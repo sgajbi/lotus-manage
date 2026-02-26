@@ -1,13 +1,11 @@
 services:
-  lotus-advise:
+  lotus-manage:
     environment:
       - APP_PERSISTENCE_PROFILE=PRODUCTION
       - DPM_SUPPORTABILITY_STORE_BACKEND=POSTGRES
-      - DPM_SUPPORTABILITY_POSTGRES_DSN=postgresql://dpm:dpm@postgres:5432/dpm_supportability
+      - DPM_SUPPORTABILITY_POSTGRES_DSN=postgresql://manage:manage@postgres:5432/manage_supportability
       - PROPOSAL_STORE_BACKEND=POSTGRES
-      - PROPOSAL_POSTGRES_DSN=postgresql://dpm:dpm@postgres:5432/dpm_supportability
+      - PROPOSAL_POSTGRES_DSN=postgresql://manage:manage@postgres:5432/manage_supportability
       - DPM_POLICY_PACKS_ENABLED=true
       - DPM_POLICY_PACK_CATALOG_BACKEND=POSTGRES
-      - DPM_POLICY_PACK_POSTGRES_DSN=postgresql://dpm:dpm@postgres:5432/dpm_supportability
-
-
+      - DPM_POLICY_PACK_POSTGRES_DSN=postgresql://manage:manage@postgres:5432/manage_supportability
