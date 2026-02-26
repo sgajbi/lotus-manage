@@ -37,7 +37,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
       - name: Install
-        run: make install
+        run: make install-ci
       - name: Verify Dependencies
         run: python -m pip check
       - name: Lint
@@ -72,7 +72,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
       - name: Install
-        run: make install
+        run: make install-ci
       - name: Run tests with coverage data
         env:
           COVERAGE_FILE: .coverage.${{ matrix.suite }}
@@ -96,7 +96,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
       - name: Install
-        run: make install
+        run: make install-ci
       - name: Download coverage artifacts
         uses: actions/download-artifact@v4
         with:
