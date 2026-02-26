@@ -1,0 +1,13 @@
+from typing import Protocol
+
+from src.core.dpm.policy_packs import DpmPolicyPackDefinition
+
+
+class DpmPolicyPackRepository(Protocol):
+    def list_policy_packs(self) -> list[DpmPolicyPackDefinition]: ...
+
+    def get_policy_pack(self, *, policy_pack_id: str) -> DpmPolicyPackDefinition | None: ...
+
+    def upsert_policy_pack(self, policy_pack: DpmPolicyPackDefinition) -> None: ...
+
+    def delete_policy_pack(self, *, policy_pack_id: str) -> bool: ...

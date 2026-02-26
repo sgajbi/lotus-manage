@@ -1,0 +1,70 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "pf_demo_support_27",
+    "base_currency": "USD",
+    "positions": [
+      {
+        "instrument_id": "EQ_1",
+        "quantity": "80"
+      },
+      {
+        "instrument_id": "EQ_2",
+        "quantity": "20"
+      }
+    ],
+    "cash_balances": [
+      {
+        "currency": "USD",
+        "amount": "2000"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "EQ_1",
+        "price": "100",
+        "currency": "USD"
+      },
+      {
+        "instrument_id": "EQ_2",
+        "price": "50",
+        "currency": "USD"
+      }
+    ],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      {
+        "instrument_id": "EQ_1",
+        "weight": "0.50"
+      },
+      {
+        "instrument_id": "EQ_2",
+        "weight": "0.50"
+      }
+    ]
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "EQ_1",
+      "status": "APPROVED",
+      "asset_class": "EQUITY",
+      "attributes": {
+        "sector": "TECH"
+      }
+    },
+    {
+      "instrument_id": "EQ_2",
+      "status": "APPROVED",
+      "asset_class": "EQUITY",
+      "attributes": {
+        "sector": "HEALTHCARE"
+      }
+    }
+  ],
+  "options": {
+    "single_position_max_weight": "0.60"
+  }
+}

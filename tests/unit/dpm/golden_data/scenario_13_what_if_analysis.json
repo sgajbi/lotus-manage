@@ -1,0 +1,170 @@
+{
+  "scenario_name": "13_what_if_analysis_mode",
+  "description": "Baseline single-run golden plus batch what-if fixture for API compare mode.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_13",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "Tech_Stock",
+          "quantity": "100"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "0"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "Tech_Stock",
+          "price": "100",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "Bond_Safe",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "Tech_Stock",
+          "weight": "0.0"
+        },
+        {
+          "instrument_id": "Bond_Safe",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "Tech_Stock",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      },
+      {
+        "instrument_id": "Bond_Safe",
+        "status": "APPROVED",
+        "asset_class": "FIXED_INCOME"
+      }
+    ],
+    "options": {}
+  },
+  "expected_output": {
+    "status": "READY",
+    "target": {
+      "targets": [
+        {
+          "instrument_id": "Tech_Stock",
+          "final_weight": "0.0"
+        },
+        {
+          "instrument_id": "Bond_Safe",
+          "final_weight": "1.0"
+        }
+      ]
+    },
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "Tech_Stock",
+        "side": "SELL",
+        "quantity": "100",
+        "notional": {
+          "amount": "10000",
+          "currency": "USD"
+        }
+      },
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "Bond_Safe",
+        "side": "BUY",
+        "quantity": "100",
+        "notional": {
+          "amount": "10000",
+          "currency": "USD"
+        }
+      }
+    ]
+  },
+  "batch_inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_13",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "Tech_Stock",
+          "quantity": "100"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "0"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "Tech_Stock",
+          "price": "100",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "Bond_Safe",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "Tech_Stock",
+          "weight": "0.0"
+        },
+        {
+          "instrument_id": "Bond_Safe",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "Tech_Stock",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      },
+      {
+        "instrument_id": "Bond_Safe",
+        "status": "APPROVED",
+        "asset_class": "FIXED_INCOME"
+      }
+    ],
+    "scenarios": {
+      "ignore_checks": {
+        "options": {}
+      },
+      "invalid_case": {
+        "options": {
+          "group_constraints": {
+            "invalid-key": {
+              "max_weight": "0.25"
+            }
+          }
+        }
+      }
+    }
+  }
+}

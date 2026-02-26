@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:17.6
+    environment:
+      POSTGRES_DB: dpm_supportability
+      POSTGRES_USER: dpm
+      POSTGRES_PASSWORD: dpm
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dpm -d dpm_supportability"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ci-local:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci-local
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      PYTHONUNBUFFERED: "1"
+      DPM_SUPPORTABILITY_POSTGRES_DSN: postgresql://dpm:dpm@postgres:5432/dpm_supportability
+      PROPOSAL_POSTGRES_DSN: postgresql://dpm:dpm@postgres:5432/dpm_supportability
+      DPM_POSTGRES_INTEGRATION_DSN: postgresql://dpm:dpm@postgres:5432/dpm_supportability
+      PROPOSAL_POSTGRES_INTEGRATION_DSN: postgresql://dpm:dpm@postgres:5432/dpm_supportability
+    command: ["sh", "-lc", "make ci-local"]

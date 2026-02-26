@@ -1,0 +1,65 @@
+{
+  "scenario_name": "12_solver_infeasible",
+  "description": "Solver mode blocks when hard constraints are infeasible with no filler instrument.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_12b",
+      "base_currency": "USD",
+      "positions": [],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "1000.00"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "Tech_A",
+          "price": "100.00",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "Tech_A",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "Tech_A",
+        "status": "APPROVED",
+        "asset_class": "EQUITY",
+        "attributes": {
+          "sector": "TECH"
+        }
+      }
+    ],
+    "options": {
+      "target_method": "SOLVER",
+      "single_position_max_weight": "0.4",
+      "cash_band_min_weight": "0.5",
+      "cash_band_max_weight": "0.5",
+      "group_constraints": {
+        "sector:TECH": {
+          "max_weight": "0.3"
+        }
+      }
+    }
+  },
+  "expected_output": {
+    "status": "BLOCKED",
+    "diagnostics": {
+      "warnings": [
+        "INFEASIBLE_INFEASIBLE",
+        "INFEASIBILITY_HINT_SINGLE_POSITION_CAPACITY"
+      ]
+    }
+  }
+}

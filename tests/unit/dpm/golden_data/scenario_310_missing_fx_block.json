@@ -1,0 +1,111 @@
+{
+  "scenario_name": "scenario_310_missing_fx_block",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_310",
+      "base_currency": "SGD",
+      "positions": [],
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "10000.0",
+          "settled": null,
+          "pending": null
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "US_A",
+          "price": "100.0",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "US_A",
+          "weight": "0.5"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "US_A",
+        "status": "APPROVED",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      }
+    ],
+    "options": {
+      "cash_band_min_weight": "0.0",
+      "cash_band_max_weight": "1.0",
+      "single_position_max_weight": null,
+      "min_trade_notional": null,
+      "allow_restricted": false,
+      "suppress_dust_trades": true,
+      "dust_trade_threshold": null,
+      "fx_buffer_pct": "0.01",
+      "block_on_missing_prices": true,
+      "block_on_missing_fx": true,
+      "min_cash_buffer_pct": "0.0"
+    }
+  },
+  "expected_outputs": {
+    "status": "BLOCKED",
+    "intents": [],
+    "after_simulated": {
+      "total_value": {
+        "amount": "10000.0",
+        "currency": "SGD"
+      },
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "10000.0"
+        }
+      ],
+      "positions": [],
+      "allocation_by_asset_class": [
+        {
+          "key": "CASH",
+          "weight": "1",
+          "value": {
+            "amount": "10000.0",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation_by_instrument": [],
+      "allocation": []
+    },
+    "diagnostics": {
+      "warnings": [],
+      "suppressed_intents": [],
+      "data_quality": {
+        "price_missing": [],
+        "fx_missing": [
+          "USD/SGD"
+        ],
+        "shelf_missing": []
+      }
+    },
+    "universe": {
+      "universe_id": "u_rr_c905b14e",
+      "eligible_for_buy": [
+        "US_A"
+      ],
+      "eligible_for_sell": [
+        "US_A"
+      ],
+      "excluded": [],
+      "coverage": {
+        "price_coverage_pct": "0",
+        "fx_coverage_pct": "0"
+      }
+    }
+  }
+}

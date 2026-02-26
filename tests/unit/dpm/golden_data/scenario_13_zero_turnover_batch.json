@@ -1,0 +1,108 @@
+{
+  "scenario_name": "13_zero_turnover_batch",
+  "description": "No-trade baseline for batch compare metric semantics.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_13_zero",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "EQ_1",
+          "quantity": "100"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "0"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "EQ_1",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "EQ_1",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "EQ_1",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      }
+    ],
+    "options": {}
+  },
+  "expected_output": {
+    "status": "READY",
+    "target": {
+      "targets": [
+        {
+          "instrument_id": "EQ_1",
+          "final_weight": "1.0"
+        }
+      ]
+    },
+    "intents": []
+  },
+  "batch_inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_13_zero",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "EQ_1",
+          "quantity": "100"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "0"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "EQ_1",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "EQ_1",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "EQ_1",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      }
+    ],
+    "scenarios": {
+      "steady": {
+        "options": {}
+      }
+    }
+  }
+}

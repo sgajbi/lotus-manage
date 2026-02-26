@@ -1,0 +1,205 @@
+{
+  "scenario_name": "scenario_104_multicurrency_fx",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_104",
+      "base_currency": "SGD",
+      "positions": [],
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "20000.0",
+          "settled": null,
+          "pending": null
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "US_ETF",
+          "price": "100.0",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": [
+        {
+          "pair": "USD/SGD",
+          "rate": "1.35"
+        }
+      ]
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "US_ETF",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "US_ETF",
+        "status": "APPROVED",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      }
+    ],
+    "options": {
+      "valuation_mode": "CALCULATED",
+      "cash_band_min_weight": "0.00",
+      "cash_band_max_weight": "1.00",
+      "single_position_max_weight": null,
+      "min_trade_notional": null,
+      "allow_restricted": false,
+      "suppress_dust_trades": true,
+      "dust_trade_threshold": null,
+      "fx_buffer_pct": "0.01",
+      "block_on_missing_prices": true,
+      "block_on_missing_fx": true,
+      "min_cash_buffer_pct": "0.0"
+    }
+  },
+  "expected_outputs": {
+    "status": "BLOCKED",
+    "intents": [
+      {
+        "intent_type": "FX_SPOT",
+        "intent_id": "oi_fx_2",
+        "pair": "USD/SGD",
+        "buy_currency": "USD",
+        "buy_amount": "14948.000",
+        "sell_currency": "SGD",
+        "sell_amount_estimated": "20179.80000",
+        "dependencies": [],
+        "rationale": {
+          "code": "FUNDING",
+          "message": "Fund"
+        }
+      },
+      {
+        "intent_type": "SECURITY_TRADE",
+        "intent_id": "oi_1",
+        "instrument_id": "US_ETF",
+        "side": "BUY",
+        "quantity": "148",
+        "notional": {
+          "amount": "14800.0",
+          "currency": "USD"
+        },
+        "notional_base": {
+          "amount": "19980.000",
+          "currency": "SGD"
+        },
+        "dependencies": [
+          "oi_fx_2"
+        ],
+        "rationale": {
+          "code": "DRIFT_REBALANCE",
+          "message": "Align"
+        },
+        "constraints_applied": []
+      }
+    ],
+    "after_simulated": {
+      "total_value": {
+        "amount": "20000.00000",
+        "currency": "SGD"
+      },
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "-179.80000"
+        },
+        {
+          "currency": "USD",
+          "amount": "148.000"
+        }
+      ],
+      "positions": [
+        {
+          "instrument_id": "US_ETF",
+          "quantity": "148",
+          "instrument_currency": "USD",
+          "asset_class": "UNKNOWN",
+          "price": {
+            "amount": "100.0",
+            "currency": "USD"
+          },
+          "value_in_instrument_ccy": {
+            "amount": "14800.0",
+            "currency": "USD"
+          },
+          "value_in_base_ccy": {
+            "amount": "19980.000",
+            "currency": "SGD"
+          },
+          "weight": "0.999"
+        }
+      ],
+      "allocation_by_asset_class": [
+        {
+          "key": "UNKNOWN",
+          "weight": "0.999",
+          "value": {
+            "amount": "19980.000",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "CASH",
+          "weight": "0.001",
+          "value": {
+            "amount": "20.00000",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation_by_instrument": [
+        {
+          "key": "US_ETF",
+          "weight": "0.999",
+          "value": {
+            "amount": "19980.000",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation": [
+        {
+          "key": "US_ETF",
+          "weight": "0.999",
+          "value": {
+            "amount": "19980.000",
+            "currency": "SGD"
+          }
+        }
+      ]
+    },
+    "diagnostics": {
+      "warnings": [
+        "SIMULATION_SAFETY_CHECK_FAILED"
+      ],
+      "suppressed_intents": [],
+      "data_quality": {
+        "price_missing": [],
+        "fx_missing": [],
+        "shelf_missing": []
+      }
+    },
+    "universe": {
+      "universe_id": "u_rr_64aeec7e",
+      "eligible_for_buy": [
+        "US_ETF"
+      ],
+      "eligible_for_sell": [
+        "US_ETF"
+      ],
+      "excluded": [],
+      "coverage": {
+        "price_coverage_pct": "1",
+        "fx_coverage_pct": "1"
+      }
+    }
+  }
+}

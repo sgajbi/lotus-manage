@@ -1,0 +1,131 @@
+{
+  "scenario_name": "08_sector_cap",
+  "description": "Enforce sector:TECH <= 20% on a 30% allocation, redistributing excess to Bond_B.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_08",
+      "base_currency": "USD",
+      "positions": [],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "1000.00"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "Tech_A",
+          "price": "100.00",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "Bond_B",
+          "price": "100.00",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "Tech_A",
+          "weight": "0.3"
+        },
+        {
+          "instrument_id": "Bond_B",
+          "weight": "0.7"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "Tech_A",
+        "status": "APPROVED",
+        "asset_class": "EQUITY",
+        "attributes": {
+          "sector": "TECH"
+        }
+      },
+      {
+        "instrument_id": "Bond_B",
+        "status": "APPROVED",
+        "asset_class": "FIXED_INCOME",
+        "attributes": {
+          "sector": "FI"
+        }
+      }
+    ],
+    "options": {
+      "group_constraints": {
+        "sector:TECH": {
+          "max_weight": "0.2"
+        }
+      }
+    }
+  },
+  "expected_output": {
+    "status": "READY",
+    "target": {
+      "targets": [
+        {
+          "instrument_id": "Tech_A",
+          "final_weight": "0.2",
+          "tags": [
+            "CAPPED_BY_MAX_WEIGHT"
+          ]
+        },
+        {
+          "instrument_id": "Bond_B",
+          "final_weight": "0.8",
+          "tags": [
+            "REDISTRIBUTED_RECIPIENT"
+          ]
+        }
+      ]
+    },
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "Tech_A",
+        "side": "BUY",
+        "quantity": "2",
+        "notional": {
+          "amount": "200.00",
+          "currency": "USD"
+        }
+      },
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "Bond_B",
+        "side": "BUY",
+        "quantity": "8",
+        "notional": {
+          "amount": "800.00",
+          "currency": "USD"
+        }
+      }
+    ],
+    "diagnostics": {
+      "warnings": [
+        "CAPPED_BY_GROUP_LIMIT_sector:TECH"
+      ]
+    },
+    "after_simulated": {
+      "allocation_by_attribute": {
+        "sector": [
+          {
+            "key": "TECH",
+            "weight": "0.2"
+          },
+          {
+            "key": "FI",
+            "weight": "0.8"
+          }
+        ]
+      }
+    }
+  }
+}

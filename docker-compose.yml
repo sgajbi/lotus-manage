@@ -1,12 +1,59 @@
 services:
-  lotus-manage:
-    build: .
+  lotus-advise:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lotus-advise:latest
+    init: true
+    restart: unless-stopped
     ports:
-      - \"8140:8140\"
-    env_file:
-      - .env
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - APP_PERSISTENCE_PROFILE=${APP_PERSISTENCE_PROFILE:-PRODUCTION}
+      - DPM_SUPPORTABILITY_STORE_BACKEND=${DPM_SUPPORTABILITY_STORE_BACKEND:-POSTGRES}
+      - DPM_SUPPORTABILITY_POSTGRES_DSN=${DPM_SUPPORTABILITY_POSTGRES_DSN:-postgresql://dpm:dpm@postgres:5432/dpm_supportability}
+      - PROPOSAL_STORE_BACKEND=${PROPOSAL_STORE_BACKEND:-POSTGRES}
+      - PROPOSAL_POSTGRES_DSN=${PROPOSAL_POSTGRES_DSN:-postgresql://dpm:dpm@postgres:5432/dpm_supportability}
+      - DPM_POLICY_PACK_CATALOG_BACKEND=${DPM_POLICY_PACK_CATALOG_BACKEND:-POSTGRES}
+      - DPM_POLICY_PACK_POSTGRES_DSN=${DPM_POLICY_PACK_POSTGRES_DSN:-postgresql://dpm:dpm@postgres:5432/dpm_supportability}
     healthcheck:
-      test: [\"CMD\", \"python\", \"-c\", \"import urllib.request; urllib.request.urlopen('http://localhost:8140/health/ready')\"]
-      interval: 15s
-      timeout: 3s
-      retries: 10
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=3)"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  postgres:
+    image: postgres:17.6
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=dpm_supportability
+      - POSTGRES_USER=dpm
+      - POSTGRES_PASSWORD=dpm
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dpm -d dpm_supportability"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - dpm-postgres-data:/var/lib/postgresql/data
+
+volumes:
+  dpm-postgres-data:
+
+

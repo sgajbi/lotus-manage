@@ -1,0 +1,235 @@
+{
+  "scenario_name": "scenario_114_frozen_asset",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_114",
+      "base_currency": "SGD",
+      "positions": [
+        {
+          "instrument_id": "RUSSIA_ETF",
+          "quantity": "100",
+          "market_value": null
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "10000.00",
+          "settled": null,
+          "pending": null
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "RUSSIA_ETF",
+          "price": "100.0",
+          "currency": "SGD"
+        },
+        {
+          "instrument_id": "US_BOND",
+          "price": "100.0",
+          "currency": "SGD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "US_BOND",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "RUSSIA_ETF",
+        "status": "SUSPENDED",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      },
+      {
+        "instrument_id": "US_BOND",
+        "status": "APPROVED",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      }
+    ],
+    "options": {
+      "valuation_mode": "CALCULATED",
+      "cash_band_min_weight": "0.00",
+      "cash_band_max_weight": "1.00",
+      "single_position_max_weight": null,
+      "min_trade_notional": null,
+      "allow_restricted": false,
+      "suppress_dust_trades": true,
+      "dust_trade_threshold": null,
+      "fx_buffer_pct": "0.01",
+      "block_on_missing_prices": true,
+      "block_on_missing_fx": true,
+      "min_cash_buffer_pct": "0.0"
+    }
+  },
+  "expected_outputs": {
+    "status": "PENDING_REVIEW",
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "intent_id": "oi_1",
+        "instrument_id": "US_BOND",
+        "side": "BUY",
+        "quantity": "100",
+        "notional": {
+          "amount": "10000.0",
+          "currency": "SGD"
+        },
+        "notional_base": {
+          "amount": "10000.00",
+          "currency": "SGD"
+        },
+        "dependencies": [],
+        "rationale": {
+          "code": "DRIFT_REBALANCE",
+          "message": "Align"
+        },
+        "constraints_applied": []
+      }
+    ],
+    "after_simulated": {
+      "total_value": {
+        "amount": "20000.00",
+        "currency": "SGD"
+      },
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "0.00"
+        }
+      ],
+      "positions": [
+        {
+          "instrument_id": "RUSSIA_ETF",
+          "quantity": "100",
+          "instrument_currency": "SGD",
+          "asset_class": "UNKNOWN",
+          "price": {
+            "amount": "100.0",
+            "currency": "SGD"
+          },
+          "value_in_instrument_ccy": {
+            "amount": "10000.0",
+            "currency": "SGD"
+          },
+          "value_in_base_ccy": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          },
+          "weight": "0.5"
+        },
+        {
+          "instrument_id": "US_BOND",
+          "quantity": "100",
+          "instrument_currency": "SGD",
+          "asset_class": "UNKNOWN",
+          "price": {
+            "amount": "100.0",
+            "currency": "SGD"
+          },
+          "value_in_instrument_ccy": {
+            "amount": "10000.0",
+            "currency": "SGD"
+          },
+          "value_in_base_ccy": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          },
+          "weight": "0.5"
+        }
+      ],
+      "allocation_by_asset_class": [
+        {
+          "key": "UNKNOWN",
+          "weight": "1",
+          "value": {
+            "amount": "20000.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "CASH",
+          "weight": "0",
+          "value": {
+            "amount": "0.00",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation_by_instrument": [
+        {
+          "key": "RUSSIA_ETF",
+          "weight": "0.5",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "US_BOND",
+          "weight": "0.5",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation": [
+        {
+          "key": "RUSSIA_ETF",
+          "weight": "0.5",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "US_BOND",
+          "weight": "0.5",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        }
+      ]
+    },
+    "diagnostics": {
+      "warnings": [],
+      "suppressed_intents": [],
+      "data_quality": {
+        "price_missing": [],
+        "fx_missing": [],
+        "shelf_missing": []
+      }
+    },
+    "universe": {
+      "universe_id": "u_rr_7cbde4a5",
+      "eligible_for_buy": [
+        "US_BOND"
+      ],
+      "eligible_for_sell": [
+        "US_BOND"
+      ],
+      "excluded": [
+        {
+          "instrument_id": "RUSSIA_ETF",
+          "reason_code": "LOCKED_DUE_TO_SUSPENDED"
+        }
+      ],
+      "coverage": {
+        "price_coverage_pct": "1",
+        "fx_coverage_pct": "1"
+      }
+    }
+  }
+}
