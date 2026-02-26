@@ -13,6 +13,3 @@ def test_versioned_proposals_surface_exists() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/rebalance/proposals")
     assert response.status_code in {200, 400, 422, 503}
-
-
-

@@ -193,5 +193,3 @@ class TestIntentDependenciesAndSimulation:
         )
 
         assert diagnostics.cash_ladder_breaches == []
-
-

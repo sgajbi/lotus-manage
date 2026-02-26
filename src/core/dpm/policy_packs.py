@@ -11,7 +11,7 @@ DpmPolicyPackSource = Literal["DISABLED", "REQUEST", "TENANT_DEFAULT", "GLOBAL_D
 
 class DpmEffectivePolicyPackResolution(BaseModel):
     enabled: bool = Field(
-        description="Whether policy-pack resolution is enabled for DPM request processing.",
+        description="Whether policy-pack resolution is enabled for lotus-manage request processing.",
         examples=[False],
     )
     selected_policy_pack_id: Optional[str] = Field(

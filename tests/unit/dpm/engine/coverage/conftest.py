@@ -34,5 +34,3 @@ def base_inputs():
     ]
     model = model_portfolio(targets=[target("TARGET_ASSET", "0.5")])
     return pf, mkt, model, shelf
-
-

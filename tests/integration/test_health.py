@@ -17,5 +17,3 @@ def test_integration_capabilities_contract() -> None:
     assert body["sourceService"] == SERVICE_NAME
     assert isinstance(body["features"], list)
     assert isinstance(body["workflows"], list)
-
-

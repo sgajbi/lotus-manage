@@ -91,15 +91,15 @@ app = FastAPI(
     ),
     openapi_tags=[
         {
-            "name": "DPM Simulation",
-            "description": "Core deterministic DPM simulation endpoints.",
+            "name": "lotus-manage Simulation",
+            "description": "Core deterministic lotus-manage simulation endpoints.",
         },
         {
-            "name": "DPM What-If Analysis",
+            "name": "lotus-manage What-If Analysis",
             "description": "Batch scenario analysis endpoints (sync and async).",
         },
         {
-            "name": "DPM Run Supportability",
+            "name": "lotus-manage Run Supportability",
             "description": "Run, operation, idempotency, and artifact retrieval endpoints.",
         },
         {

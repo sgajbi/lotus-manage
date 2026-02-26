@@ -1,16 +1,16 @@
-# DPM Rebalance Engine Know-How
+# lotus-manage Rebalance Engine Know-How
 
 Implementation scope:
 - API: `src/api/main.py` (`/rebalance/simulate`, `/rebalance/analyze`)
-- DPM run supportability router: `src/api/routers/dpm_runs.py`
-- DPM policy-pack supportability router: `src/api/routers/dpm_policy_packs.py`
-- DPM run supportability runtime config/env parsing: `src/api/routers/dpm_runs_config.py`
-- DPM run supportability service orchestration: `src/core/dpm_runs/service.py`
-- DPM run supportability DTO mappers: `src/core/dpm_runs/serializers.py`
-- DPM run supportability workflow transition helpers: `src/core/dpm_runs/workflow.py`
+- lotus-manage run supportability router: `src/api/routers/dpm_runs.py`
+- lotus-manage policy-pack supportability router: `src/api/routers/dpm_policy_packs.py`
+- lotus-manage run supportability runtime config/env parsing: `src/api/routers/dpm_runs_config.py`
+- lotus-manage run supportability service orchestration: `src/core/dpm_runs/service.py`
+- lotus-manage run supportability DTO mappers: `src/core/dpm_runs/serializers.py`
+- lotus-manage run supportability workflow transition helpers: `src/core/dpm_runs/workflow.py`
 - Models: `src/core/models.py`
 - Core orchestration: `src/core/dpm/engine.py` (`run_simulation`)
-- DPM modular internals:
+- lotus-manage modular internals:
   - `src/core/dpm/universe.py` (universe construction and shelf filtering)
   - `src/core/dpm/targets.py` (target generation and group-constraint application)
   - `src/core/dpm/intents.py` (security intent generation, tax-aware sell controls)
@@ -98,7 +98,7 @@ Implementation scope:
   - oldest/newest created-at timestamps for runs and operations
 
 ### `GET /rebalance/policies/effective`
-- Purpose: resolve and return effective DPM policy-pack selection for integration/support diagnostics.
+- Purpose: resolve and return effective lotus-manage policy-pack selection for integration/support diagnostics.
 - Optional headers:
   - `X-Policy-Pack-Id`
   - `X-Tenant-Policy-Pack-Id`
@@ -140,7 +140,7 @@ Swagger contract quality:
 - Policy endpoints are contract-tested as response-only (`GET` without request body).
 
 ### `GET /rebalance/runs/{rebalance_run_id}`
-- Purpose: retrieve one DPM run with full result payload and lineage metadata for support investigations.
+- Purpose: retrieve one lotus-manage run with full result payload and lineage metadata for support investigations.
 
 ### `GET /rebalance/runs/{rebalance_run_id}/support-bundle`
 - Purpose: retrieve one aggregated supportability bundle so investigations can run from one payload.
@@ -178,7 +178,7 @@ Swagger contract quality:
   - `include_idempotency_history`
 
 ### `GET /rebalance/runs`
-- Purpose: list DPM runs for supportability investigations.
+- Purpose: list lotus-manage runs for supportability investigations.
 - Filters:
   - `from` (created-at lower bound)
   - `to` (created-at upper bound)
@@ -190,10 +190,10 @@ Swagger contract quality:
   - `cursor`
 
 ### `GET /rebalance/runs/by-correlation/{correlation_id}`
-- Purpose: retrieve latest DPM run mapped to correlation id.
+- Purpose: retrieve latest lotus-manage run mapped to correlation id.
 
 ### `GET /rebalance/runs/by-request-hash/{request_hash}`
-- Purpose: retrieve latest DPM run mapped to canonical request hash.
+- Purpose: retrieve latest lotus-manage run mapped to canonical request hash.
 - Note: URL-encode `request_hash` when calling via path parameter.
 
 ### `GET /rebalance/runs/idempotency/{idempotency_key}`
@@ -285,7 +285,7 @@ Swagger contract quality:
 - `PENDING_REVIEW`: at least one soft-rule fail and no hard fail.
 - `BLOCKED`: any hard fail (rules, data quality, or reconciliation).
 
-## DPM Feature Flags
+## lotus-manage Feature Flags
 
 - `target_method`
 - `compare_target_methods`
@@ -325,7 +325,7 @@ Swagger contract quality:
   - `DPM_TENANT_POLICY_PACK_MAP_JSON` (JSON map: `tenant_id -> policy_pack_id`)
 
 Dependency policy note:
-- `link_buy_to_same_currency_sell_dependency=null` defaults to `true` in DPM.
+- `link_buy_to_same_currency_sell_dependency=null` defaults to `true` in lotus-manage.
 - when `false`, BUY security intents no longer depend on same-currency SELL intents.
 
 ## PostgreSQL Migration Tooling
@@ -345,7 +345,7 @@ Dependency policy note:
 - Production rollout runbook:
   - `docs/documentation/postgres-migration-rollout-runbook.md`
 
-## Tests That Lock DPM Behavior
+## Tests That Lock lotus-manage Behavior
 
 - API: `tests/unit/dpm/api/test_api_rebalance.py`
 - Engine: `tests/unit/dpm/engine/`
@@ -355,4 +355,4 @@ Dependency policy note:
 ## Deprecation Notes
 
 - `src/core/dpm_engine.py` is a compatibility shim and emits `DeprecationWarning`.
-- Use `src/core/dpm/engine.py` as the stable DPM engine import path.
+- Use `src/core/dpm/engine.py` as the stable lotus-manage engine import path.

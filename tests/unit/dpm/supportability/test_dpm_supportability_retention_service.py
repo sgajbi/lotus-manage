@@ -92,5 +92,3 @@ def test_supportability_retention_purges_expired_run_records(repository):
 
     with pytest.raises(DpmRunNotFoundError, match="DPM_IDEMPOTENCY_KEY_NOT_FOUND"):
         service.get_idempotency_history(idempotency_key="idem-retention-old")
-
-

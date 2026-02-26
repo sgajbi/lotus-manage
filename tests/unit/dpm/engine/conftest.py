@@ -33,5 +33,3 @@ def base_context():
         shelf_entry("SELL_ONLY_ASSET", status="SELL_ONLY", asset_class="EQUITY"),
     ]
     return pf, mkt, shelf
-
-

@@ -16,7 +16,7 @@ from src.core.dpm_runs import (
     "/rebalance/operations",
     response_model=DpmAsyncOperationListResponse,
     status_code=status.HTTP_200_OK,
-    summary="List DPM Async Operations",
+    summary="List lotus-manage Async Operations",
     description=(
         "Returns asynchronous operation records with optional filters and cursor pagination."
     ),
@@ -95,7 +95,7 @@ def list_dpm_async_operations(
     "/rebalance/operations/{operation_id}",
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Async Operation",
+    summary="Get lotus-manage Async Operation",
     description="Returns asynchronous operation status and terminal result/error payload.",
 )
 def get_dpm_async_operation(
@@ -117,7 +117,7 @@ def get_dpm_async_operation(
     "/rebalance/operations/by-correlation/{correlation_id}",
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Async Operation by Correlation Id",
+    summary="Get lotus-manage Async Operation by Correlation Id",
     description="Returns asynchronous operation associated with correlation id.",
 )
 def get_dpm_async_operation_by_correlation(
@@ -139,7 +139,7 @@ def get_dpm_async_operation_by_correlation(
     "/rebalance/lineage/{entity_id}",
     response_model=DpmLineageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Supportability Lineage by Entity Id",
+    summary="Get lotus-manage Supportability Lineage by Entity Id",
     description=(
         "Returns supportability lineage edges for an entity id, including correlation, "
         "idempotency, run, and operation relations."

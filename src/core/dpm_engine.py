@@ -1,5 +1,5 @@
 """
-Backward-compatible shim for DPM engine module path.
+Backward-compatible shim for lotus-manage engine module path.
 
 Preferred import:
 `from src.core.dpm.engine import run_simulation`

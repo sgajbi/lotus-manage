@@ -1,12 +1,12 @@
-# ADR-0006: DPM Async Execution Mode (`INLINE` vs `ACCEPT_ONLY`)
+# ADR-0006: lotus-manage Async Execution Mode (`INLINE` vs `ACCEPT_ONLY`)
 
 - Status: Accepted
 - Date: 2026-02-20
-- Owners: DPM API / Platform
+- Owners: lotus-manage API / Platform
 
 ## Context
 
-RFC-0018 introduces asynchronous operation resources for DPM analysis workflows. Teams need configurable behavior between immediate inline execution and acceptance-only mode where execution is delegated later.
+RFC-0018 introduces asynchronous operation resources for lotus-manage analysis workflows. Teams need configurable behavior between immediate inline execution and acceptance-only mode where execution is delegated later.
 
 ## Decision
 

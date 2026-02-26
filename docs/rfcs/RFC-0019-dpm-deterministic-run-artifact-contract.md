@@ -1,4 +1,4 @@
-# RFC-0019: DPM Deterministic Run Artifact Contract
+# RFC-0019: lotus-manage Deterministic Run Artifact Contract
 
 | Metadata | Details |
 | --- | --- |
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Introduce a deterministic run artifact contract for DPM so every run can be retrieved as a stable business payload for support, replay validation, and lineage use cases.
+Introduce a deterministic run artifact contract for lotus-manage so every run can be retrieved as a stable business payload for support, replay validation, and lineage use cases.
 
 ## 2. Problem Statement
 
@@ -19,9 +19,9 @@ Current supportability APIs expose run metadata, but there is no single normaliz
 
 ### 3.1 Goals
 
-- Define a versioned DPM run artifact schema.
+- Define a versioned lotus-manage run artifact schema.
 - Keep artifact generation deterministic for the same stored run.
-- Reuse vocabulary where advisory and DPM overlap.
+- Reuse vocabulary where advisory and lotus-manage overlap.
 - Preserve existing endpoints and behavior.
 
 ### 3.2 Non-Goals
@@ -84,4 +84,4 @@ Additive endpoint only. Existing run and simulation APIs remain unchanged.
 ## 7. Status and Reason Code Conventions
 
 - Artifact retrieval does not introduce new business statuses.
-- Existing DPM run status vocabulary remains: `READY`, `PENDING_REVIEW`, `BLOCKED`.
+- Existing lotus-manage run status vocabulary remains: `READY`, `PENDING_REVIEW`, `BLOCKED`.

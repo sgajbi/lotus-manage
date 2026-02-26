@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
-ConsumerSystem = Literal["BFF", "PA", "DPM", "UI", "UNKNOWN"]
+ConsumerSystem = Literal["lotus-gateway", "lotus-performance", "lotus-manage", "UI", "UNKNOWN"]
 
 
 class FeatureCapability(BaseModel):
@@ -49,7 +49,7 @@ def _env_bool(name: str, default: bool) -> bool:
 @router.get("/integration/capabilities", response_model=IntegrationCapabilitiesResponse)
 @router.get("/platform/capabilities", response_model=IntegrationCapabilitiesResponse)
 async def get_integration_capabilities(
-    consumer_system: ConsumerSystem = Query("BFF", alias="consumerSystem"),
+    consumer_system: ConsumerSystem = Query("lotus-gateway", alias="consumerSystem"),
     tenant_id: str = Query("default", alias="tenantId"),
 ) -> IntegrationCapabilitiesResponse:
     lifecycle_enabled = _env_bool("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", True)
@@ -72,20 +72,20 @@ async def get_integration_capabilities(
             FeatureCapability(
                 key="dpm.execution.stateful_pas_ref",
                 enabled=True,
-                owner_service="DPM",
-                description="Stateful DPM execution with PAS-referenced data.",
+                owner_service="lotus-manage",
+                description="Stateful lotus-manage execution with lotus-core-referenced data.",
             ),
             FeatureCapability(
                 key="dpm.execution.stateless_inline_bundle",
                 enabled=inline_bundle_enabled,
-                owner_service="DPM",
-                description="Stateless DPM execution using inline request bundles.",
+                owner_service="lotus-manage",
+                description="Stateless lotus-manage execution using inline request bundles.",
             ),
             FeatureCapability(
                 key="dpm.proposals.lifecycle",
                 enabled=lifecycle_enabled,
-                owner_service="DPM",
-                description="DPM lifecycle proposal and supportability workflows.",
+                owner_service="lotus-manage",
+                description="lotus-manage lifecycle proposal and supportability workflows.",
             ),
         ],
         workflows=[

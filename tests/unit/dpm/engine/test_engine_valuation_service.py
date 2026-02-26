@@ -99,5 +99,3 @@ def test_valuation_handles_missing_attributes():
 
     assert state.total_value.amount == Decimal("10")
     assert state.allocation_by_attribute == {}
-
-

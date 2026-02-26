@@ -70,5 +70,3 @@ def test_idempotency_history_not_found_raises_consistent_error():
     service = DpmRunSupportService(repository=InMemoryDpmRunRepository())
     with pytest.raises(DpmRunNotFoundError, match="DPM_IDEMPOTENCY_KEY_NOT_FOUND"):
         service.get_idempotency_history(idempotency_key="idem-history-missing")
-
-

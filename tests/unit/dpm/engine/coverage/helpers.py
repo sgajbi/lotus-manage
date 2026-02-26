@@ -12,5 +12,3 @@ def usd_cash_portfolio(portfolio_id: str, amount: str = "1000"):
 
 def empty_diagnostics() -> DiagnosticsData:
     return DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
-
-

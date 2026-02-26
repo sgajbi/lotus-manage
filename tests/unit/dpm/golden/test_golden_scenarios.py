@@ -131,5 +131,3 @@ def test_golden_scenario(filename):
                 act_item = next((a for a in act_attrs[attr_key] if a.key == exp_item["key"]), None)
                 assert act_item is not None
                 assert act_item.weight == Decimal(str(exp_item["weight"]))
-
-

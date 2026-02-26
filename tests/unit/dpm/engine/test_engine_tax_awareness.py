@@ -104,5 +104,3 @@ def test_tax_awareness_budget_caps_sell_quantity_with_diagnostics():
     assert result.tax_impact is not None
     assert result.tax_impact.budget_used is not None
     assert result.tax_impact.budget_used.amount == Decimal("100")
-
-

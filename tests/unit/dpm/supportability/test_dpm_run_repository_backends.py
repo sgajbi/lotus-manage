@@ -793,5 +793,3 @@ def test_sqlite_repository_purge_expired_runs_noop_when_empty():
             now=datetime(2026, 2, 22, 12, 0, tzinfo=timezone.utc),
         )
         assert purged == 0
-
-

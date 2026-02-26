@@ -1,12 +1,12 @@
-# ADR-0004: DPM Async Operation Selection and Correlation Contract
+# ADR-0004: lotus-manage Async Operation Selection and Correlation Contract
 
 - Status: Accepted
 - Date: 2026-02-20
-- Owners: DPM API / Platform
+- Owners: lotus-manage API / Platform
 
 ## Context
 
-Supportability and orchestration needs differ by endpoint latency profile. DPM required a clear policy for which operations should expose asynchronous contracts and how business/support users should retrieve operation state deterministically.
+Supportability and orchestration needs differ by endpoint latency profile. lotus-manage required a clear policy for which operations should expose asynchronous contracts and how business/support users should retrieve operation state deterministically.
 
 ## Decision
 
@@ -36,7 +36,7 @@ Correlation contract:
 ## Why
 
 - Improves enterprise orchestration without forcing async complexity on all endpoints.
-- Aligns DPM with advisory operation-vocabulary patterns while preserving DPM business semantics.
+- Aligns lotus-manage with advisory operation-vocabulary patterns while preserving lotus-manage business semantics.
 - Keeps API separation clean:
   - submission endpoint
   - operation status endpoint

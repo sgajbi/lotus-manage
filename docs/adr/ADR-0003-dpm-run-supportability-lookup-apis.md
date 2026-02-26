@@ -1,16 +1,16 @@
-# ADR-0003: DPM Run Supportability Lookup APIs
+# ADR-0003: lotus-manage Run Supportability Lookup APIs
 
 - Status: Accepted
 - Date: 2026-02-20
-- Owners: DPM API / Platform
+- Owners: lotus-manage API / Platform
 
 ## Context
 
-DPM now enforces idempotency replay semantics and propagates correlation ids. Operational teams still needed deterministic API-level lookups for run investigations without direct log or database access.
+lotus-manage now enforces idempotency replay semantics and propagates correlation ids. Operational teams still needed deterministic API-level lookups for run investigations without direct log or database access.
 
 ## Decision
 
-Introduce read-only DPM supportability endpoints:
+Introduce read-only lotus-manage supportability endpoints:
 
 1. `GET /rebalance/runs/{rebalance_run_id}`
 2. `GET /rebalance/runs/by-correlation/{correlation_id}`
@@ -33,7 +33,7 @@ Guard endpoints with runtime feature toggle:
 
 ## Why
 
-- Aligns DPM operational supportability with advisory lifecycle patterns.
+- Aligns lotus-manage operational supportability with advisory lifecycle patterns.
 - Improves incident response and auditability with deterministic retrieval paths.
 - Preserves clean separation of concerns (API router vs domain support service vs storage adapter).
 

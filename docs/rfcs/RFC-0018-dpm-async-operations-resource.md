@@ -1,4 +1,4 @@
-# RFC-0018: DPM Async Operations Resource
+# RFC-0018: lotus-manage Async Operations Resource
 
 | Metadata | Details |
 | --- | --- |
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Add asynchronous operation APIs for long-running DPM workloads, starting with batch analysis:
+Add asynchronous operation APIs for long-running lotus-manage workloads, starting with batch analysis:
 - `POST /rebalance/analyze/async`
 - `GET /rebalance/operations/{operation_id}`
 - `GET /rebalance/operations/by-correlation/{correlation_id}`
@@ -78,7 +78,7 @@ Implemented in current codebase:
   - `POST /rebalance/analyze/async`
   - `GET /rebalance/operations/{operation_id}`
   - `GET /rebalance/operations/by-correlation/{correlation_id}`
-- Operation lifecycle persistence in DPM supportability repository:
+- Operation lifecycle persistence in lotus-manage supportability repository:
   - `PENDING -> RUNNING -> SUCCEEDED | FAILED`
 - Feature flag:
   - `DPM_ASYNC_OPERATIONS_ENABLED`

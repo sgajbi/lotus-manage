@@ -181,5 +181,3 @@ def test_apply_fx_spot_to_portfolio_ignores_non_fx_intent():
     apply_fx_spot_to_portfolio(portfolio, intent)
 
     assert portfolio.cash_balances[0].amount == Decimal("1000")
-
-

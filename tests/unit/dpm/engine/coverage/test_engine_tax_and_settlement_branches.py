@@ -337,5 +337,3 @@ def test_settlement_ladder_records_fx_cash_flows():
     assert_status(result, "READY")
     ladder_ccys = {p.currency for p in result.diagnostics.cash_ladder}
     assert {"SGD", "USD", "EUR"}.issubset(ladder_ccys)
-
-

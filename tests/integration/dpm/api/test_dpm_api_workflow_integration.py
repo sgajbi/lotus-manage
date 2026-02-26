@@ -119,7 +119,9 @@ def test_support_bundle_lookup_variants_roundtrip() -> None:
     }
 
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=valid_api_payload(), headers=headers)
+        simulate = client.post(
+            "/api/v1/rebalance/simulate", json=valid_api_payload(), headers=headers
+        )
         assert simulate.status_code == 200
         run_id = simulate.json()["rebalance_run_id"]
 
@@ -134,7 +136,9 @@ def test_support_bundle_lookup_variants_roundtrip() -> None:
         by_idempotency = client.get(
             "/api/v1/rebalance/runs/idempotency/integration-dpm-bundle-1/support-bundle"
         )
-        by_operation = client.get(f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle")
+        by_operation = client.get(
+            f"/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle"
+        )
 
     assert by_run.status_code == 200
     assert by_correlation.status_code == 200
@@ -218,7 +222,7 @@ def test_health_endpoints_integration_contract() -> None:
 
 def test_integration_capabilities_contract_default_consumer() -> None:
     with TestClient(app) as client:
-        response = client.get("/integration/capabilities?consumerSystem=BFF&tenantId=default")
+        response = client.get("/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default")
 
     assert response.status_code == 200
     body = response.json()
@@ -288,7 +292,12 @@ def test_workflow_actions_and_decision_list_roundtrip(monkeypatch: pytest.Monkey
 @pytest.mark.parametrize(
     ("env_name", "env_value", "path", "expected_detail"),
     [
-        ("DPM_SUPPORT_APIS_ENABLED", "false", "/api/v1/rebalance/runs", "DPM_SUPPORT_APIS_DISABLED"),
+        (
+            "DPM_SUPPORT_APIS_ENABLED",
+            "false",
+            "/api/v1/rebalance/runs",
+            "DPM_SUPPORT_APIS_DISABLED",
+        ),
         (
             "DPM_ASYNC_OPERATIONS_ENABLED",
             "false",
@@ -325,7 +334,12 @@ def test_workflow_actions_and_decision_list_roundtrip(monkeypatch: pytest.Monkey
             "/api/v1/rebalance/lineage/corr_missing",
             "DPM_LINEAGE_APIS_DISABLED",
         ),
-        ("DPM_WORKFLOW_ENABLED", "false", "/api/v1/rebalance/workflow/decisions", "DPM_WORKFLOW_DISABLED"),
+        (
+            "DPM_WORKFLOW_ENABLED",
+            "false",
+            "/api/v1/rebalance/workflow/decisions",
+            "DPM_WORKFLOW_DISABLED",
+        ),
     ],
 )
 def test_supportability_feature_flag_guards(
@@ -411,7 +425,10 @@ def test_workflow_lookup_not_found_matrix(
     ("path", "expected_detail"),
     [
         ("/api/v1/rebalance/workflow/decisions", "DPM_WORKFLOW_DISABLED"),
-        ("/api/v1/rebalance/workflow/decisions/by-correlation/corr_missing", "DPM_WORKFLOW_DISABLED"),
+        (
+            "/api/v1/rebalance/workflow/decisions/by-correlation/corr_missing",
+            "DPM_WORKFLOW_DISABLED",
+        ),
         ("/api/v1/rebalance/runs/rr_missing/workflow", "DPM_WORKFLOW_DISABLED"),
         ("/api/v1/rebalance/runs/by-correlation/corr_missing/workflow", "DPM_WORKFLOW_DISABLED"),
         ("/api/v1/rebalance/runs/idempotency/idem_missing/workflow", "DPM_WORKFLOW_DISABLED"),
@@ -491,5 +508,3 @@ def test_workflow_action_feature_flag_guard_matrix(
 
     assert response.status_code == 404
     assert response.json()["detail"] == "DPM_WORKFLOW_DISABLED"
-
-

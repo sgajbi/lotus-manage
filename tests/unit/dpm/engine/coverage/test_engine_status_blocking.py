@@ -41,5 +41,3 @@ class TestFinalStatusAndBlocking:
         )
 
         assert_status(result, "PENDING_REVIEW")
-
-

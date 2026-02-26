@@ -1,6 +1,6 @@
 """
 FILE: tests/conftest.py
-Shared fixtures for DPM/advisory tests.
+Shared fixtures for lotus-manage/advisory tests.
 """
 
 import os
@@ -27,7 +27,11 @@ def _has_marker(item: pytest.Item, name: str) -> bool:
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
-        if _has_marker(item, "unit") or _has_marker(item, "integration") or _has_marker(item, "e2e"):
+        if (
+            _has_marker(item, "unit")
+            or _has_marker(item, "integration")
+            or _has_marker(item, "e2e")
+        ):
             continue
         path = Path(str(item.fspath)).as_posix().lower()
         if "/tests/integration/" in path or "_integration.py" in path:
@@ -94,9 +98,13 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("DPM_SUPPORTABILITY_STORE_BACKEND", "POSTGRES")
     monkeypatch.setenv("PROPOSAL_STORE_BACKEND", "POSTGRES")
     monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
-    monkeypatch.setenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "postgresql://test:test@localhost:5432/dpm")
+    monkeypatch.setenv(
+        "DPM_SUPPORTABILITY_POSTGRES_DSN", "postgresql://test:test@localhost:5432/dpm"
+    )
     monkeypatch.setenv("PROPOSAL_POSTGRES_DSN", "postgresql://test:test@localhost:5432/proposals")
-    monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://test:test@localhost:5432/policy")
+    monkeypatch.setenv(
+        "DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://test:test@localhost:5432/policy"
+    )
 
     policy_repo = _TestPolicyPackRepository()
 

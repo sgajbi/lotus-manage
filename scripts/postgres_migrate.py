@@ -11,7 +11,7 @@ if str(_REPO_ROOT) not in sys.path:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Apply forward-only PostgreSQL migrations for DPM and advisory stores."
+        description="Apply forward-only PostgreSQL migrations for lotus-manage and advisory stores."
     )
     parser.add_argument(
         "--target",
@@ -22,7 +22,7 @@ def main() -> int:
     parser.add_argument(
         "--dpm-dsn",
         default=os.getenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "").strip(),
-        help="PostgreSQL DSN for DPM supportability migrations.",
+        help="PostgreSQL DSN for lotus-manage supportability migrations.",
     )
     parser.add_argument(
         "--proposals-dsn",

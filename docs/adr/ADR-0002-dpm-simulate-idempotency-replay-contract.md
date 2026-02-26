@@ -1,8 +1,8 @@
-# ADR-0002: DPM Simulate Idempotency Replay Contract
+# ADR-0002: lotus-manage Simulate Idempotency Replay Contract
 
 - Status: Accepted
 - Date: 2026-02-20
-- Owners: DPM API / Platform
+- Owners: lotus-manage API / Platform
 
 ## Context
 
@@ -22,7 +22,7 @@ Adopt explicit replay semantics for `POST /rebalance/simulate`:
 
 ## Why
 
-- Aligns DPM and advisory API contracts.
+- Aligns lotus-manage and advisory API contracts.
 - Reduces duplicate execution risk under network retries.
 - Improves operational reproducibility and incident analysis.
 
@@ -39,4 +39,4 @@ Tradeoffs:
 ## Follow-ups
 
 - Add durable idempotency persistence for distributed deployment.
-- Add supportability lookup endpoint(s) for DPM idempotency keys if needed by operations.
+- Add supportability lookup endpoint(s) for lotus-manage idempotency keys if needed by operations.

@@ -1,4 +1,4 @@
-# RFC-0021: DPM OpenAPI Contract Hardening and Separation of Request/Response Models
+# RFC-0021: lotus-manage OpenAPI Contract Hardening and Separation of Request/Response Models
 
 | Metadata | Details |
 | --- | --- |
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Harden DPM OpenAPI contracts so request and response objects are explicitly separated, with complete field-level descriptions/examples and contract tests to prevent accidental schema drift.
+Harden lotus-manage OpenAPI contracts so request and response objects are explicitly separated, with complete field-level descriptions/examples and contract tests to prevent accidental schema drift.
 
 ## 2. Problem Statement
 
@@ -42,11 +42,11 @@ Schema ambiguity and mixed request/response models reduce integrator confidence 
 - Assertions for required fields, enums, and examples on targeted models.
 
 Phase-1 implemented:
-- Added DPM OpenAPI contract tests for async/supportability/artifact schemas and endpoint contracts:
+- Added lotus-manage OpenAPI contract tests for async/supportability/artifact schemas and endpoint contracts:
   - `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`
 - Validates:
-  - field-level descriptions/examples for key DPM response DTOs
-  - field-level descriptions/examples for DPM policy-pack resolution/catalog and nested policy DTOs
+  - field-level descriptions/examples for key lotus-manage response DTOs
+  - field-level descriptions/examples for lotus-manage policy-pack resolution/catalog and nested policy DTOs
   - request/response schema separation and response header docs on async analyze
   - request/response schema separation on:
     - `POST /rebalance/simulate`
@@ -57,7 +57,7 @@ Phase-1 implemented:
   - execute endpoint contract shape (`POST /rebalance/operations/{operation_id}/execute`)
   - artifact endpoint contract shape (`GET /rebalance/runs/{rebalance_run_id}/artifact`)
 Phase-2 implemented:
-- Extended DPM OpenAPI contract assertions for policy-pack management APIs:
+- Extended lotus-manage OpenAPI contract assertions for policy-pack management APIs:
   - `GET /rebalance/policies/catalog/{policy_pack_id}`
   - `PUT /rebalance/policies/catalog/{policy_pack_id}`
   - `DELETE /rebalance/policies/catalog/{policy_pack_id}`
@@ -72,12 +72,12 @@ Phase-2 implemented:
 - `DPM_STRICT_OPENAPI_VALIDATION` (default `true` in CI, configurable locally)
 
 Phase-1 implemented:
-- DPM contract test suite reads `DPM_STRICT_OPENAPI_VALIDATION`.
-- When set to `false`, strict DPM OpenAPI contract tests are skipped for local iteration.
+- lotus-manage contract test suite reads `DPM_STRICT_OPENAPI_VALIDATION`.
+- When set to `false`, strict lotus-manage OpenAPI contract tests are skipped for local iteration.
 
 ## 5. Test Plan
 
-- OpenAPI generation test for each DPM route family.
+- OpenAPI generation test for each lotus-manage route family.
 - Schema tests for required example/description coverage.
 - Regression tests for idempotency and supportability models.
 

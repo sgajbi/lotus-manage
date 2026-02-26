@@ -17,7 +17,7 @@ Production-style readiness checklist for RFC-0024 cutover controls.
 - [x] CI production profile startup smoke job added (`.github/workflows/ci.yml`)
 - [x] CI production profile guardrail negative checks added (`.github/workflows/ci.yml`)
 - [x] Live Postgres integration contracts present for:
-  - [x] DPM repository
+  - [x] lotus-manage repository
   - [x] advisory repository
 - [x] Production cutover contract CLI added (`scripts/production_cutover_check.py`)
 - [x] Production compose override published (`docker-compose.production.yml`)

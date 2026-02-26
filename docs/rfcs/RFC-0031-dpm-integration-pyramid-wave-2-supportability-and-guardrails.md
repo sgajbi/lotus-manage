@@ -1,7 +1,7 @@
-# RFC-0031 DPM Integration Pyramid Wave 2 - Supportability and Guardrails
+# RFC-0031 lotus-manage Integration Pyramid Wave 2 - Supportability and Guardrails
 
 ## Problem Statement
-DPM backend coverage meets threshold, but integration-test proportion remains below the target pyramid range. Critical supportability and feature-guardrail API behaviors need stronger integration-level validation.
+lotus-manage backend coverage meets threshold, but integration-test proportion remains below the target pyramid range. Critical supportability and feature-guardrail API behaviors need stronger integration-level validation.
 
 ## Root Cause
 Existing integration tests focused on main happy paths and did not sufficiently validate:
@@ -12,9 +12,9 @@ Existing integration tests focused on main happy paths and did not sufficiently 
 
 ## Proposed Solution
 Add integration workflow tests for:
-1. DPM support-bundle lookups (by correlation/idempotency/operation).
-2. DPM idempotency history endpoint behavior under feature flags.
-3. DPM supportability summary guardrail when disabled.
+1. lotus-manage support-bundle lookups (by correlation/idempotency/operation).
+2. lotus-manage idempotency history endpoint behavior under feature flags.
+3. lotus-manage supportability summary guardrail when disabled.
 4. Proposal supportability config backend readiness/error branch.
 5. Proposal support/idempotency endpoints and disabled-support guardrail.
 

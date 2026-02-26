@@ -1,6 +1,6 @@
-# DPM Rebalance Engine Demo Scenarios
+# lotus-manage Rebalance Engine Demo Scenarios
 
-This folder contains JSON input files demonstrating key capabilities of the DPM Rebalance Engine. Run these scenarios through the API endpoints.
+This folder contains JSON input files demonstrating key capabilities of the lotus-manage Rebalance Engine. Run these scenarios through the API endpoints.
 
 ## Running Scenarios
 
@@ -25,30 +25,30 @@ curl -X GET "http://127.0.0.1:8000/rebalance/operations?status=SUCCEEDED&operati
 curl -X GET "http://127.0.0.1:8000/rebalance/operations/by-correlation/demo-corr-26-async"
 ```
 
-For DPM policy-pack resolution supportability:
+For lotus-manage policy-pack resolution supportability:
 ```bash
 curl -X GET "http://127.0.0.1:8000/rebalance/policies/effective" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 ```
 
-For DPM policy-pack catalog and selected-pack presence diagnostics:
+For lotus-manage policy-pack catalog and selected-pack presence diagnostics:
 ```bash
 curl -X GET "http://127.0.0.1:8000/rebalance/policies/catalog" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 ```
 
-For DPM policy-pack supportability + diagnostics scenario:
+For lotus-manage policy-pack supportability + diagnostics scenario:
 ```bash
 curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-31-policy-pack" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001" --data-binary "@docs/demo/31_dpm_policy_pack_supportability_diagnostics.json"
 curl -X GET "http://127.0.0.1:8000/rebalance/policies/effective" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 curl -X GET "http://127.0.0.1:8000/rebalance/policies/catalog" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 ```
 
-For DPM supportability summary metrics scenario:
+For lotus-manage supportability summary metrics scenario:
 ```bash
 curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-32-support-summary" -H "X-Correlation-Id: demo-corr-32-support-summary" --data-binary "@docs/demo/32_dpm_supportability_summary_metrics.json"
 curl -X GET "http://127.0.0.1:8000/rebalance/supportability/summary"
 ```
 
-For DPM policy-pack turnover override demo (requires `DPM_POLICY_PACKS_ENABLED=true`):
+For lotus-manage policy-pack turnover override demo (requires `DPM_POLICY_PACKS_ENABLED=true`):
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","turnover_policy":{"max_turnover_pct":"0.01"},"tax_policy":{"enable_tax_awareness":true,"max_realized_capital_gains":"100"}}}'
 export DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED=true
@@ -82,7 +82,7 @@ curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: applic
 curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
-For DPM supportability and deterministic artifact retrieval flow:
+For lotus-manage supportability and deterministic artifact retrieval flow:
 ```bash
 curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-27-supportability" -H "X-Correlation-Id: demo-corr-27-supportability" --data-binary "@docs/demo/27_dpm_supportability_artifact_flow.json"
 curl -X GET "http://127.0.0.1:8000/rebalance/runs?status=READY&portfolio_id=pf_demo_support_27&limit=20"
@@ -102,17 +102,17 @@ curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/artifact"
 Retention can be enabled for supportability records with:
 - `DPM_SUPPORTABILITY_RETENTION_DAYS=<positive_integer>`
 
-For DPM lineage supportability (enabled when `DPM_LINEAGE_APIS_ENABLED=true`):
+For lotus-manage lineage supportability (enabled when `DPM_LINEAGE_APIS_ENABLED=true`):
 ```bash
 curl -X GET "http://127.0.0.1:8000/rebalance/lineage/<entity_id>"
 ```
 
-For DPM idempotency history supportability (enabled when `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`):
+For lotus-manage idempotency history supportability (enabled when `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`):
 ```bash
 curl -X GET "http://127.0.0.1:8000/rebalance/idempotency/<idempotency_key>/history"
 ```
 
-For DPM workflow supportability endpoints (enabled only when `DPM_WORKFLOW_ENABLED=true`):
+For lotus-manage workflow supportability endpoints (enabled only when `DPM_WORKFLOW_ENABLED=true`):
 ```bash
 curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/workflow"
 curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-correlation/<correlation_id>/workflow"
@@ -179,13 +179,13 @@ python scripts/run_demo_pack_live.py --base-url http://127.0.0.1:8000
 | `23_advisory_proposal_approval_client_consent.json` | **Proposal Consent Approval** | `EXECUTION_READY` lifecycle state | Records structured client consent and emits workflow event. |
 | `24_advisory_proposal_approval_compliance.json` | **Proposal Compliance Approval** | `AWAITING_CLIENT_CONSENT` lifecycle state | Records compliance approval and advances lifecycle. |
 | `25_advisory_proposal_transition_executed.json` | **Proposal Execution Transition** | `EXECUTED` lifecycle state | Records execution confirmation transition from execution-ready state. |
-| `26_dpm_async_batch_analysis.json` | **DPM Async Batch Analysis** | Async operation `SUCCEEDED` with partial-failure warning | Demonstrates `/rebalance/analyze/async` acceptance + operation lookup with `failed_scenarios` diagnostics. |
-| `27_dpm_supportability_artifact_flow.json` | **DPM Supportability + Artifact Flow** | `READY` run + deterministic artifact hash | Demonstrates run lookup by run id/correlation/idempotency and deterministic retrieval from `/rebalance/runs/{rebalance_run_id}/artifact`. |
-| `28_dpm_async_manual_execute_guard.json` | **DPM Async Manual Execute Guard** | Manual execute returns `409` on non-pending run | Demonstrates `/rebalance/operations/{operation_id}/execute` conflict guard when operation already completed inline. |
-| `29_dpm_workflow_gate_disabled_contract.json` | **DPM Workflow Gate Default Guard** | Workflow endpoints return `404 DPM_WORKFLOW_DISABLED` | Demonstrates feature-toggle default behavior for workflow supportability endpoints. |
-| `30_dpm_idempotency_history_supportability.json` | **DPM Idempotency History Supportability** | History returns two run mappings for same idempotency key | Demonstrates replay-disabled run recording and `GET /rebalance/idempotency/{idempotency_key}/history`. |
-| `31_dpm_policy_pack_supportability_diagnostics.json` | **DPM Policy-Pack Supportability Diagnostics** | `READY` plus policy diagnostics responses | Demonstrates policy endpoint diagnostics (`/policies/effective`, `/policies/catalog`) with policy headers and request simulation context. |
-| `32_dpm_supportability_summary_metrics.json` | **DPM Supportability Summary Metrics** | `READY` and summary response with expected metric fields | Demonstrates `/rebalance/supportability/summary` as the primary no-DB operational overview endpoint. |
+| `26_dpm_async_batch_analysis.json` | **lotus-manage Async Batch Analysis** | Async operation `SUCCEEDED` with partial-failure warning | Demonstrates `/rebalance/analyze/async` acceptance + operation lookup with `failed_scenarios` diagnostics. |
+| `27_dpm_supportability_artifact_flow.json` | **lotus-manage Supportability + Artifact Flow** | `READY` run + deterministic artifact hash | Demonstrates run lookup by run id/correlation/idempotency and deterministic retrieval from `/rebalance/runs/{rebalance_run_id}/artifact`. |
+| `28_dpm_async_manual_execute_guard.json` | **lotus-manage Async Manual Execute Guard** | Manual execute returns `409` on non-pending run | Demonstrates `/rebalance/operations/{operation_id}/execute` conflict guard when operation already completed inline. |
+| `29_dpm_workflow_gate_disabled_contract.json` | **lotus-manage Workflow Gate Default Guard** | Workflow endpoints return `404 DPM_WORKFLOW_DISABLED` | Demonstrates feature-toggle default behavior for workflow supportability endpoints. |
+| `30_dpm_idempotency_history_supportability.json` | **lotus-manage Idempotency History Supportability** | History returns two run mappings for same idempotency key | Demonstrates replay-disabled run recording and `GET /rebalance/idempotency/{idempotency_key}/history`. |
+| `31_dpm_policy_pack_supportability_diagnostics.json` | **lotus-manage Policy-Pack Supportability Diagnostics** | `READY` plus policy diagnostics responses | Demonstrates policy endpoint diagnostics (`/policies/effective`, `/policies/catalog`) with policy headers and request simulation context. |
+| `32_dpm_supportability_summary_metrics.json` | **lotus-manage Supportability Summary Metrics** | `READY` and summary response with expected metric fields | Demonstrates `/rebalance/supportability/summary` as the primary no-DB operational overview endpoint. |
 
 ## Feature Toggles Demonstrated
 

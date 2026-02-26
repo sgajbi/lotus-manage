@@ -193,5 +193,3 @@ def test_solver_target_gen_blocks_on_infeasible_constraints():
     assert status == "BLOCKED"
     assert trace == []
     assert any(w.startswith("INFEASIBLE_") for w in diag.warnings)
-
-

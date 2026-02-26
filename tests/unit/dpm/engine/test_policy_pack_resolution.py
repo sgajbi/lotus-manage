@@ -294,5 +294,3 @@ def test_policy_pack_apply_no_override_returns_original():
     assert selected is not None
     effective_options = apply_policy_pack_to_engine_options(options=options, policy_pack=selected)
     assert effective_options.max_turnover_pct == Decimal("0.15")
-
-

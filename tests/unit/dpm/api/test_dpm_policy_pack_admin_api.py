@@ -81,5 +81,3 @@ def test_postgres_connection_exception_types_handles_missing_psycopg(monkeypatch
     monkeypatch.setattr(builtins, "__import__", _import)
     exception_types = _postgres_connection_exception_types()
     assert ConnectionError in exception_types
-
-

@@ -22,7 +22,7 @@ from src.infrastructure.dpm_policy_packs import (
     PostgresDpmPolicyPackRepository,
 )
 
-router = APIRouter(tags=["DPM Run Supportability"])
+router = APIRouter(tags=["lotus-manage Run Supportability"])
 
 
 def resolve_dpm_policy_pack(
@@ -137,9 +137,9 @@ def reset_dpm_policy_pack_repository_for_tests() -> None:
     "/rebalance/policies/effective",
     response_model=DpmEffectivePolicyPackResolution,
     status_code=status.HTTP_200_OK,
-    summary="Resolve Effective DPM Policy Pack",
+    summary="Resolve Effective lotus-manage Policy Pack",
     description=(
-        "Returns the effective DPM policy-pack resolution using configured precedence "
+        "Returns the effective lotus-manage policy-pack resolution using configured precedence "
         "(request, tenant default, global default). This endpoint is read-only and "
         "intended for supportability and integration diagnostics."
     ),
@@ -181,9 +181,9 @@ def get_effective_dpm_policy_pack(
     "/rebalance/policies/catalog",
     response_model=DpmPolicyPackCatalogResponse,
     status_code=status.HTTP_200_OK,
-    summary="List DPM Policy Pack Catalog",
+    summary="List lotus-manage Policy Pack Catalog",
     description=(
-        "Returns the currently configured DPM policy-pack catalog and the effective "
+        "Returns the currently configured lotus-manage policy-pack catalog and the effective "
         "selection context for optional request and tenant headers."
     ),
 )
@@ -237,7 +237,7 @@ def get_dpm_policy_pack_catalog(
     "/rebalance/policies/catalog/{policy_pack_id}",
     response_model=DpmPolicyPackDefinition,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Policy Pack",
+    summary="Get lotus-manage Policy Pack",
     description="Returns one policy-pack definition by identifier.",
 )
 def get_dpm_policy_pack(
@@ -262,7 +262,7 @@ def get_dpm_policy_pack(
     "/rebalance/policies/catalog/{policy_pack_id}",
     response_model=DpmPolicyPackMutationResponse,
     status_code=status.HTTP_200_OK,
-    summary="Upsert DPM Policy Pack",
+    summary="Upsert lotus-manage Policy Pack",
     description="Creates or updates one policy-pack definition by identifier.",
 )
 def upsert_dpm_policy_pack(
@@ -294,7 +294,7 @@ def upsert_dpm_policy_pack(
 @router.delete(
     "/rebalance/policies/catalog/{policy_pack_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete DPM Policy Pack",
+    summary="Delete lotus-manage Policy Pack",
     description="Deletes one policy-pack definition by identifier when it exists.",
 )
 def delete_dpm_policy_pack(

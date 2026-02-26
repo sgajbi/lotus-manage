@@ -42,5 +42,3 @@ def test_build_settlement_ladder_wrapper_delegates(monkeypatch):
     )
     result = dpm_engine._build_settlement_ladder("pf", "shelf", "intents", "options", "diag")
     assert result["ok"][0] == "pf"
-
-

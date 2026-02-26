@@ -35,7 +35,7 @@ The current implementation is close to RFC-0003 but is not "institution-grade" b
 * Many existing scenarios are effectively **cash-only** portfolios (positions empty), reducing confidence for real holdings.
 * Sample response `before/after_simulated.allocation` is empty/simplistic, making outputs hard to demo and audit.
 * Universe coverage, diagnostics, and rule results need stronger realism when holdings exist.
-* A demo needs curated examples that cover *real* DPM behaviors (drift rebalance, sell-to-fund, FX funding, shelf restrictions, missing data, etc.).
+* A demo needs curated examples that cover *real* lotus-manage behaviors (drift rebalance, sell-to-fund, FX funding, shelf restrictions, missing data, etc.).
 
 ---
 

@@ -94,5 +94,3 @@ def test_settlement_awareness_allows_configured_overdraft():
     assert result.diagnostics.cash_ladder
     assert result.diagnostics.cash_ladder_breaches == []
     assert "SETTLEMENT_OVERDRAFT_UTILIZED" in result.diagnostics.warnings
-
-

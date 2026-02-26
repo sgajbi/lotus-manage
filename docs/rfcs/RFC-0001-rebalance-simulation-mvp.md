@@ -1,4 +1,4 @@
-# RFC-0001: Enterprise Rebalance Simulation MVP (DPM Platform)
+# RFC-0001: Enterprise Rebalance Simulation MVP (lotus-manage Platform)
 
 | Metadata | Details |
 | --- | --- |
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary
 
-This RFC specifies the architecture and implementation details for the **Rebalance Simulation Service**, the "brain" of the Discretionary Portfolio Management (DPM) platform.
+This RFC specifies the architecture and implementation details for the **Rebalance Simulation Service**, the "brain" of the Discretionary Portfolio Management (lotus-manage) platform.
 
 The service provides a **single, golden endpoint** that accepts a portfolio snapshot and a mandate/model strategy, and deterministically calculates the required trades (`OrderIntents`) to bring the portfolio into alignment.
 

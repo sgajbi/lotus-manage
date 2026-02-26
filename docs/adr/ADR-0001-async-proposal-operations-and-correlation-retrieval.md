@@ -52,7 +52,7 @@ Introduce an operation-resource pattern for asynchronous lifecycle workflows:
   - approvals/consent recording (state-sensitive and audit-critical)
   - read endpoints (already lightweight and deterministic)
 - Deferred:
-  - async DPM batch analyze and async advisory simulate/artifact (can reuse same pattern later)
+  - async lotus-manage batch analyze and async advisory simulate/artifact (can reuse same pattern later)
 
 ## Consequences
 
@@ -68,4 +68,4 @@ Tradeoffs:
 
 - Add persistent operation store (PostgreSQL adapter) with retention policies.
 - Add optional callback/webhook completion pattern for external orchestrators.
-- Extend same operation pattern to selected DPM workflows where latency justifies async behavior.
+- Extend same operation pattern to selected lotus-manage workflows where latency justifies async behavior.

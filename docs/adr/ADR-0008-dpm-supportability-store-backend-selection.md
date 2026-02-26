@@ -1,4 +1,4 @@
-# ADR-0008: DPM Supportability Store Backend Selection
+# ADR-0008: lotus-manage Supportability Store Backend Selection
 
 ## Status
 
@@ -6,11 +6,11 @@ Accepted
 
 ## Context
 
-RFC-0023 requires durable supportability storage while preserving current in-memory behavior for local development and backward compatibility. The DPM supportability domain now includes run records, idempotency mappings, async operation records, and workflow decision records.
+RFC-0023 requires durable supportability storage while preserving current in-memory behavior for local development and backward compatibility. The lotus-manage supportability domain now includes run records, idempotency mappings, async operation records, and workflow decision records.
 
 ## Decision
 
-Introduce backend selection for DPM supportability repository:
+Introduce backend selection for lotus-manage supportability repository:
 
 - `DPM_SUPPORTABILITY_STORE_BACKEND`
   - `IN_MEMORY` (default)

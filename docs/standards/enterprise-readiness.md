@@ -1,4 +1,4 @@
-# Enterprise Readiness Baseline (DPM)
+# Enterprise Readiness Baseline (lotus-manage)
 
 - Standard reference: `lotus-platform/Enterprise Readiness Standard.md`
 - Scope: discretionary/advisory decision workflows, policy enforcement, and run supportability APIs.

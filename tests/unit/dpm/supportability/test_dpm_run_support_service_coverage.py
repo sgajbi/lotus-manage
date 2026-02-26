@@ -144,5 +144,3 @@ def test_service_persisted_artifact_mode_backfills_missing_persisted_artifact():
     artifact = service.get_run_artifact(rebalance_run_id=result.rebalance_run_id)
     assert artifact.rebalance_run_id == result.rebalance_run_id
     assert repository.get_run_artifact(rebalance_run_id=result.rebalance_run_id) is not None
-
-
