@@ -1,0 +1,10 @@
+{
+  "approval_type": "COMPLIANCE",
+  "approved": true,
+  "actor_id": "compliance_demo_1",
+  "related_version_no": 1,
+  "expected_state": "COMPLIANCE_REVIEW",
+  "details": {
+    "comment": "Compliance approved for client presentation"
+  }
+}

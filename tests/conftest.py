@@ -4,6 +4,7 @@ Shared fixtures for DPM/advisory tests.
 """
 
 import os
+import sys
 from decimal import Decimal
 from pathlib import Path
 
@@ -13,6 +14,11 @@ from src.core.dpm.policy_packs import DpmPolicyPackDefinition, parse_policy_pack
 from src.core.models import CashBalance, EngineOptions, PortfolioSnapshot
 from src.infrastructure.dpm_runs import InMemoryDpmRunRepository
 from src.infrastructure.proposals import InMemoryProposalRepository
+
+TESTS_ROOT = Path(__file__).resolve().parent
+UNIT_TESTS_PATH = str(TESTS_ROOT / "unit")
+if UNIT_TESTS_PATH not in sys.path:
+    sys.path.insert(0, UNIT_TESTS_PATH)
 
 
 def _has_marker(item: pytest.Item, name: str) -> bool:
@@ -106,5 +112,3 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
         "src.api.routers.dpm_policy_packs.PostgresDpmPolicyPackRepository",
         lambda **_kwargs: policy_repo,
     )
-
-

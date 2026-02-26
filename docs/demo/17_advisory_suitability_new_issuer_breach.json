@@ -1,0 +1,93 @@
+{
+    "portfolio_snapshot":  {
+                               "portfolio_id":  "pf_14d_2",
+                               "base_currency":  "USD",
+                               "positions":  [
+                                                 {
+                                                     "instrument_id":  "EQ_A",
+                                                     "quantity":  "20"
+                                                 },
+                                                 {
+                                                     "instrument_id":  "EQ_B",
+                                                     "quantity":  "80"
+                                                 }
+                                             ],
+                               "cash_balances":  [
+
+                                                 ]
+                           },
+    "market_data_snapshot":  {
+                                 "prices":  [
+                                                {
+                                                    "instrument_id":  "EQ_A",
+                                                    "price":  "100",
+                                                    "currency":  "USD"
+                                                },
+                                                {
+                                                    "instrument_id":  "EQ_B",
+                                                    "price":  "100",
+                                                    "currency":  "USD"
+                                                },
+                                                {
+                                                    "instrument_id":  "EQ_C",
+                                                    "price":  "100",
+                                                    "currency":  "USD"
+                                                }
+                                            ],
+                                 "fx_rates":  [
+
+                                              ]
+                             },
+    "shelf_entries":  [
+                          {
+                              "instrument_id":  "EQ_A",
+                              "status":  "APPROVED",
+                              "asset_class":  "EQUITY",
+                              "issuer_id":  "ISSUER_GROWTH",
+                              "liquidity_tier":  "L1"
+                          },
+                          {
+                              "instrument_id":  "EQ_B",
+                              "status":  "APPROVED",
+                              "asset_class":  "EQUITY",
+                              "issuer_id":  "ISSUER_DEFENSIVE",
+                              "liquidity_tier":  "L1"
+                          },
+                          {
+                              "instrument_id":  "EQ_C",
+                              "status":  "APPROVED",
+                              "asset_class":  "EQUITY",
+                              "issuer_id":  "ISSUER_GROWTH",
+                              "liquidity_tier":  "L1"
+                          }
+                      ],
+    "options":  {
+                    "enable_proposal_simulation":  true,
+                    "suitability_thresholds":  {
+                                                   "single_position_max_weight":  "1.00",
+                                                   "issuer_max_weight":  "0.20",
+                                                   "max_weight_by_liquidity_tier":  {
+
+                                                                                    },
+                                                   "cash_band_min_weight":  "0",
+                                                   "cash_band_max_weight":  "1"
+                                               }
+                },
+    "proposed_cash_flows":  [
+
+                            ],
+    "proposed_trades":  [
+                            {
+                                "intent_type":  "SECURITY_TRADE",
+                                "side":  "SELL",
+                                "instrument_id":  "EQ_B",
+                                "quantity":  "6"
+                            },
+                            {
+                                "intent_type":  "SECURITY_TRADE",
+                                "side":  "BUY",
+                                "instrument_id":  "EQ_C",
+                                "quantity":  "6"
+                            }
+                        ]
+}

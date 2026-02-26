@@ -1,0 +1,39 @@
+
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "demo_01",
+    "base_currency": "SGD",
+    "positions": [
+      {
+        "instrument_id": "UOB_EQ",
+        "quantity": "200",
+        "market_value": { "amount": "20000.00", "currency": "SGD" }
+      }
+    ],
+    "cash_balances": [
+      { "currency": "SGD", "amount": "80000.00" }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      { "instrument_id": "UOB_EQ", "price": "100.00", "currency": "SGD" },
+      { "instrument_id": "DBS_EQ", "price": "100.00", "currency": "SGD" }
+    ],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      { "instrument_id": "UOB_EQ", "weight": "0.10" },
+      { "instrument_id": "DBS_EQ", "weight": "0.10" }
+    ]
+  },
+  "shelf_entries": [
+    { "instrument_id": "UOB_EQ", "status": "APPROVED", "asset_class": "EQUITY" },
+    { "instrument_id": "DBS_EQ", "status": "APPROVED", "asset_class": "EQUITY" }
+  ],
+  "options": {
+    "cash_band_min_weight": "0.0",
+    "cash_band_max_weight": "1.0",
+    "min_trade_notional": { "amount": "1000.0", "currency": "SGD" }
+  }
+}

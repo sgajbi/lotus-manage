@@ -1,0 +1,79 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "pf_demo_19",
+    "base_currency": "SGD",
+    "positions": [
+      {
+        "instrument_id": "SG_BOND_ETF",
+        "quantity": "100"
+      }
+    ],
+    "cash_balances": [
+      {
+        "currency": "SGD",
+        "amount": "5000"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "SG_BOND_ETF",
+        "price": "100",
+        "currency": "SGD"
+      },
+      {
+        "instrument_id": "US_EQ_ETF",
+        "price": "120",
+        "currency": "USD"
+      }
+    ],
+    "fx_rates": [
+      {
+        "pair": "USD/SGD",
+        "rate": "1.35"
+      }
+    ]
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "SG_BOND_ETF",
+      "status": "APPROVED",
+      "asset_class": "BOND",
+      "issuer_id": "ISS_SG_BOND",
+      "liquidity_tier": "L1"
+    },
+    {
+      "instrument_id": "US_EQ_ETF",
+      "status": "APPROVED",
+      "asset_class": "EQUITY",
+      "issuer_id": "ISS_US_EQ",
+      "liquidity_tier": "L2"
+    }
+  ],
+  "options": {
+    "enable_proposal_simulation": true,
+    "enable_suitability_scanner": true,
+    "suitability_thresholds": {
+      "single_position_max_weight": "1.00",
+      "issuer_max_weight": "1.00",
+      "max_weight_by_liquidity_tier": {},
+      "cash_band_min_weight": "0",
+      "cash_band_max_weight": "1"
+    }
+  },
+  "proposed_cash_flows": [
+    {
+      "currency": "SGD",
+      "amount": "1000",
+      "description": "Client top-up"
+    }
+  ],
+  "proposed_trades": [
+    {
+      "side": "BUY",
+      "instrument_id": "US_EQ_ETF",
+      "quantity": "20"
+    }
+  ]
+}

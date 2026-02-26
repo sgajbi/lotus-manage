@@ -223,7 +223,7 @@ def test_integration_capabilities_contract_default_consumer() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["contractVersion"] == "v1"
-    assert body["sourceService"] == "lotus-advise"
+    assert body["sourceService"] == "lotus-manage"
     assert "pas_ref" in body["supportedInputModes"]
 
 

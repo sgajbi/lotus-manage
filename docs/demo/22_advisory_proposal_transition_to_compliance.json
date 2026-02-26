@@ -1,0 +1,9 @@
+{
+  "event_type": "SUBMITTED_FOR_COMPLIANCE_REVIEW",
+  "actor_id": "advisor_demo_1",
+  "related_version_no": 1,
+  "expected_state": "DRAFT",
+  "reason": {
+    "comment": "High issuer concentration candidate; submit compliance review"
+  }
+}

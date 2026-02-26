@@ -1,0 +1,68 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "pf_advisory_demo_01",
+    "base_currency": "SGD",
+    "positions": [
+      {
+        "instrument_id": "SG_BOND_ETF",
+        "quantity": "100"
+      }
+    ],
+    "cash_balances": [
+      {
+        "currency": "SGD",
+        "amount": "5000.00"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "SG_BOND_ETF",
+        "price": "100.00",
+        "currency": "SGD"
+      },
+      {
+        "instrument_id": "SG_EQ_ETF",
+        "price": "150.00",
+        "currency": "SGD"
+      }
+    ],
+    "fx_rates": []
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "SG_BOND_ETF",
+      "status": "APPROVED",
+      "asset_class": "BOND"
+    },
+    {
+      "instrument_id": "SG_EQ_ETF",
+      "status": "APPROVED",
+      "asset_class": "EQUITY"
+    }
+  ],
+  "options": {
+    "enable_proposal_simulation": true,
+    "proposal_apply_cash_flows_first": true,
+    "proposal_block_negative_cash": true,
+    "block_on_missing_prices": true,
+    "block_on_missing_fx": true
+  },
+  "proposed_cash_flows": [
+    {
+      "intent_type": "CASH_FLOW",
+      "currency": "SGD",
+      "amount": "10000.00",
+      "description": "Client top-up"
+    }
+  ],
+  "proposed_trades": [
+    {
+      "intent_type": "SECURITY_TRADE",
+      "side": "BUY",
+      "instrument_id": "SG_EQ_ETF",
+      "quantity": "10"
+    }
+  ]
+}
