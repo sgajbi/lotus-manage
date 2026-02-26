@@ -1,0 +1,71 @@
+{
+  "created_by": "advisor_demo_2",
+  "simulate_request": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_demo_lifecycle_1",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "EQ_LEGACY",
+          "quantity": "100"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "5000"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "EQ_LEGACY",
+          "price": "100",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "EQ_GROWTH",
+          "price": "50",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "EQ_LEGACY",
+        "status": "APPROVED",
+        "asset_class": "EQUITY",
+        "issuer_id": "ISS_LEGACY"
+      },
+      {
+        "instrument_id": "EQ_GROWTH",
+        "status": "APPROVED",
+        "asset_class": "EQUITY",
+        "issuer_id": "ISS_GROWTH"
+      }
+    ],
+    "options": {
+      "enable_proposal_simulation": true,
+      "enable_workflow_gates": true,
+      "workflow_requires_client_consent": true
+    },
+    "proposed_cash_flows": [
+      {
+        "intent_type": "CASH_FLOW",
+        "currency": "USD",
+        "amount": "500.00",
+        "description": "Second top-up"
+      }
+    ],
+    "proposed_trades": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "side": "BUY",
+        "instrument_id": "EQ_GROWTH",
+        "quantity": "35"
+      }
+    ]
+  }
+}

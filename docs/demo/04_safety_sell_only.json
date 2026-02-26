@@ -1,0 +1,33 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "demo_04",
+    "base_currency": "SGD",
+    "positions": [],
+    "cash_balances": [
+      { "currency": "SGD", "amount": "10000.00" }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      { "instrument_id": "RISKY_ASSET", "price": "10.00", "currency": "SGD" },
+      { "instrument_id": "SAFE_ASSET", "price": "100.00", "currency": "SGD" }
+    ],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      { "instrument_id": "RISKY_ASSET", "weight": "0.50" },
+      { "instrument_id": "SAFE_ASSET", "weight": "0.50" }
+    ]
+  },
+  "shelf_entries": [
+    { "instrument_id": "RISKY_ASSET", "status": "SELL_ONLY", "asset_class": "EQUITY" },
+    { "instrument_id": "SAFE_ASSET", "status": "APPROVED", "asset_class": "EQUITY" }
+  ],
+  "options": {
+    "cash_band_min_weight": "0.0",
+    "cash_band_max_weight": "1.0",
+    "single_position_max_weight": "0.80",
+    "allow_restricted": false
+  }
+}

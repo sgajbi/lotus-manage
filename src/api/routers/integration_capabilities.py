@@ -46,43 +46,53 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+@router.get("/integration/capabilities", response_model=IntegrationCapabilitiesResponse)
 @router.get("/platform/capabilities", response_model=IntegrationCapabilitiesResponse)
 async def get_integration_capabilities(
     consumer_system: ConsumerSystem = Query("BFF", alias="consumerSystem"),
     tenant_id: str = Query("default", alias="tenantId"),
 ) -> IntegrationCapabilitiesResponse:
-    lifecycle_enabled = _env_bool("PROPOSAL_WORKFLOW_LIFECYCLE_ENABLED", True)
-    async_enabled = _env_bool("PROPOSAL_ASYNC_OPERATIONS_ENABLED", True)
+    lifecycle_enabled = _env_bool("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", True)
+    inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
+
+    supported_input_modes = ["pas_ref"]
+    if inline_bundle_enabled:
+        supported_input_modes.append("inline_bundle")
 
     return IntegrationCapabilitiesResponse(
         contractVersion="v1",
-        sourceService="lotus-manage",
+        sourceService=os.getenv("DPM_CAP_SOURCE_SERVICE", "lotus-manage"),
         consumerSystem=consumer_system,
         tenantId=tenant_id,
         generatedAt=datetime.now(UTC),
         asOfDate=date.today(),
-        policyVersion="advisory.v1",
-        supportedInputModes=["advisor_input"],
+        policyVersion=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
+        supportedInputModes=supported_input_modes,
         features=[
             FeatureCapability(
-                key="advisory.proposals.lifecycle",
-                enabled=lifecycle_enabled,
-                owner_service="ADVISORY",
-                description="Advisory proposal lifecycle APIs.",
+                key="dpm.execution.stateful_pas_ref",
+                enabled=True,
+                owner_service="DPM",
+                description="Stateful DPM execution with PAS-referenced data.",
             ),
             FeatureCapability(
-                key="advisory.proposals.async_operations",
-                enabled=async_enabled,
-                owner_service="ADVISORY",
-                description="Async advisory proposal operations.",
+                key="dpm.execution.stateless_inline_bundle",
+                enabled=inline_bundle_enabled,
+                owner_service="DPM",
+                description="Stateless DPM execution using inline request bundles.",
+            ),
+            FeatureCapability(
+                key="dpm.proposals.lifecycle",
+                enabled=lifecycle_enabled,
+                owner_service="DPM",
+                description="DPM lifecycle proposal and supportability workflows.",
             ),
         ],
         workflows=[
             WorkflowCapability(
-                workflow_key="advisory_proposal_lifecycle",
+                workflow_key="dpm_rebalance_lifecycle",
                 enabled=lifecycle_enabled,
-                required_features=["advisory.proposals.lifecycle"],
+                required_features=["dpm.proposals.lifecycle"],
             ),
         ],
     )
-

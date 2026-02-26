@@ -1,0 +1,31 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "demo_03",
+    "base_currency": "SGD",
+    "positions": [],
+    "cash_balances": [
+      { "currency": "SGD", "amount": "10000.00" }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      { "instrument_id": "US_TECH_ETF", "price": "100.00", "currency": "USD" }
+    ],
+    "fx_rates": [
+      { "pair": "USD/SGD", "rate": "1.35" }
+    ]
+  },
+  "model_portfolio": {
+    "targets": [
+      { "instrument_id": "US_TECH_ETF", "weight": "0.50" }
+    ]
+  },
+  "shelf_entries": [
+    { "instrument_id": "US_TECH_ETF", "status": "APPROVED", "asset_class": "EQUITY" }
+  ],
+  "options": {
+    "cash_band_min_weight": "0.0",
+    "cash_band_max_weight": "1.0",
+    "fx_buffer_pct": "0.01"
+  }
+}

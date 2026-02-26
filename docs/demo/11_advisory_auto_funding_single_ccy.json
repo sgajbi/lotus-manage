@@ -1,0 +1,53 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "pf_advisory_demo_11",
+    "base_currency": "SGD",
+    "positions": [],
+    "cash_balances": [
+      {
+        "currency": "SGD",
+        "amount": "10000.00"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "US_EQ_ETF",
+        "price": "100.00",
+        "currency": "USD"
+      }
+    ],
+    "fx_rates": [
+      {
+        "pair": "USD/SGD",
+        "rate": "1.35"
+      }
+    ]
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "US_EQ_ETF",
+      "status": "APPROVED",
+      "asset_class": "EQUITY"
+    }
+  ],
+  "options": {
+    "enable_proposal_simulation": true,
+    "auto_funding": true,
+    "funding_mode": "AUTO_FX",
+    "fx_funding_source_currency": "ANY_CASH",
+    "fx_generation_policy": "ONE_FX_PER_CCY",
+    "block_on_missing_prices": true,
+    "block_on_missing_fx": true
+  },
+  "proposed_cash_flows": [],
+  "proposed_trades": [
+    {
+      "intent_type": "SECURITY_TRADE",
+      "side": "BUY",
+      "instrument_id": "US_EQ_ETF",
+      "quantity": "50"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "approval_type": "CLIENT_CONSENT",
+  "approved": true,
+  "actor_id": "client_demo_1",
+  "related_version_no": 1,
+  "expected_state": "AWAITING_CLIENT_CONSENT",
+  "details": {
+    "channel": "IN_PERSON",
+    "captured_by": "advisor_demo_1",
+    "consent_reference": "consent_doc_20260219"
+  }
+}

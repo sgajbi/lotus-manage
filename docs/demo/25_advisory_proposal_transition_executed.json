@@ -1,0 +1,10 @@
+{
+  "event_type": "EXECUTED",
+  "actor_id": "ops_demo_1",
+  "related_version_no": 1,
+  "expected_state": "EXECUTION_READY",
+  "reason": {
+    "execution_id": "oms_demo_exec_1",
+    "comment": "Execution confirmed"
+  }
+}

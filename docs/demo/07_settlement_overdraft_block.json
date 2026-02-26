@@ -1,0 +1,39 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "demo_07",
+    "base_currency": "USD",
+    "positions": [{ "instrument_id": "SLOW_FUND", "quantity": "10" }],
+    "cash_balances": [{ "currency": "USD", "amount": "0" }]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      { "instrument_id": "SLOW_FUND", "price": "100", "currency": "USD" },
+      { "instrument_id": "FAST_STOCK", "price": "100", "currency": "USD" }
+    ],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      { "instrument_id": "SLOW_FUND", "weight": "0.0" },
+      { "instrument_id": "FAST_STOCK", "weight": "1.0" }
+    ]
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "SLOW_FUND",
+      "status": "APPROVED",
+      "asset_class": "FUND",
+      "settlement_days": 3
+    },
+    {
+      "instrument_id": "FAST_STOCK",
+      "status": "APPROVED",
+      "asset_class": "EQUITY",
+      "settlement_days": 1
+    }
+  ],
+  "options": {
+    "enable_settlement_awareness": true,
+    "settlement_horizon_days": 3
+  }
+}

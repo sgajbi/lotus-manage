@@ -1,0 +1,98 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "pf_demo_15",
+    "base_currency": "USD",
+    "positions": [
+      {
+        "instrument_id": "EQ_A",
+        "quantity": "7"
+      },
+      {
+        "instrument_id": "EQ_B",
+        "quantity": "2"
+      }
+    ],
+    "cash_balances": [
+      {
+        "currency": "USD",
+        "amount": "100"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "EQ_A",
+        "price": "100",
+        "currency": "USD"
+      },
+      {
+        "instrument_id": "EQ_B",
+        "price": "100",
+        "currency": "USD"
+      },
+      {
+        "instrument_id": "EQ_C",
+        "price": "100",
+        "currency": "USD"
+      }
+    ],
+    "fx_rates": []
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "EQ_A",
+      "status": "APPROVED",
+      "asset_class": "EQUITY"
+    },
+    {
+      "instrument_id": "EQ_B",
+      "status": "APPROVED",
+      "asset_class": "EQUITY"
+    },
+    {
+      "instrument_id": "EQ_C",
+      "status": "APPROVED",
+      "asset_class": "EQUITY"
+    }
+  ],
+  "options": {
+    "enable_proposal_simulation": true,
+    "enable_drift_analytics": true,
+    "enable_instrument_drift": true
+  },
+  "proposed_cash_flows": [],
+  "proposed_trades": [
+    {
+      "intent_type": "SECURITY_TRADE",
+      "side": "BUY",
+      "instrument_id": "EQ_C",
+      "quantity": "1"
+    }
+  ],
+  "reference_model": {
+    "model_id": "mdl_demo_15",
+    "as_of": "2026-02-18",
+    "base_currency": "USD",
+    "asset_class_targets": [
+      {
+        "asset_class": "EQUITY",
+        "weight": "0.95"
+      },
+      {
+        "asset_class": "CASH",
+        "weight": "0.05"
+      }
+    ],
+    "instrument_targets": [
+      {
+        "instrument_id": "EQ_A",
+        "weight": "0.40"
+      },
+      {
+        "instrument_id": "EQ_B",
+        "weight": "0.60"
+      }
+    ]
+  }
+}

@@ -1,0 +1,81 @@
+{
+    "portfolio_snapshot":  {
+                               "portfolio_id":  "pf_14d_3",
+                               "base_currency":  "USD",
+                               "positions":  [
+                                                 {
+                                                     "instrument_id":  "EQ_SO",
+                                                     "quantity":  "10"
+                                                 },
+                                                 {
+                                                     "instrument_id":  "EQ_B",
+                                                     "quantity":  "90"
+                                                 }
+                                             ],
+                               "cash_balances":  [
+
+                                                 ]
+                           },
+    "market_data_snapshot":  {
+                                 "prices":  [
+                                                {
+                                                    "instrument_id":  "EQ_SO",
+                                                    "price":  "100",
+                                                    "currency":  "USD"
+                                                },
+                                                {
+                                                    "instrument_id":  "EQ_B",
+                                                    "price":  "100",
+                                                    "currency":  "USD"
+                                                }
+                                            ],
+                                 "fx_rates":  [
+
+                                              ]
+                             },
+    "shelf_entries":  [
+                          {
+                              "instrument_id":  "EQ_SO",
+                              "status":  "SELL_ONLY",
+                              "asset_class":  "EQUITY",
+                              "issuer_id":  "ISSUER_SO",
+                              "liquidity_tier":  "L2"
+                          },
+                          {
+                              "instrument_id":  "EQ_B",
+                              "status":  "APPROVED",
+                              "asset_class":  "EQUITY",
+                              "issuer_id":  "ISSUER_B",
+                              "liquidity_tier":  "L1"
+                          }
+                      ],
+    "options":  {
+                    "enable_proposal_simulation":  true,
+                    "suitability_thresholds":  {
+                                                   "single_position_max_weight":  "1.00",
+                                                   "issuer_max_weight":  "1.00",
+                                                   "max_weight_by_liquidity_tier":  {
+
+                                                                                    },
+                                                   "cash_band_min_weight":  "0",
+                                                   "cash_band_max_weight":  "1"
+                                               }
+                },
+    "proposed_cash_flows":  [
+
+                            ],
+    "proposed_trades":  [
+                            {
+                                "intent_type":  "SECURITY_TRADE",
+                                "side":  "BUY",
+                                "instrument_id":  "EQ_SO",
+                                "quantity":  "5"
+                            },
+                            {
+                                "intent_type":  "SECURITY_TRADE",
+                                "side":  "SELL",
+                                "instrument_id":  "EQ_B",
+                                "quantity":  "5"
+                            }
+                        ]
+}

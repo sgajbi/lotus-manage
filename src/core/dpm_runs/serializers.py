@@ -29,8 +29,8 @@ def to_async_accepted(operation: DpmAsyncOperationRecord) -> DpmAsyncAcceptedRes
         status=operation.status,
         correlation_id=operation.correlation_id,
         created_at=operation.created_at.isoformat(),
-        status_url=f"/rebalance/operations/{operation.operation_id}",
-        execute_url=f"/rebalance/operations/{operation.operation_id}/execute",
+        status_url=f"/api/v1/rebalance/operations/{operation.operation_id}",
+        execute_url=f"/api/v1/rebalance/operations/{operation.operation_id}/execute",
     )
 
 

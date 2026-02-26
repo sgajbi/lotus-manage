@@ -1,0 +1,25 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "demo_05",
+    "base_currency": "SGD",
+    "positions": [],
+    "cash_balances": [
+      { "currency": "SGD", "amount": "10000.00" }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      { "instrument_id": "MISSING_PRICE_ASSET", "weight": "1.0" }
+    ]
+  },
+  "shelf_entries": [
+    { "instrument_id": "MISSING_PRICE_ASSET", "status": "APPROVED", "asset_class": "EQUITY" }
+  ],
+  "options": {
+    "block_on_missing_prices": true
+  }
+}
