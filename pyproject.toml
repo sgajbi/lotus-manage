@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lotus-manage"
 version = "0.1.0"
-description = "Lotus backend service"
+description = "Discretionary portfolio management execution and lifecycle service for Lotus platform."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
