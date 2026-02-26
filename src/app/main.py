@@ -36,3 +36,19 @@ async def metadata() -> dict[str, str]:
         "version": SERVICE_VERSION,
         "roundingPolicyVersion": ROUNDING_POLICY_VERSION,
     }
+
+
+@app.get("/integration/capabilities")
+async def integration_capabilities() -> dict:
+    return {
+        "sourceService": SERVICE_NAME,
+        "policyVersion": "manage.v1",
+        "supportedInputModes": ["api"],
+        "features": [
+            {"key": "manage.lifecycle.proxy", "enabled": True},
+            {"key": "manage.workflow.execution", "enabled": True},
+        ],
+        "workflows": [
+            {"workflow_key": "manage_lifecycle", "enabled": True},
+        ],
+    }
