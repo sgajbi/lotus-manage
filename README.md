@@ -1,6 +1,6 @@
 # lotus-manage
 
-Lotus backend service
+Discretionary portfolio management execution and lifecycle service for Lotus platform.
 
 ## Quick Start
 
@@ -15,7 +15,13 @@ make ci
   
 
 `powershell
-uvicorn src.app.main:app --reload --port 8000
+uvicorn src.app.main:app --reload --port 8140
+`",
+  ",
+  
+
+`powershell
+docker compose up --build
 `",
   ",
   
