@@ -1,6 +1,6 @@
-# Lotus Advise
+# Lotus Manage
 
-Advisor-led proposal simulation and lifecycle service.
+Discretionary portfolio management (DPM) execution, supportability, and lifecycle service.
 
-This repository contains advisory-only workflows.
-Discretionary portfolio management (DPM) workflows are owned by `lotus-manage`.
+This repository owns DPM runtime workflows.
+Advisor-led proposal workflows are owned by `lotus-advise`.
