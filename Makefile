@@ -1,10 +1,13 @@
-.PHONY: install check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck lint monetary-float-guard format clean run check-deps security-audit openapi-gate migration-smoke migration-apply pre-commit docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck lint monetary-float-guard format clean run check-deps security-audit openapi-gate migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 install:
-	pip install -r requirements.txt
-	pip install -r requirements-dev.txt
-	pip install pre-commit
+	python -m pip install --upgrade pip
+	pip install -e ".[dev]"
 	pre-commit install
+
+install-ci:
+	python -m pip install --upgrade pip
+	pip install -e ".[dev]"
 
 pre-commit:
 	pre-commit run --all-files
@@ -46,7 +49,6 @@ test-all-parallel:
 
 # Local execution flow aligned with .github/workflows/ci.yml
 ci-local: lint check-deps
-	python -m pip check
 	COVERAGE_FILE=.coverage.unit python -m pytest tests/unit --cov=src --cov-report=
 	COVERAGE_FILE=.coverage.integration python -m pytest tests/integration --cov=src --cov-report=
 	COVERAGE_FILE=.coverage.e2e python -m pytest tests/e2e --cov=src --cov-report=
@@ -92,13 +94,16 @@ run:
 	uvicorn src.api.main:app --reload --port 8000
 
 check-deps:
-	python scripts/dependency_health_check.py --requirements requirements.txt
+	python -m pip check
 
 security-audit:
-	python scripts/dependency_health_check.py --requirements requirements.txt
+	python -m pip_audit
+
+docker-build:
+	docker build -t lotus-manage:ci .
 
 docker-up:
-	docker-compose up -d --build
+	docker compose up -d --build
 
 docker-down:
-	docker-compose down
+	docker compose down

@@ -1,5 +1,5 @@
-# Use the official Python 3.11 slim image for a smaller footprint
-FROM python:3.11-slim
+# Use the official Python 3.12 slim image to match project runtime requirements
+FROM python:3.12-slim
 
 # Set environment variables to prevent Python from writing .pyc files and buffering stdout
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -12,14 +12,12 @@ RUN adduser --disabled-password --gecos '' dpm-user
 # Set the working directory
 WORKDIR /app
 
-# Copy only runtime requirements first to leverage Docker layer caching
-COPY requirements-prod.txt .
+# Copy package metadata and source
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
 
 # Install runtime dependencies only
-RUN pip install -r requirements-prod.txt
-
-# Copy the core application code
-COPY src/ ./src/
+RUN pip install --upgrade pip && pip install .
 
 # Change ownership of the application files to the non-root user
 RUN chown -R dpm-user:dpm-user /app
