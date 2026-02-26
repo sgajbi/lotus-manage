@@ -4,3 +4,5 @@ Discretionary portfolio management (lotus-manage) execution, supportability, and
 
 This repository owns lotus-manage runtime workflows.
 Advisor-led proposal workflows are owned by `lotus-advise`.
+
+API docs endpoint: `/docs`
