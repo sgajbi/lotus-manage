@@ -3,15 +3,17 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from src.core.advisory.artifact import build_proposal_artifact
+from src.core.advisory.artifact_models import ProposalArtifact
 from src.core.advisory_engine import run_proposal_simulation
 from src.core.common.canonical import hash_canonical_payload
-from src.core.models import ProposalResult, ProposalSimulateRequest
+from src.core.models import GateDecision, ProposalResult, ProposalSimulateRequest
 from src.core.proposals.models import (
     ProposalApprovalRecord,
     ProposalApprovalRecordData,
     ProposalApprovalRequest,
     ProposalApprovalsResponse,
     ProposalAsyncAcceptedResponse,
+    ProposalAsyncError,
     ProposalAsyncOperationRecord,
     ProposalAsyncOperationStatusResponse,
     ProposalCreateRequest,
@@ -31,6 +33,7 @@ from src.core.proposals.models import (
     ProposalVersionRequest,
     ProposalWorkflowEvent,
     ProposalWorkflowEventRecord,
+    ProposalWorkflowEventType,
     ProposalWorkflowState,
     ProposalWorkflowTimelineResponse,
 )
@@ -49,6 +52,12 @@ TRANSITION_MAP: dict[tuple[ProposalWorkflowState, str], ProposalWorkflowState] =
     ("AWAITING_CLIENT_CONSENT", "REJECTED"): "REJECTED",
     ("EXECUTION_READY", "EXECUTED"): "EXECUTED",
     ("EXECUTION_READY", "EXPIRED"): "EXPIRED",
+}
+
+APPROVAL_TRANSITION_RULES: dict[str, tuple[ProposalWorkflowState, ProposalWorkflowEventType]] = {
+    "RISK": ("RISK_REVIEW", "RISK_APPROVED"),
+    "COMPLIANCE": ("COMPLIANCE_REVIEW", "COMPLIANCE_APPROVED"),
+    "CLIENT_CONSENT": ("AWAITING_CLIENT_CONSENT", "CLIENT_CONSENT_RECORDED"),
 }
 
 
@@ -245,12 +254,11 @@ class ProposalWorkflowService:
         version = self._repository.get_current_version(proposal_id=proposal_id)
         if version is None:
             raise ProposalNotFoundError("PROPOSAL_VERSION_NOT_FOUND")
+        version_detail = self._to_version_detail(version, include_evidence=include_evidence)
         return ProposalDetailResponse(
             proposal=self._to_summary(proposal),
-            current_version=self._to_version_detail(version, include_evidence=include_evidence),
-            last_gate_decision=(
-                self._to_version_detail(version, include_evidence=include_evidence).gate_decision
-            ),
+            current_version=version_detail,
+            last_gate_decision=version_detail.gate_decision,
         )
 
     def list_proposals(
@@ -293,11 +301,14 @@ class ProposalWorkflowService:
         if proposal is None:
             raise ProposalNotFoundError("PROPOSAL_NOT_FOUND")
         approvals = self._repository.list_approvals(proposal_id=proposal_id)
+        approval_records: list[ProposalApprovalRecord] = []
+        for approval in approvals:
+            converted = self._to_approval(approval)
+            if converted is not None:
+                approval_records.append(converted)
         return ProposalApprovalsResponse(
             proposal_id=proposal_id,
-            approvals=[
-                self._to_approval(approval) for approval in approvals if approval is not None
-            ],
+            approvals=approval_records,
         )
 
     def get_lineage(self, *, proposal_id: str) -> ProposalLineageResponse:
@@ -697,10 +708,14 @@ class ProposalWorkflowService:
             artifact_hash=version.artifact_hash,
             simulation_hash=version.simulation_hash,
             status_at_creation=version.status_at_creation,
-            proposal_result=version.proposal_result_json,
-            artifact=version.artifact_json,
+            proposal_result=ProposalResult.model_validate(version.proposal_result_json),
+            artifact=ProposalArtifact.model_validate(version.artifact_json),
             evidence_bundle=evidence_bundle_json,
-            gate_decision=version.gate_decision_json,
+            gate_decision=(
+                GateDecision.model_validate(version.gate_decision_json)
+                if version.gate_decision_json is not None
+                else None
+            ),
         )
 
     def _to_event(self, event: ProposalWorkflowEventRecord) -> ProposalWorkflowEvent:
@@ -796,7 +811,11 @@ class ProposalWorkflowService:
                 if operation.result_json is not None
                 else None
             ),
-            error=operation.error_json,
+            error=(
+                ProposalAsyncError.model_validate(operation.error_json)
+                if operation.error_json is not None
+                else None
+            ),
         )
 
     def _run_simulation(
@@ -859,32 +878,22 @@ class ProposalWorkflowService:
         current_state: ProposalWorkflowState,
         approval_type: str,
         approved: bool,
-    ) -> tuple[str, ProposalWorkflowState]:
-        if approval_type == "RISK":
-            if current_state != "RISK_REVIEW":
-                raise ProposalTransitionError("INVALID_APPROVAL_STATE")
-            return (
-                "RISK_APPROVED" if approved else "REJECTED",
-                "AWAITING_CLIENT_CONSENT" if approved else "REJECTED",
-            )
+    ) -> tuple[ProposalWorkflowEventType, ProposalWorkflowState]:
+        rule = APPROVAL_TRANSITION_RULES.get(approval_type)
+        if rule is None:
+            raise ProposalTransitionError("INVALID_APPROVAL_TYPE")
 
-        if approval_type == "COMPLIANCE":
-            if current_state != "COMPLIANCE_REVIEW":
-                raise ProposalTransitionError("INVALID_APPROVAL_STATE")
-            return (
-                "COMPLIANCE_APPROVED" if approved else "REJECTED",
-                "AWAITING_CLIENT_CONSENT" if approved else "REJECTED",
-            )
+        expected_state, approved_event_type = rule
+        if current_state != expected_state:
+            raise ProposalTransitionError("INVALID_APPROVAL_STATE")
+
+        if not approved:
+            return "REJECTED", "REJECTED"
 
         if approval_type == "CLIENT_CONSENT":
-            if current_state != "AWAITING_CLIENT_CONSENT":
-                raise ProposalTransitionError("INVALID_APPROVAL_STATE")
-            return (
-                "CLIENT_CONSENT_RECORDED" if approved else "REJECTED",
-                "EXECUTION_READY" if approved else "REJECTED",
-            )
+            return approved_event_type, "EXECUTION_READY"
 
-        raise ProposalTransitionError("INVALID_APPROVAL_TYPE")
+        return approved_event_type, "AWAITING_CLIENT_CONSENT"
 
 
 def _utc_now() -> datetime:
