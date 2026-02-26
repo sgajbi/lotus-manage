@@ -1669,8 +1669,12 @@ def test_openapi_title_and_tag_grouping(client):
     assert "Advisory Simulation" in tags
     assert "Advisory Proposal Lifecycle" in tags
 
-    assert openapi["paths"]["/api/v1/rebalance/simulate"]["post"]["tags"] == ["lotus-manage Simulation"]
-    assert openapi["paths"]["/api/v1/rebalance/analyze"]["post"]["tags"] == ["lotus-manage What-If Analysis"]
+    assert openapi["paths"]["/api/v1/rebalance/simulate"]["post"]["tags"] == [
+        "lotus-manage Simulation"
+    ]
+    assert openapi["paths"]["/api/v1/rebalance/analyze"]["post"]["tags"] == [
+        "lotus-manage What-If Analysis"
+    ]
     assert openapi["paths"]["/api/v1/rebalance/analyze/async"]["post"]["tags"] == [
         "lotus-manage What-If Analysis"
     ]

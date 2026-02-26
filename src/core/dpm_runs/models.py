@@ -59,7 +59,9 @@ class DpmRunIdempotencyRecord(BaseModel):
 
 
 class DpmRunLookupResponse(BaseModel):
-    rebalance_run_id: str = Field(description="lotus-manage run identifier.", examples=["rr_abc12345"])
+    rebalance_run_id: str = Field(
+        description="lotus-manage run identifier.", examples=["rr_abc12345"]
+    )
     correlation_id: str = Field(
         description="Correlation identifier for the run.", examples=["corr-1234-abcd"]
     )
@@ -83,7 +85,9 @@ class DpmRunLookupResponse(BaseModel):
 
 
 class DpmRunListItemResponse(BaseModel):
-    rebalance_run_id: str = Field(description="lotus-manage run identifier.", examples=["rr_abc12345"])
+    rebalance_run_id: str = Field(
+        description="lotus-manage run identifier.", examples=["rr_abc12345"]
+    )
     correlation_id: str = Field(
         description="Correlation identifier associated with the run.",
         examples=["corr-1234-abcd"],
@@ -859,7 +863,9 @@ class DpmRunArtifactResponse(BaseModel):
         description="Artifact schema version for compatibility evolution.",
         examples=["1.0"],
     )
-    rebalance_run_id: str = Field(description="lotus-manage run identifier.", examples=["rr_abc12345"])
+    rebalance_run_id: str = Field(
+        description="lotus-manage run identifier.", examples=["rr_abc12345"]
+    )
     correlation_id: str = Field(
         description="Correlation identifier associated with this run.",
         examples=["corr-1234-abcd"],
