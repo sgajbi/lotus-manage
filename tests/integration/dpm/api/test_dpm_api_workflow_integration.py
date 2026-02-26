@@ -222,7 +222,9 @@ def test_health_endpoints_integration_contract() -> None:
 
 def test_integration_capabilities_contract_default_consumer() -> None:
     with TestClient(app) as client:
-        response = client.get("/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default")
+        response = client.get(
+            "/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default"
+        )
 
     assert response.status_code == 200
     body = response.json()

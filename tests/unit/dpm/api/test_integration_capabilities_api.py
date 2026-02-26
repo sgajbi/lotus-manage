@@ -5,7 +5,9 @@ from src.api.main import app
 
 def test_integration_capabilities_default_contract():
     with TestClient(app) as client:
-        response = client.get("/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default")
+        response = client.get(
+            "/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default"
+        )
 
     assert response.status_code == 200
     body = response.json()
@@ -27,7 +29,9 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     monkeypatch.setenv("DPM_POLICY_VERSION", "tenant-x-v2")
 
     with TestClient(app) as client:
-        response = client.get("/integration/capabilities?consumerSystem=lotus-performance&tenantId=tenant-x")
+        response = client.get(
+            "/integration/capabilities?consumerSystem=lotus-performance&tenantId=tenant-x"
+        )
 
     assert response.status_code == 200
     body = response.json()
