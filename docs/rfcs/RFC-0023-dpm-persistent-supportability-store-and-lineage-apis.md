@@ -1,4 +1,4 @@
-# RFC-0023: DPM Persistent Supportability Store and Lineage APIs
+# RFC-0023: lotus-manage Persistent Supportability Store and Lineage APIs
 
 | Metadata | Details |
 | --- | --- |
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Add durable persistence and lineage APIs for DPM supportability data so operations teams can investigate historical runs, operation chains, and idempotency behavior beyond process lifetime.
+Add durable persistence and lineage APIs for lotus-manage supportability data so operations teams can investigate historical runs, operation chains, and idempotency behavior beyond process lifetime.
 
 ## 2. Problem Statement
 
@@ -84,7 +84,7 @@ No new business run statuses. Investigation responses use explicit technical sta
     - `DPM_SUPPORTABILITY_STORE_BACKEND` (`IN_MEMORY` | `SQL`, `SQLITE` alias supported)
     - `DPM_SUPPORTABILITY_SQL_PATH` (preferred SQL backend database file path)
     - `DPM_SUPPORTABILITY_SQLITE_PATH` (backward-compatible path alias)
-  - SQLite repository adapter for DPM supportability records:
+  - SQLite repository adapter for lotus-manage supportability records:
     - runs
     - idempotency mappings
     - async operations

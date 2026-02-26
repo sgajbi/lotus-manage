@@ -30,9 +30,9 @@ Adopt a layered testing model:
    - primary suite location: `tests/unit/`.
 
 2. Mandatory Postgres integration coverage for critical persistence flows:
-   - DPM supportability repository live integration tests.
+   - lotus-manage supportability repository live integration tests.
    - advisory proposal repository live integration tests.
-   - DPM policy-pack Postgres repository live integration tests.
+   - lotus-manage policy-pack Postgres repository live integration tests.
    - production-profile startup and guardrail reason-code checks in CI.
    - migration and cutover contract checks in CI.
    - integration suite location: `tests/integration/`.

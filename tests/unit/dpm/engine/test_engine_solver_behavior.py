@@ -457,5 +457,3 @@ def test_solver_failure_reason_classification():
     assert _solver_failure_reason("infeasible_inaccurate") == "INFEASIBLE_INFEASIBLE_INACCURATE"
     assert _solver_failure_reason("unbounded") == "UNBOUNDED_UNBOUNDED"
     assert _solver_failure_reason("optimal") == "SOLVER_NON_OPTIMAL_OPTIMAL"
-
-

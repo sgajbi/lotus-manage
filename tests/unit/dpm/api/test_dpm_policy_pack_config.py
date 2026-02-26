@@ -82,5 +82,3 @@ def test_policy_pack_catalog_postgres_runtime_errors_return_503(monkeypatch):
         response = client.get("/api/v1/rebalance/policies/catalog")
         assert response.status_code == 503
         assert response.json()["detail"] == "DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED"
-
-

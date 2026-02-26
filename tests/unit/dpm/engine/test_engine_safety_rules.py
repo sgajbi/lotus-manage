@@ -77,5 +77,3 @@ def test_reconciliation_object_populated_on_success(base_options):
     assert result.reconciliation is not None
     assert result.reconciliation.status == "OK"
     assert abs(result.reconciliation.delta.amount) < Decimal("1.0")
-
-

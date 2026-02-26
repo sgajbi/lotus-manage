@@ -156,7 +156,9 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     assert by_correlation.status_code == 200
     assert by_correlation.json()["rebalance_run_id"] == body["rebalance_run_id"]
 
-    by_request_hash = client.get(f"/api/v1/rebalance/runs/by-request-hash/{run_body['request_hash']}")
+    by_request_hash = client.get(
+        f"/api/v1/rebalance/runs/by-request-hash/{run_body['request_hash']}"
+    )
     assert by_request_hash.status_code == 200
     assert by_request_hash.json()["rebalance_run_id"] == body["rebalance_run_id"]
 
@@ -257,7 +259,9 @@ def test_dpm_support_runs_list_filters_and_cursor(client):
     assert first_lookup.status_code == 200
     first_request_hash = first_lookup.json()["request_hash"]
 
-    request_hash_rows = client.get(f"/api/v1/rebalance/runs?request_hash={first_request_hash}&limit=10")
+    request_hash_rows = client.get(
+        f"/api/v1/rebalance/runs?request_hash={first_request_hash}&limit=10"
+    )
     assert request_hash_rows.status_code == 200
     request_hash_body = request_hash_rows.json()
     assert len(request_hash_body["items"]) == 1
@@ -510,7 +514,9 @@ def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     assert by_operation_body["result"] is None
     assert by_operation_body["error"] is None
 
-    by_correlation = client.get("/api/v1/rebalance/operations/by-correlation/corr-dpm-async-support-1")
+    by_correlation = client.get(
+        "/api/v1/rebalance/operations/by-correlation/corr-dpm-async-support-1"
+    )
     assert by_correlation.status_code == 200
     assert by_correlation.json()["operation_id"] == accepted.operation_id
 
@@ -533,7 +539,9 @@ def test_dpm_async_operation_list_filters_and_cursor(client):
     assert any(item["operation_id"] == two.operation_id for item in pending_body["items"])
     assert all(item["status"] == "PENDING" for item in pending_body["items"])
 
-    by_correlation = client.get("/api/v1/rebalance/operations?correlation_id=corr-dpm-ops-list-1&limit=10")
+    by_correlation = client.get(
+        "/api/v1/rebalance/operations?correlation_id=corr-dpm-ops-list-1&limit=10"
+    )
     assert by_correlation.status_code == 200
     correlation_body = by_correlation.json()
     assert len(correlation_body["items"]) == 1
@@ -545,7 +553,9 @@ def test_dpm_async_operation_list_filters_and_cursor(client):
     page_one_body = page_one.json()
     assert len(page_one_body["items"]) == 1
     assert page_one_body["next_cursor"] is not None
-    page_two = client.get(f"/api/v1/rebalance/operations?limit=1&cursor={page_one_body['next_cursor']}")
+    page_two = client.get(
+        f"/api/v1/rebalance/operations?limit=1&cursor={page_one_body['next_cursor']}"
+    )
     assert page_two.status_code == 200
     page_two_body = page_two.json()
     assert len(page_two_body["items"]) == 1
@@ -566,7 +576,9 @@ def test_dpm_async_operation_ttl_expiry_by_id_and_correlation(client, monkeypatc
     assert by_operation.status_code == 404
     assert by_operation.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
 
-    by_correlation = client.get("/api/v1/rebalance/operations/by-correlation/corr-dpm-async-ttl-expired")
+    by_correlation = client.get(
+        "/api/v1/rebalance/operations/by-correlation/corr-dpm-async-ttl-expired"
+    )
     assert by_correlation.status_code == 404
     assert by_correlation.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
 
@@ -734,7 +746,9 @@ def test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency(client):
     assert missing_by_correlation.status_code == 404
     assert missing_by_correlation.json()["detail"] == "DPM_RUN_NOT_FOUND"
 
-    missing_by_idempotency = client.get("/api/v1/rebalance/runs/idempotency/idem_missing/support-bundle")
+    missing_by_idempotency = client.get(
+        "/api/v1/rebalance/runs/idempotency/idem_missing/support-bundle"
+    )
     assert missing_by_idempotency.status_code == 404
     assert missing_by_idempotency.json()["detail"] == "DPM_IDEMPOTENCY_KEY_NOT_FOUND"
 
@@ -820,7 +834,9 @@ def test_dpm_workflow_router_not_found_mappings(client, monkeypatch):
     assert decisions_by_correlation.status_code == 404
     assert decisions_by_correlation.json()["detail"] == "DPM_RUN_NOT_FOUND"
 
-    history_by_idempotency = client.get("/api/v1/rebalance/runs/idempotency/idem_missing/workflow/history")
+    history_by_idempotency = client.get(
+        "/api/v1/rebalance/runs/idempotency/idem_missing/workflow/history"
+    )
     assert history_by_idempotency.status_code == 404
     assert history_by_idempotency.json()["detail"] == "DPM_IDEMPOTENCY_KEY_NOT_FOUND"
 
@@ -1281,7 +1297,9 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
 
 
 def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatch):
-    disabled = client.get("/api/v1/rebalance/policies/effective", headers={"X-Policy-Pack-Id": "req_pack"})
+    disabled = client.get(
+        "/api/v1/rebalance/policies/effective", headers={"X-Policy-Pack-Id": "req_pack"}
+    )
     assert disabled.status_code == 200
     assert disabled.json() == {
         "enabled": False,
@@ -1544,7 +1562,9 @@ def test_analyze_async_accept_only_mode_keeps_operation_pending(client, monkeypa
     assert operation_body["result"] is None
     assert operation_body["error"] is None
 
-    by_correlation = client.get("/api/v1/rebalance/operations/by-correlation/corr-batch-async-accept-only")
+    by_correlation = client.get(
+        "/api/v1/rebalance/operations/by-correlation/corr-batch-async-accept-only"
+    )
     assert by_correlation.status_code == 200
     assert by_correlation.json()["operation_id"] == operation_id
     assert by_correlation.json()["status"] == "PENDING"
@@ -1643,20 +1663,22 @@ def test_openapi_title_and_tag_grouping(client):
     assert openapi["info"]["title"] == "Private Banking Rebalance API"
 
     tags = {tag["name"] for tag in openapi.get("tags", [])}
-    assert "DPM Simulation" in tags
-    assert "DPM What-If Analysis" in tags
-    assert "DPM Run Supportability" in tags
+    assert "lotus-manage Simulation" in tags
+    assert "lotus-manage What-If Analysis" in tags
+    assert "lotus-manage Run Supportability" in tags
     assert "Advisory Simulation" in tags
     assert "Advisory Proposal Lifecycle" in tags
 
-    assert openapi["paths"]["/api/v1/rebalance/simulate"]["post"]["tags"] == ["DPM Simulation"]
-    assert openapi["paths"]["/api/v1/rebalance/analyze"]["post"]["tags"] == ["DPM What-If Analysis"]
-    assert openapi["paths"]["/api/v1/rebalance/analyze/async"]["post"]["tags"] == ["DPM What-If Analysis"]
+    assert openapi["paths"]["/api/v1/rebalance/simulate"]["post"]["tags"] == ["lotus-manage Simulation"]
+    assert openapi["paths"]["/api/v1/rebalance/analyze"]["post"]["tags"] == ["lotus-manage What-If Analysis"]
+    assert openapi["paths"]["/api/v1/rebalance/analyze/async"]["post"]["tags"] == [
+        "lotus-manage What-If Analysis"
+    ]
     assert openapi["paths"]["/api/v1/rebalance/policies/effective"]["get"]["tags"] == [
-        "DPM Run Supportability"
+        "lotus-manage Run Supportability"
     ]
     assert openapi["paths"]["/api/v1/rebalance/policies/catalog"]["get"]["tags"] == [
-        "DPM Run Supportability"
+        "lotus-manage Run Supportability"
     ]
     assert openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["tags"] == [
         "Advisory Simulation"
@@ -2090,10 +2112,14 @@ def test_dpm_run_workflow_endpoints_happy_path_and_invalid_transition(client, mo
     assert workflow_body["requires_review"] is True
     assert workflow_body["latest_decision"] is None
 
-    workflow_by_correlation = client.get("/api/v1/rebalance/runs/by-correlation/corr-workflow-1/workflow")
+    workflow_by_correlation = client.get(
+        "/api/v1/rebalance/runs/by-correlation/corr-workflow-1/workflow"
+    )
     assert workflow_by_correlation.status_code == 200
     assert workflow_by_correlation.json()["run_id"] == run_id
-    workflow_by_idempotency = client.get("/api/v1/rebalance/runs/idempotency/test-key-workflow-1/workflow")
+    workflow_by_idempotency = client.get(
+        "/api/v1/rebalance/runs/idempotency/test-key-workflow-1/workflow"
+    )
     assert workflow_by_idempotency.status_code == 200
     assert workflow_by_idempotency.json()["run_id"] == run_id
 
@@ -2320,7 +2346,9 @@ def test_dpm_run_workflow_endpoints_disabled_and_not_required_behavior(client, m
     assert not_required.status_code == 409
     assert not_required.json()["detail"] == "DPM_WORKFLOW_NOT_REQUIRED_FOR_RUN_STATUS"
 
-    missing_by_correlation = client.get("/api/v1/rebalance/runs/by-correlation/corr-missing/workflow")
+    missing_by_correlation = client.get(
+        "/api/v1/rebalance/runs/by-correlation/corr-missing/workflow"
+    )
     assert missing_by_correlation.status_code == 404
     assert missing_by_correlation.json()["detail"] == "DPM_RUN_NOT_FOUND"
     missing_by_idempotency = client.get("/api/v1/rebalance/runs/idempotency/idem-missing/workflow")
@@ -2354,5 +2382,3 @@ def test_dpm_run_workflow_endpoints_disabled_and_not_required_behavior(client, m
     workflow_decision_list_disabled = client.get("/api/v1/rebalance/workflow/decisions?limit=10")
     assert workflow_decision_list_disabled.status_code == 404
     assert workflow_decision_list_disabled.json()["detail"] == "DPM_WORKFLOW_DISABLED"
-
-

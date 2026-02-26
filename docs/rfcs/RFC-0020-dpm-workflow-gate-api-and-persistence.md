@@ -1,4 +1,4 @@
-# RFC-0020: DPM Workflow Gate API and Persistence
+# RFC-0020: lotus-manage Workflow Gate API and Persistence
 
 | Metadata | Details |
 | --- | --- |
@@ -10,11 +10,11 @@
 
 ## 1. Executive Summary
 
-Add workflow gate APIs and persistence for DPM runs to support reviewer-assigned actions (approve, reject, request changes) with full auditability, aligned with advisory workflow lifecycle patterns.
+Add workflow gate APIs and persistence for lotus-manage runs to support reviewer-assigned actions (approve, reject, request changes) with full auditability, aligned with advisory workflow lifecycle patterns.
 
 ## 2. Problem Statement
 
-DPM exposes run diagnostics but lacks explicit workflow gate state transitions and reviewer decision records. Operations teams currently need external tooling for gating and traceability.
+lotus-manage exposes run diagnostics but lacks explicit workflow gate state transitions and reviewer decision records. Operations teams currently need external tooling for gating and traceability.
 
 ## 3. Goals and Non-Goals
 

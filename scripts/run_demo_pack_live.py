@@ -56,7 +56,7 @@ def run_demo_pack(base_url: str) -> None:
     idem_32 = f"live-demo-32-support-summary-{run_token}"
     lifecycle_idem_20 = f"live-demo-lifecycle-20-{run_token}"
     with httpx.Client(base_url=base_url, timeout=timeout) as client:
-        # DPM single-run demos
+        # lotus-manage single-run demos
         dpm_files = [
             "01_standard_drift.json",
             "02_sell_to_fund.json",

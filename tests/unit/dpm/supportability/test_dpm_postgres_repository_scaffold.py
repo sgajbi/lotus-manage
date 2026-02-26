@@ -1022,5 +1022,3 @@ def test_import_psycopg_helper(monkeypatch):
     psycopg_module, dict_row = _import_psycopg()
     assert psycopg_module is fake_psycopg
     assert dict_row is fake_rows.dict_row
-
-

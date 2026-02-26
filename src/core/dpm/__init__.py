@@ -1,4 +1,4 @@
-"""DPM simulation package."""
+"""lotus-manage simulation package."""
 
 from src.core.dpm.engine import run_simulation
 from src.core.dpm.policy_packs import (

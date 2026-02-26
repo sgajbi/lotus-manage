@@ -172,5 +172,3 @@ class TestTargetGeneration:
 
         assert status == "READY"
         assert trace[0].instrument_id == "A"
-
-

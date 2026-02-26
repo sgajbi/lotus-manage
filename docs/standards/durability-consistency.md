@@ -1,4 +1,4 @@
-# Durability and Consistency Standard (DPM)
+# Durability and Consistency Standard (lotus-manage)
 
 - Standard reference: `lotus-platform/Durability and Consistency Standard.md`
 - Scope: discretionary and advisory workflow simulation/lifecycle write operations.

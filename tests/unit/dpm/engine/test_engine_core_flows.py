@@ -129,5 +129,3 @@ def test_dust_suppression(base_context):
     assert len(result.intents) == 0
     assert len(result.diagnostics.suppressed_intents) == 1
     assert result.diagnostics.suppressed_intents[0].instrument_id == "AAPL"
-
-

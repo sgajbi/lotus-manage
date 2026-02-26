@@ -485,7 +485,7 @@ class EngineOptions(BaseModel):
         default=None,
         description=(
             "Attach BUY intent dependency to a same-currency SELL intent. "
-            "When null, defaults are engine-specific: true for DPM, false for advisory."
+            "When null, defaults are engine-specific: true for lotus-manage, false for advisory."
         ),
         examples=[None, True, False],
     )

@@ -431,7 +431,9 @@ def test_demo_dpm_workflow_decision_listing_via_api(monkeypatch):
                     "actor_id": "e2e_reviewer",
                 },
             )
-            decision_list = client.get("/api/v1/rebalance/workflow/decisions?action=APPROVE&limit=10")
+            decision_list = client.get(
+                "/api/v1/rebalance/workflow/decisions?action=APPROVE&limit=10"
+            )
         finally:
             app.dependency_overrides = original_overrides
 
@@ -643,5 +645,3 @@ def test_demo_supportability_feature_flag_guard_matrix(
 
     assert response.status_code == 404
     assert response.json()["detail"] == expected_detail
-
-

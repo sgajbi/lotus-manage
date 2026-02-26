@@ -14,7 +14,7 @@ DpmLineageEdgeType = Literal["CORRELATION_TO_RUN", "IDEMPOTENCY_TO_RUN", "OPERAT
 
 class DpmRunRecord(BaseModel):
     rebalance_run_id: str = Field(
-        description="Internal DPM run identifier.", examples=["rr_abc12345"]
+        description="Internal lotus-manage run identifier.", examples=["rr_abc12345"]
     )
     correlation_id: str = Field(
         description="Internal correlation identifier.", examples=["corr-1234-abcd"]
@@ -34,7 +34,7 @@ class DpmRunRecord(BaseModel):
         examples=["2026-02-20T12:00:00+00:00"],
     )
     result_json: Dict[str, Any] = Field(
-        description="Serialized DPM simulation result payload.",
+        description="Serialized lotus-manage simulation result payload.",
         examples=[{"rebalance_run_id": "rr_abc12345", "status": "READY"}],
     )
 
@@ -59,7 +59,7 @@ class DpmRunIdempotencyRecord(BaseModel):
 
 
 class DpmRunLookupResponse(BaseModel):
-    rebalance_run_id: str = Field(description="DPM run identifier.", examples=["rr_abc12345"])
+    rebalance_run_id: str = Field(description="lotus-manage run identifier.", examples=["rr_abc12345"])
     correlation_id: str = Field(
         description="Correlation identifier for the run.", examples=["corr-1234-abcd"]
     )
@@ -78,12 +78,12 @@ class DpmRunLookupResponse(BaseModel):
         examples=["2026-02-20T12:00:00+00:00"],
     )
     result: RebalanceResult = Field(
-        description="Full DPM simulation result payload for investigation and audit."
+        description="Full lotus-manage simulation result payload for investigation and audit."
     )
 
 
 class DpmRunListItemResponse(BaseModel):
-    rebalance_run_id: str = Field(description="DPM run identifier.", examples=["rr_abc12345"])
+    rebalance_run_id: str = Field(description="lotus-manage run identifier.", examples=["rr_abc12345"])
     correlation_id: str = Field(
         description="Correlation identifier associated with the run.",
         examples=["corr-1234-abcd"],
@@ -576,7 +576,7 @@ class DpmRunWorkflowDecisionRecord(BaseModel):
         examples=["dwd_001"],
     )
     run_id: str = Field(
-        description="DPM run identifier associated with workflow decision.",
+        description="lotus-manage run identifier associated with workflow decision.",
         examples=["rr_abc12345"],
     )
     action: DpmWorkflowActionType = Field(
@@ -613,7 +613,7 @@ class DpmRunWorkflowDecisionResponse(BaseModel):
         examples=["dwd_001"],
     )
     run_id: str = Field(
-        description="DPM run identifier associated with workflow decision.",
+        description="lotus-manage run identifier associated with workflow decision.",
         examples=["rr_abc12345"],
     )
     action: DpmWorkflowActionType = Field(
@@ -645,7 +645,7 @@ class DpmRunWorkflowDecisionResponse(BaseModel):
 
 class DpmRunWorkflowResponse(BaseModel):
     run_id: str = Field(
-        description="DPM run identifier.",
+        description="lotus-manage run identifier.",
         examples=["rr_abc12345"],
     )
     run_status: str = Field(
@@ -680,7 +680,7 @@ class DpmRunWorkflowResponse(BaseModel):
 
 class DpmRunWorkflowHistoryResponse(BaseModel):
     run_id: str = Field(
-        description="DPM run identifier.",
+        description="lotus-manage run identifier.",
         examples=["rr_abc12345"],
     )
     decisions: list[DpmRunWorkflowDecisionResponse] = Field(
@@ -859,7 +859,7 @@ class DpmRunArtifactResponse(BaseModel):
         description="Artifact schema version for compatibility evolution.",
         examples=["1.0"],
     )
-    rebalance_run_id: str = Field(description="DPM run identifier.", examples=["rr_abc12345"])
+    rebalance_run_id: str = Field(description="lotus-manage run identifier.", examples=["rr_abc12345"])
     correlation_id: str = Field(
         description="Correlation identifier associated with this run.",
         examples=["corr-1234-abcd"],
@@ -902,7 +902,7 @@ class DpmRunArtifactResponse(BaseModel):
         examples=[{"warnings": [], "data_quality": {"price_missing": [], "fx_missing": []}}],
     )
     result: RebalanceResult = Field(
-        description="Full persisted DPM run output used as artifact source of truth.",
+        description="Full persisted lotus-manage run output used as artifact source of truth.",
         examples=[{"rebalance_run_id": "rr_abc12345", "status": "READY"}],
     )
     evidence: DpmRunArtifactEvidence = Field(

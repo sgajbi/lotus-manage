@@ -129,5 +129,3 @@ def test_postgres_connection_exception_types_handles_missing_driver(monkeypatch)
     monkeypatch.setattr(builtins, "__import__", _import_with_psycopg_missing)
     exception_types = dpm_runs_config._postgres_connection_exception_types()
     assert ValueError in exception_types
-
-

@@ -101,5 +101,3 @@ def test_turnover_cap_tie_break_is_instrument_id_ascending():
 
     assert [i.instrument_id for i in security_intents(result)] == ["A", "C"]
     assert [d.instrument_id for d in result.diagnostics.dropped_intents] == ["B"]
-
-

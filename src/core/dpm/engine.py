@@ -1,4 +1,4 @@
-"""DPM engine orchestration."""
+"""lotus-manage engine orchestration."""
 
 import uuid
 from copy import deepcopy

@@ -126,5 +126,3 @@ def _reset_tables(repository: PostgresDpmPolicyPackRepository) -> None:
     with closing(repository._connect()) as connection:  # noqa: SLF001
         connection.execute("DELETE FROM dpm_policy_packs")
         connection.commit()
-
-

@@ -293,13 +293,17 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert "X-Tenant-Policy-Pack-Id" in policy_catalog_params
     assert "X-Tenant-Id" in policy_catalog_params
 
-    policy_catalog_get_one = openapi["paths"]["/api/v1/rebalance/policies/catalog/{policy_pack_id}"]["get"]
+    policy_catalog_get_one = openapi["paths"][
+        "/api/v1/rebalance/policies/catalog/{policy_pack_id}"
+    ]["get"]
     assert "requestBody" not in policy_catalog_get_one
     assert policy_catalog_get_one["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackDefinition")
 
-    policy_catalog_upsert = openapi["paths"]["/api/v1/rebalance/policies/catalog/{policy_pack_id}"]["put"]
+    policy_catalog_upsert = openapi["paths"]["/api/v1/rebalance/policies/catalog/{policy_pack_id}"][
+        "put"
+    ]
     assert policy_catalog_upsert["requestBody"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackUpsertRequest")
@@ -358,7 +362,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     actual_params = {param["name"] for param in list_runs["parameters"]}
     assert expected_params.issubset(actual_params)
 
-    run_by_request_hash = openapi["paths"]["/api/v1/rebalance/runs/by-request-hash/{request_hash}"]["get"]
+    run_by_request_hash = openapi["paths"]["/api/v1/rebalance/runs/by-request-hash/{request_hash}"][
+        "get"
+    ]
     assert run_by_request_hash["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunLookupResponse")
@@ -368,7 +374,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "$ref"
     ].endswith("/DpmSupportabilitySummaryResponse")
 
-    support_bundle = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/support-bundle"]["get"]
+    support_bundle = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/support-bundle"][
+        "get"
+    ]
     assert support_bundle["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunSupportBundleResponse")
@@ -457,9 +465,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "/DpmLineageResponse"
     )
 
-    idempotency_history = openapi["paths"]["/api/v1/rebalance/idempotency/{idempotency_key}/history"][
-        "get"
-    ]
+    idempotency_history = openapi["paths"][
+        "/api/v1/rebalance/idempotency/{idempotency_key}/history"
+    ]["get"]
     assert idempotency_history["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunIdempotencyHistoryResponse")
@@ -483,9 +491,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "$ref"
     ].endswith("/DpmRunWorkflowResponse")
 
-    workflow_actions = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/workflow/actions"][
-        "post"
-    ]
+    workflow_actions = openapi["paths"][
+        "/api/v1/rebalance/runs/{rebalance_run_id}/workflow/actions"
+    ]["post"]
     workflow_action_request_ref = workflow_actions["requestBody"]["content"]["application/json"][
         "schema"
     ]["$ref"]
@@ -514,9 +522,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowResponse")
 
-    workflow_history = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/workflow/history"][
-        "get"
-    ]
+    workflow_history = openapi["paths"][
+        "/api/v1/rebalance/runs/{rebalance_run_id}/workflow/history"
+    ]["get"]
     assert workflow_history["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunWorkflowHistoryResponse")
@@ -534,5 +542,3 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert workflow_history_by_idempotency["responses"]["200"]["content"]["application/json"][
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowHistoryResponse")
-
-

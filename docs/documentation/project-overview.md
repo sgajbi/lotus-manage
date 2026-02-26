@@ -8,7 +8,7 @@ This document explains the system at a high level for three audiences:
 ## What This Platform Does
 
 The platform provides deterministic portfolio decisioning APIs for:
-- **DPM rebalancing** (model-driven discretionary portfolio management),
+- **lotus-manage rebalancing** (model-driven discretionary portfolio management),
 - **Advisory proposals** (advisor-entered cash flows and manual trades).
 
 Architecture authority:
@@ -38,7 +38,7 @@ The API remains deterministic for identical inputs and options.
 
 ## Core Business Flows
 
-1. DPM flow
+1. lotus-manage flow
 - Input: portfolio snapshot, market snapshot, model targets, shelf, options.
 - Output: optimized rebalance intents with controls (tax, turnover, settlement, constraints).
 
@@ -64,7 +64,7 @@ The API remains deterministic for identical inputs and options.
 ## Architecture Summary
 
 - `src/api/`: FastAPI contracts and endpoint orchestration.
-- `src/core/dpm/`: DPM-specific engine modules.
+- `src/core/dpm/`: lotus-manage-specific engine modules.
 - `src/core/advisory/`: Advisory-specific modules (artifact, funding, intents, ids).
 - `src/core/common/`: Shared logic (simulation primitives, diagnostics, drift, suitability, canonical hashing, workflow gates).
 - `src/core/models.py`: shared request/response contracts and options.
@@ -72,7 +72,7 @@ The API remains deterministic for identical inputs and options.
 ## Test Strategy
 
 Tests are organized by responsibility:
-- `tests/unit/dpm/`: DPM API, engine, and DPM golden tests.
+- `tests/unit/dpm/`: lotus-manage API, engine, and lotus-manage golden tests.
 - `tests/unit/advisory/`: advisory API, engine, contracts, and advisory golden tests.
 - `tests/unit/shared/`: shared contracts/compliance/dependencies tests.
 - `tests/e2e/`: end-to-end workflow/demo scenario tests.
@@ -96,7 +96,7 @@ CI test execution model:
 
 ## Current Delivery Principle
 
-Keep DPM and advisory behavior separated by business logic, while sharing:
+Keep lotus-manage and advisory behavior separated by business logic, while sharing:
 - vocabulary,
 - control semantics,
 - deterministic primitives,

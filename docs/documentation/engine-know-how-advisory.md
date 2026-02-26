@@ -125,7 +125,7 @@ Persistence note:
 - Validates proposal input models (`ProposedCashFlow`, `ProposedTrade`).
 
 2. Before-state valuation
-- Uses the same valuation stack as DPM (`build_simulated_state`).
+- Uses the same valuation stack as lotus-manage (`build_simulated_state`).
 
 3. Apply proposal intents
 - Cash flows can be applied before trades (`proposal_apply_cash_flows_first`).

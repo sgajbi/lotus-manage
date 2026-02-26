@@ -5,14 +5,14 @@
 
 ## Owned Domains
 
-- DPM policy-pack persistence model.
+- lotus-manage policy-pack persistence model.
 - Advisory proposal workflow persistence model.
-- Schema migration history (`schema_migrations`) for DPM namespaces.
+- Schema migration history (`schema_migrations`) for lotus-manage namespaces.
 
 ## Service Boundaries
 
-- Core portfolio ledger, valuation, and transaction source data remains PAS-owned.
-- Advanced analytics are PA-owned and consumed through APIs where needed.
+- Core portfolio ledger, valuation, and transaction source data remains lotus-core-owned.
+- Advanced analytics are lotus-performance-owned and consumed through APIs where needed.
 
 ## Schema Rules
 

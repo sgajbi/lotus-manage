@@ -154,7 +154,7 @@ def simulate_rebalance(
         policy_pack=policy_pack_definition,
     )
     current_logger.debug(
-        "Resolved DPM policy pack for simulate. enabled=%s source=%s policy_pack_id=%s",
+        "Resolved lotus-manage policy pack for simulate. enabled=%s source=%s policy_pack_id=%s",
         policy_pack.enabled,
         policy_pack.source,
         policy_pack.selected_policy_pack_id,
@@ -368,7 +368,7 @@ def submit_and_optionally_execute_async_analysis(
         tenant_id=tenant_id,
     )
     current_logger.debug(
-        "Resolved DPM policy pack for analyze async. enabled=%s source=%s policy_pack_id=%s",
+        "Resolved lotus-manage policy pack for analyze async. enabled=%s source=%s policy_pack_id=%s",
         policy_pack.enabled,
         policy_pack.source,
         policy_pack.selected_policy_pack_id,

@@ -1,6 +1,6 @@
 # Lotus Manage
 
-Discretionary portfolio management (DPM) execution, supportability, and lifecycle service.
+Discretionary portfolio management (lotus-manage) execution, supportability, and lifecycle service.
 
-This repository owns DPM runtime workflows.
+This repository owns lotus-manage runtime workflows.
 Advisor-led proposal workflows are owned by `lotus-advise`.

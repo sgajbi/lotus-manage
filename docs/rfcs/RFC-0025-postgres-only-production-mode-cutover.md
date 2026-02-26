@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Define a staged production cutover plan where DPM/advisory persistence uses PostgreSQL-only
+Define a staged production cutover plan where lotus-manage/advisory persistence uses PostgreSQL-only
 backends in non-dev environments, while preserving in-memory/SQLite paths for local workflows.
 
 ## 2. Problem Statement
@@ -81,7 +81,7 @@ variance and incident complexity in production.
   - Added `APP_PERSISTENCE_PROFILE` guardrails (`LOCAL` | `PRODUCTION`).
   - Added startup fail-fast validation in app lifespan.
   - Enforced in `PRODUCTION`:
-    - DPM supportability backend must be `POSTGRES`.
+    - lotus-manage supportability backend must be `POSTGRES`.
     - advisory proposal store backend must be `POSTGRES`.
     - policy-pack catalog backend must be `POSTGRES` when policy packs/admin APIs are enabled.
   - Added unit tests and startup tests for all guardrail reason codes.
@@ -91,7 +91,7 @@ variance and incident complexity in production.
   - Updated deployment docs and runbook with explicit `LOCAL` vs `PRODUCTION` profile behavior.
 - Slice 3 completed (2026-02-21):
   - Added CI negative guardrail job asserting startup fails with explicit reason codes for:
-    - DPM backend misconfiguration in `PRODUCTION`
+    - lotus-manage backend misconfiguration in `PRODUCTION`
     - advisory backend misconfiguration in `PRODUCTION`
     - policy-pack backend misconfiguration in `PRODUCTION` when policy packs are enabled
 - Slice 4 completed (2026-02-21):
@@ -108,7 +108,7 @@ variance and incident complexity in production.
 - Slice 6 completed (2026-02-21):
   - Switched local container defaults to Postgres-backed runtime in `docker-compose.yml`.
   - Marked legacy runtime backends as deprecated via `DeprecationWarning`:
-    - DPM supportability: `IN_MEMORY`/`SQL`/`SQLITE`
+    - lotus-manage supportability: `IN_MEMORY`/`SQL`/`SQLITE`
     - advisory store: `IN_MEMORY`
     - policy-pack catalog: `ENV_JSON`
   - Captured rationale and transition policy in ADR-0011.

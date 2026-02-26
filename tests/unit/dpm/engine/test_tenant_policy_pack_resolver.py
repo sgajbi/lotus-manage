@@ -33,5 +33,3 @@ def test_build_resolver_enabled_uses_normalized_tenant_ids():
     assert resolver.resolve(tenant_id="tenant_1") == "pack_1"
     assert resolver.resolve(tenant_id=" tenant_2 ") == "pack_2"
     assert resolver.resolve(tenant_id="missing") is None
-
-

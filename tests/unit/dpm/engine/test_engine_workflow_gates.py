@@ -84,5 +84,3 @@ def test_workflow_gate_execution_ready_when_client_consent_already_obtained():
     )
     assert gate.gate == "EXECUTION_READY"
     assert gate.recommended_next_step == "EXECUTE"
-
-

@@ -95,5 +95,3 @@ def test_allow_restricted_true_allows_restricted_target_trading():
 
     assert any(i.intent_type == "SECURITY_TRADE" and i.side == "BUY" for i in result.intents)
     assert find_excluded(result, "RESTRICTED_EQ") is None
-
-

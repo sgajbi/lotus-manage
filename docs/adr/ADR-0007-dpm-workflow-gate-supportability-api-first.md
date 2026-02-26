@@ -1,4 +1,4 @@
-# ADR-0007: DPM Workflow Gate Supportability Is API-First
+# ADR-0007: lotus-manage Workflow Gate Supportability Is API-First
 
 ## Status
 
@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-DPM support/investigation workflows need workflow gate visibility and operator actions without requiring direct database access. RFC-0020 introduces run workflow state and decisions (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) with audit metadata.
+lotus-manage support/investigation workflows need workflow gate visibility and operator actions without requiring direct database access. RFC-0020 introduces run workflow state and decisions (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) with audit metadata.
 
 ## Decision
 

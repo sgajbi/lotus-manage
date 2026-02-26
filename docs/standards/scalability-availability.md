@@ -1,6 +1,6 @@
 # Scalability and Availability Standard Alignment
 
-Service: DPM
+Service: lotus-manage
 
 This repository adopts the platform-wide standard defined in lotus-platform/Scalability and Availability Standard.md.
 
@@ -26,18 +26,18 @@ This repository adopts the platform-wide standard defined in lotus-platform/Scal
 ## Availability Baseline
 
 - Internal SLO baseline: p95 synchronous proposal API latency < 400 ms; error rate < 1%.
-- Recovery targets: RTO 30 minutes and RPO 15 minutes for persisted DPM operations.
+- Recovery targets: RTO 30 minutes and RPO 15 minutes for persisted lotus-manage operations.
 - Backup and restore validation is required for proposal/run stores in every deployment environment.
 
 ## Caching Policy Baseline
 
-- DPM only permits explicit bounded caches for idempotency and workflow supportability lookups.
+- lotus-manage only permits explicit bounded caches for idempotency and workflow supportability lookups.
 - Cache use-cases must define TTL and max-size controls with clear invalidation ownership.
 - Stale-read behavior is disallowed for correctness-critical rebalance outcomes; stale supportability reads must be explicitly documented.
 
 ## Scale Signal Metrics Coverage
 
-- DPM exports `/metrics` for HTTP and workflow instrumentation.
+- lotus-manage exports `/metrics` for HTTP and workflow instrumentation.
 - Platform-shared infrastructure metrics for CPU/memory, DB latency/pool behavior, and queue lag are sourced from:
   - `lotus-platform/platform-stack/prometheus/prometheus.yml`
   - `lotus-platform/platform-stack/docker-compose.yml`

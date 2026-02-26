@@ -1,4 +1,4 @@
-# RFC-0016: DPM Idempotency Replay Contract for `/rebalance/simulate`
+# RFC-0016: lotus-manage Idempotency Replay Contract for `/rebalance/simulate`
 
 | Metadata | Details |
 | --- | --- |
@@ -14,7 +14,7 @@ This RFC defines and implements explicit idempotency semantics for `POST /rebala
 - same `Idempotency-Key` + same canonical request payload -> return cached result
 - same `Idempotency-Key` + different canonical request payload -> return `409 Conflict`
 
-This aligns DPM behavior with advisory simulation behavior and improves enterprise-grade retry safety.
+This aligns lotus-manage behavior with advisory simulation behavior and improves enterprise-grade retry safety.
 
 Implementation note (2026-02-20):
 - Implemented in `src/api/main.py` with canonical request hashing and bounded in-memory replay cache.
@@ -28,7 +28,7 @@ Implementation note (2026-02-20):
 `/rebalance/simulate` currently requires `Idempotency-Key` but does not enforce replay/conflict semantics. This creates ambiguity and increases operational risk for:
 - client retry handling
 - replayability and reconciliation investigations
-- API consistency between DPM and advisory
+- API consistency between lotus-manage and advisory
 
 ## 3. Goals and Non-Goals
 
@@ -41,7 +41,7 @@ Implementation note (2026-02-20):
 ### 3.2 Non-Goals
 - Persistent idempotency storage in this slice.
 - New API endpoints for idempotency lookup (can be follow-up).
-- Changing core DPM simulation logic.
+- Changing core lotus-manage simulation logic.
 
 ## 4. Proposed Design
 

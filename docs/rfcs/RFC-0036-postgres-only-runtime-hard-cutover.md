@@ -19,7 +19,7 @@ Perform a hard cutover to PostgreSQL-only runtime persistence:
 ## Architectural Impact
 - Strengthens service boundaries and runtime determinism.
 - Eliminates hidden divergence between local and production persistence behavior.
-- Aligns DPM runtime with platform governance: no legacy runtime backend support.
+- Aligns lotus-manage runtime with platform governance: no legacy runtime backend support.
 
 ## Risks and Trade-offs
 - Local bootstrap now requires PostgreSQL DSNs and setup.

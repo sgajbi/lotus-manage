@@ -56,5 +56,3 @@ def test_lineage_edges_are_recorded_for_run_idempotency_and_operation():
     assert len(by_operation.edges) == 1
     assert by_operation.edges[0].edge_type == "OPERATION_TO_CORRELATION"
     assert by_operation.edges[0].target_entity_id == "corr-op-lineage-1"
-
-

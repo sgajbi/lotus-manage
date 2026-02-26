@@ -93,5 +93,3 @@ def valid_api_payload() -> dict:
         "shelf_entries": [{"instrument_id": "EQ_1", "status": "APPROVED"}],
         "options": {},
     }
-
-

@@ -1,4 +1,4 @@
-# RFC-0022: DPM Policy Pack Configuration Model
+# RFC-0022: lotus-manage Policy Pack Configuration Model
 
 | Metadata | Details |
 | --- | --- |
@@ -10,11 +10,11 @@
 
 ## 1. Executive Summary
 
-Introduce a policy-pack configuration model so DPM rule behavior can be selected and tuned per business segment without code changes, similar to advisory configurability patterns.
+Introduce a policy-pack configuration model so lotus-manage rule behavior can be selected and tuned per business segment without code changes, similar to advisory configurability patterns.
 
 ## 2. Problem Statement
 
-DPM currently relies on distributed flags and static defaults. As product variants grow, this makes onboarding and controlled rollout harder than necessary.
+lotus-manage currently relies on distributed flags and static defaults. As product variants grow, this makes onboarding and controlled rollout harder than necessary.
 
 ## 3. Goals and Non-Goals
 

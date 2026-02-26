@@ -4,7 +4,7 @@
 
 Runbook for forward-only schema migration rollout for:
 
-- DPM supportability Postgres namespace (`dpm`)
+- lotus-manage supportability Postgres namespace (`dpm`)
 - Advisory proposals Postgres namespace (`proposals`)
 
 ## Preconditions
@@ -61,7 +61,7 @@ python scripts/production_cutover_check.py --check-migrations
    - `DPM_SUPPORTABILITY_STORE_BACKEND=POSTGRES`
    - `PROPOSAL_STORE_BACKEND=POSTGRES`
    - `DPM_POLICY_PACK_CATALOG_BACKEND=POSTGRES` (when policy packs/admin APIs are enabled)
-5. Run smoke API checks for DPM and advisory.
+5. Run smoke API checks for lotus-manage and advisory.
 6. Shift traffic.
 
 Do not start app replicas with Postgres backend enabled before migrations have completed.

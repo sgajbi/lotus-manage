@@ -29,7 +29,7 @@ router = APIRouter()
     "/rebalance/simulate",
     response_model=RebalanceResult,
     status_code=status.HTTP_200_OK,
-    tags=["DPM Simulation"],
+    tags=["lotus-manage Simulation"],
     summary="Simulate a Portfolio Rebalance",
     description=(
         "Runs one deterministic rebalance simulation.\\n\\n"
@@ -112,7 +112,7 @@ def simulate_rebalance(
     "/rebalance/analyze",
     response_model=BatchRebalanceResult,
     status_code=status.HTTP_200_OK,
-    tags=["DPM What-If Analysis"],
+    tags=["lotus-manage What-If Analysis"],
     summary="Analyze Multiple Rebalance Scenarios",
     description=(
         "Runs multiple named what-if scenarios using shared snapshots.\\n\\n"
@@ -171,7 +171,7 @@ def analyze_scenarios(
     "/rebalance/analyze/async",
     response_model=DpmAsyncAcceptedResponse,
     status_code=status.HTTP_202_ACCEPTED,
-    tags=["DPM What-If Analysis"],
+    tags=["lotus-manage What-If Analysis"],
     summary="Analyze Multiple Rebalance Scenarios Asynchronously",
     description=(
         "Accepts named what-if scenarios for asynchronous execution.\\n\\n"
@@ -253,10 +253,10 @@ def analyze_scenarios_async(
     "/rebalance/operations/{operation_id}/execute",
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
-    tags=["DPM Run Supportability"],
-    summary="Execute Pending DPM Async Operation",
+    tags=["lotus-manage Run Supportability"],
+    summary="Execute Pending lotus-manage Async Operation",
     description=(
-        "Executes one pending asynchronous DPM analyze operation. "
+        "Executes one pending asynchronous lotus-manage analyze operation. "
         "Intended for orchestrated `ACCEPT_ONLY` mode flows."
     ),
     responses={

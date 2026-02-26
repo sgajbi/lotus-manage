@@ -665,5 +665,3 @@ def _reset_tables(repository: PostgresDpmRunRepository) -> None:
             "dpm_run_artifacts, dpm_async_operations, dpm_runs CASCADE"
         )
         connection.commit()
-
-

@@ -15,7 +15,7 @@ RFC-0006B bridges the gap between a functional calculator and a demo-credible, i
 
 1.  **Configurable Rules:** Replacing hard-coded thresholds (e.g., 5% cash, 10% concentration) with overrideable options/policies.
 2.  **Explicit Dependencies:** Ensuring every FX-funded Security Buy explicitly links to its funding FX trade in the `dependencies` list.
-3.  **Institutional Scenario Matrix:** Implementing the `GOLDEN_3xx` suite—12+ scenarios covering real-world DPM edge cases (Drift, Sell-to-Fund, Multi-Currency, Restricted Assets).
+3.  **Institutional Scenario Matrix:** Implementing the `GOLDEN_3xx` suite—12+ scenarios covering real-world lotus-manage edge cases (Drift, Sell-to-Fund, Multi-Currency, Restricted Assets).
 4.  **Demo Pack Tightening:** Updating `docs/demo/` so all scenarios are triggerable purely via JSON input, without code manipulation.
 
 ### 0.1 Implementation Alignment (As of 2026-02-17)

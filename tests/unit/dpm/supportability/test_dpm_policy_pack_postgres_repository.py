@@ -163,5 +163,3 @@ def test_import_psycopg_returns_driver_and_row_factory(monkeypatch):
     psycopg, dict_row = postgres_module._import_psycopg()
     assert psycopg is fake_psycopg
     assert dict_row is fake_dict_row
-
-

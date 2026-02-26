@@ -19,5 +19,3 @@ def security_intents(result):
 
 def fx_intents(result):
     return [i for i in result.intents if isinstance(i, FxSpotIntent)]
-
-

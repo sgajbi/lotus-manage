@@ -78,5 +78,3 @@ class TestUniverseAndDataQuality:
         build_simulated_state(pf, mkt, shelf, dq, warns)
 
         assert "KRW/USD" in dq.get("fx_missing", [])
-
-

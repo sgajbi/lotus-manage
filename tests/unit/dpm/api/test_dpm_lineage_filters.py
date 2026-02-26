@@ -62,5 +62,3 @@ def test_lineage_api_supports_filters_and_pagination(monkeypatch):
         )
         assert second_page.status_code == 200
         assert len(second_page.json()["edges"]) == 1
-
-

@@ -20,7 +20,7 @@ from src.core.dpm_runs.models import DpmWorkflowActionType
     "/rebalance/workflow/decisions",
     response_model=DpmWorkflowDecisionListResponse,
     status_code=status.HTTP_200_OK,
-    summary="List DPM Workflow Decisions",
+    summary="List lotus-manage Workflow Decisions",
     description=(
         "Returns paginated workflow decisions across runs with optional filters for "
         "supportability investigations."
@@ -30,7 +30,7 @@ def list_dpm_workflow_decisions(
     rebalance_run_id: Annotated[
         Optional[str],
         Query(
-            description="Optional DPM run id filter.",
+            description="Optional lotus-manage run id filter.",
             examples=["rr_abc12345"],
         ),
     ] = None,
@@ -107,7 +107,7 @@ def list_dpm_workflow_decisions(
     "/rebalance/workflow/decisions/by-correlation/{correlation_id}",
     response_model=DpmRunWorkflowHistoryResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Workflow Decisions by Correlation Id",
+    summary="Get lotus-manage Workflow Decisions by Correlation Id",
     description=(
         "Returns append-only workflow decision history for the run resolved by correlation id."
     ),
@@ -134,7 +134,7 @@ def get_dpm_workflow_decisions_by_correlation(
     "/rebalance/runs/{rebalance_run_id}/workflow",
     response_model=DpmRunWorkflowResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Workflow State",
+    summary="Get lotus-manage Run Workflow State",
     description=(
         "Returns workflow gate state and latest decision for run-level review supportability."
     ),
@@ -142,7 +142,7 @@ def get_dpm_workflow_decisions_by_correlation(
 def get_dpm_run_workflow(
     rebalance_run_id: Annotated[
         str,
-        Path(description="DPM run identifier.", examples=["rr_abc12345"]),
+        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
     ],
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmRunWorkflowResponse:
@@ -158,7 +158,7 @@ def get_dpm_run_workflow(
     "/rebalance/runs/by-correlation/{correlation_id}/workflow",
     response_model=DpmRunWorkflowResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Workflow State by Correlation Id",
+    summary="Get lotus-manage Run Workflow State by Correlation Id",
     description="Returns workflow gate state for run resolved by correlation id.",
 )
 def get_dpm_run_workflow_by_correlation(
@@ -180,7 +180,7 @@ def get_dpm_run_workflow_by_correlation(
     "/rebalance/runs/idempotency/{idempotency_key}/workflow",
     response_model=DpmRunWorkflowResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Workflow State by Idempotency Key",
+    summary="Get lotus-manage Run Workflow State by Idempotency Key",
     description="Returns workflow gate state for run resolved by idempotency key mapping.",
 )
 def get_dpm_run_workflow_by_idempotency(
@@ -202,7 +202,7 @@ def get_dpm_run_workflow_by_idempotency(
     "/rebalance/runs/{rebalance_run_id}/workflow/actions",
     response_model=DpmRunWorkflowResponse,
     status_code=status.HTTP_200_OK,
-    summary="Apply DPM Run Workflow Action",
+    summary="Apply lotus-manage Run Workflow Action",
     description=(
         "Applies one workflow action (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) and returns "
         "updated workflow state."
@@ -211,7 +211,7 @@ def get_dpm_run_workflow_by_idempotency(
 def apply_dpm_run_workflow_action(
     rebalance_run_id: Annotated[
         str,
-        Path(description="DPM run identifier.", examples=["rr_abc12345"]),
+        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
     ],
     payload: DpmRunWorkflowActionRequest,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
@@ -247,7 +247,7 @@ def apply_dpm_run_workflow_action(
     "/rebalance/runs/by-correlation/{correlation_id}/workflow/actions",
     response_model=DpmRunWorkflowResponse,
     status_code=status.HTTP_200_OK,
-    summary="Apply DPM Run Workflow Action by Correlation Id",
+    summary="Apply lotus-manage Run Workflow Action by Correlation Id",
     description=(
         "Applies one workflow action for run resolved by correlation id and returns updated "
         "workflow state."
@@ -292,7 +292,7 @@ def apply_dpm_run_workflow_action_by_correlation(
     "/rebalance/runs/idempotency/{idempotency_key}/workflow/actions",
     response_model=DpmRunWorkflowResponse,
     status_code=status.HTTP_200_OK,
-    summary="Apply DPM Run Workflow Action by Idempotency Key",
+    summary="Apply lotus-manage Run Workflow Action by Idempotency Key",
     description=(
         "Applies one workflow action for run resolved by idempotency key mapping and returns "
         "updated workflow state."
@@ -337,7 +337,7 @@ def apply_dpm_run_workflow_action_by_idempotency(
     "/rebalance/runs/{rebalance_run_id}/workflow/history",
     response_model=DpmRunWorkflowHistoryResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Workflow History",
+    summary="Get lotus-manage Run Workflow History",
     description=(
         "Returns append-only workflow decision history for run-level audit and investigation."
     ),
@@ -345,7 +345,7 @@ def apply_dpm_run_workflow_action_by_idempotency(
 def get_dpm_run_workflow_history(
     rebalance_run_id: Annotated[
         str,
-        Path(description="DPM run identifier.", examples=["rr_abc12345"]),
+        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
     ],
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmRunWorkflowHistoryResponse:
@@ -361,7 +361,7 @@ def get_dpm_run_workflow_history(
     "/rebalance/runs/by-correlation/{correlation_id}/workflow/history",
     response_model=DpmRunWorkflowHistoryResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Workflow History by Correlation Id",
+    summary="Get lotus-manage Run Workflow History by Correlation Id",
     description="Returns workflow decision history for run resolved by correlation id.",
 )
 def get_dpm_run_workflow_history_by_correlation(
@@ -383,7 +383,7 @@ def get_dpm_run_workflow_history_by_correlation(
     "/rebalance/runs/idempotency/{idempotency_key}/workflow/history",
     response_model=DpmRunWorkflowHistoryResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Workflow History by Idempotency Key",
+    summary="Get lotus-manage Run Workflow History by Idempotency Key",
     description="Returns workflow decision history for run resolved by idempotency key mapping.",
 )
 def get_dpm_run_workflow_history_by_idempotency(

@@ -1,12 +1,12 @@
-# RFC-0029: Iterative Proposal Simulation Workspace Contract for Advisory and DPM Lifecycles
+# RFC-0029: Iterative Proposal Simulation Workspace Contract for Advisory and lotus-manage Lifecycles
 
 - Status: PROPOSED
 - Date: 2026-02-24
-- Owners: DPM Rebalance Engine
+- Owners: lotus-manage Rebalance Engine
 
 ## Problem Statement
 
-Advisors and DPM users need an iterative build-refine-evaluate loop that supports repeated trade/cash adjustments with immediate constraint and portfolio impact feedback. Current workflow APIs are closer to run submission than interactive workspace collaboration.
+Advisors and lotus-manage users need an iterative build-refine-evaluate loop that supports repeated trade/cash adjustments with immediate constraint and portfolio impact feedback. Current workflow APIs are closer to run submission than interactive workspace collaboration.
 
 ## Root Cause
 
@@ -25,14 +25,14 @@ Advisors and DPM users need an iterative build-refine-evaluate loop that support
 
 ## Architectural Impact
 
-- DPM supports both interactive iteration and formal lifecycle progression.
+- lotus-manage supports both interactive iteration and formal lifecycle progression.
 - Better alignment with advisory domain behavior expected by private banking users.
 - Requires stronger idempotency and deterministic draft-state replay.
 
 ## Risks and Trade-offs
 
-- Session/state complexity increases in DPM API model.
-- Must carefully distinguish advisory-specific behavior vs DPM automation behavior.
+- Session/state complexity increases in lotus-manage API model.
+- Must carefully distinguish advisory-specific behavior vs lotus-manage automation behavior.
 - Additional persistence and audit requirements for draft iteration history.
 
 ## High-Level Implementation Approach
@@ -40,9 +40,9 @@ Advisors and DPM users need an iterative build-refine-evaluate loop that support
 1. Define draft session schema and mutation endpoints.
 2. Add normalized constraint/impact response contract.
 3. Add replay-safe persistence strategy for draft iterations.
-4. Add end-to-end tests with BFF and UI iterative loops.
+4. Add end-to-end tests with lotus-gateway and UI iterative loops.
 
 ## Dependencies
 
-- Consumed by AEA RFC-0010 and AW RFC-0007.
-- Integrates with PAS RFC-046 and PA RFC-032 for data and analytics feedback.
+- Consumed by lotus-gateway RFC-0010 and AW RFC-0007.
+- Integrates with lotus-core RFC-046 and lotus-performance RFC-032 for data and analytics feedback.

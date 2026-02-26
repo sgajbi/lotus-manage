@@ -22,7 +22,7 @@ def test_health_endpoints_available():
 def test_correlation_headers_are_exposed():
     client = TestClient(app)
     response = client.get(
-        "/integration/capabilities?consumerSystem=BFF&tenantId=default",
+        "/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default",
         headers={"X-Correlation-Id": "corr_dpm_1"},
     )
     assert response.status_code == 200
@@ -42,7 +42,7 @@ def test_traceparent_header_propagates_trace_id():
     client = TestClient(app)
     upstream_trace_id = "1234567890abcdef1234567890abcdef"
     response = client.get(
-        "/integration/capabilities?consumerSystem=BFF&tenantId=default",
+        "/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default",
         headers={"traceparent": f"00-{upstream_trace_id}-0000000000000001-01"},
     )
     assert response.status_code == 200
@@ -60,5 +60,3 @@ def test_load_concurrency_health_live_requests():
         statuses = list(pool.map(lambda _: _call_live(), range(32)))
 
     assert all(status == 200 for status in statuses)
-
-

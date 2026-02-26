@@ -1,12 +1,12 @@
-# ADR-0005: DPM Derived Run Artifact Strategy
+# ADR-0005: lotus-manage Derived Run Artifact Strategy
 
 - Status: Accepted
 - Date: 2026-02-20
-- Owners: DPM API / Platform
+- Owners: lotus-manage API / Platform
 
 ## Context
 
-DPM run supportability APIs exposed run metadata and payloads, but no deterministic artifact contract for business users, investigations, and replay validation.
+lotus-manage run supportability APIs exposed run metadata and payloads, but no deterministic artifact contract for business users, investigations, and replay validation.
 
 ## Decision
 
@@ -28,7 +28,7 @@ Service layer remains orchestration-only:
 
 - Avoids coupling artifact shape to simulation execution paths.
 - Preserves reproducibility while avoiding new persistence requirements in first slice.
-- Mirrors advisory architecture pattern (separate artifact builder module) with DPM-specific models and vocabulary.
+- Mirrors advisory architecture pattern (separate artifact builder module) with lotus-manage-specific models and vocabulary.
 
 ## Consequences
 

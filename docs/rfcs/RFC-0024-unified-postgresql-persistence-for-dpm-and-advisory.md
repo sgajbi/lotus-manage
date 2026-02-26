@@ -1,4 +1,4 @@
-# RFC-0024: Unified PostgreSQL Persistence for DPM and Advisory
+# RFC-0024: Unified PostgreSQL Persistence for lotus-manage and Advisory
 
 | Metadata | Details |
 | --- | --- |
@@ -9,18 +9,18 @@
 
 ## 1. Executive Summary
 
-Adopt PostgreSQL as the shared durable persistence backend for both DPM and advisory supportability/workflow lifecycles, using a common schema vocabulary and repository contracts while preserving existing API behavior.
+Adopt PostgreSQL as the shared durable persistence backend for both lotus-manage and advisory supportability/workflow lifecycles, using a common schema vocabulary and repository contracts while preserving existing API behavior.
 
 ## 2. Problem Statement
 
-Current state is split between in-memory adapters (advisory and default DPM) and SQLite (optional DPM backend). This is useful for incremental delivery but not sufficient for enterprise scale, concurrency, audit retention, and operational consistency across both businesses.
+Current state is split between in-memory adapters (advisory and default lotus-manage) and SQLite (optional lotus-manage backend). This is useful for incremental delivery but not sufficient for enterprise scale, concurrency, audit retention, and operational consistency across both businesses.
 
 ## 3. Goals and Non-Goals
 
 ### 3.1 Goals
 
 - Standardize on PostgreSQL for durable production persistence in both engines.
-- Reuse common naming and storage patterns across DPM and advisory where domain concepts overlap.
+- Reuse common naming and storage patterns across lotus-manage and advisory where domain concepts overlap.
 - Preserve backward-compatible API contracts and feature-flagged rollout controls.
 - Introduce migration discipline for schema evolution.
 
@@ -34,7 +34,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
 
 ### 4.1 Backend Targets
 
-- DPM supportability repository:
+- lotus-manage supportability repository:
   - runs
   - idempotency mappings
   - async operations
@@ -57,7 +57,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
   - `created_at`, `updated_at`
   - append-only event/decision records
 - Domain-specific states stay separated:
-  - DPM run workflow states and actions
+  - lotus-manage run workflow states and actions
   - advisory proposal workflow states and events
 - Persist canonical JSON snapshots for deterministic replay and artifact rebuilding.
 
@@ -72,7 +72,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
 
 ### 4.4 Configurability
 
-- DPM:
+- lotus-manage:
   - extend `DPM_SUPPORTABILITY_STORE_BACKEND` to include `POSTGRES`
   - connection config via `DPM_SUPPORTABILITY_POSTGRES_DSN`
 - Advisory:
@@ -89,7 +89,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
 ## 5. Test Plan
 
 - Contract tests for repository parity across backends.
-- API regression suite with Postgres backend enabled for DPM and advisory.
+- API regression suite with Postgres backend enabled for lotus-manage and advisory.
 - Migration smoke tests on empty and pre-seeded databases.
 - Determinism tests for artifact and replay-related payloads after persistence.
 
@@ -103,15 +103,15 @@ Current state is split between in-memory adapters (advisory and default DPM) and
 ## 7. Status and Reason Code Conventions
 
 - No change to business status vocabularies:
-  - DPM run status: `READY`, `PENDING_REVIEW`, `BLOCKED`
-  - DPM workflow status: `NOT_REQUIRED`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`
+  - lotus-manage run status: `READY`, `PENDING_REVIEW`, `BLOCKED`
+  - lotus-manage workflow status: `NOT_REQUIRED`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`
   - advisory workflow states remain as defined in RFC-0014G
 - Reason code naming remains uppercase snake case.
 
 ## 8. Implementation Status
 
 - Implemented (slice 1):
-  - DPM supportability backend contract now recognizes `POSTGRES` in configuration.
+  - lotus-manage supportability backend contract now recognizes `POSTGRES` in configuration.
   - Added DSN setting:
     - `DPM_SUPPORTABILITY_POSTGRES_DSN`
   - Guardrail behavior for early rollout:
@@ -119,7 +119,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
     - placeholder backend mode currently raises `DPM_SUPPORTABILITY_POSTGRES_NOT_IMPLEMENTED`
   - Existing default behavior remains unchanged (`IN_MEMORY` by default, `SQL`/`SQLITE` path unchanged).
 - Implemented (slice 2):
-  - Added `PostgresDpmRunRepository` backend scaffold and factory wiring for DPM supportability.
+  - Added `PostgresDpmRunRepository` backend scaffold and factory wiring for lotus-manage supportability.
   - Initialization guardrails:
     - missing DSN raises `DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED`
     - missing `psycopg` dependency raises `DPM_SUPPORTABILITY_POSTGRES_DRIVER_MISSING`
@@ -285,7 +285,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
       - transactional `transition_proposal`
   - Manual runtime validation completed on `2026-02-20`:
     - uvicorn with advisory Postgres backend enabled
-    - Docker Compose with advisory + DPM Postgres backends enabled
+    - Docker Compose with advisory + lotus-manage Postgres backends enabled
     - full demo pack validation succeeded in both runtime modes.
 - Implemented (slice 16):
   - Added shared forward-only PostgreSQL migration runner:
@@ -313,7 +313,7 @@ Current state is split between in-memory adapters (advisory and default DPM) and
     - starts live Postgres service (`postgres:17.6`)
     - applies migrations via `python scripts/postgres_migrate.py --target all`
     - runs live Postgres integration contracts for:
-      - DPM repository
+      - lotus-manage repository
       - advisory repository
   - Added production rollout runbook:
     - `docs/documentation/postgres-migration-rollout-runbook.md`

@@ -65,5 +65,3 @@ def test_held_position_lock_reason_matrix(status, expected_reason):
     excluded = find_excluded(result, "HELD_X")
     assert excluded is not None
     assert expected_reason in excluded.reason_code
-
-

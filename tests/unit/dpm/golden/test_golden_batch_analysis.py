@@ -79,5 +79,3 @@ def test_golden_batch_scenario_13_zero_turnover(client):
     metric = body["comparison_metrics"]["steady"]
     assert metric["security_intent_count"] == 0
     assert Decimal(metric["gross_turnover_notional_base"]["amount"]) == Decimal("0")
-
-

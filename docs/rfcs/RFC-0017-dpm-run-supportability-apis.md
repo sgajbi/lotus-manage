@@ -1,4 +1,4 @@
-# RFC-0017: DPM Run Supportability APIs (Run, Correlation, Idempotency Lookup)
+# RFC-0017: lotus-manage Run Supportability APIs (Run, Correlation, Idempotency Lookup)
 
 | Metadata | Details |
 | --- | --- |
@@ -10,7 +10,7 @@
 
 ## 1. Executive Summary
 
-Introduce DPM operational lookup APIs mirroring advisory supportability patterns:
+Introduce lotus-manage operational lookup APIs mirroring advisory supportability patterns:
 - lookup run by `rebalance_run_id`
 - lookup latest run by `correlation_id`
 - lookup idempotency mapping by `Idempotency-Key`
@@ -26,13 +26,13 @@ Implementation note (2026-02-20):
 
 ## 2. Problem Statement
 
-DPM now has idempotency replay semantics and correlation propagation, but lacks API retrieval surfaces for support teams. Troubleshooting currently requires log-level access instead of deterministic API-level evidence retrieval.
+lotus-manage now has idempotency replay semantics and correlation propagation, but lacks API retrieval surfaces for support teams. Troubleshooting currently requires log-level access instead of deterministic API-level evidence retrieval.
 
 ## 3. Goals and Non-Goals
 
 ### 3.1 Goals
 - Provide read-only support APIs for run investigations.
-- Reuse DPM/advisory vocabulary (`request_hash`, `correlation_id`, idempotency mapping).
+- Reuse lotus-manage/advisory vocabulary (`request_hash`, `correlation_id`, idempotency mapping).
 - Keep implementation configurable and architecture-aligned (port/adapter).
 
 ### 3.2 Non-Goals

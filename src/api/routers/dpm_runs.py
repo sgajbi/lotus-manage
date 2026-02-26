@@ -20,7 +20,7 @@ from src.core.dpm_runs import (
 from src.core.dpm_runs.repository import DpmRunRepository
 from src.core.models import RebalanceResult
 
-router = APIRouter(tags=["DPM Run Supportability"])
+router = APIRouter(tags=["lotus-manage Run Supportability"])
 
 _REPOSITORY = None
 _SERVICE: Optional[DpmRunSupportService] = None
@@ -165,9 +165,9 @@ def reset_dpm_run_support_service_for_tests() -> None:
     "/rebalance/runs",
     response_model=DpmRunListResponse,
     status_code=status.HTTP_200_OK,
-    summary="List DPM Runs",
+    summary="List lotus-manage Runs",
     description=(
-        "Returns paginated DPM runs filtered by creation time range, run status, and portfolio id."
+        "Returns paginated lotus-manage runs filtered by creation time range, run status, and portfolio id."
     ),
 )
 def list_runs(
@@ -243,7 +243,7 @@ def list_runs(
     "/rebalance/supportability/summary",
     response_model=DpmSupportabilitySummaryResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Supportability Summary",
+    summary="Get lotus-manage Supportability Summary",
     description=(
         "Returns supportability storage summary metrics (runs, operations, status counts, "
         "and temporal bounds) for operational investigation without direct database access."
@@ -264,8 +264,8 @@ def get_dpm_supportability_summary(
     "/rebalance/runs/by-correlation/{correlation_id}",
     response_model=DpmRunLookupResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run by Correlation Id",
-    description="Returns the latest DPM run mapped to a correlation id for investigation.",
+    summary="Get lotus-manage Run by Correlation Id",
+    description="Returns the latest lotus-manage run mapped to a correlation id for investigation.",
 )
 def get_run_by_correlation(
     correlation_id: Annotated[
@@ -288,8 +288,8 @@ def get_run_by_correlation(
     "/rebalance/runs/by-request-hash/{request_hash}",
     response_model=DpmRunLookupResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run by Request Hash",
-    description="Returns the latest DPM run mapped to a canonical request hash for investigation.",
+    summary="Get lotus-manage Run by Request Hash",
+    description="Returns the latest lotus-manage run mapped to a canonical request hash for investigation.",
 )
 def get_run_by_request_hash(
     request_hash: Annotated[
@@ -312,8 +312,8 @@ def get_run_by_request_hash(
     "/rebalance/runs/idempotency/{idempotency_key}",
     response_model=DpmRunIdempotencyLookupResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Idempotency Mapping",
-    description="Returns DPM idempotency key to run mapping for support investigations.",
+    summary="Get lotus-manage Idempotency Mapping",
+    description="Returns lotus-manage idempotency key to run mapping for support investigations.",
 )
 def get_run_idempotency_lookup(
     idempotency_key: Annotated[
@@ -336,7 +336,7 @@ def get_run_idempotency_lookup(
     "/rebalance/idempotency/{idempotency_key}/history",
     response_model=DpmRunIdempotencyHistoryResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Idempotency History",
+    summary="Get lotus-manage Idempotency History",
     description=(
         "Returns append-only run mapping history for one idempotency key, including request hash "
         "and correlation context for support investigations."
@@ -364,13 +364,13 @@ def get_run_idempotency_history(
     "/rebalance/runs/{rebalance_run_id}",
     response_model=DpmRunLookupResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run by Run Id",
-    description="Returns one DPM run payload and lineage metadata by run id.",
+    summary="Get lotus-manage Run by Run Id",
+    description="Returns one lotus-manage run payload and lineage metadata by run id.",
 )
 def get_run_by_run_id(
     rebalance_run_id: Annotated[
         str,
-        Path(description="DPM run identifier.", examples=["rr_abc12345"]),
+        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
     ],
     service: DpmRunSupportService = Depends(get_dpm_run_support_service),
 ) -> DpmRunLookupResponse:
@@ -385,7 +385,7 @@ def get_run_by_run_id(
     "/rebalance/runs/{rebalance_run_id}/support-bundle",
     response_model=DpmRunSupportBundleResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Support Bundle",
+    summary="Get lotus-manage Run Support Bundle",
     description=(
         "Returns an aggregated supportability bundle for one run, including run payload, "
         "lineage, workflow history, optional deterministic artifact, and optional mapped async "
@@ -395,7 +395,7 @@ def get_run_by_run_id(
 def get_dpm_run_support_bundle(
     rebalance_run_id: Annotated[
         str,
-        Path(description="DPM run identifier.", examples=["rr_abc12345"]),
+        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
     ],
     include_artifact: Annotated[
         bool,
@@ -439,7 +439,7 @@ def get_dpm_run_support_bundle(
     "/rebalance/runs/by-correlation/{correlation_id}/support-bundle",
     response_model=DpmRunSupportBundleResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Support Bundle by Correlation Id",
+    summary="Get lotus-manage Run Support Bundle by Correlation Id",
     description=(
         "Returns aggregated supportability bundle for run resolved by correlation id, "
         "including optional artifact, async operation, and idempotency history."
@@ -495,7 +495,7 @@ def get_dpm_run_support_bundle_by_correlation(
     "/rebalance/runs/idempotency/{idempotency_key}/support-bundle",
     response_model=DpmRunSupportBundleResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Support Bundle by Idempotency Key",
+    summary="Get lotus-manage Run Support Bundle by Idempotency Key",
     description=(
         "Returns aggregated supportability bundle for run resolved by idempotency key mapping, "
         "including optional artifact, async operation, and idempotency history."
@@ -551,7 +551,7 @@ def get_dpm_run_support_bundle_by_idempotency(
     "/rebalance/runs/by-operation/{operation_id}/support-bundle",
     response_model=DpmRunSupportBundleResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Support Bundle by Operation Id",
+    summary="Get lotus-manage Run Support Bundle by Operation Id",
     description=(
         "Returns aggregated supportability bundle for run resolved by asynchronous operation id, "
         "including optional artifact, async operation, and idempotency history."
@@ -607,7 +607,7 @@ def get_dpm_run_support_bundle_by_operation(
     "/rebalance/runs/{rebalance_run_id}/artifact",
     response_model=DpmRunArtifactResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get DPM Run Artifact by Run Id",
+    summary="Get lotus-manage Run Artifact by Run Id",
     description=(
         "Returns deterministic run artifact from supportability run data using configured "
         "artifact mode (`DERIVED` or `PERSISTED`)."
@@ -619,7 +619,7 @@ def get_dpm_run_support_bundle_by_operation(
 def get_run_artifact_by_run_id(
     rebalance_run_id: Annotated[
         str,
-        Path(description="DPM run identifier.", examples=["rr_abc12345"]),
+        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
     ],
     service: DpmRunSupportService = Depends(get_dpm_run_support_service),
 ) -> DpmRunArtifactResponse:

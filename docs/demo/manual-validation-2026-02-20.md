@@ -9,14 +9,14 @@ Validated the end-to-end demo pack scenarios through live API calls in both runt
 
 Coverage includes:
 
-- DPM simulate demos (`01`-`08`)
-- DPM batch analyze demo (`09`)
-- DPM async batch analyze demo (`26`)
-- DPM supportability + deterministic artifact flow demo (`27`)
-- DPM async manual-execute guard demo (`28`)
-- DPM workflow gate default-disabled contract demo (`29`)
-- DPM policy-pack supportability diagnostics demo (`31`)
-- DPM supportability summary metrics demo (`32`)
+- lotus-manage simulate demos (`01`-`08`)
+- lotus-manage batch analyze demo (`09`)
+- lotus-manage async batch analyze demo (`26`)
+- lotus-manage supportability + deterministic artifact flow demo (`27`)
+- lotus-manage async manual-execute guard demo (`28`)
+- lotus-manage workflow gate default-disabled contract demo (`29`)
+- lotus-manage policy-pack supportability diagnostics demo (`31`)
+- lotus-manage supportability summary metrics demo (`32`)
 - Advisory simulate demos (`10`-`18`)
 - Advisory artifact demo (`19`)
 - Advisory lifecycle flow demos (`20`-`25`)
@@ -542,7 +542,7 @@ Demo pack validation passed for http://127.0.0.1:8000
 
 - CI workflow adds production-profile smoke job with:
   - `APP_PERSISTENCE_PROFILE=PRODUCTION`
-  - Postgres-backed DPM/advisory/policy-pack configuration
+  - Postgres-backed lotus-manage/advisory/policy-pack configuration
   - migration application via `python scripts/postgres_migrate.py --target all`
   - startup verification of `/docs`, `/rebalance/policies/effective`, and `/rebalance/proposals?limit=1`
 
@@ -556,7 +556,7 @@ Demo pack validation passed for http://127.0.0.1:8000
 ## RFC-0025 Slice 3 Negative Guardrail Validation
 
 - Production-profile negative startup checks validated by CI job `production-profile-guardrail-negatives`:
-  - DPM backend mismatch (`DPM_SUPPORTABILITY_STORE_BACKEND=IN_MEMORY`) fails startup with:
+  - lotus-manage backend mismatch (`DPM_SUPPORTABILITY_STORE_BACKEND=IN_MEMORY`) fails startup with:
     - `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES`
   - Advisory backend mismatch (`PROPOSAL_STORE_BACKEND=IN_MEMORY`) fails startup with:
     - `PERSISTENCE_PROFILE_REQUIRES_ADVISORY_POSTGRES`
@@ -577,7 +577,7 @@ Demo pack validation passed for http://127.0.0.1:8000
   - enforces production profile and postgres-only persistence env defaults.
 
 - RFC-0025 DSN guardrail negatives are now validated in CI (`production-profile-guardrail-negatives`):
-  - missing DPM Postgres DSN -> `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN`
+  - missing lotus-manage Postgres DSN -> `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN`
   - missing advisory Postgres DSN -> `PERSISTENCE_PROFILE_REQUIRES_ADVISORY_POSTGRES_DSN`
   - missing policy-pack Postgres DSN with policy packs enabled -> `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN`
 
