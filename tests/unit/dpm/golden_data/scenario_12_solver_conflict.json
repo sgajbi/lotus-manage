@@ -1,0 +1,130 @@
+{
+  "scenario_name": "12_solver_conflict",
+  "description": "Solver mode honors hard constraints and resolves to a feasible constrained allocation.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_12",
+      "base_currency": "USD",
+      "positions": [],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "1000.00"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "Tech_A",
+          "price": "100.00",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "Bond_B",
+          "price": "100.00",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "Tech_A",
+          "weight": "1.0"
+        },
+        {
+          "instrument_id": "Bond_B",
+          "weight": "0.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "Tech_A",
+        "status": "APPROVED",
+        "asset_class": "EQUITY",
+        "attributes": {
+          "sector": "TECH"
+        }
+      },
+      {
+        "instrument_id": "Bond_B",
+        "status": "APPROVED",
+        "asset_class": "FIXED_INCOME",
+        "attributes": {
+          "sector": "FI"
+        }
+      }
+    ],
+    "options": {
+      "target_method": "SOLVER",
+      "single_position_max_weight": "0.4",
+      "cash_band_min_weight": "0.5",
+      "cash_band_max_weight": "0.5",
+      "group_constraints": {
+        "sector:TECH": {
+          "max_weight": "0.3"
+        }
+      }
+    }
+  },
+  "expected_output": {
+    "status": "READY",
+    "target": {
+      "targets": [
+        {
+          "instrument_id": "Tech_A",
+          "final_weight": "0.3"
+        },
+        {
+          "instrument_id": "Bond_B",
+          "final_weight": "0.2",
+          "tags": [
+            "REDISTRIBUTED_RECIPIENT"
+          ]
+        }
+      ]
+    },
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "Tech_A",
+        "side": "BUY",
+        "quantity": "3",
+        "notional": {
+          "amount": "300.00",
+          "currency": "USD"
+        }
+      },
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "Bond_B",
+        "side": "BUY",
+        "quantity": "2",
+        "notional": {
+          "amount": "200.00",
+          "currency": "USD"
+        }
+      }
+    ],
+    "diagnostics": {
+      "warnings": []
+    },
+    "after_simulated": {
+      "allocation_by_attribute": {
+        "sector": [
+          {
+            "key": "TECH",
+            "weight": "0.3"
+          },
+          {
+            "key": "FI",
+            "weight": "0.2"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "description": "Settlement-aware ladder with FX legs in a cross-currency switch remains executable.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_settlement_11_fx",
+      "base_currency": "SGD",
+      "positions": [
+        {
+          "instrument_id": "US_TECH",
+          "quantity": "100"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "0.00"
+        },
+        {
+          "currency": "USD",
+          "amount": "0.00"
+        },
+        {
+          "currency": "EUR",
+          "amount": "0.00"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "US_TECH",
+          "price": "100.00",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "EU_BOND",
+          "price": "100.00",
+          "currency": "EUR"
+        }
+      ],
+      "fx_rates": [
+        {
+          "pair": "USD/SGD",
+          "rate": "1.50"
+        },
+        {
+          "pair": "EUR/SGD",
+          "rate": "1.60"
+        }
+      ]
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "EU_BOND",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "US_TECH",
+        "status": "APPROVED",
+        "settlement_days": 2,
+        "attributes": {
+          "sector": "TECH"
+        }
+      },
+      {
+        "instrument_id": "EU_BOND",
+        "status": "APPROVED",
+        "settlement_days": 2,
+        "attributes": {
+          "sector": "FI"
+        }
+      }
+    ],
+    "options": {
+      "enable_settlement_awareness": true,
+      "fx_buffer_pct": "0.00",
+      "max_overdraft_by_ccy": {
+        "SGD": "50000",
+        "USD": "20000",
+        "EUR": "20000"
+      }
+    }
+  },
+  "expected_output": {
+    "status": "READY"
+  }
+}

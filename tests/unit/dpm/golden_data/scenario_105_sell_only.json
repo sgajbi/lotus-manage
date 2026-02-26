@@ -1,0 +1,263 @@
+{
+  "scenario_name": "scenario_105_sell_only",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_105",
+      "base_currency": "SGD",
+      "positions": [
+        {
+          "instrument_id": "BAD_ASSET",
+          "quantity": "100",
+          "market_value": null
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "9000.0",
+          "settled": null,
+          "pending": null
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "BAD_ASSET",
+          "price": "10.0",
+          "currency": "SGD"
+        },
+        {
+          "instrument_id": "GOOD_ASSET",
+          "price": "10.0",
+          "currency": "SGD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "BAD_ASSET",
+          "weight": "0.5"
+        },
+        {
+          "instrument_id": "GOOD_ASSET",
+          "weight": "0.5"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "BAD_ASSET",
+        "status": "SELL_ONLY",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      },
+      {
+        "instrument_id": "GOOD_ASSET",
+        "status": "APPROVED",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      }
+    ],
+    "options": {
+      "valuation_mode": "CALCULATED",
+      "cash_band_min_weight": "0.00",
+      "cash_band_max_weight": "1.00",
+      "single_position_max_weight": null,
+      "min_trade_notional": null,
+      "allow_restricted": false,
+      "suppress_dust_trades": true,
+      "dust_trade_threshold": null,
+      "fx_buffer_pct": "0.01",
+      "block_on_missing_prices": true,
+      "block_on_missing_fx": true,
+      "min_cash_buffer_pct": "0.0"
+    }
+  },
+  "expected_outputs": {
+    "status": "READY",
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "intent_id": "oi_1",
+        "instrument_id": "BAD_ASSET",
+        "side": "SELL",
+        "quantity": "100",
+        "notional": {
+          "amount": "1000.0",
+          "currency": "SGD"
+        },
+        "notional_base": {
+          "amount": "1000.00",
+          "currency": "SGD"
+        },
+        "dependencies": [],
+        "rationale": {
+          "code": "DRIFT_REBALANCE",
+          "message": "Align"
+        },
+        "constraints_applied": []
+      },
+      {
+        "intent_type": "SECURITY_TRADE",
+        "intent_id": "oi_2",
+        "instrument_id": "GOOD_ASSET",
+        "side": "BUY",
+        "quantity": "1000",
+        "notional": {
+          "amount": "10000.0",
+          "currency": "SGD"
+        },
+        "notional_base": {
+          "amount": "10000.00",
+          "currency": "SGD"
+        },
+        "dependencies": [
+          "oi_1"
+        ],
+        "rationale": {
+          "code": "DRIFT_REBALANCE",
+          "message": "Align"
+        },
+        "constraints_applied": []
+      }
+    ],
+    "after_simulated": {
+      "total_value": {
+        "amount": "10000.00",
+        "currency": "SGD"
+      },
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "0.0"
+        }
+      ],
+      "positions": [
+        {
+          "instrument_id": "BAD_ASSET",
+          "quantity": "0",
+          "instrument_currency": "SGD",
+          "asset_class": "UNKNOWN",
+          "price": {
+            "amount": "10.0",
+            "currency": "SGD"
+          },
+          "value_in_instrument_ccy": {
+            "amount": "0.0",
+            "currency": "SGD"
+          },
+          "value_in_base_ccy": {
+            "amount": "0.00",
+            "currency": "SGD"
+          },
+          "weight": "0"
+        },
+        {
+          "instrument_id": "GOOD_ASSET",
+          "quantity": "1000",
+          "instrument_currency": "SGD",
+          "asset_class": "UNKNOWN",
+          "price": {
+            "amount": "10.0",
+            "currency": "SGD"
+          },
+          "value_in_instrument_ccy": {
+            "amount": "10000.0",
+            "currency": "SGD"
+          },
+          "value_in_base_ccy": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          },
+          "weight": "1"
+        }
+      ],
+      "allocation_by_asset_class": [
+        {
+          "key": "UNKNOWN",
+          "weight": "1",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "CASH",
+          "weight": "0E+1",
+          "value": {
+            "amount": "0.0",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation_by_instrument": [
+        {
+          "key": "BAD_ASSET",
+          "weight": "0",
+          "value": {
+            "amount": "0.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "GOOD_ASSET",
+          "weight": "1",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation": [
+        {
+          "key": "BAD_ASSET",
+          "weight": "0",
+          "value": {
+            "amount": "0.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "GOOD_ASSET",
+          "weight": "1",
+          "value": {
+            "amount": "10000.00",
+            "currency": "SGD"
+          }
+        }
+      ]
+    },
+    "diagnostics": {
+      "warnings": [],
+      "suppressed_intents": [],
+      "data_quality": {
+        "price_missing": [],
+        "fx_missing": [],
+        "shelf_missing": []
+      }
+    },
+    "universe": {
+      "universe_id": "u_rr_3ac912a0",
+      "eligible_for_buy": [
+        "GOOD_ASSET"
+      ],
+      "eligible_for_sell": [
+        "BAD_ASSET",
+        "GOOD_ASSET"
+      ],
+      "excluded": [
+        {
+          "instrument_id": "BAD_ASSET",
+          "reason_code": "SHELF_STATUS_SELL_ONLY"
+        }
+      ],
+      "coverage": {
+        "price_coverage_pct": "1",
+        "fx_coverage_pct": "1"
+      }
+    }
+  }
+}

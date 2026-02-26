@@ -1,0 +1,114 @@
+{
+  "scenario_name": "10_turnover_cap",
+  "description": "Turnover cap keeps highest drift-reduction intents and applies skip-and-continue selection.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_10",
+      "base_currency": "USD",
+      "positions": [],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "100000"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "A",
+          "price": "100",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "B",
+          "price": "100",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "C",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "A",
+          "weight": "0.10"
+        },
+        {
+          "instrument_id": "B",
+          "weight": "0.10"
+        },
+        {
+          "instrument_id": "C",
+          "weight": "0.02"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "A",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      },
+      {
+        "instrument_id": "B",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      },
+      {
+        "instrument_id": "C",
+        "status": "APPROVED",
+        "asset_class": "EQUITY"
+      }
+    ],
+    "options": {
+      "max_turnover_pct": "0.15"
+    }
+  },
+  "expected_output": {
+    "status": "READY",
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "A",
+        "side": "BUY",
+        "quantity": "100",
+        "notional": {
+          "amount": "10000",
+          "currency": "USD"
+        }
+      },
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "C",
+        "side": "BUY",
+        "quantity": "20",
+        "notional": {
+          "amount": "2000",
+          "currency": "USD"
+        }
+      }
+    ],
+    "diagnostics": {
+      "warnings": [
+        "PARTIAL_REBALANCE_TURNOVER_LIMIT"
+      ],
+      "dropped_intents": [
+        {
+          "instrument_id": "B",
+          "reason": "TURNOVER_LIMIT",
+          "potential_notional": {
+            "amount": "10000",
+            "currency": "USD"
+          },
+          "score": "0.1"
+        }
+      ]
+    }
+  }
+}

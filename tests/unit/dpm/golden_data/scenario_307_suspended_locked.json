@@ -1,0 +1,166 @@
+{
+  "scenario_name": "scenario_307_suspended_locked",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_307",
+      "base_currency": "SGD",
+      "positions": [
+        {
+          "instrument_id": "S",
+          "quantity": "500",
+          "market_value": null
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "5000.0",
+          "settled": null,
+          "pending": null
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "S",
+          "price": "10.0",
+          "currency": "SGD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "S",
+          "weight": "0.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "S",
+        "status": "SUSPENDED",
+        "asset_class": "UNKNOWN",
+        "min_notional": null
+      }
+    ],
+    "options": {
+      "cash_band_min_weight": "0.0",
+      "cash_band_max_weight": "1.0",
+      "single_position_max_weight": null,
+      "min_trade_notional": null,
+      "allow_restricted": false,
+      "suppress_dust_trades": true,
+      "dust_trade_threshold": null,
+      "fx_buffer_pct": "0.01",
+      "block_on_missing_prices": true,
+      "block_on_missing_fx": true,
+      "min_cash_buffer_pct": "0.0"
+    }
+  },
+  "expected_outputs": {
+    "status": "READY",
+    "intents": [],
+    "after_simulated": {
+      "total_value": {
+        "amount": "10000.00",
+        "currency": "SGD"
+      },
+      "cash_balances": [
+        {
+          "currency": "SGD",
+          "amount": "5000.0"
+        }
+      ],
+      "positions": [
+        {
+          "instrument_id": "S",
+          "quantity": "500",
+          "instrument_currency": "SGD",
+          "asset_class": "UNKNOWN",
+          "price": {
+            "amount": "10.0",
+            "currency": "SGD"
+          },
+          "value_in_instrument_ccy": {
+            "amount": "5000.0",
+            "currency": "SGD"
+          },
+          "value_in_base_ccy": {
+            "amount": "5000.00",
+            "currency": "SGD"
+          },
+          "weight": "0.5"
+        }
+      ],
+      "allocation_by_asset_class": [
+        {
+          "key": "UNKNOWN",
+          "weight": "0.5",
+          "value": {
+            "amount": "5000.00",
+            "currency": "SGD"
+          }
+        },
+        {
+          "key": "CASH",
+          "weight": "0.5",
+          "value": {
+            "amount": "5000.0",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation_by_instrument": [
+        {
+          "key": "S",
+          "weight": "0.5",
+          "value": {
+            "amount": "5000.00",
+            "currency": "SGD"
+          }
+        }
+      ],
+      "allocation": [
+        {
+          "key": "S",
+          "weight": "0.5",
+          "value": {
+            "amount": "5000.00",
+            "currency": "SGD"
+          }
+        }
+      ]
+    },
+    "diagnostics": {
+      "warnings": [],
+      "suppressed_intents": [],
+      "data_quality": {
+        "price_missing": [],
+        "fx_missing": [],
+        "shelf_missing": []
+      }
+    },
+    "universe": {
+      "universe_id": "u_rr_45d0838a",
+      "eligible_for_buy": [],
+      "eligible_for_sell": [],
+      "excluded": [
+        {
+          "instrument_id": "S",
+          "reason_code": "SHELF_STATUS_SUSPENDED"
+        },
+        {
+          "instrument_id": "S",
+          "reason_code": "LOCKED_DUE_TO_SUSPENDED"
+        }
+      ],
+      "coverage": {
+        "price_coverage_pct": "1",
+        "fx_coverage_pct": "1"
+      }
+    }
+  }
+}

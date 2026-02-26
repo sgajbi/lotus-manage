@@ -1,0 +1,49 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "demo_28_async_manual_guard",
+    "base_currency": "USD",
+    "positions": [
+      {
+        "instrument_id": "EQ_1",
+        "quantity": "100"
+      }
+    ],
+    "cash_balances": [
+      {
+        "currency": "USD",
+        "amount": "1000"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "EQ_1",
+        "price": "100",
+        "currency": "USD"
+      }
+    ],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      {
+        "instrument_id": "EQ_1",
+        "weight": "0.5"
+      }
+    ]
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "EQ_1",
+      "status": "APPROVED",
+      "asset_class": "EQUITY"
+    }
+  ],
+  "scenarios": {
+    "baseline": {
+      "description": "Inline async execution baseline",
+      "options": {}
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "description": "Settlement-aware ladder allows configured overdraft and stays READY.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_settlement_11_overdraft_ok",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "SLOW_FUND",
+          "quantity": "10"
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "0"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "SLOW_FUND",
+          "price": "100",
+          "currency": "USD"
+        },
+        {
+          "instrument_id": "FAST_STOCK",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "SLOW_FUND",
+          "weight": "0.0"
+        },
+        {
+          "instrument_id": "FAST_STOCK",
+          "weight": "1.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "SLOW_FUND",
+        "status": "APPROVED",
+        "settlement_days": 3
+      },
+      {
+        "instrument_id": "FAST_STOCK",
+        "status": "APPROVED",
+        "settlement_days": 1
+      }
+    ],
+    "options": {
+      "enable_settlement_awareness": true,
+      "settlement_horizon_days": 3,
+      "max_overdraft_by_ccy": {
+        "USD": "1000"
+      }
+    }
+  },
+  "expected_output": {
+    "status": "READY"
+  }
+}

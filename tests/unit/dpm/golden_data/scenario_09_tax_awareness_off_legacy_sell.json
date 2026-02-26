@@ -1,0 +1,80 @@
+{
+  "description": "Tax-aware controls off preserves legacy full sell behavior.",
+  "inputs": {
+    "portfolio_snapshot": {
+      "portfolio_id": "pf_tax_09_off",
+      "base_currency": "USD",
+      "positions": [
+        {
+          "instrument_id": "ABC",
+          "quantity": "100",
+          "lots": [
+            {
+              "lot_id": "L_LOW",
+              "quantity": "50",
+              "unit_cost": {
+                "amount": "10",
+                "currency": "USD"
+              },
+              "purchase_date": "2024-01-01"
+            },
+            {
+              "lot_id": "L_HIGH",
+              "quantity": "50",
+              "unit_cost": {
+                "amount": "100",
+                "currency": "USD"
+              },
+              "purchase_date": "2024-02-01"
+            }
+          ]
+        }
+      ],
+      "cash_balances": [
+        {
+          "currency": "USD",
+          "amount": "0"
+        }
+      ]
+    },
+    "market_data_snapshot": {
+      "prices": [
+        {
+          "instrument_id": "ABC",
+          "price": "100",
+          "currency": "USD"
+        }
+      ],
+      "fx_rates": []
+    },
+    "model_portfolio": {
+      "targets": [
+        {
+          "instrument_id": "ABC",
+          "weight": "0.0"
+        }
+      ]
+    },
+    "shelf_entries": [
+      {
+        "instrument_id": "ABC",
+        "status": "APPROVED"
+      }
+    ],
+    "options": {
+      "enable_tax_awareness": false,
+      "max_realized_capital_gains": "100"
+    }
+  },
+  "expected_output": {
+    "status": "READY",
+    "intents": [
+      {
+        "intent_type": "SECURITY_TRADE",
+        "instrument_id": "ABC",
+        "side": "SELL",
+        "quantity": "100"
+      }
+    ]
+  }
+}

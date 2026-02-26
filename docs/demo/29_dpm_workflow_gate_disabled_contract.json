@@ -1,0 +1,40 @@
+{
+  "portfolio_snapshot": {
+    "portfolio_id": "pf_demo_workflow_disabled",
+    "base_currency": "USD",
+    "positions": [],
+    "cash_balances": [
+      {
+        "currency": "USD",
+        "amount": "10000"
+      }
+    ]
+  },
+  "market_data_snapshot": {
+    "prices": [
+      {
+        "instrument_id": "EQ_1",
+        "price": "100",
+        "currency": "USD"
+      }
+    ],
+    "fx_rates": []
+  },
+  "model_portfolio": {
+    "targets": [
+      {
+        "instrument_id": "EQ_1",
+        "weight": "1.0"
+      }
+    ]
+  },
+  "shelf_entries": [
+    {
+      "instrument_id": "EQ_1",
+      "status": "APPROVED"
+    }
+  ],
+  "options": {
+    "single_position_max_weight": "0.5"
+  }
+}
