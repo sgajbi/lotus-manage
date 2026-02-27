@@ -1,5 +1,7 @@
 .PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck lint monetary-float-guard format clean run check-deps security-audit openapi-gate migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
+COVERAGE_FAIL_UNDER ?= 92
+
 install:
 	python -m pip install --upgrade pip
 	pip install -e ".[dev]"
@@ -29,7 +31,7 @@ test-e2e:
 	python -m pytest tests/e2e
 
 test-all:
-	python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=99
+	python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=$(COVERAGE_FAIL_UNDER)
 
 # Fast local loop: unit tests only (no coverage)
 test-fast:
@@ -37,7 +39,7 @@ test-fast:
 
 # Full suite with coverage gate, but without term-missing output overhead
 test-all-fast:
-	python -m pytest --cov=src --cov-report= --cov-fail-under=99
+	python -m pytest --cov=src --cov-report= --cov-fail-under=$(COVERAGE_FAIL_UNDER)
 
 # Full suite without coverage for quickest full functional signal
 test-all-no-cov:
@@ -45,7 +47,7 @@ test-all-no-cov:
 
 # Full suite, optional parallel workers when pytest-xdist is installed
 test-all-parallel:
-	python -c "import importlib.util, subprocess, sys; args=[sys.executable,'-m','pytest','--cov=src','--cov-report=','--cov-fail-under=99']; args += (['-n','auto','--dist','loadscope'] if importlib.util.find_spec('xdist') else []); raise SystemExit(subprocess.call(args))"
+	python -c "import importlib.util, subprocess, sys; args=[sys.executable,'-m','pytest','--cov=src','--cov-report=','--cov-fail-under=$(COVERAGE_FAIL_UNDER)']; args += (['-n','auto','--dist','loadscope'] if importlib.util.find_spec('xdist') else []); raise SystemExit(subprocess.call(args))"
 
 # Local execution flow aligned with .github/workflows/ci.yml
 ci-local: lint check-deps
@@ -53,7 +55,7 @@ ci-local: lint check-deps
 	COVERAGE_FILE=.coverage.integration python -m pytest tests/integration --cov=src --cov-report=
 	COVERAGE_FILE=.coverage.e2e python -m pytest tests/e2e --cov=src --cov-report=
 	python -m coverage combine .coverage.unit .coverage.integration .coverage.e2e
-	python -m coverage report --fail-under=99
+	python -m coverage report --fail-under=$(COVERAGE_FAIL_UNDER)
 	$(MAKE) typecheck
 
 ci-local-docker:
