@@ -97,7 +97,9 @@ def test_workflow_gate_prioritizes_data_quality_in_reason_sorting():
         status="READY",
         rule_results=[_rule("CASH_BAND", "SOFT", reason_code="SOFT_CASH_BAND")],
         suitability=SimpleNamespace(issues=[high_issue]),
-        diagnostics=SimpleNamespace(data_quality={"price_missing": ["A"], "fx_missing": ["USD/SGD"]}),
+        diagnostics=SimpleNamespace(
+            data_quality={"price_missing": ["A"], "fx_missing": ["USD/SGD"]}
+        ),
         options=EngineOptions(),
         default_requires_client_consent=False,
     )
