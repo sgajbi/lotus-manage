@@ -6,6 +6,7 @@ import glob
 import json
 import os
 from decimal import Decimal
+from importlib.util import find_spec
 from typing import Any, Dict
 
 import pytest
@@ -40,10 +41,14 @@ SCENARIOS = sorted(
     for path in glob.glob(os.path.join(GOLDEN_DIR, "*.json"))
     if _is_rebalance_golden_fixture(path)
 )
+_SOLVER_AVAILABLE = find_spec("cvxpy") is not None and find_spec("numpy") is not None
 
 
 @pytest.mark.parametrize("filename", SCENARIOS)
 def test_golden_scenario(filename):
+    if filename.startswith("scenario_12_solver_") and not _SOLVER_AVAILABLE:
+        pytest.skip("Solver golden scenarios require cvxpy and numpy")
+
     data = load_golden_file(filename)
     inputs = data["inputs"]
     expected = data.get("expected_output") or data.get("expected_outputs")

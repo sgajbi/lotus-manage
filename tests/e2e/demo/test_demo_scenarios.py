@@ -5,6 +5,7 @@ Verifies that the public demo scenarios in docs/demo/ execute correctly.
 
 import json
 import os
+from importlib.util import find_spec
 
 import pytest
 from fastapi.testclient import TestClient
@@ -23,6 +24,7 @@ from src.core.models import (
 from tests.shared.factories import valid_api_payload
 
 DEMO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "demo")
+_SOLVER_AVAILABLE = find_spec("cvxpy") is not None and find_spec("numpy") is not None
 
 
 def load_demo_scenario(filename):
@@ -90,8 +92,12 @@ def test_demo_scenario_execution(filename, expected_status):
 
     result = run_simulation(portfolio, market_data, model, shelf, options)
 
-    assert result.status == expected_status, (
-        f"Scenario {filename} failed. Got {result.status}, expected {expected_status}"
+    effective_expected = expected_status
+    if filename == "08_solver_mode.json" and not _SOLVER_AVAILABLE:
+        effective_expected = "BLOCKED"
+
+    assert result.status == effective_expected, (
+        f"Scenario {filename} failed. Got {result.status}, expected {effective_expected}"
     )
 
 
