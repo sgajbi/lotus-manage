@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck lint monetary-float-guard format clean run check-deps security-audit openapi-gate migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard format clean run check-deps security-audit openapi-gate migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 92
 
@@ -68,6 +68,9 @@ check-all: lint typecheck test-all
 
 typecheck:
 	mypy --config-file mypy.ini
+
+typecheck-tests-critical:
+	mypy tests/unit/core/test_capabilities.py tests/unit/dpm/engine/test_engine_workflow_gates.py
 
 openapi-gate:
 	python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q

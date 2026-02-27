@@ -1,4 +1,6 @@
 from importlib.util import find_spec
+
+
 def has_optional_dependency(module_name: str) -> bool:
     return find_spec(module_name) is not None
 

@@ -17,7 +17,7 @@ def proposal_postgres_dsn() -> str:
     return os.getenv("PROPOSAL_POSTGRES_DSN", "").strip()
 
 
-def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
+def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
     types: list[type[BaseException]] = [
         ConnectionError,
         OSError,
@@ -29,6 +29,10 @@ def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
     if error_type is not None:
         types.append(error_type)
     return tuple(types)
+
+
+def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
+    return postgres_connection_exception_types()
 
 
 def build_repository() -> ProposalRepository:

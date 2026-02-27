@@ -2,6 +2,8 @@ import os
 
 from fastapi import HTTPException, status
 
+from src.core.common.capabilities import psycopg_error_type
+
 
 def env_flag(name: str, default: bool) -> bool:
     value = os.getenv(name)
@@ -22,3 +24,17 @@ def normalize_backend_init_error(*, detail: str, required_detail: str, fallback_
     if detail == required_detail:
         return detail
     return fallback_detail
+
+
+def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
+    types: list[type[BaseException]] = [
+        ConnectionError,
+        OSError,
+        TimeoutError,
+        TypeError,
+        ValueError,
+    ]
+    error_type = psycopg_error_type()
+    if error_type is not None:
+        types.append(error_type)
+    return tuple(types)
