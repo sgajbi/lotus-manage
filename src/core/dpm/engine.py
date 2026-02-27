@@ -3,7 +3,7 @@
 import uuid
 from copy import deepcopy
 from decimal import Decimal
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 from src.core.common.diagnostics import make_diagnostics_data
 from src.core.common.workflow_gates import evaluate_gate_decision
@@ -44,7 +44,9 @@ from src.core.models import (
     MarketDataSnapshot,
     ModelPortfolio,
     PortfolioSnapshot,
+    ProposalOrderIntent,
     RebalanceResult,
+    FxSpotIntent,
     SecurityTradeIntent,
     ShelfEntry,
     TargetData,
@@ -112,7 +114,10 @@ def _make_blocked_result(
             eligible_for_buy=buy_l,
             eligible_for_sell=sell_l,
             excluded=excl,
-            coverage=UniverseCoverage(price_coverage_pct=0, fx_coverage_pct=0),
+            coverage=UniverseCoverage(
+                price_coverage_pct=Decimal("0"),
+                fx_coverage_pct=Decimal("0"),
+            ),
         ),
         target=TargetData(target_id=f"t_{run_id}", strategy={}, targets=trace),
         intents=[],
@@ -263,7 +268,13 @@ def _generate_fx_and_simulate(
     options: EngineOptions,
     total_val_before: Decimal,
     diagnostics: DiagnosticsData,
-) -> tuple[list[Any], Any, list[Any], str, Any]:
+) -> tuple[
+    list[ProposalOrderIntent],
+    Any,
+    list[Any],
+    Literal["READY", "BLOCKED", "PENDING_REVIEW"],
+    Any,
+]:
     return generate_fx_and_simulate_impl(
         portfolio, market_data, shelf, intents, options, total_val_before, diagnostics
     )
@@ -335,7 +346,7 @@ def run_simulation(
             correlation_id=correlation_id,
         )
 
-    intents, tax_impact = _generate_intents(
+    security_intents, tax_impact = _generate_intents(
         portfolio,
         market_data,
         trace,
@@ -363,21 +374,21 @@ def run_simulation(
             correlation_id=correlation_id,
         )
 
-    intents = _apply_turnover_limit(
-        intents=intents,
+    security_intents = _apply_turnover_limit(
+        intents=security_intents,
         options=options,
         portfolio_value_base=tv,
         base_currency=portfolio.base_currency,
         diagnostics=diag_data,
     )
 
-    intents, after, rules, f_stat, recon = _generate_fx_and_simulate(
-        portfolio, market_data, shelf, intents, options, tv, diag_data
+    execution_intents, after, rules, f_stat, recon = _generate_fx_and_simulate(
+        portfolio, market_data, shelf, security_intents, options, tv, diag_data
     )
 
     if s3_stat == "PENDING_REVIEW" and f_stat == "READY":
         f_stat = "PENDING_REVIEW"
-    gate_status = cast(Literal["READY", "BLOCKED", "PENDING_REVIEW"], f_stat)
+    gate_status: Literal["READY", "BLOCKED", "PENDING_REVIEW"] = f_stat
     gate_decision = None
     if options.enable_workflow_gates:
         gate_decision = evaluate_gate_decision(
@@ -388,21 +399,29 @@ def run_simulation(
             options=options,
             default_requires_client_consent=False,
         )
+    result_intents: list[SecurityTradeIntent | FxSpotIntent] = [
+        intent
+        for intent in execution_intents
+        if isinstance(intent, (SecurityTradeIntent, FxSpotIntent))
+    ]
 
     return RebalanceResult(
         rebalance_run_id=run_id,
         correlation_id=correlation_id,
-        status=f_stat,
+        status=gate_status,
         before=before,
         universe=UniverseData(
             universe_id=f"u_{run_id}",
             eligible_for_buy=buy_l,
             eligible_for_sell=sell_l,
             excluded=excl,
-            coverage=UniverseCoverage(price_coverage_pct=1, fx_coverage_pct=1),
+            coverage=UniverseCoverage(
+                price_coverage_pct=Decimal("1"),
+                fx_coverage_pct=Decimal("1"),
+            ),
         ),
         target=TargetData(target_id=f"t_{run_id}", strategy={}, targets=trace),
-        intents=intents,
+        intents=result_intents,
         after_simulated=after,
         reconciliation=recon,
         tax_impact=tax_impact,

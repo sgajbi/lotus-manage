@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal
 
 from src.core.models import (
     DiagnosticsData,
@@ -36,12 +36,12 @@ def generate_intents(
 
     def lot_cost_in_instrument_ccy(unit_cost: Money, instrument_ccy: str) -> Decimal | None:
         if unit_cost.currency == instrument_ccy:
-            return cast(Decimal, unit_cost.amount)
+            return unit_cost.amount
         fx = get_fx_rate(market_data, unit_cost.currency, instrument_ccy)
         if fx is None:
             dq_log["fx_missing"].append(f"{unit_cost.currency}/{instrument_ccy}")
             return None
-        return cast(Decimal, unit_cost.amount * fx)
+        return unit_cost.amount * fx
 
     def hifo_sorted_lots(position: Any, instrument_ccy: str) -> list[tuple[Any, Decimal]]:
         if not position or not position.lots:
@@ -139,7 +139,7 @@ def generate_intents(
         )
 
         delta = target_instr_val - curr_instr_val
-        side = "BUY" if delta > 0 else "SELL"
+        side: Literal["BUY", "SELL"] = "BUY" if delta > 0 else "SELL"
         qty = int(abs(delta) // price_ent.price)
         quantity = Decimal(qty)
 

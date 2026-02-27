@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-from typing import Literal, Optional, cast
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -357,7 +357,7 @@ def apply_policy_pack_to_engine_options(
         )
     if not updates:
         return options
-    return cast(EngineOptions, options.model_copy(update=updates))
+    return options.model_copy(update=updates)
 
 
 def resolve_policy_pack_replay_enabled(

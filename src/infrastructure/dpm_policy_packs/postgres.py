@@ -2,7 +2,7 @@ import json
 from contextlib import closing
 from datetime import datetime, timezone
 from importlib.util import find_spec
-from typing import Any, cast
+from typing import Any
 
 from src.core.dpm.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -100,7 +100,7 @@ def _row_to_policy_pack(row: Any) -> DpmPolicyPackDefinition:
     payload = json.loads(row["definition_json"])
     payload["policy_pack_id"] = row["policy_pack_id"]
     payload["version"] = row["version"]
-    return cast(DpmPolicyPackDefinition, DpmPolicyPackDefinition.model_validate(payload))
+    return DpmPolicyPackDefinition.model_validate(payload)
 
 
 def _json_dump(value: dict[str, Any]) -> str:

@@ -62,7 +62,7 @@ def apply_group_constraints(
         if not group_members:
             continue
 
-        current_w = sum(eligible_targets[i] for i in group_members)
+        current_w = sum((eligible_targets[i] for i in group_members), Decimal("0"))
         if current_w <= constraint.max_weight + Decimal("0.0001"):
             continue
 
@@ -73,7 +73,7 @@ def apply_group_constraints(
             eligible_targets[i_id] *= scale
 
         candidates = [i for i in eligible_targets if i in buy_set and i not in group_members]
-        total_cand_w = sum(eligible_targets[c] for c in candidates)
+        total_cand_w = sum((eligible_targets[c] for c in candidates), Decimal("0"))
 
         if total_cand_w > Decimal("0"):
             recipients = {}

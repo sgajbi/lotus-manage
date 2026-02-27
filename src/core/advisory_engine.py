@@ -27,6 +27,7 @@ from src.core.models import (
     LineageData,
     MarketDataSnapshot,
     PortfolioSnapshot,
+    ProposalOrderIntent,
     ProposalResult,
     ProposedCashFlow,
     ProposedTrade,
@@ -176,9 +177,12 @@ def run_proposal_simulation(
     )
 
     fx_intents = sorted(fx_intents, key=lambda intent: intent.pair)
-    intents = sort_execution_intents(
-        cash_flow_intents + sell_intents + fx_intents + executable_buy_intents
-    )
+    merged_intents: list[ProposalOrderIntent] = []
+    merged_intents.extend(cash_flow_intents)
+    merged_intents.extend(sell_intents)
+    merged_intents.extend(fx_intents)
+    merged_intents.extend(executable_buy_intents)
+    intents = sort_execution_intents(merged_intents)
 
     after = build_simulated_state(
         after_portfolio,
@@ -313,3 +317,6 @@ def run_proposal_simulation(
             engine_version="0.1.0",
         ),
     )
+
+
+__all__ = ["build_reconciliation", "derive_status_from_rules", "run_proposal_simulation"]

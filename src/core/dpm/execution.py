@@ -23,6 +23,7 @@ from src.core.models import (
     ProposalOrderIntent,
     Reconciliation,
     RuleResult,
+    SecurityTradeIntent,
     ShelfEntry,
     SimulatedState,
     ValuationMode,
@@ -70,6 +71,9 @@ def build_settlement_ladder(
                 intent.notional.amount if intent.side == "SELL" else -intent.notional.amount
             )
             flows[intent.notional.currency][settlement_day] += signed_flow
+            continue
+
+        if intent.intent_type != "FX_SPOT":
             continue
 
         ensure_currency(intent.sell_currency)
@@ -183,8 +187,12 @@ def generate_fx_and_simulate(
     include_sell_dependency = options.link_buy_to_same_currency_sell_dependency
     if include_sell_dependency is None:
         include_sell_dependency = True
+    dependency_intents: list[SecurityTradeIntent | FxSpotIntent] = []
+    for intent in intents:
+        if isinstance(intent, (SecurityTradeIntent, FxSpotIntent)):
+            dependency_intents.append(intent)
     link_buy_intent_dependencies(
-        intents,
+        dependency_intents,
         fx_intent_id_by_currency=fx_map,
         include_same_currency_sell_dependency=include_sell_dependency,
     )

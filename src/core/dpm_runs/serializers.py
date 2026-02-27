@@ -1,5 +1,6 @@
 from src.core.dpm_runs.models import (
     DpmAsyncAcceptedResponse,
+    DpmAsyncError,
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
     DpmRunLookupResponse,
@@ -45,7 +46,11 @@ def to_async_status(operation: DpmAsyncOperationRecord) -> DpmAsyncOperationStat
         started_at=(operation.started_at.isoformat() if operation.started_at else None),
         finished_at=(operation.finished_at.isoformat() if operation.finished_at else None),
         result=operation.result_json,
-        error=operation.error_json,
+        error=(
+            DpmAsyncError.model_validate(operation.error_json)
+            if operation.error_json is not None
+            else None
+        ),
     )
 
 

@@ -1,6 +1,4 @@
 from decimal import Decimal
-from typing import cast
-
 from src.core.models import (
     DiagnosticsData,
     DroppedIntent,
@@ -15,7 +13,7 @@ def calculate_turnover_score(intent: SecurityTradeIntent, portfolio_value_base: 
         return Decimal("0")
     if intent.notional_base is None:
         return Decimal("0")
-    notional_abs = cast(Decimal, abs(intent.notional_base.amount))
+    notional_abs = abs(intent.notional_base.amount)
     return notional_abs / portfolio_value_base
 
 
