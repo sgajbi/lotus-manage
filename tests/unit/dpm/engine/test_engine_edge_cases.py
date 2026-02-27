@@ -1,4 +1,4 @@
-from src.core.dpm_engine import run_simulation
+from src.core.dpm.engine import run_simulation
 from src.core.models import EngineOptions
 from tests.shared.assertions import assert_dq_contains, assert_status, find_excluded
 from tests.shared.factories import (

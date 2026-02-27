@@ -6,12 +6,12 @@ import glob
 import json
 import os
 from decimal import Decimal
-from importlib.util import find_spec
 from typing import Any, Dict
 
 import pytest
 
-from src.core.dpm_engine import run_simulation
+from src.core.common.capabilities import has_solver_dependencies
+from src.core.dpm.engine import run_simulation
 from src.core.models import (
     EngineOptions,
     MarketDataSnapshot,
@@ -41,7 +41,7 @@ SCENARIOS = sorted(
     for path in glob.glob(os.path.join(GOLDEN_DIR, "*.json"))
     if _is_rebalance_golden_fixture(path)
 )
-_SOLVER_AVAILABLE = find_spec("cvxpy") is not None and find_spec("numpy") is not None
+_SOLVER_AVAILABLE = has_solver_dependencies()
 
 
 @pytest.mark.parametrize("filename", SCENARIOS)

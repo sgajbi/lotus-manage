@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Any
 
+from src.core.common.capabilities import has_solver_dependencies
 from src.core.models import DiagnosticsData, EngineOptions, Money, ShelfEntry, TargetInstrument
 
 _SOLVER_STATUS_OPTIMAL = {"optimal", "optimal_inaccurate"}
@@ -180,6 +181,9 @@ def generate_targets_solver(
     base_ccy: str,
     diagnostics: DiagnosticsData,
 ) -> tuple[list[TargetInstrument], str]:
+    if not has_solver_dependencies():
+        diagnostics.warnings.append("SOLVER_ERROR")
+        return [], "BLOCKED"
     try:
         import cvxpy as _cp
         import numpy as _np
