@@ -207,6 +207,7 @@ def analyze_scenarios_async(
         BatchRebalanceRequest,
         Field(description="Shared snapshots plus scenario map of option overrides."),
     ],
+    response: Response,
     correlation_id: Annotated[
         Optional[str],
         Header(
@@ -235,7 +236,6 @@ def analyze_scenarios_async(
             examples=["tenant_001"],
         ),
     ] = None,
-    response: Response = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> DpmAsyncAcceptedResponse:
     accepted = service.submit_and_optionally_execute_async_analysis(
@@ -244,8 +244,7 @@ def analyze_scenarios_async(
         policy_pack_id=policy_pack_id,
         tenant_id=tenant_id,
     )
-    if response is not None:
-        response.headers["X-Correlation-Id"] = accepted.correlation_id
+    response.headers["X-Correlation-Id"] = accepted.correlation_id
     return accepted
 
 

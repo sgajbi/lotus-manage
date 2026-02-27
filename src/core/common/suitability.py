@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Literal, Optional
 
 from src.core.models import (
     EngineOptions,
@@ -15,18 +15,38 @@ from src.core.models import (
 
 _STATUS_SORT = {"NEW": 0, "PERSISTENT": 1, "RESOLVED": 2}
 _SEVERITY_SORT = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
-_HIGH = "HIGH"
-_MEDIUM = "MEDIUM"
-_LOW = "LOW"
 _EPSILON = Decimal("0.0000001")
+_SuitabilityDimension = Literal[
+    "CONCENTRATION",
+    "ISSUER",
+    "LIQUIDITY",
+    "GOVERNANCE",
+    "CASH",
+    "DATA_QUALITY",
+]
+_SuitabilitySeverity = Literal["LOW", "MEDIUM", "HIGH"]
+_SuitabilityStatusChange = Literal["NEW", "RESOLVED", "PERSISTENT"]
+_SuitabilityGate = Literal["NONE", "RISK_REVIEW", "COMPLIANCE_REVIEW"]
+_HIGH: _SuitabilitySeverity = "HIGH"
+_MEDIUM: _SuitabilitySeverity = "MEDIUM"
+_LOW: _SuitabilitySeverity = "LOW"
+_SEVERITY_BY_NAME: Dict[str, _SuitabilitySeverity] = {
+    "HIGH": _HIGH,
+    "MEDIUM": _MEDIUM,
+    "LOW": _LOW,
+}
+
+
+def _as_severity(value: str) -> _SuitabilitySeverity:
+    return _SEVERITY_BY_NAME.get(value, _MEDIUM)
 
 
 @dataclass(frozen=True)
 class _IssueCandidate:
     issue_key: str
     issue_id: str
-    dimension: str
-    severity: str
+    dimension: _SuitabilityDimension
+    severity: _SuitabilitySeverity
     summary: str
     details: Dict[str, str]
 
@@ -44,7 +64,7 @@ def _to_cash_weight(state: SimulatedState) -> Decimal:
     )
 
 
-def _severity_for_concentration(measured: Decimal, limit: Decimal) -> str:
+def _severity_for_concentration(measured: Decimal, limit: Decimal) -> _SuitabilitySeverity:
     if measured > (limit * Decimal("1.25")):
         return _HIGH
     return _MEDIUM
@@ -55,7 +75,7 @@ def _issue_data_quality(
     issue_key: str,
     summary: str,
     details: Dict[str, str],
-    severity: str,
+    severity: _SuitabilitySeverity,
 ) -> _IssueCandidate:
     return _IssueCandidate(
         issue_key=issue_key,
@@ -111,7 +131,7 @@ def _scan_state_issues(
                     "instrument_id": instrument_id,
                     "missing_fields": "shelf_entry",
                 },
-                severity=thresholds.data_quality_issue_severity,
+                severity=_as_severity(thresholds.data_quality_issue_severity),
             )
             continue
 
@@ -124,7 +144,7 @@ def _scan_state_issues(
                     "instrument_id": instrument_id,
                     "missing_fields": "issuer_id",
                 },
-                severity=thresholds.data_quality_issue_severity,
+                severity=_as_severity(thresholds.data_quality_issue_severity),
             )
         else:
             issuer_weights[shelf_entry.issuer_id] = (
@@ -167,7 +187,7 @@ def _scan_state_issues(
                     "instrument_id": instrument_id,
                     "missing_fields": "liquidity_tier",
                 },
-                severity=thresholds.data_quality_issue_severity,
+                severity=_as_severity(thresholds.data_quality_issue_severity),
             )
             continue
         liquidity_weights[shelf_entry.liquidity_tier] = (
@@ -352,7 +372,7 @@ def _append_governance_trade_attempt_issues(
 
 def _build_suitability_issue(
     *,
-    status_change: str,
+    status_change: _SuitabilityStatusChange,
     candidate: _IssueCandidate,
     evidence: SuitabilityEvidence,
 ) -> SuitabilityIssue:
@@ -418,7 +438,7 @@ def _classify_issues(
     return issues
 
 
-def _recommended_gate(issues: Iterable[SuitabilityIssue]) -> str:
+def _recommended_gate(issues: Iterable[SuitabilityIssue]) -> _SuitabilityGate:
     new_issues = [issue for issue in issues if issue.status_change == "NEW"]
     if any(issue.severity == _HIGH for issue in new_issues):
         return "COMPLIANCE_REVIEW"
@@ -477,7 +497,7 @@ def compute_suitability_result(
     new_issues = [issue for issue in issues if issue.status_change == "NEW"]
     resolved_issues = [issue for issue in issues if issue.status_change == "RESOLVED"]
     persistent_issues = [issue for issue in issues if issue.status_change == "PERSISTENT"]
-    highest_severity_new = None
+    highest_severity_new: _SuitabilitySeverity | None = None
     if any(issue.severity == _HIGH for issue in new_issues):
         highest_severity_new = _HIGH
     elif any(issue.severity == _MEDIUM for issue in new_issues):

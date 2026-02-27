@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional, cast
+from typing import Any, Optional
 
 from src.core.dpm_runs.artifact import build_dpm_run_artifact
 from src.core.dpm_runs.models import (
@@ -10,6 +10,7 @@ from src.core.dpm_runs.models import (
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
     DpmLineageEdgeRecord,
+    DpmLineageEdgeType,
     DpmLineageEdgeResponse,
     DpmLineageResponse,
     DpmRunArtifactResponse,
@@ -642,7 +643,7 @@ class DpmRunSupportService:
         operation.status = "RUNNING"
         operation.started_at = _utc_now()
         self._repository.update_operation(operation)
-        return cast(dict[str, Any], operation.request_json), operation.correlation_id
+        return operation.request_json, operation.correlation_id
 
     def get_workflow(self, *, rebalance_run_id: str) -> DpmRunWorkflowResponse:
         self._cleanup_expired_supportability()
@@ -818,7 +819,7 @@ class DpmRunSupportService:
         self,
         *,
         source_entity_id: str,
-        edge_type: str,
+        edge_type: DpmLineageEdgeType,
         target_entity_id: str,
         metadata: dict[str, Any],
         created_at: datetime,
@@ -912,7 +913,7 @@ class DpmRunSupportService:
             return build_dpm_run_artifact(run=run)
         persisted = self._repository.get_run_artifact(rebalance_run_id=run.rebalance_run_id)
         if persisted is not None:
-            return cast(DpmRunArtifactResponse, DpmRunArtifactResponse.model_validate(persisted))
+            return DpmRunArtifactResponse.model_validate(persisted)
         artifact = build_dpm_run_artifact(run=run)
         self._repository.save_run_artifact(
             rebalance_run_id=run.rebalance_run_id,

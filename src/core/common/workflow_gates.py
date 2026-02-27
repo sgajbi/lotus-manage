@@ -125,6 +125,23 @@ def evaluate_gate_decision(
         options.workflow_requires_client_consent or default_requires_client_consent
     )
 
+    gate: Literal[
+        "BLOCKED",
+        "RISK_REVIEW_REQUIRED",
+        "COMPLIANCE_REVIEW_REQUIRED",
+        "CLIENT_CONSENT_REQUIRED",
+        "EXECUTION_READY",
+        "NONE",
+    ]
+    next_step: Literal[
+        "FIX_INPUT",
+        "RISK_REVIEW",
+        "COMPLIANCE_REVIEW",
+        "REQUEST_CLIENT_CONSENT",
+        "EXECUTE",
+        "NONE",
+    ]
+
     if status == "BLOCKED" or hard_fail_count > 0:
         gate = "BLOCKED"
         next_step = "FIX_INPUT"

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from src.core.advisory.artifact_models import (
     ProposalArtifact,
@@ -29,7 +29,7 @@ from src.core.advisory.artifact_models import (
 )
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.common.workflow_gates import evaluate_gate_decision
-from src.core.models import ProposalResult, ProposalSimulateRequest
+from src.core.models import Money, ProposalResult, ProposalSimulateRequest
 
 _ZERO = Decimal("0")
 
@@ -110,7 +110,9 @@ def _resolve_objective_tags(
     return tags
 
 
-def _resolve_next_step(result: ProposalResult) -> str:
+def _resolve_next_step(
+    result: ProposalResult,
+) -> Literal["CLIENT_CONSENT", "RISK_REVIEW", "COMPLIANCE_REVIEW", "EXECUTION_READY", "NONE"]:
     if result.gate_decision is not None:
         if result.gate_decision.gate == "BLOCKED":
             has_high_suitability = any(
@@ -361,10 +363,10 @@ def build_proposal_artifact(
             before=_state_payload(before_state),
             after=_state_payload(after_state),
             delta=ProposalArtifactPortfolioDelta(
-                total_value_delta={
-                    "amount": after_state.total_value.amount - before_state.total_value.amount,
-                    "currency": before_state.total_value.currency,
-                },
+                total_value_delta=Money(
+                    amount=after_state.total_value.amount - before_state.total_value.amount,
+                    currency=before_state.total_value.currency,
+                ),
                 largest_weight_changes=largest_weight_changes,
             ),
             reconciliation=(
@@ -419,4 +421,4 @@ def build_proposal_artifact(
     canonical_payload = strip_keys(payload, exclude={"created_at", "artifact_hash"})
     artifact_hash = hash_canonical_payload(canonical_payload)
     payload["evidence_bundle"]["hashes"]["artifact_hash"] = artifact_hash
-    return cast(ProposalArtifact, ProposalArtifact.model_validate(payload))
+    return ProposalArtifact.model_validate(payload)

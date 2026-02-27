@@ -1,7 +1,7 @@
 import uuid
 from collections import OrderedDict
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, status
 
@@ -46,7 +46,7 @@ def simulate_proposal_response(
             detail="IDEMPOTENCY_KEY_CONFLICT: request hash mismatch",
         )
     if existing is not None:
-        return cast(ProposalResult, ProposalResult.model_validate(existing.response_json))
+        return ProposalResult.model_validate(existing.response_json)
 
     run_fn = _main_override("run_proposal_simulation") or run_proposal_simulation
     resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
@@ -78,3 +78,11 @@ def simulate_proposal_response(
             detail="PROPOSAL_IDEMPOTENCY_STORE_WRITE_FAILED",
         ) from exc
     return result
+
+
+__all__ = [
+    "MAX_PROPOSAL_IDEMPOTENCY_CACHE_SIZE",
+    "PROPOSAL_IDEMPOTENCY_CACHE",
+    "run_proposal_simulation",
+    "simulate_proposal_response",
+]

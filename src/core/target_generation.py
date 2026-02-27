@@ -181,11 +181,13 @@ def generate_targets_solver(
     diagnostics: DiagnosticsData,
 ) -> tuple[list[TargetInstrument], str]:
     try:
-        import cvxpy as cp
-        import numpy as np
+        import cvxpy as _cp
+        import numpy as _np
     except Exception:
         diagnostics.warnings.append("SOLVER_ERROR")
         return [], "BLOCKED"
+    cp: Any = _cp
+    np: Any = _np
 
     status = "READY"
     if sell_only_excess > Decimal("0.0"):
@@ -269,7 +271,11 @@ def generate_targets_solver(
         return [], "BLOCKED"
 
     for idx, i_id in enumerate(tradeable_ids):
-        raw_weight = Decimal(str(w.value[idx]))
+        values = w.value
+        if values is None:
+            diagnostics.warnings.append("SOLVER_ERROR")
+            return [], "BLOCKED"
+        raw_weight = Decimal(str(values[idx]))
         solved_weight = max(raw_weight, Decimal("0")).quantize(Decimal("0.0001"))
         eligible_targets[i_id] = solved_weight
     return build_target_trace(model, eligible_targets, buy_list, total_val, base_ccy), status

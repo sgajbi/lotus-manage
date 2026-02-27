@@ -633,3 +633,20 @@ def get_run_artifact_by_run_id(
 
 importlib.import_module("src.api.routers.dpm_runs_operations_routes")
 importlib.import_module("src.api.routers.dpm_runs_workflow_routes")
+
+__all__ = [
+    "Depends",
+    "datetime",
+    "get_dpm_run_support_service",
+    "record_dpm_run_for_support",
+    "reset_dpm_run_support_service_for_tests",
+    "router",
+    "_assert_artifacts_enabled",
+    "_assert_async_operations_enabled",
+    "_assert_idempotency_history_apis_enabled",
+    "_assert_lineage_apis_enabled",
+    "_assert_support_apis_enabled",
+    "_assert_support_bundle_apis_enabled",
+    "_assert_supportability_summary_apis_enabled",
+    "_assert_workflow_enabled",
+]

@@ -58,7 +58,9 @@ def _create_payload() -> ProposalCreateRequest:
     )
 
 
-def _version_payload(*, portfolio_id: str = "pf_1", enable_simulation: bool = True) -> ProposalVersionRequest:
+def _version_payload(
+    *, portfolio_id: str = "pf_1", enable_simulation: bool = True
+) -> ProposalVersionRequest:
     return ProposalVersionRequest.model_validate(
         {
             "created_by": "advisor_1",
@@ -704,7 +706,10 @@ def test_internal_helpers_cover_remaining_error_contracts():
             approved=True,
             actor_id="risk_officer",
             occurred_at=datetime.now(timezone.utc),
-            details_json={"idempotency_key": "idem-target", "idempotency_request_hash": "hash-target"},
+            details_json={
+                "idempotency_key": "idem-target",
+                "idempotency_request_hash": "hash-target",
+            },
             related_version_no=1,
         )
     )
@@ -716,7 +721,10 @@ def test_internal_helpers_cover_remaining_error_contracts():
             approved=True,
             actor_id="risk_officer",
             occurred_at=datetime.now(timezone.utc),
-            details_json={"idempotency_key": "idem-other", "idempotency_request_hash": "hash-other"},
+            details_json={
+                "idempotency_key": "idem-other",
+                "idempotency_request_hash": "hash-other",
+            },
             related_version_no=1,
         )
     )
