@@ -74,7 +74,7 @@ class _FakeConnection:
 
 def _build_repository(monkeypatch):
     connection = _FakeConnection()
-    monkeypatch.setattr(postgres_module, "find_spec", lambda _name: object())
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: True)
     monkeypatch.setattr(
         PostgresDpmPolicyPackRepository,
         "_connect",
@@ -96,7 +96,7 @@ def test_postgres_policy_pack_repository_requires_dsn():
 
 
 def test_postgres_policy_pack_repository_requires_driver(monkeypatch):
-    monkeypatch.setattr(postgres_module, "find_spec", lambda _name: None)
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
     try:
         PostgresDpmPolicyPackRepository(dsn="postgresql://user:pass@localhost:5432/dpm")
     except RuntimeError as exc:
@@ -139,7 +139,7 @@ def test_postgres_policy_pack_repository_connect_uses_imported_driver(monkeypatc
         def _init_db(self):
             return None
 
-    monkeypatch.setattr(postgres_module, "find_spec", lambda _name: object())
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: True)
     monkeypatch.setattr(
         postgres_module,
         "_import_psycopg",

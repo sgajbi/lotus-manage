@@ -1,9 +1,9 @@
 import json
 from contextlib import closing
 from datetime import datetime, timezone
-from importlib.util import find_spec
 from typing import Any
 
+from src.core.common.capabilities import has_psycopg
 from src.core.dpm.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
@@ -12,7 +12,7 @@ class PostgresDpmPolicyPackRepository:
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
             raise RuntimeError("DPM_POLICY_PACK_POSTGRES_DSN_REQUIRED")
-        if find_spec("psycopg") is None:
+        if not has_psycopg():
             raise RuntimeError("DPM_POLICY_PACK_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()

@@ -395,7 +395,7 @@ class _FakeConnection:
 
 def _build_repository(monkeypatch):
     fake_connection = _FakeConnection()
-    monkeypatch.setattr(postgres_module, "find_spec", lambda _name: object())
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: True)
     monkeypatch.setattr(
         PostgresDpmRunRepository,
         "_connect",
@@ -415,7 +415,7 @@ def test_postgres_repository_requires_dsn():
 
 
 def test_postgres_repository_requires_driver(monkeypatch):
-    monkeypatch.setattr(postgres_module, "find_spec", lambda _name: None)
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
     try:
         PostgresDpmRunRepository(dsn="postgresql://user:pass@localhost:5432/dpm")
     except RuntimeError as exc:

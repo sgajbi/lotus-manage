@@ -1,6 +1,7 @@
 import os
 from typing import cast
 
+from src.core.common.capabilities import psycopg_error_type
 from src.core.dpm_runs.repository import DpmRunRepository
 from src.infrastructure.dpm_runs import (
     PostgresDpmRunRepository,
@@ -68,12 +69,9 @@ def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
         TypeError,
         ValueError,
     ]
-    try:
-        import psycopg
-    except ImportError:
-        pass
-    else:
-        types.append(psycopg.Error)
+    error_type = psycopg_error_type()
+    if error_type is not None:
+        types.append(error_type)
     return tuple(types)
 
 

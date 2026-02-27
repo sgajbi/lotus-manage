@@ -110,7 +110,7 @@ def test_validate_cutover_migrations_applied_detects_missing(monkeypatch):
 
             return _Context()
 
-    monkeypatch.setattr(contract_module, "find_spec", lambda _name: object())
+    monkeypatch.setattr(contract_module, "has_psycopg", lambda: True)
     monkeypatch.setitem(__import__("sys").modules, "psycopg", _FakePsycopg)
     monkeypatch.setitem(
         __import__("sys").modules,
@@ -131,7 +131,7 @@ def test_validate_cutover_migrations_applied_detects_missing(monkeypatch):
 
 
 def test_validate_cutover_migrations_applied_requires_postgres_driver(monkeypatch):
-    monkeypatch.setattr(contract_module, "find_spec", lambda _name: None)
+    monkeypatch.setattr(contract_module, "has_psycopg", lambda: False)
     with pytest.raises(RuntimeError) as exc:
         contract_module.validate_cutover_migrations_applied()
     assert str(exc.value) == "CUTOVER_POSTGRES_DRIVER_MISSING"

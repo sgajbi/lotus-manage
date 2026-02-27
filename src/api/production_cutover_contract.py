@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +9,7 @@ from src.api.persistence_profile import (
 )
 from src.api.routers.dpm_runs_config import supportability_postgres_dsn
 from src.api.routers.proposals_config import proposal_postgres_dsn
+from src.core.common.capabilities import has_psycopg
 
 
 def validate_production_cutover_contract(*, check_migrations: bool) -> None:
@@ -21,7 +21,7 @@ def validate_production_cutover_contract(*, check_migrations: bool) -> None:
 
 
 def validate_cutover_migrations_applied() -> None:
-    if find_spec("psycopg") is None:
+    if not has_psycopg():
         raise RuntimeError("CUTOVER_POSTGRES_DRIVER_MISSING")
     import psycopg
     from psycopg.rows import dict_row

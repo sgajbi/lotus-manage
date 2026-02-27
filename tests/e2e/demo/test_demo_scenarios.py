@@ -5,7 +5,6 @@ Verifies that the public demo scenarios in docs/demo/ execute correctly.
 
 import json
 import os
-from importlib.util import find_spec
 
 import pytest
 from fastapi.testclient import TestClient
@@ -13,7 +12,8 @@ from fastapi.testclient import TestClient
 from src.api.main import app, get_db_session
 from src.api.routers.dpm_runs import reset_dpm_run_support_service_for_tests
 from src.api.routers.proposals import reset_proposal_workflow_service_for_tests
-from src.core.dpm_engine import run_simulation
+from src.core.common.capabilities import has_solver_dependencies
+from src.core.dpm.engine import run_simulation
 from src.core.models import (
     EngineOptions,
     MarketDataSnapshot,
@@ -24,7 +24,7 @@ from src.core.models import (
 from tests.shared.factories import valid_api_payload
 
 DEMO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "docs", "demo")
-_SOLVER_AVAILABLE = find_spec("cvxpy") is not None and find_spec("numpy") is not None
+_SOLVER_AVAILABLE = has_solver_dependencies()
 
 
 def load_demo_scenario(filename):

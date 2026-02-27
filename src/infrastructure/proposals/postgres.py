@@ -1,9 +1,9 @@
 import json
 from contextlib import closing
 from datetime import datetime
-from importlib.util import find_spec
 from typing import Any, Optional, cast
 
+from src.core.common.capabilities import has_psycopg
 from src.core.proposals.models import (
     ProposalApprovalRecordData,
     ProposalAsyncOperationRecord,
@@ -21,7 +21,7 @@ class PostgresProposalRepository:
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
             raise RuntimeError("PROPOSAL_POSTGRES_DSN_REQUIRED")
-        if find_spec("psycopg") is None:
+        if not has_psycopg():
             raise RuntimeError("PROPOSAL_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()

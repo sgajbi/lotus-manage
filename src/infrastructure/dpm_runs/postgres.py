@@ -1,9 +1,9 @@
 import json
 from contextlib import closing
 from datetime import datetime, timedelta, timezone
-from importlib.util import find_spec
 from typing import Any, Optional, cast
 
+from src.core.common.capabilities import has_psycopg
 from src.core.dpm_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
@@ -20,7 +20,7 @@ class PostgresDpmRunRepository:
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
             raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED")
-        if find_spec("psycopg") is None:
+        if not has_psycopg():
             raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DRIVER_MISSING")
         self._dsn = dsn
         self._init_db()
