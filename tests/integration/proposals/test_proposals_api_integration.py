@@ -104,6 +104,25 @@ def test_proposal_lifecycle_and_supportability_endpoints_roundtrip() -> None:
     assert supportability.json()["store_backend"] in {"INMEMORY", "POSTGRES"}
 
 
+def test_proposal_supportability_config_success_contract_shape() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/v1/rebalance/proposals/supportability/config")
+
+    assert response.status_code == 200
+    assert sorted(response.json().keys()) == [
+        "allow_portfolio_id_change_on_new_version",
+        "async_operations_enabled",
+        "backend_init_error",
+        "backend_ready",
+        "lifecycle_enabled",
+        "require_expected_state",
+        "require_proposal_simulation_flag",
+        "store_backend",
+        "store_evidence_bundle",
+        "support_apis_enabled",
+    ]
+
+
 def test_proposal_lifecycle_error_contracts() -> None:
     payload = _proposal_payload()
     with TestClient(app) as client:

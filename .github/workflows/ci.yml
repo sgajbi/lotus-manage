@@ -45,6 +45,8 @@ jobs:
         run: make lint
       - name: Typecheck
         run: make typecheck
+      - name: Typecheck Critical Tests
+        run: make typecheck-tests-critical
       - name: OpenAPI Gate
         run: make openapi-gate
       - name: Migration Contract Smoke
