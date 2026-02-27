@@ -255,7 +255,7 @@ def get_dpm_policy_pack(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="DPM_POLICY_PACK_NOT_FOUND"
         )
-    return cast(DpmPolicyPackDefinition, policy_pack)
+    return policy_pack
 
 
 @router.put(

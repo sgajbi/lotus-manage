@@ -1,5 +1,5 @@
 import importlib
-from typing import Optional, cast
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
 
@@ -19,17 +19,14 @@ _SERVICE: Optional[ProposalWorkflowService] = None
 
 
 def _proposal_store_backend_name() -> str:
-    return cast(str, proposals_config.proposal_store_backend_name())
+    return proposals_config.proposal_store_backend_name()
 
 
 def _backend_init_error_detail(detail: str) -> str:
-    return cast(
-        str,
-        normalize_backend_init_error(
-            detail=detail,
-            required_detail="PROPOSAL_POSTGRES_DSN_REQUIRED",
-            fallback_detail="PROPOSAL_POSTGRES_CONNECTION_FAILED",
-        ),
+    return normalize_backend_init_error(
+        detail=detail,
+        required_detail="PROPOSAL_POSTGRES_DSN_REQUIRED",
+        fallback_detail="PROPOSAL_POSTGRES_CONNECTION_FAILED",
     )
 
 
@@ -78,7 +75,7 @@ def get_proposal_repository() -> ProposalRepository:
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="PROPOSAL_POSTGRES_CONNECTION_FAILED",
             ) from exc
-    return cast(ProposalRepository, _REPOSITORY)
+    return _REPOSITORY
 
 
 def reset_proposal_workflow_service_for_tests() -> None:
@@ -115,3 +112,16 @@ def _assert_async_operations_enabled() -> None:
 importlib.import_module("src.api.routers.proposals_lifecycle_routes")
 importlib.import_module("src.api.routers.proposals_async_routes")
 importlib.import_module("src.api.routers.proposals_support_routes")
+
+__all__ = [
+    "env_flag",
+    "proposals_config",
+    "router",
+    "_assert_async_operations_enabled",
+    "_assert_lifecycle_enabled",
+    "_assert_support_apis_enabled",
+    "_proposal_store_backend_name",
+    "get_proposal_repository",
+    "get_proposal_workflow_service",
+    "reset_proposal_workflow_service_for_tests",
+]

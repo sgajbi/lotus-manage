@@ -4,7 +4,7 @@ import uuid
 from collections import OrderedDict
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -182,7 +182,7 @@ def simulate_rebalance(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="DPM_IDEMPOTENCY_STORE_INCONSISTENT",
                 ) from exc
-            return cast(RebalanceResult, RebalanceResult.model_validate(replay_run.result))
+            return RebalanceResult.model_validate(replay_run.result)
 
     run_fn = _main_override("run_simulation") or run_simulation
     result = run_fn(
@@ -411,3 +411,18 @@ def execute_dpm_async_operation(
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from exc
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail) from exc
     return service.get_async_operation(operation_id=operation_id)
+
+
+__all__ = [
+    "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
+    "DPM_IDEMPOTENCY_CACHE",
+    "async_manual_execution_enabled",
+    "env_flag",
+    "env_int",
+    "execute_batch_analysis",
+    "execute_dpm_async_operation",
+    "resolve_async_execution_mode",
+    "run_analyze_async_operation",
+    "run_simulation",
+    "simulate_rebalance",
+]
