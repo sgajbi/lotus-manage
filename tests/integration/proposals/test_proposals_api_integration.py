@@ -5,7 +5,9 @@ from src.api.main import app
 from src.api.routers.proposals import reset_proposal_workflow_service_for_tests
 
 
-def _proposal_payload(*, portfolio_id: str = "pf_integration_1", title: str = "integration proposal") -> dict:
+def _proposal_payload(
+    *, portfolio_id: str = "pf_integration_1", title: str = "integration proposal"
+) -> dict:
     return {
         "created_by": "advisor_integration",
         "simulate_request": {
@@ -299,7 +301,13 @@ def test_create_proposal_validation_error_contract() -> None:
 @pytest.mark.parametrize(
     ("method", "path", "body", "expected_status", "expected_detail"),
     [
-        ("get", "/api/v1/rebalance/proposals/pp_missing/versions/1", None, 404, "PROPOSAL_VERSION_NOT_FOUND"),
+        (
+            "get",
+            "/api/v1/rebalance/proposals/pp_missing/versions/1",
+            None,
+            404,
+            "PROPOSAL_VERSION_NOT_FOUND",
+        ),
         (
             "post",
             "/api/v1/rebalance/proposals/pp_missing/versions",
