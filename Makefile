@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard format clean run check-deps security-audit openapi-gate migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard no-alias-gate openapi-gate api-vocabulary-gate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 92
 
@@ -14,9 +14,9 @@ install-ci:
 pre-commit:
 	pre-commit run --all-files
 
-check: lint typecheck openapi-gate test
+check: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate test
 
-ci: lint typecheck openapi-gate migration-smoke test-all security-audit
+ci: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate migration-smoke test-all security-audit
 
 test:
 	$(MAKE) test-unit
@@ -56,6 +56,9 @@ ci-local: lint check-deps
 	COVERAGE_FILE=.coverage.e2e python -m pytest tests/e2e --cov=src --cov-report=
 	python -m coverage combine .coverage.unit .coverage.integration .coverage.e2e
 	python -m coverage report --fail-under=$(COVERAGE_FAIL_UNDER)
+	$(MAKE) no-alias-gate
+	$(MAKE) openapi-gate
+	$(MAKE) api-vocabulary-gate
 	$(MAKE) typecheck
 
 ci-local-docker:
@@ -73,7 +76,13 @@ typecheck-tests-critical:
 	mypy tests/unit/core/test_capabilities.py tests/unit/dpm/engine/test_engine_workflow_gates.py
 
 openapi-gate:
-	python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+	python scripts/openapi_quality_gate.py
+
+no-alias-gate:
+	python scripts/no_alias_contract_guard.py
+
+api-vocabulary-gate:
+	python scripts/api_vocabulary_inventory.py --validate-only
 
 migration-smoke:
 	python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py tests/unit/shared/dependencies/test_production_cutover_contract.py -q
