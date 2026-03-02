@@ -399,7 +399,9 @@ def _normalize_for_compare(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = ArgumentParser(description="Generate and validate lotus-manage API vocabulary inventory")
+    parser = ArgumentParser(
+        description="Generate and validate lotus-manage API vocabulary inventory"
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
