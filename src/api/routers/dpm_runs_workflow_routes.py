@@ -58,7 +58,6 @@ def list_dpm_workflow_decisions(
     decided_from: Annotated[
         Optional[shared.datetime],
         Query(
-            alias="from",
             description="Decision timestamp lower bound (UTC ISO8601).",
             examples=["2026-02-20T00:00:00Z"],
         ),
@@ -66,7 +65,6 @@ def list_dpm_workflow_decisions(
     decided_to: Annotated[
         Optional[shared.datetime],
         Query(
-            alias="to",
             description="Decision timestamp upper bound (UTC ISO8601).",
             examples=["2026-02-20T23:59:59Z"],
         ),
@@ -215,10 +213,9 @@ def apply_dpm_run_workflow_action(
     ],
     payload: DpmRunWorkflowActionRequest,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional correlation id for workflow action request tracing.",
             examples=["corr-workflow-001"],
         ),
@@ -233,7 +230,7 @@ def apply_dpm_run_workflow_action(
             reason_code=payload.reason_code,
             comment=payload.comment,
             actor_id=payload.actor_id,
-            correlation_id=correlation_id or "c_none",
+            correlation_id=x_correlation_id or "c_none",
         )
     except DpmRunNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -260,10 +257,9 @@ def apply_dpm_run_workflow_action_by_correlation(
     ],
     payload: DpmRunWorkflowActionRequest,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-    action_correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional correlation id for workflow action request tracing.",
             examples=["corr-workflow-action-001"],
         ),
@@ -278,7 +274,7 @@ def apply_dpm_run_workflow_action_by_correlation(
             reason_code=payload.reason_code,
             comment=payload.comment,
             actor_id=payload.actor_id,
-            action_correlation_id=action_correlation_id or "c_none",
+            action_correlation_id=x_correlation_id or "c_none",
         )
     except DpmRunNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -305,10 +301,9 @@ def apply_dpm_run_workflow_action_by_idempotency(
     ],
     payload: DpmRunWorkflowActionRequest,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-    action_correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional correlation id for workflow action request tracing.",
             examples=["corr-workflow-action-002"],
         ),
@@ -323,7 +318,7 @@ def apply_dpm_run_workflow_action_by_idempotency(
             reason_code=payload.reason_code,
             comment=payload.comment,
             actor_id=payload.actor_id,
-            action_correlation_id=action_correlation_id or "c_none",
+            action_correlation_id=x_correlation_id or "c_none",
         )
     except DpmRunNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

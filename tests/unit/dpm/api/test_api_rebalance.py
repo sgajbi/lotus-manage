@@ -84,7 +84,7 @@ def test_simulate_missing_idempotency_key_422(client):
     response = client.post("/api/v1/rebalance/simulate", json=payload)
     assert response.status_code == 422
     errors = response.json()["detail"]
-    assert any(e["type"] == "missing" and "Idempotency-Key" in e["loc"] for e in errors)
+    assert any(e["type"] == "missing" and "idempotency-key" in e["loc"] for e in errors)
 
 
 def test_simulate_payload_validation_error_422(client):
@@ -243,7 +243,7 @@ def test_dpm_support_runs_list_filters_and_cursor(client):
     assert second_body["rebalance_run_id"] in ids
     assert first_body["rebalance_run_id"] in ids
 
-    ready_rows = client.get("/api/v1/rebalance/runs?status=READY&limit=10")
+    ready_rows = client.get("/api/v1/rebalance/runs?status_filter=READY&limit=10")
     assert ready_rows.status_code == 200
     ready_body = ready_rows.json()
     assert len(ready_body["items"]) >= 1
@@ -532,7 +532,7 @@ def test_dpm_async_operation_list_filters_and_cursor(client):
         request_json={"scenarios": {"baseline": {"options": {}}}},
     )
 
-    pending = client.get("/api/v1/rebalance/operations?status=PENDING&limit=10")
+    pending = client.get("/api/v1/rebalance/operations?status_filter=PENDING&limit=10")
     assert pending.status_code == 200
     pending_body = pending.json()
     assert any(item["operation_id"] == one.operation_id for item in pending_body["items"])
@@ -1697,15 +1697,15 @@ def test_openapi_async_analyze_documents_correlation_header(client):
 
     simulate_header_names = {parameter["name"] for parameter in simulate["parameters"]}
     analyze_header_names = {parameter["name"] for parameter in analyze["parameters"]}
-    assert "X-Policy-Pack-Id" in simulate_header_names
-    assert "X-Policy-Pack-Id" in analyze_header_names
-    assert "X-Tenant-Id" in simulate_header_names
-    assert "X-Tenant-Id" in analyze_header_names
+    assert "x-policy-pack-id" in simulate_header_names
+    assert "x-policy-pack-id" in analyze_header_names
+    assert "x-tenant-id" in simulate_header_names
+    assert "x-tenant-id" in analyze_header_names
 
     request_header = next(
         parameter
         for parameter in analyze_async["parameters"]
-        if parameter["name"] == "X-Correlation-Id"
+        if parameter["name"] == "x-correlation-id"
     )
     assert request_header["in"] == "header"
     assert request_header["description"]
@@ -1723,7 +1723,7 @@ def test_openapi_async_analyze_documents_correlation_header(client):
     policy_pack_header = next(
         parameter
         for parameter in analyze_async["parameters"]
-        if parameter["name"] == "X-Policy-Pack-Id"
+        if parameter["name"] == "x-policy-pack-id"
     )
     assert policy_pack_header["in"] == "header"
     assert policy_pack_header["description"]
@@ -1734,7 +1734,7 @@ def test_openapi_async_analyze_documents_correlation_header(client):
         assert any(item.get("type") == "string" for item in policy_schema.get("anyOf", []))
 
     tenant_header = next(
-        parameter for parameter in analyze_async["parameters"] if parameter["name"] == "X-Tenant-Id"
+        parameter for parameter in analyze_async["parameters"] if parameter["name"] == "x-tenant-id"
     )
     assert tenant_header["in"] == "header"
     assert tenant_header["description"]

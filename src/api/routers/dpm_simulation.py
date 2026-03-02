@@ -64,23 +64,20 @@ def simulate_rebalance(
     idempotency_key: Annotated[
         str,
         Header(
-            alias="Idempotency-Key",
             description="Required idempotency token for request deduplication at client boundary.",
             examples=["demo-idem-001"],
         ),
     ],
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional trace/correlation identifier propagated to logs.",
             examples=["corr-1234-abcd"],
         ),
     ] = None,
-    policy_pack_id: Annotated[
+    x_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Policy-Pack-Id",
             description=(
                 "Optional policy-pack identifier for request-scoped policy selection. "
                 "When selected and found in catalog, configured policy fields can override "
@@ -89,10 +86,9 @@ def simulate_rebalance(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
-    tenant_id: Annotated[
+    x_tenant_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Id",
             description="Optional tenant identifier used for tenant policy-pack default lookup.",
             examples=["tenant_001"],
         ),
@@ -102,9 +98,9 @@ def simulate_rebalance(
     return service.simulate_rebalance(
         request=request,
         idempotency_key=idempotency_key,
-        correlation_id=correlation_id,
-        policy_pack_id=policy_pack_id,
-        tenant_id=tenant_id,
+        correlation_id=x_correlation_id,
+        policy_pack_id=x_policy_pack_id,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -135,11 +131,10 @@ def analyze_scenarios(
         BatchRebalanceRequest,
         Field(description="Shared snapshots plus scenario map of option overrides."),
     ],
-    correlation_id: Annotated[Optional[str], Header(alias="X-Correlation-Id")] = None,
-    policy_pack_id: Annotated[
+    x_correlation_id: Annotated[Optional[str], Header()] = None,
+    x_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Policy-Pack-Id",
             description=(
                 "Optional policy-pack identifier for request-scoped policy selection. "
                 "When selected and found in catalog, configured policy fields can override "
@@ -148,10 +143,9 @@ def analyze_scenarios(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
-    tenant_id: Annotated[
+    x_tenant_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Id",
             description="Optional tenant identifier used for tenant policy-pack default lookup.",
             examples=["tenant_001"],
         ),
@@ -160,10 +154,10 @@ def analyze_scenarios(
 ) -> BatchRebalanceResult:
     return service.execute_batch_analysis(
         request=request,
-        correlation_id=correlation_id,
-        request_policy_pack_id=policy_pack_id,
+        correlation_id=x_correlation_id,
+        request_policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=None,
-        tenant_id=tenant_id,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -208,18 +202,16 @@ def analyze_scenarios_async(
         Field(description="Shared snapshots plus scenario map of option overrides."),
     ],
     response: Response,
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional correlation identifier for async tracking and lookup.",
             examples=["corr-batch-async-1"],
         ),
     ] = None,
-    policy_pack_id: Annotated[
+    x_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Policy-Pack-Id",
             description=(
                 "Optional policy-pack identifier for request-scoped policy selection. "
                 "When selected and found in catalog, configured policy fields can override "
@@ -228,10 +220,9 @@ def analyze_scenarios_async(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
-    tenant_id: Annotated[
+    x_tenant_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Id",
             description="Optional tenant identifier used for tenant policy-pack default lookup.",
             examples=["tenant_001"],
         ),
@@ -240,9 +231,9 @@ def analyze_scenarios_async(
 ) -> DpmAsyncAcceptedResponse:
     accepted = service.submit_and_optionally_execute_async_analysis(
         request=request,
-        correlation_id=correlation_id,
-        policy_pack_id=policy_pack_id,
-        tenant_id=tenant_id,
+        correlation_id=x_correlation_id,
+        policy_pack_id=x_policy_pack_id,
+        tenant_id=x_tenant_id,
     )
     response.headers["X-Correlation-Id"] = accepted.correlation_id
     return accepted

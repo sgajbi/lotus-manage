@@ -14,6 +14,6 @@ def test_integration_capabilities_contract() -> None:
     response = client.get("/api/v1/platform/capabilities")
     assert response.status_code == 200
     body = response.json()
-    assert body["sourceService"] == SERVICE_NAME
+    assert body["source_service"] == SERVICE_NAME
     assert isinstance(body["features"], list)
     assert isinstance(body["workflows"], list)

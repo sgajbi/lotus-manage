@@ -10,16 +10,16 @@ Add `GET /integration/capabilities` to expose backend-governed lotus-manage feat
 ## Contract
 
 Inputs:
-- `consumerSystem`
-- `tenantId`
+- `consumer_system`
+- `tenant_id`
 
 Outputs:
-- `contractVersion`
-- `sourceService`
-- `consumerSystem`
-- `tenantId`
-- `policyVersion`
-- `supportedInputModes`
+- `contract_version`
+- `source_service`
+- `consumer_system`
+- `tenant_id`
+- `policy_version`
+- `supported_input_modes`
 - `features[]`
 - `workflows[]`
 

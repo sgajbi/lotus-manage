@@ -25,7 +25,6 @@ def list_dpm_async_operations(
     created_from: Annotated[
         Optional[shared.datetime],
         Query(
-            alias="from",
             description="Operation creation lower bound timestamp (UTC ISO8601).",
             examples=["2026-02-20T00:00:00Z"],
         ),
@@ -33,7 +32,6 @@ def list_dpm_async_operations(
     created_to: Annotated[
         Optional[shared.datetime],
         Query(
-            alias="to",
             description="Operation creation upper bound timestamp (UTC ISO8601).",
             examples=["2026-02-20T23:59:59Z"],
         ),
@@ -48,7 +46,6 @@ def list_dpm_async_operations(
     status_filter: Annotated[
         Optional[str],
         Query(
-            alias="status",
             description="Optional operation status filter.",
             examples=["SUCCEEDED"],
         ),
@@ -166,7 +163,6 @@ def get_dpm_lineage(
     created_from: Annotated[
         Optional[shared.datetime],
         Query(
-            alias="from",
             description="Lineage edge creation lower bound timestamp (UTC ISO8601).",
             examples=["2026-02-20T00:00:00Z"],
         ),
@@ -174,7 +170,6 @@ def get_dpm_lineage(
     created_to: Annotated[
         Optional[shared.datetime],
         Query(
-            alias="to",
             description="Lineage edge creation upper bound timestamp (UTC ISO8601).",
             examples=["2026-02-20T23:59:59Z"],
         ),

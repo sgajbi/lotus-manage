@@ -174,7 +174,6 @@ def list_runs(
     created_from: Annotated[
         Optional[datetime],
         Query(
-            alias="from",
             description="Run creation lower bound timestamp (UTC ISO8601).",
             examples=["2026-02-20T00:00:00Z"],
         ),
@@ -182,7 +181,6 @@ def list_runs(
     created_to: Annotated[
         Optional[datetime],
         Query(
-            alias="to",
             description="Run creation upper bound timestamp (UTC ISO8601).",
             examples=["2026-02-20T23:59:59Z"],
         ),
@@ -190,7 +188,6 @@ def list_runs(
     status_filter: Annotated[
         Optional[str],
         Query(
-            alias="status",
             description="Optional run status filter.",
             examples=["READY"],
         ),

@@ -253,9 +253,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     ].endswith("/DpmAsyncAcceptedResponse")
     assert "X-Correlation-Id" in analyze_async["responses"]["202"]["headers"]
     header_names = {param["name"] for param in analyze_async["parameters"]}
-    assert "X-Correlation-Id" in header_names
-    assert "X-Policy-Pack-Id" in header_names
-    assert "X-Tenant-Id" in header_names
+    assert "x-correlation-id" in header_names
+    assert "x-policy-pack-id" in header_names
+    assert "x-tenant-id" in header_names
 
     simulate = openapi["paths"]["/api/v1/rebalance/simulate"]["post"]
     assert simulate["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
@@ -279,9 +279,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "$ref"
     ].endswith("/DpmEffectivePolicyPackResolution")
     policy_params = {param["name"] for param in effective_policy["parameters"]}
-    assert "X-Policy-Pack-Id" in policy_params
-    assert "X-Tenant-Policy-Pack-Id" in policy_params
-    assert "X-Tenant-Id" in policy_params
+    assert "x-policy-pack-id" in policy_params
+    assert "x-tenant-policy-pack-id" in policy_params
+    assert "x-tenant-id" in policy_params
 
     policy_catalog = openapi["paths"]["/api/v1/rebalance/policies/catalog"]["get"]
     assert "requestBody" not in policy_catalog
@@ -289,9 +289,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "$ref"
     ].endswith("/DpmPolicyPackCatalogResponse")
     policy_catalog_params = {param["name"] for param in policy_catalog["parameters"]}
-    assert "X-Policy-Pack-Id" in policy_catalog_params
-    assert "X-Tenant-Policy-Pack-Id" in policy_catalog_params
-    assert "X-Tenant-Id" in policy_catalog_params
+    assert "x-policy-pack-id" in policy_catalog_params
+    assert "x-tenant-policy-pack-id" in policy_catalog_params
+    assert "x-tenant-id" in policy_catalog_params
 
     policy_catalog_get_one = openapi["paths"][
         "/api/v1/rebalance/policies/catalog/{policy_pack_id}"
@@ -322,10 +322,10 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "$ref"
     ].endswith("/DpmAsyncOperationListResponse")
     expected_params = {
-        "from",
-        "to",
+        "created_from",
+        "created_to",
         "operation_type",
-        "status",
+        "status_filter",
         "correlation_id",
         "limit",
         "cursor",
@@ -351,9 +351,9 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "/DpmRunListResponse"
     )
     expected_params = {
-        "from",
-        "to",
-        "status",
+        "created_from",
+        "created_to",
+        "status_filter",
         "request_hash",
         "portfolio_id",
         "limit",
@@ -414,8 +414,8 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "action",
         "actor_id",
         "reason_code",
-        "from",
-        "to",
+        "decided_from",
+        "decided_to",
         "limit",
         "cursor",
     }

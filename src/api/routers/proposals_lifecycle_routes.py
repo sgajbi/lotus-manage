@@ -37,15 +37,13 @@ def create_proposal(
     idempotency_key: Annotated[
         str,
         Header(
-            alias="Idempotency-Key",
             description="Required idempotency key for proposal-create deduplication.",
             examples=["proposal-create-idem-001"],
         ),
     ],
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional correlation id captured in lifecycle audit reason payload.",
             examples=["corr-proposal-create-001"],
         ),
@@ -57,7 +55,7 @@ def create_proposal(
         return service.create_proposal(
             payload=payload,
             idempotency_key=idempotency_key,
-            correlation_id=correlation_id,
+            correlation_id=x_correlation_id,
         )
     except ProposalIdempotencyConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
@@ -200,10 +198,9 @@ def create_proposal_version(
         Path(description="Persisted proposal identifier.", examples=["pp_001"]),
     ],
     payload: ProposalVersionRequest,
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional correlation id captured in version event reason payload.",
             examples=["corr-proposal-version-001"],
         ),
@@ -215,7 +212,7 @@ def create_proposal_version(
         return service.create_version(
             proposal_id=proposal_id,
             payload=payload,
-            correlation_id=correlation_id,
+            correlation_id=x_correlation_id,
         )
     except ProposalNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -244,7 +241,6 @@ def transition_proposal_state(
     idempotency_key: Annotated[
         Optional[str],
         Header(
-            alias="Idempotency-Key",
             description="Optional idempotency key for replay-safe transition writes.",
             examples=["proposal-transition-idem-001"],
         ),
@@ -291,7 +287,6 @@ def record_proposal_approval(
     idempotency_key: Annotated[
         Optional[str],
         Header(
-            alias="Idempotency-Key",
             description="Optional idempotency key for replay-safe approval writes.",
             examples=["proposal-approval-idem-001"],
         ),

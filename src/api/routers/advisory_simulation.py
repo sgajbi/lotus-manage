@@ -59,15 +59,13 @@ def simulate_proposal(
     idempotency_key: Annotated[
         str,
         Header(
-            alias="Idempotency-Key",
             description="Required idempotency key used for dedupe and hash conflict detection.",
             examples=["proposal-idem-001"],
         ),
     ],
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional trace/correlation identifier propagated to logs and response.",
             examples=["corr-proposal-1234"],
         ),
@@ -77,7 +75,7 @@ def simulate_proposal(
     return service.simulate_proposal_response(
         request=request,
         idempotency_key=idempotency_key,
-        correlation_id=correlation_id,
+        correlation_id=x_correlation_id,
     )
 
 
@@ -108,15 +106,13 @@ def build_proposal_artifact_endpoint(
     idempotency_key: Annotated[
         str,
         Header(
-            alias="Idempotency-Key",
             description="Required idempotency key used for dedupe and hash conflict detection.",
             examples=["proposal-artifact-idem-001"],
         ),
     ],
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description="Optional trace/correlation identifier propagated to logs and response.",
             examples=["corr-proposal-artifact-1234"],
         ),
@@ -126,6 +122,6 @@ def build_proposal_artifact_endpoint(
     proposal_result = service.simulate_proposal_response(
         request=request,
         idempotency_key=idempotency_key,
-        correlation_id=correlation_id,
+        correlation_id=x_correlation_id,
     )
     return build_proposal_artifact(request=request, proposal_result=proposal_result)
