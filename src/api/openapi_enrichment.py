@@ -123,7 +123,9 @@ def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -
             if not operation.get("summary"):
                 operation["summary"] = f"{method.upper()} {path}"
             if not operation.get("description"):
-                operation["description"] = f"{method.upper()} operation for {path} in {service_name}."
+                operation["description"] = (
+                    f"{method.upper()} operation for {path} in {service_name}."
+                )
             if not operation.get("tags"):
                 if path.startswith("/health"):
                     operation["tags"] = ["Health"]
@@ -165,4 +167,3 @@ def enrich_openapi_schema(schema: dict[str, Any], *, service_name: str) -> dict[
     _ensure_operation_documentation(schema, service_name=service_name)
     _ensure_schema_documentation(schema)
     return schema
-
