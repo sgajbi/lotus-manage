@@ -147,35 +147,32 @@ def reset_dpm_policy_pack_repository_for_tests() -> None:
     ),
 )
 def get_effective_dpm_policy_pack(
-    request_policy_pack_id: Annotated[
+    x_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Policy-Pack-Id",
             description="Optional request-scoped policy-pack identifier.",
             examples=["dpm_standard_v1"],
         ),
     ] = None,
-    tenant_default_policy_pack_id: Annotated[
+    x_tenant_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Policy-Pack-Id",
             description="Optional tenant-default policy-pack identifier from upstream context.",
             examples=["dpm_tenant_default_v1"],
         ),
     ] = None,
-    tenant_id: Annotated[
+    x_tenant_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Id",
             description="Optional tenant identifier used for tenant policy-pack default lookup.",
             examples=["tenant_001"],
         ),
     ] = None,
 ) -> DpmEffectivePolicyPackResolution:
     return resolve_dpm_policy_pack(
-        request_policy_pack_id=request_policy_pack_id,
-        tenant_default_policy_pack_id=tenant_default_policy_pack_id,
-        tenant_id=tenant_id,
+        request_policy_pack_id=x_policy_pack_id,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
+        tenant_id=x_tenant_id,
     )
 
 
@@ -190,35 +187,32 @@ def get_effective_dpm_policy_pack(
     ),
 )
 def get_dpm_policy_pack_catalog(
-    request_policy_pack_id: Annotated[
+    x_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Policy-Pack-Id",
             description="Optional request-scoped policy-pack identifier.",
             examples=["dpm_standard_v1"],
         ),
     ] = None,
-    tenant_default_policy_pack_id: Annotated[
+    x_tenant_policy_pack_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Policy-Pack-Id",
             description="Optional tenant-default policy-pack identifier from upstream context.",
             examples=["dpm_tenant_default_v1"],
         ),
     ] = None,
-    tenant_id: Annotated[
+    x_tenant_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Tenant-Id",
             description="Optional tenant identifier used for tenant policy-pack default lookup.",
             examples=["tenant_001"],
         ),
     ] = None,
 ) -> DpmPolicyPackCatalogResponse:
     resolution = resolve_dpm_policy_pack(
-        request_policy_pack_id=request_policy_pack_id,
-        tenant_default_policy_pack_id=tenant_default_policy_pack_id,
-        tenant_id=tenant_id,
+        request_policy_pack_id=x_policy_pack_id,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
+        tenant_id=x_tenant_id,
     )
     catalog = load_dpm_policy_pack_catalog()
     items = sorted(catalog.values(), key=lambda item: item.policy_pack_id)

@@ -77,10 +77,10 @@ Implementation scope:
 ### `GET /rebalance/operations`
 - Purpose: list asynchronous operations for supportability investigations.
 - Filters:
-  - `from` (created-at lower bound)
-  - `to` (created-at upper bound)
+  - `created_from` (created-at lower bound)
+  - `created_to` (created-at upper bound)
   - `operation_type`
-  - `status`
+  - `status_filter`
   - `correlation_id`
 - Pagination:
   - `limit`
@@ -180,9 +180,9 @@ Swagger contract quality:
 ### `GET /rebalance/runs`
 - Purpose: list lotus-manage runs for supportability investigations.
 - Filters:
-  - `from` (created-at lower bound)
-  - `to` (created-at upper bound)
-  - `status` (`READY`, `PENDING_REVIEW`, `BLOCKED`)
+  - `created_from` (created-at lower bound)
+  - `created_to` (created-at upper bound)
+  - `status_filter` (`READY`, `PENDING_REVIEW`, `BLOCKED`)
   - `request_hash` (canonical request hash)
   - `portfolio_id`
 - Pagination:
@@ -203,8 +203,8 @@ Swagger contract quality:
 - Purpose: retrieve supportability lineage edges for entity ids (correlation, idempotency, run, operation).
 - Filters:
   - `edge_type`
-  - `from`
-  - `to`
+  - `created_from`
+  - `created_to`
 - Pagination:
   - `limit`
   - `cursor`
@@ -246,8 +246,8 @@ Swagger contract quality:
   - `action`
   - `actor_id`
   - `reason_code`
-  - `from` (decision timestamp lower bound)
-  - `to` (decision timestamp upper bound)
+  - `decided_from` (decision timestamp lower bound)
+  - `decided_to` (decision timestamp upper bound)
 - Pagination:
   - `limit`
   - `cursor`

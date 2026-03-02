@@ -223,14 +223,14 @@ def test_health_endpoints_integration_contract() -> None:
 def test_integration_capabilities_contract_default_consumer() -> None:
     with TestClient(app) as client:
         response = client.get(
-            "/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default"
+            "/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default"
         )
 
     assert response.status_code == 200
     body = response.json()
-    assert body["contractVersion"] == "v1"
-    assert body["sourceService"] == "lotus-manage"
-    assert "pas_ref" in body["supportedInputModes"]
+    assert body["contract_version"] == "v1"
+    assert body["source_service"] == "lotus-manage"
+    assert "pas_ref" in body["supported_input_modes"]
 
 
 def test_lineage_edge_filtering_roundtrip_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:

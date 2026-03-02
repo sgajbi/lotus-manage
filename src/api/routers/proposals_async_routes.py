@@ -29,15 +29,13 @@ def create_proposal_async(
     idempotency_key: Annotated[
         str,
         Header(
-            alias="Idempotency-Key",
             description="Required idempotency key for proposal-create deduplication.",
             examples=["proposal-create-idem-async-001"],
         ),
     ],
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description=(
                 "Optional correlation id for asynchronous tracking. Generated when omitted."
             ),
@@ -51,7 +49,7 @@ def create_proposal_async(
     accepted = service.submit_create_proposal_async(
         payload=payload,
         idempotency_key=idempotency_key,
-        correlation_id=correlation_id,
+        correlation_id=x_correlation_id,
     )
     background_tasks.add_task(
         service.execute_create_proposal_async,
@@ -80,10 +78,9 @@ def create_proposal_version_async(
     ],
     payload: ProposalVersionRequest,
     background_tasks: BackgroundTasks,
-    correlation_id: Annotated[
+    x_correlation_id: Annotated[
         Optional[str],
         Header(
-            alias="X-Correlation-Id",
             description=(
                 "Optional correlation id for asynchronous tracking. Generated when omitted."
             ),
@@ -97,7 +94,7 @@ def create_proposal_version_async(
     accepted = service.submit_create_version_async(
         proposal_id=proposal_id,
         payload=payload,
-        correlation_id=correlation_id,
+        correlation_id=x_correlation_id,
     )
     background_tasks.add_task(
         service.execute_create_version_async,

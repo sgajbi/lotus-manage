@@ -22,18 +22,16 @@ class WorkflowCapability(BaseModel):
 
 
 class IntegrationCapabilitiesResponse(BaseModel):
-    contract_version: str = Field(alias="contractVersion")
-    source_service: str = Field(alias="sourceService")
-    consumer_system: ConsumerSystem = Field(alias="consumerSystem")
-    tenant_id: str = Field(alias="tenantId")
-    generated_at: datetime = Field(alias="generatedAt")
-    as_of_date: date = Field(alias="asOfDate")
-    policy_version: str = Field(alias="policyVersion")
-    supported_input_modes: list[str] = Field(alias="supportedInputModes")
+    contract_version: str
+    source_service: str
+    consumer_system: ConsumerSystem
+    tenant_id: str
+    generated_at: datetime
+    as_of_date: date
+    policy_version: str
+    supported_input_modes: list[str]
     features: list[FeatureCapability]
     workflows: list[WorkflowCapability]
-
-    model_config = {"populate_by_name": True}
 
 
 router = APIRouter(tags=["Integration"])
@@ -49,8 +47,8 @@ def _env_bool(name: str, default: bool) -> bool:
 @router.get("/integration/capabilities", response_model=IntegrationCapabilitiesResponse)
 @router.get("/platform/capabilities", response_model=IntegrationCapabilitiesResponse)
 async def get_integration_capabilities(
-    consumer_system: ConsumerSystem = Query("lotus-gateway", alias="consumerSystem"),
-    tenant_id: str = Query("default", alias="tenantId"),
+    consumer_system: ConsumerSystem = Query("lotus-gateway"),
+    tenant_id: str = Query("default"),
 ) -> IntegrationCapabilitiesResponse:
     lifecycle_enabled = _env_bool("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", True)
     inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
@@ -60,14 +58,14 @@ async def get_integration_capabilities(
         supported_input_modes.append("inline_bundle")
 
     return IntegrationCapabilitiesResponse(
-        contractVersion="v1",
-        sourceService=os.getenv("DPM_CAP_SOURCE_SERVICE", "lotus-manage"),
-        consumerSystem=consumer_system,
-        tenantId=tenant_id,
-        generatedAt=datetime.now(UTC),
-        asOfDate=date.today(),
-        policyVersion=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
-        supportedInputModes=supported_input_modes,
+        contract_version="v1",
+        source_service=os.getenv("DPM_CAP_SOURCE_SERVICE", "lotus-manage"),
+        consumer_system=consumer_system,
+        tenant_id=tenant_id,
+        generated_at=datetime.now(UTC),
+        as_of_date=date.today(),
+        policy_version=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
+        supported_input_modes=supported_input_modes,
         features=[
             FeatureCapability(
                 key="dpm.execution.stateful_pas_ref",

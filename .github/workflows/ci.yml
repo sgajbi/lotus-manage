@@ -47,8 +47,12 @@ jobs:
         run: make typecheck
       - name: Typecheck Critical Tests
         run: make typecheck-tests-critical
+      - name: No-Alias Contract Guard
+        run: make no-alias-gate
       - name: OpenAPI Gate
         run: make openapi-gate
+      - name: API Vocabulary Gate
+        run: make api-vocabulary-gate
       - name: Migration Contract Smoke
         run: make migration-smoke
       - name: Security Audit
