@@ -3,6 +3,11 @@
 Standards for all current and future RFCs:
 - `docs/rfcs/RFC-CONVENTIONS.md`
 
+Governance trackers:
+- `docs/rfcs/RFC-INDEX.md`
+- `docs/rfcs/RFC-DELTA-BACKLOG.md`
+- `docs/rfcs/RFC-RELOCATION-PLAN.md`
+
 Governance boundary:
 - Service-specific implementation RFCs belong in this repository.
 - Cross-cutting platform and multi-service RFCs belong in `https://github.com/sgajbi/lotus-platform`.
