@@ -1,5 +1,13 @@
 # Demo Pack Manual Validation - 2026-02-20
 
+Canonical local service identity:
+
+- `http://manage.dev.lotus`
+
+Scope note:
+
+- the `127.0.0.1` and app-local port examples below are retained as historical process-level validation evidence and local-only debug paths, not as the canonical cross-app integration contract.
+
 ## Scope
 
 Validated the end-to-end demo pack scenarios through live API calls in both runtime modes:
