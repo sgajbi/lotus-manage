@@ -2,6 +2,9 @@
 
 This folder contains JSON input files demonstrating key capabilities of the lotus-manage Rebalance Engine. Run these scenarios through the API endpoints.
 
+Canonical local service identity:
+- `http://manage.dev.lotus`
+
 ## Running Scenarios
 
 ### API Usage
@@ -10,42 +13,42 @@ For simulate demos, POST the content of a scenario file to `/rebalance/simulate`
 
 Example:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-01" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-01" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 For batch what-if demos, POST to `/rebalance/analyze`:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/analyze" -H "Content-Type: application/json" --data-binary "@docs/demo/09_batch_what_if_analysis.json"
+curl -X POST "http://manage.dev.lotus/rebalance/analyze" -H "Content-Type: application/json" --data-binary "@docs/demo/09_batch_what_if_analysis.json"
 ```
 
 For asynchronous batch what-if demos, POST to `/rebalance/analyze/async` and retrieve operation status:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/analyze/async" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-26-async" --data-binary "@docs/demo/26_dpm_async_batch_analysis.json"
-curl -X GET "http://127.0.0.1:8000/rebalance/operations?status=SUCCEEDED&operation_type=ANALYZE_SCENARIOS&limit=20"
-curl -X GET "http://127.0.0.1:8000/rebalance/operations/by-correlation/demo-corr-26-async"
+curl -X POST "http://manage.dev.lotus/rebalance/analyze/async" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-26-async" --data-binary "@docs/demo/26_dpm_async_batch_analysis.json"
+curl -X GET "http://manage.dev.lotus/rebalance/operations?status=SUCCEEDED&operation_type=ANALYZE_SCENARIOS&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/operations/by-correlation/demo-corr-26-async"
 ```
 
 For lotus-manage policy-pack resolution supportability:
 ```bash
-curl -X GET "http://127.0.0.1:8000/rebalance/policies/effective" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
+curl -X GET "http://manage.dev.lotus/rebalance/policies/effective" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 ```
 
 For lotus-manage policy-pack catalog and selected-pack presence diagnostics:
 ```bash
-curl -X GET "http://127.0.0.1:8000/rebalance/policies/catalog" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
+curl -X GET "http://manage.dev.lotus/rebalance/policies/catalog" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 ```
 
 For lotus-manage policy-pack supportability + diagnostics scenario:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-31-policy-pack" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001" --data-binary "@docs/demo/31_dpm_policy_pack_supportability_diagnostics.json"
-curl -X GET "http://127.0.0.1:8000/rebalance/policies/effective" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
-curl -X GET "http://127.0.0.1:8000/rebalance/policies/catalog" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-31-policy-pack" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001" --data-binary "@docs/demo/31_dpm_policy_pack_supportability_diagnostics.json"
+curl -X GET "http://manage.dev.lotus/rebalance/policies/effective" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
+curl -X GET "http://manage.dev.lotus/rebalance/policies/catalog" -H "X-Policy-Pack-Id: dpm_standard_v1" -H "X-Tenant-Policy-Pack-Id: dpm_tenant_default_v1" -H "X-Tenant-Id: tenant_001"
 ```
 
 For lotus-manage supportability summary metrics scenario:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-32-support-summary" -H "X-Correlation-Id: demo-corr-32-support-summary" --data-binary "@docs/demo/32_dpm_supportability_summary_metrics.json"
-curl -X GET "http://127.0.0.1:8000/rebalance/supportability/summary"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-32-support-summary" -H "X-Correlation-Id: demo-corr-32-support-summary" --data-binary "@docs/demo/32_dpm_supportability_summary_metrics.json"
+curl -X GET "http://manage.dev.lotus/rebalance/supportability/summary"
 ```
 
 For lotus-manage policy-pack turnover override demo (requires `DPM_POLICY_PACKS_ENABLED=true`):
@@ -53,50 +56,50 @@ For lotus-manage policy-pack turnover override demo (requires `DPM_POLICY_PACKS_
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","turnover_policy":{"max_turnover_pct":"0.01"},"tax_policy":{"enable_tax_awareness":true,"max_realized_capital_gains":"100"}}}'
 export DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED=true
 export DPM_TENANT_POLICY_PACK_MAP_JSON='{"tenant_001":"dpm_standard_v1"}'
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-turnover-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-turnover-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 Settlement-policy override example:
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","settlement_policy":{"enable_settlement_awareness":true,"settlement_horizon_days":3}}}'
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-settlement-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/07_settlement_overdraft_block.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-settlement-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/07_settlement_overdraft_block.json"
 ```
 
 Constraint-policy override example:
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","constraint_policy":{"single_position_max_weight":"0.25","group_constraints":{"sector:TECH":{"max_weight":"0.20"}}}}}'
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-constraints-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-constraints-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 Workflow-policy override example:
 ```bash
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","workflow_policy":{"enable_workflow_gates":false,"workflow_requires_client_consent":true,"client_consent_already_obtained":true}}}'
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-workflow-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-workflow-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 Idempotency-policy override example:
 ```bash
 export DPM_IDEMPOTENCY_REPLAY_ENABLED=true
 export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","idempotency_policy":{"replay_enabled":false}}}'
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-idempotency-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 
 For lotus-manage supportability and deterministic artifact retrieval flow:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-27-supportability" -H "X-Correlation-Id: demo-corr-27-supportability" --data-binary "@docs/demo/27_dpm_supportability_artifact_flow.json"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs?status=READY&portfolio_id=pf_demo_support_27&limit=20"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs?request_hash=<request_hash>&limit=20"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-request-hash/<url_encoded_request_hash>"
-curl -X GET "http://127.0.0.1:8000/rebalance/supportability/summary"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-correlation/demo-corr-27-supportability"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/idempotency/demo-27-supportability"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/support-bundle"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-correlation/<correlation_id>/support-bundle"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/idempotency/<idempotency_key>/support-bundle"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-operation/<operation_id>/support-bundle"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/support-bundle?include_artifact=false&include_async_operation=false&include_idempotency_history=false"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/artifact"
+curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-27-supportability" -H "X-Correlation-Id: demo-corr-27-supportability" --data-binary "@docs/demo/27_dpm_supportability_artifact_flow.json"
+curl -X GET "http://manage.dev.lotus/rebalance/runs?status=READY&portfolio_id=pf_demo_support_27&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/runs?request_hash=<request_hash>&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/by-request-hash/<url_encoded_request_hash>"
+curl -X GET "http://manage.dev.lotus/rebalance/supportability/summary"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/by-correlation/demo-corr-27-supportability"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/idempotency/demo-27-supportability"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/<rebalance_run_id>/support-bundle"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/by-correlation/<correlation_id>/support-bundle"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/idempotency/<idempotency_key>/support-bundle"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/by-operation/<operation_id>/support-bundle"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/<rebalance_run_id>/support-bundle?include_artifact=false&include_async_operation=false&include_idempotency_history=false"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/<rebalance_run_id>/artifact"
 ```
 
 Retention can be enabled for supportability records with:
@@ -104,48 +107,48 @@ Retention can be enabled for supportability records with:
 
 For lotus-manage lineage supportability (enabled when `DPM_LINEAGE_APIS_ENABLED=true`):
 ```bash
-curl -X GET "http://127.0.0.1:8000/rebalance/lineage/<entity_id>"
+curl -X GET "http://manage.dev.lotus/rebalance/lineage/<entity_id>"
 ```
 
 For lotus-manage idempotency history supportability (enabled when `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`):
 ```bash
-curl -X GET "http://127.0.0.1:8000/rebalance/idempotency/<idempotency_key>/history"
+curl -X GET "http://manage.dev.lotus/rebalance/idempotency/<idempotency_key>/history"
 ```
 
 For lotus-manage workflow supportability endpoints (enabled only when `DPM_WORKFLOW_ENABLED=true`):
 ```bash
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/workflow"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-correlation/<correlation_id>/workflow"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/idempotency/<idempotency_key>/workflow"
-curl -X POST "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/workflow/actions" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-workflow-1" --data-binary '{"action":"APPROVE","reason_code":"REVIEW_APPROVED","actor_id":"reviewer_001"}'
-curl -X POST "http://127.0.0.1:8000/rebalance/runs/by-correlation/<correlation_id>/workflow/actions" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-workflow-2" --data-binary '{"action":"REQUEST_CHANGES","reason_code":"NEEDS_DETAIL","actor_id":"reviewer_001"}'
-curl -X POST "http://127.0.0.1:8000/rebalance/runs/idempotency/<idempotency_key>/workflow/actions" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-workflow-3" --data-binary '{"action":"REJECT","reason_code":"POLICY_REJECTED","actor_id":"reviewer_001"}'
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/<rebalance_run_id>/workflow/history"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/by-correlation/<correlation_id>/workflow/history"
-curl -X GET "http://127.0.0.1:8000/rebalance/runs/idempotency/<idempotency_key>/workflow/history"
-curl -X GET "http://127.0.0.1:8000/rebalance/workflow/decisions?action=APPROVE&actor_id=reviewer_001&limit=20"
-curl -X GET "http://127.0.0.1:8000/rebalance/workflow/decisions/by-correlation/<correlation_id>"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/<rebalance_run_id>/workflow"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/by-correlation/<correlation_id>/workflow"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/idempotency/<idempotency_key>/workflow"
+curl -X POST "http://manage.dev.lotus/rebalance/runs/<rebalance_run_id>/workflow/actions" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-workflow-1" --data-binary '{"action":"APPROVE","reason_code":"REVIEW_APPROVED","actor_id":"reviewer_001"}'
+curl -X POST "http://manage.dev.lotus/rebalance/runs/by-correlation/<correlation_id>/workflow/actions" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-workflow-2" --data-binary '{"action":"REQUEST_CHANGES","reason_code":"NEEDS_DETAIL","actor_id":"reviewer_001"}'
+curl -X POST "http://manage.dev.lotus/rebalance/runs/idempotency/<idempotency_key>/workflow/actions" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-workflow-3" --data-binary '{"action":"REJECT","reason_code":"POLICY_REJECTED","actor_id":"reviewer_001"}'
+curl -X GET "http://manage.dev.lotus/rebalance/runs/<rebalance_run_id>/workflow/history"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/by-correlation/<correlation_id>/workflow/history"
+curl -X GET "http://manage.dev.lotus/rebalance/runs/idempotency/<idempotency_key>/workflow/history"
+curl -X GET "http://manage.dev.lotus/rebalance/workflow/decisions?action=APPROVE&actor_id=reviewer_001&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/workflow/decisions/by-correlation/<correlation_id>"
 ```
 
 For advisory proposal simulation demos, POST to `/rebalance/proposals/simulate`:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/proposals/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-01" --data-binary "@docs/demo/10_advisory_proposal_simulate.json"
+curl -X POST "http://manage.dev.lotus/rebalance/proposals/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-01" --data-binary "@docs/demo/10_advisory_proposal_simulate.json"
 ```
 
 For advisory proposal artifact demos, POST to `/rebalance/proposals/artifact`:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/proposals/artifact" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-artifact-01" --data-binary "@docs/demo/19_advisory_proposal_artifact.json"
+curl -X POST "http://manage.dev.lotus/rebalance/proposals/artifact" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-artifact-01" --data-binary "@docs/demo/19_advisory_proposal_artifact.json"
 ```
 
 For advisory proposal persistence/lifecycle create demo, POST to `/rebalance/proposals`:
 ```bash
-curl -X POST "http://127.0.0.1:8000/rebalance/proposals" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-persist-01" --data-binary "@docs/demo/20_advisory_proposal_persist_create.json"
+curl -X POST "http://manage.dev.lotus/rebalance/proposals" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-persist-01" --data-binary "@docs/demo/20_advisory_proposal_persist_create.json"
 ```
 
 For full live demo-pack validation (all scenarios, including lifecycle flow):
 ```bash
-python scripts/run_demo_pack_live.py --base-url http://127.0.0.1:8001
-python scripts/run_demo_pack_live.py --base-url http://127.0.0.1:8000
+python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
+python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
 ```
 
 ---
@@ -289,3 +292,4 @@ python scripts/run_demo_pack_live.py --base-url http://127.0.0.1:8000
 * **READY:** All constraints met, trades generated, safety checks passed. Ready for execution.
 * **PENDING_REVIEW:** Trades generated but require human approval (e.g., cash drift, soft constraint breach).
 * **BLOCKED:** Critical failure (Data Quality, Hard Constraint, Safety Violation). No trades valid.
+

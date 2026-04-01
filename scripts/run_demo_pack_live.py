@@ -472,7 +472,9 @@ if __name__ == "__main__":
         description="Run live demo pack scenarios against API base URL"
     )
     parser.add_argument(
-        "--base-url", required=True, help="API base URL, for example http://127.0.0.1:8001"
+        "--base-url",
+        required=True,
+        help="API base URL, for example http://manage.dev.lotus or a direct local debug port such as http://127.0.0.1:8001",
     )
     args = parser.parse_args()
     run_demo_pack(args.base_url)
