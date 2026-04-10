@@ -107,6 +107,9 @@ clean:
 run:
 	uvicorn src.api.main:app --reload --port 8000
 
+run-canonical:
+	uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8001
+
 check-deps:
 	python -m pip check
 
