@@ -2,6 +2,8 @@
 
 Discretionary portfolio management (lotus-manage) execution, supportability, and lifecycle service.
 
+Repository-local engineering context: `REPOSITORY-ENGINEERING-CONTEXT.md`
+
 This repository owns lotus-manage runtime workflows.
 Advisor-led proposal workflows are owned by `lotus-advise`.
 
