@@ -1,9 +1,7 @@
-name: Backend Service Pipeline
+name: Main Releasability Gate
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
@@ -22,14 +20,14 @@ env:
 
 jobs:
   workflow-lint:
-    name: Workflow Lint
+    name: Main Releasability / Workflow Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: reviewdog/action-actionlint@v1
 
   lint-typecheck-security:
-    name: Lint Typecheck Security
+    name: Main Releasability / Lint Typecheck Security
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -59,7 +57,7 @@ jobs:
         run: make security-audit
 
   test-suites:
-    name: Tests (${{ matrix.suite }})
+    name: Main Releasability / Tests (${{ matrix.suite }})
     needs: [lint-typecheck-security]
     runs-on: ubuntu-latest
     strategy:
@@ -93,7 +91,7 @@ jobs:
           if-no-files-found: error
 
   coverage-gate:
-    name: Coverage Gate (Combined)
+    name: Main Releasability / Coverage Gate (Combined)
     needs: [test-suites]
     runs-on: ubuntu-latest
     steps:
@@ -114,13 +112,21 @@ jobs:
         run: |
           python -m coverage combine coverage-data
           python -m coverage report --fail-under=${{ env.COVERAGE_FAIL_UNDER }}
+      - name: Upload coverage summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-releasability-coverage-data
+          path: |
+            .coverage
+            coverage-data
+          include-hidden-files: true
+          if-no-files-found: error
 
   docker-build:
-    name: Validate Docker Build
+    name: Main Releasability / Validate Docker Build
     needs: [coverage-gate]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - name: Build Docker image
         run: make docker-build
-

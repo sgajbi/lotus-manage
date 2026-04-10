@@ -13,9 +13,9 @@ Production-style readiness checklist for RFC-0024 cutover controls.
 - [x] Checksum mismatch guardrail implemented and tested
 - [x] Migration advisory lock strategy implemented and tested
 - [x] Migration CLI implemented (`scripts/postgres_migrate.py`)
-- [x] CI Postgres migration smoke job added (`.github/workflows/ci.yml`)
-- [x] CI production profile startup smoke job added (`.github/workflows/ci.yml`)
-- [x] CI production profile guardrail negative checks added (`.github/workflows/ci.yml`)
+- [x] CI Postgres migration smoke job added (`.github/workflows/pr-merge-gate.yml`)
+- [x] CI production profile startup smoke job added (`.github/workflows/pr-merge-gate.yml`)
+- [x] CI production profile guardrail negative checks added (`.github/workflows/pr-merge-gate.yml`)
 - [x] Live Postgres integration contracts present for:
   - [x] lotus-manage repository
   - [x] advisory repository
