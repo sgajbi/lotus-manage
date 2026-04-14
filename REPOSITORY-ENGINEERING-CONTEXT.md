@@ -31,7 +31,8 @@ Current repository posture:
 1. `lotus-manage` is the management-side service after the split from `lotus-advise`,
 2. canonical local host runtime uses port `8001` so it can coexist with `lotus-advise`,
 3. local CI and Docker parity are already standardized under the RFC-0072 lane model,
-4. the service remains part of the canonical front-office validation path through `lotus-gateway`.
+4. upstream and source-data authority posture is classified under RFC-0082 in `docs/standards/RFC-0082-upstream-contract-family-map.md`,
+5. the service remains part of the canonical front-office validation path through `lotus-gateway`.
 
 ## Architecture And Module Map
 
@@ -58,7 +59,9 @@ Boundary rules:
 1. management workflows belong here,
 2. proposal and advisor-led flows belong in `lotus-advise`,
 3. host runtime identity and coexistence with `lotus-advise` are part of the operational contract,
-4. management capabilities should remain aligned with gateway-facing product expectations.
+4. management capabilities should remain aligned with gateway-facing product expectations,
+5. `lotus-core` remains the source-data authority for core-referenced portfolio, market-data, price, and FX inputs,
+6. REST/OpenAPI remains the canonical integration contract; gRPC is not justified for current management workflows.
 
 ## Repo-Native Commands
 
@@ -100,13 +103,16 @@ Most relevant current governance:
 3. `../lotus-platform/rfcs/RFC-0071-centralized-environment-scoped-service-addressing-and-ingress-governance.md`
 4. `../lotus-platform/rfcs/RFC-0072-platform-wide-multi-lane-ci-validation-and-release-governance.md`
 5. `../lotus-platform/rfcs/RFC-0073-lotus-ecosystem-engineering-context-and-agent-guidance-system.md`
+6. `../lotus-platform/rfcs/RFC-0082-lotus-core-domain-authority-and-analytics-serving-boundary-hardening.md`
+7. `docs/standards/RFC-0082-upstream-contract-family-map.md`
 
 ## Known Constraints And Implementation Notes
 
 1. management/advisory boundary clarity is a real quality concern after the split,
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
-4. this repo should stay operationally aligned with gateway and platform startup sequences.
+4. `pas_ref`, inline bundle source-data lineage, and remaining advisory/proposal compatibility surfaces are RFC-0082 watchlist areas,
+5. this repo should stay operationally aligned with gateway and platform startup sequences.
 
 ## Context Maintenance Rule
 
@@ -116,7 +122,8 @@ Update this document when:
 2. runtime or coexistence assumptions with `lotus-advise` change,
 3. repo-native commands or CI expectations change,
 4. upstream or downstream integration posture changes materially,
-5. current-state rollout posture changes.
+5. RFC-0082 contract-family classification changes,
+6. current-state rollout posture changes.
 
 ## Cross-Links
 
