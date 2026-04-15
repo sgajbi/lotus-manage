@@ -4,6 +4,9 @@ Discretionary portfolio management (lotus-manage) execution, supportability, and
 
 Repository-local engineering context: `REPOSITORY-ENGINEERING-CONTEXT.md`
 
+RFC-0082 upstream contract-family conformance map:
+`docs/standards/RFC-0082-upstream-contract-family-map.md`
+
 This repository owns lotus-manage runtime workflows.
 Advisor-led proposal workflows are owned by `lotus-advise`.
 
