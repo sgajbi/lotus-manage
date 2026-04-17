@@ -15,7 +15,7 @@ from src.api.simulation_examples import (
     SIMULATE_PENDING_EXAMPLE,
     SIMULATE_READY_EXAMPLE,
 )
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationStatusResponse,
     DpmRunSupportService,

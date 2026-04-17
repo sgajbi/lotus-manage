@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 import pytest
 
 from src.core.dpm.engine import run_simulation
-from src.core.dpm_runs.models import DpmRunRecord
-from src.core.dpm_runs.service import DpmRunNotFoundError, DpmRunSupportService
+from src.core.rebalance_runs.models import DpmRunRecord
+from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.models import EngineOptions
 from src.infrastructure.dpm_runs import InMemoryDpmRunRepository
 from tests.shared.factories import (

@@ -19,7 +19,7 @@ These endpoints improve incident response, support triage, and audit traceabilit
 
 Implementation note (2026-02-20):
 - Implemented router endpoints in `src/api/routers/rebalance_runs.py`.
-- Implemented support domain and repository port in `src/core/dpm_runs/`.
+- Implemented support domain and repository port in `src/core/rebalance_runs/`.
 - Implemented in-memory adapter in `src/infrastructure/dpm_runs/in_memory.py`.
 - Integrated run recording in `src/api/main.py` for `/rebalance/simulate` and `/rebalance/analyze`.
 - Added API coverage in `tests/unit/dpm/api/test_api_rebalance.py`.

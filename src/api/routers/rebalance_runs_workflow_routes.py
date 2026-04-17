@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from fastapi import Header, HTTPException, Path, Query, status
 
 from src.api.routers import rebalance_runs as shared
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmRunNotFoundError,
     DpmRunSupportService,
     DpmRunWorkflowActionRequest,
@@ -13,7 +13,7 @@ from src.core.dpm_runs import (
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,
 )
-from src.core.dpm_runs.models import DpmWorkflowActionType
+from src.core.rebalance_runs.models import DpmWorkflowActionType
 
 
 @shared.router.get(

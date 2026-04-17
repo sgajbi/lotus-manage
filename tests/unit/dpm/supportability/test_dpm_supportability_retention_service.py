@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 import pytest
 
 from src.core.dpm.engine import run_simulation
-from src.core.dpm_runs.service import DpmRunNotFoundError, DpmRunSupportService
+from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.models import EngineOptions
 from src.infrastructure.dpm_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
 from tests.shared.factories import (

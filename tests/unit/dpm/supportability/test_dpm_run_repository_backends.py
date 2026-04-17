@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,

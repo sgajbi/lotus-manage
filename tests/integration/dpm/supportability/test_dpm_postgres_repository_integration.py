@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,

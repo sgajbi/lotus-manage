@@ -20,7 +20,7 @@ from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
 )
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmRunNotFoundError,
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,

@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 
 from src.core.dpm.engine import run_simulation
-from src.core.dpm_runs.service import (
+from src.core.rebalance_runs.service import (
     DpmRunNotFoundError,
     DpmRunSupportService,
     DpmWorkflowDisabledError,

@@ -17,7 +17,7 @@ Introduce read-only lotus-manage supportability endpoints:
 3. `GET /rebalance/runs/idempotency/{idempotency_key}`
 
 Implement with repository port + in-memory adapter:
-- `src/core/dpm_runs/repository.py`
+- `src/core/rebalance_runs/repository.py`
 - `src/infrastructure/dpm_runs/in_memory.py`
 
 Record run metadata and result payload after simulation execution:

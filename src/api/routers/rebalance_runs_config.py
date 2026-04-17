@@ -2,7 +2,7 @@ import os
 from typing import cast
 
 from src.core.common.capabilities import psycopg_error_type
-from src.core.dpm_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository
 from src.infrastructure.dpm_runs import (
     PostgresDpmRunRepository,
 )

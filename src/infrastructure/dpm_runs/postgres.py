@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, cast
 
 from src.core.common.capabilities import has_psycopg
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,

@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from types import ModuleType
 
 import src.infrastructure.dpm_runs.postgres as postgres_module
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,

@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from src.core.dpm.engine import run_simulation
-from src.core.dpm_runs.service import DpmRunSupportService
+from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.models import EngineOptions
 from src.infrastructure.dpm_runs import InMemoryDpmRunRepository
 from tests.shared.factories import (

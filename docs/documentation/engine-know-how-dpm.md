@@ -5,9 +5,9 @@ Implementation scope:
 - lotus-manage run supportability router: `src/api/routers/rebalance_runs.py`
 - lotus-manage policy-pack supportability router: `src/api/routers/rebalance_policy_packs.py`
 - lotus-manage run supportability runtime config/env parsing: `src/api/routers/rebalance_runs_config.py`
-- lotus-manage run supportability service orchestration: `src/core/dpm_runs/service.py`
-- lotus-manage run supportability DTO mappers: `src/core/dpm_runs/serializers.py`
-- lotus-manage run supportability workflow transition helpers: `src/core/dpm_runs/workflow.py`
+- lotus-manage run supportability service orchestration: `src/core/rebalance_runs/service.py`
+- lotus-manage run supportability DTO mappers: `src/core/rebalance_runs/serializers.py`
+- lotus-manage run supportability workflow transition helpers: `src/core/rebalance_runs/workflow.py`
 - Models: `src/core/models.py`
 - Core orchestration: `src/core/dpm/engine.py` (`run_simulation`)
 - lotus-manage modular internals:

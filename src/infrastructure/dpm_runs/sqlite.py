@@ -6,7 +6,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Any, Optional, cast
 
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,
@@ -15,7 +15,7 @@ from src.core.dpm_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
-from src.core.dpm_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository
 
 
 class SqliteDpmRunRepository(DpmRunRepository):

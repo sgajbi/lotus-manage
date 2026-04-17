@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from fastapi import HTTPException, Path, Query, status
 
 from src.api.routers import rebalance_runs as shared
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmAsyncOperationListResponse,
     DpmAsyncOperationStatusResponse,
     DpmLineageResponse,

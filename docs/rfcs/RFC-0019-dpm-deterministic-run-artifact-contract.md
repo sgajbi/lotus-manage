@@ -58,7 +58,7 @@ Current supportability APIs expose run metadata, but there is no single normaliz
 Implemented in current codebase:
 - `GET /rebalance/runs/{rebalance_run_id}/artifact`
 - Deterministic artifact builder module:
-  - `src/core/dpm_runs/artifact.py`
+  - `src/core/rebalance_runs/artifact.py`
 - Artifact hash from canonical payload for repeatable retrieval.
 - Feature flag:
   - `DPM_ARTIFACTS_ENABLED`

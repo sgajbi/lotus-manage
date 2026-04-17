@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, sta
 
 from src.api.routers import rebalance_runs_config
 from src.api.routers.runtime_utils import assert_feature_enabled, normalize_backend_init_error
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmRunArtifactResponse,
     DpmRunIdempotencyHistoryResponse,
     DpmRunIdempotencyLookupResponse,
@@ -17,7 +17,7 @@ from src.core.dpm_runs import (
     DpmRunSupportService,
     DpmSupportabilitySummaryResponse,
 )
-from src.core.dpm_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository
 from src.core.models import RebalanceResult
 
 router = APIRouter(tags=["lotus-manage Run Supportability"])

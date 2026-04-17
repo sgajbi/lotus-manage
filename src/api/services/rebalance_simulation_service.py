@@ -25,7 +25,7 @@ from src.core.dpm.policy_packs import (
     resolve_policy_pack_definition,
     resolve_policy_pack_replay_enabled,
 )
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationStatusResponse,
     DpmRunLookupResponse,

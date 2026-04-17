@@ -35,8 +35,8 @@
 
 - Request and response contracts preserve deterministic input scope and reproducibility metadata.
 - Evidence:
-  - `src/core/dpm_runs/models.py`
-  - `src/core/dpm_runs/artifact.py`
+  - `src/core/rebalance_runs/models.py`
+  - `src/core/rebalance_runs/artifact.py`
 
 ## Concurrency and Conflict Policy
 
@@ -44,7 +44,7 @@
 - Workflow action conflicts are exposed through deterministic API responses.
 - Evidence:
   - `src/core/advisory_engine.py`
-  - `src/core/dpm_runs/service.py`
+  - `src/core/rebalance_runs/service.py`
   - `tests/unit/core/*`
 
 ## Integrity Constraints
