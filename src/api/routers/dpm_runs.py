@@ -2,7 +2,7 @@ import importlib
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
 from src.api.routers import dpm_runs_config
 from src.api.routers.runtime_utils import assert_feature_enabled, normalize_backend_init_error
@@ -100,6 +100,23 @@ def _assert_support_bundle_apis_enabled() -> None:
 
 def _supportability_store_backend_name() -> str:
     return dpm_runs_config.supportability_store_backend_name()
+
+
+def _reject_unexpected_query_params(
+    request: Request,
+    *,
+    allowed_params: set[str],
+) -> None:
+    unexpected = sorted(name for name in request.query_params if name not in allowed_params)
+    if unexpected:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                "UNSUPPORTED_QUERY_PARAMETER: "
+                + ", ".join(unexpected)
+                + " not supported for this endpoint"
+            ),
+        )
 
 
 def _build_repository() -> DpmRunRepository:
@@ -243,14 +260,23 @@ def list_runs(
     summary="Get lotus-manage Supportability Summary",
     description=(
         "Returns supportability storage summary metrics (runs, operations, status counts, "
-        "and temporal bounds) for operational investigation without direct database access."
+        "and temporal bounds) for operational investigation without direct database access. "
+        "Use this endpoint when operators need a store-wide health and retention snapshot; "
+        "it does not accept ad hoc query filters."
     ),
+    responses={
+        422: {
+            "description": "Unsupported query parameters were supplied.",
+        },
+    },
 )
 def get_dpm_supportability_summary(
+    request: Request,
     service: DpmRunSupportService = Depends(get_dpm_run_support_service),
 ) -> DpmSupportabilitySummaryResponse:
     _assert_support_apis_enabled()
     _assert_supportability_summary_apis_enabled()
+    _reject_unexpected_query_params(request, allowed_params=set())
     return service.get_supportability_summary(
         store_backend=_supportability_store_backend_name(),
         retention_days=dpm_runs_config.env_non_negative_int("DPM_SUPPORTABILITY_RETENTION_DAYS", 0),

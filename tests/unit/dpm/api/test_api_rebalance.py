@@ -627,6 +627,14 @@ def test_dpm_supportability_summary_endpoint_disabled(client, monkeypatch):
     assert response.json()["detail"] == "DPM_SUPPORTABILITY_SUMMARY_APIS_DISABLED"
 
 
+def test_dpm_supportability_summary_rejects_unexpected_query_params(client):
+    response = client.get("/api/v1/rebalance/supportability/summary?status=READY")
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
+
+
 def test_dpm_supportability_summary_includes_workflow_aggregates(client, monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     payload = get_valid_payload()

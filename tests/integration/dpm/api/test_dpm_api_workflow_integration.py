@@ -84,29 +84,14 @@ def test_run_list_and_operation_lookup_integration_flow() -> None:
     assert len(listed.json()["items"]) >= 1
 
 
-def test_supportability_summary_respects_status_filter() -> None:
-    payload = valid_api_payload()
-    headers = {
-        "Idempotency-Key": "integration-dpm-summary-filter-1",
-        "X-Correlation-Id": "corr-integration-dpm-summary-filter-1",
-    }
-
+def test_supportability_summary_rejects_unsupported_query_parameters() -> None:
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
-        assert simulate.status_code == 200
+        response = client.get("/api/v1/rebalance/supportability/summary?status=SUCCESS")
 
-        summary = client.get("/api/v1/rebalance/supportability/summary?status=SUCCESS")
-
-    assert summary.status_code == 200
-    body = summary.json()
-    assert body["run_count"] >= 1
-
-
-def test_supportability_summary_rejects_unknown_status_filter() -> None:
-    with TestClient(app) as client:
-        response = client.get("/api/v1/rebalance/supportability/summary?status=NOT_A_REAL_STATUS")
-
-    assert response.status_code == 200
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
 
 
 def test_support_bundle_lookup_variants_roundtrip() -> None:

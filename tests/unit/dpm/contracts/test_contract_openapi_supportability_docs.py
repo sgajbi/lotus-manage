@@ -425,6 +425,10 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert supportability_summary["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmSupportabilitySummaryResponse")
+    assert "store-wide health and retention snapshot" in supportability_summary["description"]
+    assert "does not accept ad hoc query filters" in supportability_summary["description"]
+    assert "parameters" not in supportability_summary
+    assert "422" in supportability_summary["responses"]
 
     support_bundle = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/support-bundle"][
         "get"
