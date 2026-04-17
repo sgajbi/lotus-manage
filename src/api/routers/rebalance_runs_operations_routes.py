@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from fastapi import HTTPException, Path, Query, status
+from fastapi import HTTPException, Path, Query, Request, status
 
 from src.api.routers import rebalance_runs as shared
 from src.core.rebalance_runs import (
@@ -18,10 +18,18 @@ from src.core.rebalance_runs import (
     status_code=status.HTTP_200_OK,
     summary="List lotus-manage Async Operations",
     description=(
-        "Returns asynchronous operation records with optional filters and cursor pagination."
+        "Returns asynchronous operation records with optional filters and cursor pagination. "
+        "Use the canonical query parameter `status_filter` for operation status filtering; "
+        "unsupported aliases are rejected."
     ),
+    responses={
+        422: {
+            "description": "Unsupported query parameters were supplied.",
+        },
+    },
 )
 def list_dpm_async_operations(
+    request: Request,
     created_from: Annotated[
         Optional[shared.datetime],
         Query(
@@ -77,6 +85,18 @@ def list_dpm_async_operations(
 ) -> DpmAsyncOperationListResponse:
     shared._assert_support_apis_enabled()
     shared._assert_async_operations_enabled()
+    shared._reject_unexpected_query_params(
+        request,
+        allowed_params={
+            "created_from",
+            "created_to",
+            "operation_type",
+            "status_filter",
+            "correlation_id",
+            "limit",
+            "cursor",
+        },
+    )
     return service.list_async_operations(
         created_from=created_from,
         created_to=created_to,

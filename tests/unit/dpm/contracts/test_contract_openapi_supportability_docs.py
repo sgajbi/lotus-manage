@@ -388,6 +388,10 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in list_operations["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert "status_filter` for operation status filtering; unsupported aliases are rejected" in (
+        list_operations["description"]
+    )
+    assert "422" in list_operations["responses"]
 
     execute_async = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}/execute"]["post"]
     assert "requestBody" not in execute_async

@@ -24,7 +24,7 @@ curl -X POST "http://manage.dev.lotus/rebalance/analyze" -H "Content-Type: appli
 For asynchronous batch what-if demos, POST to `/rebalance/analyze/async` and retrieve operation status:
 ```bash
 curl -X POST "http://manage.dev.lotus/rebalance/analyze/async" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-26-async" --data-binary "@docs/demo/26_dpm_async_batch_analysis.json"
-curl -X GET "http://manage.dev.lotus/rebalance/operations?status=SUCCEEDED&operation_type=ANALYZE_SCENARIOS&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/operations?status_filter=SUCCEEDED&operation_type=ANALYZE_SCENARIOS&limit=20"
 curl -X GET "http://manage.dev.lotus/rebalance/operations/by-correlation/demo-corr-26-async"
 ```
 

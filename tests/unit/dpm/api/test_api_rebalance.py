@@ -521,6 +521,15 @@ def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     assert by_correlation.json()["operation_id"] == accepted.operation_id
 
 
+def test_dpm_async_operation_list_rejects_unsupported_query_parameters(client):
+    response = client.get("/api/v1/rebalance/operations?status=SUCCEEDED")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
+
+
 def test_dpm_async_operation_list_filters_and_cursor(client):
     service = get_dpm_run_support_service()
     one = service.submit_analyze_async(
