@@ -107,8 +107,9 @@ Retention can be enabled for supportability records with:
 
 For lotus-manage lineage supportability (enabled when `DPM_LINEAGE_APIS_ENABLED=true`):
 ```bash
-curl -X GET "http://manage.dev.lotus/rebalance/lineage/<entity_id>"
+curl -X GET "http://manage.dev.lotus/rebalance/lineage/<entity_id>?edge_type=CORRELATION_TO_RUN&limit=20"
 ```
+Use canonical snake_case query params only; unsupported aliases are rejected with `422`.
 
 For lotus-manage idempotency history supportability (enabled when `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`):
 ```bash

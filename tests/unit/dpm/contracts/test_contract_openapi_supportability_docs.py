@@ -532,6 +532,16 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert lineage["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/DpmLineageResponse"
     )
+    assert (
+        "Supported filters are `edge_type`, `created_from`, `created_to`, `limit`, and `cursor`"
+        in lineage["description"]
+    )
+    assert lineage["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    expected_params = {"entity_id", "edge_type", "created_from", "created_to", "limit", "cursor"}
+    actual_params = {param["name"] for param in lineage["parameters"]}
+    assert expected_params.issubset(actual_params)
 
     idempotency_history = openapi["paths"][
         "/api/v1/rebalance/idempotency/{idempotency_key}/history"

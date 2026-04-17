@@ -159,10 +159,17 @@ def get_dpm_async_operation_by_correlation(
     summary="Get lotus-manage Supportability Lineage by Entity Id",
     description=(
         "Returns supportability lineage edges for an entity id, including correlation, "
-        "idempotency, run, and operation relations."
+        "idempotency, run, and operation relations. Supported filters are `edge_type`, "
+        "`created_from`, `created_to`, `limit`, and `cursor`; unsupported aliases are rejected."
     ),
+    responses={
+        422: {
+            "description": "Unsupported query parameters were supplied.",
+        },
+    },
 )
 def get_dpm_lineage(
+    request: Request,
     entity_id: Annotated[
         str,
         Path(
@@ -214,6 +221,10 @@ def get_dpm_lineage(
 ) -> DpmLineageResponse:
     shared._assert_support_apis_enabled()
     shared._assert_lineage_apis_enabled()
+    shared._reject_unexpected_query_params(
+        request,
+        allowed_params={"edge_type", "created_from", "created_to", "limit", "cursor"},
+    )
     return service.get_lineage_filtered(
         entity_id=entity_id,
         edge_type=edge_type,

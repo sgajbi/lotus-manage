@@ -1375,6 +1375,17 @@ def test_policy_pack_supportability_routes_reject_unexpected_query_params(client
     )
 
 
+def test_lineage_supportability_route_rejects_unexpected_query_params(client, monkeypatch):
+    monkeypatch.setenv("DPM_LINEAGE_APIS_ENABLED", "true")
+
+    response = client.get("/api/v1/rebalance/lineage/corr_001?edgeType=CORRELATION_TO_RUN")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: edgeType not supported for this endpoint"
+    )
+
+
 def test_effective_policy_pack_endpoint_uses_tenant_resolver_when_enabled(client, monkeypatch):
     monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
     monkeypatch.setenv("DPM_DEFAULT_POLICY_PACK_ID", "global_pack")

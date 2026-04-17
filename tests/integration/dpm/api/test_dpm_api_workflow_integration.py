@@ -251,6 +251,20 @@ def test_lineage_edge_filtering_roundtrip_when_enabled(monkeypatch: pytest.Monke
     assert edges[0]["target_entity_id"] == run_id
 
 
+def test_lineage_route_rejects_unexpected_query_alias_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DPM_LINEAGE_APIS_ENABLED", "true")
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/rebalance/lineage/corr-any?edgeType=CORRELATION_TO_RUN")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: edgeType not supported for this endpoint"
+    )
+
+
 def test_workflow_actions_and_decision_list_roundtrip(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     payload = valid_api_payload()

@@ -208,6 +208,9 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case filter names only
 
 ### `GET /rebalance/idempotency/{idempotency_key}/history`
 - Purpose: retrieve append-only idempotency key mapping history across recorded runs.
