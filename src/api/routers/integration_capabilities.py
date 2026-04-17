@@ -11,7 +11,7 @@ ConsumerSystem = Literal["lotus-gateway", "lotus-performance", "lotus-manage", "
 class FeatureCapability(BaseModel):
     key: str = Field(
         description="Canonical feature key consumed by gateway and UI orchestration.",
-        examples=["dpm.execution.stateful_pas_ref"],
+        examples=["dpm.execution.stateful_portfolio_id"],
     )
     enabled: bool = Field(
         description="Whether this feature is currently enabled for the resolved policy context.",
@@ -74,17 +74,17 @@ class IntegrationCapabilitiesResponse(BaseModel):
     )
     supported_input_modes: list[str] = Field(
         description="Supported execution input modes that downstream callers may use for rebalance flows.",
-        examples=[["pas_ref", "inline_bundle"]],
+        examples=[["portfolio_id", "inline_bundle"]],
     )
     features: list[FeatureCapability] = Field(
         description="Feature-level capability flags for downstream orchestration and UI gating.",
         examples=[
             [
                 {
-                    "key": "dpm.execution.stateful_pas_ref",
+                    "key": "dpm.execution.stateful_portfolio_id",
                     "enabled": True,
                     "owner_service": "lotus-manage",
-                    "description": "Stateful lotus-manage execution with lotus-core-referenced data.",
+                    "description": "Stateful lotus-manage execution using a governed portfolio identifier and lotus-core-referenced data.",
                 }
             ]
         ],
@@ -157,7 +157,7 @@ async def get_integration_capabilities(
     lifecycle_enabled = _env_bool("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", True)
     inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
 
-    supported_input_modes = ["pas_ref"]
+    supported_input_modes = ["portfolio_id"]
     if inline_bundle_enabled:
         supported_input_modes.append("inline_bundle")
 
@@ -172,10 +172,10 @@ async def get_integration_capabilities(
         supported_input_modes=supported_input_modes,
         features=[
             FeatureCapability(
-                key="dpm.execution.stateful_pas_ref",
+                key="dpm.execution.stateful_portfolio_id",
                 enabled=True,
                 owner_service="lotus-manage",
-                description="Stateful lotus-manage rebalance execution with lotus-core-referenced data.",
+                description="Stateful lotus-manage rebalance execution using a governed portfolio identifier and lotus-core-referenced data.",
             ),
             FeatureCapability(
                 key="dpm.execution.stateless_inline_bundle",

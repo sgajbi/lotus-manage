@@ -17,9 +17,9 @@ def test_integration_capabilities_default_contract():
     assert body["tenant_id"] == "default"
     assert "features" in body
     assert "workflows" in body
-    assert body["supported_input_modes"] == ["pas_ref", "inline_bundle"]
+    assert body["supported_input_modes"] == ["portfolio_id", "inline_bundle"]
     feature_keys = {item["key"] for item in body["features"]}
-    assert "dpm.execution.stateful_pas_ref" in feature_keys
+    assert "dpm.execution.stateful_portfolio_id" in feature_keys
     assert "dpm.execution.stateless_inline_bundle" in feature_keys
 
 
@@ -40,7 +40,7 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     assert body["policy_version"] == "tenant-x-v2"
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.proposals.lifecycle"] is False
-    assert body["supported_input_modes"] == ["pas_ref"]
+    assert body["supported_input_modes"] == ["portfolio_id"]
 
 
 def test_integration_capabilities_uses_default_query_resolution_when_omitted():

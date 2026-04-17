@@ -225,7 +225,7 @@ def test_integration_capabilities_contract_default_consumer() -> None:
     body = response.json()
     assert body["contract_version"] == "v1"
     assert body["source_service"] == "lotus-manage"
-    assert "pas_ref" in body["supported_input_modes"]
+    assert "portfolio_id" in body["supported_input_modes"]
 
 
 def test_lineage_edge_filtering_roundtrip_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:

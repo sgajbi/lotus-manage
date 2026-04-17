@@ -111,7 +111,7 @@ Most relevant current governance:
 1. management/advisory boundary clarity is a real quality concern after the split,
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
-4. `pas_ref`, inline bundle source-data lineage, and remaining advisory/proposal compatibility surfaces are RFC-0082 watchlist areas,
+4. `portfolio_id` stateful-mode semantics, inline bundle source-data lineage, and remaining advisory/proposal compatibility surfaces are RFC-0082 watchlist areas,
 5. this repo should stay operationally aligned with gateway and platform startup sequences.
 
 ## Context Maintenance Rule

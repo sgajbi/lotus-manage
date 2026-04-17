@@ -220,7 +220,7 @@ Demo pack validation passed for http://127.0.0.1:8000
   - `GET /rebalance/runs/{rebalance_run_id}` returns run payload and metadata.
   - `GET /rebalance/runs/by-correlation/{correlation_id}` returns mapped run.
   - `GET /rebalance/runs/idempotency/{idempotency_key}` returns mapped run id.
-  - `GET /rebalance/runs?status=READY&portfolio_id={portfolio_id}&limit=...` returns filtered rows.
+  - `GET /rebalance/runs?status_filter=READY&portfolio_id={portfolio_id}&limit=...` returns filtered rows.
   - Cursor pagination check:
     - `GET /rebalance/runs?limit=1` returns `next_cursor`.
     - `GET /rebalance/runs?limit=1&cursor={next_cursor}` returns next row.

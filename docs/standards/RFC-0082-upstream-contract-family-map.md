@@ -30,7 +30,7 @@ composition.
 | --- | --- | --- | --- | --- |
 | `portfolio_snapshot` request payloads | source data should be `lotus-core`-governed when populated from platform state | Snapshot and simulation / Operational Read input | rebalance and what-if source state | manage may transform for execution, but must not become the ledger or portfolio read authority |
 | `market_data_snapshot` request payloads | prices and FX should remain core-governed source data when populated from platform state | Operational Read input / Analytics Input watchlist | valuation, settlement, tax, and rebalance execution support | manage may use inputs for execution, but source truth remains upstream |
-| `pas_ref` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | stateful DPM execution posture advertised through capabilities | future stateful resolution must use governed core contracts rather than ad hoc reads |
+| `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | stateful DPM execution posture advertised through capabilities | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
 
 ## Manage-Owned Contract Families
@@ -64,7 +64,7 @@ Boundary rules:
 2. `lotus-manage` must not own canonical portfolio state, account state, transaction state, price
    source truth, FX source truth, performance attribution, benchmark-relative interpretation, or risk
    methodology.
-3. `pas_ref` and future stateful input modes must be implemented through governed `lotus-core`
+3. `portfolio_id` and future stateful input modes must be implemented through governed `lotus-core`
    snapshot, operational-read, analytics-input, or control-plane contracts.
 4. Inline bundle behavior must preserve lineage identifiers for portfolio and market-data snapshots so
    callers can trace source authority.
@@ -95,7 +95,7 @@ upstream request/response contracts.
 
 ## Gap Register
 
-1. `pas_ref` is advertised as a supported input mode, but the current code inspection did not find an
+1. `portfolio_id` is advertised as a supported input mode, but the current code inspection did not find an
    active outbound state-resolution client. When that becomes active, classify the exact `lotus-core`
    routes before stabilizing the contract.
 2. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
