@@ -291,7 +291,7 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     ]
 
 
-def test_dpm_async_and_supportability_endpoints_use_expected_request_response_contracts():
+def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():
     _guard_strict_validation()
     with TestClient(app) as client:
         openapi = client.get("/openapi.json").json()
