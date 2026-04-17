@@ -50,6 +50,7 @@ Implementation scope:
 
 ### `POST /rebalance/proposals/artifact`
 - Purpose: run proposal simulation and build deterministic advisory proposal package.
+- Strategic note: downstream callers should prefer the `lotus-advise` `/advisory/proposals/artifact` owner route.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id` (generated when missing)
 - Output: `ProposalArtifact`

@@ -1740,6 +1740,12 @@ def test_openapi_title_and_tag_grouping(client):
     assert openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["tags"] == [
         "Advisory Simulation"
     ]
+    assert "Compatibility route only" in openapi["paths"][
+        "/api/v1/rebalance/proposals/simulate"
+    ]["post"]["description"]
+    assert "Compatibility route only" in openapi["paths"][
+        "/api/v1/rebalance/proposals/artifact"
+    ]["post"]["description"]
     assert "Compatibility route only" in openapi["paths"]["/api/v1/rebalance/proposals"]["post"][
         "description"
     ]
