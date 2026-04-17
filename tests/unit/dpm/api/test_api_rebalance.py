@@ -1802,6 +1802,19 @@ def test_openapi_async_analyze_documents_correlation_header(client):
     else:
         assert any(item.get("type") == "string" for item in tenant_schema.get("anyOf", []))
 
+    simulate_examples = simulate["responses"]["200"]["content"]["application/json"]["examples"]
+    ready_example = simulate_examples["ready"]["value"]
+    pending_example = simulate_examples["pending_review"]["value"]
+    blocked_example = simulate_examples["blocked"]["value"]
+    assert "lineage" in ready_example
+    assert "before" in ready_example
+    assert "after_simulated" in ready_example
+    assert pending_example["gate_decision"]["recommended_next_step"] == "RISK_REVIEW"
+    assert blocked_example["gate_decision"]["gate"] == "BLOCKED"
+    assert blocked_example["diagnostics"]["cash_ladder_breaches"][0]["reason_code"] == (
+        "OVERDRAFT_ON_T_PLUS_1"
+    )
+
     accepted_schema = openapi["components"]["schemas"]["DpmAsyncAcceptedResponse"]
     assert "execute_url" in accepted_schema["properties"]
     assert accepted_schema["properties"]["execute_url"]["description"]
