@@ -1740,21 +1740,28 @@ def test_openapi_title_and_tag_grouping(client):
     assert openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["tags"] == [
         "Advisory Simulation"
     ]
-    assert "Compatibility route only" in openapi["paths"][
-        "/api/v1/rebalance/proposals/simulate"
-    ]["post"]["description"]
-    assert "Compatibility route only" in openapi["paths"][
-        "/api/v1/rebalance/proposals/artifact"
-    ]["post"]["description"]
-    assert "Compatibility route only" in openapi["paths"]["/api/v1/rebalance/proposals"]["post"][
-        "description"
-    ]
-    assert "Compatibility route only" in openapi["paths"]["/api/v1/rebalance/proposals/async"][
-        "post"
-    ]["description"]
-    assert "Compatibility route only" in openapi["paths"][
-        "/api/v1/rebalance/proposals/{proposal_id}/workflow-events"
-    ]["get"]["description"]
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/artifact"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/async"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/{proposal_id}/workflow-events"]["get"][
+            "description"
+        ]
+    )
 
 
 def test_openapi_async_analyze_documents_correlation_header(client):

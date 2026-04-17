@@ -269,26 +269,31 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     integration_get = openapi["paths"]["/integration/capabilities"]["get"]
     platform_get = openapi["paths"]["/platform/capabilities"]["get"]
 
-    assert "backend-governed rebalance feature and workflow capability posture" in integration_get[
-        "description"
-    ]
-    assert "platform namespace" in platform_get["description"]
-    assert "canonical snake_case query parameters `consumer_system` and `tenant_id`" in (
-        integration_get["description"]
+    assert (
+        "backend-governed rebalance feature and workflow capability posture"
+        in integration_get["description"]
     )
-    assert "canonical snake_case query parameters `consumer_system` and `tenant_id`" in (
-        platform_get["description"]
+    assert "platform namespace" in platform_get["description"]
+    assert (
+        "canonical snake_case query parameters `consumer_system` and `tenant_id`"
+        in (integration_get["description"])
+    )
+    assert (
+        "canonical snake_case query parameters `consumer_system` and `tenant_id`"
+        in (platform_get["description"])
     )
 
     integration_params = {param["name"]: param for param in integration_get["parameters"]}
     assert integration_params["consumer_system"]["schema"]["default"] == "lotus-gateway"
     assert integration_params["tenant_id"]["schema"]["default"] == "default"
-    assert "canonical snake_case query parameter `consumer_system`" in integration_params[
-        "consumer_system"
-    ]["description"]
-    assert "canonical snake_case query parameter `tenant_id`" in integration_params["tenant_id"][
-        "description"
-    ]
+    assert (
+        "canonical snake_case query parameter `consumer_system`"
+        in integration_params["consumer_system"]["description"]
+    )
+    assert (
+        "canonical snake_case query parameter `tenant_id`"
+        in integration_params["tenant_id"]["description"]
+    )
 
 
 def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():
@@ -304,9 +309,10 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "$ref"
     ].endswith("/DpmAsyncAcceptedResponse")
     assert "X-Correlation-Id" in analyze_async["responses"]["202"]["headers"]
-    assert "Use this route when the caller needs polling-based orchestration" in analyze_async[
-        "description"
-    ]
+    assert (
+        "Use this route when the caller needs polling-based orchestration"
+        in analyze_async["description"]
+    )
     header_names = {param["name"] for param in analyze_async["parameters"]}
     assert "x-correlation-id" in header_names
     assert "x-policy-pack-id" in header_names
@@ -327,9 +333,10 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert analyze["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/BatchRebalanceResult"
     )
-    assert "Use this synchronous route when the caller needs immediate results" in analyze[
-        "description"
-    ]
+    assert (
+        "Use this synchronous route when the caller needs immediate results"
+        in analyze["description"]
+    )
     analyze_examples = analyze["responses"]["200"]["content"]["application/json"]["examples"]
     assert "batch_result" in analyze_examples
     analyze_value = analyze_examples["batch_result"]["value"]
@@ -401,8 +408,9 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in list_operations["parameters"]}
     assert expected_params.issubset(actual_params)
-    assert "status_filter` for operation status filtering; unsupported aliases are rejected" in (
-        list_operations["description"]
+    assert (
+        "status_filter` for operation status filtering; unsupported aliases are rejected"
+        in (list_operations["description"])
     )
     assert "422" in list_operations["responses"]
 
@@ -434,9 +442,10 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in list_runs["parameters"]}
     assert expected_params.issubset(actual_params)
-    assert "status_filter` for status filtering; unsupported aliases are rejected" in list_runs[
-        "description"
-    ]
+    assert (
+        "status_filter` for status filtering; unsupported aliases are rejected"
+        in list_runs["description"]
+    )
     assert "422" in list_runs["responses"]
 
     run_by_request_hash = openapi["paths"]["/api/v1/rebalance/runs/by-request-hash/{request_hash}"][
@@ -495,8 +504,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     )
     assert (
         "Supported filters are `rebalance_run_id`, `action`, `actor_id`, `reason_code`, "
-        "`decided_from`, `decided_to`, `limit`, and `cursor`"
-        in workflow_decisions["description"]
+        "`decided_from`, `decided_to`, `limit`, and `cursor`" in workflow_decisions["description"]
     )
     expected_params = {
         "rebalance_run_id",

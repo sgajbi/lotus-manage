@@ -198,7 +198,7 @@ ANALYZE_RESPONSE_EXAMPLE = {
                         "dependencies": [],
                         "rationale": {
                             "code": "ALIGN_TO_TARGET",
-                            "message": "Sell down to model target weight."
+                            "message": "Sell down to model target weight.",
                         },
                         "constraints_applied": [],
                     }
