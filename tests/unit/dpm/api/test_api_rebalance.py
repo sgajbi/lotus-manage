@@ -14,9 +14,9 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-import src.api.routers.dpm_runs as dpm_runs_router
+import src.api.routers.rebalance_runs as dpm_runs_router
 from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
-from src.api.routers.dpm_runs import (
+from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
 )
@@ -472,7 +472,7 @@ def test_dpm_support_repository_backend_init_errors_return_503(client, monkeypat
         "postgresql://user:pass@localhost:5432/dpm",
     )
     monkeypatch.setattr(
-        "src.api.routers.dpm_runs_config.PostgresDpmRunRepository",
+        "src.api.routers.rebalance_runs_config.PostgresDpmRunRepository",
         lambda *args, **kwargs: (_ for _ in ()).throw(ConnectionError("boom")),
     )
     reset_dpm_run_support_service_for_tests()
@@ -970,11 +970,11 @@ def test_simulate_returns_503_when_idempotency_lookup_points_to_missing_run(clie
 
     with (
         patch(
-            "src.api.services.dpm_simulation_service.hash_canonical_payload",
+            "src.api.services.rebalance_simulation_service.hash_canonical_payload",
             return_value="sha256:matches",
         ),
         patch(
-            "src.api.services.dpm_simulation_service.get_dpm_run_support_service",
+            "src.api.services.rebalance_simulation_service.get_dpm_run_support_service",
             return_value=_InconsistentIdempotencyService(),
         ),
     ):

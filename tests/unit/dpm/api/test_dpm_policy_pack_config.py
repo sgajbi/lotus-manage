@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.api.routers.dpm_policy_packs import (
+from src.api.routers.rebalance_policy_packs import (
     policy_pack_catalog_backend_name,
     policy_pack_postgres_dsn,
     reset_dpm_policy_pack_repository_for_tests,
@@ -55,7 +55,7 @@ def test_policy_pack_catalog_postgres_connection_errors_return_503(monkeypatch):
         monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
         monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://u:p@localhost:5432/db")
         monkeypatch.setattr(
-            "src.api.routers.dpm_policy_packs.PostgresDpmPolicyPackRepository",
+            "src.api.routers.rebalance_policy_packs.PostgresDpmPolicyPackRepository",
             _ExplodingRepository,
         )
         reset_dpm_policy_pack_repository_for_tests()
@@ -74,7 +74,7 @@ def test_policy_pack_catalog_postgres_runtime_errors_return_503(monkeypatch):
         monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
         monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://u:p@localhost:5432/db")
         monkeypatch.setattr(
-            "src.api.routers.dpm_policy_packs.PostgresDpmPolicyPackRepository",
+            "src.api.routers.rebalance_policy_packs.PostgresDpmPolicyPackRepository",
             _RuntimeErrorRepository,
         )
         reset_dpm_policy_pack_repository_for_tests()

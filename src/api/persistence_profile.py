@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import os
 
-from src.api.routers.dpm_policy_packs import (
+from src.api.routers.rebalance_policy_packs import (
     policy_pack_catalog_backend_name,
 )
-from src.api.routers.dpm_runs_config import (
+from src.api.routers.rebalance_runs_config import (
     supportability_postgres_dsn,
     supportability_store_backend_name,
 )

@@ -23,22 +23,22 @@ from src.api.routers.advisory_simulation import (
 from src.api.routers.advisory_simulation import (
     router as advisory_simulation_router,
 )
-from src.api.routers.dpm_policy_packs import router as dpm_policy_pack_router
-from src.api.routers.dpm_runs import (
+from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
+from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     record_dpm_run_for_support,
 )
-from src.api.routers.dpm_runs import (
-    router as dpm_run_support_router,
+from src.api.routers.rebalance_runs import (
+    router as rebalance_run_support_router,
 )
-from src.api.routers.dpm_simulation import (
+from src.api.routers.rebalance_simulation import (
     analyze_scenarios,
     analyze_scenarios_async,
     execute_dpm_async_operation,
     simulate_rebalance,
 )
-from src.api.routers.dpm_simulation import (
-    router as dpm_simulation_router,
+from src.api.routers.rebalance_simulation import (
+    router as rebalance_simulation_router,
 )
 from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
@@ -52,27 +52,27 @@ from src.api.services.advisory_simulation_service import (
 from src.api.services.advisory_simulation_service import (
     simulate_proposal_response as _simulate_proposal_response,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
     DPM_IDEMPOTENCY_CACHE,
     run_simulation,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     async_manual_execution_enabled as _async_manual_execution_enabled,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     env_flag as _env_flag,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     env_int as _env_int,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     resolve_async_execution_mode as _resolve_async_execution_mode,
 )
-from src.api.services.dpm_simulation_service import (
+from src.api.services.rebalance_simulation_service import (
     run_analyze_async_operation as _run_analyze_async_operation,
 )
 
@@ -140,17 +140,17 @@ app.middleware("http")(build_enterprise_audit_middleware())
 
 # Unversioned compatibility routes.
 app.include_router(proposal_lifecycle_router)
-app.include_router(dpm_run_support_router)
-app.include_router(dpm_policy_pack_router)
-app.include_router(dpm_simulation_router)
+app.include_router(rebalance_run_support_router)
+app.include_router(rebalance_policy_pack_router)
+app.include_router(rebalance_simulation_router)
 app.include_router(advisory_simulation_router)
 app.include_router(integration_capabilities_router)
 
 # Canonical versioned API surface.
 app.include_router(proposal_lifecycle_router, prefix="/api/v1")
-app.include_router(dpm_run_support_router, prefix="/api/v1")
-app.include_router(dpm_policy_pack_router, prefix="/api/v1")
-app.include_router(dpm_simulation_router, prefix="/api/v1")
+app.include_router(rebalance_run_support_router, prefix="/api/v1")
+app.include_router(rebalance_policy_pack_router, prefix="/api/v1")
+app.include_router(rebalance_simulation_router, prefix="/api/v1")
 app.include_router(advisory_simulation_router, prefix="/api/v1")
 app.include_router(integration_capabilities_router, prefix="/api/v1")
 

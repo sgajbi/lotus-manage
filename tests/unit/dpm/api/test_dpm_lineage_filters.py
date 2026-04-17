@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.api.routers.dpm_runs import reset_dpm_run_support_service_for_tests
+from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 
 
 def _simulate(client: TestClient, *, correlation_id: str, idempotency_key: str) -> dict:

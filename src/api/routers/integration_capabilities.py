@@ -73,7 +73,7 @@ class IntegrationCapabilitiesResponse(BaseModel):
         examples=["dpm.policy.v1"],
     )
     supported_input_modes: list[str] = Field(
-        description="Supported execution input modes that downstream callers may use for DPM flows.",
+        description="Supported execution input modes that downstream callers may use for rebalance flows.",
         examples=[["pas_ref", "inline_bundle"]],
     )
     features: list[FeatureCapability] = Field(
@@ -116,21 +116,21 @@ def _env_bool(name: str, default: bool) -> bool:
 @router.get(
     "/integration/capabilities",
     response_model=IntegrationCapabilitiesResponse,
-    summary="Get DPM integration capabilities",
+    summary="Get rebalance integration capabilities",
     description=(
-        "Use this route when gateway, UI, or peer services need backend-governed DPM feature and "
-        "workflow capability posture for a resolved consumer and tenant context. This is a control-"
-        "plane discovery contract, not a source-data or simulation-state read. Callers must use the "
+        "Use this route when gateway, UI, or peer services need backend-governed rebalance feature "
+        "and workflow capability posture for a resolved consumer and tenant context. This is a "
+        "control-plane discovery contract, not a source-data or simulation-state read. Callers must use the "
         "canonical snake_case query parameters `consumer_system` and `tenant_id`."
     ),
 )
 @router.get(
     "/platform/capabilities",
     response_model=IntegrationCapabilitiesResponse,
-    summary="Get DPM platform capabilities",
+    summary="Get rebalance platform capabilities",
     description=(
         "Alias of `/integration/capabilities` for platform-facing capability discovery. Use it when "
-        "the caller needs the same backend-governed DPM feature/workflow posture through the "
+        "the caller needs the same backend-governed rebalance feature/workflow posture through the "
         "platform namespace. Callers must use the canonical snake_case query parameters "
         "`consumer_system` and `tenant_id`."
     ),
@@ -140,7 +140,7 @@ async def get_integration_capabilities(
         "lotus-gateway",
         description=(
             "Consumer system requesting capability posture. Use this to resolve the correct backend-"
-            "governed feature and workflow view for the caller. Send it as the canonical snake_case "
+            "governed rebalance feature and workflow view for the caller. Send it as the canonical snake_case "
             "query parameter `consumer_system`."
         ),
         examples=["lotus-gateway"],
@@ -175,13 +175,13 @@ async def get_integration_capabilities(
                 key="dpm.execution.stateful_pas_ref",
                 enabled=True,
                 owner_service="lotus-manage",
-                description="Stateful lotus-manage execution with lotus-core-referenced data.",
+                description="Stateful lotus-manage rebalance execution with lotus-core-referenced data.",
             ),
             FeatureCapability(
                 key="dpm.execution.stateless_inline_bundle",
                 enabled=inline_bundle_enabled,
                 owner_service="lotus-manage",
-                description="Stateless lotus-manage execution using inline request bundles.",
+                description="Stateless lotus-manage rebalance execution using inline request bundles.",
             ),
             FeatureCapability(
                 key="dpm.proposals.lifecycle",

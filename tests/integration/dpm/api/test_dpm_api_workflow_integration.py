@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
-from src.api.routers.dpm_runs import reset_dpm_run_support_service_for_tests
+from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from tests.shared.factories import valid_api_payload
 
 
@@ -87,6 +87,16 @@ def test_run_list_and_operation_lookup_integration_flow() -> None:
 def test_supportability_summary_rejects_unsupported_query_parameters() -> None:
     with TestClient(app) as client:
         response = client.get("/api/v1/rebalance/supportability/summary?status=SUCCESS")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
+
+
+def test_run_list_rejects_unsupported_query_parameters() -> None:
+    with TestClient(app) as client:
+        response = client.get("/api/v1/rebalance/runs?status=READY")
 
     assert response.status_code == 422
     assert response.json()["detail"] == (

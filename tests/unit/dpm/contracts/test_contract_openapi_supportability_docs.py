@@ -269,7 +269,7 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     integration_get = openapi["paths"]["/integration/capabilities"]["get"]
     platform_get = openapi["paths"]["/platform/capabilities"]["get"]
 
-    assert "backend-governed DPM feature and workflow capability posture" in integration_get[
+    assert "backend-governed rebalance feature and workflow capability posture" in integration_get[
         "description"
     ]
     assert "platform namespace" in platform_get["description"]
@@ -417,6 +417,10 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     }
     actual_params = {param["name"] for param in list_runs["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert "status_filter` for status filtering; unsupported aliases are rejected" in list_runs[
+        "description"
+    ]
+    assert "422" in list_runs["responses"]
 
     run_by_request_hash = openapi["paths"]["/api/v1/rebalance/runs/by-request-hash/{request_hash}"][
         "get"

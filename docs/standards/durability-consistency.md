@@ -18,7 +18,7 @@
 - Critical write APIs require `Idempotency-Key`.
 - Idempotency mapping/history repositories prevent duplicate business effects on retries.
 - Evidence:
-  - `src/api/routers/dpm_simulation.py`
+  - `src/api/routers/rebalance_simulation.py`
   - `src/api/routers/proposals_lifecycle_routes.py`
   - `src/infrastructure/dpm_runs/postgres.py`
   - `src/infrastructure/proposals/postgres.py`
