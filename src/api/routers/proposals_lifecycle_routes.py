@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated, Optional
 
-from fastapi import Depends, Header, HTTPException, Path, Query, status
+from fastapi import Depends, Header, HTTPException, Path, Query, Request, status
 
 from src.api.routers import proposals as shared
 from src.core.proposals import (
@@ -61,7 +61,7 @@ def create_proposal(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except ProposalValidationError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -71,9 +71,14 @@ def create_proposal(
     response_model=ProposalDetailResponse,
     status_code=status.HTTP_200_OK,
     summary="Get Proposal",
-    description="Returns proposal summary, current immutable version, and last gate decision.",
+    description=(
+        "Returns proposal summary, current immutable version, and last gate decision. "
+        "Supported query parameter: `include_evidence`; unsupported aliases are rejected."
+    ),
+    responses={422: {"description": "Unsupported query parameters were supplied."}},
 )
 def get_proposal(
+    request: Request,
     proposal_id: Annotated[
         str,
         Path(description="Persisted proposal identifier.", examples=["pp_001"]),
@@ -88,6 +93,7 @@ def get_proposal(
     service: ProposalWorkflowService = Depends(shared.get_proposal_workflow_service),
 ) -> ProposalDetailResponse:
     shared._assert_lifecycle_enabled()
+    shared._reject_unexpected_query_params(request, allowed_params={"include_evidence"})
     try:
         return service.get_proposal(proposal_id=proposal_id, include_evidence=include_evidence)
     except ProposalNotFoundError as exc:
@@ -99,9 +105,15 @@ def get_proposal(
     response_model=ProposalListResponse,
     status_code=status.HTTP_200_OK,
     summary="List Proposals",
-    description="Lists persisted proposals with optional filters and cursor pagination.",
+    description=(
+        "Lists persisted proposals with optional filters and cursor pagination. Supported query "
+        "parameters are `portfolio_id`, `state`, `created_by`, `created_from`, `created_to`, "
+        "`limit`, and `cursor`; unsupported aliases are rejected."
+    ),
+    responses={422: {"description": "Unsupported query parameters were supplied."}},
 )
 def list_proposals(
+    request: Request,
     portfolio_id: Annotated[
         Optional[str],
         Query(description="Portfolio filter.", examples=["pf_01"]),
@@ -139,6 +151,18 @@ def list_proposals(
     service: ProposalWorkflowService = Depends(shared.get_proposal_workflow_service),
 ) -> ProposalListResponse:
     shared._assert_lifecycle_enabled()
+    shared._reject_unexpected_query_params(
+        request,
+        allowed_params={
+            "portfolio_id",
+            "state",
+            "created_by",
+            "created_from",
+            "created_to",
+            "limit",
+            "cursor",
+        },
+    )
     return service.list_proposals(
         portfolio_id=portfolio_id,
         state=state,
@@ -155,9 +179,14 @@ def list_proposals(
     summary="Get Proposal Version",
     response_model=ProposalVersionDetail,
     status_code=status.HTTP_200_OK,
-    description="Returns one immutable proposal version by version number.",
+    description=(
+        "Returns one immutable proposal version by version number. Supported query parameter: "
+        "`include_evidence`; unsupported aliases are rejected."
+    ),
+    responses={422: {"description": "Unsupported query parameters were supplied."}},
 )
 def get_proposal_version(
+    request: Request,
     proposal_id: Annotated[
         str,
         Path(description="Persisted proposal identifier.", examples=["pp_001"]),
@@ -173,6 +202,7 @@ def get_proposal_version(
     service: ProposalWorkflowService = Depends(shared.get_proposal_workflow_service),
 ) -> ProposalVersionDetail:
     shared._assert_lifecycle_enabled()
+    shared._reject_unexpected_query_params(request, allowed_params={"include_evidence"})
     try:
         return service.get_version(
             proposal_id=proposal_id,
@@ -218,7 +248,7 @@ def create_proposal_version(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except ProposalValidationError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -262,7 +292,7 @@ def transition_proposal_state(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except ProposalTransitionError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 
@@ -308,6 +338,6 @@ def record_proposal_approval(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except ProposalTransitionError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc

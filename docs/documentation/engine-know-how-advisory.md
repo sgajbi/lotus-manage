@@ -77,15 +77,24 @@ Implementation scope:
 - Purpose: read proposal summary + current version + last gate decision.
 - Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals/{proposal_id}`.
 - Query: `include_evidence=true|false` (defaults true)
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case query parameter `include_evidence`
 
 ### `GET /rebalance/proposals`
 - Purpose: list proposals with filters and cursor pagination.
 - Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals`.
 - Filters: `portfolio_id`, `state`, `created_by`, `created_from`, `created_to`, `limit`, `cursor`
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case filter names only
 
 ### `GET /rebalance/proposals/{proposal_id}/versions/{version_no}`
 - Purpose: read one immutable proposal version.
 - Query: `include_evidence=true|false`
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case query parameter `include_evidence`
 
 ### `GET /rebalance/proposals/{proposal_id}/workflow-events`
 - Purpose: retrieve append-only workflow timeline for operations investigation and audit.

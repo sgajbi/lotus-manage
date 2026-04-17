@@ -1,7 +1,7 @@
 import importlib
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Request, status
 
 from src.api.routers import proposals_config
 from src.api.routers.runtime_utils import (
@@ -16,6 +16,15 @@ router = APIRouter(tags=["Advisory Proposal Lifecycle"])
 
 _REPOSITORY: Optional[ProposalRepository] = None
 _SERVICE: Optional[ProposalWorkflowService] = None
+
+
+def _reject_unexpected_query_params(request: Request, *, allowed_params: set[str]) -> None:
+    for param_name in request.query_params.keys():
+        if param_name not in allowed_params:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=f"UNSUPPORTED_QUERY_PARAMETER: {param_name} not supported for this endpoint",
+            )
 
 
 def _proposal_store_backend_name() -> str:
