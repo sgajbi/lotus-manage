@@ -120,7 +120,8 @@ def _env_bool(name: str, default: bool) -> bool:
     description=(
         "Use this route when gateway, UI, or peer services need backend-governed DPM feature and "
         "workflow capability posture for a resolved consumer and tenant context. This is a control-"
-        "plane discovery contract, not a source-data or simulation-state read."
+        "plane discovery contract, not a source-data or simulation-state read. Callers must use the "
+        "canonical snake_case query parameters `consumer_system` and `tenant_id`."
     ),
 )
 @router.get(
@@ -130,7 +131,8 @@ def _env_bool(name: str, default: bool) -> bool:
     description=(
         "Alias of `/integration/capabilities` for platform-facing capability discovery. Use it when "
         "the caller needs the same backend-governed DPM feature/workflow posture through the "
-        "platform namespace."
+        "platform namespace. Callers must use the canonical snake_case query parameters "
+        "`consumer_system` and `tenant_id`."
     ),
 )
 async def get_integration_capabilities(
@@ -138,7 +140,8 @@ async def get_integration_capabilities(
         "lotus-gateway",
         description=(
             "Consumer system requesting capability posture. Use this to resolve the correct backend-"
-            "governed feature and workflow view for the caller."
+            "governed feature and workflow view for the caller. Send it as the canonical snake_case "
+            "query parameter `consumer_system`."
         ),
         examples=["lotus-gateway"],
     ),
@@ -146,7 +149,7 @@ async def get_integration_capabilities(
         "default",
         description=(
             "Tenant context for policy-governed capability publication. Omit to use the default "
-            "tenant posture."
+            "tenant posture. Send it as the canonical snake_case query parameter `tenant_id`."
         ),
         examples=["default"],
     ),

@@ -273,12 +273,22 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
         "description"
     ]
     assert "platform namespace" in platform_get["description"]
+    assert "canonical snake_case query parameters `consumer_system` and `tenant_id`" in (
+        integration_get["description"]
+    )
+    assert "canonical snake_case query parameters `consumer_system` and `tenant_id`" in (
+        platform_get["description"]
+    )
 
     integration_params = {param["name"]: param for param in integration_get["parameters"]}
     assert integration_params["consumer_system"]["schema"]["default"] == "lotus-gateway"
     assert integration_params["tenant_id"]["schema"]["default"] == "default"
-    assert integration_params["consumer_system"]["description"]
-    assert integration_params["tenant_id"]["description"]
+    assert "canonical snake_case query parameter `consumer_system`" in integration_params[
+        "consumer_system"
+    ]["description"]
+    assert "canonical snake_case query parameter `tenant_id`" in integration_params["tenant_id"][
+        "description"
+    ]
 
 
 def test_dpm_async_and_supportability_endpoints_use_expected_request_response_contracts():
