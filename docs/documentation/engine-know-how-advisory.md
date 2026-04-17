@@ -1,5 +1,10 @@
 # Advisory Proposal Engine Know-How
 
+Owner posture:
+- Strategic owner for advisory proposal lifecycle is `lotus-advise`.
+- The `lotus-manage` `/rebalance/proposals*` family is a compatibility surface and should not gain new advisory scope.
+- Downstream consumers should migrate to `lotus-advise` `/advisory/proposals*` routes behind their own governed BFF contracts before `lotus-manage` proposal compatibility routes are deprecated.
+
 Implementation scope:
 - API: `src/api/main.py` (`/rebalance/proposals/simulate`)
 - API: `src/api/main.py` (`/rebalance/proposals/artifact`)
@@ -34,6 +39,7 @@ Implementation scope:
 
 ### `POST /rebalance/proposals/simulate`
 - Purpose: simulate advisor-entered manual cash flows and manual security trades.
+- Strategic note: downstream callers should prefer the `lotus-advise` `/advisory/proposals/simulate` owner route.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id` (generated when missing)
 - Output: `ProposalResult` with status `READY | PENDING_REVIEW | BLOCKED`
@@ -53,6 +59,7 @@ Implementation scope:
 
 ### `POST /rebalance/proposals`
 - Purpose: run simulation+artifact and persist proposal aggregate/version/workflow event.
+- Strategic note: downstream callers should migrate to the `lotus-advise` `/advisory/proposals` lifecycle owner route.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id`
 - Output: `ProposalCreateResponse`
@@ -68,10 +75,12 @@ Implementation scope:
 
 ### `GET /rebalance/proposals/{proposal_id}`
 - Purpose: read proposal summary + current version + last gate decision.
+- Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals/{proposal_id}`.
 - Query: `include_evidence=true|false` (defaults true)
 
 ### `GET /rebalance/proposals`
 - Purpose: list proposals with filters and cursor pagination.
+- Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals`.
 - Filters: `portfolio_id`, `state`, `created_by`, `created_from`, `created_to`, `limit`, `cursor`
 
 ### `GET /rebalance/proposals/{proposal_id}/versions/{version_no}`
@@ -80,12 +89,15 @@ Implementation scope:
 
 ### `GET /rebalance/proposals/{proposal_id}/workflow-events`
 - Purpose: retrieve append-only workflow timeline for operations investigation and audit.
+- Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals/{proposal_id}/workflow-events`.
 
 ### `GET /rebalance/proposals/{proposal_id}/approvals`
 - Purpose: retrieve structured approval/consent records for supportability and controls review.
+- Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals/{proposal_id}/approvals`.
 
 ### `GET /rebalance/proposals/{proposal_id}/lineage`
 - Purpose: retrieve immutable version lineage metadata (request/simulation/artifact hashes).
+- Strategic note: downstream callers should migrate to `lotus-advise` `/advisory/proposals/{proposal_id}/lineage`.
 
 ### `GET /rebalance/proposals/idempotency/{idempotency_key}`
 - Purpose: resolve idempotency-key mappings during retry and incident investigations.
