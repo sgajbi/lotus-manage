@@ -5,10 +5,10 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from src.core.dpm.engine import run_simulation
+from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.models import EngineOptions
-from src.infrastructure.dpm_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
+from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
 from tests.shared.factories import (
     cash,
     market_data_snapshot,

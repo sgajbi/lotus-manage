@@ -13,7 +13,7 @@ from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from src.api.routers.proposals import reset_proposal_workflow_service_for_tests
 from src.core.common.capabilities import has_solver_dependencies
-from src.core.dpm.engine import run_simulation
+from src.core.rebalance.engine import run_simulation
 from src.core.models import (
     EngineOptions,
     MarketDataSnapshot,

@@ -10,9 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from src.core.dpm.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
 from src.core.models import CashBalance, EngineOptions, PortfolioSnapshot
-from src.infrastructure.dpm_runs import InMemoryDpmRunRepository
+from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.proposals import InMemoryProposalRepository
 
 TESTS_ROOT = Path(__file__).resolve().parent

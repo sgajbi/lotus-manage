@@ -64,7 +64,7 @@ numpy>=1.26.0
 
 ### 3.2 Target Solver (`src/core/target_generation.py`)
 
-Implemented with `generate_targets_solver(...)` in `src/core/target_generation.py`, invoked from Stage 3 dispatch in `src/core/dpm/engine.py`.
+Implemented with `generate_targets_solver(...)` in `src/core/target_generation.py`, invoked from Stage 3 dispatch in `src/core/rebalance/engine.py`.
 
 ```python
 import cvxpy as cp

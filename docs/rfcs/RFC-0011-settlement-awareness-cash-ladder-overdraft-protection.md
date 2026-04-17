@@ -66,7 +66,7 @@ Runtime toggle:
 1. Settlement behavior is request-scoped via `options.enable_settlement_awareness`.
 2. Default is `False` for backward compatibility.
 
-### 3.2 Simulation Logic (`src/core/dpm/engine.py`)
+### 3.2 Simulation Logic (`src/core/rebalance/engine.py`)
 
 Modify Stage 5 simulation to evaluate settlement timing.
 

@@ -9,7 +9,7 @@ from importlib.util import find_spec
 
 import pytest
 
-from src.core.dpm.engine import _generate_targets
+from src.core.rebalance.engine import _generate_targets
 from src.core.models import (
     DiagnosticsData,
     EngineOptions,

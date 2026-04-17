@@ -4,7 +4,7 @@ from contextlib import closing
 
 import pytest
 
-from src.core.dpm.policy_packs import DpmPolicyPackDefinition
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.dpm_policy_packs.postgres import PostgresDpmPolicyPackRepository
 from tests.unit.dpm.supportability.test_dpm_policy_pack_postgres_repository import (
     _build_repository as _build_fake_repository,

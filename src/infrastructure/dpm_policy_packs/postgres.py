@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
-from src.core.dpm.policy_packs import DpmPolicyPackDefinition
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 

@@ -9,13 +9,13 @@ Implementation scope:
 - lotus-manage run supportability DTO mappers: `src/core/rebalance_runs/serializers.py`
 - lotus-manage run supportability workflow transition helpers: `src/core/rebalance_runs/workflow.py`
 - Models: `src/core/models.py`
-- Core orchestration: `src/core/dpm/engine.py` (`run_simulation`)
+- Core orchestration: `src/core/rebalance/engine.py` (`run_simulation`)
 - lotus-manage modular internals:
-  - `src/core/dpm/universe.py` (universe construction and shelf filtering)
-  - `src/core/dpm/targets.py` (target generation and group-constraint application)
-  - `src/core/dpm/intents.py` (security intent generation, tax-aware sell controls)
-  - `src/core/dpm/turnover.py` (turnover ranking and budget enforcement)
-  - `src/core/dpm/execution.py` (FX generation, settlement ladder, simulation execution)
+  - `src/core/rebalance/universe.py` (universe construction and shelf filtering)
+  - `src/core/rebalance/targets.py` (target generation and group-constraint application)
+  - `src/core/rebalance/intents.py` (security intent generation, tax-aware sell controls)
+  - `src/core/rebalance/turnover.py` (turnover ranking and budget enforcement)
+  - `src/core/rebalance/execution.py` (FX generation, settlement ladder, simulation execution)
 - Shared simulation primitives: `src/core/common/simulation_shared.py`
 - Shared intent dependency linker: `src/core/common/intent_dependencies.py`
 - Shared workflow gate evaluator: `src/core/common/workflow_gates.py`
@@ -355,4 +355,4 @@ Dependency policy note:
 ## Deprecation Notes
 
 - `src/core/dpm_engine.py` is a compatibility shim and emits `DeprecationWarning`.
-- Use `src/core/dpm/engine.py` as the stable lotus-manage engine import path.
+- Use `src/core/rebalance/engine.py` as the stable lotus-manage engine import path.

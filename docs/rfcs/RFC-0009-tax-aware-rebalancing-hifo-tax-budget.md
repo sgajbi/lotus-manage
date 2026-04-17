@@ -69,7 +69,7 @@ Validation:
 1. `sum(lot.quantity)` must equal `position.quantity` within tolerance when lots are provided.
 2. Reject negative lot quantities.
 
-### 3.2 Sell Allocation Logic (`src/core/dpm/engine.py`)
+### 3.2 Sell Allocation Logic (`src/core/rebalance/engine.py`)
 
 Apply this logic in Stage 4 during sell intent generation.
 

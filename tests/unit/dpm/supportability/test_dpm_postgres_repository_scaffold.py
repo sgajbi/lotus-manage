@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from types import ModuleType
 
-import src.infrastructure.dpm_runs.postgres as postgres_module
+import src.infrastructure.rebalance_runs.postgres as postgres_module
 from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
@@ -10,7 +10,7 @@ from src.core.rebalance_runs.models import (
     DpmRunRecord,
     DpmRunWorkflowDecisionRecord,
 )
-from src.infrastructure.dpm_runs.postgres import (
+from src.infrastructure.rebalance_runs.postgres import (
     PostgresDpmRunRepository,
     _import_psycopg,
     _json_dump,

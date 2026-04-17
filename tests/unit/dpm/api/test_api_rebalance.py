@@ -1237,7 +1237,7 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
     )
 
     payload = get_valid_payload()
-    from src.core.dpm.engine import run_simulation as real_run
+    from src.core.rebalance.engine import run_simulation as real_run
     from src.core.models import (
         EngineOptions,
         MarketDataSnapshot,
@@ -1483,7 +1483,7 @@ def test_dpm_policy_pack_catalog_overrides_options_using_tenant_resolver(client,
         '{"tenant_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.02"}}}',
     )
     payload = get_valid_payload()
-    from src.core.dpm.engine import run_simulation as real_run
+    from src.core.rebalance.engine import run_simulation as real_run
     from src.core.models import (
         EngineOptions,
         MarketDataSnapshot,
@@ -1833,7 +1833,7 @@ def test_analyze_scenarios_are_processed_in_sorted_name_order(client):
     payload.pop("options")
     payload["scenarios"] = {"z_case": {"options": {}}, "a_case": {"options": {}}}
 
-    from src.core.dpm.engine import run_simulation as real_run
+    from src.core.rebalance.engine import run_simulation as real_run
     from src.core.models import (
         EngineOptions,
         MarketDataSnapshot,

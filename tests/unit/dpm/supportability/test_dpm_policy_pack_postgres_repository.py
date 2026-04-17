@@ -2,7 +2,7 @@ import sys
 from types import SimpleNamespace
 
 import src.infrastructure.dpm_policy_packs.postgres as postgres_module
-from src.core.dpm.policy_packs import DpmPolicyPackDefinition
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 from src.infrastructure.dpm_policy_packs.postgres import PostgresDpmPolicyPackRepository
 
 

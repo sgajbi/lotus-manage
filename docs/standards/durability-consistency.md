@@ -20,7 +20,7 @@
 - Evidence:
   - `src/api/routers/rebalance_simulation.py`
   - `src/api/routers/proposals_lifecycle_routes.py`
-  - `src/infrastructure/dpm_runs/postgres.py`
+  - `src/infrastructure/rebalance_runs/postgres.py`
   - `src/infrastructure/proposals/postgres.py`
 
 ## Atomicity and Transaction Boundaries
@@ -28,7 +28,7 @@
 - Run/proposal persistence uses explicit transaction boundaries in repository implementations.
 - Partial workflow updates must fail and surface explicit errors.
 - Evidence:
-  - `src/infrastructure/dpm_runs/postgres.py`
+  - `src/infrastructure/rebalance_runs/postgres.py`
   - `src/infrastructure/proposals/postgres.py`
 
 ## As-Of and Reproducibility Semantics

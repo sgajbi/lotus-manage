@@ -19,8 +19,8 @@ from src.api.routers.rebalance_runs import (
     record_dpm_run_for_support,
 )
 from src.core.common.canonical import hash_canonical_payload
-from src.core.dpm.engine import run_simulation
-from src.core.dpm.policy_packs import (
+from src.core.rebalance.engine import run_simulation
+from src.core.rebalance.policy_packs import (
     apply_policy_pack_to_engine_options,
     resolve_policy_pack_definition,
     resolve_policy_pack_replay_enabled,

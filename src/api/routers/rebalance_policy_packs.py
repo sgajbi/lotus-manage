@@ -9,8 +9,8 @@ from src.api.routers.runtime_utils import (
     normalize_backend_init_error,
 )
 from src.core.common.capabilities import psycopg_error_type
-from src.core.dpm.policy_pack_repository import DpmPolicyPackRepository
-from src.core.dpm.policy_packs import (
+from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
+from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
     DpmPolicyPackCatalogResponse,
     DpmPolicyPackDefinition,
@@ -18,7 +18,7 @@ from src.core.dpm.policy_packs import (
     DpmPolicyPackUpsertRequest,
     resolve_effective_policy_pack,
 )
-from src.core.dpm.tenant_policy_packs import build_tenant_policy_pack_resolver
+from src.core.rebalance.tenant_policy_packs import build_tenant_policy_pack_resolver
 from src.infrastructure.dpm_policy_packs import (
     PostgresDpmPolicyPackRepository,
 )

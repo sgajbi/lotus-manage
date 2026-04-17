@@ -2,12 +2,12 @@
 Backward-compatible shim for lotus-manage engine module path.
 
 Preferred import:
-`from src.core.dpm.engine import run_simulation`
+`from src.core.rebalance.engine import run_simulation`
 """
 
 import warnings
 
-from src.core.dpm.engine import (
+from src.core.rebalance.engine import (
     _apply_group_constraints,
     _apply_turnover_limit,
     _calculate_turnover_score,
@@ -17,7 +17,7 @@ from src.core.dpm.engine import (
 )
 
 warnings.warn(
-    "src.core.dpm_engine is deprecated; use src.core.dpm.engine instead.",
+    "src.core.dpm_engine is deprecated; use src.core.rebalance.engine instead.",
     DeprecationWarning,
     stacklevel=2,
 )

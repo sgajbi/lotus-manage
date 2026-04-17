@@ -5,7 +5,7 @@ from importlib.util import find_spec
 
 import pytest
 
-from src.core.dpm.engine import _generate_targets, run_simulation
+from src.core.rebalance.engine import _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
 from src.core.target_generation import _solver_failure_reason
 from tests.shared.factories import (
