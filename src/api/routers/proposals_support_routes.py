@@ -21,7 +21,8 @@ from src.core.proposals import (
     summary="Get Proposal Supportability Configuration",
     description=(
         "Returns proposal supportability runtime configuration and backend initialization status "
-        "for operational diagnostics without direct database access."
+        "for operational diagnostics without direct database access. Compatibility route only; "
+        "strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def get_proposal_supportability_config() -> ProposalSupportabilityConfigResponse:
@@ -59,7 +60,8 @@ def get_proposal_supportability_config() -> ProposalSupportabilityConfigResponse
     status_code=status.HTTP_200_OK,
     summary="Get Proposal Workflow Timeline",
     description=(
-        "Returns append-only workflow event timeline for investigation, supportability, and audit."
+        "Returns append-only workflow event timeline for investigation, supportability, and audit. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def get_proposal_workflow_timeline(
@@ -86,7 +88,8 @@ def get_proposal_workflow_timeline(
     status_code=status.HTTP_200_OK,
     summary="Get Proposal Approvals",
     description=(
-        "Returns approval/consent records for support investigations and workflow audit traces."
+        "Returns approval/consent records for support investigations and workflow audit traces. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def get_proposal_approvals(
@@ -114,7 +117,8 @@ def get_proposal_approvals(
     summary="Get Proposal Lineage",
     description=(
         "Returns immutable version lineage metadata with hashes "
-        "for reproducibility and root-cause analysis."
+        "for reproducibility and root-cause analysis. Compatibility route only; strategic "
+        "advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def get_proposal_lineage(
@@ -141,7 +145,8 @@ def get_proposal_lineage(
     status_code=status.HTTP_200_OK,
     summary="Lookup Proposal Idempotency Mapping",
     description=(
-        "Returns idempotency-to-proposal mapping for support and retry investigation workflows."
+        "Returns idempotency-to-proposal mapping for support and retry investigation workflows. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def get_proposal_idempotency_lookup(

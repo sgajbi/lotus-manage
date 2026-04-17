@@ -29,7 +29,8 @@ from src.core.proposals.models import ProposalApprovalRequest, ProposalListRespo
     summary="Create and Persist Advisory Proposal",
     description=(
         "Runs advisory simulation + artifact generation and persists immutable proposal version, "
-        "workflow creation event, and idempotency mapping."
+        "workflow creation event, and idempotency mapping. Compatibility route only; strategic "
+        "advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def create_proposal(
@@ -73,7 +74,8 @@ def create_proposal(
     summary="Get Proposal",
     description=(
         "Returns proposal summary, current immutable version, and last gate decision. "
-        "Supported query parameter: `include_evidence`; unsupported aliases are rejected."
+        "Supported query parameter: `include_evidence`; unsupported aliases are rejected. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
     responses={422: {"description": "Unsupported query parameters were supplied."}},
 )
@@ -108,7 +110,8 @@ def get_proposal(
     description=(
         "Lists persisted proposals with optional filters and cursor pagination. Supported query "
         "parameters are `portfolio_id`, `state`, `created_by`, `created_from`, `created_to`, "
-        "`limit`, and `cursor`; unsupported aliases are rejected."
+        "`limit`, and `cursor`; unsupported aliases are rejected. Compatibility route only; "
+        "strategic advisory proposal ownership lives in `lotus-advise`."
     ),
     responses={422: {"description": "Unsupported query parameters were supplied."}},
 )
@@ -181,7 +184,8 @@ def list_proposals(
     status_code=status.HTTP_200_OK,
     description=(
         "Returns one immutable proposal version by version number. Supported query parameter: "
-        "`include_evidence`; unsupported aliases are rejected."
+        "`include_evidence`; unsupported aliases are rejected. Compatibility route only; "
+        "strategic advisory proposal ownership lives in `lotus-advise`."
     ),
     responses={422: {"description": "Unsupported query parameters were supplied."}},
 )
@@ -219,7 +223,8 @@ def get_proposal_version(
     status_code=status.HTTP_200_OK,
     summary="Create Proposal Version",
     description=(
-        "Creates a new immutable proposal version by rerunning simulation + artifact build."
+        "Creates a new immutable proposal version by rerunning simulation + artifact build. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def create_proposal_version(
@@ -259,7 +264,8 @@ def create_proposal_version(
     status_code=status.HTTP_200_OK,
     summary="Transition Proposal State",
     description=(
-        "Applies one validated workflow transition with optimistic state concurrency check."
+        "Applies one validated workflow transition with optimistic state concurrency check. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def transition_proposal_state(
@@ -305,7 +311,8 @@ def transition_proposal_state(
     description=(
         "Persists a structured approval/consent record and appends "
         "the corresponding workflow event "
-        "with deterministic state transition."
+        "with deterministic state transition. Compatibility route only; strategic advisory "
+        "proposal ownership lives in `lotus-advise`."
     ),
 )
 def record_proposal_approval(
