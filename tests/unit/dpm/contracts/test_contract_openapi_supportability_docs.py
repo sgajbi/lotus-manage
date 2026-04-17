@@ -330,6 +330,8 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert effective_policy["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmEffectivePolicyPackResolution")
+    assert "Supply resolution context via the documented headers" in effective_policy["description"]
+    assert "422" in effective_policy["responses"]
     policy_params = {param["name"] for param in effective_policy["parameters"]}
     assert "x-policy-pack-id" in policy_params
     assert "x-tenant-policy-pack-id" in policy_params
@@ -340,6 +342,8 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert policy_catalog["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackCatalogResponse")
+    assert "Supply resolution context via the documented headers" in policy_catalog["description"]
+    assert "422" in policy_catalog["responses"]
     policy_catalog_params = {param["name"] for param in policy_catalog["parameters"]}
     assert "x-policy-pack-id" in policy_catalog_params
     assert "x-tenant-policy-pack-id" in policy_catalog_params

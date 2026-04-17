@@ -1,7 +1,7 @@
 import os
 from typing import Annotated, Optional, cast
 
-from fastapi import APIRouter, Header, HTTPException, Path, status
+from fastapi import APIRouter, Header, HTTPException, Path, Request, status
 
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
@@ -24,6 +24,23 @@ from src.infrastructure.dpm_policy_packs import (
 )
 
 router = APIRouter(tags=["lotus-manage Run Supportability"])
+
+
+def _reject_unexpected_query_params(
+    request: Request,
+    *,
+    allowed_params: set[str],
+) -> None:
+    unexpected = sorted(name for name in request.query_params if name not in allowed_params)
+    if unexpected:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                "UNSUPPORTED_QUERY_PARAMETER: "
+                + ", ".join(unexpected)
+                + " not supported for this endpoint"
+            ),
+        )
 
 
 def resolve_dpm_policy_pack(
@@ -143,10 +160,17 @@ def reset_dpm_policy_pack_repository_for_tests() -> None:
     description=(
         "Returns the effective lotus-manage policy-pack resolution using configured precedence "
         "(request, tenant default, global default). This endpoint is read-only and "
-        "intended for supportability and integration diagnostics."
+        "intended for supportability and integration diagnostics. Supply resolution context via "
+        "the documented headers rather than query parameters."
     ),
+    responses={
+        422: {
+            "description": "Unsupported query parameters were supplied.",
+        },
+    },
 )
 def get_effective_dpm_policy_pack(
+    request: Request,
     x_policy_pack_id: Annotated[
         Optional[str],
         Header(
@@ -169,6 +193,7 @@ def get_effective_dpm_policy_pack(
         ),
     ] = None,
 ) -> DpmEffectivePolicyPackResolution:
+    _reject_unexpected_query_params(request, allowed_params=set())
     return resolve_dpm_policy_pack(
         request_policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
@@ -183,10 +208,17 @@ def get_effective_dpm_policy_pack(
     summary="List lotus-manage Policy Pack Catalog",
     description=(
         "Returns the currently configured lotus-manage policy-pack catalog and the effective "
-        "selection context for optional request and tenant headers."
+        "selection context for optional request and tenant headers. Supply resolution context via "
+        "the documented headers rather than query parameters."
     ),
+    responses={
+        422: {
+            "description": "Unsupported query parameters were supplied.",
+        },
+    },
 )
 def get_dpm_policy_pack_catalog(
+    request: Request,
     x_policy_pack_id: Annotated[
         Optional[str],
         Header(
@@ -209,6 +241,7 @@ def get_dpm_policy_pack_catalog(
         ),
     ] = None,
 ) -> DpmPolicyPackCatalogResponse:
+    _reject_unexpected_query_params(request, allowed_params=set())
     resolution = resolve_dpm_policy_pack(
         request_policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,

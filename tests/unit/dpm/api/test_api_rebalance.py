@@ -1352,6 +1352,20 @@ def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatc
     }
 
 
+def test_policy_pack_supportability_routes_reject_unexpected_query_params(client):
+    effective = client.get("/api/v1/rebalance/policies/effective?tenant_id=tenant_001")
+    assert effective.status_code == 422
+    assert effective.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
+    )
+
+    catalog = client.get("/api/v1/rebalance/policies/catalog?tenant_id=tenant_001")
+    assert catalog.status_code == 422
+    assert catalog.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
+    )
+
+
 def test_effective_policy_pack_endpoint_uses_tenant_resolver_when_enabled(client, monkeypatch):
     monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
     monkeypatch.setenv("DPM_DEFAULT_POLICY_PACK_ID", "global_pack")
