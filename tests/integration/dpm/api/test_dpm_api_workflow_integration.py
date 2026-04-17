@@ -265,6 +265,20 @@ def test_lineage_route_rejects_unexpected_query_alias_when_enabled(
     )
 
 
+def test_workflow_decision_list_rejects_unexpected_query_alias_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/rebalance/workflow/decisions?runId=rr-any")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: runId not supported for this endpoint"
+    )
+
+
 def test_workflow_actions_and_decision_list_roundtrip(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     payload = valid_api_payload()

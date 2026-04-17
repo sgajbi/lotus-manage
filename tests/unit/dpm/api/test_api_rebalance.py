@@ -1386,6 +1386,17 @@ def test_lineage_supportability_route_rejects_unexpected_query_params(client, mo
     )
 
 
+def test_workflow_decision_list_rejects_unexpected_query_params(client, monkeypatch):
+    monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
+
+    response = client.get("/api/v1/rebalance/workflow/decisions?runId=rr_001")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: runId not supported for this endpoint"
+    )
+
+
 def test_effective_policy_pack_endpoint_uses_tenant_resolver_when_enabled(client, monkeypatch):
     monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
     monkeypatch.setenv("DPM_DEFAULT_POLICY_PACK_ID", "global_pack")

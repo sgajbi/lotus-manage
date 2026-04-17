@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from fastapi import Header, HTTPException, Path, Query, status
+from fastapi import Header, HTTPException, Path, Query, Request, status
 
 from src.api.routers import rebalance_runs as shared
 from src.core.rebalance_runs import (
@@ -23,10 +23,18 @@ from src.core.rebalance_runs.models import DpmWorkflowActionType
     summary="List lotus-manage Workflow Decisions",
     description=(
         "Returns paginated workflow decisions across runs with optional filters for "
-        "supportability investigations."
+        "supportability investigations. Supported filters are `rebalance_run_id`, `action`, "
+        "`actor_id`, `reason_code`, `decided_from`, `decided_to`, `limit`, and `cursor`; "
+        "unsupported aliases are rejected."
     ),
+    responses={
+        422: {
+            "description": "Unsupported query parameters were supplied.",
+        },
+    },
 )
 def list_dpm_workflow_decisions(
+    request: Request,
     rebalance_run_id: Annotated[
         Optional[str],
         Query(
@@ -89,6 +97,19 @@ def list_dpm_workflow_decisions(
 ) -> DpmWorkflowDecisionListResponse:
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
+    shared._reject_unexpected_query_params(
+        request,
+        allowed_params={
+            "rebalance_run_id",
+            "action",
+            "actor_id",
+            "reason_code",
+            "decided_from",
+            "decided_to",
+            "limit",
+            "cursor",
+        },
+    )
     return service.list_workflow_decisions(
         rebalance_run_id=rebalance_run_id,
         action=action,

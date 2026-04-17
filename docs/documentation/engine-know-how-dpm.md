@@ -254,6 +254,9 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case filter names only
 
 ### `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}`
 - Purpose: retrieve workflow decision history when only correlation id is available in incident context.

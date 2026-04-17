@@ -477,6 +477,14 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_decisions["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmWorkflowDecisionListResponse")
+    assert workflow_decisions["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    assert (
+        "Supported filters are `rebalance_run_id`, `action`, `actor_id`, `reason_code`, "
+        "`decided_from`, `decided_to`, `limit`, and `cursor`"
+        in workflow_decisions["description"]
+    )
     expected_params = {
         "rebalance_run_id",
         "action",
