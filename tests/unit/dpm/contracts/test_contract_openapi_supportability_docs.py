@@ -118,6 +118,29 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _assert_property_has_docs(supportability_summary_schema, "workflow_reason_code_counts")
     _assert_property_has_docs(supportability_summary_schema, "lineage_edge_count")
     _assert_property_has_docs(supportability_summary_schema, "oldest_run_created_at")
+
+    integration_capabilities_schema = schemas["IntegrationCapabilitiesResponse"]
+    _assert_property_has_docs(integration_capabilities_schema, "contract_version")
+    _assert_property_has_docs(integration_capabilities_schema, "source_service")
+    _assert_property_has_docs(integration_capabilities_schema, "consumer_system")
+    _assert_property_has_docs(integration_capabilities_schema, "tenant_id")
+    _assert_property_has_docs(integration_capabilities_schema, "generated_at")
+    _assert_property_has_docs(integration_capabilities_schema, "as_of_date")
+    _assert_property_has_docs(integration_capabilities_schema, "policy_version")
+    _assert_property_has_docs(integration_capabilities_schema, "supported_input_modes")
+    _assert_property_has_docs(integration_capabilities_schema, "features")
+    _assert_property_has_docs(integration_capabilities_schema, "workflows")
+
+    feature_capability_schema = schemas["FeatureCapability"]
+    _assert_property_has_docs(feature_capability_schema, "key")
+    _assert_property_has_docs(feature_capability_schema, "enabled")
+    _assert_property_has_docs(feature_capability_schema, "owner_service")
+    _assert_property_has_docs(feature_capability_schema, "description")
+
+    workflow_capability_schema = schemas["WorkflowCapability"]
+    _assert_property_has_docs(workflow_capability_schema, "workflow_key")
+    _assert_property_has_docs(workflow_capability_schema, "enabled")
+    _assert_property_has_docs(workflow_capability_schema, "required_features")
     _assert_property_has_docs(supportability_summary_schema, "newest_run_created_at")
     _assert_property_has_docs(supportability_summary_schema, "oldest_operation_created_at")
     _assert_property_has_docs(supportability_summary_schema, "newest_operation_created_at")
@@ -237,6 +260,25 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
 
     mutation_response_schema = schemas["DpmPolicyPackMutationResponse"]
     _assert_property_has_docs(mutation_response_schema, "item")
+
+
+def test_integration_capabilities_paths_have_route_and_query_docs():
+    _guard_strict_validation()
+    openapi = app.openapi()
+
+    integration_get = openapi["paths"]["/integration/capabilities"]["get"]
+    platform_get = openapi["paths"]["/platform/capabilities"]["get"]
+
+    assert "backend-governed DPM feature and workflow capability posture" in integration_get[
+        "description"
+    ]
+    assert "platform namespace" in platform_get["description"]
+
+    integration_params = {param["name"]: param for param in integration_get["parameters"]}
+    assert integration_params["consumer_system"]["schema"]["default"] == "lotus-gateway"
+    assert integration_params["tenant_id"]["schema"]["default"] == "default"
+    assert integration_params["consumer_system"]["description"]
+    assert integration_params["tenant_id"]["description"]
 
 
 def test_dpm_async_and_supportability_endpoints_use_expected_request_response_contracts():

@@ -41,3 +41,13 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.proposals.lifecycle"] is False
     assert body["supported_input_modes"] == ["pas_ref"]
+
+
+def test_integration_capabilities_uses_default_query_resolution_when_omitted():
+    with TestClient(app) as client:
+        response = client.get("/integration/capabilities")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["consumer_system"] == "lotus-gateway"
+    assert body["tenant_id"] == "default"

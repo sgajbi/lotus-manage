@@ -17,3 +17,15 @@ def test_integration_capabilities_contract() -> None:
     assert body["source_service"] == SERVICE_NAME
     assert isinstance(body["features"], list)
     assert isinstance(body["workflows"], list)
+
+
+def test_platform_capabilities_alias_honors_explicit_query_context() -> None:
+    client = TestClient(app)
+    response = client.get(
+        "/api/v1/platform/capabilities?consumer_system=lotus-performance&tenant_id=tenant-x"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["consumer_system"] == "lotus-performance"
+    assert body["tenant_id"] == "tenant-x"
