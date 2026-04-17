@@ -55,6 +55,11 @@ Implementation scope:
 
 ### `POST /rebalance/analyze`
 - Purpose: multi-scenario what-if analysis using shared snapshots.
+- When to use:
+  - immediate caller-facing what-if analysis where the full batch result should return in one response
+  - up to 20 scenarios per request
+- When not to use:
+  - deferred or polling-based orchestration; use `POST /rebalance/analyze/async`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
 - Optional header: `X-Tenant-Id` (used for tenant default policy-pack resolver lookup)
@@ -73,6 +78,16 @@ Implementation scope:
 - Scenario correlation behavior:
   - when `X-Correlation-Id` is provided, each scenario result uses `{header}:{scenario_name}`
   - when omitted, each scenario result uses `{batch_run_id}:{scenario_name}`
+
+### `POST /rebalance/analyze/async`
+- Purpose: asynchronous what-if batch submission returning an operation handle instead of full batch results.
+- When to use:
+  - polling-based orchestration
+  - accept-now/execute-later flows
+  - `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`
+- Retrieval:
+  - `GET /rebalance/operations/{operation_id}`
+  - `GET /rebalance/operations/by-correlation/{correlation_id}`
 
 ### `GET /rebalance/operations`
 - Purpose: list asynchronous operations for supportability investigations.

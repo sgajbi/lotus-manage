@@ -304,6 +304,9 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "$ref"
     ].endswith("/DpmAsyncAcceptedResponse")
     assert "X-Correlation-Id" in analyze_async["responses"]["202"]["headers"]
+    assert "Use this route when the caller needs polling-based orchestration" in analyze_async[
+        "description"
+    ]
     header_names = {param["name"] for param in analyze_async["parameters"]}
     assert "x-correlation-id" in header_names
     assert "x-policy-pack-id" in header_names
@@ -324,6 +327,16 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert analyze["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/BatchRebalanceResult"
     )
+    assert "Use this synchronous route when the caller needs immediate results" in analyze[
+        "description"
+    ]
+    analyze_examples = analyze["responses"]["200"]["content"]["application/json"]["examples"]
+    assert "batch_result" in analyze_examples
+    analyze_value = analyze_examples["batch_result"]["value"]
+    assert "baseline" in analyze_value["results"]
+    assert "baseline" in analyze_value["comparison_metrics"]
+    assert "invalid_case" in analyze_value["failed_scenarios"]
+    assert "PARTIAL_BATCH_FAILURE" in analyze_value["warnings"]
 
     effective_policy = openapi["paths"]["/api/v1/rebalance/policies/effective"]["get"]
     assert "requestBody" not in effective_policy

@@ -55,10 +55,98 @@ ANALYZE_RESPONSE_EXAMPLE = {
         "batch_run_id": "batch_ab12cd34",
         "run_at_utc": "2026-02-18T10:00:00+00:00",
         "base_snapshot_ids": {"portfolio_snapshot_id": "pf_batch", "market_data_snapshot_id": "md"},
-        "results": {},
-        "comparison_metrics": {},
-        "failed_scenarios": {},
-        "warnings": [],
+        "results": {
+            "baseline": {
+                "rebalance_run_id": "rr_batch_baseline_001",
+                "correlation_id": "corr-batch-sync-1:baseline",
+                "status": "READY",
+                "before": {
+                    "total_value": {"amount": "11000.00", "currency": "USD"},
+                    "cash_balances": [{"currency": "USD", "amount": "1000.00"}],
+                    "positions": [],
+                    "allocation_by_asset_class": [],
+                    "allocation_by_instrument": [],
+                    "allocation": [],
+                    "allocation_by_attribute": {},
+                },
+                "universe": {
+                    "universe_id": "uni_batch_baseline_001",
+                    "eligible_for_buy": ["EQ_1"],
+                    "eligible_for_sell": ["EQ_1"],
+                    "excluded": [],
+                    "coverage": {"price_coverage_pct": "1.0", "fx_coverage_pct": "1.0"},
+                },
+                "target": {
+                    "target_id": "target_batch_baseline_001",
+                    "strategy": {},
+                    "targets": [],
+                },
+                "intents": [
+                    {
+                        "intent_type": "SECURITY_TRADE",
+                        "intent_id": "oi_batch_001",
+                        "instrument_id": "EQ_1",
+                        "side": "SELL",
+                        "quantity": "45",
+                        "notional": {"amount": "4500.00", "currency": "USD"},
+                        "notional_base": {"amount": "4500.00", "currency": "USD"},
+                        "dependencies": [],
+                        "rationale": {
+                            "code": "ALIGN_TO_TARGET",
+                            "message": "Sell down to model target weight."
+                        },
+                        "constraints_applied": [],
+                    }
+                ],
+                "after_simulated": {
+                    "total_value": {"amount": "11000.00", "currency": "USD"},
+                    "cash_balances": [{"currency": "USD", "amount": "5500.00"}],
+                    "positions": [],
+                    "allocation_by_asset_class": [],
+                    "allocation_by_instrument": [],
+                    "allocation": [],
+                    "allocation_by_attribute": {},
+                },
+                "reconciliation": {
+                    "before_total_value": {"amount": "11000.00", "currency": "USD"},
+                    "after_total_value": {"amount": "11000.00", "currency": "USD"},
+                    "delta": {"amount": "0.00", "currency": "USD"},
+                    "tolerance": {"amount": "0.01", "currency": "USD"},
+                    "status": "OK",
+                },
+                "rule_results": [],
+                "explanation": {},
+                "diagnostics": {
+                    "warnings": [],
+                    "suppressed_intents": [],
+                    "dropped_intents": [],
+                    "group_constraint_events": [],
+                    "tax_budget_constraint_events": [],
+                    "cash_ladder": [],
+                    "cash_ladder_breaches": [],
+                    "missing_fx_pairs": [],
+                    "funding_plan": [],
+                    "insufficient_cash": [],
+                    "data_quality": {"price_missing": [], "fx_missing": []},
+                },
+                "lineage": {
+                    "portfolio_snapshot_id": "pf_batch",
+                    "market_data_snapshot_id": "md",
+                    "request_hash": "sha256:batch-baseline",
+                },
+            }
+        },
+        "comparison_metrics": {
+            "baseline": {
+                "status": "READY",
+                "security_intent_count": 1,
+                "gross_turnover_notional_base": {"amount": "4500.00", "currency": "USD"},
+            }
+        },
+        "failed_scenarios": {
+            "invalid_case": "INVALID_OPTIONS: group constraint keys must match <attribute_key>:<attribute_value>"
+        },
+        "warnings": ["PARTIAL_BATCH_FAILURE"],
     },
 }
 ANALYZE_ASYNC_ACCEPTED_EXAMPLE = {

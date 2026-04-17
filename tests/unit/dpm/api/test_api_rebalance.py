@@ -1754,6 +1754,11 @@ def test_openapi_async_analyze_documents_correlation_header(client):
     assert "x-policy-pack-id" in analyze_header_names
     assert "x-tenant-id" in simulate_header_names
     assert "x-tenant-id" in analyze_header_names
+    sync_correlation_header = next(
+        parameter for parameter in analyze["parameters"] if parameter["name"] == "x-correlation-id"
+    )
+    assert sync_correlation_header["in"] == "header"
+    assert "scenario name" in sync_correlation_header["description"]
 
     request_header = next(
         parameter

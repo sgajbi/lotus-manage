@@ -111,8 +111,14 @@ def simulate_rebalance(
     tags=["lotus-manage What-If Analysis"],
     summary="Analyze Multiple Rebalance Scenarios",
     description=(
-        "Runs multiple named what-if scenarios using shared snapshots.\\n\\n"
-        "Each scenario validates `options` independently and executes in sorted scenario-key order."
+        "Runs multiple named what-if scenarios using shared snapshots and returns the full batch "
+        "result in one response.\\n\\n"
+        "Use this synchronous route when the caller needs immediate results for up to 20 "
+        "scenarios in one request. Use `POST /rebalance/analyze/async` when the caller needs "
+        "polling-based orchestration or `ACCEPT_ONLY` execution.\\n\\n"
+        "Each scenario validates `options` independently, executes in sorted scenario-key order, "
+        "and contributes to `results`, `comparison_metrics`, `failed_scenarios`, and batch-level "
+        "`warnings`."
     ),
     responses={
         200: {
@@ -131,7 +137,16 @@ def analyze_scenarios(
         BatchRebalanceRequest,
         Field(description="Shared snapshots plus scenario map of option overrides."),
     ],
-    x_correlation_id: Annotated[Optional[str], Header()] = None,
+    x_correlation_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional batch correlation identifier. Successful scenario results append the "
+                "scenario name to this value as `{correlation_id}:{scenario_name}`."
+            ),
+            examples=["corr-batch-sync-1"],
+        ),
+    ] = None,
     x_policy_pack_id: Annotated[
         Optional[str],
         Header(
@@ -168,7 +183,11 @@ def analyze_scenarios(
     tags=["lotus-manage What-If Analysis"],
     summary="Analyze Multiple Rebalance Scenarios Asynchronously",
     description=(
-        "Accepts named what-if scenarios for asynchronous execution.\\n\\n"
+        "Accepts named what-if scenarios for asynchronous execution and returns a polling handle "
+        "instead of the full batch result.\\n\\n"
+        "Use this route when the caller needs polling-based orchestration, deferred execution, "
+        "or `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use `POST /rebalance/analyze` when immediate "
+        "batch results are required.\\n\\n"
         "Execution mode is controlled by `DPM_ASYNC_EXECUTION_MODE` (`INLINE` or `ACCEPT_ONLY`).\\n"
         "Use `GET /rebalance/operations/{operation_id}` or "
         "`GET /rebalance/operations/by-correlation/{correlation_id}` for status/result retrieval."
