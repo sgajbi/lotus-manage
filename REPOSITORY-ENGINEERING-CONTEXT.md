@@ -42,7 +42,11 @@ Primary areas:
    management APIs, workflow logic, and supporting modules.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.
-3. `tests/`
+3. `docs/`
+   project overview, runbooks, standards, demo evidence, and RFC documentation.
+4. `wiki/`
+   canonical authored source for repository wiki publication and operator onboarding summaries.
+5. `tests/`
    unit, integration, and e2e validation.
 
 ## Runtime And Integration Boundaries
@@ -92,7 +96,11 @@ Important validation expectations:
 
 1. no-alias, OpenAPI, API vocabulary, migration smoke, and security audit are active,
 2. PR-grade validation includes coverage-backed full test execution,
-3. host/runtime coexistence assumptions matter for canonical front-office startup.
+3. host/runtime coexistence assumptions matter for canonical front-office startup,
+4. README changes should preserve the local Docker runtime contract language enforced by
+   `tests/unit/test_local_docker_runtime_contract.py`,
+5. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
+   `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`.
 
 ## Standards And RFCs That Govern This Repository
 
@@ -112,7 +120,11 @@ Most relevant current governance:
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
 4. `portfolio_id` stateful-mode semantics, inline bundle source-data lineage, and remaining advisory/proposal compatibility surfaces are RFC-0082 watchlist areas,
-5. this repo should stay operationally aligned with gateway and platform startup sequences.
+5. this repo should stay operationally aligned with gateway and platform startup sequences,
+6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
+   rather than duplicating the full `docs/` tree,
+7. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
+   diff and avoid committing timestamp-only churn when the semantic inventory is unchanged.
 
 ## Context Maintenance Rule
 
@@ -123,7 +135,8 @@ Update this document when:
 3. repo-native commands or CI expectations change,
 4. upstream or downstream integration posture changes materially,
 5. RFC-0082 contract-family classification changes,
-6. current-state rollout posture changes.
+6. current-state rollout posture changes,
+7. README or `wiki/` structure changes the repository-local onboarding or operator navigation model.
 
 ## Cross-Links
 
