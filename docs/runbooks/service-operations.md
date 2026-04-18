@@ -12,7 +12,7 @@
 - Liveness: /health/live
 - Readiness: /health/ready
 - General health: /health
-- Metadata: /metadata
+- OpenAPI docs: /docs
 
 ## Incident First Checks
 
