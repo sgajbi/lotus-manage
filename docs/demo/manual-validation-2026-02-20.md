@@ -198,7 +198,7 @@ Demo pack validation passed for http://127.0.0.1:8000
       both return `200`.
     - `GET /rebalance/idempotency/{idempotency_key}/history` returns `200` with two entries
       preserving run ids, correlation ids, and request hashes.
-  - Container run (`lotus-advise:latest`, `DPM_IDEMPOTENCY_REPLAY_ENABLED=false`,
+  - Container run (`lotus-manage:latest`, `DPM_IDEMPOTENCY_REPLAY_ENABLED=false`,
     `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`, `DPM_SUPPORTABILITY_STORE_BACKEND=SQLITE`)
     on `http://127.0.0.1:8012`:
     - Two `POST /rebalance/simulate` calls with same idempotency key and different payload hash
@@ -209,7 +209,7 @@ Demo pack validation passed for http://127.0.0.1:8000
     - `GET /rebalance/lineage/{correlation_id}` returns `200` with `CORRELATION_TO_RUN`.
     - `GET /rebalance/lineage/{idempotency_key}` returns `200` with `IDEMPOTENCY_TO_RUN`.
     - `GET /rebalance/lineage/{operation_id}` returns `200` with `OPERATION_TO_CORRELATION`.
-  - Container run (`lotus-advise:latest` with `DPM_SUPPORTABILITY_STORE_BACKEND=SQLITE`)
+  - Container run (`lotus-manage:latest` with `DPM_SUPPORTABILITY_STORE_BACKEND=SQLITE`)
     on `http://127.0.0.1:8002`:
     - `POST /rebalance/simulate` succeeded (`200`).
     - `GET /rebalance/runs/{rebalance_run_id}` succeeded (`200`).
@@ -286,7 +286,7 @@ Demo pack validation passed for http://127.0.0.1:8000
       - history `decisions=[]`
     - `GET /rebalance/workflow/decisions?limit=20` returns workflow decisions across runs.
     - `GET /rebalance/workflow/decisions?actor_id=...&action=...&limit=...` returns filtered rows.
-  - Container runtime (`lotus-advise:latest` with `-e DPM_WORKFLOW_ENABLED=true`,
+  - Container runtime (`lotus-manage:latest` with `-e DPM_WORKFLOW_ENABLED=true`,
     published on `http://127.0.0.1:8002`):
     - `GET /rebalance/runs/by-correlation/{correlation_id}/workflow` returns `200`.
     - `GET /rebalance/runs/idempotency/{idempotency_key}/workflow` returns `200`.
@@ -300,7 +300,7 @@ Demo pack validation passed for http://127.0.0.1:8000
     - Idempotency-key workflow retrieval without prior action returns:
       - `workflow_status=PENDING_REVIEW`
       - history `decisions=[]`
-  - Container runtime (`lotus-advise:latest` with `-e DPM_WORKFLOW_ENABLED=true`,
+  - Container runtime (`lotus-manage:latest` with `-e DPM_WORKFLOW_ENABLED=true`,
     published on `http://127.0.0.1:8031`):
     - `POST /rebalance/simulate` returns `200`.
     - `POST /rebalance/runs/{rebalance_run_id}/workflow/actions` with `APPROVE` returns `200`.
@@ -308,7 +308,7 @@ Demo pack validation passed for http://127.0.0.1:8000
       returns `200` with one matching decision.
     - `GET /rebalance/workflow/decisions/by-correlation/corr-manual-wf-docker`
       returns `200` with decision history for the resolved run.
-  - Container runtime (`lotus-advise:latest` with `-e DPM_WORKFLOW_ENABLED=true`,
+  - Container runtime (`lotus-manage:latest` with `-e DPM_WORKFLOW_ENABLED=true`,
     published on `http://127.0.0.1:8034`):
     - `POST /rebalance/simulate` + one workflow `APPROVE` action succeeded.
     - `GET /rebalance/workflow/decisions/by-correlation/corr-manual-wf-corr-docker`
@@ -343,7 +343,7 @@ Demo pack validation passed for http://127.0.0.1:8000
   - `DPM_SUPPORTABILITY_STORE_BACKEND=POSTGRES`
   - `DPM_SUPPORTABILITY_POSTGRES_DSN=postgresql://dpm:dpm@postgres:5432/dpm_supportability`
   - Commands:
-    - `docker-compose --profile postgres up -d --build lotus-advise`
+    - `docker-compose --profile postgres up -d --build lotus-manage`
     - `.venv\Scripts\python scripts/run_demo_pack_live.py --base-url http://127.0.0.1:8000`
   - Observed result:
     - `Demo pack validation passed for http://127.0.0.1:8000`
@@ -542,7 +542,7 @@ Demo pack validation passed for http://127.0.0.1:8000
 
 - Docker startup validation (expected fail-fast):
   - Command:
-    - `docker run --rm -e APP_PERSISTENCE_PROFILE=PRODUCTION -e DPM_SUPPORTABILITY_STORE_BACKEND=IN_MEMORY -e PROPOSAL_STORE_BACKEND=POSTGRES lotus-advise:latest`
+    - `docker run --rm -e APP_PERSISTENCE_PROFILE=PRODUCTION -e DPM_SUPPORTABILITY_STORE_BACKEND=IN_MEMORY -e PROPOSAL_STORE_BACKEND=POSTGRES lotus-manage:latest`
   - Observed:
     - container exits at startup with `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES`.
 
