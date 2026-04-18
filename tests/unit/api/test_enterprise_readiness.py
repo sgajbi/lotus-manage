@@ -2,6 +2,7 @@ import json
 
 from src.api.enterprise_readiness import (
     authorize_write_request,
+    emit_audit_event,
     is_feature_enabled,
     redact_sensitive,
     validate_enterprise_runtime_config,
@@ -60,3 +61,18 @@ def test_validate_enterprise_runtime_config_reports_rotation_issue(monkeypatch):
     monkeypatch.setenv("ENTERPRISE_SECRET_ROTATION_DAYS", "120")
     issues = validate_enterprise_runtime_config()
     assert "secret_rotation_days_out_of_range" in issues
+
+
+def test_emit_audit_event_uses_manage_service_identity(caplog):
+    with caplog.at_level("INFO", logger="enterprise_readiness"):
+        emit_audit_event(
+            action="POST /rebalance/simulate",
+            actor_id="operator-1",
+            tenant_id="tenant-1",
+            role="operator",
+            correlation_id="corr-1",
+            metadata={"status_code": 200},
+        )
+
+    assert caplog.records
+    assert caplog.records[-1].audit["service"] == "lotus-manage"

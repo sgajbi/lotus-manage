@@ -100,7 +100,10 @@ Important validation expectations:
 4. README changes should preserve the local Docker runtime contract language enforced by
    `tests/unit/test_local_docker_runtime_contract.py`,
 5. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
-   `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`.
+   `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
+6. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
+   `lotus-manage` service, image, and ingress identity while clearly labeling historical local-only
+   debug paths.
 
 ## Standards And RFCs That Govern This Repository
 
@@ -123,7 +126,9 @@ Most relevant current governance:
 5. this repo should stay operationally aligned with gateway and platform startup sequences,
 6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,
-7. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
+7. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
+   stale split-era names,
+8. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged.
 
 ## Context Maintenance Rule
