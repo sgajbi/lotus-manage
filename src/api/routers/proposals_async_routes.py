@@ -20,7 +20,8 @@ from src.core.proposals import (
     summary="Create and Persist Advisory Proposal Asynchronously",
     description=(
         "Accepts proposal creation request for asynchronous processing. "
-        "Use returned operation id or correlation id to retrieve status and result."
+        "Use returned operation id or correlation id to retrieve status and result. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def create_proposal_async(
@@ -68,7 +69,8 @@ def create_proposal_async(
     summary="Create Proposal Version Asynchronously",
     description=(
         "Accepts proposal-version creation request for asynchronous processing. "
-        "Use returned operation id or correlation id to retrieve status and result."
+        "Use returned operation id or correlation id to retrieve status and result. "
+        "Compatibility route only; strategic advisory proposal ownership lives in `lotus-advise`."
     ),
 )
 def create_proposal_version_async(
@@ -111,7 +113,10 @@ def create_proposal_version_async(
     response_model=ProposalAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get Proposal Async Operation",
-    description="Returns asynchronous operation status and terminal result/error payload.",
+    description=(
+        "Returns asynchronous operation status and terminal result/error payload. Compatibility "
+        "route only; strategic advisory proposal ownership lives in `lotus-advise`."
+    ),
 )
 def get_proposal_async_operation(
     operation_id: Annotated[
@@ -133,7 +138,10 @@ def get_proposal_async_operation(
     response_model=ProposalAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get Proposal Async Operation by Correlation Id",
-    description="Returns the latest asynchronous operation associated with correlation id.",
+    description=(
+        "Returns the latest asynchronous operation associated with correlation id. Compatibility "
+        "route only; strategic advisory proposal ownership lives in `lotus-advise`."
+    ),
 )
 def get_proposal_async_operation_by_correlation(
     correlation_id: Annotated[

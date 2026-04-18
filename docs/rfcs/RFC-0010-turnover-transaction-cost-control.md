@@ -63,7 +63,7 @@ class DiagnosticsData(BaseModel):
 Validation:
 1. `max_turnover_pct` must be within `[0, 1]` when provided.
 
-### 3.2 Stage-4 Intent Selection (`src/core/dpm/engine.py`)
+### 3.2 Stage-4 Intent Selection (`src/core/rebalance/engine.py`)
 
 Implemented in `_apply_turnover_limit(...)`, called after `_generate_intents(...)` and before Stage 5 simulation.
 

@@ -24,7 +24,7 @@ curl -X POST "http://manage.dev.lotus/rebalance/analyze" -H "Content-Type: appli
 For asynchronous batch what-if demos, POST to `/rebalance/analyze/async` and retrieve operation status:
 ```bash
 curl -X POST "http://manage.dev.lotus/rebalance/analyze/async" -H "Content-Type: application/json" -H "X-Correlation-Id: demo-corr-26-async" --data-binary "@docs/demo/26_dpm_async_batch_analysis.json"
-curl -X GET "http://manage.dev.lotus/rebalance/operations?status=SUCCEEDED&operation_type=ANALYZE_SCENARIOS&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/operations?status_filter=SUCCEEDED&operation_type=ANALYZE_SCENARIOS&limit=20"
 curl -X GET "http://manage.dev.lotus/rebalance/operations/by-correlation/demo-corr-26-async"
 ```
 
@@ -88,7 +88,7 @@ curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: appl
 For lotus-manage supportability and deterministic artifact retrieval flow:
 ```bash
 curl -X POST "http://manage.dev.lotus/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-27-supportability" -H "X-Correlation-Id: demo-corr-27-supportability" --data-binary "@docs/demo/27_dpm_supportability_artifact_flow.json"
-curl -X GET "http://manage.dev.lotus/rebalance/runs?status=READY&portfolio_id=pf_demo_support_27&limit=20"
+curl -X GET "http://manage.dev.lotus/rebalance/runs?status_filter=READY&portfolio_id=pf_demo_support_27&limit=20"
 curl -X GET "http://manage.dev.lotus/rebalance/runs?request_hash=<request_hash>&limit=20"
 curl -X GET "http://manage.dev.lotus/rebalance/runs/by-request-hash/<url_encoded_request_hash>"
 curl -X GET "http://manage.dev.lotus/rebalance/supportability/summary"
@@ -107,8 +107,9 @@ Retention can be enabled for supportability records with:
 
 For lotus-manage lineage supportability (enabled when `DPM_LINEAGE_APIS_ENABLED=true`):
 ```bash
-curl -X GET "http://manage.dev.lotus/rebalance/lineage/<entity_id>"
+curl -X GET "http://manage.dev.lotus/rebalance/lineage/<entity_id>?edge_type=CORRELATION_TO_RUN&limit=20"
 ```
+Use canonical snake_case query params only; unsupported aliases are rejected with `422`.
 
 For lotus-manage idempotency history supportability (enabled when `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`):
 ```bash

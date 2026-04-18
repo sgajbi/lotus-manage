@@ -20,6 +20,9 @@ composition.
    source-data authority.
 5. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
    surfaces.
+6. Current downstream evidence for capability discovery flows through
+   `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/platform/capabilities`; the
+   canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
 
 ## `lotus-core` Contract Family Posture
 
@@ -27,18 +30,18 @@ composition.
 | --- | --- | --- | --- | --- |
 | `portfolio_snapshot` request payloads | source data should be `lotus-core`-governed when populated from platform state | Snapshot and simulation / Operational Read input | rebalance and what-if source state | manage may transform for execution, but must not become the ledger or portfolio read authority |
 | `market_data_snapshot` request payloads | prices and FX should remain core-governed source data when populated from platform state | Operational Read input / Analytics Input watchlist | valuation, settlement, tax, and rebalance execution support | manage may use inputs for execution, but source truth remains upstream |
-| `pas_ref` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | stateful DPM execution posture advertised through capabilities | future stateful resolution must use governed core contracts rather than ad hoc reads |
+| `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | stateful rebalance execution posture advertised through capabilities | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
 
 ## Manage-Owned Contract Families
 
 | Surface | Route family | Owner | Boundary rule |
 | --- | --- | --- | --- |
-| rebalance simulation | `POST /rebalance/simulate` | `lotus-manage` | owns deterministic DPM execution result, policy application, controls, and workflow gate output |
+| rebalance simulation | `POST /rebalance/simulate` | `lotus-manage` | owns deterministic rebalance execution result, policy application, controls, and workflow gate output |
 | what-if analysis | `POST /rebalance/analyze`, `POST /rebalance/analyze/async` | `lotus-manage` | owns scenario orchestration and run correlation semantics |
 | async operation execution | `/rebalance/operations/*` | `lotus-manage` | owns management-side operation state and supportability |
 | run supportability | `/rebalance/runs/*`, `/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
-| policy-pack supportability | `/rebalance/policies/*` | `lotus-manage` | owns DPM policy-pack selection and diagnostics |
+| policy-pack supportability | `/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
 | integration capabilities | `/integration/capabilities`, `/platform/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
 
 ## Split-Boundary Posture
@@ -52,16 +55,16 @@ Boundary rules:
 1. advisor-led proposal workflow should not expand in `lotus-manage`,
 2. new advisory decision-summary, alternatives, suitability, or consent behavior belongs in
    `lotus-advise`,
-3. gateway-facing management workflow should consume `lotus-manage` for DPM execution and
+3. gateway-facing management workflow should consume `lotus-manage` for rebalance execution and
    supportability only.
 
 ## Conformance Rules
 
-1. `lotus-manage` may own execution decisions produced by its DPM engine from governed inputs.
+1. `lotus-manage` may own execution decisions produced by its rebalance engine from governed inputs.
 2. `lotus-manage` must not own canonical portfolio state, account state, transaction state, price
    source truth, FX source truth, performance attribution, benchmark-relative interpretation, or risk
    methodology.
-3. `pas_ref` and future stateful input modes must be implemented through governed `lotus-core`
+3. `portfolio_id` and future stateful input modes must be implemented through governed `lotus-core`
    snapshot, operational-read, analytics-input, or control-plane contracts.
 4. Inline bundle behavior must preserve lineage identifiers for portfolio and market-data snapshots so
    callers can trace source authority.
@@ -92,15 +95,19 @@ upstream request/response contracts.
 
 ## Gap Register
 
-1. `pas_ref` is advertised as a supported input mode, but the current code inspection did not find an
+1. `portfolio_id` is advertised as a supported input mode, but the current code inspection did not find an
    active outbound state-resolution client. When that becomes active, classify the exact `lotus-core`
    routes before stabilizing the contract.
-2. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
+2. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
+   `GET /api/v1/platform/capabilities`; `lotus-manage` remains canonical on snake_case
+   `consumer_system` and `tenant_id`, so the downstream client should be corrected rather than
+   expanding manage-side aliases.
+3. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
    authority. Keep snapshot identifiers, request hashes, and supportability bundles mandatory for
    traceability.
-3. Remaining advisory/proposal-lifecycle surfaces in `lotus-manage` should not receive new advisory
+4. Remaining advisory/proposal-lifecycle surfaces in `lotus-manage` should not receive new advisory
    scope unless a split-governance decision explicitly keeps them here.
-4. If DPM simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
+5. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
    caching, and source-data retrieval design before considering a transport change.
 
 ## Validation Lane

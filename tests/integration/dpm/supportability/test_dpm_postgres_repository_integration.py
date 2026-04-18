@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,
@@ -13,7 +13,7 @@ from src.core.dpm_runs.models import (
     DpmRunRecord,
     DpmRunWorkflowDecisionRecord,
 )
-from src.infrastructure.dpm_runs.postgres import PostgresDpmRunRepository
+from src.infrastructure.rebalance_runs.postgres import PostgresDpmRunRepository
 from tests.unit.dpm.supportability.test_dpm_postgres_repository_scaffold import (
     _build_repository as _build_fake_repository,
 )

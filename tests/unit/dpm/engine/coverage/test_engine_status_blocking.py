@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from src.core.dpm.engine import run_simulation
+from src.core.rebalance.engine import run_simulation
 from src.core.models import EngineOptions, Money, ValuationMode
 from tests.shared.assertions import assert_status
 from tests.shared.factories import position, price, shelf_entry

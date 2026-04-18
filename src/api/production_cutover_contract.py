@@ -7,7 +7,7 @@ from src.api.persistence_profile import (
     app_persistence_profile_name,
     validate_persistence_profile_guardrails,
 )
-from src.api.routers.dpm_runs_config import supportability_postgres_dsn
+from src.api.routers.rebalance_runs_config import supportability_postgres_dsn
 from src.api.routers.proposals_config import proposal_postgres_dsn
 from src.core.common.capabilities import has_psycopg
 

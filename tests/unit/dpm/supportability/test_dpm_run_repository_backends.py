@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from src.core.dpm_runs.models import (
+from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
     DpmLineageEdgeRecord,
     DpmRunIdempotencyHistoryRecord,
@@ -12,7 +12,7 @@ from src.core.dpm_runs.models import (
     DpmRunRecord,
     DpmRunWorkflowDecisionRecord,
 )
-from src.infrastructure.dpm_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
+from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
 
 
 @pytest.fixture(params=["IN_MEMORY", "SQLITE"])

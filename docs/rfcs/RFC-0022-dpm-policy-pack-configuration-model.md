@@ -74,7 +74,7 @@ Policy pack selection must not alter run status vocabulary semantics.
 
 - Implemented (slice 1):
   - Policy-pack resolution module:
-    - `src/core/dpm/policy_packs.py`
+    - `src/core/rebalance/policy_packs.py`
     - precedence order:
       - explicit request policy
       - tenant default policy
@@ -131,7 +131,7 @@ Policy pack selection must not alter run status vocabulary semantics.
 - Implemented (slice 6):
   - Tenant policy-pack adapter integration:
     - resolver module:
-      - `src/core/dpm/tenant_policy_packs.py`
+      - `src/core/rebalance/tenant_policy_packs.py`
     - optional tenant context header:
       - `X-Tenant-Id`
     - optional tenant default header remains supported:

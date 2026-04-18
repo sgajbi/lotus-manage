@@ -1,6 +1,6 @@
 import pytest
 
-from src.core.dpm.engine import run_simulation
+from src.core.rebalance.engine import run_simulation
 from src.core.models import EngineOptions
 from tests.shared.assertions import find_excluded
 from tests.shared.factories import (

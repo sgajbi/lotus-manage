@@ -64,7 +64,7 @@ The API remains deterministic for identical inputs and options.
 ## Architecture Summary
 
 - `src/api/`: FastAPI contracts and endpoint orchestration.
-- `src/core/dpm/`: lotus-manage-specific engine modules.
+- `src/core/rebalance/`: lotus-manage-specific engine modules.
 - `src/core/advisory/`: Advisory-specific modules (artifact, funding, intents, ids).
 - `src/core/common/`: Shared logic (simulation primitives, diagnostics, drift, suitability, canonical hashing, workflow gates).
 - `src/core/models.py`: shared request/response contracts and options.

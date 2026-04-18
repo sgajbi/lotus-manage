@@ -91,15 +91,15 @@ migration-apply:
 	python scripts/postgres_migrate.py --target all
 
 lint:
-	ruff check .
-	ruff format --check .
+	python -m ruff check .
+	python -m ruff format --check .
 	$(MAKE) monetary-float-guard
 
 monetary-float-guard:
 	python scripts/check_monetary_float_usage.py
 
 format:
-	ruff format .
+	python -m ruff format .
 
 clean:
 	python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in ['__pycache__', '.pytest_cache', 'htmlcov', '.ruff_cache', '.mypy_cache']]; pathlib.Path('.coverage').unlink(missing_ok=True)"

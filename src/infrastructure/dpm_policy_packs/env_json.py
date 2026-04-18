@@ -1,4 +1,4 @@
-from src.core.dpm.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
 
 
 class EnvJsonDpmPolicyPackRepository:

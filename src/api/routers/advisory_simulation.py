@@ -26,6 +26,8 @@ router = APIRouter()
     description=(
         "Runs deterministic advisory proposal simulation from advisor-entered cash flows "
         "and manual security trades.\\n\\n"
+        "Compatibility route only; strategic advisory proposal ownership lives in "
+        "`lotus-advise`.\\n\\n"
         "Processing order:\\n"
         "1) Cash flows (if `proposal_apply_cash_flows_first=true`)\\n"
         "2) Manual security sells (instrument ascending)\\n"
@@ -88,6 +90,8 @@ def simulate_proposal(
     description=(
         "Runs advisory proposal simulation and returns a deterministic "
         "proposal artifact package.\\n\\n"
+        "Compatibility route only; strategic advisory proposal ownership lives in "
+        "`lotus-advise`.\\n\\n"
         "Required header: `Idempotency-Key`.\\n"
         "Optional header: `X-Correlation-Id` (auto-generated when omitted).\\n\\n"
         "Requires `options.enable_proposal_simulation=true`."

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-03-02T13:32:22.582936+00:00",
+  "generatedAt": "2026-04-17T23:59:13.942986+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -389,7 +389,7 @@
       "semanticId": "lotus.as_of_date",
       "canonicalTerm": "as_of_date",
       "preferredName": "as_of_date",
-      "description": "Business date for as of date.",
+      "description": "Governing business date for the capability posture publication.",
       "example": "2026-03-02",
       "type": "string",
       "locations": [
@@ -889,7 +889,7 @@
       "semanticId": "lotus.contract_version",
       "canonicalTerm": "contract_version",
       "preferredName": "contract_version",
-      "description": "integration capabilities response field: contract version.",
+      "description": "Version of the published integration-capabilities contract.",
       "example": "v1",
       "type": "string",
       "locations": [
@@ -1862,7 +1862,7 @@
       "semanticId": "lotus.features",
       "canonicalTerm": "features",
       "preferredName": "features",
-      "description": "integration capabilities response field: features.",
+      "description": "Feature-level capability flags for downstream orchestration and UI gating.",
       "example": [
         "features_item_example"
       ],
@@ -2153,7 +2153,7 @@
       "semanticId": "lotus.generated_at",
       "canonicalTerm": "generated_at",
       "preferredName": "generated_at",
-      "description": "Timestamp for generated at.",
+      "description": "UTC timestamp when this capability payload was generated.",
       "example": "2026-03-02T10:30:00Z",
       "type": "string",
       "locations": [
@@ -3442,7 +3442,7 @@
       "semanticId": "lotus.owner_service",
       "canonicalTerm": "owner_service",
       "preferredName": "owner_service",
-      "description": "Owning service for this feature.",
+      "description": "Owning service that governs the feature flag and workflow semantics.",
       "example": "sample_owner_service",
       "type": "string",
       "locations": [
@@ -3513,7 +3513,7 @@
       "semanticId": "lotus.policy_version",
       "canonicalTerm": "policy_version",
       "preferredName": "policy_version",
-      "description": "integration capabilities response field: policy version.",
+      "description": "Policy version that governed the resolved capability posture.",
       "example": "sample_policy_version",
       "type": "string",
       "locations": [
@@ -4230,7 +4230,7 @@
       "semanticId": "lotus.required_features",
       "canonicalTerm": "required_features",
       "preferredName": "required_features",
-      "description": "workflow capability field: required features.",
+      "description": "Feature keys that must be enabled before this workflow should be surfaced.",
       "example": [
         "sample_required_features_item"
       ],
@@ -4851,7 +4851,7 @@
       "semanticId": "lotus.source_service",
       "canonicalTerm": "source_service",
       "preferredName": "source_service",
-      "description": "integration capabilities response field: source service.",
+      "description": "Service that owns and generated this capabilities response.",
       "example": "lotus-manage",
       "type": "string",
       "locations": [
@@ -5085,7 +5085,7 @@
       "semanticId": "lotus.supported_input_modes",
       "canonicalTerm": "supported_input_modes",
       "preferredName": "supported_input_modes",
-      "description": "integration capabilities response field: supported input modes.",
+      "description": "Supported execution input modes that downstream callers may use for rebalance flows.",
       "example": [
         "sample_supported_input_modes_item"
       ],
@@ -5745,7 +5745,7 @@
       "semanticId": "lotus.workflow_key",
       "canonicalTerm": "workflow_key",
       "preferredName": "workflow_key",
-      "description": "Workflow key for feature orchestration.",
+      "description": "Canonical workflow key used by downstream orchestration surfaces.",
       "example": "sample_workflow_key",
       "type": "string",
       "locations": [
@@ -5820,7 +5820,7 @@
       "semanticId": "lotus.workflows",
       "canonicalTerm": "workflows",
       "preferredName": "workflows",
-      "description": "integration capabilities response field: workflows.",
+      "description": "Workflow-level capability flags and their required feature dependencies.",
       "example": [
         "workflows_item_example"
       ],
@@ -7192,7 +7192,7 @@
       "location": "header",
       "required": false,
       "type": "object",
-      "description": "Canonical x correlation id used by lotus-manage APIs.",
+      "description": "Optional batch correlation identifier. Successful scenario results append the scenario name to this value as `{correlation_id}:{scenario_name}`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
@@ -7324,7 +7324,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical consumer system used by lotus-manage APIs.",
+      "description": "Consumer system requesting capability posture. Use this to resolve the correct backend-governed rebalance feature and workflow view for the caller. Send it as the canonical snake_case query parameter `consumer_system`.",
       "example": "lotus-gateway",
       "allowedValues": [
         "lotus-gateway",
@@ -7342,7 +7342,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical tenant id used by lotus-manage APIs.",
+      "description": "Tenant context for policy-governed capability publication. Omit to use the default tenant posture. Send it as the canonical snake_case query parameter `tenant_id`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.tenant_id",
@@ -7354,7 +7354,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical consumer system used by lotus-manage APIs.",
+      "description": "Consumer system requesting capability posture. Use this to resolve the correct backend-governed rebalance feature and workflow view for the caller. Send it as the canonical snake_case query parameter `consumer_system`.",
       "example": "lotus-gateway",
       "allowedValues": [
         "lotus-gateway",
@@ -7372,7 +7372,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical tenant id used by lotus-manage APIs.",
+      "description": "Tenant context for policy-governed capability publication. Omit to use the default tenant posture. Send it as the canonical snake_case query parameter `tenant_id`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.tenant_id",
@@ -8680,7 +8680,7 @@
       "location": "header",
       "required": false,
       "type": "object",
-      "description": "Canonical x correlation id used by lotus-manage APIs.",
+      "description": "Optional batch correlation identifier. Successful scenario results append the scenario name to this value as `{correlation_id}:{scenario_name}`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
@@ -8812,7 +8812,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical consumer system used by lotus-manage APIs.",
+      "description": "Consumer system requesting capability posture. Use this to resolve the correct backend-governed rebalance feature and workflow view for the caller. Send it as the canonical snake_case query parameter `consumer_system`.",
       "example": "lotus-gateway",
       "allowedValues": [
         "lotus-gateway",
@@ -8830,7 +8830,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical tenant id used by lotus-manage APIs.",
+      "description": "Tenant context for policy-governed capability publication. Omit to use the default tenant posture. Send it as the canonical snake_case query parameter `tenant_id`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.tenant_id",
@@ -8842,7 +8842,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical consumer system used by lotus-manage APIs.",
+      "description": "Consumer system requesting capability posture. Use this to resolve the correct backend-governed rebalance feature and workflow view for the caller. Send it as the canonical snake_case query parameter `consumer_system`.",
       "example": "lotus-gateway",
       "allowedValues": [
         "lotus-gateway",
@@ -8860,7 +8860,7 @@
       "location": "query",
       "required": false,
       "type": "string",
-      "description": "Canonical tenant id used by lotus-manage APIs.",
+      "description": "Tenant context for policy-governed capability publication. Omit to use the default tenant posture. Send it as the canonical snake_case query parameter `tenant_id`.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.tenant_id",
@@ -46685,7 +46685,7 @@
       "method": "GET",
       "path": "/platform/capabilities",
       "operationId": "get_integration_capabilities_platform_capabilities_get",
-      "summary": "Get Integration Capabilities",
+      "summary": "Get rebalance platform capabilities",
       "request": {
         "fields": [
           {
@@ -46852,7 +46852,7 @@
       "method": "GET",
       "path": "/integration/capabilities",
       "operationId": "get_integration_capabilities_integration_capabilities_get",
-      "summary": "Get Integration Capabilities",
+      "summary": "Get rebalance integration capabilities",
       "request": {
         "fields": [
           {
@@ -84818,7 +84818,7 @@
       "method": "GET",
       "path": "/api/v1/platform/capabilities",
       "operationId": "get_integration_capabilities_api_v1_platform_capabilities_get",
-      "summary": "Get Integration Capabilities",
+      "summary": "Get rebalance platform capabilities",
       "request": {
         "fields": [
           {
@@ -84985,7 +84985,7 @@
       "method": "GET",
       "path": "/api/v1/integration/capabilities",
       "operationId": "get_integration_capabilities_api_v1_integration_capabilities_get",
-      "summary": "Get Integration Capabilities",
+      "summary": "Get rebalance integration capabilities",
       "request": {
         "fields": [
           {

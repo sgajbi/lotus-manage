@@ -14,13 +14,13 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-import src.api.routers.dpm_runs as dpm_runs_router
+import src.api.routers.rebalance_runs as dpm_runs_router
 from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
-from src.api.routers.dpm_runs import (
+from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
 )
-from src.core.dpm_runs import (
+from src.core.rebalance_runs import (
     DpmRunNotFoundError,
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,
@@ -472,7 +472,7 @@ def test_dpm_support_repository_backend_init_errors_return_503(client, monkeypat
         "postgresql://user:pass@localhost:5432/dpm",
     )
     monkeypatch.setattr(
-        "src.api.routers.dpm_runs_config.PostgresDpmRunRepository",
+        "src.api.routers.rebalance_runs_config.PostgresDpmRunRepository",
         lambda *args, **kwargs: (_ for _ in ()).throw(ConnectionError("boom")),
     )
     reset_dpm_run_support_service_for_tests()
@@ -519,6 +519,15 @@ def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     )
     assert by_correlation.status_code == 200
     assert by_correlation.json()["operation_id"] == accepted.operation_id
+
+
+def test_dpm_async_operation_list_rejects_unsupported_query_parameters(client):
+    response = client.get("/api/v1/rebalance/operations?status=SUCCEEDED")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
 
 
 def test_dpm_async_operation_list_filters_and_cursor(client):
@@ -625,6 +634,14 @@ def test_dpm_supportability_summary_endpoint_disabled(client, monkeypatch):
     response = client.get("/api/v1/rebalance/supportability/summary")
     assert response.status_code == 404
     assert response.json()["detail"] == "DPM_SUPPORTABILITY_SUMMARY_APIS_DISABLED"
+
+
+def test_dpm_supportability_summary_rejects_unexpected_query_params(client):
+    response = client.get("/api/v1/rebalance/supportability/summary?status=READY")
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
 
 
 def test_dpm_supportability_summary_includes_workflow_aggregates(client, monkeypatch):
@@ -962,11 +979,11 @@ def test_simulate_returns_503_when_idempotency_lookup_points_to_missing_run(clie
 
     with (
         patch(
-            "src.api.services.dpm_simulation_service.hash_canonical_payload",
+            "src.api.services.rebalance_simulation_service.hash_canonical_payload",
             return_value="sha256:matches",
         ),
         patch(
-            "src.api.services.dpm_simulation_service.get_dpm_run_support_service",
+            "src.api.services.rebalance_simulation_service.get_dpm_run_support_service",
             return_value=_InconsistentIdempotencyService(),
         ),
     ):
@@ -1229,7 +1246,7 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
     )
 
     payload = get_valid_payload()
-    from src.core.dpm.engine import run_simulation as real_run
+    from src.core.rebalance.engine import run_simulation as real_run
     from src.core.models import (
         EngineOptions,
         MarketDataSnapshot,
@@ -1342,6 +1359,42 @@ def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatc
         "selected_policy_pack_id": "global_pack",
         "source": "GLOBAL_DEFAULT",
     }
+
+
+def test_policy_pack_supportability_routes_reject_unexpected_query_params(client):
+    effective = client.get("/api/v1/rebalance/policies/effective?tenant_id=tenant_001")
+    assert effective.status_code == 422
+    assert effective.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
+    )
+
+    catalog = client.get("/api/v1/rebalance/policies/catalog?tenant_id=tenant_001")
+    assert catalog.status_code == 422
+    assert catalog.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
+    )
+
+
+def test_lineage_supportability_route_rejects_unexpected_query_params(client, monkeypatch):
+    monkeypatch.setenv("DPM_LINEAGE_APIS_ENABLED", "true")
+
+    response = client.get("/api/v1/rebalance/lineage/corr_001?edgeType=CORRELATION_TO_RUN")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: edgeType not supported for this endpoint"
+    )
+
+
+def test_workflow_decision_list_rejects_unexpected_query_params(client, monkeypatch):
+    monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
+
+    response = client.get("/api/v1/rebalance/workflow/decisions?runId=rr_001")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: runId not supported for this endpoint"
+    )
 
 
 def test_effective_policy_pack_endpoint_uses_tenant_resolver_when_enabled(client, monkeypatch):
@@ -1461,7 +1514,7 @@ def test_dpm_policy_pack_catalog_overrides_options_using_tenant_resolver(client,
         '{"tenant_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.02"}}}',
     )
     payload = get_valid_payload()
-    from src.core.dpm.engine import run_simulation as real_run
+    from src.core.rebalance.engine import run_simulation as real_run
     from src.core.models import (
         EngineOptions,
         MarketDataSnapshot,
@@ -1687,6 +1740,28 @@ def test_openapi_title_and_tag_grouping(client):
     assert openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["tags"] == [
         "Advisory Simulation"
     ]
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/artifact"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/async"]["post"]["description"]
+    )
+    assert (
+        "Compatibility route only"
+        in openapi["paths"]["/api/v1/rebalance/proposals/{proposal_id}/workflow-events"]["get"][
+            "description"
+        ]
+    )
 
 
 def test_openapi_async_analyze_documents_correlation_header(client):
@@ -1701,6 +1776,11 @@ def test_openapi_async_analyze_documents_correlation_header(client):
     assert "x-policy-pack-id" in analyze_header_names
     assert "x-tenant-id" in simulate_header_names
     assert "x-tenant-id" in analyze_header_names
+    sync_correlation_header = next(
+        parameter for parameter in analyze["parameters"] if parameter["name"] == "x-correlation-id"
+    )
+    assert sync_correlation_header["in"] == "header"
+    assert "scenario name" in sync_correlation_header["description"]
 
     request_header = next(
         parameter
@@ -1743,6 +1823,19 @@ def test_openapi_async_analyze_documents_correlation_header(client):
         assert tenant_schema["type"] == "string"
     else:
         assert any(item.get("type") == "string" for item in tenant_schema.get("anyOf", []))
+
+    simulate_examples = simulate["responses"]["200"]["content"]["application/json"]["examples"]
+    ready_example = simulate_examples["ready"]["value"]
+    pending_example = simulate_examples["pending_review"]["value"]
+    blocked_example = simulate_examples["blocked"]["value"]
+    assert "lineage" in ready_example
+    assert "before" in ready_example
+    assert "after_simulated" in ready_example
+    assert pending_example["gate_decision"]["recommended_next_step"] == "RISK_REVIEW"
+    assert blocked_example["gate_decision"]["gate"] == "BLOCKED"
+    assert blocked_example["diagnostics"]["cash_ladder_breaches"][0]["reason_code"] == (
+        "OVERDRAFT_ON_T_PLUS_1"
+    )
 
     accepted_schema = openapi["components"]["schemas"]["DpmAsyncAcceptedResponse"]
     assert "execute_url" in accepted_schema["properties"]
@@ -1811,7 +1904,7 @@ def test_analyze_scenarios_are_processed_in_sorted_name_order(client):
     payload.pop("options")
     payload["scenarios"] = {"z_case": {"options": {}}, "a_case": {"options": {}}}
 
-    from src.core.dpm.engine import run_simulation as real_run
+    from src.core.rebalance.engine import run_simulation as real_run
     from src.core.models import (
         EngineOptions,
         MarketDataSnapshot,

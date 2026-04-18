@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-import src.core.dpm.engine as dpm_engine
+import src.core.rebalance.engine as dpm_engine
 
 
 def test_to_weight_map_helper_returns_expected_mapping():

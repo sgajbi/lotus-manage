@@ -2,20 +2,20 @@
 
 Implementation scope:
 - API: `src/api/main.py` (`/rebalance/simulate`, `/rebalance/analyze`)
-- lotus-manage run supportability router: `src/api/routers/dpm_runs.py`
-- lotus-manage policy-pack supportability router: `src/api/routers/dpm_policy_packs.py`
-- lotus-manage run supportability runtime config/env parsing: `src/api/routers/dpm_runs_config.py`
-- lotus-manage run supportability service orchestration: `src/core/dpm_runs/service.py`
-- lotus-manage run supportability DTO mappers: `src/core/dpm_runs/serializers.py`
-- lotus-manage run supportability workflow transition helpers: `src/core/dpm_runs/workflow.py`
+- lotus-manage run supportability router: `src/api/routers/rebalance_runs.py`
+- lotus-manage policy-pack supportability router: `src/api/routers/rebalance_policy_packs.py`
+- lotus-manage run supportability runtime config/env parsing: `src/api/routers/rebalance_runs_config.py`
+- lotus-manage run supportability service orchestration: `src/core/rebalance_runs/service.py`
+- lotus-manage run supportability DTO mappers: `src/core/rebalance_runs/serializers.py`
+- lotus-manage run supportability workflow transition helpers: `src/core/rebalance_runs/workflow.py`
 - Models: `src/core/models.py`
-- Core orchestration: `src/core/dpm/engine.py` (`run_simulation`)
+- Core orchestration: `src/core/rebalance/engine.py` (`run_simulation`)
 - lotus-manage modular internals:
-  - `src/core/dpm/universe.py` (universe construction and shelf filtering)
-  - `src/core/dpm/targets.py` (target generation and group-constraint application)
-  - `src/core/dpm/intents.py` (security intent generation, tax-aware sell controls)
-  - `src/core/dpm/turnover.py` (turnover ranking and budget enforcement)
-  - `src/core/dpm/execution.py` (FX generation, settlement ladder, simulation execution)
+  - `src/core/rebalance/universe.py` (universe construction and shelf filtering)
+  - `src/core/rebalance/targets.py` (target generation and group-constraint application)
+  - `src/core/rebalance/intents.py` (security intent generation, tax-aware sell controls)
+  - `src/core/rebalance/turnover.py` (turnover ranking and budget enforcement)
+  - `src/core/rebalance/execution.py` (FX generation, settlement ladder, simulation execution)
 - Shared simulation primitives: `src/core/common/simulation_shared.py`
 - Shared intent dependency linker: `src/core/common/intent_dependencies.py`
 - Shared workflow gate evaluator: `src/core/common/workflow_gates.py`
@@ -55,6 +55,11 @@ Implementation scope:
 
 ### `POST /rebalance/analyze`
 - Purpose: multi-scenario what-if analysis using shared snapshots.
+- When to use:
+  - immediate caller-facing what-if analysis where the full batch result should return in one response
+  - up to 20 scenarios per request
+- When not to use:
+  - deferred or polling-based orchestration; use `POST /rebalance/analyze/async`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
 - Optional header: `X-Tenant-Id` (used for tenant default policy-pack resolver lookup)
@@ -73,6 +78,16 @@ Implementation scope:
 - Scenario correlation behavior:
   - when `X-Correlation-Id` is provided, each scenario result uses `{header}:{scenario_name}`
   - when omitted, each scenario result uses `{batch_run_id}:{scenario_name}`
+
+### `POST /rebalance/analyze/async`
+- Purpose: asynchronous what-if batch submission returning an operation handle instead of full batch results.
+- When to use:
+  - polling-based orchestration
+  - accept-now/execute-later flows
+  - `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`
+- Retrieval:
+  - `GET /rebalance/operations/{operation_id}`
+  - `GET /rebalance/operations/by-correlation/{correlation_id}`
 
 ### `GET /rebalance/operations`
 - Purpose: list asynchronous operations for supportability investigations.
@@ -208,6 +223,9 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case filter names only
 
 ### `GET /rebalance/idempotency/{idempotency_key}/history`
 - Purpose: retrieve append-only idempotency key mapping history across recorded runs.
@@ -251,6 +269,9 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Contract hardening:
+  - unsupported query aliases are rejected with `422`
+  - use canonical snake_case filter names only
 
 ### `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}`
 - Purpose: retrieve workflow decision history when only correlation id is available in incident context.
@@ -355,4 +376,4 @@ Dependency policy note:
 ## Deprecation Notes
 
 - `src/core/dpm_engine.py` is a compatibility shim and emits `DeprecationWarning`.
-- Use `src/core/dpm/engine.py` as the stable lotus-manage engine import path.
+- Use `src/core/rebalance/engine.py` as the stable lotus-manage engine import path.

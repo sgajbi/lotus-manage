@@ -11,7 +11,7 @@ from typing import Any, Dict
 import pytest
 
 from src.core.common.capabilities import has_solver_dependencies
-from src.core.dpm.engine import run_simulation
+from src.core.rebalance.engine import run_simulation
 from src.core.models import (
     EngineOptions,
     MarketDataSnapshot,

@@ -1,4 +1,4 @@
-from src.core.dpm.tenant_policy_packs import (
+from src.core.rebalance.tenant_policy_packs import (
     build_tenant_policy_pack_resolver,
     parse_tenant_policy_pack_map,
 )

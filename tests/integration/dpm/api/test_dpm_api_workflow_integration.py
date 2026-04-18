@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
-from src.api.routers.dpm_runs import reset_dpm_run_support_service_for_tests
+from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from tests.shared.factories import valid_api_payload
 
 
@@ -84,29 +84,24 @@ def test_run_list_and_operation_lookup_integration_flow() -> None:
     assert len(listed.json()["items"]) >= 1
 
 
-def test_supportability_summary_respects_status_filter() -> None:
-    payload = valid_api_payload()
-    headers = {
-        "Idempotency-Key": "integration-dpm-summary-filter-1",
-        "X-Correlation-Id": "corr-integration-dpm-summary-filter-1",
-    }
-
+def test_supportability_summary_rejects_unsupported_query_parameters() -> None:
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
-        assert simulate.status_code == 200
+        response = client.get("/api/v1/rebalance/supportability/summary?status=SUCCESS")
 
-        summary = client.get("/api/v1/rebalance/supportability/summary?status=SUCCESS")
-
-    assert summary.status_code == 200
-    body = summary.json()
-    assert body["run_count"] >= 1
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
 
 
-def test_supportability_summary_rejects_unknown_status_filter() -> None:
+def test_run_list_rejects_unsupported_query_parameters() -> None:
     with TestClient(app) as client:
-        response = client.get("/api/v1/rebalance/supportability/summary?status=NOT_A_REAL_STATUS")
+        response = client.get("/api/v1/rebalance/runs?status=READY")
 
-    assert response.status_code == 200
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
 
 
 def test_support_bundle_lookup_variants_roundtrip() -> None:
@@ -230,7 +225,7 @@ def test_integration_capabilities_contract_default_consumer() -> None:
     body = response.json()
     assert body["contract_version"] == "v1"
     assert body["source_service"] == "lotus-manage"
-    assert "pas_ref" in body["supported_input_modes"]
+    assert "portfolio_id" in body["supported_input_modes"]
 
 
 def test_lineage_edge_filtering_roundtrip_when_enabled(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -254,6 +249,34 @@ def test_lineage_edge_filtering_roundtrip_when_enabled(monkeypatch: pytest.Monke
     assert len(edges) == 1
     assert edges[0]["edge_type"] == "CORRELATION_TO_RUN"
     assert edges[0]["target_entity_id"] == run_id
+
+
+def test_lineage_route_rejects_unexpected_query_alias_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DPM_LINEAGE_APIS_ENABLED", "true")
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/rebalance/lineage/corr-any?edgeType=CORRELATION_TO_RUN")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: edgeType not supported for this endpoint"
+    )
+
+
+def test_workflow_decision_list_rejects_unexpected_query_alias_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/rebalance/workflow/decisions?runId=rr-any")
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: runId not supported for this endpoint"
+    )
 
 
 def test_workflow_actions_and_decision_list_roundtrip(monkeypatch: pytest.MonkeyPatch) -> None:

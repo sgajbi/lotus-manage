@@ -118,6 +118,29 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _assert_property_has_docs(supportability_summary_schema, "workflow_reason_code_counts")
     _assert_property_has_docs(supportability_summary_schema, "lineage_edge_count")
     _assert_property_has_docs(supportability_summary_schema, "oldest_run_created_at")
+
+    integration_capabilities_schema = schemas["IntegrationCapabilitiesResponse"]
+    _assert_property_has_docs(integration_capabilities_schema, "contract_version")
+    _assert_property_has_docs(integration_capabilities_schema, "source_service")
+    _assert_property_has_docs(integration_capabilities_schema, "consumer_system")
+    _assert_property_has_docs(integration_capabilities_schema, "tenant_id")
+    _assert_property_has_docs(integration_capabilities_schema, "generated_at")
+    _assert_property_has_docs(integration_capabilities_schema, "as_of_date")
+    _assert_property_has_docs(integration_capabilities_schema, "policy_version")
+    _assert_property_has_docs(integration_capabilities_schema, "supported_input_modes")
+    _assert_property_has_docs(integration_capabilities_schema, "features")
+    _assert_property_has_docs(integration_capabilities_schema, "workflows")
+
+    feature_capability_schema = schemas["FeatureCapability"]
+    _assert_property_has_docs(feature_capability_schema, "key")
+    _assert_property_has_docs(feature_capability_schema, "enabled")
+    _assert_property_has_docs(feature_capability_schema, "owner_service")
+    _assert_property_has_docs(feature_capability_schema, "description")
+
+    workflow_capability_schema = schemas["WorkflowCapability"]
+    _assert_property_has_docs(workflow_capability_schema, "workflow_key")
+    _assert_property_has_docs(workflow_capability_schema, "enabled")
+    _assert_property_has_docs(workflow_capability_schema, "required_features")
     _assert_property_has_docs(supportability_summary_schema, "newest_run_created_at")
     _assert_property_has_docs(supportability_summary_schema, "oldest_operation_created_at")
     _assert_property_has_docs(supportability_summary_schema, "newest_operation_created_at")
@@ -239,7 +262,41 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _assert_property_has_docs(mutation_response_schema, "item")
 
 
-def test_dpm_async_and_supportability_endpoints_use_expected_request_response_contracts():
+def test_integration_capabilities_paths_have_route_and_query_docs():
+    _guard_strict_validation()
+    openapi = app.openapi()
+
+    integration_get = openapi["paths"]["/integration/capabilities"]["get"]
+    platform_get = openapi["paths"]["/platform/capabilities"]["get"]
+
+    assert (
+        "backend-governed rebalance feature and workflow capability posture"
+        in integration_get["description"]
+    )
+    assert "platform namespace" in platform_get["description"]
+    assert (
+        "canonical snake_case query parameters `consumer_system` and `tenant_id`"
+        in (integration_get["description"])
+    )
+    assert (
+        "canonical snake_case query parameters `consumer_system` and `tenant_id`"
+        in (platform_get["description"])
+    )
+
+    integration_params = {param["name"]: param for param in integration_get["parameters"]}
+    assert integration_params["consumer_system"]["schema"]["default"] == "lotus-gateway"
+    assert integration_params["tenant_id"]["schema"]["default"] == "default"
+    assert (
+        "canonical snake_case query parameter `consumer_system`"
+        in integration_params["consumer_system"]["description"]
+    )
+    assert (
+        "canonical snake_case query parameter `tenant_id`"
+        in integration_params["tenant_id"]["description"]
+    )
+
+
+def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():
     _guard_strict_validation()
     with TestClient(app) as client:
         openapi = client.get("/openapi.json").json()
@@ -252,6 +309,10 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
         "$ref"
     ].endswith("/DpmAsyncAcceptedResponse")
     assert "X-Correlation-Id" in analyze_async["responses"]["202"]["headers"]
+    assert (
+        "Use this route when the caller needs polling-based orchestration"
+        in analyze_async["description"]
+    )
     header_names = {param["name"] for param in analyze_async["parameters"]}
     assert "x-correlation-id" in header_names
     assert "x-policy-pack-id" in header_names
@@ -272,12 +333,25 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert analyze["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/BatchRebalanceResult"
     )
+    assert (
+        "Use this synchronous route when the caller needs immediate results"
+        in analyze["description"]
+    )
+    analyze_examples = analyze["responses"]["200"]["content"]["application/json"]["examples"]
+    assert "batch_result" in analyze_examples
+    analyze_value = analyze_examples["batch_result"]["value"]
+    assert "baseline" in analyze_value["results"]
+    assert "baseline" in analyze_value["comparison_metrics"]
+    assert "invalid_case" in analyze_value["failed_scenarios"]
+    assert "PARTIAL_BATCH_FAILURE" in analyze_value["warnings"]
 
     effective_policy = openapi["paths"]["/api/v1/rebalance/policies/effective"]["get"]
     assert "requestBody" not in effective_policy
     assert effective_policy["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmEffectivePolicyPackResolution")
+    assert "Supply resolution context via the documented headers" in effective_policy["description"]
+    assert "422" in effective_policy["responses"]
     policy_params = {param["name"] for param in effective_policy["parameters"]}
     assert "x-policy-pack-id" in policy_params
     assert "x-tenant-policy-pack-id" in policy_params
@@ -288,6 +362,8 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert policy_catalog["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackCatalogResponse")
+    assert "Supply resolution context via the documented headers" in policy_catalog["description"]
+    assert "422" in policy_catalog["responses"]
     policy_catalog_params = {param["name"] for param in policy_catalog["parameters"]}
     assert "x-policy-pack-id" in policy_catalog_params
     assert "x-tenant-policy-pack-id" in policy_catalog_params
@@ -332,6 +408,11 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     }
     actual_params = {param["name"] for param in list_operations["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert (
+        "status_filter` for operation status filtering; unsupported aliases are rejected"
+        in (list_operations["description"])
+    )
+    assert "422" in list_operations["responses"]
 
     execute_async = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}/execute"]["post"]
     assert "requestBody" not in execute_async
@@ -361,6 +442,11 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     }
     actual_params = {param["name"] for param in list_runs["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert (
+        "status_filter` for status filtering; unsupported aliases are rejected"
+        in list_runs["description"]
+    )
+    assert "422" in list_runs["responses"]
 
     run_by_request_hash = openapi["paths"]["/api/v1/rebalance/runs/by-request-hash/{request_hash}"][
         "get"
@@ -373,6 +459,10 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert supportability_summary["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmSupportabilitySummaryResponse")
+    assert "store-wide health and retention snapshot" in supportability_summary["description"]
+    assert "does not accept ad hoc query filters" in supportability_summary["description"]
+    assert "parameters" not in supportability_summary
+    assert "422" in supportability_summary["responses"]
 
     support_bundle = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/support-bundle"][
         "get"
@@ -409,6 +499,13 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert workflow_decisions["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmWorkflowDecisionListResponse")
+    assert workflow_decisions["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    assert (
+        "Supported filters are `rebalance_run_id`, `action`, `actor_id`, `reason_code`, "
+        "`decided_from`, `decided_to`, `limit`, and `cursor`" in workflow_decisions["description"]
+    )
     expected_params = {
         "rebalance_run_id",
         "action",
@@ -464,6 +561,16 @@ def test_dpm_async_and_supportability_endpoints_use_expected_request_response_co
     assert lineage["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/DpmLineageResponse"
     )
+    assert (
+        "Supported filters are `edge_type`, `created_from`, `created_to`, `limit`, and `cursor`"
+        in lineage["description"]
+    )
+    assert lineage["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    expected_params = {"entity_id", "edge_type", "created_from", "created_to", "limit", "cursor"}
+    actual_params = {param["name"] for param in lineage["parameters"]}
+    assert expected_params.issubset(actual_params)
 
     idempotency_history = openapi["paths"][
         "/api/v1/rebalance/idempotency/{idempotency_key}/history"

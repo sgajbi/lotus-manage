@@ -1,7 +1,7 @@
 from decimal import Decimal
 
-import src.core.dpm.policy_packs as policy_pack_module
-from src.core.dpm.policy_packs import (
+import src.core.rebalance.policy_packs as policy_pack_module
+from src.core.rebalance.policy_packs import (
     apply_policy_pack_to_engine_options,
     parse_policy_pack_catalog,
     resolve_effective_policy_pack,

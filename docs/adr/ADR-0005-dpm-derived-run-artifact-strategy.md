@@ -19,10 +19,10 @@ Implement a derived artifact strategy as phase 1:
 4. Guard endpoint with `DPM_ARTIFACTS_ENABLED` feature toggle (default `true`).
 
 Implementation is separated into dedicated module:
-- `src/core/dpm_runs/artifact.py`
+- `src/core/rebalance_runs/artifact.py`
 
 Service layer remains orchestration-only:
-- `src/core/dpm_runs/service.py`
+- `src/core/rebalance_runs/service.py`
 
 ## Why
 

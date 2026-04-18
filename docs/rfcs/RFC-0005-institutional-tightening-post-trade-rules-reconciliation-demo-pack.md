@@ -22,7 +22,7 @@ RFC-0005 upgrades the rebalance engine from a functional calculator to an **inst
 ### 0.1 Implementation Alignment (As of 2026-02-17)
 
 1. Rule engine and reconciliation are implemented.
-2. Core orchestration remains in `src/core/dpm/engine.py`; `src/core/compliance.py` and `src/core/valuation.py` are modularized, while `simulation.py` is not a separate module.
+2. Core orchestration remains in `src/core/rebalance/engine.py`; `src/core/compliance.py` and `src/core/valuation.py` are modularized, while `simulation.py` is not a separate module.
 3. `MIN_TRADE_SIZE` is emitted as `severity=SOFT` with `status=PASS` and reason `INTENTS_SUPPRESSED` when applicable.
 
 ---
@@ -73,7 +73,7 @@ The Rule Engine must run *after* the simulation step.
 
 ## 4. Implementation Plan
 
-1.  **Modularization:** Keep `src/core/dpm/engine.py` as orchestrator and use:
+1.  **Modularization:** Keep `src/core/rebalance/engine.py` as orchestrator and use:
     * `valuation.py`: State construction & normalization.
     * `compliance.py`: The Rule Engine.
     * Intent application & FX simulation inside `engine.py`.

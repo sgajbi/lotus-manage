@@ -3,7 +3,7 @@ import importlib
 import pytest
 
 import src.core.advisory_engine as advisory_engine
-import src.core.dpm.engine as dpm_engine_impl
+import src.core.rebalance.engine as dpm_engine_impl
 
 
 def test_engine_shim_exports_expected_entrypoints():

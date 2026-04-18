@@ -123,6 +123,37 @@ def test_proposal_supportability_config_success_contract_shape() -> None:
     ]
 
 
+def test_proposal_read_routes_reject_unexpected_query_params() -> None:
+    payload = _proposal_payload()
+    with TestClient(app) as client:
+        created = client.post(
+            "/api/v1/rebalance/proposals",
+            json=payload,
+            headers={"Idempotency-Key": "integration-proposal-query-guard-1"},
+        )
+        assert created.status_code == 200
+        proposal_id = created.json()["proposal"]["proposal_id"]
+
+        detail = client.get(f"/api/v1/rebalance/proposals/{proposal_id}?includeEvidence=true")
+        listing = client.get("/api/v1/rebalance/proposals?createdBy=advisor_integration")
+        version = client.get(
+            f"/api/v1/rebalance/proposals/{proposal_id}/versions/1?includeEvidence=true"
+        )
+
+    assert detail.status_code == 422
+    assert detail.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: includeEvidence not supported for this endpoint"
+    )
+    assert listing.status_code == 422
+    assert listing.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: createdBy not supported for this endpoint"
+    )
+    assert version.status_code == 422
+    assert version.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: includeEvidence not supported for this endpoint"
+    )
+
+
 def test_proposal_lifecycle_error_contracts() -> None:
     payload = _proposal_payload()
     with TestClient(app) as client:

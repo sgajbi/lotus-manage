@@ -10,9 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from src.core.dpm.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
 from src.core.models import CashBalance, EngineOptions, PortfolioSnapshot
-from src.infrastructure.dpm_runs import InMemoryDpmRunRepository
+from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.proposals import InMemoryProposalRepository
 
 TESTS_ROOT = Path(__file__).resolve().parent
@@ -109,7 +109,7 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
     policy_repo = _TestPolicyPackRepository()
 
     monkeypatch.setattr(
-        "src.api.routers.dpm_runs_config.PostgresDpmRunRepository",
+        "src.api.routers.rebalance_runs_config.PostgresDpmRunRepository",
         lambda **_kwargs: InMemoryDpmRunRepository(),
     )
     monkeypatch.setattr(
@@ -117,6 +117,6 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
         lambda **_kwargs: InMemoryProposalRepository(),
     )
     monkeypatch.setattr(
-        "src.api.routers.dpm_policy_packs.PostgresDpmPolicyPackRepository",
+        "src.api.routers.rebalance_policy_packs.PostgresDpmPolicyPackRepository",
         lambda **_kwargs: policy_repo,
     )

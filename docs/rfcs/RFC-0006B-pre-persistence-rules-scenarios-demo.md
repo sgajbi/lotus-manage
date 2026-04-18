@@ -93,7 +93,7 @@ class EngineOptions(BaseModel):
 
 ### 3.2 Dependency Logic Update
 
-In `src/core/dpm/engine.py` -> `_generate_fx_and_simulate`:
+In `src/core/rebalance/engine.py` -> `_generate_fx_and_simulate`:
 
 1. Identify net cash flow per currency.
 2. Generate required FX intents.

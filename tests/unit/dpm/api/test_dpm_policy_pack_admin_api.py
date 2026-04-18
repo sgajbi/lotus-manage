@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.api.routers.dpm_policy_packs import (
+from src.api.routers.rebalance_policy_packs import (
     _postgres_connection_exception_types,
     reset_dpm_policy_pack_repository_for_tests,
 )
