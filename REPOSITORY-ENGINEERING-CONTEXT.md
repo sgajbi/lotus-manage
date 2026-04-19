@@ -32,7 +32,9 @@ Current repository posture:
 2. canonical local host runtime uses port `8001` so it can coexist with `lotus-advise`,
 3. local CI and Docker parity are already standardized under the RFC-0072 lane model,
 4. upstream and source-data authority posture is classified under RFC-0082 in `docs/standards/RFC-0082-upstream-contract-family-map.md`,
-5. the service remains part of the canonical front-office validation path through `lotus-gateway`.
+5. it carries repo-native RFC-0084 consumer declarations for the governed core portfolio-state
+   product used by management execution request contracts,
+6. the service remains part of the canonical front-office validation path through `lotus-gateway`.
 
 ## Architecture And Module Map
 
@@ -48,6 +50,8 @@ Primary areas:
    canonical authored source for repository wiki publication and operator onboarding summaries.
 5. `tests/`
    unit, integration, and e2e validation.
+6. `contracts/domain-data-products/`
+   repo-native consumer declarations for governed upstream domain data products.
 
 ## Runtime And Integration Boundaries
 
@@ -83,6 +87,8 @@ Use these commands as the primary local contract:
    `make ci-local-docker`
 6. canonical host runtime
    `make run-canonical`
+7. domain-data-product contract validation
+   `make domain-product-validate`
 
 ## Validation And CI Expectations
 
@@ -129,7 +135,11 @@ Most relevant current governance:
 7. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
    stale split-era names,
 8. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
-   diff and avoid committing timestamp-only churn when the semantic inventory is unchanged.
+   diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
+9. the current repo-native domain-data-product declaration intentionally records only governed
+   `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
+   market-data and future stateful `portfolio_id` resolution must be added only after upstream
+   producer approval and an explicit source-data retrieval design.
 
 ## Context Maintenance Rule
 

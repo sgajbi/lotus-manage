@@ -1,0 +1,30 @@
+{
+  "contract_id": "domain-data-product-consumers",
+  "contract_version": "1.0.0",
+  "governed_by_rfc": "RFC-0084",
+  "consumer_repository": "lotus-manage",
+  "dependencies": [
+    {
+      "product_name": "PortfolioStateSnapshot",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "generated_at",
+        "as_of_date",
+        "reconciliation_status",
+        "data_quality_status",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "caller_supplied_contract_payload",
+      "business_purpose": "Run discretionary rebalance simulation and what-if analysis from a governed portfolio-state snapshot supplied through the current management request contract.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    }
+  ]
+}
