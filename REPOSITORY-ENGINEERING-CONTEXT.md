@@ -34,7 +34,9 @@ Current repository posture:
 4. upstream and source-data authority posture is classified under RFC-0082 in `docs/standards/RFC-0082-upstream-contract-family-map.md`,
 5. it carries repo-native RFC-0084 consumer declarations for the governed core portfolio-state
    product used by management execution request contracts,
-6. the service remains part of the canonical front-office validation path through `lotus-gateway`.
+6. it carries the RFC-0091 repo-native producer declaration and telemetry fixture for
+   `PortfolioActionRegister`,
+7. the service remains part of the canonical front-office validation path through `lotus-gateway`.
 
 ## Architecture And Module Map
 
@@ -51,7 +53,10 @@ Primary areas:
 5. `tests/`
    unit, integration, and e2e validation.
 6. `contracts/domain-data-products/`
-   repo-native consumer declarations for governed upstream domain data products.
+   repo-native producer and consumer declarations for governed upstream domain data products and
+   management workflow products.
+7. `contracts/trust-telemetry/`
+   repo-native RFC-0087/RFC-0091 trust telemetry snapshots for governed management products.
 
 ## Runtime And Integration Boundaries
 
