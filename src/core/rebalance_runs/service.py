@@ -4,11 +4,13 @@ from typing import Any, Optional
 
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import (
+    DpmActionRegisterSupportability,
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationListItemResponse,
     DpmAsyncOperationListResponse,
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
+    DpmFreshnessBucket,
     DpmLineageEdgeRecord,
     DpmLineageEdgeType,
     DpmLineageEdgeResponse,
@@ -29,6 +31,8 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowResponse,
     DpmSupportabilitySummaryData,
     DpmSupportabilitySummaryResponse,
+    DpmSupportabilityReason,
+    DpmSupportabilityState,
     DpmWorkflowActionType,
     DpmWorkflowDecisionListResponse,
     DpmWorkflowStatus,
@@ -411,6 +415,7 @@ class DpmRunSupportService:
         self._cleanup_expired_operations()
         self._cleanup_expired_supportability()
         summary: DpmSupportabilitySummaryData = self._repository.get_supportability_summary()
+        supportability = _resolve_action_register_supportability(summary=summary)
         return DpmSupportabilitySummaryResponse(
             store_backend=store_backend,
             retention_days=retention_days,
@@ -442,6 +447,7 @@ class DpmRunSupportService:
                 if summary.newest_operation_created_at is not None
                 else None
             ),
+            supportability=supportability,
         )
 
     def get_run_support_bundle(
@@ -924,6 +930,58 @@ class DpmRunSupportService:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _resolve_action_register_supportability(
+    *,
+    summary: DpmSupportabilitySummaryData,
+) -> DpmActionRegisterSupportability:
+    freshness_bucket = _resolve_freshness_bucket(summary=summary)
+    has_records = summary.run_count > 0 or summary.operation_count > 0
+    state: DpmSupportabilityState
+    reason: DpmSupportabilityReason
+    if not has_records:
+        state = "empty"
+        reason = "supportability_summary_empty"
+    elif freshness_bucket == "stale":
+        state = "stale"
+        reason = "supportability_summary_stale"
+    elif summary.operation_status_counts.get("FAILED", 0) > 0:
+        state = "degraded"
+        reason = "supportability_summary_degraded"
+    else:
+        state = "ready"
+        reason = "supportability_summary_ready"
+    return DpmActionRegisterSupportability(
+        state=state,
+        reason=reason,
+        freshness_bucket=freshness_bucket,
+        run_count=summary.run_count,
+        operation_count=summary.operation_count,
+        workflow_decision_count=summary.workflow_decision_count,
+    )
+
+
+def _resolve_freshness_bucket(*, summary: DpmSupportabilitySummaryData) -> DpmFreshnessBucket:
+    candidates = [
+        value
+        for value in (
+            summary.newest_run_created_at,
+            summary.newest_operation_created_at,
+        )
+        if value is not None
+    ]
+    if not candidates:
+        return "unknown"
+    newest = max(candidates)
+    if newest.tzinfo is None:
+        newest = newest.replace(tzinfo=timezone.utc)
+    age_days = (_utc_now().date() - newest.astimezone(timezone.utc).date()).days
+    if age_days <= 0:
+        return "current"
+    if age_days <= 1:
+        return "same_day"
+    return "stale"
 
 
 def _lineage_cursor(edge: DpmLineageEdgeRecord) -> str:

@@ -14,6 +14,21 @@
 - capability discovery is backend-owned and should not be inferred by downstream callers
 - local Docker keeps PostgreSQL internal to the Compose network by default
 
+## RFC-0108 action register supportability
+
+- `GET /rebalance/supportability/summary` returns `supportability.state`,
+  `supportability.reason`, and `supportability.freshness_bucket` for management action register
+  surfaces.
+- Operators should treat `empty` as no persisted run or operation evidence, `stale` as old
+  supportability evidence, and `degraded` as failed async operation evidence.
+- `/metrics` exposes `lotus_manage_action_register_supportability_total` with only bounded
+  `surface`, `supportability_state`, `reason`, and `freshness_bucket` labels.
+- Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
+  content to supportability metric labels or log dimensions.
+- Capability consumers should gate this posture on
+  `manage.observability.action_register_supportability` from `/integration/capabilities` or
+  `/platform/capabilities`.
+
 ## Key references
 
 - [docs/documentation/project-overview.md](../docs/documentation/project-overview.md)

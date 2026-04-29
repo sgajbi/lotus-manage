@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-04-17T23:59:13.942986+00:00",
+  "generatedAt": "2026-04-29T08:33:06.767448+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -1916,6 +1916,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.freshness_bucket",
+      "canonicalTerm": "freshness_bucket",
+      "preferredName": "freshness_bucket",
+      "description": "Freshness bucket derived from the latest persisted run or operation timestamp.",
+      "example": "current",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -4883,10 +4897,12 @@
       "example": null,
       "type": "object",
       "locations": [
-        "query"
+        "query",
+        "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -5079,6 +5095,22 @@
       ],
       "observedTypes": [
         "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.supportability",
+      "canonicalTerm": "supportability",
+      "preferredName": "supportability",
+      "description": "Canonical supportability used by lotus-manage APIs.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmActionRegisterSupportability",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmActionRegisterSupportability"
       ]
     },
     {
@@ -24089,6 +24121,62 @@
             "type": "object",
             "semanticId": "lotus.newest_operation_created_at",
             "attributeRef": "#/attributeCatalog/lotus.newest_operation_created_at"
+          },
+          {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmActionRegisterSupportability",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.freshness_bucket",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.freshness_bucket",
+            "attributeRef": "#/attributeCatalog/lotus.freshness_bucket"
+          },
+          {
+            "name": "supportability.run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.run_count",
+            "attributeRef": "#/attributeCatalog/lotus.run_count"
+          },
+          {
+            "name": "supportability.operation_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.operation_count",
+            "attributeRef": "#/attributeCatalog/lotus.operation_count"
+          },
+          {
+            "name": "supportability.workflow_decision_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.workflow_decision_count",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_decision_count"
           }
         ]
       }
@@ -62222,6 +62310,62 @@
             "type": "object",
             "semanticId": "lotus.newest_operation_created_at",
             "attributeRef": "#/attributeCatalog/lotus.newest_operation_created_at"
+          },
+          {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmActionRegisterSupportability",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.freshness_bucket",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.freshness_bucket",
+            "attributeRef": "#/attributeCatalog/lotus.freshness_bucket"
+          },
+          {
+            "name": "supportability.run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.run_count",
+            "attributeRef": "#/attributeCatalog/lotus.run_count"
+          },
+          {
+            "name": "supportability.operation_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.operation_count",
+            "attributeRef": "#/attributeCatalog/lotus.operation_count"
+          },
+          {
+            "name": "supportability.workflow_decision_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.workflow_decision_count",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_decision_count"
           }
         ]
       }

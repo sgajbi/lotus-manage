@@ -10,6 +10,25 @@ DpmAsyncOperationStatus = Literal["PENDING", "RUNNING", "SUCCEEDED", "FAILED"]
 DpmWorkflowStatus = Literal["NOT_REQUIRED", "PENDING_REVIEW", "APPROVED", "REJECTED"]
 DpmWorkflowActionType = Literal["APPROVE", "REJECT", "REQUEST_CHANGES"]
 DpmLineageEdgeType = Literal["CORRELATION_TO_RUN", "IDEMPOTENCY_TO_RUN", "OPERATION_TO_CORRELATION"]
+DpmSupportabilityState = Literal[
+    "ready",
+    "stale",
+    "degraded",
+    "empty",
+    "error",
+    "permission_blocked",
+    "unsupported",
+]
+DpmSupportabilityReason = Literal[
+    "supportability_summary_ready",
+    "supportability_summary_empty",
+    "supportability_summary_stale",
+    "supportability_summary_degraded",
+    "supportability_summary_error",
+    "permission_blocked",
+    "unsupported_surface",
+]
+DpmFreshnessBucket = Literal["current", "same_day", "stale", "unknown"]
 
 
 class DpmRunRecord(BaseModel):
@@ -196,6 +215,36 @@ class DpmSupportabilitySummaryData(BaseModel):
     )
 
 
+class DpmActionRegisterSupportability(BaseModel):
+    state: DpmSupportabilityState = Field(
+        description="Bounded supportability state for management action register surfaces.",
+        examples=["ready"],
+    )
+    reason: DpmSupportabilityReason = Field(
+        description="Bounded product-safe reason for the supportability state.",
+        examples=["supportability_summary_ready"],
+    )
+    freshness_bucket: DpmFreshnessBucket = Field(
+        description="Freshness bucket derived from the latest persisted run or operation timestamp.",
+        examples=["current"],
+    )
+    run_count: int = Field(
+        ge=0,
+        description="Total persisted run records considered for this posture.",
+        examples=[128],
+    )
+    operation_count: int = Field(
+        ge=0,
+        description="Total persisted async operation records considered for this posture.",
+        examples=[42],
+    )
+    workflow_decision_count: int = Field(
+        ge=0,
+        description="Total persisted workflow decisions considered for this posture.",
+        examples=[16],
+    )
+
+
 class DpmSupportabilitySummaryResponse(BaseModel):
     store_backend: str = Field(
         description="Configured supportability storage backend.",
@@ -260,6 +309,12 @@ class DpmSupportabilitySummaryResponse(BaseModel):
         default=None,
         description="Newest persisted operation creation timestamp (UTC ISO8601).",
         examples=["2026-02-20T12:10:00+00:00"],
+    )
+    supportability: DpmActionRegisterSupportability = Field(
+        description=(
+            "Source-backed supportability posture for management action register and "
+            "supportability summary surfaces."
+        )
     )
 
 
