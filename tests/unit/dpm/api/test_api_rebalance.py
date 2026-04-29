@@ -627,6 +627,22 @@ def test_dpm_supportability_summary_endpoint(client):
     assert body["newest_run_created_at"] is not None
     assert body["oldest_operation_created_at"] is not None
     assert body["newest_operation_created_at"] is not None
+    assert body["supportability"] == {
+        "state": "ready",
+        "reason": "supportability_summary_ready",
+        "freshness_bucket": "current",
+        "run_count": 1,
+        "operation_count": 1,
+        "workflow_decision_count": 0,
+    }
+
+    metrics = client.get("/metrics")
+    assert metrics.status_code == 200
+    assert "lotus_manage_action_register_supportability_total" in metrics.text
+    assert 'surface="rebalance/supportability/summary"' in metrics.text
+    assert 'supportability_state="ready"' in metrics.text
+    assert 'reason="supportability_summary_ready"' in metrics.text
+    assert 'freshness_bucket="current"' in metrics.text
 
 
 def test_dpm_supportability_summary_endpoint_disabled(client, monkeypatch):

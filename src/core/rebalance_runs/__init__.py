@@ -1,4 +1,5 @@
 from src.core.rebalance_runs.models import (
+    DpmActionRegisterSupportability,
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationListResponse,
     DpmAsyncOperationStatusResponse,
@@ -24,6 +25,7 @@ from src.core.rebalance_runs.service import (
 )
 
 __all__ = [
+    "DpmActionRegisterSupportability",
     "DpmAsyncAcceptedResponse",
     "DpmAsyncOperationListResponse",
     "DpmAsyncOperationStatusResponse",

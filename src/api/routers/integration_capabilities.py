@@ -189,6 +189,12 @@ async def get_integration_capabilities(
                 owner_service="lotus-manage",
                 description="lotus-manage lifecycle proposal and supportability workflows.",
             ),
+            FeatureCapability(
+                key="manage.observability.action_register_supportability",
+                enabled=True,
+                owner_service="lotus-manage",
+                description="Source-backed action register and supportability summary posture with bounded states, reasons, and metrics.",
+            ),
         ],
         workflows=[
             WorkflowCapability(

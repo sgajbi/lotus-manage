@@ -21,6 +21,7 @@ def test_integration_capabilities_default_contract():
     feature_keys = {item["key"] for item in body["features"]}
     assert "dpm.execution.stateful_portfolio_id" in feature_keys
     assert "dpm.execution.stateless_inline_bundle" in feature_keys
+    assert "manage.observability.action_register_supportability" in feature_keys
 
 
 def test_integration_capabilities_env_overrides(monkeypatch):

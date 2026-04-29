@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -144,3 +144,55 @@ def test_service_persisted_artifact_mode_backfills_missing_persisted_artifact():
     artifact = service.get_run_artifact(rebalance_run_id=result.rebalance_run_id)
     assert artifact.rebalance_run_id == result.rebalance_run_id
     assert repository.get_run_artifact(rebalance_run_id=result.rebalance_run_id) is not None
+
+
+def test_supportability_summary_posture_empty_ready_stale_and_degraded():
+    empty_service = _build_service()
+    empty = empty_service.get_supportability_summary(store_backend="INMEMORY", retention_days=0)
+    assert empty.supportability.state == "empty"
+    assert empty.supportability.reason == "supportability_summary_empty"
+    assert empty.supportability.freshness_bucket == "unknown"
+
+    ready_service = _build_service()
+    ready_service.record_run(
+        result=_sample_result(),
+        request_hash="sha256:req-supportability-ready",
+        portfolio_id="pf_service_artifact_1",
+        idempotency_key=None,
+        created_at=datetime.now(timezone.utc),
+    )
+    ready = ready_service.get_supportability_summary(store_backend="INMEMORY", retention_days=0)
+    assert ready.supportability.state == "ready"
+    assert ready.supportability.reason == "supportability_summary_ready"
+    assert ready.supportability.freshness_bucket == "current"
+
+    stale_service = _build_service()
+    stale_service.record_run(
+        result=_sample_result(),
+        request_hash="sha256:req-supportability-stale",
+        portfolio_id="pf_service_artifact_1",
+        idempotency_key=None,
+        created_at=datetime.now(timezone.utc) - timedelta(days=3),
+    )
+    stale = stale_service.get_supportability_summary(store_backend="INMEMORY", retention_days=0)
+    assert stale.supportability.state == "stale"
+    assert stale.supportability.reason == "supportability_summary_stale"
+    assert stale.supportability.freshness_bucket == "stale"
+
+    degraded_service = _build_service()
+    accepted = degraded_service.submit_analyze_async(
+        correlation_id="corr-supportability-degraded",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+    )
+    degraded_service.complete_operation_failure(
+        operation_id=accepted.operation_id,
+        code="FAILED_TEST",
+        message="failed",
+    )
+    degraded = degraded_service.get_supportability_summary(
+        store_backend="INMEMORY",
+        retention_days=0,
+    )
+    assert degraded.supportability.state == "degraded"
+    assert degraded.supportability.reason == "supportability_summary_degraded"
+    assert degraded.supportability.freshness_bucket == "current"

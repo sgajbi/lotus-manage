@@ -90,8 +90,21 @@ Existing tests that cover this posture include:
 11. `tests/integration/dpm/supportability/test_dpm_postgres_repository_integration.py`
 12. `tests/integration/dpm/supportability/test_dpm_policy_pack_postgres_repository_integration.py`
 
-This RFC-0082 documentation slice did not change runtime behavior, OpenAPI output, migrations, or
-upstream request/response contracts.
+RFC-0108 Slice 12 adds implementation-backed management supportability posture to
+`/rebalance/supportability/summary` and capability discovery:
+
+1. `GET /rebalance/supportability/summary` returns a `supportability` object with bounded
+   `state`, `reason`, `freshness_bucket`, and aggregate counts derived from persisted run,
+   operation, and workflow-decision records.
+2. `/integration/capabilities` and `/platform/capabilities` publish
+   `manage.observability.action_register_supportability` as the backend-owned feature key for
+   Gateway and Workbench gating.
+3. `/metrics` exposes `lotus_manage_action_register_supportability_total` with bounded
+   `surface`, `supportability_state`, `reason`, and `freshness_bucket` labels only. Portfolio ids,
+   request hashes, correlation ids, actor ids, and client content must not be emitted as metric
+   labels.
+4. This slice changes OpenAPI response shape for the summary endpoint but does not introduce
+   migrations or outbound upstream coupling.
 
 ## Gap Register
 

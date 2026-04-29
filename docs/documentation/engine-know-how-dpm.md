@@ -111,6 +111,15 @@ Implementation scope:
   - run status distribution
   - async operation status distribution
   - oldest/newest created-at timestamps for runs and operations
+  - `supportability` posture with bounded `state`, `reason`, and `freshness_bucket`
+- Supportability states:
+  - `ready` when persisted supportability records are current and no failed async operation is present
+  - `empty` when no run or operation records exist
+  - `stale` when the newest run or operation timestamp is older than the freshness window
+  - `degraded` when failed async operation records are present
+- Metrics: each successful summary read records
+  `lotus_manage_action_register_supportability_total` with bounded `surface`,
+  `supportability_state`, `reason`, and `freshness_bucket` labels only.
 
 ### `GET /rebalance/policies/effective`
 - Purpose: resolve and return effective lotus-manage policy-pack selection for integration/support diagnostics.

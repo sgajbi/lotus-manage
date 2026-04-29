@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
+from src.api.observability import record_action_register_supportability
 from src.api.routers import rebalance_runs_config
 from src.api.routers.runtime_utils import assert_feature_enabled, normalize_backend_init_error
 from src.core.rebalance_runs import (
@@ -297,12 +298,19 @@ def get_dpm_supportability_summary(
     _assert_support_apis_enabled()
     _assert_supportability_summary_apis_enabled()
     _reject_unexpected_query_params(request, allowed_params=set())
-    return service.get_supportability_summary(
+    response = service.get_supportability_summary(
         store_backend=_supportability_store_backend_name(),
         retention_days=rebalance_runs_config.env_non_negative_int(
             "DPM_SUPPORTABILITY_RETENTION_DAYS", 0
         ),
     )
+    record_action_register_supportability(
+        surface="rebalance/supportability/summary",
+        supportability_state=response.supportability.state,
+        reason=response.supportability.reason,
+        freshness_bucket=response.supportability.freshness_bucket,
+    )
+    return response
 
 
 @router.get(
