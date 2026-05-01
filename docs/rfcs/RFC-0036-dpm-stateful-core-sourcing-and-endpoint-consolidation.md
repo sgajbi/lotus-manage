@@ -562,6 +562,42 @@ Exit evidence:
 2. `lotus-core` issue/PR links for any required source-data gaps,
 3. no runtime behavior changed yet.
 
+Slice 1 implementation evidence captured on 2026-05-01:
+
+1. Existing `lotus-core` source-data product audited:
+   - product: `PortfolioStateSnapshot:v1`
+   - route: `POST /integration/portfolios/{portfolio_id}/core-snapshot`
+   - serving plane: `query_control_plane_service`
+   - approved consumers include `lotus-manage`
+   - current coverage: baseline/projected positions, deltas, portfolio totals, instrument
+     enrichment, governance metadata, request fingerprint, freshness/runtime metadata, and policy
+     provenance.
+2. Resolver decision: `core-snapshot` is useful but insufficient as the sole stateful DPM resolver
+   because it does not provide model portfolio targets, discretionary mandate-to-model binding,
+   product shelf eligibility, settlement metadata, tax-lot completeness, complete target-instrument
+   market data, complete FX coverage, or DPM-specific supportability in one certified source-data
+   contract.
+3. Target resolver contract remains the preferred route:
+   `POST /integration/portfolios/{portfolio_id}/dpm-execution-context`.
+4. Upstream gap filed: `lotus-core` issue
+   `https://github.com/sgajbi/lotus-core/issues/330`.
+5. Stateful promotion no-go: `lotus-manage` must keep stateful mode disabled until issue #330 or an
+   equivalent certified `lotus-core` source-data bundle exists and live evidence proves resolver
+   readiness.
+6. Implementation guidance for later slices:
+   - use `core-snapshot` only as a partial portfolio-state input if the final resolver contract
+     explicitly composes it with separately certified model, shelf, tax-lot, market-data, FX, and
+     supportability products;
+   - do not infer missing DPM context in Gateway;
+   - propagate correlation and trace headers to `lotus-core`;
+   - use bounded resolver calls with no sensitive identifiers in metric labels;
+   - target initial resolver timeout budget: 500 ms connect, 2 s total for synchronous simulate,
+     and 5 s total for async-analysis context hydration, to be tightened or relaxed only with live
+     latency evidence.
+7. Gateway integration remains out of scope for RFC-0036 implementation and will be rebuilt later
+   against the corrected canonical contract.
+8. Runtime behavior: no `lotus-manage` runtime behavior changed in Slice 1.
+
 ### Slice 2: Cleanup And Structure
 
 1. Remove dead code, stale compatibility shims, unused fixtures, obsolete scripts, and misleading
