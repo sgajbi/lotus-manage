@@ -630,6 +630,11 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "status_filter` for status filtering; unsupported aliases are rejected"
         in list_runs["description"]
     )
+    assert "ordered by `created_at` descending" in list_runs["description"]
+    assert "Pass the returned `next_cursor`" in list_runs["description"]
+    assert list_runs["responses"]["200"]["description"] == (
+        "Bounded page of run supportability records for investigation."
+    )
     assert "422" in list_runs["responses"]
 
     run_by_request_hash = openapi["paths"]["/api/v1/rebalance/runs/by-request-hash/{request_hash}"][

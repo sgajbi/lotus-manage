@@ -282,6 +282,10 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Ordering: `created_at` descending, then `rebalance_run_id` descending for deterministic ties.
+- `next_cursor` is the last returned `rebalance_run_id`; pass it back as `cursor` for the next page.
+- Persistent repositories push status and cursor predicates into storage to avoid loading the full run set.
+- Unsupported query aliases such as `status`, `from`, or `to` return `422`.
 
 ### `GET /rebalance/runs/by-correlation/{correlation_id}`
 - Purpose: retrieve latest lotus-manage run mapped to correlation id.

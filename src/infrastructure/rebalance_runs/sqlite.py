@@ -123,7 +123,7 @@ class SqliteDpmRunRepository(DpmRunRepository):
         cursor: Optional[str],
     ) -> tuple[list[DpmRunRecord], Optional[str]]:
         where_clauses = []
-        args: list[str] = []
+        args: list[Any] = []
         if created_from is not None:
             where_clauses.append("created_at >= ?")
             args.append(created_from.isoformat())
@@ -136,6 +136,22 @@ class SqliteDpmRunRepository(DpmRunRepository):
         if request_hash is not None:
             where_clauses.append("request_hash = ?")
             args.append(request_hash)
+        if status is not None:
+            where_clauses.append("json_extract(result_json, '$.status') = ?")
+            args.append(status)
+        if cursor is not None:
+            where_clauses.append(
+                """
+                (
+                    created_at < (SELECT created_at FROM dpm_runs WHERE rebalance_run_id = ?)
+                    OR (
+                        created_at = (SELECT created_at FROM dpm_runs WHERE rebalance_run_id = ?)
+                        AND rebalance_run_id < ?
+                    )
+                )
+                """
+            )
+            args.extend([cursor, cursor, cursor])
 
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
         query = f"""
@@ -150,7 +166,9 @@ class SqliteDpmRunRepository(DpmRunRepository):
             FROM dpm_runs
             {where_sql}
             ORDER BY created_at DESC, rebalance_run_id DESC
+            LIMIT ?
         """
+        args.append(limit + 1)
         with closing(self._connect()) as connection:
             rows = connection.execute(query, tuple(args)).fetchall()
         run_candidates = [self._to_run(row) for row in rows]
@@ -158,16 +176,6 @@ class SqliteDpmRunRepository(DpmRunRepository):
             list[DpmRunRecord],
             [run for run in run_candidates if run is not None],
         )
-        if status is not None:
-            runs = [run for run in runs if str(run.result_json.get("status", "")) == status]
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(runs) if row.rebalance_run_id == cursor),
-                None,
-            )
-            if cursor_index is None:
-                return [], None
-            runs = runs[cursor_index + 1 :]
         page = runs[:limit]
         next_cursor = page[-1].rebalance_run_id if len(runs) > limit else None
         return page, next_cursor

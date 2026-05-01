@@ -195,9 +195,14 @@ def reset_dpm_run_support_service_for_tests() -> None:
     description=(
         "Returns paginated lotus-manage runs filtered by creation time range, run status, "
         "canonical request hash, and portfolio id. Use the canonical query parameter "
-        "`status_filter` for status filtering; unsupported aliases are rejected."
+        "`status_filter` for status filtering; unsupported aliases are rejected. Rows are "
+        "ordered by `created_at` descending with `rebalance_run_id` as a deterministic "
+        "tie-breaker. Pass the returned `next_cursor` to continue from the next row."
     ),
     responses={
+        200: {
+            "description": "Bounded page of run supportability records for investigation.",
+        },
         422: {
             "description": "Unsupported query parameters were supplied.",
         },

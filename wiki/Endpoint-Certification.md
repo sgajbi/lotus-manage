@@ -84,6 +84,64 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: run inventory
+
+Route:
+
+- `GET /rebalance/runs`
+
+Purpose:
+
+Returns a bounded, filtered page of persisted discretionary mandate rebalance runs for operator,
+audit, and supportability investigations. Use this endpoint when the caller needs a run inventory
+or the latest runs for a portfolio. Use direct lookup routes when the caller already has a run id,
+correlation id, idempotency key, or request hash.
+
+Request surface:
+
+- Filters: `created_from`, `created_to`, `status_filter`, `request_hash`, and `portfolio_id`.
+- Pagination: `limit` and `cursor`.
+- Ordering: `created_at` descending, then `rebalance_run_id` descending for deterministic ties.
+- `next_cursor` is the last returned `rebalance_run_id`.
+- Unsupported aliases such as `status`, `from`, or `to` return `422`.
+
+Functional coverage:
+
+- filtering by run status, request hash, portfolio id, and creation window,
+- deterministic pagination across same-timestamp rows,
+- invalid cursor behavior returns an empty page with no next cursor,
+- retention cleanup excludes expired runs before listing,
+- unsupported aliases are rejected instead of silently ignored.
+
+Non-functional posture:
+
+- The endpoint is a local supportability read and does not call upstream portfolio, market-data,
+  advisory, or gateway services.
+- SQLite and Postgres repositories push status predicates and cursor pagination into storage,
+  reducing unnecessary in-process filtering and improving latency as run volume grows.
+- Page size is bounded by the OpenAPI `limit` contract.
+
+Upstream integration posture:
+
+The endpoint reads persisted `lotus-manage` run records captured from execution requests. Source
+portfolio, model, market, and policy authority remains with the original caller and future
+`lotus-core` stateful resolution design.
+
+Downstream consumers:
+
+- `lotus-gateway` uses this endpoint with canonical `portfolio_id` and `limit` parameters for
+  Workbench and foundation portfolio snapshots.
+- No Workbench direct source-service consumer was found; Workbench should continue using Gateway.
+- Stale proposal-listing methods still exist in Gateway legacy tests/client surface and are already
+  tracked under `sgajbi/lotus-gateway#178`.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_runs_list_filters_and_cursor tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_list_runs_filter_and_cursor_contract tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_list_runs_filters_and_cursor tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: deterministic run artifact
 
 Route:

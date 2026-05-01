@@ -317,6 +317,12 @@ def test_dpm_support_runs_list_filters_and_cursor(client):
         != page_one_body["items"][0]["rebalance_run_id"]
     )
 
+    unsupported_status_alias = client.get("/api/v1/rebalance/runs?status=READY")
+    assert unsupported_status_alias.status_code == 422
+    assert unsupported_status_alias.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
+    )
+
 
 def test_dpm_support_runs_list_respects_retention_policy(client, monkeypatch):
     monkeypatch.setenv("DPM_SUPPORTABILITY_RETENTION_DAYS", "1")
