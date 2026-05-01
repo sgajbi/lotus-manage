@@ -19,6 +19,26 @@ flowchart LR
     Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
 ```
 
+## Evidence flow
+
+```mermaid
+flowchart TD
+    Validator[scripts/validate_live_api.py] --> DemoPack[Live demo pack]
+    Validator --> Boundary[OpenAPI boundary probes]
+    Validator --> Capabilities[Capability truth probes]
+    Validator --> Supportability[Postgres supportability probes]
+    Validator --> Metrics[Bounded metrics probes]
+    DemoPack --> Manage[lotus-manage API]
+    Boundary --> Manage
+    Capabilities --> Manage
+    Supportability --> Manage
+    Metrics --> Manage
+    Manage --> DpmDb[(DPM PostgreSQL schema)]
+```
+
+This evidence path is API-first. It is intended for `lotus-manage` certification before broader
+Gateway or Workbench integration is treated as a product-surface dependency.
+
 ## Code map
 
 - `src/api/`

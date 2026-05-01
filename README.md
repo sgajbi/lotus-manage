@@ -123,6 +123,8 @@ Repo-native gate mapping:
   local feature-lane split by unit, integration, and e2e coverage phases
 - `make ci-local-docker`
   Docker parity for the local CI contract
+- `make live-api-validate`
+  live API evidence against a running `lotus-manage` instance
 
 When the README changes, also run:
 

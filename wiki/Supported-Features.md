@@ -31,6 +31,8 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Production persistence guardrails | Enforced | `src/api/persistence_profile.py` and production cutover tests |
 | PostgreSQL migration checks | Enforced | `scripts/postgres_migrate.py --target dpm` and migration tests |
 | Docker startup readiness | Enforced | local Docker runtime contract tests |
+| Live API evidence | Enforced before API readiness claims | `scripts/validate_live_api.py` and `make live-api-validate` |
+| Async correlation conflict handling | Enforced | API tests and live API duplicate-correlation probe |
 
 ## Explicit Non-Goals
 
