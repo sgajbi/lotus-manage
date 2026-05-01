@@ -336,8 +336,13 @@ class _FakeConnection:
                 counts[operation["status"]] = counts.get(operation["status"], 0) + 1
             rows = [{"status": key, "status_count": value} for key, value in counts.items()]
             return _FakeCursor(rows=rows)
-        if "SELECT result_json FROM dpm_runs" in sql:
-            rows = [{"result_json": row["result_json"]} for row in self.runs.values()]
+        if "SELECT result_json::jsonb ->> 'status' AS status" in sql:
+            counts = {}
+            for run in self.runs.values():
+                status = postgres_module.json.loads(run["result_json"]).get("status")
+                if status is not None:
+                    counts[status] = counts.get(status, 0) + 1
+            rows = [{"status": key, "status_count": value} for key, value in counts.items()]
             return _FakeCursor(rows=rows)
         if "SELECT COUNT(*) AS workflow_decision_count" in sql:
             return _FakeCursor(row={"workflow_decision_count": len(self.workflow_decisions)})

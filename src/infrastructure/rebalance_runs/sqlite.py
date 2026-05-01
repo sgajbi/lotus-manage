@@ -636,8 +636,9 @@ class SqliteDpmRunRepository(DpmRunRepository):
             GROUP BY status
         """
         run_status_query = """
-            SELECT result_json
+            SELECT json_extract(result_json, '$.status') AS status, COUNT(*) AS status_count
             FROM dpm_runs
+            GROUP BY json_extract(result_json, '$.status')
         """
         workflow_decision_count_query = (
             "SELECT COUNT(*) AS workflow_decision_count FROM dpm_workflow_decisions"
@@ -657,7 +658,7 @@ class SqliteDpmRunRepository(DpmRunRepository):
             run_row = connection.execute(run_query).fetchone()
             operation_row = connection.execute(operation_query).fetchone()
             status_rows = connection.execute(operation_status_query).fetchall()
-            run_rows = connection.execute(run_status_query).fetchall()
+            run_status_rows = connection.execute(run_status_query).fetchall()
             workflow_row = connection.execute(workflow_decision_count_query).fetchone()
             workflow_action_rows = connection.execute(workflow_action_counts_query).fetchall()
             workflow_reason_code_rows = connection.execute(
@@ -670,11 +671,11 @@ class SqliteDpmRunRepository(DpmRunRepository):
             for row in status_rows
             if row["status"] is not None
         }
-        run_status_counts: dict[str, int] = {}
-        for row in run_rows:
-            status = str(json.loads(row["result_json"]).get("status", ""))
-            if status:
-                run_status_counts[status] = run_status_counts.get(status, 0) + 1
+        run_status_counts = {
+            row["status"]: int(row["status_count"])
+            for row in run_status_rows
+            if row["status"] is not None
+        }
         workflow_action_counts = {
             row["action"]: int(row["action_count"])
             for row in workflow_action_rows

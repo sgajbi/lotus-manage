@@ -296,9 +296,19 @@ def list_runs(
         "Returns supportability storage summary metrics (runs, operations, status counts, "
         "and temporal bounds) for operational investigation without direct database access. "
         "Use this endpoint when operators need a store-wide health and retention snapshot; "
-        "it does not accept ad hoc query filters."
+        "it does not accept ad hoc query filters. The response includes bounded action-register "
+        "supportability state for Gateway and Workbench portfolio-management readiness surfaces."
     ),
     responses={
+        200: {
+            "description": (
+                "Store-wide supportability summary with counts, freshness, and bounded "
+                "action-register posture."
+            ),
+        },
+        404: {
+            "description": "Support APIs or supportability summary APIs are disabled.",
+        },
         422: {
             "description": "Unsupported query parameters were supplied.",
         },

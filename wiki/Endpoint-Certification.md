@@ -142,6 +142,64 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_runs
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: supportability summary
+
+Route:
+
+- `GET /rebalance/supportability/summary`
+
+Purpose:
+
+Returns a store-wide supportability and readiness snapshot for discretionary mandate operations
+without requiring direct database access. Use this endpoint for operational health checks, Gateway
+portfolio workspace supportability posture, and Workbench readiness surfaces. Use run inventory or
+direct lookup endpoints when row-level run details are required.
+
+Request surface:
+
+- No query options.
+- Unsupported query parameters return `422`.
+- Feature gates: `DPM_SUPPORT_APIS_ENABLED` and `DPM_SUPPORTABILITY_SUMMARY_APIS_ENABLED`.
+
+Functional coverage:
+
+- run and async-operation totals,
+- run and operation status distributions,
+- workflow decision totals plus action and reason-code distributions,
+- lineage edge totals,
+- oldest and newest run/operation timestamps,
+- bounded `supportability` state, reason, freshness bucket, and supporting counts,
+- metrics emission through bounded action-register labels,
+- disabled feature gates and unsupported query parameters.
+
+Non-functional posture:
+
+- The endpoint is a local supportability read and does not call upstream portfolio, market-data,
+  advisory, or gateway services.
+- SQLite and Postgres repositories aggregate run status counts in storage instead of loading every
+  run result payload into application memory.
+- The response is bounded by aggregate counts and timestamps rather than row-level payloads.
+
+Upstream integration posture:
+
+The endpoint summarizes persisted `lotus-manage` records captured from execution, async-operation,
+workflow, and lineage flows. It does not resolve fresh source state from `lotus-core`; source
+authority remains with the original execution request and future stateful source-data design.
+
+Downstream consumers:
+
+- `lotus-gateway` reads this endpoint for portfolio workspace supportability posture.
+- `lotus-workbench` receives supportability posture through Gateway portfolio contracts, not direct
+  source-service calls.
+- No stale downstream source-service consumer was found for this endpoint.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_endpoint tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_rejects_unexpected_query_params tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_supportability_summary_contract tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_supportability_summary tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: deterministic run artifact
 
 Route:

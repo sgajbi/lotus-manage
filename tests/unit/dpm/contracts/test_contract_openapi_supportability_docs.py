@@ -650,6 +650,14 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     ].endswith("/DpmSupportabilitySummaryResponse")
     assert "store-wide health and retention snapshot" in supportability_summary["description"]
     assert "does not accept ad hoc query filters" in supportability_summary["description"]
+    assert "bounded action-register supportability state" in supportability_summary["description"]
+    assert supportability_summary["responses"]["200"]["description"] == (
+        "Store-wide supportability summary with counts, freshness, and bounded "
+        "action-register posture."
+    )
+    assert supportability_summary["responses"]["404"]["description"] == (
+        "Support APIs or supportability summary APIs are disabled."
+    )
     assert "parameters" not in supportability_summary
     assert "422" in supportability_summary["responses"]
 

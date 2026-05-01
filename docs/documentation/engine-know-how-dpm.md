@@ -177,6 +177,9 @@ Implementation scope:
 - Metrics: each successful summary read records
   `lotus_manage_action_register_supportability_total` with bounded `surface`,
   `supportability_state`, `reason`, and `freshness_bucket` labels only.
+- Persistent repositories aggregate run status counts in storage instead of loading every run
+  result payload into application memory.
+- Unsupported query parameters return `422`; this endpoint has no query options.
 
 ### `GET /rebalance/policies/effective`
 - Purpose: resolve and return effective lotus-manage policy-pack selection for integration/support diagnostics.
