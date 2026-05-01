@@ -142,6 +142,92 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_runs
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: direct run lookup
+
+Routes:
+
+- `GET /rebalance/runs/{rebalance_run_id}`
+- `GET /rebalance/runs/by-correlation/{correlation_id}`
+- `GET /rebalance/runs/by-request-hash/{request_hash}`
+- `GET /rebalance/runs/idempotency/{idempotency_key}`
+
+Purpose:
+
+Returns exact persisted supportability records for discretionary mandate rebalance runs when the
+caller already has a specific investigation handle. These routes are intentionally narrow point
+lookups. Use `/rebalance/runs` for inventory search, `/rebalance/runs/{run_id}/artifact` for the
+deterministic audit artifact, and support-bundle routes when workflow, lineage, async operation, or
+idempotency history context is required.
+
+Functional behavior:
+
+- Run-id, correlation-id, and request-hash routes return the same `DpmRunLookupResponse` shape:
+  run id, correlation id, canonical request hash, optional idempotency key, portfolio id, creation
+  timestamp, and full persisted rebalance result.
+- The idempotency route returns the current key-to-run mapping with idempotency key, request hash,
+  run id, and mapping timestamp.
+- Missing run, correlation, and request-hash handles return `DPM_RUN_NOT_FOUND`.
+- Missing idempotency keys return `DPM_IDEMPOTENCY_KEY_NOT_FOUND`.
+- `DPM_SUPPORT_APIS_ENABLED=false` returns `DPM_SUPPORT_APIS_DISABLED` before storage lookup.
+- All four routes reject unsupported query parameters with `422`; they do not silently ignore
+  filters or include flags.
+
+```mermaid
+flowchart LR
+    Operator[Operator, Gateway trace, or incident ticket] --> Handle{Available handle}
+    Handle -->|run id| ByRun[GET /rebalance/runs/{run_id}]
+    Handle -->|correlation id| ByCorrelation[GET /rebalance/runs/by-correlation/{correlation_id}]
+    Handle -->|request hash| ByRequestHash[GET /rebalance/runs/by-request-hash/{request_hash}]
+    Handle -->|idempotency key| ByIdempotency[GET /rebalance/runs/idempotency/{idempotency_key}]
+    ByRun --> Store[(Supportability store)]
+    ByCorrelation --> Store
+    ByRequestHash --> Store
+    ByIdempotency --> Store
+    Store --> Result[Persisted run or current idempotency mapping]
+    Result --> Bundle[Use support-bundle only when broader evidence is needed]
+```
+
+Non-functional posture:
+
+- The routes are local supportability reads over the configured repository backend and perform no
+  upstream calls to `lotus-core`, `lotus-advise`, market-data services, Gateway, or Workbench.
+- Lookup by run id and idempotency key are primary-key style reads in the persistence layer.
+- Correlation-id and request-hash lookups resolve the latest mapped run and should remain indexed in
+  persistent backends as data volume grows.
+- The API surface is low-latency and deterministic; callers should avoid polling these endpoints for
+  inventory workflows and use the bounded list endpoint instead.
+
+Upstream integration posture:
+
+These lookup routes expose records captured by `lotus-manage` during execution. The original
+portfolio, model, market, and policy inputs remain governed by the request contract and future
+`lotus-core` stateful resolution path. The direct lookup family does not create new upstream source
+authority.
+
+Downstream consumers:
+
+- `lotus-gateway` can use these routes for source-service supportability and incident resolution
+  when it has a run id, correlation id, request hash, or idempotency key.
+- Workbench should not call these source-service routes directly; any product surface should remain
+  Gateway-mediated.
+- No duplicate strategic route was found in `lotus-manage`. Support bundles are complementary, not
+  replacements, because they intentionally return a broader investigation payload.
+
+Client-demo and operations value:
+
+- Business and operations users can explain these endpoints as the traceability layer behind a
+  discretionary mandate action: every submitted run can be recovered by the operational handle a
+  banker, support analyst, or platform trace is likely to have.
+- Sales and client-facing demos should position this as auditability and operational resilience,
+  not as advisory proposal management. Advisory proposal lifecycle remains owned by `lotus-advise`.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_lookup_by_run_correlation_and_idempotency tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_not_found_and_disabled tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: supportability summary
 
 Route:

@@ -174,23 +174,38 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     assert run_body["idempotency_key"] == "test-key-support-1"
     assert run_body["request_hash"].startswith("sha256:")
     assert run_body["result"]["rebalance_run_id"] == body["rebalance_run_id"]
+    assert run_body["portfolio_id"] == payload["portfolio_snapshot"]["portfolio_id"]
+    assert run_body["result"]["lineage"]["request_hash"] == run_body["request_hash"]
 
     by_correlation = client.get("/api/v1/rebalance/runs/by-correlation/corr-support-1")
     assert by_correlation.status_code == 200
-    assert by_correlation.json()["rebalance_run_id"] == body["rebalance_run_id"]
+    correlation_body = by_correlation.json()
+    assert correlation_body == run_body
 
     by_request_hash = client.get(
         f"/api/v1/rebalance/runs/by-request-hash/{run_body['request_hash']}"
     )
     assert by_request_hash.status_code == 200
-    assert by_request_hash.json()["rebalance_run_id"] == body["rebalance_run_id"]
+    assert by_request_hash.json() == run_body
 
     by_idempotency = client.get("/api/v1/rebalance/runs/idempotency/test-key-support-1")
     assert by_idempotency.status_code == 200
     idem_body = by_idempotency.json()
     assert idem_body["idempotency_key"] == "test-key-support-1"
     assert idem_body["rebalance_run_id"] == body["rebalance_run_id"]
-    assert idem_body["request_hash"].startswith("sha256:")
+    assert idem_body["request_hash"] == run_body["request_hash"]
+    assert idem_body["created_at"] == run_body["created_at"]
+
+    unsupported_lookup_queries = [
+        f"/api/v1/rebalance/runs/{body['rebalance_run_id']}?include_artifact=true",
+        "/api/v1/rebalance/runs/by-correlation/corr-support-1?limit=1",
+        f"/api/v1/rebalance/runs/by-request-hash/{run_body['request_hash']}?include_lineage=true",
+        "/api/v1/rebalance/runs/idempotency/test-key-support-1?history=true",
+    ]
+    for url in unsupported_lookup_queries:
+        unsupported = client.get(url)
+        assert unsupported.status_code == 422
+        assert unsupported.json()["detail"].startswith("UNSUPPORTED_QUERY_PARAMETER:")
 
     artifact = client.get(f"/api/v1/rebalance/runs/{body['rebalance_run_id']}/artifact")
     assert artifact.status_code == 200
@@ -489,9 +504,16 @@ def test_dpm_support_apis_not_found_and_disabled(client, monkeypatch):
     assert missing_artifact.json()["detail"] == "DPM_RUN_NOT_FOUND"
 
     monkeypatch.setenv("DPM_SUPPORT_APIS_ENABLED", "false")
-    disabled = client.get("/api/v1/rebalance/runs/rr_missing")
-    assert disabled.status_code == 404
-    assert disabled.json()["detail"] == "DPM_SUPPORT_APIS_DISABLED"
+    disabled_urls = [
+        "/api/v1/rebalance/runs/rr_missing",
+        "/api/v1/rebalance/runs/by-correlation/corr-missing",
+        "/api/v1/rebalance/runs/by-request-hash/sha256:missing",
+        "/api/v1/rebalance/runs/idempotency/idem-missing",
+    ]
+    for url in disabled_urls:
+        disabled = client.get(url)
+        assert disabled.status_code == 404
+        assert disabled.json()["detail"] == "DPM_SUPPORT_APIS_DISABLED"
 
     monkeypatch.setenv("DPM_SUPPORT_APIS_ENABLED", "true")
     monkeypatch.setenv("DPM_ARTIFACTS_ENABLED", "false")

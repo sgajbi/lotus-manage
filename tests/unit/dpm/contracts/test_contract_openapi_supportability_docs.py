@@ -643,6 +643,65 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert run_by_request_hash["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunLookupResponse")
+    assert "canonical request hash" in run_by_request_hash["description"]
+    assert "URL-encode the request hash" in run_by_request_hash["description"]
+    assert "does not accept query parameters" in run_by_request_hash["description"]
+    assert run_by_request_hash["responses"]["200"]["description"] == (
+        "Latest run supportability record mapped to the request hash."
+    )
+    assert "404" in run_by_request_hash["responses"]
+    assert run_by_request_hash["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+
+    run_by_id = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}"]["get"]
+    assert run_by_id["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
+        "/DpmRunLookupResponse"
+    )
+    assert "deterministic audit artifact" in run_by_id["description"]
+    assert "support-bundle" in run_by_id["description"]
+    assert "does not accept query parameters" in run_by_id["description"]
+    assert run_by_id["responses"]["200"]["description"] == (
+        "Persisted run supportability record and result payload."
+    )
+    assert "404" in run_by_id["responses"]
+    assert run_by_id["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+
+    run_by_correlation = openapi["paths"]["/api/v1/rebalance/runs/by-correlation/{correlation_id}"][
+        "get"
+    ]
+    assert run_by_correlation["responses"]["200"]["content"]["application/json"]["schema"][
+        "$ref"
+    ].endswith("/DpmRunLookupResponse")
+    assert "X-Correlation-Id" in run_by_correlation["description"]
+    assert "support-bundle routes" in run_by_correlation["description"]
+    assert "does not accept query parameters" in run_by_correlation["description"]
+    assert run_by_correlation["responses"]["200"]["description"] == (
+        "Latest run supportability record mapped to the correlation id."
+    )
+    assert "404" in run_by_correlation["responses"]
+    assert run_by_correlation["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+
+    idempotency_lookup = openapi["paths"]["/api/v1/rebalance/runs/idempotency/{idempotency_key}"][
+        "get"
+    ]
+    assert idempotency_lookup["responses"]["200"]["content"]["application/json"]["schema"][
+        "$ref"
+    ].endswith("/DpmRunIdempotencyLookupResponse")
+    assert "current idempotency-key mapping" in idempotency_lookup["description"]
+    assert "append-only retry history" in idempotency_lookup["description"]
+    assert "does not accept query parameters" in idempotency_lookup["description"]
+    assert idempotency_lookup["responses"]["200"]["description"] == (
+        "Current idempotency-key to run mapping."
+    )
+    assert "404" in idempotency_lookup["responses"]
+    assert idempotency_lookup["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     supportability_summary = openapi["paths"]["/api/v1/rebalance/supportability/summary"]["get"]
     assert supportability_summary["responses"]["200"]["content"]["application/json"]["schema"][

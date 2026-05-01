@@ -292,13 +292,21 @@ Swagger contract quality:
 
 ### `GET /rebalance/runs/by-correlation/{correlation_id}`
 - Purpose: retrieve latest lotus-manage run mapped to correlation id.
+- Use when the caller has a submitted `X-Correlation-Id` from Gateway, logs, or an incident ticket
+  and needs the exact persisted run payload.
+- Does not accept query parameters; use `/rebalance/runs` for filtered inventory search.
 
 ### `GET /rebalance/runs/by-request-hash/{request_hash}`
 - Purpose: retrieve latest lotus-manage run mapped to canonical request hash.
 - Note: URL-encode `request_hash` when calling via path parameter.
+- Does not accept query parameters; use this only when the canonical `sha256:` request fingerprint
+  is the investigation handle.
 
 ### `GET /rebalance/runs/idempotency/{idempotency_key}`
 - Purpose: retrieve idempotency key to run mapping for retry and incident analysis.
+- Returns the current mapping only. Use `/rebalance/idempotency/{idempotency_key}/history` when
+  replay-disabled history or conflict reconstruction is required.
+- Does not accept query parameters.
 
 ### `GET /rebalance/lineage/{entity_id}`
 - Purpose: retrieve supportability lineage edges for entity ids (correlation, idempotency, run, operation).
