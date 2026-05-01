@@ -31,12 +31,21 @@
 - `/metrics` exposes `lotus_manage_core_resolver_total` with only bounded `operation`, `outcome`,
   `supportability_state`, and `reason` labels for future stateful core resolver calls. It must not
   include portfolio ids, source payload identifiers, request hashes, or raw upstream error text.
-- Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
-  content to supportability metric labels or log dimensions.
+- Dashboard panels and alert rules are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`. Add metrics to code and tests before
+  referencing them in dashboard or alert contracts; `make mesh-contract-validate` checks that the
+  contract only references implemented metrics.
+- Do not add portfolio ids, request hashes, idempotency keys, actor ids, client content, raw
+  upstream errors, or diagnostics payloads to supportability metric labels or free-text log
+  messages. Correlation, request, and trace identifiers are allowed only as structured tracing
+  context fields.
 - HTTP access logs use route templates such as
   `/api/v1/rebalance/runs/by-request-hash/{request_hash}` rather than raw request paths, and emit
   bounded `status_family` and `latency_bucket_ms` fields. Do not replace those with raw path values
   or precise caller identifiers.
+- Service-level log messages must use bounded event text. Do not embed correlation ids,
+  idempotency keys, run ids, operation ids, request hashes, portfolio ids, diagnostics payloads, or
+  raw upstream error text in message strings.
 - Capability consumers should gate this posture on
   `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
   `/api/v1/integration/capabilities`.

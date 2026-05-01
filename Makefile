@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 92
 
@@ -107,7 +107,10 @@ domain-product-validate:
 trust-telemetry-validate:
 	python scripts/validate_trust_telemetry_contracts.py
 
-mesh-contract-validate: domain-product-validate trust-telemetry-validate
+observability-contract-validate:
+	python scripts/validate_observability_contracts.py
+
+mesh-contract-validate: domain-product-validate trust-telemetry-validate observability-contract-validate
 
 format:
 	python -m ruff format .

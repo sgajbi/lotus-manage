@@ -1043,6 +1043,51 @@ Implementation evidence captured on 2026-05-01:
    - monetary float guard passed,
    - no-alias, mypy, OpenAPI, API vocabulary, and mesh validation gates passed,
    - unit suite returned 477 passed.
+10. Added repo-native dashboard and alert contract governance at
+    `contracts/observability/lotus-manage-monitoring.v1.json`. The contract declares only
+    implemented custom metrics, dashboard panels, and alert rules for:
+    - `lotus_manage_action_register_supportability_total`,
+    - `lotus_manage_core_resolver_total`.
+11. Added `scripts/validate_observability_contracts.py`, `make observability-contract-validate`,
+    and Make integration through `mesh-contract-validate` so dashboard and alert references cannot
+    drift from implemented metrics.
+12. Focused monitoring-contract validation passed:
+    - `python scripts/validate_observability_contracts.py` passed,
+    - `python -m pytest tests/unit/test_observability_contracts.py tests/unit/dpm/api/test_observability_api.py -q`
+      returned 15 passed,
+    - `python -m ruff check scripts/validate_observability_contracts.py tests/unit/test_observability_contracts.py`
+      passed,
+    - `python -m ruff format --check scripts/validate_observability_contracts.py tests/unit/test_observability_contracts.py`
+      passed.
+13. Live Docker proof initially exposed a no-sensitive-logging gap: service messages embedded
+    correlation ids, idempotency keys, batch ids, operation ids, and blocked-run diagnostics in
+    free-text log messages even though access logs were route-template based.
+14. Removed raw support identifiers and diagnostics payloads from service log messages. Focused
+    validation passed:
+    - `python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_simulate_blocked_logs_warning tests/unit/dpm/api/test_api_rebalance.py::test_simulate_logs_do_not_embed_request_identifiers tests/unit/dpm/api/test_observability_api.py -q`
+      returned 14 passed,
+    - `python -m ruff check src/api/services/rebalance_simulation_service.py tests/unit/dpm/api/test_api_rebalance.py`
+      passed,
+    - `python -m ruff format --check src/api/services/rebalance_simulation_service.py tests/unit/dpm/api/test_api_rebalance.py`
+      passed after formatting.
+15. Docker-backed live proof passed after resetting stale local supportability volume:
+    - `docker compose down -v`,
+    - `LOTUS_MANAGE_HOST_PORT=8001 docker compose up -d --build`,
+    - `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate` returned 0 failures
+      across 8 probes,
+    - `/health/ready` returned `{"status":"ready"}`,
+    - `/metrics` exposed `lotus_manage_action_register_supportability_total` with bounded labels
+      and `lotus_manage_core_resolver_total` as the governed stateful resolver metric family.
+16. Repository-native `make check` passed after monitoring-contract and logging hardening:
+    - lint and format checks passed,
+    - monetary float guard passed,
+    - no-alias, mypy, OpenAPI, API vocabulary, domain product, trust telemetry, and observability
+      contract gates passed,
+    - unit suite returned 481 passed.
+17. Live log spot-check after the Docker rebuild showed service message strings such as
+    `Simulating rebalance request` and `Analyzing scenario batch` without embedded `CID=`,
+    `Idempotency=`, `BatchID=`, `OperationID=`, or diagnostics payload text. Correlation, request,
+    and trace fields remain structured observability context.
 
 ### Slice 10: Enterprise API Certification
 

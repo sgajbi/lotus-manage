@@ -354,11 +354,7 @@ def simulate_rebalance(
 ) -> RebalanceResult:
     current_logger = _resolved_logger()
     resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
-    current_logger.info(
-        "Simulating rebalance. CID=%s Idempotency=%s",
-        resolved_correlation_id,
-        idempotency_key,
-    )
+    current_logger.info("Simulating rebalance request")
     default_replay_enabled = env_flag("DPM_IDEMPOTENCY_REPLAY_ENABLED", True)
     request_payload = request.model_dump(mode="json")
     request_hash = hash_canonical_payload(request_payload)
@@ -435,14 +431,10 @@ def simulate_rebalance(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="DPM_IDEMPOTENCY_STORE_WRITE_FAILED",
             ) from exc
-        current_logger.exception(
-            "Supportability persistence failed. RunID=%s CorrelationID=%s",
-            result.rebalance_run_id,
-            result.correlation_id,
-        )
+        current_logger.exception("Supportability persistence failed")
 
     if result.status == "BLOCKED":
-        current_logger.warning("Run blocked. Diagnostics: %s", result.diagnostics)
+        current_logger.warning("Run blocked by DPM engine safety rules")
 
     return result
 
@@ -458,7 +450,7 @@ def execute_batch_analysis(
 ) -> BatchRebalanceResult:
     current_logger = _resolved_logger()
     batch_id = f"batch_{uuid.uuid4().hex[:8]}"
-    current_logger.info("Analyzing scenario batch. CID=%s BatchID=%s", correlation_id, batch_id)
+    current_logger.info("Analyzing scenario batch")
 
     results = {}
     comparison_metrics = {}
@@ -519,7 +511,7 @@ def execute_batch_analysis(
                 base_currency=request.portfolio_snapshot.base_currency,
             )
         except (HTTPException, ValidationError, RuntimeError, ValueError) as exc:
-            current_logger.exception("Scenario execution failed. Scenario=%s", scenario_name)
+            current_logger.exception("Scenario execution failed")
             failed_scenarios[scenario_name] = f"SCENARIO_EXECUTION_ERROR: {type(exc).__name__}"
 
     if failed_scenarios:
@@ -575,7 +567,7 @@ def run_analyze_async_operation(*, operation_id: str, service: DpmRunSupportServ
             result_json=result.model_dump(mode="json"),
         )
     except (DpmRunNotFoundError, ValidationError, HTTPException, RuntimeError, ValueError) as exc:
-        current_logger.exception("Asynchronous batch analysis failed. OperationID=%s", operation_id)
+        current_logger.exception("Asynchronous batch analysis failed")
         service.complete_operation_failure(
             operation_id=operation_id,
             code=type(exc).__name__,

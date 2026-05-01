@@ -134,7 +134,8 @@ Repo-native gate mapping:
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make mesh-contract-validate`
-  repo-native domain product and trust telemetry validation against Lotus platform governance
+  repo-native domain product, trust telemetry, and observability monitoring contract validation
+  against Lotus platform governance
 
 When the README changes, also run:
 

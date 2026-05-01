@@ -1,0 +1,130 @@
+{
+  "contract_id": "lotus-manage:observability-monitoring:v1",
+  "contract_version": "1.0.0",
+  "service": "lotus-manage",
+  "owner_repository": "lotus-manage",
+  "status": "active",
+  "purpose": "Govern the implemented monitoring surface for discretionary portfolio management APIs without exposing portfolio, client, request, idempotency, instrument, or raw upstream identifiers.",
+  "no_sensitive_telemetry_policy": {
+    "forbidden_label_values": [
+      "portfolio_id",
+      "account_id",
+      "client_id",
+      "instrument_id",
+      "request_hash",
+      "idempotency_key",
+      "correlation_id",
+      "run_id",
+      "actor_id",
+      "raw_error"
+    ],
+    "label_cardinality_posture": "bounded_allowlist_only"
+  },
+  "metrics": [
+    {
+      "name": "lotus_manage_action_register_supportability_total",
+      "type": "counter",
+      "description": "Counts supportability summary observations for the portfolio action register surface.",
+      "labels": {
+        "surface": ["rebalance/supportability/summary", "unknown_surface"],
+        "supportability_state": [
+          "ready",
+          "stale",
+          "degraded",
+          "empty",
+          "error",
+          "permission_blocked",
+          "unsupported"
+        ],
+        "reason": [
+          "supportability_summary_ready",
+          "supportability_summary_empty",
+          "supportability_summary_stale",
+          "supportability_summary_degraded",
+          "supportability_summary_error",
+          "permission_blocked",
+          "unsupported_surface"
+        ],
+        "freshness_bucket": ["current", "same_day", "stale", "unknown"]
+      },
+      "source": "src.api.observability.record_action_register_supportability"
+    },
+    {
+      "name": "lotus_manage_core_resolver_total",
+      "type": "counter",
+      "description": "Counts stateful lotus-core resolver outcomes for DPM execution-context sourcing.",
+      "labels": {
+        "operation": ["dpm_execution_context"],
+        "outcome": ["success", "unavailable", "incomplete", "error"],
+        "supportability_state": ["ready", "degraded", "incomplete", "unavailable", "unknown"],
+        "reason": [
+          "ready",
+          "degraded",
+          "resolver_unavailable",
+          "context_incomplete",
+          "invalid_response",
+          "unexpected_error"
+        ]
+      },
+      "source": "src.api.observability.record_core_resolver_call"
+    }
+  ],
+  "dashboards": [
+    {
+      "dashboard_id": "lotus-manage-dpm-operational-health",
+      "audience": ["operations", "engineering", "platform-governance"],
+      "panels": [
+        {
+          "panel_id": "action-register-supportability-by-state",
+          "title": "Portfolio Action Register Supportability",
+          "metric": "lotus_manage_action_register_supportability_total",
+          "query": "sum by (supportability_state, reason, freshness_bucket) (rate(lotus_manage_action_register_supportability_total[5m]))",
+          "use_when": "Monitor supportability summary readiness and freshness for action-register operational evidence."
+        },
+        {
+          "panel_id": "core-resolver-outcomes",
+          "title": "Stateful Core Resolver Outcomes",
+          "metric": "lotus_manage_core_resolver_total",
+          "query": "sum by (outcome, supportability_state, reason) (rate(lotus_manage_core_resolver_total[5m]))",
+          "use_when": "Monitor stateful resolver readiness after the governed lotus-core DPM execution-context contract is available."
+        }
+      ]
+    }
+  ],
+  "alerts": [
+    {
+      "alert_id": "lotus-manage-action-register-supportability-errors",
+      "severity": "warning",
+      "metric": "lotus_manage_action_register_supportability_total",
+      "expression": "sum(rate(lotus_manage_action_register_supportability_total{supportability_state=\"error\"}[5m])) > 0",
+      "for": "10m",
+      "description": "Action-register supportability summary is returning error state.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-core-resolver-unavailable",
+      "severity": "critical",
+      "metric": "lotus_manage_core_resolver_total",
+      "expression": "sum(rate(lotus_manage_core_resolver_total{outcome=\"unavailable\"}[5m])) > 0",
+      "for": "5m",
+      "description": "Stateful DPM execution context cannot be resolved from lotus-core.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-core-resolver-incomplete-context",
+      "severity": "warning",
+      "metric": "lotus_manage_core_resolver_total",
+      "expression": "sum(rate(lotus_manage_core_resolver_total{outcome=\"incomplete\"}[15m])) > 0",
+      "for": "15m",
+      "description": "lotus-core returned an incomplete or invalid DPM execution context.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    }
+  ],
+  "evidence": {
+    "local_validation": [
+      "python scripts/validate_observability_contracts.py",
+      "python -m pytest tests/unit/test_observability_contracts.py"
+    ],
+    "remote_lane": "Remote Feature Lane"
+  }
+}

@@ -1528,6 +1528,28 @@ def test_simulate_blocked_logs_warning(client):
         mock_logger.warning.assert_called()
         args, _ = mock_logger.warning.call_args
         assert "Run blocked" in args[0]
+        assert len(args) == 1
+        assert "Diagnostics" not in args[0]
+
+
+def test_simulate_logs_do_not_embed_request_identifiers(client):
+    payload = get_valid_payload()
+    headers = {
+        "Idempotency-Key": "test-key-log-redaction",
+        "X-Correlation-Id": "corr-log-redaction",
+    }
+
+    with patch("src.api.main.logger") as mock_logger:
+        response = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+
+    assert response.status_code == 200
+    logged_text = " ".join(
+        str(arg) for call in mock_logger.info.call_args_list for arg in call.args
+    )
+    assert "corr-log-redaction" not in logged_text
+    assert "test-key-log-redaction" not in logged_text
+    assert "Idempotency" not in logged_text
+    assert "CID=" not in logged_text
 
 
 def test_simulate_missing_price_can_continue_when_non_blocking(client):

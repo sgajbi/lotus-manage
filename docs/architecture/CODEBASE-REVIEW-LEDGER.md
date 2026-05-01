@@ -166,6 +166,36 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki operations and supported-features source updated because operator-facing
   metric behavior changed.
 
+## RFC36-S9-003: Dashboard and alert posture was prose-only
+
+- Date: 2026-05-01
+- Scope: monitoring contracts, Make validation, observability governance tests
+- Finding: RFC-0036 required dashboard and alert contracts for implemented metrics, but the
+  repository had no governed source artifact tying dashboard panels and alert rules to the concrete
+  Prometheus metrics implemented by `src.api.observability`.
+- Action: added `contracts/observability/lotus-manage-monitoring.v1.json`, a repo-native validator,
+  Make integration through `mesh-contract-validate`, and tests proving dashboard and alert
+  references use only implemented metrics with bounded, non-sensitive labels.
+- Status: fixed for currently implemented custom metrics.
+- Wiki decision: wiki operations and supported-features source updated because operator-facing
+  monitoring contract behavior changed.
+
+## RFC36-S9-004: Application logs embedded support identifiers in message text
+
+- Date: 2026-05-01
+- Scope: service log messages, blocked-run diagnostics, no-sensitive logging tests
+- Finding: live Docker evidence showed service-level log messages embedding correlation ids,
+  idempotency keys, batch ids, operation ids, and blocked-run diagnostics in free-text messages.
+  Route-template access logs were safe, but application messages could still leak sensitive
+  supportability identifiers or payload-derived diagnostics.
+- Action: changed simulate, batch-analysis, supportability-persistence, blocked-run, scenario-error,
+  and async-error log messages to bounded event text without raw identifiers or diagnostics payloads;
+  added API tests proving simulate logs do not embed request identifiers and blocked-run warnings do
+  not include diagnostics.
+- Status: fixed for current service-owned log messages.
+- Wiki decision: wiki operations and supported-features source updated because operator-facing
+  logging behavior changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01
