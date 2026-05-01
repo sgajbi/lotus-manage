@@ -31,6 +31,7 @@ This repo does not own:
 - [Overview](Overview)
 - [Architecture](Architecture)
 - [API Surface](API-Surface)
+- [Endpoint Certification](Endpoint-Certification)
 - [Supported Features](Supported-Features)
 - [Getting Started](Getting-Started)
 - [Development Workflow](Development-Workflow)

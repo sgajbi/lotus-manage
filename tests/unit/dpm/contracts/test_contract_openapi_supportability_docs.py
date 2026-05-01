@@ -295,6 +295,28 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
         in integration_params["tenant_id"]["description"]
     )
 
+    integration_examples = integration_get["responses"]["200"]["content"]["application/json"][
+        "examples"
+    ]
+    platform_examples = platform_get["responses"]["200"]["content"]["application/json"]["examples"]
+    assert platform_examples == integration_examples
+    default_example = integration_examples["default"]["value"]
+    assert default_example["supported_input_modes"] == ["inline_bundle"]
+    example_features = {item["key"]: item for item in default_example["features"]}
+    assert example_features["dpm.execution.stateful_portfolio_id"]["enabled"] is False
+    assert example_features["dpm.execution.stateless_inline_bundle"]["enabled"] is True
+    assert example_features["dpm.workflow.review_gate"]["enabled"] is False
+    assert (
+        example_features["manage.observability.action_register_supportability"]["enabled"] is True
+    )
+    assert default_example["workflows"] == [
+        {
+            "workflow_key": "dpm_rebalance_lifecycle",
+            "enabled": False,
+            "required_features": ["dpm.workflow.review_gate"],
+        }
+    ]
+
 
 def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():
     _guard_strict_validation()

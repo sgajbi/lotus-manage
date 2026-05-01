@@ -23,6 +23,8 @@ composition.
 6. Current downstream evidence for capability discovery flows through
    `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/platform/capabilities`; the
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
+7. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
+   `sgajbi/lotus-gateway#178`.
 
 ## `lotus-core` Contract Family Posture
 
@@ -111,7 +113,7 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
 1. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
    `GET /api/v1/platform/capabilities`; `lotus-manage` remains canonical on snake_case
    `consumer_system` and `tenant_id`, so the downstream client should be corrected rather than
-   expanding manage-side aliases.
+   expanding manage-side aliases. Tracked as `sgajbi/lotus-gateway#178`.
 2. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
    authority. Keep snapshot identifiers, request hashes, and supportability bundles mandatory for
    traceability.

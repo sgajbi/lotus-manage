@@ -38,6 +38,12 @@ Default capability posture is intentionally conservative: inline bundle executio
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.
 
+Source-service callers must use the canonical snake_case query parameters `consumer_system` and
+`tenant_id`. Gateway may expose camelCase on its public BFF contract, but direct calls into
+`lotus-manage` should not rely on Gateway naming.
+
+Endpoint certification details are tracked in [Endpoint Certification](Endpoint-Certification).
+
 ## Platform surfaces
 
 - `/health`
