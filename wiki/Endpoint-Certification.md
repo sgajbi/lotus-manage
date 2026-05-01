@@ -84,6 +84,85 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: policy-pack read supportability
+
+Routes:
+
+- `GET /rebalance/policies/effective`
+- `GET /rebalance/policies/catalog`
+
+Purpose:
+
+Management-side discretionary mandate policy controls for supportability, tenant diagnostics, and
+pre-execution integration checks. These endpoints are not advisory proposal APIs; advisor-led
+proposal and lifecycle flows belong in `lotus-advise`.
+
+Functional behavior:
+
+- Effective policy resolution uses deterministic precedence: request-scoped `X-Policy-Pack-Id`,
+  then tenant default `X-Tenant-Policy-Pack-Id`, then tenant resolver lookup by `X-Tenant-Id`, then
+  global default `DPM_DEFAULT_POLICY_PACK_ID`.
+- Resolution context is header-only. Unsupported query parameters return `422` instead of being
+  ignored or treated as aliases.
+- The effective endpoint returns `enabled`, `selected_policy_pack_id`, and `source`.
+- The catalog endpoint returns `enabled`, `total`, selected policy-pack id and source,
+  `selected_policy_pack_present`, and sorted policy-pack definitions.
+- Catalog storage is the governed PostgreSQL policy-pack repository; missing or unavailable storage
+  returns `503`.
+
+```mermaid
+flowchart LR
+    Caller[Gateway, operator, or certification probe] --> Effective[GET /rebalance/policies/effective]
+    Caller --> Catalog[GET /rebalance/policies/catalog]
+    Effective --> Precedence{Resolution precedence}
+    Precedence --> Request[X-Policy-Pack-Id]
+    Precedence --> Tenant[X-Tenant-Policy-Pack-Id or X-Tenant-Id resolver]
+    Precedence --> Global[DPM_DEFAULT_POLICY_PACK_ID]
+    Catalog --> Repo[(PostgreSQL policy-pack repository)]
+    Repo --> Items[Sorted policy-pack definitions]
+    Effective --> Selection[Selected policy-pack id and source]
+    Catalog --> Selection
+```
+
+Non-functional posture:
+
+- `/rebalance/policies/effective` performs no repository read and is a low-latency configuration
+  resolution endpoint.
+- `/rebalance/policies/catalog` performs a bounded local repository read, returns a deterministic
+  sorted catalog, and performs no upstream calls to `lotus-core`, `lotus-advise`, Gateway, or
+  Workbench.
+- Header-only resolution avoids query-alias sprawl and keeps the direct source-service contract
+  aligned with OpenAPI.
+- The policy-pack read surface supports mandate execution governance without reintroducing advisory
+  ownership into `lotus-manage`.
+
+Upstream integration posture:
+
+Policy-pack selection may be supplied by Gateway or tenant runtime context through headers.
+`lotus-core` remains authoritative for portfolio and mandate source data, but it is not a source for
+policy-pack catalog definitions in this endpoint family.
+
+Downstream consumers:
+
+- `lotus-gateway` is the strategic downstream integration boundary before any Workbench product
+  surface consumes these controls.
+- `lotus-workbench` should consume policy-pack posture through Gateway after integration, not by
+  calling `lotus-manage` directly.
+- No duplicate strategic source-service route was found in `lotus-manage`.
+
+Client-demo and operations value:
+
+These endpoints let business users and operations explain how a discretionary mandate execution is
+governed before the run is submitted: which policy pack will apply, where it came from, and whether
+the configured catalog contains the selected pack.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_effective_policy_pack_endpoint_resolution_precedence tests/unit/dpm/api/test_api_rebalance.py::test_policy_pack_supportability_routes_reject_unexpected_query_params tests/unit/dpm/api/test_api_rebalance.py::test_policy_pack_catalog_endpoint_returns_resolution_and_items tests/unit/dpm/api/test_dpm_policy_pack_config.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: run inventory
 
 Route:

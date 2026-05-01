@@ -1,5 +1,5 @@
 import os
-from typing import Annotated, Optional, cast
+from typing import Annotated, Any, Optional, cast
 
 from fastapi import APIRouter, Header, HTTPException, Path, Request, status
 
@@ -24,6 +24,37 @@ from src.infrastructure.dpm_policy_packs import (
 )
 
 router = APIRouter(tags=["lotus-manage Run Supportability"])
+
+_RouteResponses = dict[int | str, dict[str, Any]]
+
+_POLICY_RESOLUTION_DESCRIPTION = (
+    "Returns the effective discretionary mandate policy-pack resolution using configured "
+    "precedence: request-scoped `X-Policy-Pack-Id`, tenant default "
+    "`X-Tenant-Policy-Pack-Id` or tenant resolver lookup by `X-Tenant-Id`, then global default. "
+    "Use this read-only endpoint for supportability and integration diagnostics before invoking "
+    "rebalance execution. Supply resolution context via the documented headers rather than query "
+    "parameters; unsupported query parameters are rejected."
+)
+
+_POLICY_CATALOG_DESCRIPTION = (
+    "Returns the configured discretionary mandate policy-pack catalog from the governed "
+    "PostgreSQL policy-pack repository plus the effective selection context for optional request "
+    "and tenant headers. Use this endpoint when operators or downstream integration checks need "
+    "to confirm which policy packs are available and whether the selected policy pack is present. "
+    "Supply resolution context via the documented headers rather than query parameters; "
+    "unsupported query parameters are rejected."
+)
+
+_POLICY_RESOLUTION_RESPONSES: _RouteResponses = {
+    200: {"description": "Effective policy-pack selection and resolution source."},
+    422: {"description": "Unsupported query parameters were supplied."},
+}
+
+_POLICY_CATALOG_RESPONSES: _RouteResponses = {
+    200: {"description": "Policy-pack catalog with effective selection context."},
+    503: {"description": "Policy-pack repository is unavailable or not configured."},
+    422: {"description": "Unsupported query parameters were supplied."},
+}
 
 
 def _reject_unexpected_query_params(
@@ -157,17 +188,8 @@ def reset_dpm_policy_pack_repository_for_tests() -> None:
     response_model=DpmEffectivePolicyPackResolution,
     status_code=status.HTTP_200_OK,
     summary="Resolve Effective lotus-manage Policy Pack",
-    description=(
-        "Returns the effective lotus-manage policy-pack resolution using configured precedence "
-        "(request, tenant default, global default). This endpoint is read-only and "
-        "intended for supportability and integration diagnostics. Supply resolution context via "
-        "the documented headers rather than query parameters."
-    ),
-    responses={
-        422: {
-            "description": "Unsupported query parameters were supplied.",
-        },
-    },
+    description=_POLICY_RESOLUTION_DESCRIPTION,
+    responses=_POLICY_RESOLUTION_RESPONSES,
 )
 def get_effective_dpm_policy_pack(
     request: Request,
@@ -206,16 +228,8 @@ def get_effective_dpm_policy_pack(
     response_model=DpmPolicyPackCatalogResponse,
     status_code=status.HTTP_200_OK,
     summary="List lotus-manage Policy Pack Catalog",
-    description=(
-        "Returns the currently configured lotus-manage policy-pack catalog and the effective "
-        "selection context for optional request and tenant headers. Supply resolution context via "
-        "the documented headers rather than query parameters."
-    ),
-    responses={
-        422: {
-            "description": "Unsupported query parameters were supplied.",
-        },
-    },
+    description=_POLICY_CATALOG_DESCRIPTION,
+    responses=_POLICY_CATALOG_RESPONSES,
 )
 def get_dpm_policy_pack_catalog(
     request: Request,

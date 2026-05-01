@@ -183,10 +183,16 @@ Implementation scope:
 
 ### `GET /rebalance/policies/effective`
 - Purpose: resolve and return effective lotus-manage policy-pack selection for integration/support diagnostics.
+- Resolution precedence:
+  - request-scoped `X-Policy-Pack-Id`
+  - tenant default `X-Tenant-Policy-Pack-Id`
+  - tenant resolver lookup by `X-Tenant-Id`
+  - global default `DPM_DEFAULT_POLICY_PACK_ID`
 - Optional headers:
   - `X-Policy-Pack-Id`
   - `X-Tenant-Policy-Pack-Id`
   - `X-Tenant-Id`
+- Query parameters are not accepted; callers must use headers for resolution context.
 - Output:
   - `enabled`
   - `selected_policy_pack_id`
@@ -194,10 +200,12 @@ Implementation scope:
 
 ### `GET /rebalance/policies/catalog`
 - Purpose: inspect configured policy-pack definitions and effective selection context for supportability.
+- Backend: governed PostgreSQL policy-pack repository.
 - Optional headers:
   - `X-Policy-Pack-Id`
   - `X-Tenant-Policy-Pack-Id`
   - `X-Tenant-Id`
+- Query parameters are not accepted; callers must use headers for resolution context.
 - Output:
   - `enabled`
   - `total`

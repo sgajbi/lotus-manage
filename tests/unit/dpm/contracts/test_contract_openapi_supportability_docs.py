@@ -460,8 +460,18 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert effective_policy["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmEffectivePolicyPackResolution")
-    assert "Supply resolution context via the documented headers" in effective_policy["description"]
-    assert "422" in effective_policy["responses"]
+    assert "precedence" in effective_policy["description"]
+    assert "X-Policy-Pack-Id" in effective_policy["description"]
+    assert "X-Tenant-Policy-Pack-Id" in effective_policy["description"]
+    assert "X-Tenant-Id" in effective_policy["description"]
+    assert "before invoking rebalance execution" in effective_policy["description"]
+    assert "unsupported query parameters are rejected" in effective_policy["description"]
+    assert effective_policy["responses"]["200"]["description"] == (
+        "Effective policy-pack selection and resolution source."
+    )
+    assert effective_policy["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
     policy_params = {param["name"] for param in effective_policy["parameters"]}
     assert "x-policy-pack-id" in policy_params
     assert "x-tenant-policy-pack-id" in policy_params
@@ -472,8 +482,18 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert policy_catalog["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackCatalogResponse")
-    assert "Supply resolution context via the documented headers" in policy_catalog["description"]
-    assert "422" in policy_catalog["responses"]
+    assert "PostgreSQL policy-pack repository" in policy_catalog["description"]
+    assert "selected policy pack is present" in policy_catalog["description"]
+    assert "unsupported query parameters are rejected" in policy_catalog["description"]
+    assert policy_catalog["responses"]["200"]["description"] == (
+        "Policy-pack catalog with effective selection context."
+    )
+    assert policy_catalog["responses"]["503"]["description"] == (
+        "Policy-pack repository is unavailable or not configured."
+    )
+    assert policy_catalog["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
     policy_catalog_params = {param["name"] for param in policy_catalog["parameters"]}
     assert "x-policy-pack-id" in policy_catalog_params
     assert "x-tenant-policy-pack-id" in policy_catalog_params

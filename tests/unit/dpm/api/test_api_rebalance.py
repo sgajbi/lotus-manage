@@ -1616,17 +1616,19 @@ def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatc
 
 
 def test_policy_pack_supportability_routes_reject_unexpected_query_params(client):
-    effective = client.get("/api/v1/rebalance/policies/effective?tenant_id=tenant_001")
-    assert effective.status_code == 422
-    assert effective.json()["detail"] == (
-        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
-    )
+    unsupported_urls = {
+        "/api/v1/rebalance/policies/effective?tenant_id=tenant_001": "tenant_id",
+        "/api/v1/rebalance/policies/effective?policyPackId=pack_001": "policyPackId",
+        "/api/v1/rebalance/policies/catalog?tenant_id=tenant_001": "tenant_id",
+        "/api/v1/rebalance/policies/catalog?include_disabled=true": "include_disabled",
+    }
 
-    catalog = client.get("/api/v1/rebalance/policies/catalog?tenant_id=tenant_001")
-    assert catalog.status_code == 422
-    assert catalog.json()["detail"] == (
-        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
-    )
+    for url, unsupported_param in unsupported_urls.items():
+        response = client.get(url)
+        assert response.status_code == 422
+        assert response.json()["detail"] == (
+            f"UNSUPPORTED_QUERY_PARAMETER: {unsupported_param} not supported for this endpoint"
+        )
 
 
 def test_lineage_supportability_route_rejects_unexpected_query_params(client, monkeypatch):
@@ -1719,6 +1721,11 @@ def test_policy_pack_catalog_endpoint_returns_resolution_and_items(client, monke
     assert [item["policy_pack_id"] for item in body["items"]] == ["dpm_request_pack", "global_pack"]
     assert body["items"][0]["version"] == "2"
     assert body["items"][0]["turnover_policy"]["max_turnover_pct"] == "0.03"
+    assert body["items"][0]["tax_policy"]["enable_tax_awareness"] is None
+    assert body["items"][0]["settlement_policy"]["settlement_horizon_days"] is None
+    assert body["items"][0]["constraint_policy"]["group_constraints"] == {}
+    assert body["items"][0]["workflow_policy"]["enable_workflow_gates"] is None
+    assert body["items"][0]["idempotency_policy"]["replay_enabled"] is None
 
 
 def test_policy_pack_catalog_endpoint_uses_tenant_resolver(client, monkeypatch):
