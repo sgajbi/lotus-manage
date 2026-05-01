@@ -216,16 +216,28 @@ Implementation scope:
 
 ### `GET /rebalance/policies/catalog/{policy_pack_id}`
 - Purpose: retrieve one policy-pack definition by identifier.
+- Backend: governed PostgreSQL policy-pack repository.
+- Query parameters are not accepted.
+- Missing identifiers return `DPM_POLICY_PACK_NOT_FOUND`.
+- Use this read route when a caller already has a policy-pack id and needs the exact policy controls
+  that would be applied by execution.
 
 ### `PUT /rebalance/policies/catalog/{policy_pack_id}`
 - Purpose: create or update one policy-pack definition by identifier.
 - Feature flag:
   - `DPM_POLICY_PACK_ADMIN_APIS_ENABLED` (default `false`)
+- Backend: governed PostgreSQL policy-pack repository.
+- The path `policy_pack_id` is authoritative; the request body does not carry a second identifier.
+- Query parameters are not accepted.
+- Disabled admin APIs return `DPM_POLICY_PACK_ADMIN_APIS_DISABLED`.
 
 ### `DELETE /rebalance/policies/catalog/{policy_pack_id}`
 - Purpose: delete one policy-pack definition by identifier.
 - Feature flag:
   - `DPM_POLICY_PACK_ADMIN_APIS_ENABLED` (default `false`)
+- Backend: governed PostgreSQL policy-pack repository.
+- Query parameters are not accepted.
+- Missing identifiers return `DPM_POLICY_PACK_NOT_FOUND`.
 
 Swagger contract quality:
 - Policy-pack and supportability DTOs are contract-tested for field-level `description` and `examples`.

@@ -506,6 +506,20 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert policy_catalog_get_one["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackDefinition")
+    assert (
+        "turnover, tax, settlement, constraint, workflow, and idempotency controls"
+        in (policy_catalog_get_one["description"])
+    )
+    assert "unsupported query parameters are rejected" in policy_catalog_get_one["description"]
+    assert policy_catalog_get_one["responses"]["404"]["description"] == (
+        "Policy-pack identifier was not found."
+    )
+    assert policy_catalog_get_one["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    assert policy_catalog_get_one["responses"]["503"]["description"] == (
+        "Policy-pack repository is unavailable or not configured."
+    )
 
     policy_catalog_upsert = openapi["paths"]["/api/v1/rebalance/policies/catalog/{policy_pack_id}"][
         "put"
@@ -516,12 +530,36 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert policy_catalog_upsert["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmPolicyPackMutationResponse")
+    assert "operator/admin control-plane endpoint" in policy_catalog_upsert["description"]
+    assert "DPM_POLICY_PACK_ADMIN_APIS_ENABLED=true" in policy_catalog_upsert["description"]
+    assert "path identifier is authoritative" in policy_catalog_upsert["description"]
+    assert policy_catalog_upsert["responses"]["404"]["description"] == (
+        "Policy-pack admin APIs are disabled for this runtime."
+    )
+    assert policy_catalog_upsert["responses"]["422"]["description"] == (
+        "Request body validation failed or unsupported query parameters were supplied."
+    )
+    assert policy_catalog_upsert["responses"]["503"]["description"] == (
+        "Policy-pack repository is unavailable or not configured."
+    )
 
     policy_catalog_delete = openapi["paths"]["/api/v1/rebalance/policies/catalog/{policy_pack_id}"][
         "delete"
     ]
     assert "requestBody" not in policy_catalog_delete
     assert "204" in policy_catalog_delete["responses"]
+    assert "operator/admin control-plane endpoint" in policy_catalog_delete["description"]
+    assert "obsolete mandate policy packs" in policy_catalog_delete["description"]
+    assert "advisory proposal lifecycle workflows" in policy_catalog_delete["description"]
+    assert policy_catalog_delete["responses"]["404"]["description"] == (
+        "Policy-pack admin APIs are disabled or the policy pack was not found."
+    )
+    assert policy_catalog_delete["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    assert policy_catalog_delete["responses"]["503"]["description"] == (
+        "Policy-pack repository is unavailable or not configured."
+    )
 
     list_operations = openapi["paths"]["/api/v1/rebalance/operations"]["get"]
     assert list_operations["responses"]["200"]["content"]["application/json"]["schema"][

@@ -163,6 +163,73 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_effective_policy
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: policy-pack catalog administration
+
+Routes:
+
+- `GET /rebalance/policies/catalog/{policy_pack_id}`
+- `PUT /rebalance/policies/catalog/{policy_pack_id}`
+- `DELETE /rebalance/policies/catalog/{policy_pack_id}`
+
+Purpose:
+
+Governed operator/admin control-plane access to individual discretionary mandate policy-pack
+definitions. The read route supports exact policy inspection by id. Mutation routes are disabled by
+default and must be enabled explicitly with `DPM_POLICY_PACK_ADMIN_APIS_ENABLED=true`.
+
+Functional behavior:
+
+- `GET` retrieves one policy-pack definition by id and returns `DPM_POLICY_PACK_NOT_FOUND` for
+  missing identifiers.
+- `PUT` creates or updates the policy-pack definition under the path identifier; the request body
+  contains version and policy controls, not a competing identifier.
+- `DELETE` removes one existing policy pack and returns `DPM_POLICY_PACK_NOT_FOUND` for missing
+  identifiers.
+- `PUT` and `DELETE` return `DPM_POLICY_PACK_ADMIN_APIS_DISABLED` when admin APIs are disabled.
+- Query parameters are not accepted on any route in this family; stale aliases such as `dry_run`,
+  `force`, or `include_disabled` return `422`.
+- Policy payload coverage includes turnover, tax, settlement, constraint, workflow, and idempotency
+  controls.
+
+```mermaid
+flowchart LR
+    Operator[Governed operator or admin automation] --> Read[GET catalog/{policy_pack_id}]
+    Operator --> Upsert[PUT catalog/{policy_pack_id}]
+    Operator --> Delete[DELETE catalog/{policy_pack_id}]
+    Upsert --> Flag{Admin APIs enabled?}
+    Delete --> Flag
+    Flag -->|false| Disabled[DPM_POLICY_PACK_ADMIN_APIS_DISABLED]
+    Flag -->|true| Repo[(PostgreSQL policy-pack repository)]
+    Read --> Repo
+    Repo --> Definition[Policy-pack definition]
+    Repo --> Missing[DPM_POLICY_PACK_NOT_FOUND]
+```
+
+Non-functional posture:
+
+- All routes are local repository operations against the governed PostgreSQL policy-pack store and
+  perform no upstream calls to `lotus-core`, `lotus-advise`, Gateway, or Workbench.
+- The mutation surface is explicitly feature-flagged to keep normal runtime read-only unless
+  policy governance operations are required.
+- The path-only identity model avoids conflicting identifiers and keeps mutation semantics
+  deterministic.
+- The endpoints are mandate-governance controls; they are not advisory proposal lifecycle APIs.
+
+Upstream and downstream posture:
+
+- Policy-pack definitions are locally governed management controls. `lotus-core` remains
+  authoritative for portfolio and mandate source data, not this policy catalog.
+- `lotus-gateway` is the strategic downstream boundary for any future operator surface.
+- No duplicate strategic source-service route was found in `lotus-manage`; downstream systems
+  should not call these admin routes directly from Workbench.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py tests/unit/dpm/supportability/test_dpm_policy_pack_postgres_repository.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: run inventory
 
 Route:
