@@ -151,3 +151,65 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: synchronous what-if analysis
+
+Route:
+
+- `POST /rebalance/analyze`
+
+Purpose:
+
+Runs a bounded set of named discretionary mandate what-if scenarios against shared inline snapshots
+and returns the full batch result synchronously. Use this endpoint when the caller needs immediate
+scenario comparison. Use `/rebalance/analyze/async` for polling-based orchestration or
+accept-now/execute-later flows.
+
+Request surface:
+
+- Body: shared `portfolio_snapshot`, `market_data_snapshot`, `model_portfolio`, `shelf_entries`,
+  plus a named `scenarios` map.
+- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
+  `X-Tenant-Id`.
+- Scenario names must match `[a-z0-9_\-]{1,64}`.
+- Maximum scenario count is 20.
+
+Functional coverage:
+
+- successful multi-scenario batch with deterministic scenario-key ordering,
+- explicit and fallback snapshot identifiers,
+- explicit and generated scenario correlation ids,
+- request-level and tenant-default policy-pack resolution,
+- invalid scenario option isolation,
+- runtime failure isolation,
+- partial-failure warning publication,
+- maximum scenario boundary,
+- comparison metrics keyed only to successful scenarios,
+- gross turnover metric reconciliation to returned `SECURITY_TRADE` intents,
+- mixed `READY`, `PENDING_REVIEW`, and `BLOCKED` scenario outcomes.
+
+Non-functional posture:
+
+- Synchronous analysis is bounded by the 20-scenario request limit.
+- Scenarios execute in deterministic sorted-key order for reproducible supportability and tests.
+- One scenario failure does not discard successful scenario evidence.
+- For latency-sensitive or deferred batches, callers should use `/rebalance/analyze/async`.
+
+Upstream integration posture:
+
+The endpoint accepts inline source-governed snapshots and does not perform outbound source-data reads.
+Upstream data authority remains outside `lotus-manage`; lineage and snapshot identifiers must be
+preserved by callers. Policy-pack resolution is local to `lotus-manage`.
+
+Downstream consumers:
+
+- No direct strategic Gateway or Workbench consumer was found for `/rebalance/analyze`.
+- Future Gateway/Workbench mandate-analysis integration should capability-gate this endpoint and
+  preserve scenario names, correlation ids, and policy-pack context.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```

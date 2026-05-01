@@ -4,12 +4,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.simulation_examples import (
+    ANALYZE_RESPONSE_EXAMPLE,
     SIMULATE_BLOCKED_EXAMPLE,
     SIMULATE_PENDING_EXAMPLE,
     SIMULATE_READY_EXAMPLE,
 )
 from src.api.main import app
-from src.core.models import RebalanceResult
+from src.core.models import BatchRebalanceResult, RebalanceResult
 
 
 def _strict_openapi_validation_enabled() -> bool:
@@ -341,6 +342,27 @@ def test_simulate_response_examples_are_complete_rebalance_results(example):
     assert result.diagnostics.data_quality
     assert result.gate_decision is not None
     assert result.lineage.request_hash.startswith("sha256:")
+
+
+def test_analyze_response_example_is_complete_batch_result():
+    _guard_strict_validation()
+
+    result = BatchRebalanceResult.model_validate(ANALYZE_RESPONSE_EXAMPLE["value"])
+
+    assert result.batch_run_id.startswith("batch_")
+    assert set(result.results.keys()) == {"baseline"}
+    assert set(result.comparison_metrics.keys()) == {"baseline"}
+    assert set(result.failed_scenarios.keys()) == {"invalid_case"}
+    assert "PARTIAL_BATCH_FAILURE" in result.warnings
+    baseline = result.results["baseline"]
+    metric = result.comparison_metrics["baseline"]
+    expected_turnover = sum(
+        intent.notional_base.amount
+        for intent in baseline.intents
+        if intent.intent_type == "SECURITY_TRADE" and intent.notional_base is not None
+    )
+    assert metric.security_intent_count == 1
+    assert metric.gross_turnover_notional_base.amount == expected_turnover
 
 
 def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():

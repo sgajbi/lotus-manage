@@ -984,15 +984,26 @@ class BatchRebalanceRequest(BaseModel):
     }
 
     portfolio_snapshot: PortfolioSnapshot = Field(
-        description="Shared portfolio snapshot for all scenarios."
+        description="Shared portfolio snapshot for all scenarios.",
+        examples=[{"portfolio_id": "pf_batch", "base_currency": "USD"}],
     )
     market_data_snapshot: MarketDataSnapshot = Field(
-        description="Shared market-data snapshot for all scenarios."
+        description="Shared market-data snapshot for all scenarios.",
+        examples=[{"prices": [{"instrument_id": "EQ_1", "price": "100", "currency": "USD"}]}],
     )
-    model_portfolio: ModelPortfolio = Field(description="Shared model targets for all scenarios.")
-    shelf_entries: List[ShelfEntry] = Field(description="Shared shelf metadata for all scenarios.")
+    model_portfolio: ModelPortfolio = Field(
+        description="Shared model targets for all scenarios.",
+        examples=[{"targets": [{"instrument_id": "EQ_1", "weight": "1.0"}]}],
+    )
+    shelf_entries: List[ShelfEntry] = Field(
+        description="Shared shelf metadata for all scenarios.",
+        examples=[[{"instrument_id": "EQ_1", "status": "APPROVED"}]],
+    )
     scenarios: Dict[str, SimulationScenario] = Field(
-        description="Named scenario map for batch analysis."
+        description="Named scenario map for batch analysis.",
+        examples=[
+            {"baseline": {"options": {}}, "turnover_cap": {"options": {"max_turnover_pct": "0.1"}}}
+        ],
     )
 
     @field_validator("scenarios")
@@ -1014,28 +1025,56 @@ class BatchRebalanceRequest(BaseModel):
 
 class BatchScenarioMetric(BaseModel):
     status: Literal["READY", "BLOCKED", "PENDING_REVIEW"] = Field(
-        description="Scenario run status."
+        description="Scenario run status.",
+        examples=["READY"],
     )
-    security_intent_count: int = Field(description="Count of SECURITY_TRADE intents.")
+    security_intent_count: int = Field(
+        description="Count of SECURITY_TRADE intents.",
+        examples=[1],
+    )
     gross_turnover_notional_base: Money = Field(
-        description="Gross turnover proxy in base currency."
+        description="Gross turnover proxy in base currency.",
+        examples=[{"amount": "4500.00", "currency": "USD"}],
     )
 
 
 class BatchRebalanceResult(BaseModel):
-    batch_run_id: str = Field(description="Batch execution identifier.")
-    run_at_utc: str = Field(description="Batch execution timestamp (UTC ISO8601).")
-    base_snapshot_ids: Dict[str, str] = Field(description="Resolved base snapshot identifiers.")
+    batch_run_id: str = Field(
+        description="Batch execution identifier.", examples=["batch_ab12cd34"]
+    )
+    run_at_utc: str = Field(
+        description="Batch execution timestamp (UTC ISO8601).",
+        examples=["2026-02-18T10:00:00+00:00"],
+    )
+    base_snapshot_ids: Dict[str, str] = Field(
+        description="Resolved base snapshot identifiers.",
+        examples=[{"portfolio_snapshot_id": "pf_batch", "market_data_snapshot_id": "md"}],
+    )
     results: Dict[str, RebalanceResult] = Field(
         default_factory=dict,
         description="Successful scenario results keyed by scenario name.",
+        examples=[{"baseline": {"status": "READY", "rebalance_run_id": "rr_batch_baseline_001"}}],
     )
     comparison_metrics: Dict[str, BatchScenarioMetric] = Field(
         default_factory=dict,
         description="Per-scenario comparison metrics for successful scenarios.",
+        examples=[
+            {
+                "baseline": {
+                    "status": "READY",
+                    "security_intent_count": 1,
+                    "gross_turnover_notional_base": {"amount": "4500.00", "currency": "USD"},
+                }
+            }
+        ],
     )
     failed_scenarios: Dict[str, str] = Field(
         default_factory=dict,
         description="Validation/runtime failures keyed by scenario name.",
+        examples=[{"invalid_case": "INVALID_OPTIONS: validation failed"}],
     )
-    warnings: List[str] = Field(default_factory=list, description="Batch-level warning codes.")
+    warnings: List[str] = Field(
+        default_factory=list,
+        description="Batch-level warning codes.",
+        examples=[["PARTIAL_BATCH_FAILURE"]],
+    )

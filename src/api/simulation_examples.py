@@ -92,6 +92,7 @@ def _simulate_result_example(
     warnings: list[str],
     gate_decision: dict[str, Any],
     request_hash: str,
+    idempotency_key: str | None = "demo-idem-001",
     rule_results: list[dict[str, Any]] | None = None,
     cash_ladder_breaches: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
@@ -141,9 +142,52 @@ def _simulate_result_example(
             "portfolio_snapshot_id": "pf_demo",
             "market_data_snapshot_id": "md_demo",
             "request_hash": request_hash,
-            "idempotency_key": "demo-idem-001",
+            **({"idempotency_key": idempotency_key} if idempotency_key is not None else {}),
         },
     }
+
+
+def _analyze_baseline_result_example() -> dict[str, Any]:
+    result = _simulate_result_example(
+        correlation_id="corr-batch-sync-1:baseline",
+        status="READY",
+        rebalance_run_id="rr_batch_baseline_001",
+        warnings=[],
+        gate_decision=_gate_decision_example(
+            gate="EXECUTION_READY",
+            recommended_next_step="EXECUTE",
+            hard_fail_count=0,
+            soft_fail_count=0,
+        ),
+        request_hash="sha256:batch-baseline",
+        idempotency_key=None,
+    )
+    result["universe"]["universe_id"] = "uni_batch_baseline_001"
+    result["target"]["target_id"] = "target_batch_baseline_001"
+    result["intents"] = [
+        {
+            "intent_type": "SECURITY_TRADE",
+            "intent_id": "oi_batch_001",
+            "instrument_id": "EQ_1",
+            "side": "SELL",
+            "quantity": "45",
+            "notional": {"amount": "4500.00", "currency": "USD"},
+            "notional_base": {"amount": "4500.00", "currency": "USD"},
+            "dependencies": [],
+            "rationale": {
+                "code": "ALIGN_TO_TARGET",
+                "message": "Sell down to model target weight.",
+            },
+            "constraints_applied": [],
+        }
+    ]
+    result["after_simulated"] = _state_example(cash_amount="5500.00")
+    result["lineage"] = {
+        "portfolio_snapshot_id": "pf_batch",
+        "market_data_snapshot_id": "md",
+        "request_hash": "sha256:batch-baseline",
+    }
+    return result
 
 
 SIMULATE_READY_EXAMPLE = {
@@ -248,87 +292,7 @@ ANALYZE_RESPONSE_EXAMPLE = {
         "batch_run_id": "batch_ab12cd34",
         "run_at_utc": "2026-02-18T10:00:00+00:00",
         "base_snapshot_ids": {"portfolio_snapshot_id": "pf_batch", "market_data_snapshot_id": "md"},
-        "results": {
-            "baseline": {
-                "rebalance_run_id": "rr_batch_baseline_001",
-                "correlation_id": "corr-batch-sync-1:baseline",
-                "status": "READY",
-                "before": {
-                    "total_value": {"amount": "11000.00", "currency": "USD"},
-                    "cash_balances": [{"currency": "USD", "amount": "1000.00"}],
-                    "positions": [],
-                    "allocation_by_asset_class": [],
-                    "allocation_by_instrument": [],
-                    "allocation": [],
-                    "allocation_by_attribute": {},
-                },
-                "universe": {
-                    "universe_id": "uni_batch_baseline_001",
-                    "eligible_for_buy": ["EQ_1"],
-                    "eligible_for_sell": ["EQ_1"],
-                    "excluded": [],
-                    "coverage": {"price_coverage_pct": "1.0", "fx_coverage_pct": "1.0"},
-                },
-                "target": {
-                    "target_id": "target_batch_baseline_001",
-                    "strategy": {},
-                    "targets": [],
-                },
-                "intents": [
-                    {
-                        "intent_type": "SECURITY_TRADE",
-                        "intent_id": "oi_batch_001",
-                        "instrument_id": "EQ_1",
-                        "side": "SELL",
-                        "quantity": "45",
-                        "notional": {"amount": "4500.00", "currency": "USD"},
-                        "notional_base": {"amount": "4500.00", "currency": "USD"},
-                        "dependencies": [],
-                        "rationale": {
-                            "code": "ALIGN_TO_TARGET",
-                            "message": "Sell down to model target weight.",
-                        },
-                        "constraints_applied": [],
-                    }
-                ],
-                "after_simulated": {
-                    "total_value": {"amount": "11000.00", "currency": "USD"},
-                    "cash_balances": [{"currency": "USD", "amount": "5500.00"}],
-                    "positions": [],
-                    "allocation_by_asset_class": [],
-                    "allocation_by_instrument": [],
-                    "allocation": [],
-                    "allocation_by_attribute": {},
-                },
-                "reconciliation": {
-                    "before_total_value": {"amount": "11000.00", "currency": "USD"},
-                    "after_total_value": {"amount": "11000.00", "currency": "USD"},
-                    "delta": {"amount": "0.00", "currency": "USD"},
-                    "tolerance": {"amount": "0.01", "currency": "USD"},
-                    "status": "OK",
-                },
-                "rule_results": [],
-                "explanation": {},
-                "diagnostics": {
-                    "warnings": [],
-                    "suppressed_intents": [],
-                    "dropped_intents": [],
-                    "group_constraint_events": [],
-                    "tax_budget_constraint_events": [],
-                    "cash_ladder": [],
-                    "cash_ladder_breaches": [],
-                    "missing_fx_pairs": [],
-                    "funding_plan": [],
-                    "insufficient_cash": [],
-                    "data_quality": {"price_missing": [], "fx_missing": []},
-                },
-                "lineage": {
-                    "portfolio_snapshot_id": "pf_batch",
-                    "market_data_snapshot_id": "md",
-                    "request_hash": "sha256:batch-baseline",
-                },
-            }
-        },
+        "results": {"baseline": _analyze_baseline_result_example()},
         "comparison_metrics": {
             "baseline": {
                 "status": "READY",

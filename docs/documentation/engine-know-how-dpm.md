@@ -63,6 +63,7 @@ Implementation scope:
   - deferred or polling-based orchestration; use `POST /rebalance/analyze/async`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
+- Optional header: `X-Tenant-Policy-Pack-Id` (explicit tenant default when no request pack is supplied)
 - Optional header: `X-Tenant-Id` (used for tenant default policy-pack resolver lookup)
   - Current policy transformations:
     - `max_turnover_pct`
@@ -76,6 +77,10 @@ Implementation scope:
     - `workflow_requires_client_consent`
     - `client_consent_already_obtained`
 - Output: `BatchRebalanceResult` with scenario-level results/metrics/failures.
+- Partial failure behavior:
+  - invalid scenario options are isolated to `failed_scenarios`
+  - runtime failures in one scenario do not suppress successful scenario outputs
+  - `PARTIAL_BATCH_FAILURE` is emitted when any scenario fails
 - Scenario correlation behavior:
   - when `X-Correlation-Id` is provided, each scenario result uses `{header}:{scenario_name}`
   - when omitted, each scenario result uses `{batch_run_id}:{scenario_name}`
