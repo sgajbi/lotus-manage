@@ -623,6 +623,29 @@ Exit evidence:
 4. wiki check passes when wiki source changes,
 5. docs regression tests pass.
 
+Slice 2 implementation evidence captured on 2026-05-01:
+
+1. Added repository-local architecture review controls:
+   - `docs/architecture/README.md`
+   - `docs/architecture/CODEBASE-REVIEW-PLAYBOOK.md`
+   - `docs/architecture/CODEBASE-REVIEW-LEDGER.md`
+2. Recorded cleanup findings in the ledger:
+   - missing durable cleanup review controls fixed;
+   - retired advisory/proposal generated package remnants removed from disk;
+   - duplicate unversioned domain API mounts deferred to Slice 3 because they change runtime
+     endpoint behavior;
+   - advisory vocabulary retained only where it is historical rationale or explicit boundary
+     documentation, with active cleanup deferred to Slice 4.
+3. Tightened `tests/unit/test_documentation_current_state.py` so retired advisory/proposal package
+   namespaces stay absent and the architecture review docs remain present.
+4. Updated the README documentation map to include the architecture review ledger.
+5. Wiki decision: no wiki source change in this sub-slice because the changes are engineering
+   control evidence. Existing wiki source already states the current product/operator boundary.
+6. Validation:
+   - `python -m pytest tests/unit/test_documentation_current_state.py -q`
+   - `python -m pytest tests/unit/test_documentation_current_state.py tests/unit/test_local_docker_runtime_contract.py -q`
+   - `git diff --check`
+
 ### Slice 3: Endpoint Consolidation
 
 1. Remove unversioned domain API router mounts.

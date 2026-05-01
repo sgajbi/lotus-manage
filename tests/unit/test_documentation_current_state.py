@@ -8,6 +8,7 @@ CURRENT_DOC_PATHS = [
     ROOT / "README.md",
     ROOT / "REPOSITORY-ENGINEERING-CONTEXT.md",
     ROOT / "docs" / "documentation",
+    ROOT / "docs" / "architecture",
     ROOT / "docs" / "standards",
     ROOT / "docs" / "demo" / "README.md",
     ROOT / "docs" / "adr" / "README.md",
@@ -71,6 +72,8 @@ def test_removed_dpm_python_compatibility_shims_stay_retired() -> None:
         ROOT / "src" / "api" / "routers" / "dpm_runs_operations_routes.py",
         ROOT / "src" / "api" / "routers" / "dpm_runs_workflow_routes.py",
         ROOT / "src" / "api" / "routers" / "dpm_simulation.py",
+        ROOT / "src" / "core" / "advisory",
+        ROOT / "src" / "core" / "proposals",
         ROOT / "src" / "api" / "services" / "dpm_simulation_service.py",
         ROOT / "src" / "core" / "dpm_engine.py",
         ROOT / "src" / "core" / "engine.py",
@@ -78,6 +81,28 @@ def test_removed_dpm_python_compatibility_shims_stay_retired() -> None:
     unexpected = [str(path.relative_to(ROOT)) for path in retired_paths if path.exists()]
 
     assert unexpected == []
+
+
+def test_architecture_review_control_docs_stay_present() -> None:
+    required_docs = [
+        ROOT / "docs" / "architecture" / "README.md",
+        ROOT / "docs" / "architecture" / "CODEBASE-REVIEW-PLAYBOOK.md",
+        ROOT / "docs" / "architecture" / "CODEBASE-REVIEW-LEDGER.md",
+    ]
+    missing = [str(path.relative_to(ROOT)) for path in required_docs if not path.exists()]
+
+    assert missing == []
+
+    ledger = required_docs[-1].read_text(encoding="utf-8")
+    required_findings = [
+        "RFC36-S2-001",
+        "RFC36-S2-002",
+        "RFC36-S2-003",
+        "RFC36-S2-004",
+    ]
+    missing_findings = [finding for finding in required_findings if finding not in ledger]
+
+    assert missing_findings == []
 
 
 def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:

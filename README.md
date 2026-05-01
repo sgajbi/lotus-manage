@@ -179,6 +179,8 @@ Operationally important truths:
 
 - project overview:
   [docs/documentation/project-overview.md](docs/documentation/project-overview.md)
+- architecture review ledger:
+  [docs/architecture/CODEBASE-REVIEW-LEDGER.md](docs/architecture/CODEBASE-REVIEW-LEDGER.md)
 - operations and CI strategy:
   [docs/operations/development-workflow-and-ci-strategy.md](docs/operations/development-workflow-and-ci-strategy.md)
 - service runbook:
