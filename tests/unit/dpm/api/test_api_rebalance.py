@@ -2740,6 +2740,34 @@ def test_dpm_run_workflow_endpoints_happy_path_and_invalid_transition(client, mo
     assert workflow_decisions_by_correlation_body["run_id"] == run_id
     assert len(workflow_decisions_by_correlation_body["decisions"]) == 4
 
+    unsupported_workflow_queries = [
+        f"/api/v1/rebalance/runs/{run_id}/workflow?include_history=true",
+        "/api/v1/rebalance/runs/by-correlation/corr-workflow-1/workflow?runId=legacy",
+        "/api/v1/rebalance/runs/idempotency/test-key-workflow-1/workflow?history=true",
+        f"/api/v1/rebalance/runs/{run_id}/workflow/history?limit=1",
+        "/api/v1/rebalance/runs/by-correlation/corr-workflow-1/workflow/history?limit=1",
+        "/api/v1/rebalance/runs/idempotency/test-key-workflow-1/workflow/history?limit=1",
+        "/api/v1/rebalance/workflow/decisions/by-correlation/corr-workflow-1?limit=1",
+    ]
+    for url in unsupported_workflow_queries:
+        unsupported = client.get(url)
+        assert unsupported.status_code == 422
+        assert unsupported.json()["detail"].startswith("UNSUPPORTED_QUERY_PARAMETER:")
+
+    unsupported_action_query = client.post(
+        f"/api/v1/rebalance/runs/{run_id}/workflow/actions?dry_run=true",
+        json={
+            "action": "APPROVE",
+            "reason_code": "REVIEW_APPROVED",
+            "comment": None,
+            "actor_id": "reviewer_2",
+        },
+    )
+    assert unsupported_action_query.status_code == 422
+    assert unsupported_action_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: dry_run not supported for this endpoint"
+    )
+
     invalid = client.post(
         f"/api/v1/rebalance/runs/{run_id}/workflow/actions",
         json={

@@ -766,6 +766,10 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_decisions["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmWorkflowDecisionListResponse")
+    assert workflow_decisions["responses"]["200"]["description"] == (
+        "Bounded page of workflow decisions ordered by newest decision timestamp."
+    )
+    assert "404" in workflow_decisions["responses"]
     assert workflow_decisions["responses"]["422"]["description"] == (
         "Unsupported query parameters were supplied."
     )
@@ -792,6 +796,15 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_decisions_by_correlation["responses"]["200"]["content"]["application/json"][
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowHistoryResponse")
+    assert "run resolved by correlation id" in workflow_decisions_by_correlation["description"]
+    assert "does not accept query parameters" in workflow_decisions_by_correlation["description"]
+    assert workflow_decisions_by_correlation["responses"]["200"]["description"] == (
+        "Append-only workflow decision history for the resolved run."
+    )
+    assert "404" in workflow_decisions_by_correlation["responses"]
+    assert workflow_decisions_by_correlation["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     support_bundle_by_idempotency = openapi["paths"][
         "/api/v1/rebalance/runs/idempotency/{idempotency_key}/support-bundle"
@@ -886,6 +899,15 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/DpmRunWorkflowResponse"
     )
+    assert "current review posture" in workflow["description"]
+    assert "does not accept query parameters" in workflow["description"]
+    assert workflow["responses"]["200"]["description"] == (
+        "Current workflow state and latest reviewer decision for the run."
+    )
+    assert "404" in workflow["responses"]
+    assert workflow["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     workflow_by_correlation = openapi["paths"][
         "/api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow"
@@ -893,6 +915,15 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_by_correlation["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunWorkflowResponse")
+    assert "submitted correlation id" in workflow_by_correlation["description"]
+    assert "does not accept query parameters" in workflow_by_correlation["description"]
+    assert workflow_by_correlation["responses"]["200"]["description"] == (
+        "Current workflow state and latest reviewer decision for the run."
+    )
+    assert "404" in workflow_by_correlation["responses"]
+    assert workflow_by_correlation["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     workflow_by_idempotency = openapi["paths"][
         "/api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow"
@@ -900,6 +931,15 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_by_idempotency["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunWorkflowResponse")
+    assert "idempotency-key mapping" in workflow_by_idempotency["description"]
+    assert "does not accept query parameters" in workflow_by_idempotency["description"]
+    assert workflow_by_idempotency["responses"]["200"]["description"] == (
+        "Current workflow state and latest reviewer decision for the run."
+    )
+    assert "404" in workflow_by_idempotency["responses"]
+    assert workflow_by_idempotency["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     workflow_actions = openapi["paths"][
         "/api/v1/rebalance/runs/{rebalance_run_id}/workflow/actions"
@@ -911,6 +951,16 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_actions["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunWorkflowResponse")
+    assert "Supply the reviewer action in the request body" in workflow_actions["description"]
+    assert "does not accept query parameters" in workflow_actions["description"]
+    assert workflow_actions["responses"]["200"]["description"] == (
+        "Updated workflow state after applying the reviewer action."
+    )
+    assert "404" in workflow_actions["responses"]
+    assert "409" in workflow_actions["responses"]
+    assert workflow_actions["responses"]["422"]["description"] == (
+        "Invalid action payload or unsupported query parameters were supplied."
+    )
 
     workflow_actions_by_correlation = openapi["paths"][
         "/api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow/actions"
@@ -921,6 +971,16 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_actions_by_correlation["responses"]["200"]["content"]["application/json"][
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowResponse")
+    assert "submitted correlation id" in workflow_actions_by_correlation["description"]
+    assert "does not accept query parameters" in workflow_actions_by_correlation["description"]
+    assert workflow_actions_by_correlation["responses"]["200"]["description"] == (
+        "Updated workflow state after applying the reviewer action."
+    )
+    assert "404" in workflow_actions_by_correlation["responses"]
+    assert "409" in workflow_actions_by_correlation["responses"]
+    assert workflow_actions_by_correlation["responses"]["422"]["description"] == (
+        "Invalid action payload or unsupported query parameters were supplied."
+    )
 
     workflow_actions_by_idempotency = openapi["paths"][
         "/api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/actions"
@@ -931,6 +991,16 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_actions_by_idempotency["responses"]["200"]["content"]["application/json"][
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowResponse")
+    assert "idempotency-key mapping" in workflow_actions_by_idempotency["description"]
+    assert "does not accept query parameters" in workflow_actions_by_idempotency["description"]
+    assert workflow_actions_by_idempotency["responses"]["200"]["description"] == (
+        "Updated workflow state after applying the reviewer action."
+    )
+    assert "404" in workflow_actions_by_idempotency["responses"]
+    assert "409" in workflow_actions_by_idempotency["responses"]
+    assert workflow_actions_by_idempotency["responses"]["422"]["description"] == (
+        "Invalid action payload or unsupported query parameters were supplied."
+    )
 
     workflow_history = openapi["paths"][
         "/api/v1/rebalance/runs/{rebalance_run_id}/workflow/history"
@@ -938,6 +1008,15 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_history["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunWorkflowHistoryResponse")
+    assert "review reconstruction" in workflow_history["description"]
+    assert "does not accept query parameters" in workflow_history["description"]
+    assert workflow_history["responses"]["200"]["description"] == (
+        "Append-only workflow decision history for the resolved run."
+    )
+    assert "404" in workflow_history["responses"]
+    assert workflow_history["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     workflow_history_by_correlation = openapi["paths"][
         "/api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow/history"
@@ -945,6 +1024,15 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_history_by_correlation["responses"]["200"]["content"]["application/json"][
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowHistoryResponse")
+    assert "submitted correlation id" in workflow_history_by_correlation["description"]
+    assert "does not accept query parameters" in workflow_history_by_correlation["description"]
+    assert workflow_history_by_correlation["responses"]["200"]["description"] == (
+        "Append-only workflow decision history for the resolved run."
+    )
+    assert "404" in workflow_history_by_correlation["responses"]
+    assert workflow_history_by_correlation["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     workflow_history_by_idempotency = openapi["paths"][
         "/api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/history"
@@ -952,3 +1040,12 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_history_by_idempotency["responses"]["200"]["content"]["application/json"][
         "schema"
     ]["$ref"].endswith("/DpmRunWorkflowHistoryResponse")
+    assert "idempotency-key mapping" in workflow_history_by_idempotency["description"]
+    assert "does not accept query parameters" in workflow_history_by_idempotency["description"]
+    assert workflow_history_by_idempotency["responses"]["200"]["description"] == (
+        "Append-only workflow decision history for the resolved run."
+    )
+    assert "404" in workflow_history_by_idempotency["responses"]
+    assert workflow_history_by_idempotency["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )

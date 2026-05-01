@@ -529,6 +529,104 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_idempotency_
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: workflow review supportability
+
+Routes:
+
+- `GET /rebalance/runs/{rebalance_run_id}/workflow`
+- `GET /rebalance/runs/by-correlation/{correlation_id}/workflow`
+- `GET /rebalance/runs/idempotency/{idempotency_key}/workflow`
+- `POST /rebalance/runs/{rebalance_run_id}/workflow/actions`
+- `POST /rebalance/runs/by-correlation/{correlation_id}/workflow/actions`
+- `POST /rebalance/runs/idempotency/{idempotency_key}/workflow/actions`
+- `GET /rebalance/runs/{rebalance_run_id}/workflow/history`
+- `GET /rebalance/runs/by-correlation/{correlation_id}/workflow/history`
+- `GET /rebalance/runs/idempotency/{idempotency_key}/workflow/history`
+- `GET /rebalance/workflow/decisions`
+- `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}`
+
+Purpose:
+
+Provides the discretionary mandate review-control layer for rebalance runs that require human
+review before execution. Workflow supportability is deliberately management-side: it captures
+review posture, reviewer actions, reason codes, comments, actors, decision timestamps, and action
+correlation ids. It is not an advisory proposal lifecycle and must not be used for advisor-led
+client recommendation consent flows; those remain in `lotus-advise`.
+
+Functional behavior:
+
+- Workflow state routes return current run status, workflow status, review-required flag, and latest
+  decision when present.
+- Workflow action routes accept only `APPROVE`, `REJECT`, or `REQUEST_CHANGES` plus uppercase
+  `reason_code`, optional `comment`, required `actor_id`, and optional `X-Correlation-Id`.
+- Workflow history routes return append-only decisions in chronological order for the resolved run.
+- The global decision list supports bounded search by `rebalance_run_id`, `action`, `actor_id`,
+  `reason_code`, `decided_from`, `decided_to`, `limit`, and `cursor`.
+- Missing run handles return `DPM_RUN_NOT_FOUND`; missing idempotency handles return
+  `DPM_IDEMPOTENCY_KEY_NOT_FOUND`.
+- Disabled workflow APIs return `DPM_WORKFLOW_DISABLED`.
+- Invalid transitions return `409` with governed workflow transition details.
+- Point lookup, history, and action routes reject unsupported query parameters with `422`.
+
+```mermaid
+flowchart TD
+    Run[Rebalance run] --> Gate{Run status requires review?}
+    Gate -->|No| Ready[No workflow action allowed]
+    Gate -->|Yes| Pending[PENDING_REVIEW]
+    Pending --> RequestChanges[REQUEST_CHANGES]
+    RequestChanges --> Pending
+    Pending --> Approve[APPROVE]
+    Pending --> Reject[REJECT]
+    Approve --> Approved[APPROVED]
+    Reject --> Rejected[REJECTED]
+    Pending --> History[(Append-only workflow decisions)]
+    RequestChanges --> History
+    Approve --> History
+    Reject --> History
+    History --> List[GET /rebalance/workflow/decisions]
+```
+
+Non-functional posture:
+
+- Workflow routes are local supportability reads or writes over the configured repository backend.
+- State and history reads do not call upstream `lotus-core`, `lotus-advise`, Gateway, Workbench, or
+  market-data services.
+- Workflow decision list is page-bounded with a maximum `limit` of 200 and uses explicit canonical
+  filters.
+- The state/action/history routes are low-latency point operations keyed by run id, correlation id,
+  or idempotency key.
+- The feature gate keeps review-control internals disabled unless the management workflow is
+  intentionally enabled for the runtime.
+
+Upstream integration posture:
+
+Workflow decisions are derived from `lotus-manage` run status and local reviewer actions. They do
+not source new portfolio data. The original execution run still carries caller-supplied portfolio,
+model, market, and policy context; future stateful source resolution remains governed by the
+`lotus-core` integration design.
+
+Downstream consumers:
+
+- `lotus-gateway` is the strategic downstream boundary if workflow posture becomes product-facing.
+- Workbench should consume workflow posture through Gateway only, not direct source-service calls.
+- No duplicate strategic route was found in `lotus-manage`; workflow history and global decision
+  list are complementary because one is run-scoped and the other is filter/search oriented.
+
+Client-demo and operations value:
+
+- Business users can describe this as discretionary mandate control evidence: the platform can show
+  which rebalance runs required review, who acted, why, when, and under which trace id.
+- Operations can use it to reconstruct review events without database access.
+- Sales and client-pitch material should position this as governance and auditability for managed
+  portfolio operations, not as an advisory recommendation workflow.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_workflow_endpoints_happy_path_and_invalid_transition tests/unit/dpm/api/test_api_rebalance.py::test_dpm_workflow_decision_list_endpoint_filters_and_cursor tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_workflow_endpoints_disabled_and_not_required_behavior tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: single rebalance simulation
 
 Route:

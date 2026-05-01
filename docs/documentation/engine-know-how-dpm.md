@@ -351,30 +351,44 @@ Swagger contract quality:
 
 ### `GET /rebalance/runs/{rebalance_run_id}/workflow`
 - Purpose: retrieve workflow gate status and latest reviewer decision for a run.
+- Enablement: `DPM_WORKFLOW_ENABLED=true`.
+- Does not accept query parameters; use workflow history when the append-only decision trail is
+  required.
 
 ### `GET /rebalance/runs/by-correlation/{correlation_id}/workflow`
 - Purpose: retrieve workflow gate status when only correlation id is known.
+- Does not accept query parameters.
 
 ### `GET /rebalance/runs/idempotency/{idempotency_key}/workflow`
 - Purpose: retrieve workflow gate status when only idempotency key is known.
+- Does not accept query parameters.
 
 ### `POST /rebalance/runs/{rebalance_run_id}/workflow/actions`
 - Purpose: apply one workflow action (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) with actor/reason trace.
+- Body: `action`, `reason_code`, optional `comment`, and `actor_id`.
+- Optional header: `X-Correlation-Id` for action tracing.
+- Does not accept query parameters.
 
 ### `POST /rebalance/runs/by-correlation/{correlation_id}/workflow/actions`
 - Purpose: apply one workflow action when only run correlation id is known.
+- Does not accept query parameters.
 
 ### `POST /rebalance/runs/idempotency/{idempotency_key}/workflow/actions`
 - Purpose: apply one workflow action when only idempotency key is known.
+- Does not accept query parameters.
 
 ### `GET /rebalance/runs/{rebalance_run_id}/workflow/history`
 - Purpose: retrieve append-only workflow decision history for audit and investigation.
+- Does not accept query parameters; use `/rebalance/workflow/decisions` for filtered decision
+  search.
 
 ### `GET /rebalance/runs/by-correlation/{correlation_id}/workflow/history`
 - Purpose: retrieve workflow decision history when only correlation id is known.
+- Does not accept query parameters.
 
 ### `GET /rebalance/runs/idempotency/{idempotency_key}/workflow/history`
 - Purpose: retrieve workflow decision history when only idempotency key is known.
+- Does not accept query parameters.
 
 ### `GET /rebalance/workflow/decisions`
 - Purpose: list workflow decisions across runs for supportability investigations.
