@@ -13,6 +13,7 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
+from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
@@ -304,10 +305,24 @@ class PostgresDpmRunRepository:
         ]
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        self._upsert_operation(operation)
+        try:
+            self._upsert_operation(operation)
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                raise DpmRunRepositoryConflictError(
+                    "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
+                ) from exc
+            raise
 
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        self._upsert_operation(operation)
+        try:
+            self._upsert_operation(operation)
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                raise DpmRunRepositoryConflictError(
+                    "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
+                ) from exc
+            raise
 
     def get_operation(self, *, operation_id: str) -> Optional[DpmAsyncOperationRecord]:
         query = """
@@ -851,6 +866,10 @@ def _import_psycopg() -> tuple[Any, Any]:
     from psycopg.rows import dict_row
 
     return psycopg, dict_row
+
+
+def _is_unique_violation(exc: Exception) -> bool:
+    return exc.__class__.__name__ == "UniqueViolation"
 
 
 def _json_dump(value: dict[str, Any]) -> str:

@@ -12,6 +12,7 @@ from src.core.rebalance_runs.models import (
     DpmRunRecord,
     DpmRunWorkflowDecisionRecord,
 )
+from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
 
 
@@ -225,6 +226,43 @@ def test_repository_async_operations_and_ttl_contract(repository):
     )
     assert removed == 1
     assert repository.get_operation(operation_id="dop_repo_1") is None
+
+
+def test_repository_rejects_duplicate_async_operation_correlation(repository):
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    repository.create_operation(
+        DpmAsyncOperationRecord(
+            operation_id="dop_repo_conflict_1",
+            operation_type="ANALYZE_SCENARIOS",
+            status="PENDING",
+            correlation_id="corr_repo_conflict",
+            created_at=now,
+            started_at=None,
+            finished_at=None,
+            result_json=None,
+            error_json=None,
+            request_json={"scenarios": {"baseline": {"options": {}}}},
+        )
+    )
+
+    with pytest.raises(
+        DpmRunRepositoryConflictError,
+        match="DPM_ASYNC_OPERATION_CORRELATION_CONFLICT",
+    ):
+        repository.create_operation(
+            DpmAsyncOperationRecord(
+                operation_id="dop_repo_conflict_2",
+                operation_type="ANALYZE_SCENARIOS",
+                status="PENDING",
+                correlation_id="corr_repo_conflict",
+                created_at=now,
+                started_at=None,
+                finished_at=None,
+                result_json=None,
+                error_json=None,
+                request_json={"scenarios": {"baseline": {"options": {}}}},
+            )
+        )
 
 
 def test_repository_list_runs_request_hash_filter_contract(repository):

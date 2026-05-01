@@ -37,7 +37,7 @@ from src.core.rebalance_runs.models import (
     DpmWorkflowDecisionListResponse,
     DpmWorkflowStatus,
 )
-from src.core.rebalance_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 from src.core.rebalance_runs.serializers import (
     to_async_accepted,
     to_async_status,
@@ -278,7 +278,10 @@ class DpmRunSupportService:
             error_json=None,
             request_json=request_json,
         )
-        self._repository.create_operation(operation)
+        try:
+            self._repository.create_operation(operation)
+        except DpmRunRepositoryConflictError as exc:
+            raise DpmAsyncOperationConflictError(str(exc)) from exc
         self._record_lineage_edge(
             source_entity_id=operation.operation_id,
             edge_type="OPERATION_TO_CORRELATION",

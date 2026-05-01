@@ -15,7 +15,7 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
-from src.core.rebalance_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 
 
 class SqliteDpmRunRepository(DpmRunRepository):
@@ -294,10 +294,16 @@ class SqliteDpmRunRepository(DpmRunRepository):
         ]
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        self._upsert_operation(operation)
+        try:
+            self._upsert_operation(operation)
+        except sqlite3.IntegrityError as exc:
+            raise DpmRunRepositoryConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT") from exc
 
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        self._upsert_operation(operation)
+        try:
+            self._upsert_operation(operation)
+        except sqlite3.IntegrityError as exc:
+            raise DpmRunRepositoryConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT") from exc
 
     def get_operation(self, *, operation_id: str) -> Optional[DpmAsyncOperationRecord]:
         query = """
