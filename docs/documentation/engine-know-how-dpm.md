@@ -308,6 +308,18 @@ Swagger contract quality:
 
 ### `GET /rebalance/idempotency/{idempotency_key}/history`
 - Purpose: retrieve append-only idempotency key mapping history across recorded runs.
+- Enablement: `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`.
+- When to use:
+  - retry support investigations
+  - idempotency conflict reconstruction
+  - audit evidence for replay-disabled runs sharing an idempotency key
+- Response ordering:
+  - `created_at`
+  - `rebalance_run_id`
+  - `correlation_id`
+  - `request_hash`
+- Query parameters are not accepted; unsupported query parameters return `422`.
+- Missing idempotency keys return `404` with `DPM_IDEMPOTENCY_KEY_NOT_FOUND`.
 
 ### `GET /rebalance/runs/{rebalance_run_id}/workflow`
 - Purpose: retrieve workflow gate status and latest reviewer decision for a run.

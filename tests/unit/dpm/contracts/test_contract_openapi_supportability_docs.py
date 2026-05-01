@@ -765,6 +765,20 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert idempotency_history["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunIdempotencyHistoryResponse")
+    assert "DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true" in idempotency_history["description"]
+    assert "does not accept query parameters" in idempotency_history["description"]
+    assert "404" in idempotency_history["responses"]
+    assert idempotency_history["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    idempotency_key_param = next(
+        parameter
+        for parameter in idempotency_history["parameters"]
+        if parameter["name"] == "idempotency_key"
+    )
+    assert idempotency_key_param["in"] == "path"
+    assert idempotency_key_param["required"] is True
+    assert idempotency_key_param["description"]
 
     workflow = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/workflow"]["get"]
     assert workflow["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(

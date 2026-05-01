@@ -424,6 +424,10 @@ def test_dpm_idempotency_history_api_disabled_enabled_and_history_payload(client
     body = history.json()
     assert body["idempotency_key"] == "test-key-history-1"
     assert len(body["history"]) == 2
+    assert [event["correlation_id"] for event in body["history"]] == [
+        "corr-history-1",
+        "corr-history-2",
+    ]
     assert body["history"][0]["rebalance_run_id"] == run_one
     assert body["history"][0]["correlation_id"] == "corr-history-1"
     assert body["history"][0]["request_hash"].startswith("sha256:")
@@ -434,6 +438,14 @@ def test_dpm_idempotency_history_api_disabled_enabled_and_history_payload(client
     missing = client.get("/api/v1/rebalance/idempotency/test-key-history-missing/history")
     assert missing.status_code == 404
     assert missing.json()["detail"] == "DPM_IDEMPOTENCY_KEY_NOT_FOUND"
+
+    unsupported_query = client.get(
+        "/api/v1/rebalance/idempotency/test-key-history-1/history?limit=1"
+    )
+    assert unsupported_query.status_code == 422
+    assert unsupported_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: limit not supported for this endpoint"
+    )
 
 
 def test_dpm_support_apis_not_found_and_disabled(client, monkeypatch):

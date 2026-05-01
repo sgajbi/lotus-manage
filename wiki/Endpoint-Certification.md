@@ -145,6 +145,63 @@ python -m pytest tests/unit/dpm/api/test_dpm_lineage_filters.py tests/unit/dpm/a
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: idempotency history lookup
+
+Route:
+
+- `GET /rebalance/idempotency/{idempotency_key}/history`
+
+Purpose:
+
+Returns append-only idempotency mapping history for one idempotency key, including run ids,
+correlation ids, request hashes, and event timestamps. Use this endpoint for retry-history
+investigations, idempotency conflict reconstruction, and audit evidence when replay-disabled runs
+share an idempotency key. Use `GET /rebalance/runs/idempotency/{idempotency_key}` when only the
+latest mapping is needed.
+
+Request surface:
+
+- Path parameter: `idempotency_key`.
+- Query parameters: none.
+- Response: `DpmRunIdempotencyHistoryResponse`.
+- Feature gate: `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`.
+
+Functional coverage:
+
+- disabled history API returns governed `404`,
+- enabled history API returns append-only events for repeated idempotency keys,
+- event payloads include `rebalance_run_id`, `correlation_id`, `request_hash`, and `created_at`,
+- events are ordered by `created_at`, `rebalance_run_id`, `correlation_id`, and `request_hash`,
+- missing keys return `404` with `DPM_IDEMPOTENCY_KEY_NOT_FOUND`,
+- unsupported query parameters return `422`.
+
+Non-functional posture:
+
+- The endpoint is a bounded supportability read for one idempotency key and does not accept ad hoc
+  filters.
+- The route reads persisted local supportability state only and does not call upstream services.
+- Keeping the history endpoint feature-gated by default avoids exposing retry internals unless an
+  operator or certification workflow explicitly enables it.
+
+Upstream integration posture:
+
+The endpoint reports idempotency events captured when `lotus-manage` records simulation runs. It
+does not source or mutate upstream portfolio, market, model, or policy data.
+
+Downstream consumers:
+
+- Demo and integration tests use this endpoint for supportability proof when the feature gate is
+  enabled.
+- No direct strategic Gateway or Workbench consumer was found for the idempotency history route.
+- Future incident tooling should use this route rather than scraping run lists for retry history.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_idempotency_history_api_disabled_enabled_and_history_payload tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts tests/unit/test_local_docker_runtime_contract.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: single rebalance simulation
 
 Route:
