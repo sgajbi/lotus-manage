@@ -1230,6 +1230,9 @@ Implementation evidence captured on 2026-05-01:
     from component schemas, documented `/metrics` as `text/plain; version=0.0.4`, and added
     contract tests that fail if JSON request/response content lacks examples or metrics regresses
     to JSON.
+17. Strengthened the repo-native OpenAPI quality gate so it also fails when JSON request or
+    response content lacks `example` or `examples`. Added focused gate tests for missing request
+    examples and missing response examples.
 
 ### Slice 11: Implementation Proof
 

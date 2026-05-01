@@ -275,6 +275,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint-certification source updated because Swagger certification
   expectations and monitoring endpoint documentation changed.
 
+## RFC36-S10-005: OpenAPI quality gate did not enforce request/response examples
+
+- Date: 2026-05-02
+- Scope: `scripts/openapi_quality_gate.py`, Swagger example certification tests
+- Finding: after request/response examples were added to the generated OpenAPI schema, the
+  repo-native OpenAPI gate still only enforced endpoint summaries, descriptions, tags, response
+  families, and schema field metadata. A future route could regress request/response examples and
+  still pass the dedicated OpenAPI gate.
+- Action: extended `scripts/openapi_quality_gate.py` to fail when JSON request or response content
+  lacks `example` or `examples`; added focused unit tests for missing request examples and missing
+  response examples.
+- Status: fixed for the repo-native OpenAPI quality gate.
+- Wiki decision: no wiki source change required; this is a validation hardening of the already
+  documented Swagger certification standard.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

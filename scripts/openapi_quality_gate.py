@@ -13,6 +13,7 @@ if PROJECT_ROOT_STR not in sys.path:
 from src.app.main import app  # noqa: E402
 
 ALLOWED_METHODS = {"get", "post", "put", "patch", "delete"}
+JSON_MEDIA_TYPE = "application/json"
 
 
 def _has_success_response(operation: dict[str, Any]) -> bool:
@@ -30,6 +31,10 @@ def _has_error_response(operation: dict[str, Any]) -> bool:
 
 def _is_ref_only(prop_schema: dict[str, Any]) -> bool:
     return set(prop_schema.keys()) == {"$ref"}
+
+
+def _has_content_example(content: dict[str, Any]) -> bool:
+    return bool(content.get("example") or content.get("examples"))
 
 
 def evaluate_schema(schema: dict[str, Any], *, service_name: str) -> list[str]:
@@ -66,6 +71,20 @@ def evaluate_schema(schema: dict[str, Any], *, service_name: str) -> list[str]:
                     missing_docs.append((method_upper, path, "2xx response"))
                 if not _has_error_response(operation):
                     missing_docs.append((method_upper, path, "error response (4xx/5xx/default)"))
+                for status_code, response in operation.get("responses", {}).items():
+                    if not isinstance(response, dict):
+                        continue
+                    json_content = response.get("content", {}).get(JSON_MEDIA_TYPE)
+                    if isinstance(json_content, dict) and not _has_content_example(json_content):
+                        missing_docs.append((method_upper, path, f"{status_code} response example"))
+
+            request_json_content = (
+                operation.get("requestBody", {}).get("content", {}).get(JSON_MEDIA_TYPE)
+            )
+            if isinstance(request_json_content, dict) and not _has_content_example(
+                request_json_content
+            ):
+                missing_docs.append((method_upper, path, "request example"))
 
     schemas = schema.get("components", {}).get("schemas", {})
     if isinstance(schemas, dict):
