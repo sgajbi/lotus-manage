@@ -131,24 +131,8 @@ curl -X GET "http://manage.dev.lotus/rebalance/workflow/decisions?action=APPROVE
 curl -X GET "http://manage.dev.lotus/rebalance/workflow/decisions/by-correlation/<correlation_id>"
 ```
 
-For advisory proposal simulation demos, POST to `/rebalance/proposals/simulate`:
+For full live demo-pack validation:
 ```bash
-curl -X POST "http://manage.dev.lotus/rebalance/proposals/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-01" --data-binary "@docs/demo/10_advisory_proposal_simulate.json"
-```
-
-For advisory proposal artifact demos, POST to `/rebalance/proposals/artifact`:
-```bash
-curl -X POST "http://manage.dev.lotus/rebalance/proposals/artifact" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-artifact-01" --data-binary "@docs/demo/19_advisory_proposal_artifact.json"
-```
-
-For advisory proposal persistence/lifecycle create demo, POST to `/rebalance/proposals`:
-```bash
-curl -X POST "http://manage.dev.lotus/rebalance/proposals" -H "Content-Type: application/json" -H "Idempotency-Key: demo-proposal-persist-01" --data-binary "@docs/demo/20_advisory_proposal_persist_create.json"
-```
-
-For full live demo-pack validation (all scenarios, including lifecycle flow):
-```bash
-python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
 python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
 ```
 
@@ -167,22 +151,6 @@ python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
 | `07_settlement_overdraft_block.json` | **Settlement Overdraft Block** | `BLOCKED` | Settlement-day cash ladder blocks run on projected overdraft. |
 | `08_solver_mode.json` | **Solver Target Generation** | `READY` | Runs Stage-3 target generation in solver mode (`target_method=SOLVER`). |
 | `09_batch_what_if_analysis.json` | **Batch What-If Analysis** | Mixed by scenario | Runs baseline/tax/settlement scenarios in one `/rebalance/analyze` call. |
-| `10_advisory_proposal_simulate.json` | **Advisory Proposal Simulation** | `READY` | Simulates manual cash flows and manual trades in `/rebalance/proposals/simulate`. |
-| `11_advisory_auto_funding_single_ccy.json` | **Advisory Auto-Funding (Single CCY)** | `READY` | Generates funding `FX_SPOT` and links BUY dependency. |
-| `12_advisory_partial_funding.json` | **Advisory Partial Funding** | `READY` | Uses existing foreign cash first, then tops up with FX. |
-| `13_advisory_missing_fx_blocked.json` | **Advisory Missing FX (Blocked)** | `BLOCKED` | Blocks advisory proposal when required FX funding pair is missing. |
-| `14_advisory_drift_asset_class.json` | **Advisory Drift Analytics (Asset Class)** | `READY` | Returns `drift_analysis.asset_class` against inline `reference_model`. |
-| `15_advisory_drift_instrument.json` | **Advisory Drift Analytics (Instrument)** | `READY` | Returns both asset-class and instrument drift with unmodeled exposures. |
-| `16_advisory_suitability_resolved_single_position.json` | **Suitability Resolved Concentration** | `READY` | Returns a `RESOLVED` single-position issue after proposal trades. |
-| `17_advisory_suitability_new_issuer_breach.json` | **Suitability New Issuer Breach** | `READY` | Returns a `NEW` high-severity issuer concentration issue and gate recommendation. |
-| `18_advisory_suitability_sell_only_violation.json` | **Suitability Sell-Only Violation** | `BLOCKED` | Returns a `NEW` governance issue when proposal attempts BUY in `SELL_ONLY`. |
-| `19_advisory_proposal_artifact.json` | **Advisory Proposal Artifact** | `READY` | Returns a deterministic proposal package from `/rebalance/proposals/artifact` with evidence bundle and hash. |
-| `20_advisory_proposal_persist_create.json` | **Proposal Persist Create** | `DRAFT` lifecycle state | Creates persisted proposal aggregate + immutable version via `/rebalance/proposals`. |
-| `21_advisory_proposal_new_version.json` | **Proposal New Version** | `DRAFT` lifecycle state | Creates immutable version `N+1` via `/rebalance/proposals/{proposal_id}/versions`. |
-| `22_advisory_proposal_transition_to_compliance.json` | **Proposal Transition** | `COMPLIANCE_REVIEW` lifecycle state | Transitions proposal workflow using optimistic `expected_state`. |
-| `23_advisory_proposal_approval_client_consent.json` | **Proposal Consent Approval** | `EXECUTION_READY` lifecycle state | Records structured client consent and emits workflow event. |
-| `24_advisory_proposal_approval_compliance.json` | **Proposal Compliance Approval** | `AWAITING_CLIENT_CONSENT` lifecycle state | Records compliance approval and advances lifecycle. |
-| `25_advisory_proposal_transition_executed.json` | **Proposal Execution Transition** | `EXECUTED` lifecycle state | Records execution confirmation transition from execution-ready state. |
 | `26_dpm_async_batch_analysis.json` | **lotus-manage Async Batch Analysis** | Async operation `SUCCEEDED` with partial-failure warning | Demonstrates `/rebalance/analyze/async` acceptance + operation lookup with `failed_scenarios` diagnostics. |
 | `27_dpm_supportability_artifact_flow.json` | **lotus-manage Supportability + Artifact Flow** | `READY` run + deterministic artifact hash | Demonstrates run lookup by run id/correlation/idempotency and deterministic retrieval from `/rebalance/runs/{rebalance_run_id}/artifact`. |
 | `28_dpm_async_manual_execute_guard.json` | **lotus-manage Async Manual Execute Guard** | Manual execute returns `409` on non-pending run | Demonstrates `/rebalance/operations/{operation_id}/execute` conflict guard when operation already completed inline. |
@@ -235,59 +203,6 @@ python scripts/run_demo_pack_live.py --base-url http://manage.dev.lotus
 - `32_dpm_supportability_summary_metrics.json`:
   - `POST /rebalance/simulate` to create supportability records
   - `GET /rebalance/supportability/summary` for run/operation/workflow/lineage aggregate metrics
-- `10_advisory_proposal_simulate.json`:
-  - `options.enable_proposal_simulation=true`
-  - `options.proposal_apply_cash_flows_first=true`
-  - `options.proposal_block_negative_cash=true`
-- `11_advisory_auto_funding_single_ccy.json`:
-  - `options.auto_funding=true`
-  - `options.funding_mode=AUTO_FX`
-  - `options.fx_generation_policy=ONE_FX_PER_CCY`
-- `12_advisory_partial_funding.json`:
-  - `options.auto_funding=true`
-  - existing foreign cash + FX top-up behavior
-- `13_advisory_missing_fx_blocked.json`:
-  - `options.block_on_missing_fx=true`
-  - hard block + missing FX diagnostics
-- `14_advisory_drift_asset_class.json`:
-  - `options.enable_drift_analytics=true`
-  - `reference_model.asset_class_targets` controls drift comparison buckets
-- `15_advisory_drift_instrument.json`:
-  - `options.enable_instrument_drift=true`
-  - `reference_model.instrument_targets` enables instrument-level drift output
-- `16_advisory_suitability_resolved_single_position.json`:
-  - `options.enable_suitability_scanner=true`
-  - `options.suitability_thresholds.single_position_max_weight=0.10`
-- `17_advisory_suitability_new_issuer_breach.json`:
-  - `options.enable_suitability_scanner=true`
-  - `options.suitability_thresholds.issuer_max_weight=0.20`
-- `18_advisory_suitability_sell_only_violation.json`:
-  - `options.enable_suitability_scanner=true`
-  - governance scan emits `NEW` issue for blocked BUY attempt in `SELL_ONLY`
-- `19_advisory_proposal_artifact.json`:
-  - `POST /rebalance/proposals/artifact`
-  - deterministic `artifact_hash` excludes volatile fields (`created_at`, hash field)
-  - includes `summary`, `portfolio_impact`, `trades_and_funding`, `suitability_summary`, `assumptions_and_limits`, `disclosures`, and `evidence_bundle`
-- `20_advisory_proposal_persist_create.json`:
-  - `POST /rebalance/proposals`
-  - `Idempotency-Key` required, create is idempotent by canonical request hash
-  - persists proposal metadata, immutable version payload, and `CREATED` event
-- `21_advisory_proposal_new_version.json`:
-  - `POST /rebalance/proposals/{proposal_id}/versions`
-  - same portfolio context by default (`PROPOSAL_ALLOW_PORTFOLIO_CHANGE_ON_NEW_VERSION=false`)
-- `22_advisory_proposal_transition_to_compliance.json`:
-  - `POST /rebalance/proposals/{proposal_id}/transitions`
-  - requires `expected_state` by default (`PROPOSAL_REQUIRE_EXPECTED_STATE=true`)
-- `23_advisory_proposal_approval_client_consent.json`:
-  - `POST /rebalance/proposals/{proposal_id}/approvals`
-  - persists approval record and workflow event in one operation
-- `24_advisory_proposal_approval_compliance.json`:
-  - `POST /rebalance/proposals/{proposal_id}/approvals`
-  - validates compliance approval transition from `COMPLIANCE_REVIEW`
-- `25_advisory_proposal_transition_executed.json`:
-  - `POST /rebalance/proposals/{proposal_id}/transitions`
-  - validates transition to `EXECUTED` from `EXECUTION_READY`
-
 ## Understanding Output Statuses
 
 * **READY:** All constraints met, trades generated, safety checks passed. Ready for execution.

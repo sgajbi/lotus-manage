@@ -99,7 +99,7 @@ def test_apply_postgres_migrations_detects_checksum_mismatch(monkeypatch, tmp_pa
 
 def test_migration_lock_key_is_stable_and_namespace_scoped():
     assert _migration_lock_key(namespace="dpm") == _migration_lock_key(namespace="dpm")
-    assert _migration_lock_key(namespace="dpm") != _migration_lock_key(namespace="proposals")
+    assert _migration_lock_key(namespace="dpm") != _migration_lock_key(namespace="policy_packs")
 
 
 def test_apply_postgres_migrations_unlocks_when_rollback_raises(monkeypatch):

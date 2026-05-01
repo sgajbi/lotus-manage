@@ -195,30 +195,6 @@ class ModelPortfolio(BaseModel):
     targets: List[ModelTarget] = Field(description="List of model target weights.")
 
 
-class ReferenceAssetClassTarget(BaseModel):
-    asset_class: str = Field(description="Reference model asset-class bucket.")
-    weight: Decimal = Field(description="Target weight for the asset-class bucket.")
-
-
-class ReferenceInstrumentTarget(BaseModel):
-    instrument_id: str = Field(description="Reference model instrument identifier.")
-    weight: Decimal = Field(description="Target weight for the instrument bucket.")
-
-
-class ReferenceModel(BaseModel):
-    model_id: str = Field(description="Reference model identifier.")
-    as_of: str = Field(description="Reference model as-of date.")
-    base_currency: str = Field(description="Reference model base currency.")
-    asset_class_targets: List[ReferenceAssetClassTarget] = Field(
-        default_factory=list,
-        description="Reference target weights by asset class.",
-    )
-    instrument_targets: List[ReferenceInstrumentTarget] = Field(
-        default_factory=list,
-        description="Optional reference target weights by instrument.",
-    )
-
-
 class TaxLot(BaseModel):
     lot_id: str = Field(
         description="Unique lot identifier within instrument.", examples=["LOT_001"]
@@ -273,66 +249,6 @@ class GroupConstraint(BaseModel):
         if v < Decimal("0") or v > Decimal("1"):
             raise ValueError("max_weight must be between 0 and 1 inclusive")
         return v
-
-
-class SuitabilityThresholds(BaseModel):
-    single_position_max_weight: Decimal = Field(
-        default=Decimal("0.10"),
-        ge=0,
-        le=1,
-        description="Maximum advisory suitability weight per single instrument.",
-        examples=["0.10"],
-    )
-    issuer_max_weight: Decimal = Field(
-        default=Decimal("0.20"),
-        ge=0,
-        le=1,
-        description="Maximum advisory suitability aggregate weight per issuer.",
-        examples=["0.20"],
-    )
-    max_weight_by_liquidity_tier: Dict[str, Decimal] = Field(
-        default_factory=lambda: {"L4": Decimal("0.10"), "L5": Decimal("0.05")},
-        description=(
-            "Maximum advisory suitability aggregate weight by liquidity tier, "
-            "for example {'L4': '0.10', 'L5': '0.05'}."
-        ),
-        examples=[{"L4": "0.10", "L5": "0.05"}],
-    )
-    cash_band_min_weight: Decimal = Field(
-        default=Decimal("0.01"),
-        ge=0,
-        le=1,
-        description="Minimum advisory suitability cash weight.",
-        examples=["0.01"],
-    )
-    cash_band_max_weight: Decimal = Field(
-        default=Decimal("0.05"),
-        ge=0,
-        le=1,
-        description="Maximum advisory suitability cash weight.",
-        examples=["0.05"],
-    )
-    data_quality_issue_severity: Literal["LOW", "MEDIUM", "HIGH"] = Field(
-        default="MEDIUM",
-        description="Severity used for suitability data-quality issues.",
-        examples=["MEDIUM"],
-    )
-
-    @field_validator("max_weight_by_liquidity_tier")
-    @classmethod
-    def validate_max_weight_by_liquidity_tier(cls, v: Dict[str, Decimal]) -> Dict[str, Decimal]:
-        for tier, value in v.items():
-            if tier not in {"L1", "L2", "L3", "L4", "L5"}:
-                raise ValueError("liquidity tier keys must be one of L1, L2, L3, L4, L5")
-            if value < Decimal("0") or value > Decimal("1"):
-                raise ValueError("liquidity-tier max weights must be between 0 and 1 inclusive")
-        return v
-
-    @model_validator(mode="after")
-    def validate_cash_band(self) -> "SuitabilityThresholds":
-        if self.cash_band_min_weight > self.cash_band_max_weight:
-            raise ValueError("suitability cash band min cannot exceed max")
-        return self
 
 
 class EngineOptions(BaseModel):
@@ -445,11 +361,6 @@ class EngineOptions(BaseModel):
         description="Enable settlement-time cash ladder overdraft checks.",
         examples=[True],
     )
-    enable_proposal_simulation: bool = Field(
-        default=False,
-        description="Enable advisory proposal simulation endpoint behavior.",
-        examples=[False],
-    )
     enable_workflow_gates: bool = Field(
         default=True,
         description="Enable deterministic workflow gate decision output.",
@@ -459,7 +370,7 @@ class EngineOptions(BaseModel):
         default=False,
         description=(
             "Require client consent before execution in gate-decision policy. "
-            "Typically true for advisory and false for discretionary mandates."
+            "Normally false for discretionary mandate workflows."
         ),
         examples=[False],
     )
@@ -471,76 +382,13 @@ class EngineOptions(BaseModel):
         ),
         examples=[False],
     )
-    proposal_apply_cash_flows_first: bool = Field(
-        default=True,
-        description="Apply proposal cash flows before manual trade simulation.",
-        examples=[True],
-    )
-    proposal_block_negative_cash: bool = Field(
-        default=True,
-        description="Block proposal when cash-flow withdrawals create negative balances.",
-        examples=[True],
-    )
     link_buy_to_same_currency_sell_dependency: Optional[bool] = Field(
         default=None,
         description=(
             "Attach BUY intent dependency to a same-currency SELL intent. "
-            "When null, defaults are engine-specific: true for lotus-manage, false for advisory."
+            "When null, lotus-manage links same-currency BUY intents to generated SELL funding."
         ),
         examples=[None, True, False],
-    )
-    enable_drift_analytics: bool = Field(
-        default=True,
-        description="Enable advisory drift analytics when a reference model is provided.",
-        examples=[True],
-    )
-    enable_suitability_scanner: bool = Field(
-        default=True,
-        description="Enable advisory suitability scanner output in proposal simulation results.",
-        examples=[True],
-    )
-    suitability_thresholds: SuitabilityThresholds = Field(
-        default_factory=SuitabilityThresholds,
-        description="Threshold settings used by advisory suitability scanner checks.",
-    )
-    enable_instrument_drift: bool = Field(
-        default=True,
-        description="Enable instrument-level drift analytics when reference targets are present.",
-        examples=[True],
-    )
-    drift_top_contributors_limit: int = Field(
-        default=5,
-        ge=1,
-        le=20,
-        description="Maximum bucket count in top-contributor and highlight lists.",
-        examples=[5],
-    )
-    drift_unmodeled_exposure_threshold: Decimal = Field(
-        default=Decimal("0.01"),
-        ge=0,
-        le=1,
-        description="Minimum exposure threshold for unmodeled-exposure highlights.",
-        examples=["0.01"],
-    )
-    auto_funding: bool = Field(
-        default=True,
-        description="Enable advisory auto-funding for foreign-currency proposal buys.",
-        examples=[True],
-    )
-    funding_mode: Literal["AUTO_FX"] = Field(
-        default="AUTO_FX",
-        description="Advisory proposal funding mode.",
-        examples=["AUTO_FX"],
-    )
-    fx_funding_source_currency: Literal["BASE_ONLY", "ANY_CASH"] = Field(
-        default="ANY_CASH",
-        description="Funding source selection policy for generated advisory FX intents.",
-        examples=["ANY_CASH"],
-    )
-    fx_generation_policy: Literal["ONE_FX_PER_CCY"] = Field(
-        default="ONE_FX_PER_CCY",
-        description="FX intent generation policy for advisory auto-funding.",
-        examples=["ONE_FX_PER_CCY"],
     )
     settlement_horizon_days: int = Field(
         default=5,
@@ -736,24 +584,7 @@ class FxSpotIntent(BaseModel):
     )
 
 
-class CashFlowIntent(BaseModel):
-    intent_type: Literal["CASH_FLOW"] = Field(
-        default="CASH_FLOW",
-        description="Intent discriminator.",
-        examples=["CASH_FLOW"],
-    )
-    intent_id: str = Field(description="Intent identifier unique within run.", examples=["oi_cf_1"])
-    currency: str = Field(description="Cash-flow currency code.", examples=["USD"])
-    amount: Decimal = Field(description="Signed cash-flow amount.", examples=["2000.00"])
-    description: Optional[str] = Field(
-        default=None,
-        description="Optional advisor-entered note.",
-        examples=["Client top-up"],
-    )
-
-
 OrderIntent = Union[SecurityTradeIntent, FxSpotIntent]
-ProposalOrderIntent = Union[CashFlowIntent, FxSpotIntent, SecurityTradeIntent]
 
 
 class RuleResult(BaseModel):
@@ -816,7 +647,7 @@ class CashLadderBreach(BaseModel):
 
 
 class FundingPlanEntry(BaseModel):
-    target_currency: str = Field(description="Currency required by advisory BUY intents.")
+    target_currency: str = Field(description="Currency required by generated BUY intents.")
     required: Decimal = Field(description="Total required amount in target currency.")
     available_before_fx: Decimal = Field(
         description="Available amount in target currency before generated FX."
@@ -865,15 +696,15 @@ class DiagnosticsData(BaseModel):
     )
     missing_fx_pairs: List[str] = Field(
         default_factory=list,
-        description="Missing FX pairs required for generated funding or proposal valuation.",
+        description="Missing FX pairs required for generated funding or valuation.",
     )
     funding_plan: List[FundingPlanEntry] = Field(
         default_factory=list,
-        description="Advisory funding plan details for generated FX intents.",
+        description="Funding plan details for generated FX intents.",
     )
     insufficient_cash: List[InsufficientCashEntry] = Field(
         default_factory=list,
-        description="Funding deficits that block proposal simulation.",
+        description="Funding deficits that block simulation.",
     )
     data_quality: Dict[str, List[str]] = Field(
         description="Data-quality issue buckets and affected keys."
@@ -887,7 +718,7 @@ class LineageData(BaseModel):
     idempotency_key: Optional[str] = Field(
         default=None,
         description="Request idempotency key.",
-        examples=["proposal-idem-001"],
+        examples=["rebalance-idem-001"],
     )
     engine_version: Optional[str] = Field(
         default=None,
@@ -915,89 +746,10 @@ class TaxImpact(BaseModel):
     budget_used: Optional[Money] = Field(default=None, description="Portion of budget consumed.")
 
 
-class DriftReferenceModelSummary(BaseModel):
-    model_id: str = Field(description="Reference model identifier.")
-    as_of: str = Field(description="Reference model as-of date.")
-    base_currency: str = Field(description="Reference model base currency.")
-
-
-class DriftBucketDetail(BaseModel):
-    bucket: str = Field(description="Drift bucket key.")
-    model_weight: Decimal = Field(description="Reference model weight for the bucket.")
-    portfolio_weight_before: Decimal = Field(
-        description="Before-state portfolio weight for the bucket."
-    )
-    portfolio_weight_after: Decimal = Field(
-        description="After-state portfolio weight for the bucket."
-    )
-    drift_before: Decimal = Field(description="Signed before-state drift for the bucket.")
-    drift_after: Decimal = Field(description="Signed after-state drift for the bucket.")
-    abs_drift_before: Decimal = Field(description="Absolute before-state drift for the bucket.")
-    abs_drift_after: Decimal = Field(description="Absolute after-state drift for the bucket.")
-    improvement: Decimal = Field(description="Positive when absolute drift improves.")
-
-
-class DriftDimensionAnalysis(BaseModel):
-    drift_total_before: Decimal = Field(description="Total drift in before-state.")
-    drift_total_after: Decimal = Field(description="Total drift in after-state.")
-    drift_total_delta: Decimal = Field(
-        description="After minus before drift total. Negative means improvement."
-    )
-    top_contributors_before: List[DriftBucketDetail] = Field(
-        default_factory=list,
-        description="Largest before-state drift contributors.",
-    )
-    buckets: List[DriftBucketDetail] = Field(
-        default_factory=list,
-        description="Deterministic drift details for all buckets.",
-    )
-
-
-class DriftHighlightEntry(BaseModel):
-    bucket: str = Field(description="Highlighted drift bucket.")
-    improvement: Decimal = Field(description="Improvement value for the highlighted bucket.")
-
-
-class DriftUnmodeledExposure(BaseModel):
-    bucket: str = Field(description="Bucket with model weight of zero.")
-    portfolio_weight_before: Decimal = Field(description="Before-state exposure for the bucket.")
-    portfolio_weight_after: Decimal = Field(description="After-state exposure for the bucket.")
-    max_portfolio_weight: Decimal = Field(
-        description="Max of before/after exposure for the bucket."
-    )
-
-
-class DriftHighlights(BaseModel):
-    largest_improvements: List[DriftHighlightEntry] = Field(
-        default_factory=list,
-        description="Buckets with largest positive drift improvements.",
-    )
-    largest_deteriorations: List[DriftHighlightEntry] = Field(
-        default_factory=list,
-        description="Buckets with largest drift deteriorations.",
-    )
-    unmodeled_exposures: List[DriftUnmodeledExposure] = Field(
-        default_factory=list,
-        description="Buckets where model weight is zero and exposure exceeds threshold.",
-    )
-
-
-class DriftAnalysis(BaseModel):
-    reference_model: DriftReferenceModelSummary = Field(
-        description="Reference model identifier details."
-    )
-    asset_class: DriftDimensionAnalysis = Field(description="Asset-class drift analytics.")
-    instrument: Optional[DriftDimensionAnalysis] = Field(
-        default=None,
-        description="Instrument drift analytics when instrument targets are provided.",
-    )
-    highlights: DriftHighlights = Field(description="Deterministic advisory highlights.")
-
-
 class SuitabilityEvidenceSnapshotIds(BaseModel):
     portfolio_snapshot_id: str = Field(
         description="Portfolio snapshot id used as evidence source.",
-        examples=["pf_advisory_01"],
+        examples=["pf_mandate_01"],
     )
     market_data_snapshot_id: str = Field(
         description="Market-data snapshot id used as evidence source.",
@@ -1036,7 +788,7 @@ class SuitabilityIssue(BaseModel):
         examples=["CONCENTRATION"],
     )
     severity: Literal["LOW", "MEDIUM", "HIGH"] = Field(
-        description="Advisory suitability severity level.",
+        description="Mandate review severity level.",
         examples=["HIGH"],
     )
     status_change: Literal["NEW", "RESOLVED", "PERSISTENT"] = Field(
@@ -1083,7 +835,7 @@ class SuitabilityResult(BaseModel):
         description="Deterministic ordered suitability issue list.",
     )
     recommended_gate: Literal["NONE", "RISK_REVIEW", "COMPLIANCE_REVIEW"] = Field(
-        description="Advisory gate recommendation derived from NEW issue severities.",
+        description="Review gate recommendation derived from NEW issue severities.",
         examples=["COMPLIANCE_REVIEW"],
     )
 
@@ -1193,272 +945,6 @@ class RebalanceResult(BaseModel):
     gate_decision: Optional[GateDecision] = Field(
         default=None,
         description="Deterministic workflow gate decision for downstream orchestration.",
-    )
-    lineage: LineageData = Field(description="Lineage identifiers and request hash.")
-
-
-class ProposedCashFlow(BaseModel):
-    intent_type: Literal["CASH_FLOW"] = Field(
-        default="CASH_FLOW",
-        description="Intent discriminator for advisory cash-flow proposals.",
-        examples=["CASH_FLOW"],
-    )
-    currency: str = Field(description="Cash-flow currency code.", examples=["USD"])
-    amount: Decimal = Field(
-        description="Signed cash-flow amount as decimal string.",
-        examples=["2000.00", "-500.00"],
-    )
-    description: Optional[str] = Field(
-        default=None,
-        description="Optional advisor-entered narrative for this cash flow.",
-        examples=["Client deposit before switch"],
-    )
-
-    @field_validator("amount", mode="before")
-    @classmethod
-    def reject_float_amount(cls, v: object) -> object:
-        if isinstance(v, float):
-            raise ValueError("PROPOSAL_INVALID_TRADE_INPUT: amount must be a decimal string")
-        return v
-
-
-class ProposedTrade(BaseModel):
-    intent_type: Literal["SECURITY_TRADE"] = Field(
-        default="SECURITY_TRADE",
-        description="Intent discriminator for advisory security trades.",
-        examples=["SECURITY_TRADE"],
-    )
-    side: Literal["BUY", "SELL"] = Field(description="Manual trade side.", examples=["BUY"])
-    instrument_id: str = Field(
-        description="Instrument identifier for manual trade.",
-        examples=["EQ_GROWTH"],
-    )
-    quantity: Optional[Decimal] = Field(
-        default=None,
-        gt=0,
-        description="Trade quantity. Required when `notional` is not provided.",
-        examples=["40"],
-    )
-    notional: Optional[Money] = Field(
-        default=None,
-        description=(
-            "Trade notional in instrument currency. Required when `quantity` is not provided."
-        ),
-        examples=[{"amount": "2000.00", "currency": "USD"}],
-    )
-
-    @field_validator("quantity", mode="before")
-    @classmethod
-    def reject_float_quantity(cls, v: object) -> object:
-        if isinstance(v, float):
-            raise ValueError("PROPOSAL_INVALID_TRADE_INPUT: quantity must be a decimal string")
-        return v
-
-    @field_validator("notional", mode="before")
-    @classmethod
-    def reject_float_notional_amount(cls, v: object) -> object:
-        if isinstance(v, dict) and isinstance(v.get("amount"), float):
-            raise ValueError(
-                "PROPOSAL_INVALID_TRADE_INPUT: notional.amount must be a decimal string"
-            )
-        return v
-
-    @model_validator(mode="after")
-    def validate_quantity_or_notional(self) -> "ProposedTrade":
-        if self.quantity is None and self.notional is None:
-            raise ValueError("PROPOSAL_INVALID_TRADE_INPUT: quantity or notional is required")
-        if self.quantity is not None and self.notional is not None:
-            raise ValueError(
-                "PROPOSAL_INVALID_TRADE_INPUT: provide either quantity or notional, not both"
-            )
-        if self.notional is not None and self.notional.amount <= Decimal("0"):
-            raise ValueError("PROPOSAL_INVALID_TRADE_INPUT: notional.amount must be greater than 0")
-        return self
-
-
-class ProposalSimulateRequest(BaseModel):
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "portfolio_snapshot": {
-                    "portfolio_id": "pf_advisory_01",
-                    "base_currency": "USD",
-                    "positions": [{"instrument_id": "EQ_LEGACY", "quantity": "100"}],
-                    "cash_balances": [{"currency": "USD", "amount": "5000.00"}],
-                },
-                "market_data_snapshot": {
-                    "prices": [
-                        {"instrument_id": "EQ_LEGACY", "price": "100.00", "currency": "USD"},
-                        {"instrument_id": "EQ_GROWTH", "price": "50.00", "currency": "USD"},
-                    ],
-                    "fx_rates": [],
-                },
-                "shelf_entries": [
-                    {"instrument_id": "EQ_LEGACY", "status": "APPROVED"},
-                    {"instrument_id": "EQ_GROWTH", "status": "APPROVED"},
-                ],
-                "options": {
-                    "enable_proposal_simulation": True,
-                    "proposal_apply_cash_flows_first": True,
-                    "proposal_block_negative_cash": True,
-                    "block_on_missing_prices": True,
-                    "block_on_missing_fx": True,
-                },
-                "proposed_cash_flows": [
-                    {
-                        "intent_type": "CASH_FLOW",
-                        "currency": "USD",
-                        "amount": "2000.00",
-                        "description": "Client top-up",
-                    }
-                ],
-                "proposed_trades": [
-                    {
-                        "intent_type": "SECURITY_TRADE",
-                        "side": "BUY",
-                        "instrument_id": "EQ_GROWTH",
-                        "quantity": "40",
-                    }
-                ],
-            }
-        }
-    }
-
-    portfolio_snapshot: PortfolioSnapshot = Field(
-        description="Current portfolio holdings and cash balances.",
-        examples=[
-            {
-                "portfolio_id": "pf_advisory_01",
-                "base_currency": "USD",
-                "positions": [{"instrument_id": "EQ_LEGACY", "quantity": "100"}],
-                "cash_balances": [{"currency": "USD", "amount": "5000.00"}],
-            }
-        ],
-    )
-    market_data_snapshot: MarketDataSnapshot = Field(
-        description="Price and FX snapshot used for proposal simulation.",
-        examples=[
-            {
-                "prices": [
-                    {"instrument_id": "EQ_LEGACY", "price": "100.00", "currency": "USD"},
-                    {"instrument_id": "EQ_GROWTH", "price": "50.00", "currency": "USD"},
-                ],
-                "fx_rates": [],
-            }
-        ],
-    )
-    shelf_entries: List[ShelfEntry] = Field(
-        description="Instrument eligibility and policy metadata.",
-        examples=[
-            [
-                {"instrument_id": "EQ_LEGACY", "status": "APPROVED"},
-                {"instrument_id": "EQ_GROWTH", "status": "APPROVED"},
-            ]
-        ],
-    )
-    options: EngineOptions = Field(
-        default_factory=EngineOptions,
-        description="Request-level engine behavior and feature toggles.",
-        examples=[
-            {
-                "enable_proposal_simulation": True,
-                "proposal_apply_cash_flows_first": True,
-                "proposal_block_negative_cash": True,
-            }
-        ],
-    )
-    proposed_cash_flows: List[ProposedCashFlow] = Field(
-        default_factory=list,
-        description="Advisor-entered cash flow instructions.",
-        examples=[[{"intent_type": "CASH_FLOW", "currency": "USD", "amount": "2000.00"}]],
-    )
-    proposed_trades: List[ProposedTrade] = Field(
-        default_factory=list,
-        description="Advisor-entered manual security trade instructions.",
-        examples=[
-            [
-                {
-                    "intent_type": "SECURITY_TRADE",
-                    "side": "BUY",
-                    "instrument_id": "EQ_GROWTH",
-                    "quantity": "40",
-                }
-            ]
-        ],
-    )
-    reference_model: Optional[ReferenceModel] = Field(
-        default=None,
-        description="Optional reference model used for advisory drift analytics.",
-    )
-
-
-class ProposalResult(BaseModel):
-    model_config = {
-        "json_schema_extra": {
-            "example": {
-                "proposal_run_id": "pr_abc12345",
-                "correlation_id": "corr_123abc",
-                "status": "READY",
-                "intents": [],
-                "diagnostics": {
-                    "warnings": [],
-                    "data_quality": {"price_missing": [], "fx_missing": []},
-                },
-                "lineage": {"request_hash": "sha256:...", "idempotency_key": "idem-1"},
-            }
-        }
-    }
-
-    proposal_run_id: str = Field(description="Proposal run identifier.", examples=["pr_abc12345"])
-    correlation_id: str = Field(
-        description="Correlation id used by request logging context.",
-        examples=["corr_123abc"],
-    )
-    status: Literal["READY", "BLOCKED", "PENDING_REVIEW"] = Field(
-        description="Top-level domain outcome.",
-        examples=["READY"],
-    )
-    before: SimulatedState = Field(description="Before-state valuation snapshot.")
-    intents: List[Annotated[ProposalOrderIntent, Field(discriminator="intent_type")]] = Field(
-        description="Deterministically ordered proposal intents applied during simulation.",
-        examples=[
-            [
-                {
-                    "intent_type": "CASH_FLOW",
-                    "intent_id": "oi_cf_1",
-                    "currency": "USD",
-                    "amount": "2000.00",
-                },
-                {
-                    "intent_type": "SECURITY_TRADE",
-                    "intent_id": "oi_1",
-                    "side": "BUY",
-                    "instrument_id": "EQ_GROWTH",
-                    "quantity": "40",
-                },
-            ]
-        ],
-    )
-    after_simulated: SimulatedState = Field(description="After-state simulation snapshot.")
-    reconciliation: Optional[Reconciliation] = Field(
-        default=None, description="Reconciliation output."
-    )
-    rule_results: List[RuleResult] = Field(
-        default_factory=list, description="Rule engine evaluations."
-    )
-    explanation: Dict[str, Any] = Field(description="Additional explanatory payload.")
-    diagnostics: DiagnosticsData = Field(description="Diagnostics and warnings for the run.")
-    drift_analysis: Optional[DriftAnalysis] = Field(
-        default=None,
-        description="Reference-model drift analytics when provided and enabled.",
-    )
-    suitability: Optional[SuitabilityResult] = Field(
-        default=None,
-        description="Advisory suitability scanner output with NEW/RESOLVED/PERSISTENT issues.",
-    )
-    gate_decision: Optional[GateDecision] = Field(
-        default=None,
-        description="Deterministic workflow gate decision for advisory workflow routing.",
     )
     lineage: LineageData = Field(description="Lineage identifiers and request hash.")
 

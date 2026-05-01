@@ -25,7 +25,7 @@ def test_integration_capabilities_default_contract():
 
 
 def test_integration_capabilities_env_overrides(monkeypatch):
-    monkeypatch.setenv("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", "false")
+    monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "false")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", "false")
     monkeypatch.setenv("DPM_POLICY_VERSION", "tenant-x-v2")
 
@@ -40,7 +40,7 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     assert body["tenant_id"] == "tenant-x"
     assert body["policy_version"] == "tenant-x-v2"
     features = {item["key"]: item["enabled"] for item in body["features"]}
-    assert features["dpm.proposals.lifecycle"] is False
+    assert features["dpm.workflow.review_gate"] is False
     assert body["supported_input_modes"] == ["portfolio_id"]
 
 

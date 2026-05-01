@@ -1735,8 +1735,8 @@ def test_openapi_title_and_tag_grouping(client):
     assert "lotus-manage Simulation" in tags
     assert "lotus-manage What-If Analysis" in tags
     assert "lotus-manage Run Supportability" in tags
-    assert "Advisory Simulation" in tags
-    assert "Advisory Proposal Lifecycle" in tags
+    assert "Advisory Simulation" not in tags
+    assert "Advisory Proposal Lifecycle" not in tags
 
     assert openapi["paths"]["/api/v1/rebalance/simulate"]["post"]["tags"] == [
         "lotus-manage Simulation"
@@ -1753,31 +1753,9 @@ def test_openapi_title_and_tag_grouping(client):
     assert openapi["paths"]["/api/v1/rebalance/policies/catalog"]["get"]["tags"] == [
         "lotus-manage Run Supportability"
     ]
-    assert openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["tags"] == [
-        "Advisory Simulation"
-    ]
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/artifact"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/async"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/{proposal_id}/workflow-events"]["get"][
-            "description"
-        ]
-    )
+    assert "/api/v1/rebalance/proposals/simulate" not in openapi["paths"]
+    assert "/api/v1/rebalance/proposals/artifact" not in openapi["paths"]
+    assert "/api/v1/rebalance/proposals" not in openapi["paths"]
 
 
 def test_openapi_async_analyze_documents_correlation_header(client):

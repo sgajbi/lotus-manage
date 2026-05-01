@@ -88,7 +88,7 @@ migration-smoke:
 	python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py tests/unit/shared/dependencies/test_production_cutover_contract.py -q
 
 migration-apply:
-	python scripts/postgres_migrate.py --target all
+	python scripts/postgres_migrate.py --target dpm
 
 lint:
 	python -m ruff check .

@@ -73,9 +73,7 @@ def test_validate_cutover_can_include_migration_check(monkeypatch):
 
 def test_expected_migration_versions_for_namespaces():
     dpm_versions = expected_migration_versions(namespace="dpm")
-    proposals_versions = expected_migration_versions(namespace="proposals")
     assert "0001" in dpm_versions
-    assert "0001" in proposals_versions
 
 
 def test_normalize_stored_migration_version():
@@ -120,10 +118,9 @@ def test_validate_cutover_migrations_applied_detects_missing(monkeypatch):
     monkeypatch.setattr(
         contract_module,
         "expected_migration_versions",
-        lambda namespace: ["0001", "0002"] if namespace == "dpm" else ["0001"],
+        lambda namespace: ["0001", "0002"],
     )
     monkeypatch.setattr(contract_module, "supportability_postgres_dsn", lambda: "postgresql://dpm")
-    monkeypatch.setattr(contract_module, "proposal_postgres_dsn", lambda: "postgresql://adv")
 
     with pytest.raises(RuntimeError) as exc:
         contract_module.validate_cutover_migrations_applied()

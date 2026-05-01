@@ -9,7 +9,7 @@ def test_e2e_smoke() -> None:
     assert response.json()["status"] == "ok"
 
 
-def test_versioned_proposals_surface_exists() -> None:
+def test_versioned_proposals_surface_removed_from_manage() -> None:
     client = TestClient(app)
     response = client.get("/api/v1/rebalance/proposals")
-    assert response.status_code in {200, 400, 422, 503}
+    assert response.status_code == 404

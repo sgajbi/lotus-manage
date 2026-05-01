@@ -7,7 +7,6 @@ from typing import Any
 
 _EXAMPLE_BY_KEY: dict[str, Any] = {
     "portfolio_id": "DEMO_DPM_EUR_001",
-    "proposal_id": "pp_001",
     "rebalance_run_id": "rr_001",
     "operation_id": "dop_001",
     "consumer_system": "lotus-gateway",

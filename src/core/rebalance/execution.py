@@ -19,8 +19,8 @@ from src.core.models import (
     FxSpotIntent,
     IntentRationale,
     MarketDataSnapshot,
+    OrderIntent,
     PortfolioSnapshot,
-    ProposalOrderIntent,
     Reconciliation,
     RuleResult,
     SecurityTradeIntent,
@@ -34,7 +34,7 @@ from src.core.valuation import build_simulated_state, get_fx_rate
 def build_settlement_ladder(
     portfolio: PortfolioSnapshot,
     shelf: list[ShelfEntry],
-    intents: list[ProposalOrderIntent],
+    intents: list[OrderIntent],
     options: EngineOptions,
     diagnostics: DiagnosticsData,
 ) -> None:
@@ -117,12 +117,12 @@ def generate_fx_and_simulate(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
     shelf: list[ShelfEntry],
-    intents: list[ProposalOrderIntent],
+    intents: list[OrderIntent],
     options: EngineOptions,
     total_val_before: Decimal,
     diagnostics: DiagnosticsData,
 ) -> tuple[
-    list[ProposalOrderIntent],
+    list[OrderIntent],
     SimulatedState | PortfolioSnapshot,
     list[RuleResult],
     Literal["READY", "BLOCKED", "PENDING_REVIEW"],

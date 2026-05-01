@@ -18,13 +18,6 @@ from src.api.openapi_enrichment import enrich_openapi_schema
 from src.api.persistence_profile import validate_persistence_profile_guardrails
 from src.api.persistence_profile import app_persistence_profile_name
 from src.api.production_cutover_contract import validate_cutover_migrations_applied
-from src.api.routers.advisory_simulation import (
-    build_proposal_artifact_endpoint,
-    simulate_proposal,
-)
-from src.api.routers.advisory_simulation import (
-    router as advisory_simulation_router,
-)
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
@@ -44,15 +37,6 @@ from src.api.routers.rebalance_simulation import (
 )
 from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
-)
-from src.api.routers.proposals import router as proposal_lifecycle_router
-from src.api.services.advisory_simulation_service import (
-    MAX_PROPOSAL_IDEMPOTENCY_CACHE_SIZE,
-    PROPOSAL_IDEMPOTENCY_CACHE,
-    run_proposal_simulation,
-)
-from src.api.services.advisory_simulation_service import (
-    simulate_proposal_response as _simulate_proposal_response,
 )
 from src.api.services.rebalance_simulation_service import (
     DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
@@ -106,14 +90,6 @@ app = FastAPI(
             "name": "lotus-manage Run Supportability",
             "description": "Run, operation, idempotency, and artifact retrieval endpoints.",
         },
-        {
-            "name": "Advisory Simulation",
-            "description": "Advisory proposal simulation and artifact endpoints.",
-        },
-        {
-            "name": "Advisory Proposal Lifecycle",
-            "description": "Advisory proposal persistence, workflow, and support endpoints.",
-        },
     ],
     lifespan=_app_lifespan,
 )
@@ -141,19 +117,15 @@ validate_enterprise_runtime_config()
 app.middleware("http")(build_enterprise_audit_middleware())
 
 # Unversioned compatibility routes.
-app.include_router(proposal_lifecycle_router)
 app.include_router(rebalance_run_support_router)
 app.include_router(rebalance_policy_pack_router)
 app.include_router(rebalance_simulation_router)
-app.include_router(advisory_simulation_router)
 app.include_router(integration_capabilities_router)
 
 # Canonical versioned API surface.
-app.include_router(proposal_lifecycle_router, prefix="/api/v1")
 app.include_router(rebalance_run_support_router, prefix="/api/v1")
 app.include_router(rebalance_policy_pack_router, prefix="/api/v1")
 app.include_router(rebalance_simulation_router, prefix="/api/v1")
-app.include_router(advisory_simulation_router, prefix="/api/v1")
 app.include_router(integration_capabilities_router, prefix="/api/v1")
 
 
@@ -198,26 +170,20 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
 __all__ = [
     "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
     "DPM_IDEMPOTENCY_CACHE",
-    "MAX_PROPOSAL_IDEMPOTENCY_CACHE_SIZE",
-    "PROPOSAL_IDEMPOTENCY_CACHE",
     "_async_manual_execution_enabled",
     "_env_flag",
     "_env_int",
     "_execute_batch_analysis",
     "_resolve_async_execution_mode",
     "_run_analyze_async_operation",
-    "_simulate_proposal_response",
     "analyze_scenarios",
     "analyze_scenarios_async",
     "app",
-    "build_proposal_artifact_endpoint",
     "execute_dpm_async_operation",
     "get_db_session",
     "get_dpm_run_support_service",
     "record_dpm_run_for_support",
-    "run_proposal_simulation",
     "run_simulation",
-    "simulate_proposal",
     "simulate_rebalance",
     "unhandled_exception_to_problem_details",
 ]

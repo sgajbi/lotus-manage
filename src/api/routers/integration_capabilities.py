@@ -39,7 +39,7 @@ class WorkflowCapability(BaseModel):
     required_features: list[str] = Field(
         default_factory=list,
         description="Feature keys that must be enabled before this workflow should be surfaced.",
-        examples=[["dpm.proposals.lifecycle"]],
+        examples=[["dpm.workflow.review_gate"]],
     )
 
 
@@ -96,7 +96,7 @@ class IntegrationCapabilitiesResponse(BaseModel):
                 {
                     "workflow_key": "dpm_rebalance_lifecycle",
                     "enabled": True,
-                    "required_features": ["dpm.proposals.lifecycle"],
+                    "required_features": ["dpm.workflow.review_gate"],
                 }
             ]
         ],
@@ -154,7 +154,7 @@ async def get_integration_capabilities(
         examples=["default"],
     ),
 ) -> IntegrationCapabilitiesResponse:
-    lifecycle_enabled = _env_bool("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", True)
+    workflow_enabled = _env_bool("DPM_WORKFLOW_ENABLED", False)
     inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
 
     supported_input_modes = ["portfolio_id"]
@@ -184,10 +184,10 @@ async def get_integration_capabilities(
                 description="Stateless lotus-manage rebalance execution using inline request bundles.",
             ),
             FeatureCapability(
-                key="dpm.proposals.lifecycle",
-                enabled=lifecycle_enabled,
+                key="dpm.workflow.review_gate",
+                enabled=workflow_enabled,
                 owner_service="lotus-manage",
-                description="lotus-manage lifecycle proposal and supportability workflows.",
+                description="Discretionary mandate run review gates for approve, reject, and request-changes decisions.",
             ),
             FeatureCapability(
                 key="manage.observability.action_register_supportability",
@@ -199,8 +199,8 @@ async def get_integration_capabilities(
         workflows=[
             WorkflowCapability(
                 workflow_key="dpm_rebalance_lifecycle",
-                enabled=lifecycle_enabled,
-                required_features=["dpm.proposals.lifecycle"],
+                enabled=workflow_enabled,
+                required_features=["dpm.workflow.review_gate"],
             ),
         ],
     )

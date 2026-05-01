@@ -54,7 +54,6 @@ def run_demo_pack(base_url: str) -> None:
     idem_31 = f"live-demo-31-policy-pack-{run_token}"
     corr_32 = f"live-corr-32-support-summary-{run_token}"
     idem_32 = f"live-demo-32-support-summary-{run_token}"
-    lifecycle_idem_20 = f"live-demo-lifecycle-20-{run_token}"
     with httpx.Client(base_url=base_url, timeout=timeout) as client:
         # lotus-manage single-run demos
         dpm_files = [
@@ -346,123 +345,6 @@ def run_demo_pack(base_url: str) -> None:
             support_summary.get("run_count", 0) >= 1,
             "32: supportability summary should include at least one run",
         )
-
-        # Advisory simulate demos
-        advisory_expected = {
-            "10_advisory_proposal_simulate.json": "READY",
-            "11_advisory_auto_funding_single_ccy.json": "READY",
-            "12_advisory_partial_funding.json": "READY",
-            "13_advisory_missing_fx_blocked.json": "BLOCKED",
-            "14_advisory_drift_asset_class.json": "READY",
-            "15_advisory_drift_instrument.json": "READY",
-            "16_advisory_suitability_resolved_single_position.json": "READY",
-            "17_advisory_suitability_new_issuer_breach.json": "READY",
-            "18_advisory_suitability_sell_only_violation.json": "BLOCKED",
-        }
-        for file_name, expected in advisory_expected.items():
-            body = _run_scenario(
-                client,
-                name=file_name,
-                method="POST",
-                path="/rebalance/proposals/simulate",
-                expected_http=200,
-                payload_file=file_name,
-                headers={"Idempotency-Key": f"live-{file_name}"},
-            )
-            _assert(
-                body.get("status") == expected,
-                f"{file_name}: unexpected status {body.get('status')}",
-            )
-
-        artifact = _run_scenario(
-            client,
-            name="19_advisory_proposal_artifact.json",
-            method="POST",
-            path="/rebalance/proposals/artifact",
-            expected_http=200,
-            payload_file="19_advisory_proposal_artifact.json",
-            headers={"Idempotency-Key": "live-demo-artifact-19"},
-        )
-        _assert(artifact.get("status") == "READY", "19_advisory_proposal_artifact.json: not READY")
-        _assert(
-            artifact.get("evidence_bundle", {})
-            .get("hashes", {})
-            .get("artifact_hash", "")
-            .startswith("sha256:"),
-            "19_advisory_proposal_artifact.json: missing artifact hash",
-        )
-
-        # Lifecycle flow demos
-        create = _run_scenario(
-            client,
-            name="20_advisory_proposal_persist_create.json",
-            method="POST",
-            path="/rebalance/proposals",
-            expected_http=200,
-            payload_file="20_advisory_proposal_persist_create.json",
-            headers={"Idempotency-Key": lifecycle_idem_20},
-        )
-        proposal_id = create["proposal"]["proposal_id"]
-        _assert(create["proposal"]["current_state"] == "DRAFT", "20: unexpected lifecycle state")
-
-        version = _run_scenario(
-            client,
-            name="21_advisory_proposal_new_version.json",
-            method="POST",
-            path=f"/rebalance/proposals/{proposal_id}/versions",
-            expected_http=200,
-            payload_file="21_advisory_proposal_new_version.json",
-        )
-        _assert(version["proposal"]["current_version_no"] == 2, "21: version increment failed")
-
-        transition = _run_scenario(
-            client,
-            name="22_advisory_proposal_transition_to_compliance.json",
-            method="POST",
-            path=f"/rebalance/proposals/{proposal_id}/transitions",
-            expected_http=200,
-            payload_file="22_advisory_proposal_transition_to_compliance.json",
-        )
-        _assert(transition["current_state"] == "COMPLIANCE_REVIEW", "22: unexpected state")
-
-        compliance = _run_scenario(
-            client,
-            name="24_advisory_proposal_approval_compliance.json",
-            method="POST",
-            path=f"/rebalance/proposals/{proposal_id}/approvals",
-            expected_http=200,
-            payload_file="24_advisory_proposal_approval_compliance.json",
-        )
-        _assert(compliance["current_state"] == "AWAITING_CLIENT_CONSENT", "24: unexpected state")
-
-        consent = _run_scenario(
-            client,
-            name="23_advisory_proposal_approval_client_consent.json",
-            method="POST",
-            path=f"/rebalance/proposals/{proposal_id}/approvals",
-            expected_http=200,
-            payload_file="23_advisory_proposal_approval_client_consent.json",
-        )
-        _assert(consent["current_state"] == "EXECUTION_READY", "23: unexpected state")
-
-        executed = _run_scenario(
-            client,
-            name="25_advisory_proposal_transition_executed.json",
-            method="POST",
-            path=f"/rebalance/proposals/{proposal_id}/transitions",
-            expected_http=200,
-            payload_file="25_advisory_proposal_transition_executed.json",
-        )
-        _assert(executed["current_state"] == "EXECUTED", "25: unexpected state")
-
-        listed = _run_scenario(
-            client,
-            name="list_proposals",
-            method="GET",
-            path="/rebalance/proposals?portfolio_id=pf_demo_lifecycle_1&limit=5",
-            expected_http=200,
-        )
-        _assert(len(listed.get("items", [])) >= 1, "list_proposals: expected at least one item")
 
     print(f"Demo pack validation passed for {base_url}")
 

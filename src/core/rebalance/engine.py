@@ -43,8 +43,8 @@ from src.core.models import (
     LineageData,
     MarketDataSnapshot,
     ModelPortfolio,
+    OrderIntent,
     PortfolioSnapshot,
-    ProposalOrderIntent,
     RebalanceResult,
     FxSpotIntent,
     SecurityTradeIntent,
@@ -269,7 +269,7 @@ def _generate_fx_and_simulate(
     total_val_before: Decimal,
     diagnostics: DiagnosticsData,
 ) -> tuple[
-    list[ProposalOrderIntent],
+    list[OrderIntent],
     Any,
     list[Any],
     Literal["READY", "BLOCKED", "PENDING_REVIEW"],

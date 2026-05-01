@@ -16,7 +16,7 @@ def test_local_docker_runtime_applies_postgres_migrations_before_startup() -> No
 
     assert "depends_on:" in compose_text
     assert "condition: service_healthy" in compose_text
-    assert "python scripts/postgres_migrate.py --target all" in compose_text
+    assert "python scripts/postgres_migrate.py --target dpm" in compose_text
     assert "urllib.request.urlopen('http://127.0.0.1:8000/health/ready'" in compose_text
     assert "COPY scripts/ ./scripts/" in dockerfile_text
     assert "psycopg[binary]" in pyproject_text

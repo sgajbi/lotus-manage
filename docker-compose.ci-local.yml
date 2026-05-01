@@ -25,7 +25,5 @@ services:
       PIP_DISABLE_PIP_VERSION_CHECK: "1"
       PYTHONUNBUFFERED: "1"
       DPM_SUPPORTABILITY_POSTGRES_DSN: postgresql://manage:manage@postgres:5432/manage_supportability
-      PROPOSAL_POSTGRES_DSN: postgresql://manage:manage@postgres:5432/manage_supportability
       DPM_POSTGRES_INTEGRATION_DSN: postgresql://manage:manage@postgres:5432/manage_supportability
-      PROPOSAL_POSTGRES_INTEGRATION_DSN: postgresql://manage:manage@postgres:5432/manage_supportability
     command: ["sh", "-lc", "make ci-local"]
