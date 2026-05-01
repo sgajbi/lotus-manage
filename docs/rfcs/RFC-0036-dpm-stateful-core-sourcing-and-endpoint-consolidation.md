@@ -998,6 +998,34 @@ Exit evidence:
 4. dashboard/alert contract references only implemented metrics,
 5. live evidence captures logs, metrics, health/readiness, and degraded-state behavior.
 
+Implementation evidence captured on 2026-05-01:
+
+1. Hardened HTTP access logs so request completion events emit route templates instead of raw URL
+   paths. This prevents supportability identifiers such as request hashes, correlation ids,
+   idempotency keys, portfolio ids, and run ids from appearing in the `endpoint` log field.
+2. Replaced exact request latency in access-log extra fields with bounded `latency_bucket_ms` and
+   added bounded `status_family` alongside numeric `status_code`.
+3. Added formatter-level redaction for sensitive `extra_fields` keys, including `portfolio_id`,
+   `request_hash`, `idempotency_key`, `correlation_id`, `actor_id`, `client_id`, `account_id`,
+   `instrument_id`, and `run_id`.
+4. Added tests proving:
+   - sensitive formatter extra fields are redacted,
+   - the request-hash supportability route logs
+     `/api/v1/rebalance/runs/by-request-hash/{request_hash}` rather than the raw hash value,
+   - latency and status posture are emitted through bounded fields.
+5. Focused validation passed:
+   - `python -m pytest tests/unit/dpm/api/test_observability_api.py -q` returned 11 passed,
+   - `python -m ruff check src/api/observability.py tests/unit/dpm/api/test_observability_api.py`
+     passed,
+   - `python -m ruff format --check src/api/observability.py tests/unit/dpm/api/test_observability_api.py`
+     passed after formatting,
+   - `python -m mypy --config-file mypy.ini` passed.
+6. Repository-native `make check` passed:
+   - lint and format checks passed,
+   - monetary float guard passed,
+   - no-alias, mypy, OpenAPI, API vocabulary, and mesh validation gates passed,
+   - unit suite returned 476 passed.
+
 ### Slice 10: Enterprise API Certification
 
 1. Certify every public `lotus-manage` API endpoint, endpoint-by-endpoint.

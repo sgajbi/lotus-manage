@@ -137,6 +137,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki mesh product source updated because client/demo-facing mesh product truth
   changed.
 
+## RFC36-S9-001: Access logs emitted raw supportability paths
+
+- Date: 2026-05-01
+- Scope: HTTP access logging, structured log formatter, observability tests
+- Finding: request completion logs emitted `request.url.path` as `endpoint`, which can include
+  supportability identifiers such as request hashes, correlation ids, idempotency keys, portfolio ids,
+  or run ids. The formatter also accepted arbitrary `extra_fields` without redacting sensitive key
+  names.
+- Action: changed HTTP access logs to emit route templates, bounded `status_family`, and bounded
+  `latency_bucket_ms`; added redaction for sensitive extra-field names; added tests proving
+  request-hash path values are not logged and sensitive formatter fields are redacted.
+- Status: fixed for HTTP access logs and formatter-owned extra fields.
+- Wiki decision: wiki operations and supported-features source updated because operator-facing
+  logging behavior changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

@@ -1,3 +1,5 @@
+import json
+import logging
 from concurrent.futures import ThreadPoolExecutor
 
 from fastapi.testclient import TestClient
@@ -117,6 +119,65 @@ def test_action_register_supportability_metric_labels_are_bounded(monkeypatch):
     }
     assert "PB_SG_GLOBAL_BAL_001" not in captured.values()
     assert "client_name:private-bank-client" not in captured.values()
+
+
+def test_json_formatter_redacts_sensitive_extra_fields():
+    formatter = observability_module.JsonFormatter()
+    record = logging.LogRecord(
+        name="lotus-manage.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="sensitive.event",
+        args=(),
+        exc_info=None,
+    )
+    record.extra_fields = {
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "request_hash": "sha256:secret-request",
+        "status_family": "2xx",
+    }
+
+    payload = json.loads(formatter.format(record))
+
+    assert payload["portfolio_id"] == "[REDACTED]"
+    assert payload["request_hash"] == "[REDACTED]"
+    assert payload["status_family"] == "2xx"
+    assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(payload)
+    assert "sha256:secret-request" not in json.dumps(payload)
+
+
+def test_http_access_log_uses_route_template_not_sensitive_path_values():
+    captured: list[logging.LogRecord] = []
+
+    class _CaptureHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:
+            captured.append(record)
+
+    logger = logging.getLogger("http.access")
+    handler = _CaptureHandler()
+    logger.addHandler(handler)
+    try:
+        client = TestClient(app)
+        response = client.get(
+            "/api/v1/rebalance/runs/by-request-hash/sha256:sensitive-request-hash"
+        )
+    finally:
+        logger.removeHandler(handler)
+
+    assert response.status_code in {404, 503}
+    access_records = [
+        record
+        for record in captured
+        if getattr(record, "msg", None) == "request.completed"
+        and isinstance(getattr(record, "extra_fields", None), dict)
+    ]
+    assert access_records
+    extra_fields = access_records[-1].extra_fields
+    assert extra_fields["endpoint"] == "/api/v1/rebalance/runs/by-request-hash/{request_hash}"
+    assert extra_fields["status_family"] in {"4xx", "5xx"}
+    assert extra_fields["latency_bucket_ms"].startswith(("le_", "gt_"))
+    assert "sha256:sensitive-request-hash" not in json.dumps(extra_fields)
 
 
 def test_traceparent_header_propagates_trace_id():

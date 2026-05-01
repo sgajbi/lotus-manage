@@ -30,6 +30,10 @@
   `unknown` rather than emitting raw caller values.
 - Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
   content to supportability metric labels or log dimensions.
+- HTTP access logs use route templates such as
+  `/api/v1/rebalance/runs/by-request-hash/{request_hash}` rather than raw request paths, and emit
+  bounded `status_family` and `latency_bucket_ms` fields. Do not replace those with raw path values
+  or precise caller identifiers.
 - Capability consumers should gate this posture on
   `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
   `/api/v1/integration/capabilities`.

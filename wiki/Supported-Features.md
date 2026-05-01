@@ -37,6 +37,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Source-safe core resolver errors | Enforced for modeled stateful mode | resolver timeout/retry tests, no-core-base-url API test, and stateful feature-gate API test |
 | Capability truth gating | Enforced | integration capability tests proving stateful is not published without resolver readiness |
 | Mesh product validation | Enforced for repo-native declarations and trust telemetry | `make mesh-contract-validate`, domain product tests, trust telemetry tests |
+| Sensitive-safe access logging | Enforced | observability tests proving route-template logging and redaction of sensitive extra fields |
 
 ## Explicit Non-Goals
 
