@@ -23,7 +23,13 @@
   - `RFC-0028` integration capabilities contract
   - `lotus-platform` RFC-0067 OpenAPI quality and API vocabulary governance
   - `lotus-platform` RFC-0072 multi-lane CI validation and release governance
+  - `lotus-platform` RFC-0087 live trust telemetry and certification plane
+  - `lotus-platform` RFC-0088 self-serve discovery and dependency catalog
+  - `lotus-platform` RFC-0089 mesh certification merge gate and operational trust enforcement
   - `lotus-platform` RFC-0082 source-data authority and downstream integration hardening
+  - `lotus-platform` RFC-0091 enterprise data mesh maturity and production readiness
+  - `lotus-platform` RFC-0108 front-office analytics UI observability and operational posture,
+    where ecosystem-wide supportability, metrics, logs, and no-sensitive-telemetry rules apply
 - Supersedes:
   - The older `docs/rfcs/RFC-CONVENTIONS.md` rule that treated unversioned
     `POST /rebalance/simulate` as the long-term canonical endpoint. This RFC defines the target
@@ -109,6 +115,14 @@ For stateful mode, the user-facing outcome is:
 7. Capture complete lineage and supportability evidence for stateful and stateless runs.
 8. Improve OpenAPI/Swagger so every endpoint explains when to use it, when not to use it, request
    modes, attributes, examples, and error behavior.
+9. Remove advisory leftovers, stale proposal paths, obsolete compatibility code, and misleading
+   documentation from `lotus-manage`.
+10. Bring every `lotus-manage` API to Lotus enterprise certification standard before promotion.
+11. Fully onboard `lotus-manage` to the Lotus data mesh as a governed producer/consumer with
+    source-data-product, trust-telemetry, SLO, access, lifecycle, evidence-pack, and catalog
+    posture.
+12. Bring `lotus-manage` observability, logging, metrics, tracing, supportability, dashboards, and
+    alert contracts to the current Lotus ecosystem standard.
 
 ## Non-Goals
 
@@ -444,7 +458,26 @@ Exit evidence:
 3. route inventory proves no duplicate product API paths,
 4. live API demo pack uses only canonical paths.
 
-### Slice 2: Explicit Stateless Envelope
+### Slice 2: Advisory Leftover Cleanup
+
+1. Search all `src/`, `tests/`, `docs/`, `wiki/`, contracts, scripts, OpenAPI examples, demo
+   packs, and environment names for advisory/proposal leftovers.
+2. Remove any remaining proposal simulation, proposal artifact, proposal lifecycle, approval,
+   consent, advisory workspace, or advisory report code from `lotus-manage`.
+3. Remove stale compatibility shims, fixtures, operation names, error codes, comments, docs, or
+   tests that imply advisory ownership.
+4. Keep only DPM/discretionary mandate vocabulary in code, contracts, OpenAPI, docs, and wiki.
+5. Record any downstream stale consumer issues in the downstream repository rather than preserving
+   local compatibility.
+
+Exit evidence:
+
+1. advisory/proposal search ledger shows no active `lotus-manage` ownership remnants,
+2. no advisory/proposal routes appear in OpenAPI,
+3. no stale proposal tests or demo flows remain in `lotus-manage`,
+4. `lotus-advise` remains the documented destination owner for advisory flows.
+
+### Slice 3: Explicit Stateless Envelope
 
 1. Add envelope request models for simulate, analyze, and async analyze.
 2. Move current direct request body into `stateless_input`.
@@ -457,7 +490,7 @@ Exit evidence:
 2. idempotency replay/conflict tests pass,
 3. OpenAPI examples include complete request and response examples.
 
-### Slice 3: Core Resolver Client And Stateful Models
+### Slice 4: Core Resolver Client And Stateful Models
 
 1. Add `stateful_input` models.
 2. Add a `lotus-core` resolver client with bounded timeout, retry, correlation propagation, and
@@ -473,7 +506,7 @@ Exit evidence:
    lineage,
 3. no sensitive identifiers appear in metrics labels.
 
-### Slice 4: Stateful Simulate And Analyze Certification
+### Slice 5: Stateful Simulate And Analyze Certification
 
 1. Enable stateful simulate under controlled configuration.
 2. Enable stateful analyze and async analyze.
@@ -489,19 +522,90 @@ Exit evidence:
 3. supportability and lineage verified,
 4. Remote Feature Lane and PR Merge Gate pass.
 
-### Slice 5: Documentation, Wiki, And Platform Context
+### Slice 6: Enterprise API Certification
+
+1. Certify every public `lotus-manage` API endpoint endpoint-by-endpoint.
+2. Remove duplicate, deprecated, stale, or misleading endpoints before certification.
+3. Verify every endpoint has clear what/when/how/when-not-to-use guidance.
+4. Verify every request and response attribute has description, type, and example value.
+5. Verify all examples are executable and aligned to current request/response models.
+6. Verify all error responses use consistent Problem Details or governed error-body semantics and
+   include examples.
+7. Verify every endpoint has meaningful unit, integration, OpenAPI, vocabulary, and live proof
+   coverage proportional to risk.
+8. Record endpoint certification evidence in docs/wiki and update supported-features only after
+   proof exists.
+
+Exit evidence:
+
+1. endpoint certification ledger covers every remaining API,
+2. OpenAPI quality, API vocabulary, no-alias, and docs contract gates pass,
+3. duplicate route inventory is empty,
+4. live API evidence exists for high-value execution and supportability endpoints,
+5. residual endpoint risks have explicit issues and owners.
+
+### Slice 7: Enterprise Data Mesh Onboarding
+
+1. Reconcile `lotus-manage` producer and consumer declarations under
+   `contracts/domain-data-products/`.
+2. Ensure `PortfolioActionRegister` and any new stateful DPM execution/context evidence products
+   have product id, owner, classification, quality rules, source lineage, SLO, access, lifecycle,
+   evidence-pack, and catalog metadata aligned to platform RFC-0087 through RFC-0091.
+3. Add or update trust telemetry fixtures under `contracts/trust-telemetry/`.
+4. Validate that `lotus-manage` consumes `lotus-core` source-data products without claiming source
+   ownership.
+5. Update `lotus-platform` platform-contract mirrors and catalogs where required.
+6. Add mesh certification tests and automation coverage so drift blocks merge.
+7. Document mesh producer/consumer posture in README, wiki, and endpoint certification docs.
+
+Exit evidence:
+
+1. domain-data-product validation passes locally,
+2. trust telemetry validation passes locally,
+3. mesh certification workflow or equivalent platform validator passes,
+4. platform catalog entries match repo-native declarations,
+5. wiki and supported-features describe mesh posture without overclaiming.
+
+### Slice 8: Observability, Logging, Instrumentation, And Monitoring Parity
+
+1. Align `lotus-manage` logs, metrics, traces, correlation propagation, audit events, supportability
+   summaries, health/readiness semantics, and operator diagnostics with current Lotus ecosystem
+   standards.
+2. Apply RFC-0108-style no-sensitive-telemetry rules: no portfolio ids, client ids, account ids,
+   instrument ids, request hashes, raw holdings, or payload content in metric labels or unbounded
+   logs.
+3. Add bounded metrics for execution, stateful resolver calls, source-data supportability, run
+   supportability, policy-pack supportability, async operations, and workflow decisions.
+4. Add structured fan-out/resolver logs with service, operation, status, latency bucket, retry
+   outcome, supportability state, and bounded reason code.
+5. Add dashboard and alert contracts only for metrics that are implemented and tested.
+6. Add protected diagnostics/operator documentation for degraded upstream source-data states.
+7. Verify production readiness behavior for persistence profile, migrations, readiness, and
+   degraded upstream dependencies.
+
+Exit evidence:
+
+1. observability unit/integration tests pass,
+2. no-sensitive-log and no-sensitive-metric-label checks pass,
+3. `/metrics` exposes only bounded labels,
+4. dashboard/alert contract references only implemented metrics,
+5. live evidence captures logs, metrics, health/readiness, and degraded-state behavior.
+
+### Slice 9: Documentation, Wiki, And Platform Context
 
 1. Update README, repository context, engine know-how, API surface, endpoint certification, and
    supported-features docs.
 2. Update repo-local wiki source and publish after merge.
-3. Update platform context/source-data catalogs if the core resolver contract changes.
-4. Record Gateway integration as a follow-on, not part of this RFC.
+3. Update data-mesh, observability, operations, and endpoint-certification wiki pages.
+4. Update platform context/source-data catalogs if the core resolver contract changes.
+5. Record Gateway integration as a follow-on, not part of this RFC.
 
 Exit evidence:
 
 1. wiki check passes,
 2. docs regression tests pass,
-3. supported-features reflects only implemented and proven behavior.
+3. supported-features reflects only implemented and proven behavior,
+4. platform context and wiki truth match repo-local implementation reality.
 
 ## Test Plan
 
@@ -518,7 +622,11 @@ Minimum test coverage:
 7. supportability store tests for source-lineage persistence,
 8. OpenAPI examples and attribute documentation tests,
 9. API vocabulary/no-alias tests,
-10. live core-backed API validation before stateful mode is promoted.
+10. advisory-leftover absence tests or search-contract checks,
+11. endpoint certification tests for every public API family,
+12. data-mesh declaration and trust telemetry validation,
+13. no-sensitive logging/metrics/tracing tests,
+14. live core-backed API validation before stateful mode is promoted.
 
 ## OpenAPI And Swagger Requirements
 
@@ -532,15 +640,17 @@ Every strategic endpoint must document:
 6. all error responses with examples,
 7. idempotency behavior,
 8. source-data ownership and lineage behavior,
-9. mode-specific examples for stateless and stateful requests.
+9. mode-specific examples for stateless and stateful requests,
+10. certification status and supportability behavior for every endpoint family.
 
 ## Rollout Plan
 
 1. Implement endpoint consolidation and stateless envelope first.
 2. Keep stateful mode disabled while resolver and core source-data gaps are implemented.
 3. Certify stateful mode locally against `lotus-core`.
-4. Promote `dpm.execution.stateful_portfolio_id` in capabilities only after live proof.
-5. Rebuild Gateway integration in a separate follow-on slice against the canonical `/api/v1`
+4. Complete API certification, data-mesh onboarding, and observability parity before promotion.
+5. Promote `dpm.execution.stateful_portfolio_id` in capabilities only after live proof.
+6. Rebuild Gateway integration in a separate follow-on slice against the canonical `/api/v1`
    contract.
 
 ## Risks And Controls
@@ -553,6 +663,9 @@ Every strategic endpoint must document:
 | stale or incomplete core data drives execution | supportability state, completeness checks, source-lineage requirements, blocking error codes |
 | OpenAPI sprawl continues | remove duplicates and certify route inventory |
 | test suite becomes shallow | require unit, integration, live, OpenAPI, vocabulary, and endpoint certification proof |
+| mesh onboarding is claimed without operating proof | require repo-native declarations, trust telemetry, SLO/access/lifecycle/evidence metadata, platform catalog sync, and validation |
+| observability exposes sensitive portfolio or client information | bounded labels, no-sensitive tests, protected diagnostics, and RFC-0108-style field policy |
+| advisory scope leaks back into manage | dedicated cleanup slice plus route inventory, OpenAPI checks, and downstream issue tracking |
 
 ## Acceptance Criteria
 
@@ -566,8 +679,14 @@ This RFC is complete only when:
 6. OpenAPI and API vocabulary gates pass,
 7. live stateful proof is captured and critically reviewed,
 8. supportability and artifact evidence include source lineage,
-9. docs, wiki, repository context, and platform context are updated,
-10. Gateway follow-on integration work is tracked separately.
+9. advisory leftovers are removed from code, contracts, tests, docs, and OpenAPI,
+10. every public API is endpoint-certified to Lotus enterprise standard,
+11. `lotus-manage` is fully onboarded to data mesh requirements for its producer and consumer
+    products,
+12. observability, logging, instrumentation, monitoring, and protected diagnostics meet current
+    Lotus ecosystem standards,
+13. docs, wiki, repository context, and platform context are updated,
+14. Gateway follow-on integration work is tracked separately.
 
 ## Follow-On Work
 
