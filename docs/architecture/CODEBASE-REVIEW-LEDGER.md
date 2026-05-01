@@ -214,6 +214,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki operations and supported-features source updated because operator-facing
   monitoring behavior changed.
 
+## RFC36-S10-001: Capabilities endpoint silently ignored unsupported query parameters
+
+- Date: 2026-05-01
+- Scope: `GET /api/v1/integration/capabilities`, query-parameter guardrails, downstream
+  certification evidence
+- Finding: the capabilities endpoint documented canonical source-service query parameters
+  `consumer_system` and `tenant_id`, but unsupported camelCase parameters were ignored and caused
+  the endpoint to fall back to the default `lotus-gateway/default` posture. That is unsafe for a
+  certified control-plane endpoint because a downstream caller can believe tenant or consumer
+  context was applied when it was not.
+- Action: centralized unsupported-query rejection in `runtime_utils`, reused it for run and
+  policy-pack APIs to reduce duplicate helper code, and applied it to the capabilities endpoint.
+  Added API tests for camelCase rejection and unknown consumer validation.
+- Status: fixed for the capabilities endpoint.
+- Wiki decision: wiki endpoint-certification source updated because the certified request contract
+  and downstream remediation guidance changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

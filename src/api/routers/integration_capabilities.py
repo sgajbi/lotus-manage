@@ -2,9 +2,10 @@ import os
 from datetime import UTC, date, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 
+from src.api.routers.runtime_utils import reject_unexpected_query_params
 from src.core.common.capabilities import has_solver_dependencies
 
 ConsumerSystem = Literal["lotus-gateway", "lotus-performance", "lotus-manage", "UI", "UNKNOWN"]
@@ -312,10 +313,14 @@ def _build_capabilities_response(
                     "examples": CAPABILITIES_RESPONSE_EXAMPLES,
                 }
             },
-        }
+        },
+        422: {
+            "description": "Unsupported query parameters or invalid consumer values were supplied."
+        },
     },
 )
 async def get_integration_capabilities(
+    request: Request,
     consumer_system: ConsumerSystem = Query(
         "lotus-gateway",
         description=(
@@ -334,6 +339,10 @@ async def get_integration_capabilities(
         examples=["default"],
     ),
 ) -> IntegrationCapabilitiesResponse:
+    reject_unexpected_query_params(
+        request,
+        allowed_params={"consumer_system", "tenant_id"},
+    )
     return _build_capabilities_response(
         consumer_system=consumer_system,
         tenant_id=tenant_id,

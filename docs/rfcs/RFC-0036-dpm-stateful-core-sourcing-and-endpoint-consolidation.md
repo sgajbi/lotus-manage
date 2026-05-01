@@ -1147,6 +1147,49 @@ Exit evidence:
 4. live API evidence exists for high-value execution and supportability endpoints,
 5. residual endpoint risks have explicit issues and owners.
 
+Implementation evidence captured on 2026-05-01:
+
+1. Started endpoint-by-endpoint certification with `GET /api/v1/integration/capabilities` because
+   it governs downstream feature publication and stateful-mode truth.
+2. Certification review found that unsupported camelCase query parameters were silently ignored,
+   allowing direct source-service callers to believe `consumerSystem` or `tenantId` was applied
+   when the endpoint had actually fallen back to `lotus-gateway/default`.
+3. Centralized unsupported-query rejection in `src/api/routers/runtime_utils.py`, reused it from
+   the run-supportability and policy-pack routers, and applied it to
+   `GET /api/v1/integration/capabilities`.
+4. Added tests proving:
+   - canonical `consumer_system` and `tenant_id` still resolve explicitly,
+   - noncanonical `consumerSystem` and `tenantId` now fail closed with `422`,
+   - unknown consumer-system values fail contract validation with `422`,
+   - stateful `portfolio_id` execution is not published unless all resolver readiness gates are
+     configured.
+5. Downstream review confirmed `sgajbi/lotus-gateway#178` remains the active remediation issue for
+   Gateway use of the removed `/api/v1/platform/capabilities` alias, camelCase direct source-service
+   query parameters, stale proposal-era DPM client methods, and strategic DPM capability mapping.
+6. Focused validation passed:
+   - `python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`
+     returned 15 passed,
+   - `python scripts/openapi_quality_gate.py` passed,
+   - `python scripts/api_vocabulary_inventory.py --validate-only` passed,
+   - `python -m ruff check src/api/routers/runtime_utils.py src/api/routers/rebalance_runs.py src/api/routers/rebalance_policy_packs.py src/api/routers/integration_capabilities.py tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`
+     passed,
+   - targeted mypy over the changed routers passed.
+7. Repository-native `make check` passed after capabilities certification hardening:
+   - lint and format checks passed,
+   - monetary float guard passed,
+   - no-alias, mypy, OpenAPI, API vocabulary, domain product, trust telemetry, and observability
+     contract gates passed,
+   - unit suite returned 484 passed.
+8. Docker-backed live proof passed:
+   - `docker compose down -v`,
+   - `LOTUS_MANAGE_HOST_PORT=8001 docker compose up -d --build`,
+   - canonical `GET /api/v1/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default`
+     returned `200`,
+   - noncanonical `GET /api/v1/integration/capabilities?consumerSystem=lotus-gateway&tenantId=default`
+     returned `422` with `UNSUPPORTED_QUERY_PARAMETER`,
+   - `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate` returned 0 failures
+     across 8 probes.
+
 ### Slice 11: Implementation Proof
 
 1. Prove the full implementation end to end against this RFC using the live application and

@@ -1,6 +1,6 @@
 import os
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 
 from src.core.common.capabilities import psycopg_error_type
 
@@ -17,6 +17,23 @@ def assert_feature_enabled(*, name: str, default: bool, detail: str) -> None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=detail,
+        )
+
+
+def reject_unexpected_query_params(
+    request: Request,
+    *,
+    allowed_params: set[str],
+) -> None:
+    unexpected = sorted(name for name in request.query_params if name not in allowed_params)
+    if unexpected:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                "UNSUPPORTED_QUERY_PARAMETER: "
+                + ", ".join(unexpected)
+                + " not supported for this endpoint"
+            ),
         )
 
 

@@ -108,13 +108,22 @@ def test_platform_capabilities_alias_is_removed() -> None:
     assert platform.status_code == 404
 
 
-def test_integration_capabilities_ignores_noncanonical_camel_case_query_params() -> None:
+def test_integration_capabilities_rejects_noncanonical_camel_case_query_params() -> None:
     with TestClient(app) as client:
         response = client.get(
             "/api/v1/integration/capabilities?consumerSystem=lotus-performance&tenantId=tenant-x"
         )
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["consumer_system"] == "lotus-gateway"
-    assert body["tenant_id"] == "default"
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: consumerSystem, tenantId not supported for this endpoint"
+    )
+
+
+def test_integration_capabilities_rejects_unknown_consumer_system() -> None:
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/integration/capabilities?consumer_system=lotus-workbench&tenant_id=default"
+        )
+
+    assert response.status_code == 422

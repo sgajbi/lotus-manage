@@ -108,7 +108,8 @@ Functional coverage:
 - environment-controlled stateful `portfolio_id` publication,
 - environment-controlled `stateless` publication,
 - runtime solver dependency discovery,
-- noncanonical camelCase direct-source query parameters do not override defaults.
+- noncanonical camelCase direct-source query parameters fail closed with `422`,
+- unknown consumer-system values fail contract validation with `422`.
 
 Default capability posture:
 
@@ -131,11 +132,14 @@ Downstream consumers:
 - `lotus-gateway` platform capabilities aggregation is the strategic downstream consumer.
 - `lotus-workbench` consumes the Gateway BFF contract rather than calling `lotus-manage` directly.
 
-Tracked downstream remediation:
+Certification finding and tracked downstream remediation:
 
 - `sgajbi/lotus-gateway#178` tracks Gateway cleanup for direct source-service query parameters,
   stale proposal/advisory-era DPM client methods, and normalized capability mapping from strategic
-  `lotus-manage` DPM feature/workflow keys.
+  `lotus-manage` DPM feature/workflow keys. Gateway currently calls the removed
+  `/api/v1/platform/capabilities` alias with camelCase query parameters; the certified
+  source-service contract is `/api/v1/integration/capabilities` with `consumer_system` and
+  `tenant_id`.
 
 Evidence commands:
 

@@ -294,6 +294,10 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     integration_params = {param["name"]: param for param in integration_get["parameters"]}
     assert integration_params["consumer_system"]["schema"]["default"] == "lotus-gateway"
     assert integration_params["tenant_id"]["schema"]["default"] == "default"
+    assert "consumerSystem" not in integration_params
+    assert "tenantId" not in integration_params
+    assert "422" in integration_get["responses"]
+    assert "Unsupported query parameters" in integration_get["responses"]["422"]["description"]
     assert (
         "canonical snake_case query parameter `consumer_system`"
         in integration_params["consumer_system"]["description"]

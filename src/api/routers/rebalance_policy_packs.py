@@ -8,6 +8,7 @@ from src.api.routers.runtime_utils import (
     assert_feature_enabled,
     env_flag,
     normalize_backend_init_error,
+    reject_unexpected_query_params,
 )
 from src.core.common.capabilities import psycopg_error_type
 from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
@@ -105,21 +106,7 @@ _POLICY_CATALOG_DELETE_RESPONSES: _RouteResponses = {
 }
 
 
-def _reject_unexpected_query_params(
-    request: Request,
-    *,
-    allowed_params: set[str],
-) -> None:
-    unexpected = sorted(name for name in request.query_params if name not in allowed_params)
-    if unexpected:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                "UNSUPPORTED_QUERY_PARAMETER: "
-                + ", ".join(unexpected)
-                + " not supported for this endpoint"
-            ),
-        )
+_reject_unexpected_query_params = reject_unexpected_query_params
 
 
 def resolve_dpm_policy_pack(

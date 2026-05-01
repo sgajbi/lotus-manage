@@ -9,7 +9,11 @@ from src.api.observability import (
     record_action_register_supportability,
 )
 from src.api.routers import rebalance_runs_config
-from src.api.routers.runtime_utils import assert_feature_enabled, normalize_backend_init_error
+from src.api.routers.runtime_utils import (
+    assert_feature_enabled,
+    normalize_backend_init_error,
+    reject_unexpected_query_params,
+)
 from src.core.rebalance_runs import (
     DpmRunArtifactResponse,
     DpmRunIdempotencyHistoryResponse,
@@ -111,21 +115,7 @@ def _supportability_store_backend_name() -> str:
     return rebalance_runs_config.supportability_store_backend_name()
 
 
-def _reject_unexpected_query_params(
-    request: Request,
-    *,
-    allowed_params: set[str],
-) -> None:
-    unexpected = sorted(name for name in request.query_params if name not in allowed_params)
-    if unexpected:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                "UNSUPPORTED_QUERY_PARAMETER: "
-                + ", ".join(unexpected)
-                + " not supported for this endpoint"
-            ),
-        )
+_reject_unexpected_query_params = reject_unexpected_query_params
 
 
 def _build_repository() -> DpmRunRepository:
