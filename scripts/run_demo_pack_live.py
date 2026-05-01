@@ -68,6 +68,8 @@ def run_demo_pack(base_url: str) -> None:
     idem_27 = f"live-demo-27-supportability-{run_token}"
     corr_29 = f"live-corr-29-workflow-disabled-{run_token}"
     idem_29 = f"live-demo-29-workflow-disabled-{run_token}"
+    corr_26 = f"live-corr-26-async-{run_token}"
+    corr_28 = f"live-corr-28-async-inline-{run_token}"
     idem_31 = f"live-demo-31-policy-pack-{run_token}"
     corr_32 = f"live-corr-32-support-summary-{run_token}"
     idem_32 = f"live-demo-32-support-summary-{run_token}"
@@ -190,7 +192,7 @@ def run_demo_pack(base_url: str) -> None:
             path="/rebalance/analyze/async",
             expected_http=202,
             payload_file="26_dpm_async_batch_analysis.json",
-            headers={"X-Correlation-Id": "demo-corr-26-async"},
+            headers={"X-Correlation-Id": corr_26},
         )
         operation_id = async_batch["operation_id"]
         operation = _run_scenario(
@@ -218,7 +220,7 @@ def run_demo_pack(base_url: str) -> None:
             path="/rebalance/analyze/async",
             expected_http=202,
             payload_file="28_dpm_async_manual_execute_guard.json",
-            headers={"X-Correlation-Id": "demo-corr-28-async-inline"},
+            headers={"X-Correlation-Id": corr_28},
         )
         manual_execute_conflict = client.post(
             f"/rebalance/operations/{manual_guard['operation_id']}/execute"

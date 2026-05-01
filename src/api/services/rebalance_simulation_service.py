@@ -29,6 +29,7 @@ from src.core.rebalance.policy_packs import (
 )
 from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
+    DpmAsyncOperationConflictError,
     DpmAsyncOperationStatusResponse,
     DpmRunLookupResponse,
     DpmRunNotFoundError,
@@ -386,17 +387,20 @@ def submit_and_optionally_execute_async_analysis(
         policy_pack.source,
         policy_pack.selected_policy_pack_id,
     )
-    accepted = service.submit_analyze_async(
-        correlation_id=correlation_id,
-        request_json={
-            "batch_request": request.model_dump(mode="json"),
-            "policy_context": {
-                "request_policy_pack_id": policy_pack_id,
-                "tenant_default_policy_pack_id": None,
-                "tenant_id": tenant_id,
+    try:
+        accepted = service.submit_analyze_async(
+            correlation_id=correlation_id,
+            request_json={
+                "batch_request": request.model_dump(mode="json"),
+                "policy_context": {
+                    "request_policy_pack_id": policy_pack_id,
+                    "tenant_default_policy_pack_id": None,
+                    "tenant_id": tenant_id,
+                },
             },
-        },
-    )
+        )
+    except DpmAsyncOperationConflictError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     if resolve_async_execution_mode() == "ACCEPT_ONLY":
         return accepted
     run_analyze_async_operation(operation_id=accepted.operation_id, service=service)

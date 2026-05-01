@@ -1234,6 +1234,20 @@ def test_analyze_async_generates_and_echoes_correlation_header_when_missing(clie
     assert accepted.headers["X-Correlation-Id"] == accepted_body["correlation_id"]
 
 
+def test_analyze_async_duplicate_correlation_returns_domain_conflict(client):
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+    headers = {"X-Correlation-Id": "corr-batch-async-duplicate"}
+
+    first = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+    second = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+
+    assert first.status_code == 202
+    assert second.status_code == 409
+    assert second.json()["detail"] == "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
+
+
 def test_analyze_async_failure_is_captured_in_operation_status(client):
     payload = get_valid_payload()
     payload.pop("options")

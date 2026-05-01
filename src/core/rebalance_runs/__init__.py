@@ -18,6 +18,7 @@ from src.core.rebalance_runs.models import (
 )
 from src.core.rebalance_runs.repository import DpmRunRepository
 from src.core.rebalance_runs.service import (
+    DpmAsyncOperationConflictError,
     DpmRunNotFoundError,
     DpmRunSupportService,
     DpmWorkflowDisabledError,
@@ -41,6 +42,7 @@ __all__ = [
     "DpmWorkflowDecisionListResponse",
     "DpmRunWorkflowHistoryResponse",
     "DpmRunWorkflowResponse",
+    "DpmAsyncOperationConflictError",
     "DpmRunNotFoundError",
     "DpmWorkflowDisabledError",
     "DpmWorkflowTransitionError",

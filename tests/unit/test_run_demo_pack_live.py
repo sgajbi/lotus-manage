@@ -27,3 +27,12 @@ def test_non_solver_demo_requires_expected_status() -> None:
             body={"status": "BLOCKED", "diagnostics": {"warnings": ["SOLVER_ERROR"]}},
             expected="READY",
         )
+
+
+def test_live_demo_script_does_not_use_fixed_async_correlation_ids() -> None:
+    import scripts.run_demo_pack_live as demo_pack
+
+    source = demo_pack.Path(demo_pack.__file__).read_text(encoding="utf-8")
+
+    assert '"demo-corr-26-async"' not in source
+    assert '"demo-corr-28-async-inline"' not in source

@@ -56,6 +56,10 @@ class DpmRunNotFoundError(Exception):
     pass
 
 
+class DpmAsyncOperationConflictError(Exception):
+    pass
+
+
 class DpmWorkflowDisabledError(Exception):
     pass
 
@@ -257,6 +261,11 @@ class DpmRunSupportService:
         self._cleanup_expired_operations()
         now = created_at or _utc_now()
         resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
+        existing_operation = self._repository.get_operation_by_correlation(
+            correlation_id=resolved_correlation_id
+        )
+        if existing_operation is not None:
+            raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
         operation = DpmAsyncOperationRecord(
             operation_id=f"dop_{uuid.uuid4().hex[:12]}",
             operation_type="ANALYZE_SCENARIOS",

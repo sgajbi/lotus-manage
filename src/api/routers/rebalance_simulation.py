@@ -212,6 +212,7 @@ def analyze_scenarios(
             },
         },
         404: {"description": "Async operations disabled by configuration."},
+        409: {"description": "Correlation id already belongs to an existing async operation."},
         422: {"description": "Validation error (invalid shared payload or scenario key format)."},
     },
 )
