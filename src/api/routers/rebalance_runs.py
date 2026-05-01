@@ -4,7 +4,10 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 
-from src.api.observability import record_action_register_supportability
+from src.api.observability import (
+    ACTION_REGISTER_SUPPORTABILITY_SURFACE,
+    record_action_register_supportability,
+)
 from src.api.routers import rebalance_runs_config
 from src.api.routers.runtime_utils import assert_feature_enabled, normalize_backend_init_error
 from src.core.rebalance_runs import (
@@ -305,7 +308,7 @@ def get_dpm_supportability_summary(
         ),
     )
     record_action_register_supportability(
-        surface="rebalance/supportability/summary",
+        surface=ACTION_REGISTER_SUPPORTABILITY_SURFACE,
         supportability_state=response.supportability.state,
         reason=response.supportability.reason,
         freshness_bucket=response.supportability.freshness_bucket,

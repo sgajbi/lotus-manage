@@ -21,6 +21,41 @@ MANAGE_SUPPORTABILITY_TOTAL = Counter(
     ["surface", "supportability_state", "reason", "freshness_bucket"],
 )
 
+ACTION_REGISTER_SUPPORTABILITY_SURFACE = "rebalance/supportability/summary"
+UNKNOWN_ACTION_REGISTER_SURFACE = "unknown_surface"
+
+_ALLOWED_ACTION_REGISTER_SURFACES = frozenset({ACTION_REGISTER_SUPPORTABILITY_SURFACE})
+_ALLOWED_SUPPORTABILITY_STATES = frozenset(
+    {
+        "ready",
+        "stale",
+        "degraded",
+        "empty",
+        "error",
+        "permission_blocked",
+        "unsupported",
+    }
+)
+_ALLOWED_SUPPORTABILITY_REASONS = frozenset(
+    {
+        "supportability_summary_ready",
+        "supportability_summary_empty",
+        "supportability_summary_stale",
+        "supportability_summary_degraded",
+        "supportability_summary_error",
+        "permission_blocked",
+        "unsupported_surface",
+    }
+)
+_ALLOWED_FRESHNESS_BUCKETS = frozenset({"current", "same_day", "stale", "unknown"})
+
+
+def _safe_metric_label(value: str, *, allowed_values: frozenset[str], fallback: str) -> str:
+    candidate = value.strip()
+    if candidate in allowed_values:
+        return candidate
+    return fallback
+
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
@@ -104,8 +139,24 @@ def record_action_register_supportability(
     freshness_bucket: str,
 ) -> None:
     MANAGE_SUPPORTABILITY_TOTAL.labels(
-        surface=surface,
-        supportability_state=supportability_state,
-        reason=reason,
-        freshness_bucket=freshness_bucket,
+        surface=_safe_metric_label(
+            surface,
+            allowed_values=_ALLOWED_ACTION_REGISTER_SURFACES,
+            fallback=UNKNOWN_ACTION_REGISTER_SURFACE,
+        ),
+        supportability_state=_safe_metric_label(
+            supportability_state,
+            allowed_values=_ALLOWED_SUPPORTABILITY_STATES,
+            fallback="error",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_SUPPORTABILITY_REASONS,
+            fallback="supportability_summary_error",
+        ),
+        freshness_bucket=_safe_metric_label(
+            freshness_bucket,
+            allowed_values=_ALLOWED_FRESHNESS_BUCKETS,
+            fallback="unknown",
+        ),
     ).inc()

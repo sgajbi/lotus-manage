@@ -25,7 +25,9 @@
 - Operators should treat `empty` as no persisted run or operation evidence, `stale` as old
   supportability evidence, and `degraded` as failed async operation evidence.
 - `/metrics` exposes `lotus_manage_action_register_supportability_total` with only bounded
-  `surface`, `supportability_state`, `reason`, and `freshness_bucket` labels.
+  `surface`, `supportability_state`, `reason`, and `freshness_bucket` labels. The recorder
+  allowlists label values and falls back to `unknown_surface`, `supportability_summary_error`, or
+  `unknown` rather than emitting raw caller values.
 - Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
   content to supportability metric labels or log dimensions.
 - Capability consumers should gate this posture on
