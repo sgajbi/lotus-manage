@@ -16,6 +16,8 @@ from src.api.enterprise_readiness import (
 from src.api.observability import correlation_id_var, setup_observability
 from src.api.openapi_enrichment import enrich_openapi_schema
 from src.api.persistence_profile import validate_persistence_profile_guardrails
+from src.api.persistence_profile import app_persistence_profile_name
+from src.api.production_cutover_contract import validate_cutover_migrations_applied
 from src.api.routers.advisory_simulation import (
     build_proposal_artifact_endpoint,
     simulate_proposal,
@@ -170,6 +172,9 @@ def health_live() -> dict[str, str]:
 @app.get("/health/ready")
 @app.get("/api/v1/health/ready")
 def health_ready() -> dict[str, str]:
+    validate_persistence_profile_guardrails()
+    if app_persistence_profile_name() == "PRODUCTION":
+        validate_cutover_migrations_applied()
     return {"status": "ready"}
 
 

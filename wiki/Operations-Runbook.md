@@ -13,6 +13,9 @@
 - supportability flows depend on truthful run persistence, lineage, and idempotency history
 - capability discovery is backend-owned and should not be inferred by downstream callers
 - local Docker keeps PostgreSQL internal to the Compose network by default
+- Docker startup applies PostgreSQL migrations before serving traffic
+- `/health/ready` validates production persistence guardrails and applied migrations in production
+  profile, so container health is tied to supportability backing-store readiness instead of `/docs`
 
 ## RFC-0108 action register supportability
 
@@ -28,6 +31,20 @@
 - Capability consumers should gate this posture on
   `manage.observability.action_register_supportability` from `/integration/capabilities` or
   `/platform/capabilities`.
+
+## Docker production readiness
+
+- Compose waits for the internal PostgreSQL service to be healthy before starting
+  `lotus-manage`.
+- The application command runs `python scripts/postgres_migrate.py --target all` before `uvicorn`.
+- The runtime image includes the migration script and the `psycopg` runtime driver required for
+  Postgres-backed supportability stores.
+- A healthy container should have the `schema_migrations` table plus DPM and proposal persistence
+  tables. If `/rebalance/supportability/summary` returns a Postgres connection or migration error,
+  inspect the startup logs first for migration failures.
+- For canonical front-office proof, `GET /rebalance/supportability/summary` should return HTTP
+  `200`. An `empty` supportability state is acceptable for a freshly seeded stack with no recorded
+  management actions; HTTP `503` is not acceptable demo evidence.
 
 ## Key references
 

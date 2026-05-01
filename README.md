@@ -156,6 +156,11 @@ Local Docker runtime does not publish the internal PostgreSQL port by default.
 `postgres:5432` remains internal to the Compose network, and only the application port `8000`
 is published for local API access.
 
+Docker startup applies the forward-only PostgreSQL migrations before `uvicorn` starts, and the
+container healthcheck uses `/health/ready` rather than `/docs`. In production profile,
+`/health/ready` validates persistence guardrails and applied migration versions so supportability
+APIs cannot look healthy while their backing store is missing or unmigrated.
+
 Operationally important truths:
 
 1. readiness and migration posture matter because supportability flows depend on persistence truth
