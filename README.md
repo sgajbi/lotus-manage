@@ -41,8 +41,8 @@ Current posture under RFC-0082:
 1. rebalance simulation, policy-pack behavior, async operations, and run-support contracts are
    owned here
 2. stateful `portfolio_id` mode must remain anchored to governed `lotus-core` authority
-3. remaining advisory or proposal-lifecycle routes in this repo are compatibility or cleanup
-   surfaces, not a mandate to expand advisory scope here
+3. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
+   for this repository and belong in `lotus-advise`
 
 ## Current Operational Posture
 
@@ -66,8 +66,6 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/rebalance/policies/*`
 - integration capabilities
   `/integration/capabilities`, `/platform/capabilities`
-- compatibility advisory surfaces
-  proposal simulation and proposal lifecycle routes that remain present during split cleanup
 - platform surfaces
   `/health`, `/health/live`, `/health/ready`, `/docs`
 
@@ -79,8 +77,6 @@ Key code areas:
   discretionary portfolio-management simulation engine and supporting rebalance modules
 - `src/core/dpm_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
-- `src/core/proposals/`
-  compatibility proposal-lifecycle models and services still carried in this repo
 - `src/infrastructure/`
   PostgreSQL migrations, repository backends, and policy-pack persistence
 - `docs/`
@@ -166,7 +162,7 @@ Operationally important truths:
 1. readiness and migration posture matter because supportability flows depend on persistence truth
 2. capability discovery through `/integration/capabilities` remains backend-owned and uses
    canonical snake_case query parameters
-3. compatibility advisory routes should be maintained carefully but should not grow advisory scope
+3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
 
 ## Documentation Map
 

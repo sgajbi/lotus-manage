@@ -30,11 +30,6 @@
 - `/platform/capabilities`
   backend-owned feature and workflow discovery for gateway and platform consumers
 
-## Compatibility surfaces
-
-- advisory simulation and proposal lifecycle routes remain present in the router layout
-- treat them as compatibility or managed cleanup scope unless a current repo RFC says otherwise
-
 ## Platform surfaces
 
 - `/health`

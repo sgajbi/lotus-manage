@@ -1,6 +1,7 @@
 # Architecture Decision Records
 
-- `ADR-0001-async-proposal-operations-and-correlation-retrieval.md`
+Current `lotus-manage` ADRs:
+
 - `ADR-0002-dpm-simulate-idempotency-replay-contract.md`
 - `ADR-0003-dpm-run-supportability-lookup-apis.md`
 - `ADR-0004-dpm-async-operation-selection-and-correlation-contract.md`
@@ -10,4 +11,6 @@
 - `ADR-0008-dpm-supportability-store-backend-selection.md`
 - `ADR-0009-postgresql-as-target-persistence-backend.md`
 - `ADR-0010-testing-strategy-fast-unit-and-postgres-parity.md`
-- `ADR-0011-local-postgres-default-and-runtime-legacy-backend-deprecation.md`
+
+Retired advisory/proposal ADRs were removed from the active index after `lotus-advise` became the
+owner of advisor-led proposal simulation, artifacts, consent, and lifecycle workflows.

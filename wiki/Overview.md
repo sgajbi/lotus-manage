@@ -27,4 +27,4 @@ This repo does not own:
 - management-side service after the `lotus-advise` split
 - canonical host runtime on port `8001` so both services can coexist locally
 - explicit no-alias, OpenAPI, vocabulary, migration, and security governance in CI
-- remaining advisory/proposal routes treated as compatibility or cleanup surfaces under RFC-0082
+- proposal simulation, artifacts, consent, and lifecycle routes are owned by `lotus-advise`

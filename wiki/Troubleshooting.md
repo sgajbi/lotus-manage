@@ -4,7 +4,7 @@
 
 - if readiness fails, inspect persistence and migration posture first
 - if supportability endpoints return inconsistent results, verify run persistence and lineage stores
-- if local host startup collides with advisory runtime, confirm `lotus-manage` is using port `8001`
+- if local host startup collides with `lotus-advise`, confirm `lotus-manage` is using port `8001`
 - if capability discovery fails, check query parameter shape and backend route availability
 
 ## Useful commands

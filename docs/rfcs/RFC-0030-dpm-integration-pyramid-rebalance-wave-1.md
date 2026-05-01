@@ -13,7 +13,6 @@ Most API workflow verification lives under `tests/unit` with mocked seams, while
 Add integration API workflow tests that exercise router + service + in-memory persistence boundaries without heavy mocking:
 
 - lotus-manage rebalance simulation lifecycle with supportability lookups.
-- Advisory proposal lifecycle creation/version/workflow timeline retrieval.
 
 ## Architectural Impact
 
@@ -28,4 +27,3 @@ No production code changes. Improves confidence in real service wiring and endpo
 
 1. Add integration fixture to reset lotus-manage runtime singletons between tests.
 2. Add lotus-manage run supportability integration workflow tests.
-3. Add advisory proposal lifecycle integration workflow tests.

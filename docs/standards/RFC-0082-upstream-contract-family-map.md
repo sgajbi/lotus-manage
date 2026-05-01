@@ -47,12 +47,12 @@ composition.
 ## Split-Boundary Posture
 
 `lotus-advise` is the advisory workflow and proposal simulation authority after the repository split.
-Any remaining advisory-labeled or proposal-lifecycle surface in `lotus-manage` is treated as
-compatibility or managed cleanup surface unless a current repo RFC explicitly keeps it here.
+`lotus-manage` no longer exposes proposal simulation, proposal artifact, or proposal lifecycle
+routes.
 
 Boundary rules:
 
-1. advisor-led proposal workflow should not expand in `lotus-manage`,
+1. advisor-led proposal workflow should not be reintroduced in `lotus-manage`,
 2. new advisory decision-summary, alternatives, suitability, or consent behavior belongs in
    `lotus-advise`,
 3. gateway-facing management workflow should consume `lotus-manage` for rebalance execution and
@@ -118,9 +118,7 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
 3. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
    authority. Keep snapshot identifiers, request hashes, and supportability bundles mandatory for
    traceability.
-4. Remaining advisory/proposal-lifecycle surfaces in `lotus-manage` should not receive new advisory
-   scope unless a split-governance decision explicitly keeps them here.
-5. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
+4. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
    caching, and source-data retrieval design before considering a transport change.
 
 ## Validation Lane

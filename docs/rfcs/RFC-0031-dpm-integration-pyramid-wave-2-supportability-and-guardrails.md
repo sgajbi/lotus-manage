@@ -15,8 +15,7 @@ Add integration workflow tests for:
 1. lotus-manage support-bundle lookups (by correlation/idempotency/operation).
 2. lotus-manage idempotency history endpoint behavior under feature flags.
 3. lotus-manage supportability summary guardrail when disabled.
-4. Proposal supportability config backend readiness/error branch.
-5. Proposal support/idempotency endpoints and disabled-support guardrail.
+4. lotus-manage workflow and policy-pack supportability guardrails.
 
 ## Architectural Impact
 No runtime logic changes. Validation depth increases for existing API contracts and guardrail behavior.
@@ -26,6 +25,6 @@ No runtime logic changes. Validation depth increases for existing API contracts 
 - Slight CI runtime increase due to expanded integration suite.
 
 ## High-Level Implementation Approach
-1. Extend existing integration API workflow test files under `tests/integration/dpm/api` and `tests/integration/advisory/api`.
+1. Extend existing integration API workflow test files under `tests/integration/dpm/api`.
 2. Validate with integration suite execution and lint checks.
 3. Merge increment and re-measure pyramid distribution.

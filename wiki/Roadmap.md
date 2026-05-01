@@ -9,5 +9,4 @@
 ## Watchlist areas
 
 - `portfolio_id` stateful-mode implementation depth against governed `lotus-core` contracts
-- remaining advisory/proposal compatibility surfaces that still live in this repo
 - gateway capability-consumer alignment on canonical snake_case query parameters

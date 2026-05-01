@@ -7,6 +7,18 @@
 - PostgreSQL-backed persistence and migrations under `src/infrastructure/`
 - consumed primarily through `lotus-gateway`
 
+```mermaid
+flowchart LR
+    Gateway[lotus-gateway] --> Manage[lotus-manage FastAPI]
+    Manage --> Engine[DPM rebalance engine]
+    Manage --> Runs[Run supportability services]
+    Manage --> Policies[Policy-pack resolver]
+    Runs --> Postgres[(PostgreSQL DPM schema)]
+    Policies --> Postgres
+    Core[lotus-core source data] -. governed input snapshots .-> Gateway
+    Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
+```
+
 ## Code map
 
 - `src/api/`
@@ -17,8 +29,6 @@
   async operation, workflow, artifact, and supportability services
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
-- `src/core/proposals/`
-  compatibility proposal-lifecycle modules still present after the service split
 - `src/infrastructure/`
   persistence backends, policy-pack repositories, and PostgreSQL migrations
 

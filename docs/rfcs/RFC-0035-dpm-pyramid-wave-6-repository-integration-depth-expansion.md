@@ -6,7 +6,6 @@ lotus-manage test coverage is at `99%`, but the integration slice remains below 
 ## Proposed Change
 Add meaningful PostgreSQL repository-integration tests for:
 - lotus-manage supportability repository (`dpm_runs`): cursor edge cases, filter combinations, workflow-decision paging, summary aggregation semantics, and retention guardrails.
-- Advisory proposal repository (`proposals`): simulation idempotency persistence, list pagination/cursor semantics, workflow event/approval ordering, transition without approval, and version retrieval paths.
 - lotus-manage policy-pack repository: empty-state behavior, rich policy definition roundtrip, deterministic ordering, and delete semantics.
 
 ## Architectural Impact

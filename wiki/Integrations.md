@@ -14,7 +14,7 @@
 3. `portfolio_id` and future stateful modes must stay grounded in governed `lotus-core` contracts
 4. capability consumers should use canonical snake_case query parameters `consumer_system` and
    `tenant_id`
-5. remaining advisory compatibility routes should not be used to expand advisory ownership here
+5. advisory proposal workflows should be integrated through `lotus-advise`
 
 ## Reference
 

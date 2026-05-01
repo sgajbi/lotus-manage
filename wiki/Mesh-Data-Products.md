@@ -7,7 +7,7 @@
 ## Governed product
 
 - Product ID: `lotus-manage:PortfolioActionRegister:v1`
-- Product role: governed portfolio action register for management, advisory, reporting, gateway, and Workbench discovery flows
+- Product role: governed portfolio action register for management, reporting, gateway, and Workbench discovery flows
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Trust telemetry: `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
 

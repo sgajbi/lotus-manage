@@ -1,13 +1,12 @@
 # Durability and Consistency Standard (lotus-manage)
 
 - Standard reference: `lotus-platform/Durability and Consistency Standard.md`
-- Scope: discretionary and advisory workflow simulation/lifecycle write operations.
+- Scope: discretionary mandate workflow simulation, lifecycle review, and supportability writes.
 - Change control: RFC required for policy changes; ADR required for temporary exceptions.
 
 ## Workflow Consistency Classification
 
 - Strong consistency:
-  - proposal lifecycle writes
   - run/workflow operation state transitions
   - idempotency mapping persistence
 - Eventual consistency:
@@ -19,17 +18,14 @@
 - Idempotency mapping/history repositories prevent duplicate business effects on retries.
 - Evidence:
   - `src/api/routers/rebalance_simulation.py`
-  - `src/api/routers/proposals_lifecycle_routes.py`
   - `src/infrastructure/rebalance_runs/postgres.py`
-  - `src/infrastructure/proposals/postgres.py`
 
 ## Atomicity and Transaction Boundaries
 
-- Run/proposal persistence uses explicit transaction boundaries in repository implementations.
+- Run and workflow persistence uses explicit transaction boundaries in repository implementations.
 - Partial workflow updates must fail and surface explicit errors.
 - Evidence:
   - `src/infrastructure/rebalance_runs/postgres.py`
-  - `src/infrastructure/proposals/postgres.py`
 
 ## As-Of and Reproducibility Semantics
 
@@ -43,7 +39,6 @@
 - Idempotency conflict behavior is explicit (same key + different payload -> conflict).
 - Workflow action conflicts are exposed through deterministic API responses.
 - Evidence:
-  - `src/core/advisory_engine.py`
   - `src/core/rebalance_runs/service.py`
   - `tests/unit/core/*`
 

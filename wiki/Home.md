@@ -31,6 +31,7 @@ This repo does not own:
 - [Overview](Overview)
 - [Architecture](Architecture)
 - [API Surface](API-Surface)
+- [Supported Features](Supported-Features)
 - [Getting Started](Getting-Started)
 - [Development Workflow](Development-Workflow)
 - [Validation and CI](Validation-and-CI)

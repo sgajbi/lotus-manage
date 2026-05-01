@@ -12,7 +12,8 @@ For platform-wide truth, read:
 
 `lotus-manage` is the discretionary portfolio-management and operational workflow service.
 
-It owns management-side execution, supportability, and lifecycle workflows that are not advisory-only.
+It owns management-side execution, supportability, and mandate workflow review for discretionary
+portfolio management.
 
 ## Business And Domain Responsibility
 
@@ -22,7 +23,8 @@ This repository owns:
 2. management-side lifecycle and execution support,
 3. operational supportability and related management contracts.
 
-Advisor-led proposal workflows are intentionally owned by `lotus-advise`.
+Advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are intentionally
+owned by `lotus-advise`.
 
 ## Current-State Summary
 
@@ -70,7 +72,7 @@ Runtime model:
 Boundary rules:
 
 1. management workflows belong here,
-2. proposal and advisor-led flows belong in `lotus-advise`,
+2. proposal and advisor-led flows belong in `lotus-advise` and should not be reintroduced here,
 3. host runtime identity and coexistence with `lotus-advise` are part of the operational contract,
 4. management capabilities should remain aligned with gateway-facing product expectations,
 5. `lotus-core` remains the source-data authority for core-referenced portfolio, market-data, price, and FX inputs,
@@ -130,10 +132,10 @@ Most relevant current governance:
 
 ## Known Constraints And Implementation Notes
 
-1. management/advisory boundary clarity is a real quality concern after the split,
+1. management/advisory boundary clarity remains a real quality concern after the split,
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
-4. `portfolio_id` stateful-mode semantics, inline bundle source-data lineage, and remaining advisory/proposal compatibility surfaces are RFC-0082 watchlist areas,
+4. `portfolio_id` stateful-mode semantics and inline bundle source-data lineage are RFC-0082 watchlist areas,
 5. this repo should stay operationally aligned with gateway and platform startup sequences,
 6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,

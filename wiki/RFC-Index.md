@@ -34,12 +34,13 @@
 
 ## Future-facing RFCs
 
-- RFC-0029
-  iterative workspace contract
 - RFC-0035
   integration pyramid wave 6 depth expansion
-- RFC-0036
-  PostgreSQL-only runtime hard cutover
+
+## Superseded advisory scope
+
+- Advisor-led proposal simulation, artifacts, consent, and lifecycle RFCs are no longer active
+  `lotus-manage` scope. They belong in `lotus-advise`.
 
 ## Full local RFC inventory
 
