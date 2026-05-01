@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-01T10:27:34.416337+00:00",
+  "generatedAt": "2026-05-01T12:26:51.492256+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -44512,16 +44512,25 @@
       }
     },
     {
-      "domain": "api",
+      "domain": "health",
       "method": "GET",
       "path": "/api/v1/health",
       "operationId": "health_api_v1_health_get",
-      "summary": "Health",
+      "summary": "General lotus-manage Health",
       "request": {
         "fields": []
       },
       "response": {
-        "fields": []
+        "fields": [
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
       }
     },
     {
@@ -44529,25 +44538,43 @@
       "method": "GET",
       "path": "/health",
       "operationId": "health_health_get",
-      "summary": "Health",
+      "summary": "General lotus-manage Health",
       "request": {
         "fields": []
       },
       "response": {
-        "fields": []
+        "fields": [
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
       }
     },
     {
-      "domain": "api",
+      "domain": "health",
       "method": "GET",
       "path": "/api/v1/health/live",
       "operationId": "health_live_api_v1_health_live_get",
-      "summary": "Health Live",
+      "summary": "lotus-manage Liveness Probe",
       "request": {
         "fields": []
       },
       "response": {
-        "fields": []
+        "fields": [
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
       }
     },
     {
@@ -44555,25 +44582,43 @@
       "method": "GET",
       "path": "/health/live",
       "operationId": "health_live_health_live_get",
-      "summary": "Health Live",
+      "summary": "lotus-manage Liveness Probe",
       "request": {
         "fields": []
       },
       "response": {
-        "fields": []
+        "fields": [
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
       }
     },
     {
-      "domain": "api",
+      "domain": "health",
       "method": "GET",
       "path": "/api/v1/health/ready",
       "operationId": "health_ready_api_v1_health_ready_get",
-      "summary": "Health Ready",
+      "summary": "lotus-manage Readiness Probe",
       "request": {
         "fields": []
       },
       "response": {
-        "fields": []
+        "fields": [
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
       }
     },
     {
@@ -44581,12 +44626,21 @@
       "method": "GET",
       "path": "/health/ready",
       "operationId": "health_ready_health_ready_get",
-      "summary": "Health Ready",
+      "summary": "lotus-manage Readiness Probe",
       "request": {
         "fields": []
       },
       "response": {
-        "fields": []
+        "fields": [
+          {
+            "name": "status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
       }
     }
   ]

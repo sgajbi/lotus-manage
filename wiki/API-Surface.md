@@ -47,6 +47,9 @@ Endpoint certification details are tracked in [Endpoint Certification](Endpoint-
 ## Platform surfaces
 
 - `/health`
+  lightweight service health
 - `/health/live`
+  process liveness without persistence dependency checks
 - `/health/ready`
+  readiness with persistence guardrails and production migration cutover validation
 - `/docs`

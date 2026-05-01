@@ -9,9 +9,12 @@
 
 ## Health and Readiness
 
-- Liveness: /health/live
-- Readiness: /health/ready
-- General health: /health
+- Liveness: `/health/live` returns `{"status":"live"}` and does not touch persistence dependencies.
+- Readiness: `/health/ready` returns `{"status":"ready"}` after persistence guardrails pass; in
+  production profile it also validates required cutover migrations.
+- General health: `/health` returns `{"status":"ok"}` for lightweight service health checks.
+- Versioned aliases are available under `/api/v1/health`, `/api/v1/health/live`, and
+  `/api/v1/health/ready`.
 - OpenAPI docs: /docs
 
 ## Incident First Checks

@@ -270,6 +270,11 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     mutation_response_schema = schemas["DpmPolicyPackMutationResponse"]
     _assert_property_has_docs(mutation_response_schema, "item")
 
+    health_status_schema = schemas["HealthStatusResponse"]
+    _assert_property_has_docs(health_status_schema, "status")
+    status_schema = health_status_schema["properties"]["status"]
+    assert set(status_schema["enum"]) == {"ok", "live", "ready"}
+
 
 def test_integration_capabilities_paths_have_route_and_query_docs():
     _guard_strict_validation()
@@ -454,6 +459,32 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert "baseline" in analyze_value["comparison_metrics"]
     assert "invalid_case" in analyze_value["failed_scenarios"]
     assert "PARTIAL_BATCH_FAILURE" in analyze_value["warnings"]
+
+    health_paths = {
+        "/health": "minimal service health",
+        "/api/v1/health": "Versioned alias for `/health`",
+        "/health/live": "process liveness without touching persistence dependencies",
+        "/api/v1/health/live": "Versioned alias for `/health/live`",
+        "/health/ready": "production profile",
+        "/api/v1/health/ready": "Versioned alias for `/health/ready`",
+    }
+    for path, description_fragment in health_paths.items():
+        operation = openapi["paths"][path]["get"]
+        assert operation["tags"] == ["Health"]
+        assert description_fragment in operation["description"]
+        assert operation["responses"]["200"]["content"]["application/json"]["schema"][
+            "$ref"
+        ].endswith("/HealthStatusResponse")
+        assert operation["responses"]["200"]["description"] in {
+            "Health probe succeeded.",
+            "Readiness probe succeeded.",
+        }
+        assert "requestBody" not in operation
+
+    assert openapi["paths"]["/health/ready"]["get"]["responses"]["500"]["description"] == (
+        "Readiness guardrails failed, including production persistence profile or migration "
+        "cutover checks."
+    )
 
     effective_policy = openapi["paths"]["/api/v1/rebalance/policies/effective"]["get"]
     assert "requestBody" not in effective_policy

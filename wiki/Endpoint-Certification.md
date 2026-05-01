@@ -17,6 +17,71 @@ An endpoint is complete only when these checks are true:
    response attribute with examples,
 6. live API evidence has been captured against a running `lotus-manage` instance.
 
+## Certified endpoint family: service health probes
+
+Routes:
+
+- `GET /health`
+- `GET /api/v1/health`
+- `GET /health/live`
+- `GET /api/v1/health/live`
+- `GET /health/ready`
+- `GET /api/v1/health/ready`
+
+Purpose:
+
+Operational probe surface for platform ingress, Docker health checks, and service monitoring. These
+routes are platform/runtime endpoints, not discretionary mandate execution or advisory workflow
+APIs.
+
+Functional behavior:
+
+- `/health` returns `{ "status": "ok" }` for lightweight service health.
+- `/health/live` returns `{ "status": "live" }` and deliberately does not touch persistence
+  dependencies; use it for process liveness probes.
+- `/health/ready` returns `{ "status": "ready" }` only after persistence profile guardrails pass.
+- In production profile, readiness also validates required cutover migrations before reporting
+  ready.
+- `/api/v1/*` health routes are versioned aliases with identical response semantics.
+
+```mermaid
+flowchart LR
+    Platform[Container, ingress, or monitor] --> Health[GET /health]
+    Platform --> Live[GET /health/live]
+    Platform --> Ready[GET /health/ready]
+    Health --> Ok[status ok]
+    Live --> Process[process liveness only]
+    Ready --> Guardrails[Persistence profile guardrails]
+    Guardrails --> Profile{Production profile?}
+    Profile -->|no| ReadyStatus[status ready]
+    Profile -->|yes| Migrations[Cutover migration validation]
+    Migrations --> ReadyStatus
+```
+
+Non-functional posture:
+
+- Liveness is intentionally low-latency and side-effect free.
+- Readiness is stricter than liveness so orchestration does not route traffic to a runtime whose
+  persistence profile or production migrations are invalid.
+- The response model is intentionally small and typed: `status` is limited to `ok`, `live`, or
+  `ready`.
+- These endpoints perform no calls to `lotus-core`, `lotus-advise`, Gateway, or Workbench.
+
+Downstream consumers:
+
+- Docker compose uses `/health/ready` for container health.
+- Platform ingress and runtime monitors should use `/health/live` for process liveness and
+  `/health/ready` for traffic readiness.
+- Product clients should not infer DPM feature availability from these routes; use
+  `/integration/capabilities` or `/platform/capabilities` for capability posture.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: capabilities discovery
 
 Routes:

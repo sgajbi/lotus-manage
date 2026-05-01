@@ -9,16 +9,21 @@ from src.api.main import app
 
 def test_health_endpoints_available():
     client = TestClient(app)
-    health = client.get("/health")
-    live = client.get("/health/live")
-    ready = client.get("/health/ready")
+    expected = {
+        "/health": {"status": "ok"},
+        "/api/v1/health": {"status": "ok"},
+        "/health/live": {"status": "live"},
+        "/api/v1/health/live": {"status": "live"},
+        "/health/ready": {"status": "ready"},
+        "/api/v1/health/ready": {"status": "ready"},
+    }
 
-    assert health.status_code == 200
-    assert live.status_code == 200
-    assert ready.status_code == 200
-    assert health.json() == {"status": "ok"}
-    assert live.json() == {"status": "live"}
-    assert ready.json() == {"status": "ready"}
+    for path, body in expected.items():
+        response = client.get(path)
+        assert response.status_code == 200
+        assert response.json() == body
+
+    assert {client.get(path).headers["content-type"] for path in expected} == {"application/json"}
 
 
 def test_health_ready_validates_cutover_migrations_in_production(monkeypatch):
@@ -31,8 +36,41 @@ def test_health_ready_validates_cutover_migrations_in_production(monkeypatch):
         lambda: called.__setitem__("migrations", called["migrations"] + 1),
     )
 
-    assert main_module.health_ready() == {"status": "ready"}
+    assert main_module.health_ready().model_dump() == {"status": "ready"}
     assert called["migrations"] == 1
+
+
+def test_health_ready_skips_cutover_migrations_outside_production(monkeypatch):
+    called = {"guardrails": 0, "migrations": 0}
+    monkeypatch.setattr(main_module, "app_persistence_profile_name", lambda: "LOCAL")
+    monkeypatch.setattr(
+        main_module,
+        "validate_persistence_profile_guardrails",
+        lambda: called.__setitem__("guardrails", called["guardrails"] + 1),
+    )
+    monkeypatch.setattr(
+        main_module,
+        "validate_cutover_migrations_applied",
+        lambda: called.__setitem__("migrations", called["migrations"] + 1),
+    )
+
+    assert main_module.health_ready().model_dump() == {"status": "ready"}
+    assert called == {"guardrails": 1, "migrations": 0}
+
+
+def test_health_live_does_not_touch_readiness_dependencies(monkeypatch):
+    monkeypatch.setattr(
+        main_module,
+        "validate_persistence_profile_guardrails",
+        lambda: (_ for _ in ()).throw(AssertionError("readiness guardrail was called")),
+    )
+    monkeypatch.setattr(
+        main_module,
+        "validate_cutover_migrations_applied",
+        lambda: (_ for _ in ()).throw(AssertionError("migration guardrail was called")),
+    )
+
+    assert main_module.health_live().model_dump() == {"status": "live"}
 
 
 def test_correlation_headers_are_exposed():
