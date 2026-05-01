@@ -1240,7 +1240,8 @@ Implementation evidence captured on 2026-05-01:
       blocked with `DPM_STATEFUL_INPUT_DISABLED` until the governed `lotus-core` resolver contract
       is live-certified,
     - added unit tests that prove the live validator catches stale Swagger contracts.
-19. Direct canonical-host manage API evidence against `http://manage.dev.lotus` on 2026-05-02
+19. Initial direct canonical-host manage API evidence against `http://manage.dev.lotus` on
+    2026-05-02
     produced 9 passing probes and 1 failure:
     - passing: demo pack, readiness, capability truth, no advisory/proposal OpenAPI paths, removed
       proposal route 404, stateful sourcing guard, async duplicate-correlation conflict,
@@ -1251,6 +1252,31 @@ Implementation evidence captured on 2026-05-01:
     but canonical runtime proof is not gold-pass complete until the running `lotus-manage` image is
     refreshed from this branch and `scripts/validate_live_api.py --base-url http://manage.dev.lotus`
     returns 0 failures.
+21. Refreshed only the `lotus-manage` container to the current branch image while preserving
+    `lotus-advise` on port `8000`, `lotus-manage` on port `8001`, and the running `lotus-core`
+    services.
+22. Refreshed direct canonical-host manage API evidence on 2026-05-02 passed:
+    - evidence directory: `output/rfc-0036-gold-pass-20260502-072810` (local ignored evidence),
+    - `scripts/validate_live_api.py --base-url http://manage.dev.lotus --json-output ...` returned
+      0 failures across 10 probes,
+    - live OpenAPI route inventory had 39 paths, no advisory/proposal paths, no unversioned product
+      paths, no missing JSON request/response examples, and `/metrics` documented only
+      `text/plain; version=0.0.4`,
+    - sampled metrics text contained none of `PB_SG_GLOBAL_BAL_001`, `sha256:`, `demo-idem`,
+      `corr_`, `rr_`, or `dop_`,
+    - live capabilities returned `supported_input_modes=["stateless"]` and
+      `dpm.execution.stateful_portfolio_id=false`.
+23. Direct `lotus-core` integration posture probes confirmed the target stateful resolver route is
+    not yet live:
+    - `POST http://core-control.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
+      returned `404`,
+    - `POST http://core-query.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
+      returned `404`.
+24. Evidence conclusion: `lotus-manage` current branch is gold-pass clean for the implemented
+    stateless API surface, supportability APIs, OpenAPI certification, and stateful feature gate.
+    Full RFC closure remains blocked for stateful core-sourced execution until `lotus-core` issue
+    `sgajbi/lotus-core#330` or an equivalent certified resolver contract is implemented and live
+    proof is captured.
 
 ### Slice 11: Implementation Proof
 
@@ -1338,10 +1364,13 @@ Exit evidence:
 
 Assessment date: 2026-05-02
 
-Current decision: **not yet final gold-pass complete**. Slices 0 through 10 have substantial
-implementation evidence and multiple hardening passes. Slices 11 through 13 are still open because
-live canonical runtime proof, second-last implementation review, and final closure evidence have
-not fully converged.
+Current decision: **gold-pass clean for the implemented stateless manage API surface, not final RFC
+complete**. Slices 0 through 10 have substantial implementation evidence and multiple hardening
+passes. Slice 11 now has clean direct canonical-host `lotus-manage` API evidence after refreshing
+the manage container to the branch image. Full RFC completion remains blocked because stateful
+core-sourced execution is intentionally disabled until the target `lotus-core` DPM
+execution-context route is implemented and live-certified. Slices 12 and 13 still require
+second-last review and final closure evidence.
 
 ### Slice-By-Slice Completeness
 
@@ -1358,7 +1387,7 @@ not fully converged.
 | Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. New stateful DPM source-data products must wait for the upstream resolver contract. |
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
-| Slice 11 Implementation proof | Not complete | Direct canonical manage API evidence found stale deployed OpenAPI on the running stack. The stack must be refreshed and live validator rerun to 0 failures. |
+| Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Direct core probes showed the target DPM execution-context route returns 404, so stateful promotion remains blocked by `sgajbi/lotus-core#330`. |
 | Slice 12 Second-last hardening | Not complete | Requires post-proof review after refreshed live evidence is clean. |
 | Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
 
@@ -1398,18 +1427,21 @@ not fully converged.
 
 1. Local `make check` passed after live-validator hardening with 491 unit tests.
 2. Remote Feature Lane passed for the latest pushed certification commits.
-3. Direct canonical-host manage API validation against `http://manage.dev.lotus` captured a useful
-   partial proof: 9 passing probes and 1 stale OpenAPI failure.
-4. The live proof failure is actionable and correctly blocks final closure until the canonical
-   runtime is refreshed to the current branch image.
+3. Refreshed direct canonical-host manage API validation against `http://manage.dev.lotus` passed
+   10/10 probes after refreshing only `lotus-manage` to the branch image.
+4. Critical artifact review confirmed route inventory, Swagger examples, metrics media type,
+   capability truth, and sampled no-sensitive-metric posture.
+5. Direct `lotus-core` probes confirmed the target stateful DPM execution-context route is not yet
+   live, which correctly blocks stateful mode promotion.
 
 ### Standard Assessment
 
-The implementation has not yet genuinely reached the expected gold standard because Slice 11 found
-runtime/schema drift in the canonical environment. The codebase is stronger than it was before this
-pass, and the new validator prevents the same superficial live proof from passing again, but final
-gold-pass status requires refreshed live evidence with 0 manage API failures and a second-last
-review over that evidence.
+The implemented stateless `lotus-manage` API surface has reached the expected evidence standard for
+this stage: local gates pass, remote Feature Lane is green, direct canonical-host manage API proof
+passes, and the previous stale Swagger runtime drift is now caught by validation and resolved by a
+targeted manage refresh. The full RFC has not reached final gold-standard closure because stateful
+core-sourced execution depends on a `lotus-core` DPM execution-context route that is not yet live,
+and the second-last/final closure slices remain to be completed after that dependency is resolved.
 
 ## Test Plan
 

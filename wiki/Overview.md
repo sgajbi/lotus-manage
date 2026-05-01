@@ -49,8 +49,9 @@ flowchart LR
 
 ## Current Proof Posture
 
-Current branch code has strengthened API, OpenAPI, mesh, and observability validation. A direct
-canonical-host manage API proof on 2026-05-02 showed business execution probes passing, but also
-found the running canonical `lotus-manage` container was stale relative to the branch OpenAPI
-certification changes. Final proof requires refreshing the running image and rerunning
-`scripts/validate_live_api.py --base-url http://manage.dev.lotus` to 0 failures.
+Current branch code has strengthened API, OpenAPI, mesh, and observability validation. After
+refreshing only the `lotus-manage` container to the branch image on 2026-05-02, direct
+canonical-host manage API proof passed 10/10 probes against `http://manage.dev.lotus`.
+
+That proof covers the implemented stateless API surface. Stateful `portfolio_id` execution remains
+blocked because the target `lotus-core` DPM execution-context route is not yet live-certified.

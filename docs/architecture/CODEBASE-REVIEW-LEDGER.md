@@ -308,6 +308,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki current-state pages updated to clarify manage/core integration posture and
   live evidence standard.
 
+## RFC36-S11-002: Refreshed manage runtime proved API surface but core stateful route remains absent
+
+- Date: 2026-05-02
+- Scope: refreshed canonical-host manage API proof, `lotus-core` DPM execution-context route probe,
+  stateful promotion decision
+- Finding: after refreshing only `lotus-manage` to the branch image, the strengthened live validator
+  passed 10/10 probes against `http://manage.dev.lotus`. Critical review confirmed the deployed
+  OpenAPI no longer had missing JSON examples and `/metrics` was Prometheus text. Direct
+  `lotus-core` probes for
+  `/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context` returned `404` on both
+  `core-control.dev.lotus` and `core-query.dev.lotus`, proving stateful core-sourced promotion is
+  still blocked by the upstream contract gap.
+- Action: recorded the refreshed evidence in RFC-0036 and retained the capability posture where
+  `supported_input_modes` is only `["stateless"]` and `dpm.execution.stateful_portfolio_id=false`.
+- Status: fixed for implemented stateless/manage API proof; blocked for stateful core-sourced
+  execution until `sgajbi/lotus-core#330` or equivalent resolver contract is implemented.
+- Wiki decision: wiki current-state pages updated to state the implemented proof posture and the
+  remaining core dependency explicitly.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

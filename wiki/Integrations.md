@@ -48,6 +48,18 @@ Current state:
    `DPM_CORE_BASE_URL`, and capability flag are all enabled.
 4. RFC-0036 tracks the upstream gap through `sgajbi/lotus-core#330`.
 
+Live proof on 2026-05-02:
+
+1. `POST http://core-control.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
+   returned `404`.
+2. `POST http://core-query.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
+   returned `404`.
+3. `POST http://manage.dev.lotus/api/v1/rebalance/simulate` with `input_mode=stateful` returned
+   `409 DPM_STATEFUL_INPUT_DISABLED`.
+
+This is the correct current behavior: manage is ready for the implemented stateless surface, while
+stateful core-sourced execution remains withheld until the upstream route is certified.
+
 ## Manage API Consumers
 
 Strategic downstream consumption should use:

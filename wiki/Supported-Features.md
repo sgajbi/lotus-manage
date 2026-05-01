@@ -50,7 +50,7 @@ flowchart LR
 | Stateful resolver metrics | Enforced with bounded labels | observability tests and stateful resolver API tests |
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
-| Live manage API proof | Strengthened; final gold-pass pending refreshed runtime evidence | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` now checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
+| Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
 
 ## Explicit Non-Goals
 
@@ -72,4 +72,5 @@ python scripts/validate_live_api.py --base-url http://manage.dev.lotus --json-ou
 ```
 
 Final proof is not complete if the validator reports stale OpenAPI certification drift, even when
-business execution probes pass.
+business execution probes pass. Stateful execution is also not complete until `lotus-core` exposes a
+certified DPM execution-context route and manage live proof shows stateful source lineage.
