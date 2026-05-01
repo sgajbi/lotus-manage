@@ -1848,6 +1848,10 @@ def test_openapi_async_analyze_documents_correlation_header(client):
     assert "X-Correlation-Id" in response_headers
     assert response_headers["X-Correlation-Id"]["description"]
     assert response_headers["X-Correlation-Id"]["schema"]["type"] == "string"
+    conflict_example = analyze_async["responses"]["409"]["content"]["application/json"]["examples"][
+        "correlation_conflict"
+    ]["value"]
+    assert conflict_example["detail"] == "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
 
     policy_pack_header = next(
         parameter

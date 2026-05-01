@@ -310,6 +310,12 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     ].endswith("/DpmAsyncAcceptedResponse")
     assert "X-Correlation-Id" in analyze_async["responses"]["202"]["headers"]
     assert (
+        analyze_async["responses"]["409"]["content"]["application/json"]["examples"][
+            "correlation_conflict"
+        ]["value"]["detail"]
+        == "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
+    )
+    assert (
         "Use this route when the caller needs polling-based orchestration"
         in analyze_async["description"]
     )

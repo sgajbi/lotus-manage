@@ -8,6 +8,7 @@ from src.api.request_models import RebalanceRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import (
+    ANALYZE_ASYNC_409_EXAMPLE,
     ANALYZE_ASYNC_ACCEPTED_EXAMPLE,
     ANALYZE_RESPONSE_EXAMPLE,
     SIMULATE_409_EXAMPLE,
@@ -212,7 +213,14 @@ def analyze_scenarios(
             },
         },
         404: {"description": "Async operations disabled by configuration."},
-        409: {"description": "Correlation id already belongs to an existing async operation."},
+        409: {
+            "description": "Correlation id already belongs to an existing async operation.",
+            "content": {
+                "application/json": {
+                    "examples": {"correlation_conflict": ANALYZE_ASYNC_409_EXAMPLE}
+                }
+            },
+        },
         422: {"description": "Validation error (invalid shared payload or scenario key format)."},
     },
 )

@@ -265,3 +265,7 @@ ANALYZE_ASYNC_ACCEPTED_EXAMPLE = {
         "status_url": "/rebalance/operations/dop_abc12345",
     },
 }
+ANALYZE_ASYNC_409_EXAMPLE = {
+    "summary": "Correlation conflict",
+    "value": {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"},
+}
