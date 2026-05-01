@@ -13,8 +13,7 @@
 - Readiness: `/health/ready` returns `{"status":"ready"}` after persistence guardrails pass; in
   production profile it also validates required cutover migrations.
 - General health: `/health` returns `{"status":"ok"}` for lightweight service health checks.
-- Versioned aliases are available under `/api/v1/health`, `/api/v1/health/live`, and
-  `/api/v1/health/ready`.
+- Health probes are infrastructure endpoints and intentionally remain unversioned.
 - OpenAPI docs: /docs
 
 ## Incident First Checks

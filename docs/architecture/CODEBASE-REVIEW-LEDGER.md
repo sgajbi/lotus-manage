@@ -36,6 +36,18 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Status: deferred to Slice 3
 - Wiki decision: no wiki source change in Slice 2.
 
+## RFC36-S3-001: Duplicate product endpoint surface removed
+
+- Date: 2026-05-01
+- Scope: `src/api/main.py`, `src/api/routers/integration_capabilities.py`, OpenAPI inventory
+- Finding: product routers were mounted both unversioned and under `/api/v1`, and capability
+  discovery was exposed under both integration and platform namespaces.
+- Action: removed unversioned product router mounts, removed the platform capability alias, kept
+  health and metrics as unversioned infrastructure probes, and regenerated the API vocabulary
+  inventory.
+- Status: fixed
+- Wiki decision: wiki source updated because endpoint and demo-facing product truth changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

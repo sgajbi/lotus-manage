@@ -58,4 +58,4 @@ Gateway or Workbench integration is treated as a product-surface dependency.
 2. `lotus-core` remains source-data authority when request inputs are core-referenced
 3. `lotus-gateway` is the primary downstream product consumer
 4. REST/OpenAPI remains the canonical integration contract
-5. capability discovery is backend-owned through `/integration/capabilities`
+5. capability discovery is backend-owned through `/api/v1/integration/capabilities`

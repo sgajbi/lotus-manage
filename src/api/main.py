@@ -143,12 +143,6 @@ setup_observability(app)
 validate_enterprise_runtime_config()
 app.middleware("http")(build_enterprise_audit_middleware())
 
-# Unversioned compatibility routes.
-app.include_router(rebalance_run_support_router)
-app.include_router(rebalance_policy_pack_router)
-app.include_router(rebalance_simulation_router)
-app.include_router(integration_capabilities_router)
-
 # Canonical versioned API surface.
 app.include_router(rebalance_run_support_router, prefix="/api/v1")
 app.include_router(rebalance_policy_pack_router, prefix="/api/v1")
@@ -164,17 +158,6 @@ app.include_router(integration_capabilities_router, prefix="/api/v1")
         "Returns a minimal service health response for lightweight operator and ingress checks. "
         "Use `/health/live` for process liveness and `/health/ready` for readiness that validates "
         "runtime guardrails."
-    ),
-    responses=_HEALTH_RESPONSES,
-    tags=["Health"],
-)
-@app.get(
-    "/api/v1/health",
-    response_model=HealthStatusResponse,
-    summary="General lotus-manage Health",
-    description=(
-        "Versioned alias for `/health`. Use this for API-client health checks that stay inside "
-        "the versioned surface."
     ),
     responses=_HEALTH_RESPONSES,
     tags=["Health"],
@@ -195,14 +178,6 @@ def health() -> HealthStatusResponse:
     responses=_HEALTH_RESPONSES,
     tags=["Health"],
 )
-@app.get(
-    "/api/v1/health/live",
-    response_model=HealthStatusResponse,
-    summary="lotus-manage Liveness Probe",
-    description="Versioned alias for `/health/live` with the same process-liveness semantics.",
-    responses=_HEALTH_RESPONSES,
-    tags=["Health"],
-)
 def health_live() -> HealthStatusResponse:
     return HealthStatusResponse(status="live")
 
@@ -216,14 +191,6 @@ def health_live() -> HealthStatusResponse:
         "this also validates that required cutover migrations have been applied, so supportability "
         "APIs do not appear ready while their backing store is missing or unmigrated."
     ),
-    responses=_READY_RESPONSES,
-    tags=["Health"],
-)
-@app.get(
-    "/api/v1/health/ready",
-    response_model=HealthStatusResponse,
-    summary="lotus-manage Readiness Probe",
-    description="Versioned alias for `/health/ready` with the same production readiness checks.",
     responses=_READY_RESPONSES,
     tags=["Health"],
 )

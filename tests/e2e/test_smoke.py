@@ -4,7 +4,7 @@ from src.app.main import app
 
 def test_e2e_smoke() -> None:
     client = TestClient(app)
-    response = client.get("/api/v1/health")
+    response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
 

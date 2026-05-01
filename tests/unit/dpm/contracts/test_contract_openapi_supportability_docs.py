@@ -280,21 +280,15 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     _guard_strict_validation()
     openapi = app.openapi()
 
-    integration_get = openapi["paths"]["/integration/capabilities"]["get"]
-    platform_get = openapi["paths"]["/platform/capabilities"]["get"]
+    integration_get = openapi["paths"]["/api/v1/integration/capabilities"]["get"]
 
     assert (
         "backend-governed rebalance feature and workflow capability posture"
         in integration_get["description"]
     )
-    assert "platform namespace" in platform_get["description"]
     assert (
         "canonical snake_case query parameters `consumer_system` and `tenant_id`"
         in (integration_get["description"])
-    )
-    assert (
-        "canonical snake_case query parameters `consumer_system` and `tenant_id`"
-        in (platform_get["description"])
     )
 
     integration_params = {param["name"]: param for param in integration_get["parameters"]}
@@ -312,8 +306,6 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     integration_examples = integration_get["responses"]["200"]["content"]["application/json"][
         "examples"
     ]
-    platform_examples = platform_get["responses"]["200"]["content"]["application/json"]["examples"]
-    assert platform_examples == integration_examples
     default_example = integration_examples["default"]["value"]
     assert default_example["supported_input_modes"] == ["inline_bundle"]
     example_features = {item["key"]: item for item in default_example["features"]}
@@ -462,11 +454,8 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     health_paths = {
         "/health": "minimal service health",
-        "/api/v1/health": "Versioned alias for `/health`",
         "/health/live": "process liveness without touching persistence dependencies",
-        "/api/v1/health/live": "Versioned alias for `/health/live`",
         "/health/ready": "production profile",
-        "/api/v1/health/ready": "Versioned alias for `/health/ready`",
     }
     for path, description_fragment in health_paths.items():
         operation = openapi["paths"][path]["get"]
@@ -650,7 +639,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "schema"
     ]["$ref"].endswith("/DpmAsyncOperationStatusResponse")
     assert (
-        "submitted `X-Correlation-Id` to `POST /rebalance/analyze/async`"
+        "submitted `X-Correlation-Id` to `POST /api/v1/rebalance/analyze/async`"
         in get_operation_by_correlation["description"]
     )
     assert "404" in get_operation_by_correlation["responses"]

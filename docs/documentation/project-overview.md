@@ -101,16 +101,15 @@ That means:
 
 Primary management surfaces:
 
-- `POST /rebalance/simulate`
-- `POST /rebalance/analyze`
-- `POST /rebalance/analyze/async`
-- `/rebalance/runs/*`
-- `/rebalance/operations/*`
-- `/rebalance/lineage/*`
-- `/rebalance/idempotency/*`
-- `/rebalance/policies/*`
-- `/integration/capabilities`
-- `/platform/capabilities`
+- `POST /api/v1/rebalance/simulate`
+- `POST /api/v1/rebalance/analyze`
+- `POST /api/v1/rebalance/analyze/async`
+- `/api/v1/rebalance/runs/*`
+- `/api/v1/rebalance/operations/*`
+- `/api/v1/rebalance/lineage/*`
+- `/api/v1/rebalance/idempotency/*`
+- `/api/v1/rebalance/policies/*`
+- `/api/v1/integration/capabilities`
 
 For grouped route documentation, use the repo wiki and router-level docs rather than extending this
 overview into an endpoint catalog.

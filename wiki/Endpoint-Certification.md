@@ -22,11 +22,8 @@ An endpoint is complete only when these checks are true:
 Routes:
 
 - `GET /health`
-- `GET /api/v1/health`
 - `GET /health/live`
-- `GET /api/v1/health/live`
 - `GET /health/ready`
-- `GET /api/v1/health/ready`
 
 Purpose:
 
@@ -42,7 +39,7 @@ Functional behavior:
 - `/health/ready` returns `{ "status": "ready" }` only after persistence profile guardrails pass.
 - In production profile, readiness also validates required cutover migrations before reporting
   ready.
-- `/api/v1/*` health routes are versioned aliases with identical response semantics.
+- Health probes are infrastructure endpoints and intentionally remain unversioned.
 
 ```mermaid
 flowchart LR
@@ -73,7 +70,7 @@ Downstream consumers:
 - Platform ingress and runtime monitors should use `/health/live` for process liveness and
   `/health/ready` for traffic readiness.
 - Product clients should not infer DPM feature availability from these routes; use
-  `/integration/capabilities` or `/platform/capabilities` for capability posture.
+  `/api/v1/integration/capabilities` for capability posture.
 
 Evidence commands:
 
@@ -86,8 +83,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Routes:
 
-- `GET /integration/capabilities`
-- `GET /platform/capabilities`
+- `GET /api/v1/integration/capabilities`
 
 Purpose:
 
@@ -108,7 +104,6 @@ Functional coverage:
 
 - default consumer and tenant resolution,
 - explicit consumer and tenant resolution,
-- `/platform/capabilities` alias parity with `/integration/capabilities`,
 - conservative default input-mode posture,
 - environment-controlled stateful `portfolio_id` publication,
 - environment-controlled `inline_bundle` publication,
@@ -153,8 +148,8 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Routes:
 
-- `GET /rebalance/policies/effective`
-- `GET /rebalance/policies/catalog`
+- `GET /api/v1/rebalance/policies/effective`
+- `GET /api/v1/rebalance/policies/catalog`
 
 Purpose:
 
@@ -177,8 +172,8 @@ Functional behavior:
 
 ```mermaid
 flowchart LR
-    Caller[Gateway, operator, or certification probe] --> Effective[GET /rebalance/policies/effective]
-    Caller --> Catalog[GET /rebalance/policies/catalog]
+    Caller[Gateway, operator, or certification probe] --> Effective[GET /api/v1/rebalance/policies/effective]
+    Caller --> Catalog[GET /api/v1/rebalance/policies/catalog]
     Effective --> Precedence{Resolution precedence}
     Precedence --> Request[X-Policy-Pack-Id]
     Precedence --> Tenant[X-Tenant-Policy-Pack-Id or X-Tenant-Id resolver]
@@ -191,9 +186,9 @@ flowchart LR
 
 Non-functional posture:
 
-- `/rebalance/policies/effective` performs no repository read and is a low-latency configuration
+- `/api/v1/rebalance/policies/effective` performs no repository read and is a low-latency configuration
   resolution endpoint.
-- `/rebalance/policies/catalog` performs a bounded local repository read, returns a deterministic
+- `/api/v1/rebalance/policies/catalog` performs a bounded local repository read, returns a deterministic
   sorted catalog, and performs no upstream calls to `lotus-core`, `lotus-advise`, Gateway, or
   Workbench.
 - Header-only resolution avoids query-alias sprawl and keeps the direct source-service contract
@@ -232,9 +227,9 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Routes:
 
-- `GET /rebalance/policies/catalog/{policy_pack_id}`
-- `PUT /rebalance/policies/catalog/{policy_pack_id}`
-- `DELETE /rebalance/policies/catalog/{policy_pack_id}`
+- `GET /api/v1/rebalance/policies/catalog/{policy_pack_id}`
+- `PUT /api/v1/rebalance/policies/catalog/{policy_pack_id}`
+- `DELETE /api/v1/rebalance/policies/catalog/{policy_pack_id}`
 
 Purpose:
 
@@ -299,7 +294,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/runs`
+- `GET /api/v1/rebalance/runs`
 
 Purpose:
 
@@ -357,16 +352,16 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Routes:
 
-- `GET /rebalance/runs/{rebalance_run_id}`
-- `GET /rebalance/runs/by-correlation/{correlation_id}`
-- `GET /rebalance/runs/by-request-hash/{request_hash}`
-- `GET /rebalance/runs/idempotency/{idempotency_key}`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}`
+- `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}`
+- `GET /api/v1/rebalance/runs/by-request-hash/{request_hash}`
+- `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}`
 
 Purpose:
 
 Returns exact persisted supportability records for discretionary mandate rebalance runs when the
 caller already has a specific investigation handle. These routes are intentionally narrow point
-lookups. Use `/rebalance/runs` for inventory search, `/rebalance/runs/{run_id}/artifact` for the
+lookups. Use `/api/v1/rebalance/runs` for inventory search, `/api/v1/rebalance/runs/{run_id}/artifact` for the
 deterministic audit artifact, and support-bundle routes when workflow, lineage, async operation, or
 idempotency history context is required.
 
@@ -386,10 +381,10 @@ Functional behavior:
 ```mermaid
 flowchart LR
     Operator[Operator, Gateway trace, or incident ticket] --> Handle{Available handle}
-    Handle -->|run id| ByRun[GET /rebalance/runs/{run_id}]
-    Handle -->|correlation id| ByCorrelation[GET /rebalance/runs/by-correlation/{correlation_id}]
-    Handle -->|request hash| ByRequestHash[GET /rebalance/runs/by-request-hash/{request_hash}]
-    Handle -->|idempotency key| ByIdempotency[GET /rebalance/runs/idempotency/{idempotency_key}]
+    Handle -->|run id| ByRun[GET /api/v1/rebalance/runs/{run_id}]
+    Handle -->|correlation id| ByCorrelation[GET /api/v1/rebalance/runs/by-correlation/{correlation_id}]
+    Handle -->|request hash| ByRequestHash[GET /api/v1/rebalance/runs/by-request-hash/{request_hash}]
+    Handle -->|idempotency key| ByIdempotency[GET /api/v1/rebalance/runs/idempotency/{idempotency_key}]
     ByRun --> Store[(Supportability store)]
     ByCorrelation --> Store
     ByRequestHash --> Store
@@ -443,7 +438,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/supportability/summary`
+- `GET /api/v1/rebalance/supportability/summary`
 
 Purpose:
 
@@ -501,7 +496,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/runs/{rebalance_run_id}/artifact`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/artifact`
 
 Purpose:
 
@@ -563,7 +558,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/runs/{rebalance_run_id}/support-bundle`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/support-bundle`
 
 Purpose:
 
@@ -626,7 +621,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/lineage/{entity_id}`
+- `GET /api/v1/rebalance/lineage/{entity_id}`
 
 Purpose:
 
@@ -672,7 +667,7 @@ the original request.
 Downstream consumers:
 
 - Integration tests use lineage lookup for supportability round trips.
-- No direct strategic Gateway or Workbench consumer was found for `/rebalance/lineage/{entity_id}`.
+- No direct strategic Gateway or Workbench consumer was found for `/api/v1/rebalance/lineage/{entity_id}`.
 - Future downstream incident tooling should use this endpoint for DPM supportability graph
   traversal rather than adding duplicate lineage routes.
 
@@ -687,14 +682,14 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/idempotency/{idempotency_key}/history`
+- `GET /api/v1/rebalance/idempotency/{idempotency_key}/history`
 
 Purpose:
 
 Returns append-only idempotency mapping history for one idempotency key, including run ids,
 correlation ids, request hashes, and event timestamps. Use this endpoint for retry-history
 investigations, idempotency conflict reconstruction, and audit evidence when replay-disabled runs
-share an idempotency key. Use `GET /rebalance/runs/idempotency/{idempotency_key}` when only the
+share an idempotency key. Use `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}` when only the
 latest mapping is needed.
 
 Request surface:
@@ -744,17 +739,17 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Routes:
 
-- `GET /rebalance/runs/{rebalance_run_id}/workflow`
-- `GET /rebalance/runs/by-correlation/{correlation_id}/workflow`
-- `GET /rebalance/runs/idempotency/{idempotency_key}/workflow`
-- `POST /rebalance/runs/{rebalance_run_id}/workflow/actions`
-- `POST /rebalance/runs/by-correlation/{correlation_id}/workflow/actions`
-- `POST /rebalance/runs/idempotency/{idempotency_key}/workflow/actions`
-- `GET /rebalance/runs/{rebalance_run_id}/workflow/history`
-- `GET /rebalance/runs/by-correlation/{correlation_id}/workflow/history`
-- `GET /rebalance/runs/idempotency/{idempotency_key}/workflow/history`
-- `GET /rebalance/workflow/decisions`
-- `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/workflow`
+- `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow`
+- `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow`
+- `POST /api/v1/rebalance/runs/{rebalance_run_id}/workflow/actions`
+- `POST /api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow/actions`
+- `POST /api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/actions`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/workflow/history`
+- `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow/history`
+- `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/history`
+- `GET /api/v1/rebalance/workflow/decisions`
+- `GET /api/v1/rebalance/workflow/decisions/by-correlation/{correlation_id}`
 
 Purpose:
 
@@ -794,7 +789,7 @@ flowchart TD
     RequestChanges --> History
     Approve --> History
     Reject --> History
-    History --> List[GET /rebalance/workflow/decisions]
+    History --> List[GET /api/v1/rebalance/workflow/decisions]
 ```
 
 Non-functional posture:
@@ -842,7 +837,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `POST /rebalance/simulate`
+- `POST /api/v1/rebalance/simulate`
 
 Purpose:
 
@@ -881,7 +876,7 @@ Non-functional posture:
 - Idempotency protects client retries and prevents same-key/different-request ambiguity.
 - The endpoint records supportability state when persistence is enabled; replay-enabled persistence
   failures return service-unavailable responses rather than falsely accepting a run.
-- For multi-scenario or deferred execution, use `/rebalance/analyze` or `/rebalance/analyze/async`.
+- For multi-scenario or deferred execution, use `/api/v1/rebalance/analyze` or `/api/v1/rebalance/analyze/async`.
 
 Upstream integration posture:
 
@@ -910,13 +905,13 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `POST /rebalance/analyze`
+- `POST /api/v1/rebalance/analyze`
 
 Purpose:
 
 Runs a bounded set of named discretionary mandate what-if scenarios against shared inline snapshots
 and returns the full batch result synchronously. Use this endpoint when the caller needs immediate
-scenario comparison. Use `/rebalance/analyze/async` for polling-based orchestration or
+scenario comparison. Use `/api/v1/rebalance/analyze/async` for polling-based orchestration or
 accept-now/execute-later flows.
 
 Request surface:
@@ -947,7 +942,7 @@ Non-functional posture:
 - Synchronous analysis is bounded by the 20-scenario request limit.
 - Scenarios execute in deterministic sorted-key order for reproducible supportability and tests.
 - One scenario failure does not discard successful scenario evidence.
-- For latency-sensitive or deferred batches, callers should use `/rebalance/analyze/async`.
+- For latency-sensitive or deferred batches, callers should use `/api/v1/rebalance/analyze/async`.
 
 Upstream integration posture:
 
@@ -957,7 +952,7 @@ preserved by callers. Policy-pack resolution is local to `lotus-manage`.
 
 Downstream consumers:
 
-- No direct strategic Gateway or Workbench consumer was found for `/rebalance/analyze`.
+- No direct strategic Gateway or Workbench consumer was found for `/api/v1/rebalance/analyze`.
 - Future Gateway/Workbench mandate-analysis integration should capability-gate this endpoint and
   preserve scenario names, correlation ids, and policy-pack context.
 
@@ -972,7 +967,7 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `POST /rebalance/analyze/async`
+- `POST /api/v1/rebalance/analyze/async`
 
 Purpose:
 
@@ -988,8 +983,8 @@ Request surface:
   `X-Tenant-Id`.
 - Response: `DpmAsyncAcceptedResponse` with `operation_id`, initial `status`, `correlation_id`,
   `status_url`, and `execute_url`.
-- Retrieval: `GET /rebalance/operations/{operation_id}` or
-  `GET /rebalance/operations/by-correlation/{correlation_id}`.
+- Retrieval: `GET /api/v1/rebalance/operations/{operation_id}` or
+  `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}`.
 
 Functional coverage:
 
@@ -1020,7 +1015,7 @@ callers and `lotus-core`-governed data products.
 
 Downstream consumers:
 
-- No direct strategic Gateway or Workbench consumer was found for `/rebalance/analyze/async`.
+- No direct strategic Gateway or Workbench consumer was found for `/api/v1/rebalance/analyze/async`.
 - Future downstream integration should treat this endpoint as the strategic deferred DPM analysis
   submission route, not as an advisory proposal lifecycle route.
 
@@ -1035,12 +1030,12 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `POST /rebalance/operations/{operation_id}/execute`
+- `POST /api/v1/rebalance/operations/{operation_id}/execute`
 
 Purpose:
 
 Executes one pending asynchronous DPM scenario-analysis operation that was accepted through
-`POST /rebalance/analyze/async` in `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use this endpoint for
+`POST /api/v1/rebalance/analyze/async` in `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use this endpoint for
 external orchestration flows that intentionally separate operation acceptance from execution.
 
 Request surface:
@@ -1068,7 +1063,7 @@ Non-functional posture:
 
 - The endpoint is deliberately body-less so execution is bound to the persisted, audited operation
   request and policy context.
-- Terminal operation lookup remains stable through `GET /rebalance/operations/{operation_id}`;
+- Terminal operation lookup remains stable through `GET /api/v1/rebalance/operations/{operation_id}`;
   repeated execute calls are rejected instead of replaying the calculation.
 - Manual execution supports low-latency acceptance while allowing an external orchestrator to start
   compute work under its own scheduling controls.
@@ -1095,13 +1090,13 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/operations`
+- `GET /api/v1/rebalance/operations`
 
 Purpose:
 
 Returns a bounded page of asynchronous DPM operation records for supportability, operator triage,
 polling dashboards, and recent-operation review after async analysis submission. Use this endpoint
-for list/filter views. Use `GET /rebalance/operations/{operation_id}` when the caller already has a
+for list/filter views. Use `GET /api/v1/rebalance/operations/{operation_id}` when the caller already has a
 single operation handle.
 
 Request surface:
@@ -1137,7 +1132,7 @@ bundle endpoints.
 
 Downstream consumers:
 
-- No direct strategic Gateway or Workbench consumer was found for `/rebalance/operations`.
+- No direct strategic Gateway or Workbench consumer was found for `/api/v1/rebalance/operations`.
 - Future dashboards should use this list route for bounded operation summaries and then call the
   by-id operation endpoint for terminal result/error detail.
 
@@ -1152,14 +1147,14 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/operations/{operation_id}`
+- `GET /api/v1/rebalance/operations/{operation_id}`
 
 Purpose:
 
 Returns one asynchronous operation status record when the caller has the exact operation handle.
 Use this endpoint for polling a submitted async analysis operation, inspecting terminal result/error
 payloads, or checking manual-execution eligibility. Use
-`GET /rebalance/operations/by-correlation/{correlation_id}` when only a correlation id is available.
+`GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` when only a correlation id is available.
 
 Request surface:
 
@@ -1208,13 +1203,13 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 Route:
 
-- `GET /rebalance/operations/by-correlation/{correlation_id}`
+- `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}`
 
 Purpose:
 
 Returns one asynchronous operation status record when the caller has the submitted correlation id but
 not the generated operation id. Use this endpoint for polling after submitting `X-Correlation-Id` to
-`POST /rebalance/analyze/async`, or for supportability lookup from external logs keyed by
+`POST /api/v1/rebalance/analyze/async`, or for supportability lookup from external logs keyed by
 correlation id.
 
 Request surface:

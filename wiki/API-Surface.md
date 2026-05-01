@@ -2,11 +2,11 @@
 
 ## Core management surfaces
 
-- `POST /rebalance/simulate`
+- `POST /api/v1/rebalance/simulate`
   deterministic rebalance execution
-- `POST /rebalance/analyze`
+- `POST /api/v1/rebalance/analyze`
   synchronous what-if analysis
-- `POST /rebalance/analyze/async`
+- `POST /api/v1/rebalance/analyze/async`
   async what-if orchestration
 
 Async operation correlation ids are unique operation handles. Reusing an existing async
@@ -15,23 +15,22 @@ storage-layer constraint.
 
 ## Run supportability surfaces
 
-- `/rebalance/runs/*`
+- `/api/v1/rebalance/runs/*`
   run lookup, workflow state, artifacts, and support bundles
-- `/rebalance/operations/*`
+- `/api/v1/rebalance/operations/*`
   async operation status and execution
-- `/rebalance/lineage/*`
+- `/api/v1/rebalance/lineage/*`
   lineage traversal
-- `/rebalance/idempotency/*`
+- `/api/v1/rebalance/idempotency/*`
   idempotency history and replay support
-- `/rebalance/supportability/summary`
+- `/api/v1/rebalance/supportability/summary`
   store-wide supportability snapshot
 
 ## Policy and capability surfaces
 
-- `/rebalance/policies/*`
+- `/api/v1/rebalance/policies/*`
   effective policy resolution and catalog supportability
-- `/integration/capabilities`
-- `/platform/capabilities`
+- `/api/v1/integration/capabilities`
   backend-owned feature and workflow discovery for gateway and platform consumers
 
 Default capability posture is intentionally conservative: inline bundle execution is enabled,

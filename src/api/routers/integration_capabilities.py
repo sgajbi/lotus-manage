@@ -307,27 +307,6 @@ def _build_capabilities_response(
         }
     },
 )
-@router.get(
-    "/platform/capabilities",
-    response_model=IntegrationCapabilitiesResponse,
-    summary="Get rebalance platform capabilities",
-    description=(
-        "Alias of `/integration/capabilities` for platform-facing capability discovery. Use it when "
-        "the caller needs the same backend-governed rebalance feature/workflow posture through the "
-        "platform namespace. Callers must use the canonical snake_case query parameters "
-        "`consumer_system` and `tenant_id`."
-    ),
-    responses={
-        200: {
-            "description": "Backend-governed discretionary mandate capability posture.",
-            "content": {
-                "application/json": {
-                    "examples": CAPABILITIES_RESPONSE_EXAMPLES,
-                }
-            },
-        }
-    },
-)
 async def get_integration_capabilities(
     consumer_system: ConsumerSystem = Query(
         "lotus-gateway",

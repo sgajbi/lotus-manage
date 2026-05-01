@@ -18,7 +18,7 @@ def test_integration_capabilities_default_contract(monkeypatch):
 
     with TestClient(app) as client:
         response = client.get(
-            "/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default"
+            "/api/v1/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default"
         )
 
     assert response.status_code == 200
@@ -54,7 +54,7 @@ def test_integration_capabilities_env_overrides(monkeypatch):
 
     with TestClient(app) as client:
         response = client.get(
-            "/integration/capabilities?consumer_system=lotus-performance&tenant_id=tenant-x"
+            "/api/v1/integration/capabilities?consumer_system=lotus-performance&tenant_id=tenant-x"
         )
 
     assert response.status_code == 200
@@ -77,7 +77,7 @@ def test_integration_capabilities_can_publish_both_supported_input_modes(monkeyp
     monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
 
     with TestClient(app) as client:
-        response = client.get("/integration/capabilities")
+        response = client.get("/api/v1/integration/capabilities")
 
     assert response.status_code == 200
     body = response.json()
@@ -89,7 +89,7 @@ def test_integration_capabilities_can_publish_both_supported_input_modes(monkeyp
 
 def test_integration_capabilities_uses_default_query_resolution_when_omitted():
     with TestClient(app) as client:
-        response = client.get("/integration/capabilities")
+        response = client.get("/api/v1/integration/capabilities")
 
     assert response.status_code == 200
     body = response.json()
@@ -97,34 +97,19 @@ def test_integration_capabilities_uses_default_query_resolution_when_omitted():
     assert body["tenant_id"] == "default"
 
 
-def test_platform_capabilities_alias_matches_integration_contract_payload() -> None:
+def test_platform_capabilities_alias_is_removed() -> None:
     with TestClient(app) as client:
-        integration = client.get(
-            "/integration/capabilities?consumer_system=lotus-performance&tenant_id=tenant-x"
-        )
         platform = client.get(
-            "/platform/capabilities?consumer_system=lotus-performance&tenant_id=tenant-x"
+            "/api/v1/platform/capabilities?consumer_system=lotus-performance&tenant_id=tenant-x"
         )
 
-    assert integration.status_code == 200
-    assert platform.status_code == 200
-
-    integration_body = integration.json()
-    platform_body = platform.json()
-    assert platform_body["contract_version"] == integration_body["contract_version"]
-    assert platform_body["source_service"] == integration_body["source_service"]
-    assert platform_body["consumer_system"] == "lotus-performance"
-    assert platform_body["tenant_id"] == "tenant-x"
-    assert platform_body["policy_version"] == integration_body["policy_version"]
-    assert platform_body["supported_input_modes"] == integration_body["supported_input_modes"]
-    assert platform_body["features"] == integration_body["features"]
-    assert platform_body["workflows"] == integration_body["workflows"]
+    assert platform.status_code == 404
 
 
-def test_platform_capabilities_ignores_noncanonical_camel_case_query_params() -> None:
+def test_integration_capabilities_ignores_noncanonical_camel_case_query_params() -> None:
     with TestClient(app) as client:
         response = client.get(
-            "/platform/capabilities?consumerSystem=lotus-performance&tenantId=tenant-x"
+            "/api/v1/integration/capabilities?consumerSystem=lotus-performance&tenantId=tenant-x"
         )
 
     assert response.status_code == 200

@@ -21,7 +21,7 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
         path = request.url.path
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
-        if path == "/platform/capabilities":
+        if path == "/api/v1/integration/capabilities":
             return _json_response(
                 200,
                 {
@@ -33,15 +33,15 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
                 },
             )
         if path == "/openapi.json":
-            return _json_response(200, {"paths": {"/rebalance/simulate": {}}})
-        if path == "/rebalance/proposals":
+            return _json_response(200, {"paths": {"/api/v1/rebalance/simulate": {}}})
+        if path == "/api/v1/rebalance/proposals":
             return _json_response(404, {"detail": "Not Found"})
-        if path == "/rebalance/analyze/async":
+        if path == "/api/v1/rebalance/analyze/async":
             async_posts += 1
             if async_posts == 1:
                 return _json_response(202, {"operation_id": "dop_test"})
             return _json_response(409, {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"})
-        if path == "/rebalance/supportability/summary":
+        if path == "/api/v1/rebalance/supportability/summary":
             return _json_response(
                 200,
                 {"store_backend": "POSTGRES", "run_count": 1, "operation_count": 1},
@@ -82,7 +82,7 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
         path = request.url.path
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
-        if path == "/platform/capabilities":
+        if path == "/api/v1/integration/capabilities":
             return _json_response(
                 200,
                 {
@@ -94,12 +94,12 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
                 },
             )
         if path == "/openapi.json":
-            return _json_response(200, {"paths": {"/rebalance/proposals": {}}})
-        if path == "/rebalance/proposals":
+            return _json_response(200, {"paths": {"/api/v1/rebalance/proposals": {}}})
+        if path == "/api/v1/rebalance/proposals":
             return _json_response(404, {"detail": "Not Found"})
-        if path == "/rebalance/analyze/async":
+        if path == "/api/v1/rebalance/analyze/async":
             return _json_response(409, {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"})
-        if path == "/rebalance/supportability/summary":
+        if path == "/api/v1/rebalance/supportability/summary":
             return _json_response(
                 200,
                 {"store_backend": "POSTGRES", "run_count": 1, "operation_count": 1},

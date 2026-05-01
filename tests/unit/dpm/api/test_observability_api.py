@@ -11,11 +11,8 @@ def test_health_endpoints_available():
     client = TestClient(app)
     expected = {
         "/health": {"status": "ok"},
-        "/api/v1/health": {"status": "ok"},
         "/health/live": {"status": "live"},
-        "/api/v1/health/live": {"status": "live"},
         "/health/ready": {"status": "ready"},
-        "/api/v1/health/ready": {"status": "ready"},
     }
 
     for path, body in expected.items():
@@ -76,7 +73,7 @@ def test_health_live_does_not_touch_readiness_dependencies(monkeypatch):
 def test_correlation_headers_are_exposed():
     client = TestClient(app)
     response = client.get(
-        "/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default",
+        "/api/v1/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default",
         headers={"X-Correlation-Id": "corr_dpm_1"},
     )
     assert response.status_code == 200
@@ -126,7 +123,7 @@ def test_traceparent_header_propagates_trace_id():
     client = TestClient(app)
     upstream_trace_id = "1234567890abcdef1234567890abcdef"
     response = client.get(
-        "/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default",
+        "/api/v1/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default",
         headers={"traceparent": f"00-{upstream_trace_id}-0000000000000001-01"},
     )
     assert response.status_code == 200

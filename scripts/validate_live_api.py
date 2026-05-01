@@ -50,7 +50,7 @@ def _probe_ready(client: httpx.Client) -> ProbeResult:
 
 def _probe_capabilities(client: httpx.Client) -> ProbeResult:
     response = client.get(
-        "/platform/capabilities",
+        "/api/v1/integration/capabilities",
         params={"consumer_system": "lotus-gateway", "tenant_id": "default"},
     )
     body = response.json()
@@ -85,7 +85,7 @@ def _probe_openapi_boundary(client: httpx.Client) -> ProbeResult:
 
 
 def _probe_removed_proposal_route(client: httpx.Client) -> ProbeResult:
-    response = client.get("/rebalance/proposals")
+    response = client.get("/api/v1/rebalance/proposals")
     return _result(
         "removed_proposal_route_404",
         response.status_code == 404,
@@ -97,8 +97,8 @@ def _probe_async_duplicate_correlation(client: httpx.Client) -> ProbeResult:
     payload = _load_demo_payload("26_dpm_async_batch_analysis.json")
     correlation_id = f"live-dup-{uuid.uuid4().hex[:10]}"
     headers = {"X-Correlation-Id": correlation_id}
-    first = client.post("/rebalance/analyze/async", json=payload, headers=headers)
-    second = client.post("/rebalance/analyze/async", json=payload, headers=headers)
+    first = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+    second = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
     second_body = second.json() if second.content else {}
     return _result(
         "async_duplicate_correlation_conflict",
@@ -114,7 +114,7 @@ def _probe_async_duplicate_correlation(client: httpx.Client) -> ProbeResult:
 
 
 def _probe_supportability_summary(client: httpx.Client) -> ProbeResult:
-    response = client.get("/rebalance/supportability/summary")
+    response = client.get("/api/v1/rebalance/supportability/summary")
     body = response.json()
     return _result(
         "supportability_postgres_summary",

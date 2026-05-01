@@ -662,6 +662,52 @@ Exit evidence:
 3. route inventory proves no duplicate product API paths,
 4. live API demo pack uses only canonical paths.
 
+Slice 3 implementation evidence captured on 2026-05-01:
+
+1. Removed duplicate product routing:
+   - unversioned rebalance, operation, run-support, policy, lineage, idempotency, workflow, and
+     capability router mounts removed from `src/api/main.py`;
+   - `/platform/capabilities` and `/api/v1/platform/capabilities` removed from
+     `src/api/routers/integration_capabilities.py`;
+   - `/api/v1/health*` aliases removed so health probes remain unversioned infrastructure
+     endpoints.
+2. Route inventory after implementation contains only:
+   - `/api/v1/rebalance/*` product APIs;
+   - `/api/v1/integration/capabilities`;
+   - `/health`, `/health/live`, `/health/ready`, and `/metrics` infrastructure APIs.
+3. Updated live validation and demo-pack scripts to call canonical `/api/v1` product paths.
+4. Updated current-state docs and wiki source for canonical endpoint truth:
+   - `README.md`
+   - `docs/demo/README.md`
+   - `docs/documentation/engine-know-how-dpm.md`
+   - `docs/documentation/project-overview.md`
+   - `docs/runbooks/service-operations.md`
+   - `docs/standards/RFC-0082-upstream-contract-family-map.md`
+   - `wiki/API-Surface.md`
+   - `wiki/Architecture.md`
+   - `wiki/Endpoint-Certification.md`
+   - `wiki/Operations-Runbook.md`
+   - `wiki/Supported-Features.md`
+5. Added a route-inventory regression test:
+   `tests/unit/dpm/api/test_api_rebalance.py::test_openapi_exposes_only_canonical_product_routes`.
+6. Regenerated `docs/standards/api-vocabulary/lotus-manage-api-vocabulary.v1.json`; the large
+   reduction is expected because duplicate unversioned and platform-alias entries were removed.
+7. Validation:
+   - focused endpoint/API/docs tests: 40 passed;
+   - `python -m pytest tests/unit -q`: 458 passed;
+   - `python -m pytest tests/integration tests/e2e -q`: 101 passed;
+   - `python scripts/openapi_quality_gate.py`;
+   - `python scripts/api_vocabulary_inventory.py --validate-only`;
+   - `python scripts/no_alias_contract_guard.py`;
+   - `python -m ruff check .`;
+   - `python -m ruff format --check .`;
+   - `git diff --check`.
+8. Wiki source check:
+   - `powershell -ExecutionPolicy Bypass -File ..\lotus-platform\automation\Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage`
+     reports expected pre-merge drift for the five wiki pages updated by this slice. Repo-local
+     `wiki/` source is the branch-authored truth; publication remains a final closure action after
+     merge.
+
 ### Slice 4: Advisory Leftover Cleanup
 
 1. Search all `src/`, `tests/`, `docs/`, `wiki/`, contracts, scripts, OpenAPI examples, demo

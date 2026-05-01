@@ -59,14 +59,14 @@ Current posture under RFC-0082:
 Main runtime surfaces come from [src/api/main.py](src/api/main.py):
 
 - rebalance simulation
-  `/rebalance/simulate`, `/rebalance/analyze`, `/rebalance/analyze/async`
+  `/api/v1/rebalance/simulate`, `/api/v1/rebalance/analyze`, `/api/v1/rebalance/analyze/async`
 - run supportability
-  `/rebalance/runs/*`, `/rebalance/operations/*`, `/rebalance/supportability/summary`,
-  `/rebalance/lineage/*`, `/rebalance/idempotency/*`
+  `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/operations/*`, `/api/v1/rebalance/supportability/summary`,
+  `/api/v1/rebalance/lineage/*`, `/api/v1/rebalance/idempotency/*`
 - policy-pack supportability
-  `/rebalance/policies/*`
+  `/api/v1/rebalance/policies/*`
 - integration capabilities
-  `/integration/capabilities`, `/platform/capabilities`
+  `/api/v1/integration/capabilities`, `/api/v1/integration/capabilities`
 - platform surfaces
   `/health`, `/health/live`, `/health/ready`, `/docs`
 
@@ -171,7 +171,7 @@ Idempotency history remains feature-gated by default; set
 Operationally important truths:
 
 1. readiness and migration posture matter because supportability flows depend on persistence truth
-2. capability discovery through `/integration/capabilities` remains backend-owned and uses
+2. capability discovery through `/api/v1/integration/capabilities` remains backend-owned and uses
    canonical snake_case query parameters
 3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
 

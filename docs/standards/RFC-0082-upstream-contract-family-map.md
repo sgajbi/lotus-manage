@@ -21,7 +21,7 @@ composition.
 5. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
    surfaces.
 6. Current downstream evidence for capability discovery flows through
-   `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/platform/capabilities`; the
+   `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/integration/capabilities`; the
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
 7. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
    `sgajbi/lotus-gateway#178`.
@@ -41,12 +41,12 @@ composition.
 
 | Surface | Route family | Owner | Boundary rule |
 | --- | --- | --- | --- |
-| rebalance simulation | `POST /rebalance/simulate` | `lotus-manage` | owns deterministic rebalance execution result, policy application, controls, and workflow gate output |
-| what-if analysis | `POST /rebalance/analyze`, `POST /rebalance/analyze/async` | `lotus-manage` | owns scenario orchestration and run correlation semantics |
-| async operation execution | `/rebalance/operations/*` | `lotus-manage` | owns management-side operation state and supportability |
-| run supportability | `/rebalance/runs/*`, `/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
-| policy-pack supportability | `/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
-| integration capabilities | `/integration/capabilities`, `/platform/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
+| rebalance simulation | `POST /api/v1/rebalance/simulate` | `lotus-manage` | owns deterministic rebalance execution result, policy application, controls, and workflow gate output |
+| what-if analysis | `POST /api/v1/rebalance/analyze`, `POST /api/v1/rebalance/analyze/async` | `lotus-manage` | owns scenario orchestration and run correlation semantics |
+| async operation execution | `/api/v1/rebalance/operations/*` | `lotus-manage` | owns management-side operation state and supportability |
+| run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
+| policy-pack supportability | `/api/v1/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
+| integration capabilities | `/api/v1/integration/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
 
 ## Split-Boundary Posture
 
@@ -73,7 +73,7 @@ Boundary rules:
 4. Inline bundle behavior must preserve lineage identifiers for portfolio and market-data snapshots so
    callers can trace source authority.
 5. Gateway capability consumers must receive backend-owned feature and workflow truth from
-   `/integration/capabilities`; UI or gateway layers must not infer manage feature flags.
+   `/api/v1/integration/capabilities`; UI or gateway layers must not infer manage feature flags.
 6. Transport optimization discussions start with request shape, payload size, async execution,
    idempotency, caching, and supportability. gRPC is not a default answer for management workflows.
 
@@ -95,12 +95,12 @@ Existing tests that cover this posture include:
 12. `tests/integration/dpm/supportability/test_dpm_policy_pack_postgres_repository_integration.py`
 
 RFC-0108 Slice 12 adds implementation-backed management supportability posture to
-`/rebalance/supportability/summary` and capability discovery:
+`/api/v1/rebalance/supportability/summary` and capability discovery:
 
-1. `GET /rebalance/supportability/summary` returns a `supportability` object with bounded
+1. `GET /api/v1/rebalance/supportability/summary` returns a `supportability` object with bounded
    `state`, `reason`, `freshness_bucket`, and aggregate counts derived from persisted run,
    operation, and workflow-decision records.
-2. `/integration/capabilities` and `/platform/capabilities` publish
+2. `/api/v1/integration/capabilities` publishes
    `manage.observability.action_register_supportability` as the backend-owned feature key for
    Gateway and Workbench gating.
 3. `/metrics` exposes `lotus_manage_action_register_supportability_total` with bounded
@@ -113,7 +113,7 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
 ## Gap Register
 
 1. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
-   `GET /api/v1/platform/capabilities`; `lotus-manage` remains canonical on snake_case
+   `GET /api/v1/integration/capabilities`; `lotus-manage` remains canonical on snake_case
    `consumer_system` and `tenant_id`, so the downstream client should be corrected rather than
    expanding manage-side aliases. Tracked as `sgajbi/lotus-gateway#178`.
 2. Workbench proposal simulation docs and routes still need explicit ownership cleanup so advisory

@@ -100,7 +100,7 @@ def run_demo_pack(base_url: str) -> None:
                 client,
                 name=file_name,
                 method="POST",
-                path="/rebalance/simulate",
+                path="/api/v1/rebalance/simulate",
                 expected_http=200,
                 payload_file=file_name,
                 headers={
@@ -114,7 +114,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="27_dpm_supportability_artifact_flow.json",
             method="POST",
-            path="/rebalance/simulate",
+            path="/api/v1/rebalance/simulate",
             expected_http=200,
             payload_file="27_dpm_supportability_artifact_flow.json",
             headers={
@@ -128,7 +128,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="27_get_run",
             method="GET",
-            path=f"/rebalance/runs/{run_id}",
+            path=f"/api/v1/rebalance/runs/{run_id}",
             expected_http=200,
         )
         _assert(by_run["rebalance_run_id"] == run_id, "27: run lookup mismatch")
@@ -137,7 +137,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="27_get_run_by_correlation",
             method="GET",
-            path=f"/rebalance/runs/by-correlation/{corr_27}",
+            path=f"/api/v1/rebalance/runs/by-correlation/{corr_27}",
             expected_http=200,
         )
         _assert(by_correlation["rebalance_run_id"] == run_id, "27: correlation lookup mismatch")
@@ -146,7 +146,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="27_get_run_by_idempotency",
             method="GET",
-            path=f"/rebalance/runs/idempotency/{idem_27}",
+            path=f"/api/v1/rebalance/runs/idempotency/{idem_27}",
             expected_http=200,
         )
         _assert(by_idempotency["rebalance_run_id"] == run_id, "27: idempotency lookup mismatch")
@@ -155,14 +155,14 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="27_get_artifact_one",
             method="GET",
-            path=f"/rebalance/runs/{run_id}/artifact",
+            path=f"/api/v1/rebalance/runs/{run_id}/artifact",
             expected_http=200,
         )
         artifact_two = _run_scenario(
             client,
             name="27_get_artifact_two",
             method="GET",
-            path=f"/rebalance/runs/{run_id}/artifact",
+            path=f"/api/v1/rebalance/runs/{run_id}/artifact",
             expected_http=200,
         )
         _assert(
@@ -176,7 +176,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="09_batch_what_if_analysis.json",
             method="POST",
-            path="/rebalance/analyze",
+            path="/api/v1/rebalance/analyze",
             expected_http=200,
             payload_file="09_batch_what_if_analysis.json",
         )
@@ -189,7 +189,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="26_dpm_async_batch_analysis.json",
             method="POST",
-            path="/rebalance/analyze/async",
+            path="/api/v1/rebalance/analyze/async",
             expected_http=202,
             payload_file="26_dpm_async_batch_analysis.json",
             headers={"X-Correlation-Id": corr_26},
@@ -199,7 +199,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="get_async_operation",
             method="GET",
-            path=f"/rebalance/operations/{operation_id}",
+            path=f"/api/v1/rebalance/operations/{operation_id}",
             expected_http=200,
         )
         _assert(operation["status"] == "SUCCEEDED", "26: async operation did not succeed")
@@ -217,13 +217,13 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="28_dpm_async_manual_execute_guard.json",
             method="POST",
-            path="/rebalance/analyze/async",
+            path="/api/v1/rebalance/analyze/async",
             expected_http=202,
             payload_file="28_dpm_async_manual_execute_guard.json",
             headers={"X-Correlation-Id": corr_28},
         )
         manual_execute_conflict = client.post(
-            f"/rebalance/operations/{manual_guard['operation_id']}/execute"
+            f"/api/v1/rebalance/operations/{manual_guard['operation_id']}/execute"
         )
         _assert(
             manual_execute_conflict.status_code == 409,
@@ -238,7 +238,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="29_dpm_workflow_gate_disabled_contract.json",
             method="POST",
-            path="/rebalance/simulate",
+            path="/api/v1/rebalance/simulate",
             expected_http=200,
             payload_file="29_dpm_workflow_gate_disabled_contract.json",
             headers={
@@ -247,7 +247,7 @@ def run_demo_pack(base_url: str) -> None:
             },
         )
         workflow_run_id = workflow_disabled["rebalance_run_id"]
-        workflow_disabled_state = client.get(f"/rebalance/runs/{workflow_run_id}/workflow")
+        workflow_disabled_state = client.get(f"/api/v1/rebalance/runs/{workflow_run_id}/workflow")
         _assert(
             workflow_disabled_state.status_code == 404,
             "29: expected workflow state endpoint to be disabled by default",
@@ -257,7 +257,7 @@ def run_demo_pack(base_url: str) -> None:
             "29: unexpected workflow disabled detail",
         )
         workflow_disabled_history = client.get(
-            f"/rebalance/runs/{workflow_run_id}/workflow/history"
+            f"/api/v1/rebalance/runs/{workflow_run_id}/workflow/history"
         )
         _assert(
             workflow_disabled_history.status_code == 404,
@@ -277,7 +277,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="31_dpm_policy_pack_supportability_diagnostics.json",
             method="POST",
-            path="/rebalance/simulate",
+            path="/api/v1/rebalance/simulate",
             expected_http=200,
             payload_file="31_dpm_policy_pack_supportability_diagnostics.json",
             headers={
@@ -294,7 +294,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="31_get_effective_policy_pack",
             method="GET",
-            path="/rebalance/policies/effective",
+            path="/api/v1/rebalance/policies/effective",
             expected_http=200,
             headers=policy_headers,
         )
@@ -307,7 +307,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="31_get_policy_catalog",
             method="GET",
-            path="/rebalance/policies/catalog",
+            path="/api/v1/rebalance/policies/catalog",
             expected_http=200,
             headers=policy_headers,
         )
@@ -327,7 +327,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="32_dpm_supportability_summary_metrics.json",
             method="POST",
-            path="/rebalance/simulate",
+            path="/api/v1/rebalance/simulate",
             expected_http=200,
             payload_file="32_dpm_supportability_summary_metrics.json",
             headers={
@@ -339,7 +339,7 @@ def run_demo_pack(base_url: str) -> None:
             client,
             name="32_get_supportability_summary",
             method="GET",
-            path="/rebalance/supportability/summary",
+            path="/api/v1/rebalance/supportability/summary",
             expected_http=200,
         )
         _assert(

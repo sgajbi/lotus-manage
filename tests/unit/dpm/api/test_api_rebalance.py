@@ -2190,6 +2190,28 @@ def test_openapi_title_and_tag_grouping(client):
     assert "/api/v1/rebalance/proposals" not in openapi["paths"]
 
 
+def test_openapi_exposes_only_canonical_product_routes(client):
+    openapi = client.get("/openapi.json").json()
+    paths = set(openapi["paths"])
+
+    assert "/api/v1/integration/capabilities" in paths
+    assert "/platform/capabilities" not in paths
+    assert "/api/v1/platform/capabilities" not in paths
+    assert "/api/v1/health" not in paths
+    assert "/api/v1/health/live" not in paths
+    assert "/api/v1/health/ready" not in paths
+
+    allowed_unversioned_infrastructure_paths = {
+        "/health",
+        "/health/live",
+        "/health/ready",
+        "/metrics",
+    }
+    unversioned_paths = {path for path in paths if not path.startswith("/api/v1")}
+
+    assert unversioned_paths == allowed_unversioned_infrastructure_paths
+
+
 def test_openapi_async_analyze_documents_correlation_header(client):
     openapi = client.get("/openapi.json").json()
     simulate = openapi["paths"]["/api/v1/rebalance/simulate"]["post"]

@@ -132,7 +132,7 @@ def simulate_rebalance(
         "Runs multiple named what-if scenarios using shared snapshots and returns the full batch "
         "result in one response.\\n\\n"
         "Use this synchronous route when the caller needs immediate results for up to 20 "
-        "scenarios in one request. Use `POST /rebalance/analyze/async` when the caller needs "
+        "scenarios in one request. Use `POST /api/v1/rebalance/analyze/async` when the caller needs "
         "polling-based orchestration or `ACCEPT_ONLY` execution.\\n\\n"
         "Each scenario validates `options` independently, executes in sorted scenario-key order, "
         "and contributes to `results`, `comparison_metrics`, `failed_scenarios`, and batch-level "
@@ -214,11 +214,11 @@ def analyze_scenarios(
         "Accepts named what-if scenarios for asynchronous execution and returns a polling handle "
         "instead of the full batch result.\\n\\n"
         "Use this route when the caller needs polling-based orchestration, deferred execution, "
-        "or `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use `POST /rebalance/analyze` when immediate "
+        "or `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use `POST /api/v1/rebalance/analyze` when immediate "
         "batch results are required.\\n\\n"
         "Execution mode is controlled by `DPM_ASYNC_EXECUTION_MODE` (`INLINE` or `ACCEPT_ONLY`).\\n"
-        "Use `GET /rebalance/operations/{operation_id}` or "
-        "`GET /rebalance/operations/by-correlation/{correlation_id}` for status/result retrieval."
+        "Use `GET /api/v1/rebalance/operations/{operation_id}` or "
+        "`GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` for status/result retrieval."
     ),
     responses={
         202: {
@@ -313,11 +313,11 @@ def analyze_scenarios_async(
     summary="Execute Pending lotus-manage Async Operation",
     description=(
         "Executes one pending asynchronous lotus-manage scenario-analysis operation that was "
-        "accepted through `POST /rebalance/analyze/async` while "
+        "accepted through `POST /api/v1/rebalance/analyze/async` while "
         "`DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use this endpoint for governed external "
         "orchestration where the caller first records an operation handle, then explicitly "
         "starts execution. Do not use it for already terminal operations; they are returned by "
-        "`GET /rebalance/operations/{operation_id}` and are rejected here with `409`."
+        "`GET /api/v1/rebalance/operations/{operation_id}` and are rejected here with `409`."
     ),
     responses={
         200: {

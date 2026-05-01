@@ -7,18 +7,18 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 
 | Capability | Primary APIs | Current state | Evidence |
 | --- | --- | --- | --- |
-| Rebalance simulation | `POST /rebalance/simulate` | Supported | unit goldens, OpenAPI gate, API vocabulary gate |
-| What-if analysis | `POST /rebalance/analyze` | Supported | unit and demo scenarios |
-| Async what-if execution | `POST /rebalance/analyze/async`, `/rebalance/operations/*` | Supported | async operation tests and demo scenario 26 |
-| Run supportability | `/rebalance/runs/*`, `/rebalance/supportability/summary` | Supported | supportability service tests and contract docs tests |
-| Deterministic run artifact | `/rebalance/runs/{rebalance_run_id}/artifact` | Supported | artifact service tests and demo scenario 27 |
-| Lineage lookup | `/rebalance/lineage/*` | Feature-gated | lineage service tests |
-| Idempotency history | `/rebalance/idempotency/*` | Feature-gated | idempotency history service tests and demo scenario 30 |
-| Workflow review gates | `/rebalance/runs/*/workflow*`, `/rebalance/workflow/decisions*` | Feature-gated | workflow service tests and demo scenario 29 |
-| Policy-pack supportability | `/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
-| Integration capabilities | `/integration/capabilities`, `/platform/capabilities` | Supported | capability contract tests |
-| Solver target generation | `POST /rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
-| Stateful `portfolio_id` execution | `/integration/capabilities`, `/platform/capabilities` | Disabled by default until governed core resolution is configured | capability contract tests and RFC-0082 map |
+| Rebalance simulation | `POST /api/v1/rebalance/simulate` | Supported | unit goldens, OpenAPI gate, API vocabulary gate |
+| What-if analysis | `POST /api/v1/rebalance/analyze` | Supported | unit and demo scenarios |
+| Async what-if execution | `POST /api/v1/rebalance/analyze/async`, `/api/v1/rebalance/operations/*` | Supported | async operation tests and demo scenario 26 |
+| Run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | Supported | supportability service tests and contract docs tests |
+| Deterministic run artifact | `/api/v1/rebalance/runs/{rebalance_run_id}/artifact` | Supported | artifact service tests and demo scenario 27 |
+| Lineage lookup | `/api/v1/rebalance/lineage/*` | Feature-gated | lineage service tests |
+| Idempotency history | `/api/v1/rebalance/idempotency/*` | Feature-gated | idempotency history service tests and demo scenario 30 |
+| Workflow review gates | `/api/v1/rebalance/runs/*/workflow*`, `/api/v1/rebalance/workflow/decisions*` | Feature-gated | workflow service tests and demo scenario 29 |
+| Policy-pack supportability | `/api/v1/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
+| Integration capabilities | `/api/v1/integration/capabilities` | Supported | capability contract tests |
+| Solver target generation | `POST /api/v1/rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
+| Stateful `portfolio_id` execution | `/api/v1/integration/capabilities` | Disabled by default until governed core resolution is configured | capability contract tests and RFC-0082 map |
 
 ## Non-Functional Capabilities
 

@@ -23,7 +23,7 @@ from src.core.rebalance_runs import (
         "Returns asynchronous operation records for discretionary mandate supportability, "
         "operator triage, and downstream polling dashboards. Use this endpoint when a caller needs "
         "a bounded page of operations filtered by creation window, operation type, status, or "
-        "correlation id. Use `GET /rebalance/operations/{operation_id}` when the caller already "
+        "correlation id. Use `GET /api/v1/rebalance/operations/{operation_id}` when the caller already "
         "has a single operation handle. Use the canonical query parameter `status_filter` for "
         "operation status filtering; unsupported aliases are rejected."
     ),
@@ -126,10 +126,10 @@ def list_dpm_async_operations(
     summary="Get lotus-manage Async Operation",
     description=(
         "Returns one asynchronous operation status record by operation id. Use this endpoint after "
-        "`POST /rebalance/analyze/async`, after `GET /rebalance/operations`, or from operator "
+        "`POST /api/v1/rebalance/analyze/async`, after `GET /api/v1/rebalance/operations`, or from operator "
         "support tooling when the exact operation handle is known. Terminal `SUCCEEDED` operations "
         "include the batch analysis result payload; terminal `FAILED` operations include structured "
-        "error details. Use `GET /rebalance/operations/by-correlation/{correlation_id}` when the "
+        "error details. Use `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` when the "
         "caller has only a correlation id."
     ),
     responses={
@@ -163,10 +163,10 @@ def get_dpm_async_operation(
     summary="Get lotus-manage Async Operation by Correlation Id",
     description=(
         "Returns one asynchronous operation status record by correlation id. Use this endpoint when "
-        "the caller submitted `X-Correlation-Id` to `POST /rebalance/analyze/async` and does not "
+        "the caller submitted `X-Correlation-Id` to `POST /api/v1/rebalance/analyze/async` and does not "
         "have the generated operation id. Terminal `SUCCEEDED` operations include the batch "
         "analysis result payload; terminal `FAILED` operations include structured error details. "
-        "Use `GET /rebalance/operations/{operation_id}` when the operation id is already known."
+        "Use `GET /api/v1/rebalance/operations/{operation_id}` when the operation id is already known."
     ),
     responses={
         200: {

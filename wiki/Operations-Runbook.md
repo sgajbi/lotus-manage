@@ -19,7 +19,7 @@
 
 ## RFC-0108 action register supportability
 
-- `GET /rebalance/supportability/summary` returns `supportability.state`,
+- `GET /api/v1/rebalance/supportability/summary` returns `supportability.state`,
   `supportability.reason`, and `supportability.freshness_bucket` for management action register
   surfaces.
 - Operators should treat `empty` as no persisted run or operation evidence, `stale` as old
@@ -31,8 +31,8 @@
 - Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
   content to supportability metric labels or log dimensions.
 - Capability consumers should gate this posture on
-  `manage.observability.action_register_supportability` from `/integration/capabilities` or
-  `/platform/capabilities`.
+  `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
+  `/api/v1/integration/capabilities`.
 
 ## Docker production readiness
 
@@ -42,10 +42,10 @@
 - The runtime image includes the migration script and the `psycopg` runtime driver required for
   Postgres-backed supportability stores.
 - A healthy container should have the `schema_migrations` table plus DPM supportability,
-  workflow, lineage, and policy-pack persistence tables. If `/rebalance/supportability/summary`
+  workflow, lineage, and policy-pack persistence tables. If `/api/v1/rebalance/supportability/summary`
   returns a Postgres connection or migration error, inspect the startup logs first for migration
   failures.
-- For canonical front-office proof, `GET /rebalance/supportability/summary` should return HTTP
+- For canonical front-office proof, `GET /api/v1/rebalance/supportability/summary` should return HTTP
   `200`. An `empty` supportability state is acceptable for a freshly seeded stack with no recorded
   management actions; HTTP `503` is not acceptable demo evidence.
 
