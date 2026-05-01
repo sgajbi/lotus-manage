@@ -24,6 +24,7 @@ Routes:
 - `GET /health`
 - `GET /health/live`
 - `GET /health/ready`
+- `GET /metrics`
 
 Purpose:
 
@@ -40,12 +41,15 @@ Functional behavior:
 - In production profile, readiness also validates required cutover migrations before reporting
   ready.
 - Health probes are infrastructure endpoints and intentionally remain unversioned.
+- `/metrics` exposes Prometheus metrics for platform scraping and runtime monitoring. It is an
+  infrastructure endpoint, not a business-data API.
 
 ```mermaid
 flowchart LR
     Platform[Container, ingress, or monitor] --> Health[GET /health]
     Platform --> Live[GET /health/live]
     Platform --> Ready[GET /health/ready]
+    Platform --> Metrics[GET /metrics]
     Health --> Ok[status ok]
     Live --> Process[process liveness only]
     Ready --> Guardrails[Persistence profile guardrails]
@@ -53,6 +57,7 @@ flowchart LR
     Profile -->|no| ReadyStatus[status ready]
     Profile -->|yes| Migrations[Cutover migration validation]
     Migrations --> ReadyStatus
+    Metrics --> Prometheus[Prometheus scrape]
 ```
 
 Non-functional posture:
@@ -63,19 +68,23 @@ Non-functional posture:
 - The response model is intentionally small and typed: `status` is limited to `ok`, `live`, or
   `ready`.
 - These endpoints perform no calls to `lotus-core`, `lotus-advise`, Gateway, or Workbench.
+- Metrics labels must remain bounded and must not expose portfolio ids, client names, account ids,
+  request hashes, idempotency keys, correlation ids, run ids, raw upstream errors, or diagnostics
+  payloads.
 
 Downstream consumers:
 
 - Docker compose uses `/health/ready` for container health.
 - Platform ingress and runtime monitors should use `/health/live` for process liveness and
   `/health/ready` for traffic readiness.
+- Platform monitoring scrapes `/metrics`.
 - Product clients should not infer DPM feature availability from these routes; use
   `/api/v1/integration/capabilities` for capability posture.
 
 Evidence commands:
 
 ```bash
-python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/api/test_observability_api.py::test_action_register_supportability_metric_labels_are_bounded tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
@@ -561,9 +570,12 @@ LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 
 ## Certified endpoint: run supportability bundle
 
-Route:
+Routes:
 
 - `GET /api/v1/rebalance/runs/{rebalance_run_id}/support-bundle`
+- `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}/support-bundle`
+- `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}/support-bundle`
+- `GET /api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle`
 
 Purpose:
 

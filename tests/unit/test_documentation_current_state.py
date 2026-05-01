@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from src.api.main import app
+
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -135,5 +137,12 @@ def test_indexed_rfc_and_adr_files_exist() -> None:
             target = ROOT / token if "/" in token else index_path.parent / token
             if not target.exists():
                 missing.append(f"{index_path.relative_to(ROOT)} -> {token}")
+
+    assert missing == []
+
+
+def test_endpoint_certification_wiki_covers_openapi_paths() -> None:
+    certification = (ROOT / "wiki" / "Endpoint-Certification.md").read_text(encoding="utf-8")
+    missing = [path for path in sorted(app.openapi()["paths"]) if path not in certification]
 
     assert missing == []

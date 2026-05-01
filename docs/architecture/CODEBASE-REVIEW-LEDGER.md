@@ -245,6 +245,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint-certification source updated because the certified error contract
   changed.
 
+## RFC36-S10-003: Endpoint certification ledger coverage was not mechanically enforced
+
+- Date: 2026-05-02
+- Scope: endpoint certification wiki, OpenAPI route inventory, documentation regression tests
+- Finding: Slice 10 relied on manual comparison between OpenAPI routes and endpoint-certification
+  wiki entries. The support-bundle variants were described in prose but not listed as explicit
+  routes, and `/metrics` was not included in the certified infrastructure endpoint family.
+- Action: added a documentation regression test that requires every OpenAPI path to appear in
+  `wiki/Endpoint-Certification.md`; added explicit support-bundle variant routes and certified
+  `/metrics` as an infrastructure monitoring endpoint with bounded-label requirements.
+- Status: fixed for route-level coverage drift.
+- Wiki decision: wiki endpoint-certification source updated because endpoint coverage truth
+  changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

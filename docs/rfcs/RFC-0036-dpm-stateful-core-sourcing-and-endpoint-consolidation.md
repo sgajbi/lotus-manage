@@ -1214,6 +1214,16 @@ Implementation evidence captured on 2026-05-01:
       `UNSUPPORTED_QUERY_PARAMETER`,
     - `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate` returned 0 failures
       across 8 probes.
+14. Hardening review on 2026-05-02 concluded that RFC-0036 is not ready for final closure because
+    Slice 11 implementation proof, Slice 12 second-last hardening, and Slice 13 final closure do
+    not yet have exit evidence. No new major delivery slice is needed before those slices, but
+    Slice 10 needs stronger mechanical proof.
+15. Added an endpoint-certification coverage guard:
+    - `tests/unit/test_documentation_current_state.py::test_endpoint_certification_wiki_covers_openapi_paths`
+      now compares every OpenAPI path with `wiki/Endpoint-Certification.md`,
+    - the endpoint-certification wiki now lists the support-bundle lookup variants explicitly,
+    - `/metrics` is certified as an infrastructure monitoring endpoint with bounded-label
+      requirements.
 
 ### Slice 11: Implementation Proof
 
