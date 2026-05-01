@@ -1090,6 +1090,17 @@ def test_dpm_supportability_summary_endpoint_disabled(client, monkeypatch):
     assert response.json()["detail"] == "DPM_SUPPORTABILITY_SUMMARY_APIS_DISABLED"
 
 
+def test_dpm_supportability_summary_backend_init_error_returns_503(client, monkeypatch):
+    monkeypatch.setenv("DPM_SUPPORTABILITY_STORE_BACKEND", "POSTGRES")
+    monkeypatch.delenv("DPM_SUPPORTABILITY_POSTGRES_DSN", raising=False)
+    reset_dpm_run_support_service_for_tests()
+
+    response = client.get("/api/v1/rebalance/supportability/summary")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED"
+
+
 def test_dpm_supportability_summary_rejects_unexpected_query_params(client):
     response = client.get("/api/v1/rebalance/supportability/summary?status=READY")
     assert response.status_code == 422

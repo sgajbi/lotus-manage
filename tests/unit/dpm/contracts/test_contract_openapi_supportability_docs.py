@@ -801,6 +801,9 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     )
     assert "parameters" not in supportability_summary
     assert "422" in supportability_summary["responses"]
+    assert supportability_summary["responses"]["503"]["description"] == (
+        "Supportability store backend is unavailable or not configured."
+    )
 
     support_bundle = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/support-bundle"][
         "get"

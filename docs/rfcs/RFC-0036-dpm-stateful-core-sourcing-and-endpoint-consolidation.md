@@ -1189,6 +1189,31 @@ Implementation evidence captured on 2026-05-01:
      returned `422` with `UNSUPPORTED_QUERY_PARAMETER`,
    - `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate` returned 0 failures
      across 8 probes.
+9. Continued endpoint certification with `GET /api/v1/rebalance/supportability/summary`. Review
+   found that the endpoint could return bounded backend-initialization `503` errors, but OpenAPI
+   only documented disabled and unsupported-query responses.
+10. Added the missing `503` response contract and a direct API regression test for
+    `DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED` on the supportability summary endpoint.
+11. Focused supportability-summary validation passed:
+    - `python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_endpoint tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_backend_init_error_returns_503 tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_rejects_unexpected_query_params tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_supportability_summary_contract tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_supportability_summary tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q`
+      returned 7 passed,
+    - `python scripts/openapi_quality_gate.py` passed,
+    - `python scripts/api_vocabulary_inventory.py --validate-only` passed,
+    - ruff check/format and targeted mypy over the changed supportability router passed.
+12. Repository-native `make check` passed after supportability-summary certification hardening:
+    - lint and format checks passed,
+    - monetary float guard passed,
+    - no-alias, mypy, OpenAPI, API vocabulary, domain product, trust telemetry, and observability
+      contract gates passed,
+    - unit suite returned 485 passed.
+13. Docker-backed live proof passed:
+    - `docker compose down -v`,
+    - `LOTUS_MANAGE_HOST_PORT=8001 docker compose up -d --build`,
+    - `GET /api/v1/rebalance/supportability/summary` returned `200`,
+    - `GET /api/v1/rebalance/supportability/summary?status=READY` returned `422` with
+      `UNSUPPORTED_QUERY_PARAMETER`,
+    - `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate` returned 0 failures
+      across 8 probes.
 
 ### Slice 11: Implementation Proof
 

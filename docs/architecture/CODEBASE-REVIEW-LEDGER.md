@@ -231,6 +231,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint-certification source updated because the certified request contract
   and downstream remediation guidance changed.
 
+## RFC36-S10-002: Supportability summary omitted documented backend-unavailable response
+
+- Date: 2026-05-01
+- Scope: `GET /api/v1/rebalance/supportability/summary`, OpenAPI response contract, endpoint
+  certification tests
+- Finding: the supportability summary endpoint can fail during repository dependency construction
+  with a bounded `503` detail such as `DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED`, but the endpoint
+  documentation advertised only disabled and unsupported-query error responses.
+- Action: added the `503` OpenAPI response description, a direct API regression test for backend
+  initialization failure on the summary endpoint, and endpoint-certification wiki evidence.
+- Status: fixed for supportability summary certification.
+- Wiki decision: wiki endpoint-certification source updated because the certified error contract
+  changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

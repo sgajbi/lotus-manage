@@ -302,6 +302,9 @@ def list_runs(
         422: {
             "description": "Unsupported query parameters were supplied.",
         },
+        503: {
+            "description": "Supportability store backend is unavailable or not configured.",
+        },
     },
 )
 def get_dpm_supportability_summary(
