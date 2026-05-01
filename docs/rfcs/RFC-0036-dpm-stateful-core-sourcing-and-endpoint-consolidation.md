@@ -925,6 +925,54 @@ Exit evidence:
 4. platform catalog entries match repo-native declarations,
 5. wiki and supported-features describe mesh posture without overclaiming.
 
+Implementation evidence captured on 2026-05-01:
+
+1. Corrected `PortfolioActionRegister:v1` source-data declaration to reference implemented
+   `lotus-manage` route families:
+   - `/api/v1/rebalance/supportability/summary`,
+   - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`,
+   - `/api/v1/rebalance/runs/{rebalance_run_id}/workflow`,
+   - `/api/v1/rebalance/workflow/decisions`.
+2. Changed the product serving plane to `query_control_plane_service` so the mesh declaration
+   describes current supportability/control-plane publication instead of a stale local workflow
+   placeholder.
+3. Added repo-native trust telemetry validation through
+   `scripts/validate_trust_telemetry_contracts.py`, `make trust-telemetry-validate`, and
+   `make mesh-contract-validate`.
+4. Added focused tests proving:
+   - repo-native domain product validation passes,
+   - repo-native trust telemetry validation passes,
+   - telemetry identity and observed trust metadata match the product declaration,
+   - `lotus-manage` does not promote a stateful DPM execution-context dependency before
+     `sgajbi/lotus-core#330` is resolved.
+5. Updated RFC-0082 boundary documentation and wiki mesh product material to reflect the
+   implemented feature-gated core resolver seam without declaring a promoted live API-read
+   dependency.
+6. Focused validation passed:
+   - `python -m pytest tests/unit/test_domain_data_product_contracts.py tests/unit/test_trust_telemetry_contracts.py -q`
+     returned 10 passed,
+   - `make mesh-contract-validate` passed,
+   - `python -m ruff check scripts/validate_trust_telemetry_contracts.py tests/unit/test_trust_telemetry_contracts.py tests/unit/test_domain_data_product_contracts.py`
+     passed,
+   - `python -m ruff format --check scripts/validate_trust_telemetry_contracts.py tests/unit/test_trust_telemetry_contracts.py tests/unit/test_domain_data_product_contracts.py`
+     passed after formatting,
+   - `python scripts/no_alias_contract_guard.py` passed,
+   - `python scripts/openapi_quality_gate.py` passed.
+7. Repository-native `make check` passed after formatting the Slice 7/8 edits:
+   - lint and format checks passed,
+   - monetary float guard passed,
+   - no-alias, mypy, OpenAPI, and API vocabulary gates passed,
+   - mesh contract validation passed,
+   - unit suite returned 474 passed.
+8. Platform generated catalog already includes `lotus-manage:PortfolioActionRegister:v1`; platform
+   source-manifest notes remain a follow-up cleanup because this slice changed repo-native truth and
+   did not regenerate platform-wide catalog artifacts.
+9. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` still reports published-wiki drift
+   against repo-authored wiki source for `API-Surface.md`, `Architecture.md`,
+   `Endpoint-Certification.md`, `Mesh-Data-Products.md`, `Operations-Runbook.md`, and
+   `Supported-Features.md`. This is not resolved on the feature branch because wiki publication is a
+   post-merge action under the Lotus wiki rule.
+
 ### Slice 9: Observability, Logging, Instrumentation, And Monitoring Parity
 
 1. Align `lotus-manage` logs, metrics, traces, correlation propagation, audit events, supportability

@@ -119,6 +119,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint certification and supported-features source updated because
   capability publication and stateful proof posture changed.
 
+## RFC36-S8-001: Mesh declaration referenced stale route and missed telemetry gate
+
+- Date: 2026-05-01
+- Scope: domain-data-product declaration, trust telemetry, mesh validation automation
+- Finding: `PortfolioActionRegister:v1` still declared stale `/manage/portfolio-actions/{portfolio_id}`
+  as its current route, even though the implemented management evidence surfaces are the rebalance
+  supportability, artifact, and workflow route families. Repo-native trust telemetry existed, but no
+  local wrapper or Make target validated it alongside domain-product declarations.
+- Action: updated the product declaration to point at implemented supportability/artifact/workflow
+  routes, set the serving plane to `query_control_plane_service`, added
+  `scripts/validate_trust_telemetry_contracts.py`, added `make trust-telemetry-validate` and
+  `make mesh-contract-validate`, and added tests for telemetry/declaration alignment plus the
+  no-stateful-source-dependency promotion guard.
+- Status: fixed for repo-native mesh truth; platform-wide catalog regeneration remains deferred to
+  the platform aggregation flow.
+- Wiki decision: wiki mesh product source updated because client/demo-facing mesh product truth
+  changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

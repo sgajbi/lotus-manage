@@ -133,6 +133,8 @@ Repo-native gate mapping:
   Docker parity for the local CI contract
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
+- `make mesh-contract-validate`
+  repo-native domain product and trust telemetry validation against Lotus platform governance
 
 When the README changes, also run:
 

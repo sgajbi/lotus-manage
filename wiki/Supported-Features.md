@@ -36,6 +36,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Async correlation conflict handling | Enforced | API tests and live API duplicate-correlation probe |
 | Source-safe core resolver errors | Enforced for modeled stateful mode | resolver timeout/retry tests, no-core-base-url API test, and stateful feature-gate API test |
 | Capability truth gating | Enforced | integration capability tests proving stateful is not published without resolver readiness |
+| Mesh product validation | Enforced for repo-native declarations and trust telemetry | `make mesh-contract-validate`, domain product tests, trust telemetry tests |
 
 ## Explicit Non-Goals
 

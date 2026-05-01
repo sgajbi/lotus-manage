@@ -33,9 +33,12 @@
         "source_batch_fingerprint",
         "correlation_id"
       ],
-      "serving_plane": "management_workflow_service",
+      "serving_plane": "query_control_plane_service",
       "current_routes": [
-        "/manage/portfolio-actions/{portfolio_id}"
+        "/api/v1/rebalance/supportability/summary",
+        "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
+        "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
+        "/api/v1/rebalance/workflow/decisions"
       ],
       "freshness_policy": {
         "freshness_class": "daily",

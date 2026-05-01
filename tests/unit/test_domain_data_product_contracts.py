@@ -77,7 +77,9 @@ def test_manage_declaration_does_not_claim_live_source_data_api_reads() -> None:
     upstream_family_map = UPSTREAM_FAMILY_MAP_PATH.read_text(encoding="utf-8")
 
     assert consumption_modes == {"caller_supplied_contract_payload"}
-    assert "does not contain an active outbound HTTP client" in upstream_family_map
+    assert "modeled, feature-gated outbound resolver client" in upstream_family_map
+    assert "does not declare a promoted live" in upstream_family_map
+    assert "API-read dependency" in upstream_family_map
 
 
 def test_manage_declaration_keeps_unapproved_market_data_on_the_watchlist() -> None:
@@ -111,5 +113,22 @@ def test_manage_product_declaration_publishes_portfolio_action_register() -> Non
     assert product["product_version"] == "v1"
     assert product["lifecycle_status"] == "active"
     assert product["approved_consumers"] == ["lotus-gateway"]
+    assert product["serving_plane"] == "query_control_plane_service"
+    assert product["current_routes"] == [
+        "/api/v1/rebalance/supportability/summary",
+        "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
+        "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
+        "/api/v1/rebalance/workflow/decisions",
+    ]
     assert product["lineage_policy"]["lineage_required"] is True
     assert product["lineage_policy"]["lineage_bundle_class_ref"] == "customer_lineage_summary"
+
+
+def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() -> None:
+    payload = _load_consumer_declaration()
+    dependency_names = {dependency["product_name"] for dependency in payload["dependencies"]}
+    readme = DECLARATION_README_PATH.read_text(encoding="utf-8")
+
+    assert "DpmExecutionContext" not in dependency_names
+    assert "DpmCoreExecutionContext" not in dependency_names
+    assert "sgajbi/lotus-core#330" in readme

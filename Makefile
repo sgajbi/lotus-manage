@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 92
 
@@ -14,7 +14,7 @@ install-ci:
 pre-commit:
 	pre-commit run --all-files
 
-check: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate test
+check: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate mesh-contract-validate test
 
 ci: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate migration-smoke test-all security-audit
 
@@ -103,6 +103,11 @@ monetary-float-guard:
 
 domain-product-validate:
 	python scripts/validate_domain_data_product_contracts.py
+
+trust-telemetry-validate:
+	python scripts/validate_trust_telemetry_contracts.py
+
+mesh-contract-validate: domain-product-validate trust-telemetry-validate
 
 format:
 	python -m ruff format .
