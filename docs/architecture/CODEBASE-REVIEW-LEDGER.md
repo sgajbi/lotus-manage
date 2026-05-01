@@ -327,6 +327,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki current-state pages updated to state the implemented proof posture and the
   remaining core dependency explicitly.
 
+## RFC36-S12-001: Manual manage/core integration proof needed executable coverage
+
+- Date: 2026-05-02
+- Scope: `scripts/validate_live_api.py`, `tests/unit/test_validate_live_api.py`, manage/core live
+  integration proof
+- Finding: Slice 11 recorded direct `lotus-core` DPM execution-context probes manually. That was
+  useful evidence, but it left a repeatability gap: future proof runs could validate
+  `lotus-manage` API behavior without rechecking whether the expected upstream route posture still
+  matched the RFC decision.
+- Action: extended the live API validator with optional `--core-base-url` probes and an explicit
+  `--expect-core-dpm-route absent|available` posture. Added unit coverage proving the current
+  expected absent state passes and that an unexpected available route fails the current blocked
+  proof. Ran the enhanced validator against `manage.dev.lotus`, `core-control.dev.lotus`, and
+  `core-query.dev.lotus`; it passed 11/11 probes with both core hosts returning `404` and manage
+  returning `409 DPM_STATEFUL_INPUT_DISABLED` for stateful simulation.
+- Status: fixed for repeatable Slice 12 manage/core posture proof. Stateful promotion remains
+  blocked by `sgajbi/lotus-core#330`.
+- Wiki decision: wiki integration and supported-feature source updated because live proof commands
+  and current manage/core posture evidence changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

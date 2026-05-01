@@ -4,7 +4,7 @@ import sys
 import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import httpx
 
@@ -146,17 +146,7 @@ def _probe_removed_proposal_route(client: httpx.Client) -> ProbeResult:
 def _probe_stateful_core_sourcing_guard(client: httpx.Client) -> ProbeResult:
     response = client.post(
         "/api/v1/rebalance/simulate",
-        json={
-            "input_mode": "stateful",
-            "stateful_input": {
-                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
-                "as_of": "2026-03-25",
-                "mandate_id": "mandate_balanced_discretionary",
-                "model_portfolio_id": "model_balanced_sgd",
-                "tenant_id": "tenant_001",
-                "booking_center_code": "SG",
-            },
-        },
+        json=_stateful_simulate_payload(),
         headers={"Idempotency-Key": f"live-stateful-disabled-{uuid.uuid4().hex[:10]}"},
     )
     body = response.json() if response.content else {}
@@ -164,6 +154,63 @@ def _probe_stateful_core_sourcing_guard(client: httpx.Client) -> ProbeResult:
         "stateful_core_sourcing_guard",
         response.status_code == 409 and body.get("detail") == "DPM_STATEFUL_INPUT_DISABLED",
         {
+            "status_code": response.status_code,
+            "body": body,
+        },
+    )
+
+
+def _stateful_selector_payload(
+    *,
+    portfolio_id: str = "PB_SG_GLOBAL_BAL_001",
+    as_of: str = "2026-03-25",
+) -> dict[str, str]:
+    return {
+        "portfolio_id": portfolio_id,
+        "as_of": as_of,
+        "mandate_id": "mandate_balanced_discretionary",
+        "model_portfolio_id": "model_balanced_sgd",
+        "tenant_id": "tenant_001",
+        "booking_center_code": "SG",
+    }
+
+
+def _stateful_simulate_payload() -> dict[str, Any]:
+    return {
+        "input_mode": "stateful",
+        "stateful_input": _stateful_selector_payload(),
+    }
+
+
+def _probe_core_dpm_execution_context_route(
+    client: httpx.Client,
+    *,
+    core_base_url: str,
+    portfolio_id: str,
+    as_of: str,
+    expectation: Literal["absent", "available"],
+) -> ProbeResult:
+    response = client.post(
+        f"/integration/portfolios/{portfolio_id}/dpm-execution-context",
+        json=_stateful_selector_payload(portfolio_id=portfolio_id, as_of=as_of),
+    )
+    body: Any
+    try:
+        body = response.json() if response.content else {}
+    except ValueError:
+        body = response.text[:500]
+
+    if expectation == "absent":
+        ok = response.status_code == 404
+    else:
+        ok = response.status_code == 200 and isinstance(body, dict) and "source_lineage" in body
+
+    return _result(
+        "core_dpm_execution_context_route",
+        ok,
+        {
+            "core_base_url": core_base_url,
+            "expectation": expectation,
             "status_code": response.status_code,
             "body": body,
         },
@@ -226,6 +273,10 @@ def run_live_api_validation(
     base_url: str,
     *,
     include_demo_pack: bool = True,
+    core_base_urls: list[str] | None = None,
+    expect_core_dpm_route: Literal["absent", "available"] = "absent",
+    portfolio_id: str = "PB_SG_GLOBAL_BAL_001",
+    as_of: str = "2026-03-25",
     transport: httpx.BaseTransport | None = None,
 ) -> list[ProbeResult]:
     results: list[ProbeResult] = []
@@ -256,6 +307,31 @@ def run_live_api_validation(
             except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
                 results.append(_result(probe.__name__, False, {"error": str(exc)}))
 
+    for core_base_url in core_base_urls or []:
+        with httpx.Client(base_url=core_base_url, timeout=timeout, transport=transport) as client:
+            try:
+                results.append(
+                    _probe_core_dpm_execution_context_route(
+                        client,
+                        core_base_url=core_base_url,
+                        portfolio_id=portfolio_id,
+                        as_of=as_of,
+                        expectation=expect_core_dpm_route,
+                    )
+                )
+            except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+                results.append(
+                    _result(
+                        "core_dpm_execution_context_route",
+                        False,
+                        {
+                            "core_base_url": core_base_url,
+                            "expectation": expect_core_dpm_route,
+                            "error": str(exc),
+                        },
+                    )
+                )
+
     return results
 
 
@@ -282,11 +358,44 @@ def main() -> int:
         type=Path,
         help="Optional path for machine-readable validation evidence.",
     )
+    parser.add_argument(
+        "--core-base-url",
+        action="append",
+        default=[],
+        help=(
+            "Optional lotus-core base URL to probe for the DPM execution-context route. "
+            "May be supplied more than once."
+        ),
+    )
+    parser.add_argument(
+        "--expect-core-dpm-route",
+        choices=["absent", "available"],
+        default="absent",
+        help=(
+            "Expected lotus-core DPM execution-context route posture. Use 'absent' for the "
+            "current RFC-0036 blocked state and 'available' once lotus-core implements the "
+            "governed resolver contract."
+        ),
+    )
+    parser.add_argument(
+        "--portfolio-id",
+        default="PB_SG_GLOBAL_BAL_001",
+        help="Portfolio id used for optional lotus-core DPM execution-context probing.",
+    )
+    parser.add_argument(
+        "--as-of",
+        default="2026-03-25",
+        help="As-of date used for optional lotus-core DPM execution-context probing.",
+    )
     args = parser.parse_args()
 
     results = run_live_api_validation(
         args.base_url,
         include_demo_pack=not args.skip_demo_pack,
+        core_base_urls=args.core_base_url,
+        expect_core_dpm_route=args.expect_core_dpm_route,
+        portfolio_id=args.portfolio_id,
+        as_of=args.as_of,
     )
     summary = summarize(results)
     rendered = json.dumps(summary, indent=2, sort_keys=True)

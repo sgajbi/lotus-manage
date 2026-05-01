@@ -1277,6 +1277,18 @@ Implementation evidence captured on 2026-05-01:
     Full RFC closure remains blocked for stateful core-sourced execution until `lotus-core` issue
     `sgajbi/lotus-core#330` or an equivalent certified resolver contract is implemented and live
     proof is captured.
+25. Slice 12 hardening converted the manual manage/core integration probe into executable live
+    validation:
+    - `scripts/validate_live_api.py` now accepts `--core-base-url` and
+      `--expect-core-dpm-route`,
+    - focused tests prove the validator passes when the current expected core route absence is
+      observed and fails if the route posture changes unexpectedly,
+    - `python scripts/validate_live_api.py --base-url http://manage.dev.lotus --skip-demo-pack
+      --core-base-url http://core-control.dev.lotus --core-base-url http://core-query.dev.lotus
+      --expect-core-dpm-route absent --json-output
+      output/rfc-0036-s12-core-manage-api-summary.json` passed 11/11 probes,
+    - the two core probes returned `404`, while manage retained `409
+      DPM_STATEFUL_INPUT_DISABLED` for stateful simulation.
 
 ### Slice 11: Implementation Proof
 
@@ -1365,12 +1377,14 @@ Exit evidence:
 Assessment date: 2026-05-02
 
 Current decision: **gold-pass clean for the implemented stateless manage API surface, not final RFC
-complete**. Slices 0 through 10 have substantial implementation evidence and multiple hardening
-passes. Slice 11 now has clean direct canonical-host `lotus-manage` API evidence after refreshing
-the manage container to the branch image. Full RFC completion remains blocked because stateful
-core-sourced execution is intentionally disabled until the target `lotus-core` DPM
-execution-context route is implemented and live-certified. Slices 12 and 13 still require
-second-last review and final closure evidence.
+complete**. Slices 0 through 12 have substantial implementation evidence and multiple hardening
+passes for the implemented surface. Slice 11 has clean direct canonical-host `lotus-manage` API
+evidence after refreshing the manage container to the branch image, and Slice 12 now has
+machine-enforced manage/core integration posture proof. Full RFC completion remains blocked because
+stateful core-sourced execution is intentionally disabled until the target `lotus-core` DPM
+execution-context route is implemented and live-certified. Slice 13 final closure remains blocked
+until the upstream dependency is resolved or the RFC is explicitly rebaselined to close only the
+implemented stateless surface.
 
 ### Slice-By-Slice Completeness
 
@@ -1388,7 +1402,7 @@ second-last review and final closure evidence.
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
 | Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Direct core probes showed the target DPM execution-context route returns 404, so stateful promotion remains blocked by `sgajbi/lotus-core#330`. |
-| Slice 12 Second-last hardening | Not complete | Requires post-proof review after refreshed live evidence is clean. |
+| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, focused unit tests, and 11/11 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
 | Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
 
 ### What Was Truly Completed
@@ -1414,6 +1428,8 @@ second-last review and final closure evidence.
 5. Expanded live API validation so stale deployed OpenAPI cannot pass implementation proof.
 6. Added bounded metrics and monitoring contracts for execution, async operations, policy-pack
    resolution, workflow decisions, run supportability, and stateful resolver posture.
+7. Converted direct `lotus-core` DPM execution-context route checks into reusable validator
+   coverage so manage/core integration posture is proven by automation rather than manual notes.
 
 ### Debt Removed
 
@@ -1433,15 +1449,19 @@ second-last review and final closure evidence.
    capability truth, and sampled no-sensitive-metric posture.
 5. Direct `lotus-core` probes confirmed the target stateful DPM execution-context route is not yet
    live, which correctly blocks stateful mode promotion.
+6. Enhanced manage/core live validation passed 11/11 probes, including executable checks against
+   `core-control.dev.lotus` and `core-query.dev.lotus` for the expected missing DPM
+   execution-context route.
 
 ### Standard Assessment
 
 The implemented stateless `lotus-manage` API surface has reached the expected evidence standard for
 this stage: local gates pass, remote Feature Lane is green, direct canonical-host manage API proof
-passes, and the previous stale Swagger runtime drift is now caught by validation and resolved by a
-targeted manage refresh. The full RFC has not reached final gold-standard closure because stateful
-core-sourced execution depends on a `lotus-core` DPM execution-context route that is not yet live,
-and the second-last/final closure slices remain to be completed after that dependency is resolved.
+passes, the previous stale Swagger runtime drift is now caught by validation and resolved by a
+targeted manage refresh, and manage/core integration posture is now checked by executable live
+validation. The full RFC has not reached final gold-standard closure because stateful core-sourced
+execution depends on a `lotus-core` DPM execution-context route that is not yet live, and final
+closure remains to be completed after that dependency is resolved or explicitly rebaselined.
 
 ## Test Plan
 

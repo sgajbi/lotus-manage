@@ -51,6 +51,7 @@ flowchart LR
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
 | Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
+| Manage/core integration posture proof | Passed for current blocked state | `scripts/validate_live_api.py --base-url http://manage.dev.lotus --skip-demo-pack --core-base-url http://core-control.dev.lotus --core-base-url http://core-query.dev.lotus --expect-core-dpm-route absent` proves manage stays stateless-only while the target core DPM execution-context route returns `404` |
 
 ## Explicit Non-Goals
 
@@ -69,6 +70,13 @@ For RFC-0036 final proof, use the direct manage API path first:
 
 ```powershell
 python scripts/validate_live_api.py --base-url http://manage.dev.lotus --json-output output/rfc-0036-gold-pass/live-api-summary.json
+```
+
+For current manage/core integration proof before stateful promotion, add the core route posture
+checks:
+
+```powershell
+python scripts/validate_live_api.py --base-url http://manage.dev.lotus --skip-demo-pack --core-base-url http://core-control.dev.lotus --core-base-url http://core-query.dev.lotus --expect-core-dpm-route absent --json-output output/rfc-0036-s12-core-manage-api-summary.json
 ```
 
 Final proof is not complete if the validator reports stale OpenAPI certification drift, even when
