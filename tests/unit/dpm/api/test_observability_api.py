@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from fastapi.testclient import TestClient
 
+import src.api.main as main_module
 from src.api.main import app
 
 
@@ -17,6 +18,20 @@ def test_health_endpoints_available():
     assert health.json() == {"status": "ok"}
     assert live.json() == {"status": "live"}
     assert ready.json() == {"status": "ready"}
+
+
+def test_health_ready_validates_cutover_migrations_in_production(monkeypatch):
+    called = {"migrations": 0}
+    monkeypatch.setattr(main_module, "app_persistence_profile_name", lambda: "PRODUCTION")
+    monkeypatch.setattr(main_module, "validate_persistence_profile_guardrails", lambda: None)
+    monkeypatch.setattr(
+        main_module,
+        "validate_cutover_migrations_applied",
+        lambda: called.__setitem__("migrations", called["migrations"] + 1),
+    )
+
+    assert main_module.health_ready() == {"status": "ready"}
+    assert called["migrations"] == 1
 
 
 def test_correlation_headers_are_exposed():

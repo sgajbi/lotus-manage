@@ -12,9 +12,10 @@ RUN adduser --disabled-password --gecos '' dpm-user
 # Set the working directory
 WORKDIR /app
 
-# Copy package metadata and source
+# Copy package metadata, source, and operational scripts
 COPY pyproject.toml README.md ./
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 
 # Install runtime dependencies only
 RUN pip install --upgrade pip && pip install .
@@ -28,9 +29,9 @@ USER dpm-user
 # Expose the port uvicorn will listen on
 EXPOSE 8000
 
-# Container-level healthcheck using Python stdlib (no curl dependency)
+# Container-level readiness check using Python stdlib (no curl dependency)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs', timeout=3)"
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready', timeout=3)"
 
 # Command to run the application
 CMD ["python", "-m", "uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

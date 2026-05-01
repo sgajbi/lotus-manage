@@ -29,6 +29,17 @@ python -m pytest tests/unit/test_local_docker_runtime_contract.py -q
 
 That protects the local Docker runtime contract wording.
 
+When Docker readiness, migration startup, or supportability health behavior changes, include:
+
+```bash
+python -m pytest tests/unit/test_local_docker_runtime_contract.py tests/unit/dpm/api/test_observability_api.py tests/unit/shared/dependencies/test_production_cutover_contract.py -q
+docker compose config
+```
+
+For canonical front-office proof, rebuild with `LOTUS_MANAGE_HOST_PORT=8001`, verify that
+`/api/v1/rebalance/supportability/summary` returns HTTP `200`, and confirm Gateway overview no
+longer reports `MANAGE_REBALANCE_UNAVAILABLE`.
+
 When DPM supportability or OpenAPI-facing docs change, run:
 
 ```bash
