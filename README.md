@@ -1,7 +1,7 @@
 # lotus-manage
 
-Discretionary portfolio-management execution, supportability, and lifecycle service for the Lotus
-ecosystem.
+Discretionary mandate portfolio-management execution, workflow review, and operational
+supportability service for the Lotus ecosystem.
 
 Repository-local engineering context:
 [REPOSITORY-ENGINEERING-CONTEXT.md](REPOSITORY-ENGINEERING-CONTEXT.md)

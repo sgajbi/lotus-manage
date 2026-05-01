@@ -10,18 +10,20 @@ For platform-wide truth, read:
 
 ## Repository Role
 
-`lotus-manage` is the discretionary portfolio-management and operational workflow service.
+`lotus-manage` is the discretionary mandate portfolio-management execution and operational
+supportability service.
 
-It owns management-side execution, supportability, and mandate workflow review for discretionary
-portfolio management.
+It owns management-side rebalance execution, what-if orchestration, run supportability, policy-pack
+controls, and mandate workflow review for discretionary portfolio management.
 
 ## Business And Domain Responsibility
 
 This repository owns:
 
-1. discretionary portfolio-management workflow APIs,
-2. management-side lifecycle and execution support,
-3. operational supportability and related management contracts.
+1. discretionary mandate rebalance simulation and what-if workflow APIs,
+2. management-side lifecycle, workflow review, and execution support,
+3. operational supportability, deterministic artifacts, lineage, idempotency, and policy-pack
+   contracts.
 
 Advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are intentionally
 owned by `lotus-advise`.
@@ -38,7 +40,10 @@ Current repository posture:
    product used by management execution request contracts,
 6. it carries the RFC-0091 repo-native producer declaration and telemetry fixture for
    `PortfolioActionRegister`,
-7. the service remains part of the canonical front-office validation path through `lotus-gateway`.
+7. the service remains part of the canonical front-office validation path through `lotus-gateway`,
+8. current execution APIs consume caller-supplied inline portfolio, market-data, model, shelf, and
+   option bundles; stateful `portfolio_id` retrieval is disabled until a governed `lotus-core`
+   resolver is enabled.
 
 ## Architecture And Module Map
 
@@ -65,7 +70,8 @@ Primary areas:
 Runtime model:
 
 1. FastAPI service,
-2. depends on `lotus-core`,
+2. depends on `lotus-core` as source-data authority for future governed state resolution, while
+   current execution consumes inline request bundles,
 3. primarily consumed through `lotus-gateway`,
 4. canonical host runtime is exposed through `manage.dev.lotus`.
 

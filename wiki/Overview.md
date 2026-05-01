@@ -2,9 +2,9 @@
 
 ## Business role
 
-`lotus-manage` owns discretionary portfolio-management execution and management-side workflow
-supportability. It turns governed portfolio inputs into deterministic rebalance decisions,
-supportability evidence, and operational workflow state.
+`lotus-manage` owns discretionary mandate portfolio-management execution, management-side workflow
+review, and operational supportability. It turns governed portfolio inputs into deterministic
+rebalance decisions, supportability evidence, policy controls, and operational workflow state.
 
 ## Ownership boundaries
 
