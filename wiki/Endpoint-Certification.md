@@ -14,7 +14,9 @@ An endpoint is complete only when these checks are true:
 3. upstream source-data authority is identified and any missing upstream integration is explicit,
 4. downstream consumers are identified and stale or duplicate usage has a tracked remediation issue,
 5. Swagger explains what the endpoint is for, when to use it, and documents every request and
-   response attribute with examples,
+   response attribute with examples; route-local examples are preferred for business-critical
+   outcomes and schema-derived examples are used as a minimum guard for every JSON request and
+   response contract,
 6. live API evidence has been captured against a running `lotus-manage` instance.
 
 ## Certified endpoint family: service health probes
@@ -68,6 +70,7 @@ Non-functional posture:
 - The response model is intentionally small and typed: `status` is limited to `ok`, `live`, or
   `ready`.
 - These endpoints perform no calls to `lotus-core`, `lotus-advise`, Gateway, or Workbench.
+- Swagger documents `/metrics` as Prometheus text exposition, not JSON.
 - Metrics labels must remain bounded and must not expose portfolio ids, client names, account ids,
   request hashes, idempotency keys, correlation ids, run ids, raw upstream errors, or diagnostics
   payloads.
@@ -84,7 +87,7 @@ Downstream consumers:
 Evidence commands:
 
 ```bash
-python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/api/test_observability_api.py::test_action_register_supportability_metric_labels_are_bounded tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/api/test_observability_api.py::test_action_register_supportability_metric_labels_are_bounded tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_json_requests_and_responses_have_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_metrics_openapi_documents_prometheus_text_response -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 

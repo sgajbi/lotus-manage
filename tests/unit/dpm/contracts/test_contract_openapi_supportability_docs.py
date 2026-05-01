@@ -40,6 +40,10 @@ def _schema_any(schemas: dict, names: list[str]) -> dict:
     raise KeyError(f"None of schema names present: {names}")
 
 
+def _has_example(content: dict) -> bool:
+    return bool(content.get("example") or content.get("examples"))
+
+
 def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _guard_strict_validation()
     openapi = app.openapi()
@@ -326,6 +330,44 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
             "required_features": ["dpm.workflow.review_gate"],
         }
     ]
+
+
+def test_openapi_json_requests_and_responses_have_examples():
+    _guard_strict_validation()
+    openapi = app.openapi()
+    missing: list[str] = []
+
+    for path, operations in sorted(openapi["paths"].items()):
+        for method, operation in sorted(operations.items()):
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            request_content = (
+                operation.get("requestBody", {}).get("content", {}).get("application/json")
+            )
+            if isinstance(request_content, dict) and not _has_example(request_content):
+                missing.append(f"{method.upper()} {path} request")
+
+            for status_code, response in sorted(operation.get("responses", {}).items()):
+                response_content = response.get("content", {}).get("application/json")
+                if isinstance(response_content, dict) and not _has_example(response_content):
+                    missing.append(f"{method.upper()} {path} {status_code} response")
+
+    assert missing == []
+
+
+def test_metrics_openapi_documents_prometheus_text_response():
+    _guard_strict_validation()
+    openapi = app.openapi()
+
+    metrics_response = openapi["paths"]["/metrics"]["get"]["responses"]["200"]
+    content = metrics_response["content"]
+
+    assert "application/json" not in content
+    prometheus_content = content["text/plain; version=0.0.4"]
+    assert prometheus_content["schema"]["type"] == "string"
+    assert prometheus_content["examples"]["prometheus"]["value"].startswith(
+        "# HELP http_requests_total"
+    )
 
 
 @pytest.mark.parametrize(

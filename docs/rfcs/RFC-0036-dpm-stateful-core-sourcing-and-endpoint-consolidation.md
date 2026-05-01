@@ -1224,6 +1224,12 @@ Implementation evidence captured on 2026-05-01:
     - the endpoint-certification wiki now lists the support-bundle lookup variants explicitly,
     - `/metrics` is certified as an infrastructure monitoring endpoint with bounded-label
       requirements.
+16. Continued Slice 10 Swagger review found that many JSON request and response contracts had
+    schemas and descriptions but no concrete examples, and `/metrics` was advertised as JSON
+    despite returning Prometheus text. Added central OpenAPI enrichment to derive bounded examples
+    from component schemas, documented `/metrics` as `text/plain; version=0.0.4`, and added
+    contract tests that fail if JSON request/response content lacks examples or metrics regresses
+    to JSON.
 
 ### Slice 11: Implementation Proof
 

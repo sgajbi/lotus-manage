@@ -25,6 +25,9 @@ _EXAMPLE_BY_KEY: dict[str, Any] = {
     "request_hash": "sha256:abc123",
 }
 
+_JSON_MEDIA_TYPE = "application/json"
+_PROMETHEUS_MEDIA_TYPE = "text/plain; version=0.0.4"
+
 
 def _to_snake_case(value: str) -> str:
     transformed = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", value)
@@ -109,6 +112,150 @@ def _infer_description(model_name: str, prop_name: str, prop_schema: dict[str, A
     return f"{_humanize(model_name)} field: {text}."
 
 
+def _schema_ref_name(ref: str) -> str:
+    return ref.rsplit("/", 1)[-1]
+
+
+def _example_from_schema(
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str] | None = None,
+) -> Any:
+    seen_refs = seen_refs or set()
+
+    if "example" in prop_schema:
+        return prop_schema["example"]
+    examples = prop_schema.get("examples")
+    if isinstance(examples, list) and examples:
+        return examples[0]
+
+    schema_ref = prop_schema.get("$ref")
+    if isinstance(schema_ref, str):
+        model_name = _schema_ref_name(schema_ref)
+        if model_name in seen_refs:
+            return {"sample_key": "sample_value"}
+        resolved_schema = schemas.get(model_name)
+        if isinstance(resolved_schema, dict):
+            return _example_from_schema(
+                model_name,
+                resolved_schema,
+                schemas,
+                seen_refs | {model_name},
+            )
+
+    for composite_key in ("allOf", "oneOf", "anyOf"):
+        options = prop_schema.get(composite_key)
+        if not isinstance(options, list):
+            continue
+        for option in options:
+            if isinstance(option, dict) and option.get("type") != "null":
+                return _example_from_schema(prop_name, option, schemas, seen_refs)
+
+    properties = prop_schema.get("properties")
+    if isinstance(properties, dict):
+        return {
+            child_name: _example_from_schema(child_name, child_schema, schemas, seen_refs)
+            for child_name, child_schema in properties.items()
+            if isinstance(child_schema, dict)
+        }
+
+    schema_type = prop_schema.get("type")
+    if schema_type == "array":
+        item_schema = prop_schema.get("items", {})
+        if isinstance(item_schema, dict):
+            return [_example_from_schema(f"{prop_name}_item", item_schema, schemas, seen_refs)]
+        return []
+    if schema_type == "object":
+        additional_properties = prop_schema.get("additionalProperties")
+        if isinstance(additional_properties, dict):
+            return {
+                "sample_key": _example_from_schema(
+                    f"{prop_name}_value",
+                    additional_properties,
+                    schemas,
+                    seen_refs,
+                )
+            }
+        return {"sample_key": "sample_value"}
+
+    return _infer_example(prop_name, prop_schema)
+
+
+def _ensure_json_content_example(
+    *,
+    content: dict[str, Any],
+    schemas: dict[str, Any],
+    name: str,
+    summary: str,
+) -> None:
+    if "example" in content or "examples" in content:
+        return
+    content["examples"] = {
+        "default": {
+            "summary": summary,
+            "value": _example_from_schema(name, content.get("schema", {}), schemas),
+        }
+    }
+
+
+def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
+    schemas = schema.get("components", {}).get("schemas", {})
+    if not isinstance(schemas, dict):
+        schemas = {}
+
+    paths = schema.get("paths", {})
+    for path, methods in paths.items():
+        if not isinstance(methods, dict):
+            continue
+        if path == "/metrics":
+            methods.get("get", {}).setdefault("responses", {}).setdefault("200", {})["content"] = {
+                _PROMETHEUS_MEDIA_TYPE: {
+                    "schema": {"type": "string"},
+                    "examples": {
+                        "prometheus": {
+                            "summary": "Prometheus metrics exposition.",
+                            "value": (
+                                "# HELP http_requests_total Total HTTP requests.\n"
+                                "# TYPE http_requests_total counter\n"
+                                'http_requests_total{service="lotus-manage",method="GET",'
+                                'path="/health",status="200"} 1\n'
+                            ),
+                        }
+                    },
+                }
+            }
+            continue
+        for method, operation in methods.items():
+            if method.lower() not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            if not isinstance(operation, dict):
+                continue
+
+            request_content = (
+                operation.get("requestBody", {}).get("content", {}).get(_JSON_MEDIA_TYPE)
+            )
+            if isinstance(request_content, dict):
+                _ensure_json_content_example(
+                    content=request_content,
+                    schemas=schemas,
+                    name=f"{method}_{path}_request",
+                    summary="Example request payload.",
+                )
+
+            for status_code, response in operation.get("responses", {}).items():
+                if not isinstance(response, dict):
+                    continue
+                response_content = response.get("content", {}).get(_JSON_MEDIA_TYPE)
+                if isinstance(response_content, dict):
+                    _ensure_json_content_example(
+                        content=response_content,
+                        schemas=schemas,
+                        name=f"{method}_{path}_{status_code}_response",
+                        summary="Example response payload.",
+                    )
+
+
 def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -> None:
     paths = schema.get("paths", {})
     for path, methods in paths.items():
@@ -165,4 +312,5 @@ def _ensure_schema_documentation(schema: dict[str, Any]) -> None:
 def enrich_openapi_schema(schema: dict[str, Any], *, service_name: str) -> dict[str, Any]:
     _ensure_operation_documentation(schema, service_name=service_name)
     _ensure_schema_documentation(schema)
+    _ensure_request_and_response_examples(schema)
     return schema

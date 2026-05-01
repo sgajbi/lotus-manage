@@ -259,6 +259,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint-certification source updated because endpoint coverage truth
   changed.
 
+## RFC36-S10-004: OpenAPI response examples were incomplete across certified routes
+
+- Date: 2026-05-02
+- Scope: OpenAPI enrichment, request/response examples, `/metrics` media type, Swagger contract
+  tests
+- Finding: many JSON request and response contracts had schemas and descriptions but no concrete
+  Swagger examples. `/metrics` was also advertised by the generated schema as JSON even though the
+  runtime contract is Prometheus text exposition.
+- Action: extended `src/api/openapi_enrichment.py` to derive bounded request and response examples
+  from component schemas when route-local examples are absent; documented `/metrics` as
+  `text/plain; version=0.0.4`; added contract tests that fail if any JSON request/response content
+  lacks examples or if `/metrics` regresses to JSON.
+- Status: fixed for current OpenAPI route inventory.
+- Wiki decision: wiki endpoint-certification source updated because Swagger certification
+  expectations and monitoring endpoint documentation changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01
