@@ -84,6 +84,68 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: deterministic run artifact
+
+Route:
+
+- `GET /rebalance/runs/{rebalance_run_id}/artifact`
+
+Purpose:
+
+Returns only the deterministic artifact for a discretionary mandate rebalance run. Use this endpoint
+when an operator, auditor, replay job, or incident-support tool needs the replayable artifact
+payload and hash evidence. Use the support-bundle endpoint instead when workflow history, lineage,
+async operation, or idempotency context is also required.
+
+Request surface:
+
+- Path parameter: `rebalance_run_id`.
+- No query options.
+- Unsupported query parameters return `422`.
+- Feature gates: `DPM_SUPPORT_APIS_ENABLED` and `DPM_ARTIFACTS_ENABLED`.
+- Artifact modes: `DERIVED` and `PERSISTED`.
+
+Functional coverage:
+
+- returned artifact identity, run id, correlation id, idempotency key, portfolio id, status,
+  request snapshot, before/after summaries, order intents, rule outcomes, diagnostics, full result,
+  and evidence fields are tied to the persisted run,
+- `artifact_hash` is recomputed from the canonical response payload with the hash field excluded,
+- repeated retrieval returns the same deterministic hash,
+- persisted mode stores artifacts and backfills missing persisted artifacts from run data,
+- missing run ids and disabled artifact APIs return governed `404` details,
+- unsupported query parameters are rejected instead of silently ignored.
+
+Non-functional posture:
+
+- The endpoint performs local deterministic artifact resolution only.
+- `DERIVED` mode avoids a separate artifact read and is stateless beyond persisted run data.
+- `PERSISTED` mode supports durable storage while retaining deterministic backfill behavior for
+  older runs without stored artifacts.
+- The route has no outbound source-data calls and no advisory proposal artifact responsibility.
+
+Upstream integration posture:
+
+The artifact is generated from persisted `lotus-manage` run output. The original run payload carries
+caller-supplied portfolio, model, market, and policy context; future stateful `portfolio_id` source
+resolution remains governed by the `lotus-core` integration design.
+
+Downstream consumers:
+
+- No direct strategic Gateway or Workbench consumer was found for this source-service artifact
+  route.
+- `lotus-advise` owns advisory proposal artifacts; this endpoint must remain limited to
+  discretionary mandate run artifacts.
+- Future audit or replay consumers should use this route for artifact-only reads and the
+  support-bundle route for broader investigation context.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_lookup_by_run_correlation_and_idempotency tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_not_found_and_disabled tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py::test_service_persisted_artifact_mode_stores_and_reads_artifact tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py::test_service_persisted_artifact_mode_backfills_missing_persisted_artifact tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: run supportability bundle
 
 Route:

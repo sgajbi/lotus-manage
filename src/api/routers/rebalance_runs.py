@@ -722,14 +722,20 @@ def get_dpm_run_support_bundle_by_operation(
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Run Artifact by Run Id",
     description=(
-        "Returns deterministic run artifact from supportability run data using configured "
-        "artifact mode (`DERIVED` or `PERSISTED`)."
+        "Returns the deterministic supportability artifact for a discretionary mandate rebalance "
+        "run. Use this endpoint when an operator, auditor, or downstream incident tool needs the "
+        "artifact payload only; use the support-bundle endpoint when workflow, lineage, async, or "
+        "idempotency context is also required. The artifact is resolved using configured artifact "
+        "mode (`DERIVED` or `PERSISTED`) and unsupported query parameters are rejected."
     ),
     responses={
+        200: {"description": "Deterministic run artifact for audit and replay support."},
         404: {"description": "Support APIs/artifacts disabled or run id not found."},
+        422: {"description": "Unsupported query parameters were supplied."},
     },
 )
 def get_run_artifact_by_run_id(
+    request: Request,
     rebalance_run_id: Annotated[
         str,
         Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
@@ -738,6 +744,7 @@ def get_run_artifact_by_run_id(
 ) -> DpmRunArtifactResponse:
     _assert_support_apis_enabled()
     _assert_artifacts_enabled()
+    _reject_unexpected_query_params(request, allowed_params=set())
     try:
         return service.get_run_artifact(rebalance_run_id=rebalance_run_id)
     except DpmRunNotFoundError as exc:

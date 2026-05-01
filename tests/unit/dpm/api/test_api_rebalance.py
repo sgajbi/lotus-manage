@@ -20,6 +20,7 @@ from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
 )
+from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
     DpmRunNotFoundError,
@@ -208,6 +209,10 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     )
     assert artifact_body["evidence"]["hashes"]["request_hash"].startswith("sha256:")
     assert artifact_body["evidence"]["hashes"]["artifact_hash"].startswith("sha256:")
+    expected_artifact_hash = hash_canonical_payload(
+        strip_keys(artifact_body, exclude={"artifact_hash"})
+    )
+    assert artifact_body["evidence"]["hashes"]["artifact_hash"] == expected_artifact_hash
     assert artifact_body["result"]["rebalance_run_id"] == body["rebalance_run_id"]
 
     artifact_again = client.get(f"/api/v1/rebalance/runs/{body['rebalance_run_id']}/artifact")
@@ -215,6 +220,14 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     assert (
         artifact_again.json()["evidence"]["hashes"]["artifact_hash"]
         == artifact_body["evidence"]["hashes"]["artifact_hash"]
+    )
+
+    unsupported_query = client.get(
+        f"/api/v1/rebalance/runs/{body['rebalance_run_id']}/artifact?include_lineage=true"
+    )
+    assert unsupported_query.status_code == 422
+    assert unsupported_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: include_lineage not supported for this endpoint"
     )
 
 

@@ -599,8 +599,17 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert run_artifact["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmRunArtifactResponse")
+    assert "artifact payload only" in run_artifact["description"]
+    assert "support-bundle endpoint" in run_artifact["description"]
+    assert "unsupported query parameters are rejected" in run_artifact["description"]
+    assert run_artifact["responses"]["200"]["description"] == (
+        "Deterministic run artifact for audit and replay support."
+    )
     assert "404" in run_artifact["responses"]
     assert run_artifact["responses"]["404"]["description"]
+    assert run_artifact["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     list_runs = openapi["paths"]["/api/v1/rebalance/runs"]["get"]
     assert list_runs["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(

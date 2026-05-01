@@ -223,6 +223,14 @@ Swagger contract quality:
 ### `GET /rebalance/runs/{rebalance_run_id}`
 - Purpose: retrieve one lotus-manage run with full result payload and lineage metadata for support investigations.
 
+### `GET /rebalance/runs/{rebalance_run_id}/artifact`
+- Purpose: retrieve only the deterministic run artifact for audit, replay, or incident-support workflows.
+- Use the support-bundle endpoint instead when workflow history, lineage, async-operation, or idempotency context is also required.
+- Artifact mode:
+  - `DERIVED` builds the artifact deterministically from persisted run data.
+  - `PERSISTED` reads the stored artifact and backfills it when the stored artifact is missing.
+- Unsupported query parameters return `422`; this endpoint has no query options.
+
 ### `GET /rebalance/runs/{rebalance_run_id}/support-bundle`
 - Purpose: retrieve one aggregated supportability bundle so investigations can run from one payload.
 - Includes:
