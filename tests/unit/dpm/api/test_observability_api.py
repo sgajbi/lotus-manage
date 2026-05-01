@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from fastapi.testclient import TestClient
 
 import src.api.main as main_module
+import src.api.observability as observability_module
 from src.api.main import app
 
 
@@ -51,6 +52,36 @@ def test_metrics_endpoint_available():
     response = client.get("/metrics")
     assert response.status_code == 200
     assert "http_requests_total" in response.text or "http_request_duration" in response.text
+
+
+def test_action_register_supportability_metric_labels_are_bounded(monkeypatch):
+    captured: dict[str, str] = {}
+
+    class _Counter:
+        def labels(self, **labels):
+            captured.update(labels)
+            return self
+
+        def inc(self):
+            return None
+
+    monkeypatch.setattr(observability_module, "MANAGE_SUPPORTABILITY_TOTAL", _Counter())
+
+    observability_module.record_action_register_supportability(
+        surface="rebalance/supportability/summary/PB_SG_GLOBAL_BAL_001",
+        supportability_state="ready",
+        reason="client_name:private-bank-client",
+        freshness_bucket="portfolio:PB_SG_GLOBAL_BAL_001",
+    )
+
+    assert captured == {
+        "surface": "unknown_surface",
+        "supportability_state": "ready",
+        "reason": "supportability_summary_error",
+        "freshness_bucket": "unknown",
+    }
+    assert "PB_SG_GLOBAL_BAL_001" not in captured.values()
+    assert "client_name:private-bank-client" not in captured.values()
 
 
 def test_traceparent_header_propagates_trace_id():
