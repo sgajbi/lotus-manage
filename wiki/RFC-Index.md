@@ -36,6 +36,8 @@
 
 - RFC-0035
   integration pyramid wave 6 depth expansion
+- RFC-0036
+  target-state stateful `lotus-core` sourcing and duplicate endpoint consolidation
 
 ## Superseded advisory scope
 

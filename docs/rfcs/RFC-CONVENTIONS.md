@@ -10,10 +10,13 @@ This document defines the required language and contract conventions for all RFC
 
 ## 2. Canonical API Conventions
 
-1. Canonical simulate endpoint is `POST /rebalance/simulate`.
-2. Do not introduce `/v1/rebalance/simulate` unless a dedicated versioning RFC is approved and all clients/tests are migrated together.
-3. Batch/analysis endpoints should follow the same route family style (`/rebalance/...`).
-4. Domain outcomes for valid payloads are represented in response `status`, not as separate HTTP domain error contracts.
+1. RFC-0036 supersedes the older unversioned-route convention for the target architecture.
+2. Strategic product APIs should use the canonical `/api/v1` surface after RFC-0036
+   implementation.
+3. Batch/analysis endpoints should follow the same versioned route family style
+   (`/api/v1/rebalance/...`).
+4. Unversioned product API duplicates should not be added.
+5. Domain outcomes for valid payloads are represented in response `status`, not as separate HTTP domain error contracts.
 
 ## 3. Status Vocabulary
 
