@@ -97,11 +97,11 @@ def env_int(name: str, default: int) -> int:
 
 
 def env_float(name: str, default: float) -> float:
-    value = os.getenv(name)
-    if value is None:
+    raw = os.getenv(name)
+    if raw is None:
         return default
     try:
-        parsed = float(value)
+        parsed = float(raw)
     except ValueError:
         return default
     return parsed if parsed > 0 else default
