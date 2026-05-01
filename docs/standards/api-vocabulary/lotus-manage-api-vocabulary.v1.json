@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-01T13:59:55.785661+00:00",
+  "generatedAt": "2026-05-01T14:09:46.876202+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -3166,6 +3166,67 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.stateless_input",
+      "canonicalTerm": "stateless_input",
+      "preferredName": "stateless_input",
+      "description": "Canonical stateless input used by lotus-manage APIs.",
+      "example": {
+        "market_data_snapshot": {
+          "fx_rates": [],
+          "prices": [
+            {
+              "currency": "USD",
+              "instrument_id": "EQ_1",
+              "price": "100"
+            }
+          ]
+        },
+        "model_portfolio": {
+          "targets": [
+            {
+              "instrument_id": "EQ_1",
+              "weight": "0.6"
+            }
+          ]
+        },
+        "options": {
+          "enable_settlement_awareness": false,
+          "enable_tax_awareness": false,
+          "target_method": "HEURISTIC"
+        },
+        "portfolio_snapshot": {
+          "base_currency": "USD",
+          "cash_balances": [
+            {
+              "amount": "5000",
+              "currency": "USD"
+            }
+          ],
+          "portfolio_id": "pf_1",
+          "positions": [
+            {
+              "instrument_id": "EQ_1",
+              "quantity": "100"
+            }
+          ]
+        },
+        "shelf_entries": [
+          {
+            "instrument_id": "EQ_1",
+            "status": "APPROVED"
+          }
+        ]
+      },
+      "type": "RebalanceRequest",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "RebalanceRequest",
+        "BatchRebalanceRequest"
       ]
     },
     {
@@ -20852,7 +20913,15 @@
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
-            "name": "portfolio_snapshot",
+            "name": "stateless_input",
+            "location": "body",
+            "required": true,
+            "type": "RebalanceRequest",
+            "semanticId": "lotus.stateless_input",
+            "attributeRef": "#/attributeCatalog/lotus.stateless_input"
+          },
+          {
+            "name": "stateless_input.portfolio_snapshot",
             "location": "body",
             "required": true,
             "type": "PortfolioSnapshot",
@@ -20860,7 +20929,7 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_snapshot"
           },
           {
-            "name": "portfolio_snapshot.snapshot_id",
+            "name": "stateless_input.portfolio_snapshot.snapshot_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -20868,7 +20937,7 @@
             "attributeRef": "#/attributeCatalog/lotus.snapshot_id"
           },
           {
-            "name": "portfolio_snapshot.portfolio_id",
+            "name": "stateless_input.portfolio_snapshot.portfolio_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20876,7 +20945,7 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
           },
           {
-            "name": "portfolio_snapshot.base_currency",
+            "name": "stateless_input.portfolio_snapshot.base_currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20884,7 +20953,7 @@
             "attributeRef": "#/attributeCatalog/lotus.base_currency"
           },
           {
-            "name": "portfolio_snapshot.positions",
+            "name": "stateless_input.portfolio_snapshot.positions",
             "location": "body",
             "required": false,
             "type": "array",
@@ -20892,7 +20961,7 @@
             "attributeRef": "#/attributeCatalog/lotus.positions"
           },
           {
-            "name": "portfolio_snapshot.positions[].instrument_id",
+            "name": "stateless_input.portfolio_snapshot.positions[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20900,7 +20969,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "portfolio_snapshot.positions[].quantity",
+            "name": "stateless_input.portfolio_snapshot.positions[].quantity",
             "location": "body",
             "required": true,
             "type": "object",
@@ -20908,7 +20977,7 @@
             "attributeRef": "#/attributeCatalog/lotus.quantity"
           },
           {
-            "name": "portfolio_snapshot.positions[].market_value",
+            "name": "stateless_input.portfolio_snapshot.positions[].market_value",
             "location": "body",
             "required": false,
             "type": "object",
@@ -20916,7 +20985,7 @@
             "attributeRef": "#/attributeCatalog/lotus.market_value"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots",
             "location": "body",
             "required": false,
             "type": "array",
@@ -20924,7 +20993,7 @@
             "attributeRef": "#/attributeCatalog/lotus.lots"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].lot_id",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].lot_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20932,7 +21001,7 @@
             "attributeRef": "#/attributeCatalog/lotus.lot_id"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].quantity",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].quantity",
             "location": "body",
             "required": true,
             "type": "object",
@@ -20940,7 +21009,7 @@
             "attributeRef": "#/attributeCatalog/lotus.quantity"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost",
             "location": "body",
             "required": true,
             "type": "Money-Input",
@@ -20948,7 +21017,7 @@
             "attributeRef": "#/attributeCatalog/lotus.unit_cost"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost.amount",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost.amount",
             "location": "body",
             "required": true,
             "type": "object",
@@ -20956,7 +21025,7 @@
             "attributeRef": "#/attributeCatalog/lotus.amount"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost.currency",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost.currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20964,7 +21033,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].purchase_date",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].purchase_date",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20972,7 +21041,7 @@
             "attributeRef": "#/attributeCatalog/lotus.purchase_date"
           },
           {
-            "name": "portfolio_snapshot.cash_balances",
+            "name": "stateless_input.portfolio_snapshot.cash_balances",
             "location": "body",
             "required": false,
             "type": "array",
@@ -20980,7 +21049,7 @@
             "attributeRef": "#/attributeCatalog/lotus.cash_balances"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].currency",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -20988,7 +21057,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].amount",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].amount",
             "location": "body",
             "required": true,
             "type": "object",
@@ -20996,7 +21065,7 @@
             "attributeRef": "#/attributeCatalog/lotus.amount"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].settled",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].settled",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21004,7 +21073,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settled"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].pending",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].pending",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21012,7 +21081,7 @@
             "attributeRef": "#/attributeCatalog/lotus.pending"
           },
           {
-            "name": "market_data_snapshot",
+            "name": "stateless_input.market_data_snapshot",
             "location": "body",
             "required": true,
             "type": "MarketDataSnapshot",
@@ -21020,7 +21089,7 @@
             "attributeRef": "#/attributeCatalog/lotus.market_data_snapshot"
           },
           {
-            "name": "market_data_snapshot.snapshot_id",
+            "name": "stateless_input.market_data_snapshot.snapshot_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21028,7 +21097,7 @@
             "attributeRef": "#/attributeCatalog/lotus.snapshot_id"
           },
           {
-            "name": "market_data_snapshot.prices",
+            "name": "stateless_input.market_data_snapshot.prices",
             "location": "body",
             "required": false,
             "type": "array",
@@ -21036,7 +21105,7 @@
             "attributeRef": "#/attributeCatalog/lotus.prices"
           },
           {
-            "name": "market_data_snapshot.prices[].instrument_id",
+            "name": "stateless_input.market_data_snapshot.prices[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -21044,7 +21113,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "market_data_snapshot.prices[].price",
+            "name": "stateless_input.market_data_snapshot.prices[].price",
             "location": "body",
             "required": true,
             "type": "object",
@@ -21052,7 +21121,7 @@
             "attributeRef": "#/attributeCatalog/lotus.price"
           },
           {
-            "name": "market_data_snapshot.prices[].currency",
+            "name": "stateless_input.market_data_snapshot.prices[].currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -21060,7 +21129,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "market_data_snapshot.fx_rates",
+            "name": "stateless_input.market_data_snapshot.fx_rates",
             "location": "body",
             "required": false,
             "type": "array",
@@ -21068,7 +21137,7 @@
             "attributeRef": "#/attributeCatalog/lotus.fx_rates"
           },
           {
-            "name": "market_data_snapshot.fx_rates[].pair",
+            "name": "stateless_input.market_data_snapshot.fx_rates[].pair",
             "location": "body",
             "required": true,
             "type": "string",
@@ -21076,7 +21145,7 @@
             "attributeRef": "#/attributeCatalog/lotus.pair"
           },
           {
-            "name": "market_data_snapshot.fx_rates[].rate",
+            "name": "stateless_input.market_data_snapshot.fx_rates[].rate",
             "location": "body",
             "required": true,
             "type": "object",
@@ -21084,7 +21153,7 @@
             "attributeRef": "#/attributeCatalog/lotus.rate"
           },
           {
-            "name": "model_portfolio",
+            "name": "stateless_input.model_portfolio",
             "location": "body",
             "required": true,
             "type": "ModelPortfolio",
@@ -21092,7 +21161,7 @@
             "attributeRef": "#/attributeCatalog/lotus.model_portfolio"
           },
           {
-            "name": "model_portfolio.targets",
+            "name": "stateless_input.model_portfolio.targets",
             "location": "body",
             "required": true,
             "type": "array",
@@ -21100,7 +21169,7 @@
             "attributeRef": "#/attributeCatalog/lotus.targets"
           },
           {
-            "name": "model_portfolio.targets[].instrument_id",
+            "name": "stateless_input.model_portfolio.targets[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -21108,7 +21177,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "model_portfolio.targets[].weight",
+            "name": "stateless_input.model_portfolio.targets[].weight",
             "location": "body",
             "required": true,
             "type": "object",
@@ -21116,7 +21185,7 @@
             "attributeRef": "#/attributeCatalog/lotus.weight"
           },
           {
-            "name": "shelf_entries",
+            "name": "stateless_input.shelf_entries",
             "location": "body",
             "required": true,
             "type": "array",
@@ -21124,7 +21193,7 @@
             "attributeRef": "#/attributeCatalog/lotus.shelf_entries"
           },
           {
-            "name": "shelf_entries[].instrument_id",
+            "name": "stateless_input.shelf_entries[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -21132,7 +21201,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "shelf_entries[].status",
+            "name": "stateless_input.shelf_entries[].status",
             "location": "body",
             "required": true,
             "type": "string",
@@ -21140,7 +21209,7 @@
             "attributeRef": "#/attributeCatalog/lotus.status"
           },
           {
-            "name": "shelf_entries[].asset_class",
+            "name": "stateless_input.shelf_entries[].asset_class",
             "location": "body",
             "required": false,
             "type": "string",
@@ -21148,7 +21217,7 @@
             "attributeRef": "#/attributeCatalog/lotus.asset_class"
           },
           {
-            "name": "shelf_entries[].issuer_id",
+            "name": "stateless_input.shelf_entries[].issuer_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21156,7 +21225,7 @@
             "attributeRef": "#/attributeCatalog/lotus.issuer_id"
           },
           {
-            "name": "shelf_entries[].liquidity_tier",
+            "name": "stateless_input.shelf_entries[].liquidity_tier",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21164,7 +21233,7 @@
             "attributeRef": "#/attributeCatalog/lotus.liquidity_tier"
           },
           {
-            "name": "shelf_entries[].settlement_days",
+            "name": "stateless_input.shelf_entries[].settlement_days",
             "location": "body",
             "required": false,
             "type": "integer",
@@ -21172,7 +21241,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settlement_days"
           },
           {
-            "name": "shelf_entries[].min_notional",
+            "name": "stateless_input.shelf_entries[].min_notional",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21180,7 +21249,7 @@
             "attributeRef": "#/attributeCatalog/lotus.min_notional"
           },
           {
-            "name": "shelf_entries[].attributes",
+            "name": "stateless_input.shelf_entries[].attributes",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21188,7 +21257,7 @@
             "attributeRef": "#/attributeCatalog/lotus.attributes"
           },
           {
-            "name": "options",
+            "name": "stateless_input.options",
             "location": "body",
             "required": true,
             "type": "EngineOptions",
@@ -21196,7 +21265,7 @@
             "attributeRef": "#/attributeCatalog/lotus.options"
           },
           {
-            "name": "options.valuation_mode",
+            "name": "stateless_input.options.valuation_mode",
             "location": "body",
             "required": false,
             "type": "ValuationMode",
@@ -21204,7 +21273,7 @@
             "attributeRef": "#/attributeCatalog/lotus.valuation_mode"
           },
           {
-            "name": "options.target_method",
+            "name": "stateless_input.options.target_method",
             "location": "body",
             "required": false,
             "type": "TargetMethod",
@@ -21212,7 +21281,7 @@
             "attributeRef": "#/attributeCatalog/lotus.target_method"
           },
           {
-            "name": "options.compare_target_methods",
+            "name": "stateless_input.options.compare_target_methods",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21220,7 +21289,7 @@
             "attributeRef": "#/attributeCatalog/lotus.compare_target_methods"
           },
           {
-            "name": "options.compare_target_methods_tolerance",
+            "name": "stateless_input.options.compare_target_methods_tolerance",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21228,7 +21297,7 @@
             "attributeRef": "#/attributeCatalog/lotus.compare_target_methods_tolerance"
           },
           {
-            "name": "options.cash_band_min_weight",
+            "name": "stateless_input.options.cash_band_min_weight",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21236,7 +21305,7 @@
             "attributeRef": "#/attributeCatalog/lotus.cash_band_min_weight"
           },
           {
-            "name": "options.cash_band_max_weight",
+            "name": "stateless_input.options.cash_band_max_weight",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21244,7 +21313,7 @@
             "attributeRef": "#/attributeCatalog/lotus.cash_band_max_weight"
           },
           {
-            "name": "options.single_position_max_weight",
+            "name": "stateless_input.options.single_position_max_weight",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21252,7 +21321,7 @@
             "attributeRef": "#/attributeCatalog/lotus.single_position_max_weight"
           },
           {
-            "name": "options.min_trade_notional",
+            "name": "stateless_input.options.min_trade_notional",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21260,7 +21329,7 @@
             "attributeRef": "#/attributeCatalog/lotus.min_trade_notional"
           },
           {
-            "name": "options.allow_restricted",
+            "name": "stateless_input.options.allow_restricted",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21268,7 +21337,7 @@
             "attributeRef": "#/attributeCatalog/lotus.allow_restricted"
           },
           {
-            "name": "options.suppress_dust_trades",
+            "name": "stateless_input.options.suppress_dust_trades",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21276,7 +21345,7 @@
             "attributeRef": "#/attributeCatalog/lotus.suppress_dust_trades"
           },
           {
-            "name": "options.dust_trade_threshold",
+            "name": "stateless_input.options.dust_trade_threshold",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21284,7 +21353,7 @@
             "attributeRef": "#/attributeCatalog/lotus.dust_trade_threshold"
           },
           {
-            "name": "options.fx_buffer_pct",
+            "name": "stateless_input.options.fx_buffer_pct",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21292,7 +21361,7 @@
             "attributeRef": "#/attributeCatalog/lotus.fx_buffer_pct"
           },
           {
-            "name": "options.block_on_missing_prices",
+            "name": "stateless_input.options.block_on_missing_prices",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21300,7 +21369,7 @@
             "attributeRef": "#/attributeCatalog/lotus.block_on_missing_prices"
           },
           {
-            "name": "options.block_on_missing_fx",
+            "name": "stateless_input.options.block_on_missing_fx",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21308,7 +21377,7 @@
             "attributeRef": "#/attributeCatalog/lotus.block_on_missing_fx"
           },
           {
-            "name": "options.min_cash_buffer_pct",
+            "name": "stateless_input.options.min_cash_buffer_pct",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21316,7 +21385,7 @@
             "attributeRef": "#/attributeCatalog/lotus.min_cash_buffer_pct"
           },
           {
-            "name": "options.max_turnover_pct",
+            "name": "stateless_input.options.max_turnover_pct",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21324,7 +21393,7 @@
             "attributeRef": "#/attributeCatalog/lotus.max_turnover_pct"
           },
           {
-            "name": "options.enable_tax_awareness",
+            "name": "stateless_input.options.enable_tax_awareness",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21332,7 +21401,7 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_tax_awareness"
           },
           {
-            "name": "options.max_realized_capital_gains",
+            "name": "stateless_input.options.max_realized_capital_gains",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21340,7 +21409,7 @@
             "attributeRef": "#/attributeCatalog/lotus.max_realized_capital_gains"
           },
           {
-            "name": "options.enable_settlement_awareness",
+            "name": "stateless_input.options.enable_settlement_awareness",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21348,7 +21417,7 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_settlement_awareness"
           },
           {
-            "name": "options.enable_workflow_gates",
+            "name": "stateless_input.options.enable_workflow_gates",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21356,7 +21425,7 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_workflow_gates"
           },
           {
-            "name": "options.workflow_requires_mandate_approval",
+            "name": "stateless_input.options.workflow_requires_mandate_approval",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21364,7 +21433,7 @@
             "attributeRef": "#/attributeCatalog/lotus.workflow_requires_mandate_approval"
           },
           {
-            "name": "options.mandate_approval_already_obtained",
+            "name": "stateless_input.options.mandate_approval_already_obtained",
             "location": "body",
             "required": false,
             "type": "boolean",
@@ -21372,7 +21441,7 @@
             "attributeRef": "#/attributeCatalog/lotus.mandate_approval_already_obtained"
           },
           {
-            "name": "options.link_buy_to_same_currency_sell_dependency",
+            "name": "stateless_input.options.link_buy_to_same_currency_sell_dependency",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21380,7 +21449,7 @@
             "attributeRef": "#/attributeCatalog/lotus.link_buy_to_same_currency_sell_dependency"
           },
           {
-            "name": "options.settlement_horizon_days",
+            "name": "stateless_input.options.settlement_horizon_days",
             "location": "body",
             "required": false,
             "type": "integer",
@@ -21388,7 +21457,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settlement_horizon_days"
           },
           {
-            "name": "options.fx_settlement_days",
+            "name": "stateless_input.options.fx_settlement_days",
             "location": "body",
             "required": false,
             "type": "integer",
@@ -21396,7 +21465,7 @@
             "attributeRef": "#/attributeCatalog/lotus.fx_settlement_days"
           },
           {
-            "name": "options.max_overdraft_by_ccy",
+            "name": "stateless_input.options.max_overdraft_by_ccy",
             "location": "body",
             "required": false,
             "type": "object",
@@ -21404,7 +21473,7 @@
             "attributeRef": "#/attributeCatalog/lotus.max_overdraft_by_ccy"
           },
           {
-            "name": "options.group_constraints",
+            "name": "stateless_input.options.group_constraints",
             "location": "body",
             "required": false,
             "type": "object",
@@ -22883,7 +22952,15 @@
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
-            "name": "portfolio_snapshot",
+            "name": "stateless_input",
+            "location": "body",
+            "required": true,
+            "type": "BatchRebalanceRequest",
+            "semanticId": "lotus.stateless_input",
+            "attributeRef": "#/attributeCatalog/lotus.stateless_input"
+          },
+          {
+            "name": "stateless_input.portfolio_snapshot",
             "location": "body",
             "required": true,
             "type": "PortfolioSnapshot",
@@ -22891,7 +22968,7 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_snapshot"
           },
           {
-            "name": "portfolio_snapshot.snapshot_id",
+            "name": "stateless_input.portfolio_snapshot.snapshot_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -22899,7 +22976,7 @@
             "attributeRef": "#/attributeCatalog/lotus.snapshot_id"
           },
           {
-            "name": "portfolio_snapshot.portfolio_id",
+            "name": "stateless_input.portfolio_snapshot.portfolio_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -22907,7 +22984,7 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
           },
           {
-            "name": "portfolio_snapshot.base_currency",
+            "name": "stateless_input.portfolio_snapshot.base_currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -22915,7 +22992,7 @@
             "attributeRef": "#/attributeCatalog/lotus.base_currency"
           },
           {
-            "name": "portfolio_snapshot.positions",
+            "name": "stateless_input.portfolio_snapshot.positions",
             "location": "body",
             "required": false,
             "type": "array",
@@ -22923,7 +23000,7 @@
             "attributeRef": "#/attributeCatalog/lotus.positions"
           },
           {
-            "name": "portfolio_snapshot.positions[].instrument_id",
+            "name": "stateless_input.portfolio_snapshot.positions[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -22931,7 +23008,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "portfolio_snapshot.positions[].quantity",
+            "name": "stateless_input.portfolio_snapshot.positions[].quantity",
             "location": "body",
             "required": true,
             "type": "object",
@@ -22939,7 +23016,7 @@
             "attributeRef": "#/attributeCatalog/lotus.quantity"
           },
           {
-            "name": "portfolio_snapshot.positions[].market_value",
+            "name": "stateless_input.portfolio_snapshot.positions[].market_value",
             "location": "body",
             "required": false,
             "type": "object",
@@ -22947,7 +23024,7 @@
             "attributeRef": "#/attributeCatalog/lotus.market_value"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots",
             "location": "body",
             "required": false,
             "type": "array",
@@ -22955,7 +23032,7 @@
             "attributeRef": "#/attributeCatalog/lotus.lots"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].lot_id",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].lot_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -22963,7 +23040,7 @@
             "attributeRef": "#/attributeCatalog/lotus.lot_id"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].quantity",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].quantity",
             "location": "body",
             "required": true,
             "type": "object",
@@ -22971,7 +23048,7 @@
             "attributeRef": "#/attributeCatalog/lotus.quantity"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost",
             "location": "body",
             "required": true,
             "type": "Money-Input",
@@ -22979,7 +23056,7 @@
             "attributeRef": "#/attributeCatalog/lotus.unit_cost"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost.amount",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost.amount",
             "location": "body",
             "required": true,
             "type": "object",
@@ -22987,7 +23064,7 @@
             "attributeRef": "#/attributeCatalog/lotus.amount"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost.currency",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost.currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -22995,7 +23072,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].purchase_date",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].purchase_date",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23003,7 +23080,7 @@
             "attributeRef": "#/attributeCatalog/lotus.purchase_date"
           },
           {
-            "name": "portfolio_snapshot.cash_balances",
+            "name": "stateless_input.portfolio_snapshot.cash_balances",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23011,7 +23088,7 @@
             "attributeRef": "#/attributeCatalog/lotus.cash_balances"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].currency",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23019,7 +23096,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].amount",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].amount",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23027,7 +23104,7 @@
             "attributeRef": "#/attributeCatalog/lotus.amount"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].settled",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].settled",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23035,7 +23112,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settled"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].pending",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].pending",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23043,7 +23120,7 @@
             "attributeRef": "#/attributeCatalog/lotus.pending"
           },
           {
-            "name": "market_data_snapshot",
+            "name": "stateless_input.market_data_snapshot",
             "location": "body",
             "required": true,
             "type": "MarketDataSnapshot",
@@ -23051,7 +23128,7 @@
             "attributeRef": "#/attributeCatalog/lotus.market_data_snapshot"
           },
           {
-            "name": "market_data_snapshot.snapshot_id",
+            "name": "stateless_input.market_data_snapshot.snapshot_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23059,7 +23136,7 @@
             "attributeRef": "#/attributeCatalog/lotus.snapshot_id"
           },
           {
-            "name": "market_data_snapshot.prices",
+            "name": "stateless_input.market_data_snapshot.prices",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23067,7 +23144,7 @@
             "attributeRef": "#/attributeCatalog/lotus.prices"
           },
           {
-            "name": "market_data_snapshot.prices[].instrument_id",
+            "name": "stateless_input.market_data_snapshot.prices[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23075,7 +23152,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "market_data_snapshot.prices[].price",
+            "name": "stateless_input.market_data_snapshot.prices[].price",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23083,7 +23160,7 @@
             "attributeRef": "#/attributeCatalog/lotus.price"
           },
           {
-            "name": "market_data_snapshot.prices[].currency",
+            "name": "stateless_input.market_data_snapshot.prices[].currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23091,7 +23168,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "market_data_snapshot.fx_rates",
+            "name": "stateless_input.market_data_snapshot.fx_rates",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23099,7 +23176,7 @@
             "attributeRef": "#/attributeCatalog/lotus.fx_rates"
           },
           {
-            "name": "market_data_snapshot.fx_rates[].pair",
+            "name": "stateless_input.market_data_snapshot.fx_rates[].pair",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23107,7 +23184,7 @@
             "attributeRef": "#/attributeCatalog/lotus.pair"
           },
           {
-            "name": "market_data_snapshot.fx_rates[].rate",
+            "name": "stateless_input.market_data_snapshot.fx_rates[].rate",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23115,7 +23192,7 @@
             "attributeRef": "#/attributeCatalog/lotus.rate"
           },
           {
-            "name": "model_portfolio",
+            "name": "stateless_input.model_portfolio",
             "location": "body",
             "required": true,
             "type": "ModelPortfolio",
@@ -23123,7 +23200,7 @@
             "attributeRef": "#/attributeCatalog/lotus.model_portfolio"
           },
           {
-            "name": "model_portfolio.targets",
+            "name": "stateless_input.model_portfolio.targets",
             "location": "body",
             "required": true,
             "type": "array",
@@ -23131,7 +23208,7 @@
             "attributeRef": "#/attributeCatalog/lotus.targets"
           },
           {
-            "name": "model_portfolio.targets[].instrument_id",
+            "name": "stateless_input.model_portfolio.targets[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23139,7 +23216,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "model_portfolio.targets[].weight",
+            "name": "stateless_input.model_portfolio.targets[].weight",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23147,7 +23224,7 @@
             "attributeRef": "#/attributeCatalog/lotus.weight"
           },
           {
-            "name": "shelf_entries",
+            "name": "stateless_input.shelf_entries",
             "location": "body",
             "required": true,
             "type": "array",
@@ -23155,7 +23232,7 @@
             "attributeRef": "#/attributeCatalog/lotus.shelf_entries"
           },
           {
-            "name": "shelf_entries[].instrument_id",
+            "name": "stateless_input.shelf_entries[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23163,7 +23240,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "shelf_entries[].status",
+            "name": "stateless_input.shelf_entries[].status",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23171,7 +23248,7 @@
             "attributeRef": "#/attributeCatalog/lotus.status"
           },
           {
-            "name": "shelf_entries[].asset_class",
+            "name": "stateless_input.shelf_entries[].asset_class",
             "location": "body",
             "required": false,
             "type": "string",
@@ -23179,7 +23256,7 @@
             "attributeRef": "#/attributeCatalog/lotus.asset_class"
           },
           {
-            "name": "shelf_entries[].issuer_id",
+            "name": "stateless_input.shelf_entries[].issuer_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23187,7 +23264,7 @@
             "attributeRef": "#/attributeCatalog/lotus.issuer_id"
           },
           {
-            "name": "shelf_entries[].liquidity_tier",
+            "name": "stateless_input.shelf_entries[].liquidity_tier",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23195,7 +23272,7 @@
             "attributeRef": "#/attributeCatalog/lotus.liquidity_tier"
           },
           {
-            "name": "shelf_entries[].settlement_days",
+            "name": "stateless_input.shelf_entries[].settlement_days",
             "location": "body",
             "required": false,
             "type": "integer",
@@ -23203,7 +23280,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settlement_days"
           },
           {
-            "name": "shelf_entries[].min_notional",
+            "name": "stateless_input.shelf_entries[].min_notional",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23211,7 +23288,7 @@
             "attributeRef": "#/attributeCatalog/lotus.min_notional"
           },
           {
-            "name": "shelf_entries[].attributes",
+            "name": "stateless_input.shelf_entries[].attributes",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23219,7 +23296,7 @@
             "attributeRef": "#/attributeCatalog/lotus.attributes"
           },
           {
-            "name": "scenarios",
+            "name": "stateless_input.scenarios",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23330,7 +23407,15 @@
             "attributeRef": "#/attributeCatalog/lotus.x_tenant_id"
           },
           {
-            "name": "portfolio_snapshot",
+            "name": "stateless_input",
+            "location": "body",
+            "required": true,
+            "type": "BatchRebalanceRequest",
+            "semanticId": "lotus.stateless_input",
+            "attributeRef": "#/attributeCatalog/lotus.stateless_input"
+          },
+          {
+            "name": "stateless_input.portfolio_snapshot",
             "location": "body",
             "required": true,
             "type": "PortfolioSnapshot",
@@ -23338,7 +23423,7 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_snapshot"
           },
           {
-            "name": "portfolio_snapshot.snapshot_id",
+            "name": "stateless_input.portfolio_snapshot.snapshot_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23346,7 +23431,7 @@
             "attributeRef": "#/attributeCatalog/lotus.snapshot_id"
           },
           {
-            "name": "portfolio_snapshot.portfolio_id",
+            "name": "stateless_input.portfolio_snapshot.portfolio_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23354,7 +23439,7 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
           },
           {
-            "name": "portfolio_snapshot.base_currency",
+            "name": "stateless_input.portfolio_snapshot.base_currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23362,7 +23447,7 @@
             "attributeRef": "#/attributeCatalog/lotus.base_currency"
           },
           {
-            "name": "portfolio_snapshot.positions",
+            "name": "stateless_input.portfolio_snapshot.positions",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23370,7 +23455,7 @@
             "attributeRef": "#/attributeCatalog/lotus.positions"
           },
           {
-            "name": "portfolio_snapshot.positions[].instrument_id",
+            "name": "stateless_input.portfolio_snapshot.positions[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23378,7 +23463,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "portfolio_snapshot.positions[].quantity",
+            "name": "stateless_input.portfolio_snapshot.positions[].quantity",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23386,7 +23471,7 @@
             "attributeRef": "#/attributeCatalog/lotus.quantity"
           },
           {
-            "name": "portfolio_snapshot.positions[].market_value",
+            "name": "stateless_input.portfolio_snapshot.positions[].market_value",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23394,7 +23479,7 @@
             "attributeRef": "#/attributeCatalog/lotus.market_value"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23402,7 +23487,7 @@
             "attributeRef": "#/attributeCatalog/lotus.lots"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].lot_id",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].lot_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23410,7 +23495,7 @@
             "attributeRef": "#/attributeCatalog/lotus.lot_id"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].quantity",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].quantity",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23418,7 +23503,7 @@
             "attributeRef": "#/attributeCatalog/lotus.quantity"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost",
             "location": "body",
             "required": true,
             "type": "Money-Input",
@@ -23426,7 +23511,7 @@
             "attributeRef": "#/attributeCatalog/lotus.unit_cost"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost.amount",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost.amount",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23434,7 +23519,7 @@
             "attributeRef": "#/attributeCatalog/lotus.amount"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].unit_cost.currency",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].unit_cost.currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23442,7 +23527,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "portfolio_snapshot.positions[].lots[].purchase_date",
+            "name": "stateless_input.portfolio_snapshot.positions[].lots[].purchase_date",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23450,7 +23535,7 @@
             "attributeRef": "#/attributeCatalog/lotus.purchase_date"
           },
           {
-            "name": "portfolio_snapshot.cash_balances",
+            "name": "stateless_input.portfolio_snapshot.cash_balances",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23458,7 +23543,7 @@
             "attributeRef": "#/attributeCatalog/lotus.cash_balances"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].currency",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23466,7 +23551,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].amount",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].amount",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23474,7 +23559,7 @@
             "attributeRef": "#/attributeCatalog/lotus.amount"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].settled",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].settled",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23482,7 +23567,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settled"
           },
           {
-            "name": "portfolio_snapshot.cash_balances[].pending",
+            "name": "stateless_input.portfolio_snapshot.cash_balances[].pending",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23490,7 +23575,7 @@
             "attributeRef": "#/attributeCatalog/lotus.pending"
           },
           {
-            "name": "market_data_snapshot",
+            "name": "stateless_input.market_data_snapshot",
             "location": "body",
             "required": true,
             "type": "MarketDataSnapshot",
@@ -23498,7 +23583,7 @@
             "attributeRef": "#/attributeCatalog/lotus.market_data_snapshot"
           },
           {
-            "name": "market_data_snapshot.snapshot_id",
+            "name": "stateless_input.market_data_snapshot.snapshot_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23506,7 +23591,7 @@
             "attributeRef": "#/attributeCatalog/lotus.snapshot_id"
           },
           {
-            "name": "market_data_snapshot.prices",
+            "name": "stateless_input.market_data_snapshot.prices",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23514,7 +23599,7 @@
             "attributeRef": "#/attributeCatalog/lotus.prices"
           },
           {
-            "name": "market_data_snapshot.prices[].instrument_id",
+            "name": "stateless_input.market_data_snapshot.prices[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23522,7 +23607,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "market_data_snapshot.prices[].price",
+            "name": "stateless_input.market_data_snapshot.prices[].price",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23530,7 +23615,7 @@
             "attributeRef": "#/attributeCatalog/lotus.price"
           },
           {
-            "name": "market_data_snapshot.prices[].currency",
+            "name": "stateless_input.market_data_snapshot.prices[].currency",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23538,7 +23623,7 @@
             "attributeRef": "#/attributeCatalog/lotus.currency"
           },
           {
-            "name": "market_data_snapshot.fx_rates",
+            "name": "stateless_input.market_data_snapshot.fx_rates",
             "location": "body",
             "required": false,
             "type": "array",
@@ -23546,7 +23631,7 @@
             "attributeRef": "#/attributeCatalog/lotus.fx_rates"
           },
           {
-            "name": "market_data_snapshot.fx_rates[].pair",
+            "name": "stateless_input.market_data_snapshot.fx_rates[].pair",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23554,7 +23639,7 @@
             "attributeRef": "#/attributeCatalog/lotus.pair"
           },
           {
-            "name": "market_data_snapshot.fx_rates[].rate",
+            "name": "stateless_input.market_data_snapshot.fx_rates[].rate",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23562,7 +23647,7 @@
             "attributeRef": "#/attributeCatalog/lotus.rate"
           },
           {
-            "name": "model_portfolio",
+            "name": "stateless_input.model_portfolio",
             "location": "body",
             "required": true,
             "type": "ModelPortfolio",
@@ -23570,7 +23655,7 @@
             "attributeRef": "#/attributeCatalog/lotus.model_portfolio"
           },
           {
-            "name": "model_portfolio.targets",
+            "name": "stateless_input.model_portfolio.targets",
             "location": "body",
             "required": true,
             "type": "array",
@@ -23578,7 +23663,7 @@
             "attributeRef": "#/attributeCatalog/lotus.targets"
           },
           {
-            "name": "model_portfolio.targets[].instrument_id",
+            "name": "stateless_input.model_portfolio.targets[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23586,7 +23671,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "model_portfolio.targets[].weight",
+            "name": "stateless_input.model_portfolio.targets[].weight",
             "location": "body",
             "required": true,
             "type": "object",
@@ -23594,7 +23679,7 @@
             "attributeRef": "#/attributeCatalog/lotus.weight"
           },
           {
-            "name": "shelf_entries",
+            "name": "stateless_input.shelf_entries",
             "location": "body",
             "required": true,
             "type": "array",
@@ -23602,7 +23687,7 @@
             "attributeRef": "#/attributeCatalog/lotus.shelf_entries"
           },
           {
-            "name": "shelf_entries[].instrument_id",
+            "name": "stateless_input.shelf_entries[].instrument_id",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23610,7 +23695,7 @@
             "attributeRef": "#/attributeCatalog/lotus.instrument_id"
           },
           {
-            "name": "shelf_entries[].status",
+            "name": "stateless_input.shelf_entries[].status",
             "location": "body",
             "required": true,
             "type": "string",
@@ -23618,7 +23703,7 @@
             "attributeRef": "#/attributeCatalog/lotus.status"
           },
           {
-            "name": "shelf_entries[].asset_class",
+            "name": "stateless_input.shelf_entries[].asset_class",
             "location": "body",
             "required": false,
             "type": "string",
@@ -23626,7 +23711,7 @@
             "attributeRef": "#/attributeCatalog/lotus.asset_class"
           },
           {
-            "name": "shelf_entries[].issuer_id",
+            "name": "stateless_input.shelf_entries[].issuer_id",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23634,7 +23719,7 @@
             "attributeRef": "#/attributeCatalog/lotus.issuer_id"
           },
           {
-            "name": "shelf_entries[].liquidity_tier",
+            "name": "stateless_input.shelf_entries[].liquidity_tier",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23642,7 +23727,7 @@
             "attributeRef": "#/attributeCatalog/lotus.liquidity_tier"
           },
           {
-            "name": "shelf_entries[].settlement_days",
+            "name": "stateless_input.shelf_entries[].settlement_days",
             "location": "body",
             "required": false,
             "type": "integer",
@@ -23650,7 +23735,7 @@
             "attributeRef": "#/attributeCatalog/lotus.settlement_days"
           },
           {
-            "name": "shelf_entries[].min_notional",
+            "name": "stateless_input.shelf_entries[].min_notional",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23658,7 +23743,7 @@
             "attributeRef": "#/attributeCatalog/lotus.min_notional"
           },
           {
-            "name": "shelf_entries[].attributes",
+            "name": "stateless_input.shelf_entries[].attributes",
             "location": "body",
             "required": false,
             "type": "object",
@@ -23666,7 +23751,7 @@
             "attributeRef": "#/attributeCatalog/lotus.attributes"
           },
           {
-            "name": "scenarios",
+            "name": "stateless_input.scenarios",
             "location": "body",
             "required": true,
             "type": "object",

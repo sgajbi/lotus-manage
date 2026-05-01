@@ -766,6 +766,31 @@ Exit evidence:
 2. idempotency replay/conflict tests pass,
 3. OpenAPI examples include complete request and response examples.
 
+Slice 5 implementation evidence captured on 2026-05-01:
+
+1. Added explicit stateless request envelopes:
+   - `StatelessRebalanceRequestEnvelope` for `POST /api/v1/rebalance/simulate`;
+   - `StatelessBatchRebalanceRequestEnvelope` for `POST /api/v1/rebalance/analyze`;
+   - `StatelessBatchRebalanceRequestEnvelope` for `POST /api/v1/rebalance/analyze/async`.
+2. Updated routers to pass `request.stateless_input` into existing deterministic engine and
+   supportability orchestration, preserving simulation behavior while changing the public request
+   contract.
+3. Updated all demo JSON payloads to use `stateless_input`.
+4. Added regression coverage proving a direct inline simulate body is now rejected with `422` when
+   the envelope is missing.
+5. Updated OpenAPI/vocabulary/docs/wiki current-state material to describe the stateless envelope.
+6. Validation:
+   - `python -m pytest tests/unit -q`: 459 passed;
+   - `python -m pytest tests/integration tests/e2e -q`: 101 passed;
+   - `python scripts/openapi_quality_gate.py`;
+   - `python scripts/api_vocabulary_inventory.py --validate-only`;
+   - `python scripts/no_alias_contract_guard.py`;
+   - `python -m ruff check .`;
+   - `python -m ruff format --check .`;
+   - `git diff --check`;
+   - OpenAPI schema proof shows simulate uses `StatelessRebalanceRequestEnvelope` and analyze uses
+     `StatelessBatchRebalanceRequestEnvelope`.
+
 ### Slice 6: Core Resolver Client And Stateful Models
 
 1. Add `stateful_input` models.

@@ -27,6 +27,8 @@ Implementation scope:
 
 ### `POST /api/v1/rebalance/simulate`
 - Purpose: deterministic rebalance simulation.
+- Body: `stateless_input` envelope containing `portfolio_snapshot`, `market_data_snapshot`,
+  `model_portfolio`, `shelf_entries`, and `options`.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
@@ -56,6 +58,8 @@ Implementation scope:
 
 ### `POST /api/v1/rebalance/analyze`
 - Purpose: multi-scenario what-if analysis using shared snapshots.
+- Body: `stateless_input` envelope containing shared `portfolio_snapshot`,
+  `market_data_snapshot`, `model_portfolio`, `shelf_entries`, and named `scenarios`.
 - When to use:
   - immediate caller-facing what-if analysis where the full batch result should return in one response
   - up to 20 scenarios per request
@@ -87,6 +91,7 @@ Implementation scope:
 
 ### `POST /api/v1/rebalance/analyze/async`
 - Purpose: asynchronous what-if batch submission returning an operation handle instead of full batch results.
+- Body: same `stateless_input` envelope as `POST /api/v1/rebalance/analyze`.
 - When to use:
   - polling-based orchestration
   - accept-now/execute-later flows

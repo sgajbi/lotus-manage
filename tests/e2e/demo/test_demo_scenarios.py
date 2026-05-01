@@ -47,7 +47,7 @@ def load_demo_scenario(filename):
     ],
 )
 def test_demo_scenario_execution(filename, expected_status):
-    data = load_demo_scenario(filename)
+    data = load_demo_scenario(filename)["stateless_input"]
 
     portfolio = PortfolioSnapshot(**data["portfolio_snapshot"])
     market_data = MarketDataSnapshot(**data["market_data_snapshot"])
@@ -194,7 +194,7 @@ def test_demo_dpm_idempotency_history_supportability_via_api(monkeypatch):
             assert first.status_code == 200
             first_run = first.json()["rebalance_run_id"]
 
-            data["options"]["single_position_max_weight"] = "0.50"
+            data["stateless_input"]["options"]["single_position_max_weight"] = "0.50"
             second = client.post(
                 "/api/v1/rebalance/simulate",
                 json=data,
@@ -377,8 +377,8 @@ def test_demo_dpm_lineage_filtering_via_api(monkeypatch):
 def test_demo_dpm_workflow_decision_listing_via_api(monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     reset_dpm_run_support_service_for_tests()
-    data = valid_api_payload()
-    data["options"]["single_position_max_weight"] = "0.5"
+    data = {"stateless_input": valid_api_payload()}
+    data["stateless_input"]["options"]["single_position_max_weight"] = "0.5"
     with TestClient(app) as client:
         original_overrides = dict(app.dependency_overrides)
         app.dependency_overrides[get_db_session] = _override_get_db_session

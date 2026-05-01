@@ -40,7 +40,7 @@ def test_golden_batch_scenario_13_what_if_analysis(client):
     data = load_golden_file("scenario_13_what_if_analysis.json")
     payload = data["batch_inputs"]
 
-    response = client.post("/api/v1/rebalance/analyze", json=payload)
+    response = client.post("/api/v1/rebalance/analyze", json={"stateless_input": payload})
     assert response.status_code == 200
     body = response.json()
 
@@ -70,7 +70,7 @@ def test_golden_batch_scenario_13_zero_turnover(client):
     data = load_golden_file("scenario_13_zero_turnover_batch.json")
     payload = data["batch_inputs"]
 
-    response = client.post("/api/v1/rebalance/analyze", json=payload)
+    response = client.post("/api/v1/rebalance/analyze", json={"stateless_input": payload})
     assert response.status_code == 200
     body = response.json()
 

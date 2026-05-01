@@ -10,6 +10,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Rebalance simulation | `POST /api/v1/rebalance/simulate` | Supported | unit goldens, OpenAPI gate, API vocabulary gate |
 | What-if analysis | `POST /api/v1/rebalance/analyze` | Supported | unit and demo scenarios |
 | Async what-if execution | `POST /api/v1/rebalance/analyze/async`, `/api/v1/rebalance/operations/*` | Supported | async operation tests and demo scenario 26 |
+| Stateless input envelope | simulate, analyze, async analyze | Supported through `stateless_input` | envelope contract tests and demo payloads |
 | Run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | Supported | supportability service tests and contract docs tests |
 | Deterministic run artifact | `/api/v1/rebalance/runs/{rebalance_run_id}/artifact` | Supported | artifact service tests and demo scenario 27 |
 | Lineage lookup | `/api/v1/rebalance/lineage/*` | Feature-gated | lineage service tests |

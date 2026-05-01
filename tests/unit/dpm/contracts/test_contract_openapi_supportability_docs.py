@@ -383,7 +383,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     analyze_async = openapi["paths"]["/api/v1/rebalance/analyze/async"]["post"]
     assert analyze_async["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/BatchRebalanceRequest"
+        "/StatelessBatchRebalanceRequestEnvelope"
     )
     assert analyze_async["responses"]["202"]["content"]["application/json"]["schema"][
         "$ref"
@@ -407,7 +407,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     simulate = openapi["paths"]["/api/v1/rebalance/simulate"]["post"]
     assert simulate["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/RebalanceRequest"
+        "/StatelessRebalanceRequestEnvelope"
     )
     assert simulate["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/RebalanceResult"
@@ -428,7 +428,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     analyze = openapi["paths"]["/api/v1/rebalance/analyze"]["post"]
     assert analyze["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/BatchRebalanceRequest"
+        "/StatelessBatchRebalanceRequestEnvelope"
     )
     assert analyze["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/BatchRebalanceResult"

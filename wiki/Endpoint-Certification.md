@@ -841,14 +841,16 @@ Route:
 
 Purpose:
 
-Runs one deterministic discretionary mandate portfolio rebalance from a complete inline request
-bundle. This is the core manage-owned execution endpoint for portfolio management, policy-pack
+Runs one deterministic discretionary mandate portfolio rebalance from a complete `stateless_input`
+inline request bundle. This is the core manage-owned execution endpoint for portfolio management, policy-pack
 application, run supportability, lineage, idempotency, and workflow-gate outcome publication. It is
 not an advisory proposal endpoint and must not be used as a canonical portfolio read API.
 
 Request surface:
 
-- Body: `portfolio_snapshot`, `market_data_snapshot`, `model_portfolio`, `shelf_entries`, `options`
+- Body: `stateless_input.portfolio_snapshot`, `stateless_input.market_data_snapshot`,
+  `stateless_input.model_portfolio`, `stateless_input.shelf_entries`,
+  `stateless_input.options`
 - Required header: `Idempotency-Key`
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
   `X-Tenant-Id`
@@ -910,14 +912,14 @@ Route:
 Purpose:
 
 Runs a bounded set of named discretionary mandate what-if scenarios against shared inline snapshots
-and returns the full batch result synchronously. Use this endpoint when the caller needs immediate
+inside a `stateless_input` envelope and returns the full batch result synchronously. Use this endpoint when the caller needs immediate
 scenario comparison. Use `/api/v1/rebalance/analyze/async` for polling-based orchestration or
 accept-now/execute-later flows.
 
 Request surface:
 
-- Body: shared `portfolio_snapshot`, `market_data_snapshot`, `model_portfolio`, `shelf_entries`,
-  plus a named `scenarios` map.
+- Body: `stateless_input` with shared `portfolio_snapshot`, `market_data_snapshot`,
+  `model_portfolio`, `shelf_entries`, plus a named `scenarios` map.
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
   `X-Tenant-Id`.
 - Scenario names must match `[a-z0-9_\-]{1,64}`.
@@ -978,7 +980,8 @@ caller needs deferred execution, operation-level supportability, or explicit man
 
 Request surface:
 
-- Body: `BatchRebalanceRequest`.
+- Body: `StatelessBatchRebalanceRequestEnvelope` with `stateless_input` containing the
+  `BatchRebalanceRequest`.
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
   `X-Tenant-Id`.
 - Response: `DpmAsyncAcceptedResponse` with `operation_id`, initial `status`, `correlation_id`,

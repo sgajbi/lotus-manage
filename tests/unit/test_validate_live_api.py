@@ -12,7 +12,9 @@ def _json_response(status_code: int, body: dict) -> httpx.Response:
 def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",
-        lambda _filename: {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
+        lambda _filename: {
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}}
+        },
     )
     async_posts = 0
 
@@ -75,7 +77,9 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
 def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> None:
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",
-        lambda _filename: {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
+        lambda _filename: {
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}}
+        },
     )
 
     def handler(request: httpx.Request) -> httpx.Response:

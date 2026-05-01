@@ -22,7 +22,7 @@ def _simulate(client: TestClient, *, correlation_id: str, idempotency_key: str) 
     }
     response = client.post(
         "/api/v1/rebalance/simulate",
-        json=payload,
+        json={"stateless_input": payload},
         headers={
             "Idempotency-Key": idempotency_key,
             "X-Correlation-Id": correlation_id,

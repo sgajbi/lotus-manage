@@ -72,6 +72,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Status: fixed
 - Wiki decision: no wiki source change required for generated local remnants.
 
+## RFC36-S5-001: Stateless request envelope made explicit
+
+- Date: 2026-05-01
+- Scope: simulate, sync analyze, async analyze request contracts, demo payloads, OpenAPI inventory
+- Finding: product endpoints still accepted direct inline bundles, which made it harder to add
+  stateful `portfolio_id` mode without ambiguous request shapes.
+- Action: added `StatelessRebalanceRequestEnvelope` and
+  `StatelessBatchRebalanceRequestEnvelope`, moved demo/API request payloads under
+  `stateless_input`, and added a regression test proving direct stateless bodies are rejected.
+- Status: fixed
+- Wiki decision: wiki endpoint certification and supported-features source updated because request
+  contract truth changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

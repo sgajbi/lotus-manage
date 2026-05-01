@@ -28,12 +28,18 @@ def teardown_function() -> None:
     app.dependency_overrides = _ORIGINAL_OVERRIDES
 
 
+def _stateless_envelope(payload: dict) -> dict:
+    return {"stateless_input": payload}
+
+
 def test_simulate_then_supportability_endpoints_roundtrip() -> None:
     payload = valid_api_payload()
     headers = {"Idempotency-Key": "integration-dpm-1", "X-Correlation-Id": "corr-integration-dpm-1"}
 
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+        simulate = client.post(
+            "/api/v1/rebalance/simulate", json=_stateless_envelope(payload), headers=headers
+        )
         assert simulate.status_code == 200
         run = simulate.json()
 
@@ -66,7 +72,9 @@ def test_run_list_and_operation_lookup_integration_flow() -> None:
     }
 
     with TestClient(app) as client:
-        accepted = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+        accepted = client.post(
+            "/api/v1/rebalance/analyze/async", json=_stateless_envelope(payload), headers=headers
+        )
         assert accepted.status_code == 202
         operation_id = accepted.json()["operation_id"]
 
@@ -115,12 +123,16 @@ def test_support_bundle_lookup_variants_roundtrip() -> None:
 
     with TestClient(app) as client:
         simulate = client.post(
-            "/api/v1/rebalance/simulate", json=valid_api_payload(), headers=headers
+            "/api/v1/rebalance/simulate",
+            json=_stateless_envelope(valid_api_payload()),
+            headers=headers,
         )
         assert simulate.status_code == 200
         run_id = simulate.json()["rebalance_run_id"]
 
-        accepted = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+        accepted = client.post(
+            "/api/v1/rebalance/analyze/async", json=_stateless_envelope(payload), headers=headers
+        )
         assert accepted.status_code == 202
         operation_id = accepted.json()["operation_id"]
 
@@ -152,7 +164,9 @@ def test_idempotency_history_disabled_by_feature_flag(monkeypatch: pytest.Monkey
     }
 
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+        simulate = client.post(
+            "/api/v1/rebalance/simulate", json=_stateless_envelope(payload), headers=headers
+        )
         assert simulate.status_code == 200
 
         monkeypatch.setenv("DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED", "false")
@@ -187,7 +201,9 @@ def test_support_bundle_optional_sections_can_be_disabled() -> None:
         "X-Correlation-Id": "corr-integration-dpm-bundle-optional-1",
     }
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+        simulate = client.post(
+            "/api/v1/rebalance/simulate", json=_stateless_envelope(payload), headers=headers
+        )
         assert simulate.status_code == 200
         run_id = simulate.json()["rebalance_run_id"]
 
@@ -238,7 +254,9 @@ def test_lineage_edge_filtering_roundtrip_when_enabled(monkeypatch: pytest.Monke
         "X-Correlation-Id": "corr-integration-dpm-lineage-filter-1",
     }
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+        simulate = client.post(
+            "/api/v1/rebalance/simulate", json=_stateless_envelope(payload), headers=headers
+        )
         assert simulate.status_code == 200
         run_id = simulate.json()["rebalance_run_id"]
 
@@ -290,7 +308,9 @@ def test_workflow_actions_and_decision_list_roundtrip(monkeypatch: pytest.Monkey
         "X-Correlation-Id": "corr-integration-dpm-workflow-1",
     }
     with TestClient(app) as client:
-        simulate = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+        simulate = client.post(
+            "/api/v1/rebalance/simulate", json=_stateless_envelope(payload), headers=headers
+        )
         assert simulate.status_code == 200
         run_id = simulate.json()["rebalance_run_id"]
 

@@ -3,6 +3,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from src.core.models import (
+    BatchRebalanceRequest,
     EngineOptions,
     MarketDataSnapshot,
     ModelPortfolio,
@@ -49,3 +50,41 @@ class RebalanceRequest(BaseModel):
         )
     )
     options: EngineOptions = Field(description="Request-level engine behavior and feature toggles.")
+
+
+class StatelessRebalanceRequestEnvelope(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "stateless_input": RebalanceRequest.model_config["json_schema_extra"]["example"]
+            }
+        }
+    }
+
+    stateless_input: RebalanceRequest = Field(
+        description=(
+            "Complete inline discretionary mandate rebalance input. Use this stateless mode when "
+            "the caller supplies governed portfolio, market-data, model, shelf, and option inputs "
+            "directly in the request body."
+        )
+    )
+
+
+class StatelessBatchRebalanceRequestEnvelope(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "stateless_input": BatchRebalanceRequest.model_config["json_schema_extra"][
+                    "example"
+                ]
+            }
+        }
+    }
+
+    stateless_input: BatchRebalanceRequest = Field(
+        description=(
+            "Complete inline multi-scenario discretionary mandate analysis input. Use this "
+            "stateless mode when the caller supplies shared governed snapshots and scenario "
+            "overrides directly in the request body."
+        )
+    )

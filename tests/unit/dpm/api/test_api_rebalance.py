@@ -49,12 +49,48 @@ def override_db_dependency():
 
 @pytest.fixture
 def client():
+    class _StatelessEnvelopeClient:
+        def __init__(self, test_client: TestClient) -> None:
+            self._test_client = test_client
+
+        def post(self, url: str, *args, **kwargs):
+            if url in {
+                "/api/v1/rebalance/simulate",
+                "/api/v1/rebalance/analyze",
+                "/api/v1/rebalance/analyze/async",
+            }:
+                body = kwargs.get("json")
+                if isinstance(body, dict) and "stateless_input" not in body:
+                    kwargs["json"] = {"stateless_input": body}
+            return self._test_client.post(url, *args, **kwargs)
+
+        def get(self, url: str, *args, **kwargs):
+            return self._test_client.get(url, *args, **kwargs)
+
+        def put(self, url: str, *args, **kwargs):
+            return self._test_client.put(url, *args, **kwargs)
+
+        def delete(self, url: str, *args, **kwargs):
+            return self._test_client.delete(url, *args, **kwargs)
+
     with TestClient(app) as test_client:
-        yield test_client
+        yield _StatelessEnvelopeClient(test_client)
 
 
 def get_valid_payload():
     return valid_api_payload()
+
+
+def test_direct_stateless_body_is_rejected_without_envelope():
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json=get_valid_payload(),
+            headers={"Idempotency-Key": "test-key-direct-body-rejected"},
+        )
+
+    assert response.status_code == 422
+    assert any("stateless_input" in error["loc"] for error in response.json()["detail"])
 
 
 def test_simulate_endpoint_success(client):

@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, Header, Path, Response, status
 from pydantic import Field
 
 from src.api.dependencies import get_db_session
-from src.api.request_models import RebalanceRequest
+from src.api.request_models import (
+    StatelessBatchRebalanceRequestEnvelope,
+    StatelessRebalanceRequestEnvelope,
+)
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import (
@@ -21,7 +24,7 @@ from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
     DpmRunSupportService,
 )
-from src.core.models import BatchRebalanceRequest, BatchRebalanceResult, RebalanceResult
+from src.core.models import BatchRebalanceResult, RebalanceResult
 
 router = APIRouter()
 
@@ -67,7 +70,7 @@ router = APIRouter()
     },
 )
 def simulate_rebalance(
-    request: RebalanceRequest,
+    request: StatelessRebalanceRequestEnvelope,
     idempotency_key: Annotated[
         str,
         Header(
@@ -113,7 +116,7 @@ def simulate_rebalance(
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> RebalanceResult:
     return service.simulate_rebalance(
-        request=request,
+        request=request.stateless_input,
         idempotency_key=idempotency_key,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
@@ -152,8 +155,10 @@ def simulate_rebalance(
 )
 def analyze_scenarios(
     request: Annotated[
-        BatchRebalanceRequest,
-        Field(description="Shared snapshots plus scenario map of option overrides."),
+        StatelessBatchRebalanceRequestEnvelope,
+        Field(
+            description="Stateless envelope containing shared snapshots plus scenario overrides."
+        ),
     ],
     x_correlation_id: Annotated[
         Optional[str],
@@ -196,7 +201,7 @@ def analyze_scenarios(
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> BatchRebalanceResult:
     return service.execute_batch_analysis(
-        request=request,
+        request=request.stateless_input,
         correlation_id=x_correlation_id,
         request_policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
@@ -253,8 +258,10 @@ def analyze_scenarios(
 )
 def analyze_scenarios_async(
     request: Annotated[
-        BatchRebalanceRequest,
-        Field(description="Shared snapshots plus scenario map of option overrides."),
+        StatelessBatchRebalanceRequestEnvelope,
+        Field(
+            description="Stateless envelope containing shared snapshots plus scenario overrides."
+        ),
     ],
     response: Response,
     x_correlation_id: Annotated[
@@ -295,7 +302,7 @@ def analyze_scenarios_async(
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> DpmAsyncAcceptedResponse:
     accepted = service.submit_and_optionally_execute_async_analysis(
-        request=request,
+        request=request.stateless_input,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
