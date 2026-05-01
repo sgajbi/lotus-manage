@@ -522,6 +522,14 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "status_filter` for operation status filtering; unsupported aliases are rejected"
         in (list_operations["description"])
     )
+    assert "bounded page of operations" in list_operations["description"]
+    for parameter in list_operations["parameters"]:
+        if parameter["name"] in expected_params:
+            assert parameter["description"]
+            assert parameter["schema"].get("examples") or parameter["schema"].get("type")
+    assert (
+        "ordered by newest creation timestamp" in list_operations["responses"]["200"]["description"]
+    )
     assert "422" in list_operations["responses"]
 
     execute_async = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}/execute"]["post"]

@@ -276,3 +276,60 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: async operation list
+
+Route:
+
+- `GET /rebalance/operations`
+
+Purpose:
+
+Returns a bounded page of asynchronous DPM operation records for supportability, operator triage,
+polling dashboards, and recent-operation review after async analysis submission. Use this endpoint
+for list/filter views. Use `GET /rebalance/operations/{operation_id}` when the caller already has a
+single operation handle.
+
+Request surface:
+
+- Query filters: `created_from`, `created_to`, `operation_type`, `status_filter`,
+  `correlation_id`.
+- Pagination: `limit` and opaque `cursor` from the prior response's `next_cursor`.
+- Unsupported aliases such as `status` are rejected.
+
+Functional coverage:
+
+- status filtering with canonical `status_filter`,
+- unsupported query-parameter rejection,
+- operation type filtering,
+- created-at window filtering,
+- correlation-id filtering,
+- cursor pagination,
+- executable flag derivation for pending operations with stored request payloads.
+
+Non-functional posture:
+
+- The endpoint is page-bounded by `limit` with a maximum of 200 rows.
+- Results are ordered by newest `created_at`, then operation id descending for deterministic
+  supportability review.
+- The list item shape excludes raw request payloads and terminal result bodies; callers retrieve
+  a specific operation for terminal detail.
+
+Upstream integration posture:
+
+The endpoint reads persisted `lotus-manage` operation state only. It does not call upstream data
+providers. Upstream lineage remains available through operation result payloads and supportability
+bundle endpoints.
+
+Downstream consumers:
+
+- No direct strategic Gateway or Workbench consumer was found for `/rebalance/operations`.
+- Future dashboards should use this list route for bounded operation summaries and then call the
+  by-id operation endpoint for terminal result/error detail.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_list_filters_and_cursor tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_list_filters_by_created_window_and_operation_type tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```

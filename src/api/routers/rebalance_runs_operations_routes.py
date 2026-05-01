@@ -16,13 +16,23 @@ from src.core.rebalance_runs import (
     "/rebalance/operations",
     response_model=DpmAsyncOperationListResponse,
     status_code=status.HTTP_200_OK,
+    tags=["lotus-manage Run Supportability"],
     summary="List lotus-manage Async Operations",
     description=(
-        "Returns asynchronous operation records with optional filters and cursor pagination. "
-        "Use the canonical query parameter `status_filter` for operation status filtering; "
-        "unsupported aliases are rejected."
+        "Returns asynchronous operation records for discretionary mandate supportability, "
+        "operator triage, and downstream polling dashboards. Use this endpoint when a caller needs "
+        "a bounded page of operations filtered by creation window, operation type, status, or "
+        "correlation id. Use `GET /rebalance/operations/{operation_id}` when the caller already "
+        "has a single operation handle. Use the canonical query parameter `status_filter` for "
+        "operation status filtering; unsupported aliases are rejected."
     ),
     responses={
+        200: {
+            "description": (
+                "Filtered async operation page ordered by newest creation timestamp, then "
+                "operation id, with an opaque `next_cursor` when another page exists."
+            ),
+        },
         422: {
             "description": "Unsupported query parameters were supplied.",
         },

@@ -106,6 +106,11 @@ Implementation scope:
 
 ### `GET /rebalance/operations`
 - Purpose: list asynchronous operations for supportability investigations.
+- When to use:
+  - bounded polling dashboards
+  - operator triage by status or correlation id
+  - recent operation review after async submission
+- Use `GET /rebalance/operations/{operation_id}` when a single operation handle is available.
 - Filters:
   - `created_from` (created-at lower bound)
   - `created_to` (created-at upper bound)
@@ -114,7 +119,9 @@ Implementation scope:
   - `correlation_id`
 - Pagination:
   - `limit`
-  - `cursor`
+  - `cursor` from the previous page's `next_cursor`
+- Ordering: newest `created_at` first, then operation id descending.
+- Unsupported query aliases such as `status` are rejected; use `status_filter`.
 
 ### `GET /rebalance/supportability/summary`
 - Purpose: return operational supportability summary metrics without direct data store access.

@@ -592,6 +592,48 @@ def test_dpm_async_operation_list_filters_and_cursor(client):
     assert page_one_body["items"][0]["operation_id"] != page_two_body["items"][0]["operation_id"]
 
 
+def test_dpm_async_operation_list_filters_by_created_window_and_operation_type(client):
+    service = get_dpm_run_support_service()
+    now = datetime.now(timezone.utc)
+    old_created_at = now - timedelta(hours=3)
+    in_window_created_at = now - timedelta(hours=1)
+    out_of_window_created_at = now + timedelta(hours=1)
+    old = service.submit_analyze_async(
+        correlation_id="corr-dpm-ops-old",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+        created_at=old_created_at,
+    )
+    in_window = service.submit_analyze_async(
+        correlation_id="corr-dpm-ops-window",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+        created_at=in_window_created_at,
+    )
+    future = service.submit_analyze_async(
+        correlation_id="corr-dpm-ops-future",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+        created_at=out_of_window_created_at,
+    )
+
+    response = client.get(
+        "/api/v1/rebalance/operations",
+        params={
+            "created_from": (now - timedelta(hours=2)).isoformat(),
+            "created_to": now.isoformat(),
+            "operation_type": "ANALYZE_SCENARIOS",
+            "status_filter": "PENDING",
+            "limit": 10,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["operation_id"] for item in body["items"]] == [in_window.operation_id]
+    assert old.operation_id not in {item["operation_id"] for item in body["items"]}
+    assert future.operation_id not in {item["operation_id"] for item in body["items"]}
+    assert body["items"][0]["operation_type"] == "ANALYZE_SCENARIOS"
+    assert body["items"][0]["status"] == "PENDING"
+
+
 def test_dpm_async_operation_ttl_expiry_by_id_and_correlation(client, monkeypatch):
     monkeypatch.setenv("DPM_ASYNC_OPERATIONS_TTL_SECONDS", "1")
     reset_dpm_run_support_service_for_tests()
