@@ -532,6 +532,26 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     )
     assert "422" in list_operations["responses"]
 
+    get_operation = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}"]["get"]
+    assert "requestBody" not in get_operation
+    assert get_operation["tags"] == ["lotus-manage Run Supportability"]
+    assert get_operation["responses"]["200"]["content"]["application/json"]["schema"][
+        "$ref"
+    ].endswith("/DpmAsyncOperationStatusResponse")
+    assert (
+        "Terminal `SUCCEEDED` operations include the batch analysis result payload"
+        in get_operation["description"]
+    )
+    assert "404" in get_operation["responses"]
+    operation_id_param = next(
+        parameter
+        for parameter in get_operation["parameters"]
+        if parameter["name"] == "operation_id"
+    )
+    assert operation_id_param["in"] == "path"
+    assert operation_id_param["required"] is True
+    assert operation_id_param["description"]
+
     execute_async = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}/execute"]["post"]
     assert "requestBody" not in execute_async
     assert execute_async["responses"]["200"]["content"]["application/json"]["schema"][

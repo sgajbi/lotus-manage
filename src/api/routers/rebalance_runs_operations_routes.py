@@ -123,7 +123,22 @@ def list_dpm_async_operations(
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Async Operation",
-    description="Returns asynchronous operation status and terminal result/error payload.",
+    description=(
+        "Returns one asynchronous operation status record by operation id. Use this endpoint after "
+        "`POST /rebalance/analyze/async`, after `GET /rebalance/operations`, or from operator "
+        "support tooling when the exact operation handle is known. Terminal `SUCCEEDED` operations "
+        "include the batch analysis result payload; terminal `FAILED` operations include structured "
+        "error details. Use `GET /rebalance/operations/by-correlation/{correlation_id}` when the "
+        "caller has only a correlation id."
+    ),
+    responses={
+        200: {
+            "description": (
+                "Operation status, executability flag, timestamps, and terminal result or error."
+            ),
+        },
+        404: {"description": "Operation not found or async operations disabled."},
+    },
 )
 def get_dpm_async_operation(
     operation_id: Annotated[

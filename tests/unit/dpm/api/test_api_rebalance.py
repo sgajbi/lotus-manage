@@ -21,11 +21,12 @@ from src.api.routers.rebalance_runs import (
     reset_dpm_run_support_service_for_tests,
 )
 from src.core.rebalance_runs import (
+    DpmAsyncOperationStatusResponse,
     DpmRunNotFoundError,
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,
 )
-from src.core.models import RebalanceResult
+from src.core.models import BatchRebalanceResult, RebalanceResult
 from tests.shared.factories import valid_api_payload
 
 
@@ -540,6 +541,38 @@ def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     )
     assert by_correlation.status_code == 200
     assert by_correlation.json()["operation_id"] == accepted.operation_id
+
+
+def test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result(client):
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {
+        "baseline": {"options": {}},
+        "invalid_case": {"options": {"group_constraints": {"sectorTECH": {"max_weight": "0.2"}}}},
+    }
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": "corr-dpm-async-terminal-detail"},
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    by_operation = client.get(f"/api/v1/rebalance/operations/{operation_id}")
+
+    assert by_operation.status_code == 200
+    typed_status = DpmAsyncOperationStatusResponse.model_validate(by_operation.json())
+    assert typed_status.operation_id == operation_id
+    assert typed_status.status == "SUCCEEDED"
+    assert typed_status.is_executable is False
+    assert typed_status.error is None
+    assert typed_status.result is not None
+    typed_result = BatchRebalanceResult.model_validate(typed_status.result)
+    assert set(typed_result.results) == {"baseline"}
+    assert set(typed_result.comparison_metrics) == {"baseline"}
+    assert set(typed_result.failed_scenarios) == {"invalid_case"}
+    assert "PARTIAL_BATCH_FAILURE" in typed_result.warnings
 
 
 def test_dpm_async_operation_list_rejects_unsupported_query_parameters(client):

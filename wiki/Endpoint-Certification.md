@@ -333,3 +333,59 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_list_filters_and_cursor tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_list_filters_by_created_window_and_operation_type tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: async operation detail by id
+
+Route:
+
+- `GET /rebalance/operations/{operation_id}`
+
+Purpose:
+
+Returns one asynchronous operation status record when the caller has the exact operation handle.
+Use this endpoint for polling a submitted async analysis operation, inspecting terminal result/error
+payloads, or checking manual-execution eligibility. Use
+`GET /rebalance/operations/by-correlation/{correlation_id}` when only a correlation id is available.
+
+Request surface:
+
+- Path parameter: `operation_id`.
+- Response: `DpmAsyncOperationStatusResponse`.
+- Terminal success: `result` contains a `BatchRebalanceResult`.
+- Terminal failure: `error` contains structured `code` and `message`.
+- Missing operation or disabled async operations return `404`.
+
+Functional coverage:
+
+- pending operation lookup by id,
+- successful terminal operation lookup with typed `BatchRebalanceResult` payload,
+- failed terminal operation lookup with structured error payload,
+- missing operation `404`,
+- async-disabled `404`,
+- by-correlation parity for the same operation record.
+
+Non-functional posture:
+
+- The endpoint returns a single bounded operation record without exposing persisted raw request
+  payloads.
+- `is_executable` is derived from operation status and stored request availability, avoiding caller
+  inference from status alone.
+- The route reads local persisted operation state and does not call upstream services.
+
+Upstream integration posture:
+
+The endpoint is a supportability read over `lotus-manage` async operation state. Upstream snapshot
+and lineage truth remains in the operation result payload and supportability bundle routes.
+
+Downstream consumers:
+
+- Integration and e2e tests use this endpoint after async submission.
+- No direct strategic Gateway or Workbench consumer was found for by-id operation detail.
+- Future downstream polling should use this endpoint when it already has `operation_id`.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```

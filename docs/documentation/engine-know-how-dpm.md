@@ -123,6 +123,17 @@ Implementation scope:
 - Ordering: newest `created_at` first, then operation id descending.
 - Unsupported query aliases such as `status` are rejected; use `status_filter`.
 
+### `GET /rebalance/operations/{operation_id}`
+- Purpose: retrieve one asynchronous operation status record when the operation handle is known.
+- When to use:
+  - poll a submitted async analysis operation
+  - inspect terminal result or error payload for supportability
+  - verify manual-execution eligibility through `is_executable`
+- Successful terminal operations include a `BatchRebalanceResult` payload in `result`.
+- Failed terminal operations include structured `error.code` and `error.message`.
+- Use `GET /rebalance/operations/by-correlation/{correlation_id}` when only the correlation id is
+  available.
+
 ### `GET /rebalance/supportability/summary`
 - Purpose: return operational supportability summary metrics without direct data store access.
 - Output:
