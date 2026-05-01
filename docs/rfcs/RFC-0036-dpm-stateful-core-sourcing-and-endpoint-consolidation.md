@@ -1289,6 +1289,18 @@ Implementation evidence captured on 2026-05-01:
       output/rfc-0036-s12-core-manage-api-summary.json` passed 11/11 probes,
     - the two core probes returned `404`, while manage retained `409
       DPM_STATEFUL_INPUT_DISABLED` for stateful simulation.
+26. Continued Slice 12 Swagger hardening found 73 `4xx`, `5xx`, or `default` responses with prose
+    descriptions but no JSON error examples. Central OpenAPI enrichment now adds bounded
+    problem-style JSON examples for every error response, and both the local OpenAPI quality gate
+    and live validator fail when deployed Swagger lacks those examples. After refreshing only
+    `lotus-manage`, live validation passed 12/12 probes:
+    - command: `python scripts/validate_live_api.py --base-url http://manage.dev.lotus
+      --core-base-url http://core-control.dev.lotus --core-base-url
+      http://core-query.dev.lotus --expect-core-dpm-route absent --json-output
+      output/rfc-0036-s12-error-openapi-core-manage-summary.json`,
+    - deployed OpenAPI had zero missing JSON request, response, or error examples,
+    - demo pack, readiness, capability truth, stateful-disabled guard, supportability summary,
+      metrics, and core route posture all passed.
 
 ### Slice 11: Implementation Proof
 
@@ -1402,7 +1414,7 @@ implemented stateless surface.
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
 | Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Direct core probes showed the target DPM execution-context route returns 404, so stateful promotion remains blocked by `sgajbi/lotus-core#330`. |
-| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, focused unit tests, and 11/11 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
+| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, stricter deployed Swagger error-example checks, focused unit tests, and 12/12 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
 | Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
 
 ### What Was Truly Completed
@@ -1430,6 +1442,8 @@ implemented stateless surface.
    resolution, workflow decisions, run supportability, and stateful resolver posture.
 7. Converted direct `lotus-core` DPM execution-context route checks into reusable validator
    coverage so manage/core integration posture is proven by automation rather than manual notes.
+8. Added central bounded JSON examples for every documented error response and promoted that rule
+   into both local and live OpenAPI certification.
 
 ### Debt Removed
 
@@ -1452,6 +1466,8 @@ implemented stateless surface.
 6. Enhanced manage/core live validation passed 11/11 probes, including executable checks against
    `core-control.dev.lotus` and `core-query.dev.lotus` for the expected missing DPM
    execution-context route.
+7. Refreshed live API proof passed 12/12 probes after strict deployed Swagger error-example
+   validation was added.
 
 ### Standard Assessment
 

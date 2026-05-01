@@ -199,6 +199,60 @@ def _ensure_json_content_example(
     }
 
 
+def _error_title(status_code: str) -> str:
+    return {
+        "400": "Bad Request",
+        "401": "Unauthorized",
+        "403": "Forbidden",
+        "404": "Not Found",
+        "409": "Conflict",
+        "422": "Validation Error",
+        "424": "Failed Dependency",
+        "500": "Internal Server Error",
+        "503": "Service Unavailable",
+        "default": "Unexpected Error",
+    }.get(status_code, "Error")
+
+
+def _error_status(status_code: str) -> int:
+    if status_code.isdigit():
+        return int(status_code)
+    return 500
+
+
+def _ensure_error_response_content(
+    *,
+    response: dict[str, Any],
+    status_code: str,
+) -> None:
+    content = response.setdefault("content", {})
+    json_content = content.setdefault(
+        _JSON_MEDIA_TYPE,
+        {
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string", "example": "about:blank"},
+                    "title": {"type": "string", "example": _error_title(status_code)},
+                    "status": {"type": "integer", "example": _error_status(status_code)},
+                    "detail": {
+                        "type": "string",
+                        "example": response.get("description") or "Request failed.",
+                    },
+                    "correlation_id": {"type": "string", "example": "corr_1234abcd"},
+                },
+            }
+        },
+    )
+    if isinstance(json_content, dict):
+        _ensure_json_content_example(
+            content=json_content,
+            schemas={},
+            name=f"error_{status_code}",
+            summary="Example error response.",
+        )
+
+
 def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
     schemas = schema.get("components", {}).get("schemas", {})
     if not isinstance(schemas, dict):
@@ -209,7 +263,8 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
         if not isinstance(methods, dict):
             continue
         if path == "/metrics":
-            methods.get("get", {}).setdefault("responses", {}).setdefault("200", {})["content"] = {
+            responses = methods.get("get", {}).setdefault("responses", {})
+            responses.setdefault("200", {})["content"] = {
                 _PROMETHEUS_MEDIA_TYPE: {
                     "schema": {"type": "string"},
                     "examples": {
@@ -225,6 +280,17 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
                     },
                 }
             }
+            for status_code, response in responses.items():
+                if not isinstance(response, dict):
+                    continue
+                normalized_status_code = str(status_code)
+                if normalized_status_code.startswith(("4", "5")) or (
+                    normalized_status_code == "default"
+                ):
+                    _ensure_error_response_content(
+                        response=response,
+                        status_code=normalized_status_code,
+                    )
             continue
         for method, operation in methods.items():
             if method.lower() not in {"get", "post", "put", "patch", "delete"}:
@@ -246,6 +312,14 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
             for status_code, response in operation.get("responses", {}).items():
                 if not isinstance(response, dict):
                     continue
+                normalized_status_code = str(status_code)
+                if normalized_status_code.startswith(("4", "5")) or (
+                    normalized_status_code == "default"
+                ):
+                    _ensure_error_response_content(
+                        response=response,
+                        status_code=normalized_status_code,
+                    )
                 response_content = response.get("content", {}).get(_JSON_MEDIA_TYPE)
                 if isinstance(response_content, dict):
                     _ensure_json_content_example(

@@ -37,6 +37,11 @@ def _has_content_example(content: dict[str, Any]) -> bool:
     return bool(content.get("example") or content.get("examples"))
 
 
+def _is_error_status(status_code: object) -> bool:
+    normalized = str(status_code)
+    return normalized.startswith(("4", "5")) or normalized == "default"
+
+
 def evaluate_schema(schema: dict[str, Any], *, service_name: str) -> list[str]:
     errors: list[str] = []
     missing_docs: list[tuple[str, str, str]] = []
@@ -75,6 +80,14 @@ def evaluate_schema(schema: dict[str, Any], *, service_name: str) -> list[str]:
                     if not isinstance(response, dict):
                         continue
                     json_content = response.get("content", {}).get(JSON_MEDIA_TYPE)
+                    if _is_error_status(status_code) and not isinstance(json_content, dict):
+                        missing_docs.append(
+                            (
+                                method_upper,
+                                path,
+                                f"{status_code} error response JSON content",
+                            )
+                        )
                     if isinstance(json_content, dict) and not _has_content_example(json_content):
                         missing_docs.append((method_upper, path, f"{status_code} response example"))
 

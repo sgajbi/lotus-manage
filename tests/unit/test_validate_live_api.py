@@ -282,6 +282,108 @@ def test_live_api_validation_reports_stale_openapi_certification_contract(monkey
     assert failure["details"]["metrics_media_types"] == ["application/json"]
 
 
+def test_live_api_validation_reports_missing_error_response_examples(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "scripts.validate_live_api._load_demo_payload",
+        lambda _filename: {
+            "input_mode": "stateless",
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
+        },
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path == "/health/ready":
+            return _json_response(200, {"status": "ready"})
+        if path == "/api/v1/integration/capabilities":
+            return _json_response(
+                200,
+                {
+                    "supported_input_modes": ["stateless"],
+                    "features": [
+                        {"key": "dpm.execution.stateful_portfolio_id", "enabled": False},
+                        {"key": "dpm.execution.stateless", "enabled": True},
+                    ],
+                },
+            )
+        if path == "/openapi.json":
+            return _json_response(
+                200,
+                {
+                    "paths": {
+                        "/metrics": {
+                            "get": {
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "text/plain; version=0.0.4": {
+                                                "schema": {"type": "string"},
+                                                "examples": {"prometheus": {"value": "metric 1"}},
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "/api/v1/rebalance/simulate": {
+                            "post": {
+                                "requestBody": {
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {"type": "object"},
+                                            "examples": {"default": {"value": {}}},
+                                        }
+                                    }
+                                },
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {"type": "object"},
+                                                "examples": {"default": {"value": {}}},
+                                            }
+                                        }
+                                    },
+                                    "409": {"description": "Conflict."},
+                                },
+                            }
+                        },
+                    }
+                },
+            )
+        if path == "/api/v1/rebalance/proposals":
+            return _json_response(404, {"detail": "Not Found"})
+        if path == "/api/v1/rebalance/simulate":
+            return _json_response(409, {"detail": "DPM_STATEFUL_INPUT_DISABLED"})
+        if path == "/api/v1/rebalance/analyze/async":
+            return _json_response(409, {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"})
+        if path == "/api/v1/rebalance/supportability/summary":
+            return _json_response(
+                200,
+                {"store_backend": "POSTGRES", "run_count": 1, "operation_count": 1},
+            )
+        if path == "/metrics":
+            return httpx.Response(200, text="lotus_manage_action_register_supportability_total 1")
+        raise AssertionError(f"Unexpected request path: {path}")
+
+    results = run_live_api_validation(
+        "http://manage.test",
+        include_demo_pack=False,
+        transport=httpx.MockTransport(handler),
+    )
+    summary = summarize(results)
+
+    failure = next(
+        failure
+        for failure in summary["failures"]
+        if failure["name"] == "openapi_certification_contract"
+    )
+    assert (
+        "POST /api/v1/rebalance/simulate 409 error response JSON content"
+        in (failure["details"]["missing_examples"])
+    )
+
+
 def test_live_api_validation_can_probe_current_core_route_absence(monkeypatch) -> None:
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",

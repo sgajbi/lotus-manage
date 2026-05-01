@@ -44,6 +44,11 @@ def _has_example(content: dict) -> bool:
     return bool(content.get("example") or content.get("examples"))
 
 
+def _is_error_status(status_code: object) -> bool:
+    normalized = str(status_code)
+    return normalized.startswith(("4", "5")) or normalized == "default"
+
+
 def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _guard_strict_validation()
     openapi = app.openapi()
@@ -278,6 +283,25 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
     _assert_property_has_docs(health_status_schema, "status")
     status_schema = health_status_schema["properties"]["status"]
     assert set(status_schema["enum"]) == {"ok", "live", "ready"}
+
+
+def test_openapi_error_responses_have_json_examples():
+    _guard_strict_validation()
+    openapi = app.openapi()
+    missing: list[str] = []
+
+    for path, operations in sorted(openapi["paths"].items()):
+        for method, operation in sorted(operations.items()):
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            for status_code, response in sorted(operation.get("responses", {}).items()):
+                if not _is_error_status(status_code):
+                    continue
+                json_content = response.get("content", {}).get("application/json")
+                if not isinstance(json_content, dict) or not _has_example(json_content):
+                    missing.append(f"{method.upper()} {path} {status_code}")
+
+    assert missing == []
 
 
 def test_integration_capabilities_paths_have_route_and_query_docs():

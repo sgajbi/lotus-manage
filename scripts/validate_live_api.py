@@ -88,6 +88,11 @@ def _content_has_example(content: dict[str, Any]) -> bool:
     return bool(content.get("example") or content.get("examples"))
 
 
+def _is_error_status(status_code: object) -> bool:
+    normalized = str(status_code)
+    return normalized.startswith(("4", "5")) or normalized == "default"
+
+
 def _probe_openapi_certification_contract(client: httpx.Client) -> ProbeResult:
     response = client.get("/openapi.json")
     body = response.json()
@@ -104,6 +109,10 @@ def _probe_openapi_certification_contract(client: httpx.Client) -> ProbeResult:
 
             for status_code, route_response in sorted(operation.get("responses", {}).items()):
                 response_content = route_response.get("content", {}).get("application/json")
+                if _is_error_status(status_code) and not isinstance(response_content, dict):
+                    missing_examples.append(
+                        f"{method.upper()} {path} {status_code} error response JSON content"
+                    )
                 if isinstance(response_content, dict) and not _content_has_example(
                     response_content
                 ):

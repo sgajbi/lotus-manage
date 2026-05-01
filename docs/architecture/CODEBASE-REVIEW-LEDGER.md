@@ -347,6 +347,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki integration and supported-feature source updated because live proof commands
   and current manage/core posture evidence changed.
 
+## RFC36-S12-002: Error responses lacked enforced Swagger examples
+
+- Date: 2026-05-02
+- Scope: OpenAPI enrichment, OpenAPI quality gate, deployed Swagger certification, live validator
+- Finding: Swagger described many `4xx`, `5xx`, and `default` responses, but 73 error responses had
+  no JSON content example. The previous local and live OpenAPI gates enforced examples only when
+  JSON content was already present, so an endpoint could retain prose-only error documentation and
+  still pass certification.
+- Action: extended central OpenAPI enrichment to add bounded JSON error examples for every
+  `4xx`, `5xx`, and `default` response, including `/metrics` default errors. Tightened
+  `scripts/openapi_quality_gate.py` and `scripts/validate_live_api.py` to fail when any error
+  response lacks JSON example content. Added focused gate, contract, and live-validator tests.
+  Refreshed only `lotus-manage` and reran live proof; the stricter validator passed 12/12 probes
+  against `manage.dev.lotus`, `core-control.dev.lotus`, and `core-query.dev.lotus`.
+- Status: fixed for current public OpenAPI route inventory and deployed Swagger proof.
+- Wiki decision: supported-feature source updated because Swagger certification and live proof
+  evidence changed; endpoint certification source already states the error-example standard.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01
