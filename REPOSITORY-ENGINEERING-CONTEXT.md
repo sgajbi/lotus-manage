@@ -135,7 +135,8 @@ Most relevant current governance:
 1. management/advisory boundary clarity remains a real quality concern after the split,
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
-4. `portfolio_id` stateful-mode semantics and inline bundle source-data lineage are RFC-0082 watchlist areas,
+4. stateful `portfolio_id` mode is disabled by default until a governed `lotus-core` resolver is
+   configured; inline bundle source-data lineage remains an RFC-0082 watchlist area,
 5. this repo should stay operationally aligned with gateway and platform startup sequences,
 6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,

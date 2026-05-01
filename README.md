@@ -40,7 +40,8 @@ Current posture under RFC-0082:
 
 1. rebalance simulation, policy-pack behavior, async operations, and run-support contracts are
    owned here
-2. stateful `portfolio_id` mode must remain anchored to governed `lotus-core` authority
+2. stateful `portfolio_id` mode is disabled by default and must remain anchored to governed
+   `lotus-core` authority when enabled
 3. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 

@@ -18,6 +18,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Policy-pack supportability | `/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
 | Integration capabilities | `/integration/capabilities`, `/platform/capabilities` | Supported | capability contract tests |
 | Solver target generation | `POST /rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
+| Stateful `portfolio_id` execution | `/integration/capabilities`, `/platform/capabilities` | Disabled by default until governed core resolution is configured | capability contract tests and RFC-0082 map |
 
 ## Non-Functional Capabilities
 

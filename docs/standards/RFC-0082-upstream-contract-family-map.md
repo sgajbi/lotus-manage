@@ -30,7 +30,7 @@ composition.
 | --- | --- | --- | --- | --- |
 | `portfolio_snapshot` request payloads | source data should be `lotus-core`-governed when populated from platform state | Snapshot and simulation / Operational Read input | rebalance and what-if source state | manage may transform for execution, but must not become the ledger or portfolio read authority |
 | `market_data_snapshot` request payloads | prices and FX should remain core-governed source data when populated from platform state | Operational Read input / Analytics Input watchlist | valuation, settlement, tax, and rebalance execution support | manage may use inputs for execution, but source truth remains upstream |
-| `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | stateful rebalance execution posture advertised through capabilities | future stateful resolution must use governed core contracts rather than ad hoc reads |
+| `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | disabled by default in capabilities until a governed state resolver is configured | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
 
 ## Manage-Owned Contract Families
@@ -108,17 +108,14 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
 
 ## Gap Register
 
-1. `portfolio_id` is advertised as a supported input mode, but the current code inspection did not find an
-   active outbound state-resolution client. When that becomes active, classify the exact `lotus-core`
-   routes before stabilizing the contract.
-2. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
+1. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
    `GET /api/v1/platform/capabilities`; `lotus-manage` remains canonical on snake_case
    `consumer_system` and `tenant_id`, so the downstream client should be corrected rather than
    expanding manage-side aliases.
-3. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
+2. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
    authority. Keep snapshot identifiers, request hashes, and supportability bundles mandatory for
    traceability.
-4. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
+3. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
    caching, and source-data retrieval design before considering a transport change.
 
 ## Validation Lane

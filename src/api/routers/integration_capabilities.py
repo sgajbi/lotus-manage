@@ -76,7 +76,7 @@ class IntegrationCapabilitiesResponse(BaseModel):
     )
     supported_input_modes: list[str] = Field(
         description="Supported execution input modes that downstream callers may use for rebalance flows.",
-        examples=[["portfolio_id", "inline_bundle"]],
+        examples=[["inline_bundle"]],
     )
     features: list[FeatureCapability] = Field(
         description="Feature-level capability flags for downstream orchestration and UI gating.",
@@ -84,9 +84,9 @@ class IntegrationCapabilitiesResponse(BaseModel):
             [
                 {
                     "key": "dpm.execution.stateful_portfolio_id",
-                    "enabled": True,
+                    "enabled": False,
                     "owner_service": "lotus-manage",
-                    "description": "Stateful lotus-manage execution using a governed portfolio identifier and lotus-core-referenced data.",
+                    "description": "Stateful lotus-manage execution using a governed portfolio identifier; disabled unless a governed lotus-core resolver is configured.",
                 }
             ]
         ],
@@ -157,10 +157,13 @@ async def get_integration_capabilities(
     ),
 ) -> IntegrationCapabilitiesResponse:
     workflow_enabled = _env_bool("DPM_WORKFLOW_ENABLED", False)
+    portfolio_id_enabled = _env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False)
     inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
     solver_available = has_solver_dependencies()
 
-    supported_input_modes = ["portfolio_id"]
+    supported_input_modes = []
+    if portfolio_id_enabled:
+        supported_input_modes.append("portfolio_id")
     if inline_bundle_enabled:
         supported_input_modes.append("inline_bundle")
 
@@ -176,9 +179,9 @@ async def get_integration_capabilities(
         features=[
             FeatureCapability(
                 key="dpm.execution.stateful_portfolio_id",
-                enabled=True,
+                enabled=portfolio_id_enabled,
                 owner_service="lotus-manage",
-                description="Stateful lotus-manage rebalance execution using a governed portfolio identifier and lotus-core-referenced data.",
+                description="Stateful lotus-manage rebalance execution using a governed portfolio identifier; enable only when a governed lotus-core resolver is configured.",
             ),
             FeatureCapability(
                 key="dpm.execution.stateless_inline_bundle",
