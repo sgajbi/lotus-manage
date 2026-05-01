@@ -312,11 +312,21 @@ def analyze_scenarios_async(
     tags=["lotus-manage Run Supportability"],
     summary="Execute Pending lotus-manage Async Operation",
     description=(
-        "Executes one pending asynchronous lotus-manage analyze operation. "
-        "Intended for orchestrated `ACCEPT_ONLY` mode flows."
+        "Executes one pending asynchronous lotus-manage scenario-analysis operation that was "
+        "accepted through `POST /rebalance/analyze/async` while "
+        "`DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use this endpoint for governed external "
+        "orchestration where the caller first records an operation handle, then explicitly "
+        "starts execution. Do not use it for already terminal operations; they are returned by "
+        "`GET /rebalance/operations/{operation_id}` and are rejected here with `409`."
     ),
     responses={
-        200: {"description": "Operation execution completed; returns terminal status payload."},
+        200: {
+            "description": (
+                "Execution attempt completed and returned terminal operation status. "
+                "The status may be `SUCCEEDED` with a batch result or `FAILED` with structured "
+                "error details."
+            ),
+        },
         404: {"description": "Operation not found or manual execution disabled."},
         409: {"description": "Operation is not in executable pending state."},
     },

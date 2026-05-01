@@ -1920,6 +1920,36 @@ def test_analyze_async_accept_only_mode_can_be_executed_manually(client, monkeyp
     assert executed_body["result"]["batch_run_id"].startswith("batch_")
 
 
+def test_analyze_async_accept_only_manual_execute_captures_failure(client, monkeypatch):
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "ACCEPT_ONLY")
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": "corr-batch-async-manual-failure"},
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    with patch("src.api.main._execute_batch_analysis", side_effect=RuntimeError("boom")):
+        executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+
+    assert executed.status_code == 200
+    executed_body = executed.json()
+    assert executed_body["operation_id"] == operation_id
+    assert executed_body["status"] == "FAILED"
+    assert executed_body["is_executable"] is False
+    assert executed_body["result"] is None
+    assert executed_body["error"] == {"code": "RuntimeError", "message": "boom"}
+
+    repeated = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+    assert repeated.status_code == 409
+    assert repeated.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_EXECUTABLE"
+
+
 def test_analyze_async_accept_only_manual_execute_preserves_tenant_policy_context(
     client, monkeypatch
 ):

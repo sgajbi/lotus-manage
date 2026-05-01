@@ -104,6 +104,20 @@ Implementation scope:
   - `GET /rebalance/operations/{operation_id}`
   - `GET /rebalance/operations/by-correlation/{correlation_id}`
 
+### `POST /rebalance/operations/{operation_id}/execute`
+- Purpose: explicitly execute a pending async scenario-analysis operation accepted in
+  `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`.
+- When to use:
+  - external orchestration needs to separate operation acceptance from execution
+  - the caller has a pending `operation_id` from `POST /rebalance/analyze/async`
+- Body: none; execution uses the persisted request and policy context from submission.
+- Response: `DpmAsyncOperationStatusResponse`.
+- Terminal behavior:
+  - `SUCCEEDED` includes the batch analysis result payload in `result`
+  - `FAILED` includes structured error details in `error`
+  - already terminal operations are not replayed and return `409`
+- Manual execution can be disabled with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false`.
+
 ### `GET /rebalance/operations`
 - Purpose: list asynchronous operations for supportability investigations.
 - When to use:

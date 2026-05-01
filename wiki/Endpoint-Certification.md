@@ -277,6 +277,66 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contrac
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: async operation manual execution
+
+Route:
+
+- `POST /rebalance/operations/{operation_id}/execute`
+
+Purpose:
+
+Executes one pending asynchronous DPM scenario-analysis operation that was accepted through
+`POST /rebalance/analyze/async` in `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use this endpoint for
+external orchestration flows that intentionally separate operation acceptance from execution.
+
+Request surface:
+
+- Path: `operation_id`.
+- Body: none.
+- Response: `DpmAsyncOperationStatusResponse`.
+- Terminal `SUCCEEDED` responses include the `BatchRebalanceResult` payload in `result`.
+- Terminal `FAILED` responses include structured `error` details and leave `result=null`.
+
+Functional coverage:
+
+- pending accept-only operations execute successfully and become non-executable,
+- execution failures are captured as terminal `FAILED` operation status,
+- failed operations cannot be re-executed and return `409`,
+- missing operations return `404`,
+- already terminal inline-executed operations return `409`,
+- disabled manual execution returns governed `404`,
+- request and tenant-default policy-pack context persists from async submission and is applied at
+  manual execution time,
+- Swagger documents body-less execution, terminal success/failure status behavior, and 404/409
+  error surfaces.
+
+Non-functional posture:
+
+- The endpoint is deliberately body-less so execution is bound to the persisted, audited operation
+  request and policy context.
+- Terminal operation lookup remains stable through `GET /rebalance/operations/{operation_id}`;
+  repeated execute calls are rejected instead of replaying the calculation.
+- Manual execution supports low-latency acceptance while allowing an external orchestrator to start
+  compute work under its own scheduling controls.
+
+Upstream integration posture:
+
+Manual execution uses the snapshots and policy context persisted at async submission time. It does
+not fetch additional upstream portfolio or market data at execution time, which keeps the operation
+auditable and reproducible.
+
+Downstream consumers:
+
+- No direct strategic Gateway or Workbench consumer was found for the manual execute route.
+- Future consumers should call this endpoint only for `ACCEPT_ONLY` deferred DPM analysis workflows.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: async operation list
 
 Route:

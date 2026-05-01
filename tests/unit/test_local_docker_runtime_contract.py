@@ -22,6 +22,16 @@ def test_local_docker_runtime_applies_postgres_migrations_before_startup() -> No
     assert "psycopg[binary]" in pyproject_text
 
 
+def test_local_docker_runtime_exposes_async_execution_controls() -> None:
+    compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "DPM_ASYNC_EXECUTION_MODE=${DPM_ASYNC_EXECUTION_MODE:-INLINE}" in compose_text
+    assert (
+        "DPM_ASYNC_MANUAL_EXECUTION_ENABLED=${DPM_ASYNC_MANUAL_EXECUTION_ENABLED:-true}"
+        in compose_text
+    )
+
+
 def test_ci_local_docker_compose_does_not_publish_internal_postgres_port() -> None:
     compose_text = Path("docker-compose.ci-local.yml").read_text(encoding="utf-8")
 

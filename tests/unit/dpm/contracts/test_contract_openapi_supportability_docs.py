@@ -576,9 +576,24 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     execute_async = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}/execute"]["post"]
     assert "requestBody" not in execute_async
+    assert execute_async["tags"] == ["lotus-manage Run Supportability"]
     assert execute_async["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmAsyncOperationStatusResponse")
+    assert "DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY" in execute_async["description"]
+    assert "already terminal operations" in execute_async["description"]
+    assert "SUCCEEDED" in execute_async["responses"]["200"]["description"]
+    assert "FAILED" in execute_async["responses"]["200"]["description"]
+    assert "404" in execute_async["responses"]
+    assert "409" in execute_async["responses"]
+    execute_operation_id_param = next(
+        parameter
+        for parameter in execute_async["parameters"]
+        if parameter["name"] == "operation_id"
+    )
+    assert execute_operation_id_param["in"] == "path"
+    assert execute_operation_id_param["required"] is True
+    assert execute_operation_id_param["description"]
 
     run_artifact = openapi["paths"]["/api/v1/rebalance/runs/{rebalance_run_id}/artifact"]["get"]
     assert run_artifact["responses"]["200"]["content"]["application/json"]["schema"][

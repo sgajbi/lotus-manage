@@ -18,6 +18,8 @@ services:
       - DPM_SUPPORTABILITY_POSTGRES_DSN=${DPM_SUPPORTABILITY_POSTGRES_DSN:-postgresql://manage:manage@postgres:5432/manage_supportability}
       - DPM_POLICY_PACK_CATALOG_BACKEND=${DPM_POLICY_PACK_CATALOG_BACKEND:-POSTGRES}
       - DPM_POLICY_PACK_POSTGRES_DSN=${DPM_POLICY_PACK_POSTGRES_DSN:-postgresql://manage:manage@postgres:5432/manage_supportability}
+      - DPM_ASYNC_EXECUTION_MODE=${DPM_ASYNC_EXECUTION_MODE:-INLINE}
+      - DPM_ASYNC_MANUAL_EXECUTION_ENABLED=${DPM_ASYNC_MANUAL_EXECUTION_ENABLED:-true}
     healthcheck:
       test:
         [
