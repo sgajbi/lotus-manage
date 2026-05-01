@@ -389,3 +389,58 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: async operation detail by correlation id
+
+Route:
+
+- `GET /rebalance/operations/by-correlation/{correlation_id}`
+
+Purpose:
+
+Returns one asynchronous operation status record when the caller has the submitted correlation id but
+not the generated operation id. Use this endpoint for polling after submitting `X-Correlation-Id` to
+`POST /rebalance/analyze/async`, or for supportability lookup from external logs keyed by
+correlation id.
+
+Request surface:
+
+- Path parameter: `correlation_id`.
+- Response: `DpmAsyncOperationStatusResponse`.
+- Terminal success: `result` contains a `BatchRebalanceResult`.
+- Terminal failure: `error` contains structured `code` and `message`.
+- Missing correlation id or disabled async operations return `404`.
+
+Functional coverage:
+
+- pending operation lookup by correlation id,
+- successful terminal operation lookup with typed `BatchRebalanceResult` payload,
+- same operation identity as by-id lookup,
+- missing correlation id `404`,
+- async-disabled `404`.
+
+Non-functional posture:
+
+- Correlation ids are unique operation handles for async operations.
+- The endpoint returns a single bounded operation record without exposing persisted raw request
+  payloads.
+- The route reads local persisted operation state and does not call upstream services.
+
+Upstream integration posture:
+
+The endpoint is a supportability read over `lotus-manage` async operation state. It depends on the
+correlation id captured at submission time and does not query upstream services.
+
+Downstream consumers:
+
+- Integration and e2e tests use this endpoint after async submission.
+- No direct strategic Gateway or Workbench consumer was found for by-correlation operation detail.
+- Future downstream polling should use this endpoint when the caller owns the correlation id but not
+  the operation id.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_correlation_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```

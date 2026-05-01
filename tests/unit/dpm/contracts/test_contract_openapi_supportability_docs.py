@@ -552,6 +552,28 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert operation_id_param["required"] is True
     assert operation_id_param["description"]
 
+    get_operation_by_correlation = openapi["paths"][
+        "/api/v1/rebalance/operations/by-correlation/{correlation_id}"
+    ]["get"]
+    assert "requestBody" not in get_operation_by_correlation
+    assert get_operation_by_correlation["tags"] == ["lotus-manage Run Supportability"]
+    assert get_operation_by_correlation["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]["$ref"].endswith("/DpmAsyncOperationStatusResponse")
+    assert (
+        "submitted `X-Correlation-Id` to `POST /rebalance/analyze/async`"
+        in get_operation_by_correlation["description"]
+    )
+    assert "404" in get_operation_by_correlation["responses"]
+    correlation_id_param = next(
+        parameter
+        for parameter in get_operation_by_correlation["parameters"]
+        if parameter["name"] == "correlation_id"
+    )
+    assert correlation_id_param["in"] == "path"
+    assert correlation_id_param["required"] is True
+    assert correlation_id_param["description"]
+
     execute_async = openapi["paths"]["/api/v1/rebalance/operations/{operation_id}/execute"]["post"]
     assert "requestBody" not in execute_async
     assert execute_async["responses"]["200"]["content"]["application/json"]["schema"][

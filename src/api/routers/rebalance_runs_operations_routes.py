@@ -160,12 +160,31 @@ def get_dpm_async_operation(
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Async Operation by Correlation Id",
-    description="Returns asynchronous operation associated with correlation id.",
+    description=(
+        "Returns one asynchronous operation status record by correlation id. Use this endpoint when "
+        "the caller submitted `X-Correlation-Id` to `POST /rebalance/analyze/async` and does not "
+        "have the generated operation id. Terminal `SUCCEEDED` operations include the batch "
+        "analysis result payload; terminal `FAILED` operations include structured error details. "
+        "Use `GET /rebalance/operations/{operation_id}` when the operation id is already known."
+    ),
+    responses={
+        200: {
+            "description": (
+                "Operation status, executability flag, timestamps, and terminal result or error."
+            ),
+        },
+        404: {
+            "description": "Operation not found for correlation id or async operations disabled."
+        },
+    },
 )
 def get_dpm_async_operation_by_correlation(
     correlation_id: Annotated[
         str,
-        Path(description="Correlation identifier associated with async operation."),
+        Path(
+            description="Correlation identifier associated with async operation.",
+            examples=["corr-dpm-async-001"],
+        ),
     ],
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmAsyncOperationStatusResponse:

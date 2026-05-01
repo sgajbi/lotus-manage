@@ -575,6 +575,35 @@ def test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result(client):
     assert "PARTIAL_BATCH_FAILURE" in typed_result.warnings
 
 
+def test_dpm_async_operation_lookup_by_correlation_returns_typed_terminal_result(client):
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+    correlation_id = "corr-dpm-async-correlation-terminal-detail"
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": correlation_id},
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    by_correlation = client.get(f"/api/v1/rebalance/operations/by-correlation/{correlation_id}")
+
+    assert by_correlation.status_code == 200
+    typed_status = DpmAsyncOperationStatusResponse.model_validate(by_correlation.json())
+    assert typed_status.operation_id == operation_id
+    assert typed_status.correlation_id == correlation_id
+    assert typed_status.status == "SUCCEEDED"
+    assert typed_status.is_executable is False
+    assert typed_status.error is None
+    assert typed_status.result is not None
+    typed_result = BatchRebalanceResult.model_validate(typed_status.result)
+    assert set(typed_result.results) == {"baseline"}
+    assert set(typed_result.failed_scenarios) == set()
+
+
 def test_dpm_async_operation_list_rejects_unsupported_query_parameters(client):
     response = client.get("/api/v1/rebalance/operations?status=SUCCEEDED")
 

@@ -134,6 +134,16 @@ Implementation scope:
 - Use `GET /rebalance/operations/by-correlation/{correlation_id}` when only the correlation id is
   available.
 
+### `GET /rebalance/operations/by-correlation/{correlation_id}`
+- Purpose: retrieve one asynchronous operation status record when the caller has the correlation id
+  but not the generated operation id.
+- When to use:
+  - polling after submitting `X-Correlation-Id` to `POST /rebalance/analyze/async`
+  - supportability lookup from external logs keyed by correlation id
+- Successful terminal operations include a `BatchRebalanceResult` payload in `result`.
+- Failed terminal operations include structured `error.code` and `error.message`.
+- Use `GET /rebalance/operations/{operation_id}` when the generated operation id is available.
+
 ### `GET /rebalance/supportability/summary`
 - Purpose: return operational supportability summary metrics without direct data store access.
 - Output:
