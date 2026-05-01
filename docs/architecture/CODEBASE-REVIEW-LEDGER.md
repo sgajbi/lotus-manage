@@ -48,6 +48,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Status: fixed
 - Wiki decision: wiki source updated because endpoint and demo-facing product truth changed.
 
+## RFC36-S4-001: Advisory-era client-consent workflow vocabulary removed
+
+- Date: 2026-05-01
+- Scope: DPM engine options, workflow gates, policy-pack contracts, tests, OpenAPI vocabulary, docs
+- Finding: discretionary mandate workflow gates still exposed advisory-style client-consent fields
+  and gate states. That wording is not domain-correct for DPM execution control.
+- Action: replaced client-consent API vocabulary with mandate-approval vocabulary:
+  `workflow_requires_mandate_approval`, `mandate_approval_already_obtained`,
+  `MANDATE_APPROVAL_REQUIRED`, and `REQUEST_MANDATE_APPROVAL`.
+- Status: fixed
+- Wiki decision: wiki supported-features source updated to keep advisory client-consent ownership
+  with `lotus-advise`.
+
+## RFC36-S4-002: Retired proposal infrastructure remnants removed
+
+- Date: 2026-05-01
+- Scope: retired proposal infrastructure package and migration namespaces
+- Finding: tracked proposal infrastructure code was already gone, but ignored generated remnants kept
+  retired proposal directories present on disk.
+- Action: removed generated remnants and expanded current-state tests so retired proposal
+  infrastructure and migration namespaces stay absent.
+- Status: fixed
+- Wiki decision: no wiki source change required for generated local remnants.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

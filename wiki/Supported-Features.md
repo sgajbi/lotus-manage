@@ -36,8 +36,8 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 
 ## Explicit Non-Goals
 
-`lotus-manage` does not own advisor-led proposal simulation, proposal artifacts, client consent, or
-proposal lifecycle APIs. Those workflows belong in `lotus-advise`.
+`lotus-manage` does not own advisor-led proposal simulation, proposal artifacts, advisor client
+consent, or proposal lifecycle APIs. Those workflows belong in `lotus-advise`.
 
 It also does not own canonical portfolio ledger state, source-data truth, risk methodology,
 performance analytics authority, or UI composition.

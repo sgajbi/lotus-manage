@@ -79,7 +79,7 @@ def test_workflow_gate_blocked_dominates() -> None:
         suitability=None,
         diagnostics=_diagnostics(),
         options=EngineOptions(),
-        default_requires_client_consent=False,
+        default_requires_mandate_approval=False,
     )
     assert gate.gate == "BLOCKED"
     assert gate.recommended_next_step == "FIX_INPUT"
@@ -92,7 +92,7 @@ def test_workflow_gate_compliance_for_new_high_suitability() -> None:
         suitability=_high_suitability_result(),
         diagnostics=_diagnostics(),
         options=EngineOptions(),
-        default_requires_client_consent=True,
+        default_requires_mandate_approval=True,
     )
     assert gate.gate == "COMPLIANCE_REVIEW_REQUIRED"
     assert gate.recommended_next_step == "COMPLIANCE_REVIEW"
@@ -105,7 +105,7 @@ def test_workflow_gate_risk_for_soft_fail() -> None:
         suitability=None,
         diagnostics=_diagnostics(),
         options=EngineOptions(),
-        default_requires_client_consent=False,
+        default_requires_mandate_approval=False,
     )
     assert gate.gate == "RISK_REVIEW_REQUIRED"
     assert gate.recommended_next_step == "RISK_REVIEW"
@@ -118,20 +118,20 @@ def test_workflow_gate_execution_ready_for_clean_dpm() -> None:
         suitability=None,
         diagnostics=_diagnostics(),
         options=EngineOptions(),
-        default_requires_client_consent=False,
+        default_requires_mandate_approval=False,
     )
     assert gate.gate == "EXECUTION_READY"
     assert gate.recommended_next_step == "EXECUTE"
 
 
-def test_workflow_gate_execution_ready_when_client_consent_already_obtained() -> None:
+def test_workflow_gate_execution_ready_when_mandate_approval_already_obtained() -> None:
     gate = evaluate_gate_decision(
         status="READY",
         rule_results=[],
         suitability=None,
         diagnostics=_diagnostics(),
-        options=EngineOptions(client_consent_already_obtained=True),
-        default_requires_client_consent=True,
+        options=EngineOptions(mandate_approval_already_obtained=True),
+        default_requires_mandate_approval=True,
     )
     assert gate.gate == "EXECUTION_READY"
     assert gate.recommended_next_step == "EXECUTE"
@@ -144,7 +144,7 @@ def test_workflow_gate_prioritizes_data_quality_in_reason_sorting() -> None:
         suitability=_high_suitability_result(),
         diagnostics=_diagnostics(price_missing=["A"], fx_missing=["USD/SGD"]),
         options=EngineOptions(),
-        default_requires_client_consent=False,
+        default_requires_mandate_approval=False,
     )
     assert gate.gate == "COMPLIANCE_REVIEW_REQUIRED"
     assert gate.summary.hard_fail_count == 0

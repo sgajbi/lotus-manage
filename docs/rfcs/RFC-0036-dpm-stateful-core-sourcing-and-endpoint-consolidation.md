@@ -727,6 +727,32 @@ Exit evidence:
 3. no stale proposal tests or demo flows remain in `lotus-manage`,
 4. `lotus-advise` remains the documented destination owner for advisory flows.
 
+Slice 4 implementation evidence captured on 2026-05-01:
+
+1. Advisory/proposal route inventory is clean:
+   - `python -c "from src.api.main import app; matches=[p for p in sorted(app.openapi()['paths']) if 'proposal' in p.lower() or 'advis' in p.lower()]; print(matches); assert matches == []"`
+     returned `[]`.
+2. Removed advisory-era client-consent workflow vocabulary from active DPM contracts and runtime:
+   - `workflow_requires_client_consent` became `workflow_requires_mandate_approval`;
+   - `client_consent_already_obtained` became `mandate_approval_already_obtained`;
+   - `CLIENT_CONSENT_REQUIRED` became `MANDATE_APPROVAL_REQUIRED`;
+   - `REQUEST_CLIENT_CONSENT` became `REQUEST_MANDATE_APPROVAL`.
+3. Regenerated API vocabulary inventory so Swagger/OpenAPI-derived certification material uses
+   mandate-approval terms.
+4. Removed generated remnants from retired proposal infrastructure namespaces and expanded
+   `tests/unit/test_documentation_current_state.py` to keep those namespaces absent.
+5. Retained only explicit boundary and historical references that say advisory proposal workflows
+   belong to `lotus-advise`, plus tests that prove removed proposal paths stay unavailable.
+6. Validation:
+   - `python -m pytest tests/unit/dpm/engine/test_engine_workflow_gates.py tests/unit/dpm/engine/test_policy_pack_resolution.py tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py tests/unit/test_documentation_current_state.py -q`:
+     137 passed;
+   - `python scripts/openapi_quality_gate.py`;
+   - `python scripts/api_vocabulary_inventory.py --validate-only`;
+   - `python scripts/no_alias_contract_guard.py`;
+   - `python -m ruff check ...`;
+   - advisory/proposal/generated-remnant search commands recorded in
+     `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+
 ### Slice 5: Explicit Stateless Envelope
 
 1. Add envelope request models for simulate, analyze, and async analyze.

@@ -366,18 +366,18 @@ class EngineOptions(BaseModel):
         description="Enable deterministic workflow gate decision output.",
         examples=[True],
     )
-    workflow_requires_client_consent: bool = Field(
+    workflow_requires_mandate_approval: bool = Field(
         default=False,
         description=(
-            "Require client consent before execution in gate-decision policy. "
+            "Require mandate approval before execution in gate-decision policy. "
             "Normally false for discretionary mandate workflows."
         ),
         examples=[False],
     )
-    client_consent_already_obtained: bool = Field(
+    mandate_approval_already_obtained: bool = Field(
         default=False,
         description=(
-            "Signals that client consent has already been obtained, allowing "
+            "Signals that mandate approval has already been obtained, allowing "
             "gate progression to execution-ready when policy permits."
         ),
         examples=[False],
@@ -877,23 +877,23 @@ class GateDecision(BaseModel):
         "BLOCKED",
         "RISK_REVIEW_REQUIRED",
         "COMPLIANCE_REVIEW_REQUIRED",
-        "CLIENT_CONSENT_REQUIRED",
+        "MANDATE_APPROVAL_REQUIRED",
         "EXECUTION_READY",
         "NONE",
     ] = Field(
         description="Deterministic workflow gate outcome.",
-        examples=["CLIENT_CONSENT_REQUIRED"],
+        examples=["MANDATE_APPROVAL_REQUIRED"],
     )
     recommended_next_step: Literal[
         "FIX_INPUT",
         "RISK_REVIEW",
         "COMPLIANCE_REVIEW",
-        "REQUEST_CLIENT_CONSENT",
+        "REQUEST_MANDATE_APPROVAL",
         "EXECUTE",
         "NONE",
     ] = Field(
         description="Recommended next workflow step based on gate policy.",
-        examples=["REQUEST_CLIENT_CONSENT"],
+        examples=["REQUEST_MANDATE_APPROVAL"],
     )
     reasons: List[GateReason] = Field(
         default_factory=list,

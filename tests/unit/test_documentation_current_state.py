@@ -77,6 +77,8 @@ def test_removed_dpm_python_compatibility_shims_stay_retired() -> None:
         ROOT / "src" / "api" / "services" / "dpm_simulation_service.py",
         ROOT / "src" / "core" / "dpm_engine.py",
         ROOT / "src" / "core" / "engine.py",
+        ROOT / "src" / "infrastructure" / "proposals",
+        ROOT / "src" / "infrastructure" / "postgres_migrations" / "proposals",
     ]
     unexpected = [str(path.relative_to(ROOT)) for path in retired_paths if path.exists()]
 

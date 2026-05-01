@@ -74,7 +74,7 @@ def test_simulate_endpoint_success(client):
         "BLOCKED",
         "RISK_REVIEW_REQUIRED",
         "COMPLIANCE_REVIEW_REQUIRED",
-        "CLIENT_CONSENT_REQUIRED",
+        "MANDATE_APPROVAL_REQUIRED",
         "EXECUTION_READY",
         "NONE",
     }
@@ -1494,8 +1494,8 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
             '"constraint_policy":{"single_position_max_weight":"0.25",'
             '"group_constraints":{"sector:TECH":{"max_weight":"0.20"}}},'
             '"workflow_policy":{"enable_workflow_gates":false,'
-            '"workflow_requires_client_consent":true,'
-            '"client_consent_already_obtained":true}}}'
+            '"workflow_requires_mandate_approval":true,'
+            '"mandate_approval_already_obtained":true}}}'
         ),
     )
 
@@ -1541,8 +1541,8 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
         assert "sector:TECH" in simulate_options.group_constraints
         assert simulate_options.group_constraints["sector:TECH"].max_weight == Decimal("0.20")
         assert simulate_options.enable_workflow_gates is False
-        assert simulate_options.workflow_requires_client_consent is True
-        assert simulate_options.client_consent_already_obtained is True
+        assert simulate_options.workflow_requires_mandate_approval is True
+        assert simulate_options.mandate_approval_already_obtained is True
 
         batch_payload = get_valid_payload()
         batch_payload.pop("options")
@@ -1563,8 +1563,8 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
         assert "sector:TECH" in analyze_options.group_constraints
         assert analyze_options.group_constraints["sector:TECH"].max_weight == Decimal("0.20")
         assert analyze_options.enable_workflow_gates is False
-        assert analyze_options.workflow_requires_client_consent is True
-        assert analyze_options.client_consent_already_obtained is True
+        assert analyze_options.workflow_requires_mandate_approval is True
+        assert analyze_options.mandate_approval_already_obtained is True
 
 
 def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatch):

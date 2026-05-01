@@ -46,8 +46,8 @@ def test_policy_pack_admin_apis_env_repository_roundtrip(monkeypatch):
                 },
                 "workflow_policy": {
                     "enable_workflow_gates": True,
-                    "workflow_requires_client_consent": True,
-                    "client_consent_already_obtained": False,
+                    "workflow_requires_mandate_approval": True,
+                    "mandate_approval_already_obtained": False,
                 },
                 "idempotency_policy": {"replay_enabled": True},
             },
@@ -64,8 +64,8 @@ def test_policy_pack_admin_apis_env_repository_roundtrip(monkeypatch):
         assert upsert_item["constraint_policy"]["group_constraints"]["sector:TECH"] == {
             "max_weight": "0.20"
         }
-        assert upsert_item["workflow_policy"]["workflow_requires_client_consent"] is True
-        assert upsert_item["workflow_policy"]["client_consent_already_obtained"] is False
+        assert upsert_item["workflow_policy"]["workflow_requires_mandate_approval"] is True
+        assert upsert_item["workflow_policy"]["mandate_approval_already_obtained"] is False
         assert upsert_item["idempotency_policy"]["replay_enabled"] is True
 
         get_one = client.get("/api/v1/rebalance/policies/catalog/dpm_standard_v1")

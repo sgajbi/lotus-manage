@@ -182,14 +182,14 @@ def test_policy_pack_apply_constraint_overrides():
 def test_policy_pack_apply_workflow_overrides():
     options = EngineOptions(
         enable_workflow_gates=True,
-        workflow_requires_client_consent=False,
-        client_consent_already_obtained=False,
+        workflow_requires_mandate_approval=False,
+        mandate_approval_already_obtained=False,
     )
     catalog = parse_policy_pack_catalog(
         (
             '{"dpm_standard_v1":{"workflow_policy":{"enable_workflow_gates":false,'
-            '"workflow_requires_client_consent":true,'
-            '"client_consent_already_obtained":true}}}'
+            '"workflow_requires_mandate_approval":true,'
+            '"mandate_approval_already_obtained":true}}}'
         )
     )
     resolution = resolve_effective_policy_pack(
@@ -201,8 +201,8 @@ def test_policy_pack_apply_workflow_overrides():
     selected = resolve_policy_pack_definition(resolution=resolution, catalog=catalog)
     effective_options = apply_policy_pack_to_engine_options(options=options, policy_pack=selected)
     assert effective_options.enable_workflow_gates is False
-    assert effective_options.workflow_requires_client_consent is True
-    assert effective_options.client_consent_already_obtained is True
+    assert effective_options.workflow_requires_mandate_approval is True
+    assert effective_options.mandate_approval_already_obtained is True
 
 
 def test_policy_pack_resolve_replay_enabled_override_and_fallback():

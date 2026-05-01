@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-01T13:49:36.489386+00:00",
+  "generatedAt": "2026-05-01T13:59:55.785661+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -501,21 +501,6 @@
       ],
       "observedTypes": [
         "array"
-      ]
-    },
-    {
-      "semanticId": "lotus.client_consent_already_obtained",
-      "canonicalTerm": "client_consent_already_obtained",
-      "preferredName": "client_consent_already_obtained",
-      "description": "Optional override indicating consent already obtained for gate evaluation.",
-      "example": "client_consent_already_obtained_example",
-      "type": "object",
-      "locations": [
-        "body"
-      ],
-      "observedTypes": [
-        "object",
-        "boolean"
       ]
     },
     {
@@ -1825,6 +1810,21 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.mandate_approval_already_obtained",
+      "canonicalTerm": "mandate_approval_already_obtained",
+      "preferredName": "mandate_approval_already_obtained",
+      "description": "Optional override indicating mandate approval already obtained for gate evaluation.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object",
+        "boolean"
       ]
     },
     {
@@ -3778,11 +3778,11 @@
       ]
     },
     {
-      "semanticId": "lotus.workflow_requires_client_consent",
-      "canonicalTerm": "workflow_requires_client_consent",
-      "preferredName": "workflow_requires_client_consent",
-      "description": "Optional override for workflow client-consent requirement.",
-      "example": "workflow_requires_client_consent_example",
+      "semanticId": "lotus.workflow_requires_mandate_approval",
+      "canonicalTerm": "workflow_requires_mandate_approval",
+      "preferredName": "workflow_requires_mandate_approval",
+      "description": "Optional override for workflow mandate-approval requirement.",
+      "example": "2026-03-02",
       "type": "object",
       "locations": [
         "body"
@@ -20245,20 +20245,20 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_workflow_gates"
           },
           {
-            "name": "items[].workflow_policy.workflow_requires_client_consent",
+            "name": "items[].workflow_policy.workflow_requires_mandate_approval",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.workflow_requires_client_consent",
-            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_client_consent"
+            "semanticId": "lotus.workflow_requires_mandate_approval",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_mandate_approval"
           },
           {
-            "name": "items[].workflow_policy.client_consent_already_obtained",
+            "name": "items[].workflow_policy.mandate_approval_already_obtained",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.client_consent_already_obtained",
-            "attributeRef": "#/attributeCatalog/lotus.client_consent_already_obtained"
+            "semanticId": "lotus.mandate_approval_already_obtained",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_approval_already_obtained"
           },
           {
             "name": "items[].idempotency_policy",
@@ -20420,20 +20420,20 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_workflow_gates"
           },
           {
-            "name": "workflow_policy.workflow_requires_client_consent",
+            "name": "workflow_policy.workflow_requires_mandate_approval",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.workflow_requires_client_consent",
-            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_client_consent"
+            "semanticId": "lotus.workflow_requires_mandate_approval",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_mandate_approval"
           },
           {
-            "name": "workflow_policy.client_consent_already_obtained",
+            "name": "workflow_policy.mandate_approval_already_obtained",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.client_consent_already_obtained",
-            "attributeRef": "#/attributeCatalog/lotus.client_consent_already_obtained"
+            "semanticId": "lotus.mandate_approval_already_obtained",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_approval_already_obtained"
           },
           {
             "name": "idempotency_policy",
@@ -20583,20 +20583,20 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_workflow_gates"
           },
           {
-            "name": "workflow_policy.workflow_requires_client_consent",
+            "name": "workflow_policy.workflow_requires_mandate_approval",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.workflow_requires_client_consent",
-            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_client_consent"
+            "semanticId": "lotus.workflow_requires_mandate_approval",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_mandate_approval"
           },
           {
-            "name": "workflow_policy.client_consent_already_obtained",
+            "name": "workflow_policy.mandate_approval_already_obtained",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.client_consent_already_obtained",
-            "attributeRef": "#/attributeCatalog/lotus.client_consent_already_obtained"
+            "semanticId": "lotus.mandate_approval_already_obtained",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_approval_already_obtained"
           },
           {
             "name": "idempotency_policy",
@@ -20747,20 +20747,20 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_workflow_gates"
           },
           {
-            "name": "item.workflow_policy.workflow_requires_client_consent",
+            "name": "item.workflow_policy.workflow_requires_mandate_approval",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.workflow_requires_client_consent",
-            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_client_consent"
+            "semanticId": "lotus.workflow_requires_mandate_approval",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_mandate_approval"
           },
           {
-            "name": "item.workflow_policy.client_consent_already_obtained",
+            "name": "item.workflow_policy.mandate_approval_already_obtained",
             "location": "body",
             "required": false,
             "type": "object",
-            "semanticId": "lotus.client_consent_already_obtained",
-            "attributeRef": "#/attributeCatalog/lotus.client_consent_already_obtained"
+            "semanticId": "lotus.mandate_approval_already_obtained",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_approval_already_obtained"
           },
           {
             "name": "item.idempotency_policy",
@@ -21356,20 +21356,20 @@
             "attributeRef": "#/attributeCatalog/lotus.enable_workflow_gates"
           },
           {
-            "name": "options.workflow_requires_client_consent",
+            "name": "options.workflow_requires_mandate_approval",
             "location": "body",
             "required": false,
             "type": "boolean",
-            "semanticId": "lotus.workflow_requires_client_consent",
-            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_client_consent"
+            "semanticId": "lotus.workflow_requires_mandate_approval",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_requires_mandate_approval"
           },
           {
-            "name": "options.client_consent_already_obtained",
+            "name": "options.mandate_approval_already_obtained",
             "location": "body",
             "required": false,
             "type": "boolean",
-            "semanticId": "lotus.client_consent_already_obtained",
-            "attributeRef": "#/attributeCatalog/lotus.client_consent_already_obtained"
+            "semanticId": "lotus.mandate_approval_already_obtained",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_approval_already_obtained"
           },
           {
             "name": "options.link_buy_to_same_currency_sell_dependency",

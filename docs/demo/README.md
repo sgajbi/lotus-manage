@@ -73,7 +73,7 @@ curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Typ
 
 Workflow-policy override example:
 ```bash
-export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","workflow_policy":{"enable_workflow_gates":false,"workflow_requires_client_consent":true,"client_consent_already_obtained":true}}}'
+export DPM_POLICY_PACK_CATALOG_JSON='{"dpm_standard_v1":{"version":"1","workflow_policy":{"enable_workflow_gates":false,"workflow_requires_mandate_approval":true,"mandate_approval_already_obtained":true}}}'
 curl -X POST "http://manage.dev.lotus/api/v1/rebalance/simulate" -H "Content-Type: application/json" -H "Idempotency-Key: demo-policy-pack-workflow-1" -H "X-Policy-Pack-Id: dpm_standard_v1" --data-binary "@docs/demo/01_standard_drift.json"
 ```
 

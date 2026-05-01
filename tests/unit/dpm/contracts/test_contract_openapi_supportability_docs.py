@@ -252,8 +252,8 @@ def test_dpm_supportability_and_async_schemas_have_descriptions_and_examples():
 
     workflow_policy_schema = schemas["DpmPolicyPackWorkflowPolicy"]
     _assert_property_has_docs(workflow_policy_schema, "enable_workflow_gates")
-    _assert_property_has_docs(workflow_policy_schema, "workflow_requires_client_consent")
-    _assert_property_has_docs(workflow_policy_schema, "client_consent_already_obtained")
+    _assert_property_has_docs(workflow_policy_schema, "workflow_requires_mandate_approval")
+    _assert_property_has_docs(workflow_policy_schema, "mandate_approval_already_obtained")
 
     idempotency_policy_schema = schemas["DpmPolicyPackIdempotencyPolicy"]
     _assert_property_has_docs(idempotency_policy_schema, "replay_enabled")

@@ -41,8 +41,8 @@ Implementation scope:
     - `single_position_max_weight`
     - `group_constraints`
     - `enable_workflow_gates`
-    - `workflow_requires_client_consent`
-    - `client_consent_already_obtained`
+    - `workflow_requires_mandate_approval`
+    - `mandate_approval_already_obtained`
   - Current non-options policy transformation:
     - `idempotency_policy.replay_enabled` controls simulate replay semantics.
 - Output: `RebalanceResult` with status `READY | PENDING_REVIEW | BLOCKED` and `gate_decision`
@@ -74,8 +74,8 @@ Implementation scope:
     - `single_position_max_weight`
     - `group_constraints`
     - `enable_workflow_gates`
-    - `workflow_requires_client_consent`
-    - `client_consent_already_obtained`
+    - `workflow_requires_mandate_approval`
+    - `mandate_approval_already_obtained`
 - Output: `BatchRebalanceResult` with scenario-level results/metrics/failures.
 - Partial failure behavior:
   - invalid scenario options are isolated to `failed_scenarios`
@@ -471,8 +471,8 @@ Swagger contract quality:
 - `fx_settlement_days`
 - `max_overdraft_by_ccy`
 - `enable_workflow_gates`
-- `workflow_requires_client_consent`
-- `client_consent_already_obtained`
+- `workflow_requires_mandate_approval`
+- `mandate_approval_already_obtained`
 - `link_buy_to_same_currency_sell_dependency`
 - plus shared controls (`valuation_mode`, cash bands, dust/min-notional, data quality blocking)
 - runtime API toggles:

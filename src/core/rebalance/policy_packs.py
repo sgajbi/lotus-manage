@@ -83,14 +83,14 @@ class DpmPolicyPackWorkflowPolicy(BaseModel):
         description="Optional override for deterministic workflow gate output.",
         examples=[True],
     )
-    workflow_requires_client_consent: Optional[bool] = Field(
+    workflow_requires_mandate_approval: Optional[bool] = Field(
         default=None,
-        description="Optional override for workflow client-consent requirement.",
+        description="Optional override for workflow mandate-approval requirement.",
         examples=[False],
     )
-    client_consent_already_obtained: Optional[bool] = Field(
+    mandate_approval_already_obtained: Optional[bool] = Field(
         default=None,
-        description="Optional override indicating consent already obtained for gate evaluation.",
+        description="Optional override indicating mandate approval already obtained for gate evaluation.",
         examples=[False],
     )
 
@@ -347,13 +347,13 @@ def apply_policy_pack_to_engine_options(
         updates["group_constraints"] = policy_pack.constraint_policy.group_constraints
     if policy_pack.workflow_policy.enable_workflow_gates is not None:
         updates["enable_workflow_gates"] = policy_pack.workflow_policy.enable_workflow_gates
-    if policy_pack.workflow_policy.workflow_requires_client_consent is not None:
-        updates["workflow_requires_client_consent"] = (
-            policy_pack.workflow_policy.workflow_requires_client_consent
+    if policy_pack.workflow_policy.workflow_requires_mandate_approval is not None:
+        updates["workflow_requires_mandate_approval"] = (
+            policy_pack.workflow_policy.workflow_requires_mandate_approval
         )
-    if policy_pack.workflow_policy.client_consent_already_obtained is not None:
-        updates["client_consent_already_obtained"] = (
-            policy_pack.workflow_policy.client_consent_already_obtained
+    if policy_pack.workflow_policy.mandate_approval_already_obtained is not None:
+        updates["mandate_approval_already_obtained"] = (
+            policy_pack.workflow_policy.mandate_approval_already_obtained
         )
     if not updates:
         return options
