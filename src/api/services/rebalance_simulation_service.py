@@ -21,6 +21,8 @@ from src.api.routers.rebalance_runs import (
 from src.core.common.canonical import hash_canonical_payload
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance.policy_packs import (
+    DpmEffectivePolicyPackResolution,
+    DpmPolicyPackDefinition,
     apply_policy_pack_to_engine_options,
     resolve_policy_pack_definition,
     resolve_policy_pack_replay_enabled,
@@ -125,6 +127,17 @@ def build_comparison_metric(
     )
 
 
+def resolve_selected_policy_pack_definition(
+    policy_pack: DpmEffectivePolicyPackResolution,
+) -> Optional[DpmPolicyPackDefinition]:
+    if policy_pack.selected_policy_pack_id is None:
+        return None
+    return resolve_policy_pack_definition(
+        resolution=policy_pack,
+        catalog=load_dpm_policy_pack_catalog(),
+    )
+
+
 def simulate_rebalance(
     *,
     request: RebalanceRequest,
@@ -147,10 +160,7 @@ def simulate_rebalance(
         request_policy_pack_id=policy_pack_id,
         tenant_id=tenant_id,
     )
-    policy_pack_definition = resolve_policy_pack_definition(
-        resolution=policy_pack,
-        catalog=load_dpm_policy_pack_catalog(),
-    )
+    policy_pack_definition = resolve_selected_policy_pack_definition(policy_pack)
     effective_options = apply_policy_pack_to_engine_options(
         options=request.options,
         policy_pack=policy_pack_definition,
@@ -250,10 +260,7 @@ def execute_batch_analysis(
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
     )
-    policy_definition = resolve_policy_pack_definition(
-        resolution=policy_resolution,
-        catalog=load_dpm_policy_pack_catalog(),
-    )
+    policy_definition = resolve_selected_policy_pack_definition(policy_resolution)
 
     for scenario_name in sorted(request.scenarios.keys()):
         scenario = request.scenarios[scenario_name]

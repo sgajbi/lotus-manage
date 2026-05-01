@@ -78,6 +78,27 @@ def test_simulate_endpoint_success(client):
     }
 
 
+def test_simulate_skips_policy_catalog_when_policy_packs_disabled(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "false")
+
+    def _fail_if_catalog_loaded():
+        raise AssertionError("policy catalog should not be loaded when policy packs are disabled")
+
+    monkeypatch.setattr(
+        "src.api.services.rebalance_simulation_service.load_dpm_policy_pack_catalog",
+        _fail_if_catalog_loaded,
+    )
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=get_valid_payload(),
+        headers={"Idempotency-Key": "test-key-policy-disabled-no-catalog"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "READY"
+
+
 def test_simulate_missing_idempotency_key_422(client):
     """Verifies that Idempotency-Key is mandatory."""
     payload = get_valid_payload()
@@ -1141,6 +1162,26 @@ def test_analyze_endpoint_success(client):
             metrics["gross_turnover_notional_base"]["currency"]
             == payload["portfolio_snapshot"]["base_currency"]
         )
+
+
+def test_analyze_skips_policy_catalog_when_policy_packs_disabled(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "false")
+
+    def _fail_if_catalog_loaded():
+        raise AssertionError("policy catalog should not be loaded when policy packs are disabled")
+
+    monkeypatch.setattr(
+        "src.api.services.rebalance_simulation_service.load_dpm_policy_pack_catalog",
+        _fail_if_catalog_loaded,
+    )
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+
+    response = client.post("/api/v1/rebalance/analyze", json=payload)
+
+    assert response.status_code == 200
+    assert set(response.json()["results"].keys()) == {"baseline"}
 
 
 def test_analyze_async_accept_and_lookup_succeeded(client):
