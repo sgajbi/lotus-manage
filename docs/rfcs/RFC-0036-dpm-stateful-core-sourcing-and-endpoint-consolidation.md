@@ -523,6 +523,30 @@ Exit evidence:
 4. RFC-0036 implementation checklist references the improved platform baseline,
 5. no `lotus-manage` runtime behavior has changed yet.
 
+Slice 0 implementation evidence captured on 2026-05-01:
+
+1. Gap addressed: generated backend services had OpenAPI, supported-features, no-sensitive,
+   observability, and health scaffolding, but endpoint certification remained mostly
+   documentation-only instead of a machine-readable gate.
+2. Platform branch: `lotus-platform` `feat/rfc-0036-platform-scaffold-certification`.
+3. Platform commit: `9c79860 Scaffold endpoint certification gate`.
+4. Platform change: `automation/New-Lotus-Service.ps1` now scaffolds
+   `docs/operations/endpoint-certification-ledger.json` and
+   `scripts/endpoint_certification_gate.py`; `platform-standards/templates/Makefile.backend.template`
+   now includes `endpoint-certification-gate` in `lint`, `check`, and `ci`.
+5. Local validation:
+   - `python -m pytest tests/unit/test_repository_hygiene_scaffold_contract.py -q`
+   - `python -m pytest tests/unit/test_repository_hygiene_scaffold_contract.py tests/unit/test_ci_governance_documentation_contract.py tests/unit/test_analytics_ui_scaffold_ci_enforcement.py -q`
+   - `python -m ruff check tests/unit/test_repository_hygiene_scaffold_contract.py`
+   - `python -m ruff format --check tests/unit/test_repository_hygiene_scaffold_contract.py`
+   - `git diff --check`
+6. GitHub validation: `lotus-platform` Remote Feature Lane run `25216261038` passed for commit
+   `9c79860e57bb5df2343ae69e317175b9e1a2fc27`.
+7. Heartbeat evidence: `lotus-platform` heartbeat `heartbeat-20260501T133105Z` completed with
+   `attention_required` due to pre-existing historical background-run and stale mesh-certification
+   advisory items; no blocking Slice 0 finding was reported.
+8. Runtime behavior: no `lotus-manage` runtime behavior changed in Slice 0.
+
 ### Slice 1: Contract Audit And No-Go Decisions
 
 1. Reconfirm `lotus-core` source-data products available for DPM execution.
