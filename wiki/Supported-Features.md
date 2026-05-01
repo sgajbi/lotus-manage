@@ -17,6 +17,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Workflow review gates | `/rebalance/runs/*/workflow*`, `/rebalance/workflow/decisions*` | Feature-gated | workflow service tests and demo scenario 29 |
 | Policy-pack supportability | `/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
 | Integration capabilities | `/integration/capabilities`, `/platform/capabilities` | Supported | capability contract tests |
+| Solver target generation | `POST /rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
 
 ## Non-Functional Capabilities
 

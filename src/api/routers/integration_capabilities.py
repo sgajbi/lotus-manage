@@ -5,6 +5,8 @@ from typing import Literal
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
 
+from src.core.common.capabilities import has_solver_dependencies
+
 ConsumerSystem = Literal["lotus-gateway", "lotus-performance", "lotus-manage", "UI", "UNKNOWN"]
 
 
@@ -156,6 +158,7 @@ async def get_integration_capabilities(
 ) -> IntegrationCapabilitiesResponse:
     workflow_enabled = _env_bool("DPM_WORKFLOW_ENABLED", False)
     inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
+    solver_available = has_solver_dependencies()
 
     supported_input_modes = ["portfolio_id"]
     if inline_bundle_enabled:
@@ -188,6 +191,12 @@ async def get_integration_capabilities(
                 enabled=workflow_enabled,
                 owner_service="lotus-manage",
                 description="Discretionary mandate run review gates for approve, reject, and request-changes decisions.",
+            ),
+            FeatureCapability(
+                key="dpm.execution.solver_target_generation",
+                enabled=solver_available,
+                owner_service="lotus-manage",
+                description="Optional solver-backed target generation for discretionary mandate rebalance requests when solver dependencies are installed.",
             ),
             FeatureCapability(
                 key="manage.observability.action_register_supportability",

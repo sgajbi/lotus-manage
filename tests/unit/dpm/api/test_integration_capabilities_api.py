@@ -1,9 +1,12 @@
 from fastapi.testclient import TestClient
 
+import src.api.routers.integration_capabilities as capabilities_router
 from src.api.main import app
 
 
-def test_integration_capabilities_default_contract():
+def test_integration_capabilities_default_contract(monkeypatch):
+    monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: True)
+
     with TestClient(app) as client:
         response = client.get(
             "/integration/capabilities?consumer_system=lotus-gateway&tenant_id=default"
@@ -21,6 +24,7 @@ def test_integration_capabilities_default_contract():
     feature_keys = {item["key"] for item in body["features"]}
     assert "dpm.execution.stateful_portfolio_id" in feature_keys
     assert "dpm.execution.stateless_inline_bundle" in feature_keys
+    assert "dpm.execution.solver_target_generation" in feature_keys
     assert "manage.observability.action_register_supportability" in feature_keys
 
 
@@ -28,6 +32,7 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "false")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", "false")
     monkeypatch.setenv("DPM_POLICY_VERSION", "tenant-x-v2")
+    monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
 
     with TestClient(app) as client:
         response = client.get(
@@ -41,6 +46,7 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     assert body["policy_version"] == "tenant-x-v2"
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.workflow.review_gate"] is False
+    assert features["dpm.execution.solver_target_generation"] is False
     assert body["supported_input_modes"] == ["portfolio_id"]
 
 
