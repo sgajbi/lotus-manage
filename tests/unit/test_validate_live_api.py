@@ -36,9 +36,53 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
                 },
             )
         if path == "/openapi.json":
-            return _json_response(200, {"paths": {"/api/v1/rebalance/simulate": {}}})
+            return _json_response(
+                200,
+                {
+                    "paths": {
+                        "/metrics": {
+                            "get": {
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "text/plain; version=0.0.4": {
+                                                "schema": {"type": "string"},
+                                                "examples": {"prometheus": {"value": "metric 1"}},
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "/api/v1/rebalance/simulate": {
+                            "post": {
+                                "requestBody": {
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {"type": "object"},
+                                            "examples": {"default": {"value": {}}},
+                                        }
+                                    }
+                                },
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "application/json": {
+                                                "schema": {"type": "object"},
+                                                "examples": {"default": {"value": {}}},
+                                            }
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            )
         if path == "/api/v1/rebalance/proposals":
             return _json_response(404, {"detail": "Not Found"})
+        if path == "/api/v1/rebalance/simulate":
+            return _json_response(409, {"detail": "DPM_STATEFUL_INPUT_DISABLED"})
         if path == "/api/v1/rebalance/analyze/async":
             async_posts += 1
             if async_posts == 1:
@@ -68,7 +112,9 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
         "ready",
         "capabilities_truthful_default",
         "openapi_no_advisory_or_proposals",
+        "openapi_certification_contract",
         "removed_proposal_route_404",
+        "stateful_core_sourcing_guard",
         "async_duplicate_correlation_conflict",
         "supportability_postgres_summary",
         "metrics_exposed_bounded_supportability",
@@ -100,9 +146,32 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
                 },
             )
         if path == "/openapi.json":
-            return _json_response(200, {"paths": {"/api/v1/rebalance/proposals": {}}})
+            return _json_response(
+                200,
+                {
+                    "paths": {
+                        "/metrics": {
+                            "get": {
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "text/plain; version=0.0.4": {
+                                                "schema": {"type": "string"},
+                                                "examples": {"prometheus": {"value": "metric 1"}},
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "/api/v1/rebalance/proposals": {},
+                    }
+                },
+            )
         if path == "/api/v1/rebalance/proposals":
             return _json_response(404, {"detail": "Not Found"})
+        if path == "/api/v1/rebalance/simulate":
+            return _json_response(409, {"detail": "DPM_STATEFUL_INPUT_DISABLED"})
         if path == "/api/v1/rebalance/analyze/async":
             return _json_response(409, {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"})
         if path == "/api/v1/rebalance/supportability/summary":
@@ -125,3 +194,89 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
     failure_names = {failure["name"] for failure in summary["failures"]}
     assert "openapi_no_advisory_or_proposals" in failure_names
     assert json.dumps(summary)
+
+
+def test_live_api_validation_reports_stale_openapi_certification_contract(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "scripts.validate_live_api._load_demo_payload",
+        lambda _filename: {
+            "input_mode": "stateless",
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
+        },
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if path == "/health/ready":
+            return _json_response(200, {"status": "ready"})
+        if path == "/api/v1/integration/capabilities":
+            return _json_response(
+                200,
+                {
+                    "supported_input_modes": ["stateless"],
+                    "features": [
+                        {"key": "dpm.execution.stateful_portfolio_id", "enabled": False},
+                        {"key": "dpm.execution.stateless", "enabled": True},
+                    ],
+                },
+            )
+        if path == "/openapi.json":
+            return _json_response(
+                200,
+                {
+                    "paths": {
+                        "/metrics": {
+                            "get": {
+                                "responses": {
+                                    "200": {"content": {"application/json": {"schema": {}}}}
+                                }
+                            }
+                        },
+                        "/api/v1/rebalance/simulate": {
+                            "post": {
+                                "requestBody": {
+                                    "content": {"application/json": {"schema": {"type": "object"}}}
+                                },
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "application/json": {"schema": {"type": "object"}}
+                                        }
+                                    }
+                                },
+                            }
+                        },
+                    }
+                },
+            )
+        if path == "/api/v1/rebalance/proposals":
+            return _json_response(404, {"detail": "Not Found"})
+        if path == "/api/v1/rebalance/simulate":
+            return _json_response(409, {"detail": "DPM_STATEFUL_INPUT_DISABLED"})
+        if path == "/api/v1/rebalance/analyze/async":
+            return _json_response(409, {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"})
+        if path == "/api/v1/rebalance/supportability/summary":
+            return _json_response(
+                200,
+                {"store_backend": "POSTGRES", "run_count": 1, "operation_count": 1},
+            )
+        if path == "/metrics":
+            return httpx.Response(200, text="lotus_manage_action_register_supportability_total 1")
+        raise AssertionError(f"Unexpected request path: {path}")
+
+    results = run_live_api_validation(
+        "http://manage.test",
+        include_demo_pack=False,
+        transport=httpx.MockTransport(handler),
+    )
+    summary = summarize(results)
+
+    failure_names = {failure["name"] for failure in summary["failures"]}
+    assert "openapi_certification_contract" in failure_names
+    failure = next(
+        failure
+        for failure in summary["failures"]
+        if failure["name"] == "openapi_certification_contract"
+    )
+    assert failure["details"]["missing_example_count"] == 3
+    assert failure["details"]["metrics_media_types"] == ["application/json"]

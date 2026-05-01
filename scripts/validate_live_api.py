@@ -84,12 +84,89 @@ def _probe_openapi_boundary(client: httpx.Client) -> ProbeResult:
     )
 
 
+def _content_has_example(content: dict[str, Any]) -> bool:
+    return bool(content.get("example") or content.get("examples"))
+
+
+def _probe_openapi_certification_contract(client: httpx.Client) -> ProbeResult:
+    response = client.get("/openapi.json")
+    body = response.json()
+    missing_examples: list[str] = []
+    for path, operations in sorted(body.get("paths", {}).items()):
+        for method, operation in sorted(operations.items()):
+            if method not in {"get", "post", "put", "patch", "delete"}:
+                continue
+            request_content = (
+                operation.get("requestBody", {}).get("content", {}).get("application/json")
+            )
+            if isinstance(request_content, dict) and not _content_has_example(request_content):
+                missing_examples.append(f"{method.upper()} {path} request")
+
+            for status_code, route_response in sorted(operation.get("responses", {}).items()):
+                response_content = route_response.get("content", {}).get("application/json")
+                if isinstance(response_content, dict) and not _content_has_example(
+                    response_content
+                ):
+                    missing_examples.append(f"{method.upper()} {path} {status_code} response")
+
+    metrics_content = (
+        body.get("paths", {})
+        .get("/metrics", {})
+        .get("get", {})
+        .get("responses", {})
+        .get("200", {})
+        .get("content", {})
+    )
+    metrics_media_types = sorted(metrics_content)
+    metrics_is_prometheus = (
+        "text/plain; version=0.0.4" in metrics_content and "application/json" not in metrics_content
+    )
+
+    return _result(
+        "openapi_certification_contract",
+        response.status_code == 200 and missing_examples == [] and metrics_is_prometheus,
+        {
+            "status_code": response.status_code,
+            "missing_examples": missing_examples[:20],
+            "missing_example_count": len(missing_examples),
+            "metrics_media_types": metrics_media_types,
+        },
+    )
+
+
 def _probe_removed_proposal_route(client: httpx.Client) -> ProbeResult:
     response = client.get("/api/v1/rebalance/proposals")
     return _result(
         "removed_proposal_route_404",
         response.status_code == 404,
         {"status_code": response.status_code, "body": response.text[:200]},
+    )
+
+
+def _probe_stateful_core_sourcing_guard(client: httpx.Client) -> ProbeResult:
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json={
+            "input_mode": "stateful",
+            "stateful_input": {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "as_of": "2026-03-25",
+                "mandate_id": "mandate_balanced_discretionary",
+                "model_portfolio_id": "model_balanced_sgd",
+                "tenant_id": "tenant_001",
+                "booking_center_code": "SG",
+            },
+        },
+        headers={"Idempotency-Key": f"live-stateful-disabled-{uuid.uuid4().hex[:10]}"},
+    )
+    body = response.json() if response.content else {}
+    return _result(
+        "stateful_core_sourcing_guard",
+        response.status_code == 409 and body.get("detail") == "DPM_STATEFUL_INPUT_DISABLED",
+        {
+            "status_code": response.status_code,
+            "body": body,
+        },
     )
 
 
@@ -166,7 +243,9 @@ def run_live_api_validation(
             _probe_ready,
             _probe_capabilities,
             _probe_openapi_boundary,
+            _probe_openapi_certification_contract,
             _probe_removed_proposal_route,
+            _probe_stateful_core_sourcing_guard,
             _probe_async_duplicate_correlation,
             _probe_supportability_summary,
             _probe_metrics,

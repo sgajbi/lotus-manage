@@ -290,6 +290,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is a validation hardening of the already
   documented Swagger certification standard.
 
+## RFC36-S11-001: Live manage API proof did not verify deployed OpenAPI certification drift
+
+- Date: 2026-05-02
+- Scope: `scripts/validate_live_api.py`, canonical `manage.dev.lotus` API proof, stateful
+  core-sourcing guardrails
+- Finding: direct canonical-host API validation against `http://manage.dev.lotus` passed the
+  existing live probes, but a critical artifact review showed the running service still advertised
+  `/metrics` as JSON and missed 46 JSON request/response examples. The live validator was checking
+  for advisory/proposal route absence, but not full deployed Swagger certification quality.
+- Action: added a live `openapi_certification_contract` probe that fails on missing JSON
+  request/response examples or incorrect `/metrics` media type; added a live
+  `stateful_core_sourcing_guard` probe proving stateful execution remains disabled until governed
+  `lotus-core` resolver proof exists; added unit tests proving stale deployed Swagger is caught.
+- Status: fixed in validator and branch code; canonical runtime proof remains blocked until the
+  running `lotus-manage` image is refreshed and the live validator returns 0 failures.
+- Wiki decision: wiki current-state pages updated to clarify manage/core integration posture and
+  live evidence standard.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

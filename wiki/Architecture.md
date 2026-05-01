@@ -6,6 +6,9 @@
 - management-side domain logic in `src/core/dpm/` and `src/core/dpm_runs/`
 - PostgreSQL-backed persistence and migrations under `src/infrastructure/`
 - consumed primarily through `lotus-gateway`
+- stateless execution is active and advertised
+- stateful core-sourced execution is modeled, guarded, and intentionally disabled until upstream
+  resolver certification is complete
 
 ```mermaid
 flowchart LR
@@ -19,25 +22,50 @@ flowchart LR
     Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
 ```
 
+## Execution Modes
+
+```mermaid
+flowchart TD
+    Request[POST /api/v1/rebalance/simulate or analyze] --> Mode{input_mode}
+    Mode -->|stateless| Bundle[Caller supplies portfolio, market data, model, shelf, and options]
+    Bundle --> Engine[DPM engine]
+    Mode -->|stateful| Gate{Stateful sourcing enabled and core base URL configured?}
+    Gate -->|no| Disabled[DPM_STATEFUL_INPUT_DISABLED or DPM_CORE_RESOLVER_UNAVAILABLE]
+    Gate -->|yes, future| Core[lotus-core DPM execution context]
+    Core --> Transform[Transform governed context to engine input]
+    Transform --> Engine
+    Engine --> Result[READY, PENDING_REVIEW, or BLOCKED]
+    Result --> Supportability[Run record, artifact, lineage, workflow, metrics]
+```
+
+The current implemented product mode is `stateless`. Stateful request models, resolver client,
+transformation helpers, and lineage fields are present so the integration boundary is explicit, but
+capabilities do not advertise stateful execution until the governed `lotus-core` source-data
+contract is live-certified.
+
 ## Evidence flow
 
 ```mermaid
 flowchart TD
     Validator[scripts/validate_live_api.py] --> DemoPack[Live demo pack]
     Validator --> Boundary[OpenAPI boundary probes]
+    Validator --> Swagger[OpenAPI certification contract]
     Validator --> Capabilities[Capability truth probes]
+    Validator --> CoreGuard[Stateful core-sourcing guard]
     Validator --> Supportability[Postgres supportability probes]
     Validator --> Metrics[Bounded metrics probes]
     DemoPack --> Manage[lotus-manage API]
     Boundary --> Manage
+    Swagger --> Manage
     Capabilities --> Manage
+    CoreGuard --> Manage
     Supportability --> Manage
     Metrics --> Manage
     Manage --> DpmDb[(DPM PostgreSQL schema)]
 ```
 
-This evidence path is API-first. It is intended for `lotus-manage` certification before broader
-Gateway or Workbench integration is treated as a product-surface dependency.
+This evidence path is API-first. It certifies `lotus-manage` and its managed core-sourcing posture
+before broader Gateway or Workbench product-surface integration is treated as proof.
 
 ## Code map
 

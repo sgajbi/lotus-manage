@@ -1233,6 +1233,24 @@ Implementation evidence captured on 2026-05-01:
 17. Strengthened the repo-native OpenAPI quality gate so it also fails when JSON request or
     response content lacks `example` or `examples`. Added focused gate tests for missing request
     examples and missing response examples.
+18. Gold-pass audit on 2026-05-02 tightened live manage API validation:
+    - added a live `openapi_certification_contract` probe that fails if any JSON request/response
+      content lacks examples or `/metrics` is not documented as Prometheus text,
+    - added a live `stateful_core_sourcing_guard` probe that proves stateful execution remains
+      blocked with `DPM_STATEFUL_INPUT_DISABLED` until the governed `lotus-core` resolver contract
+      is live-certified,
+    - added unit tests that prove the live validator catches stale Swagger contracts.
+19. Direct canonical-host manage API evidence against `http://manage.dev.lotus` on 2026-05-02
+    produced 9 passing probes and 1 failure:
+    - passing: demo pack, readiness, capability truth, no advisory/proposal OpenAPI paths, removed
+      proposal route 404, stateful sourcing guard, async duplicate-correlation conflict,
+      PostgreSQL supportability summary, and bounded supportability metric exposure,
+    - failing: live `/openapi.json` was stale relative to this branch; it still advertised
+      `/metrics` as JSON and missed 46 JSON request/response examples.
+20. Critical evidence review outcome: the branch implementation and local gates contain the fix,
+    but canonical runtime proof is not gold-pass complete until the running `lotus-manage` image is
+    refreshed from this branch and `scripts/validate_live_api.py --base-url http://manage.dev.lotus`
+    returns 0 failures.
 
 ### Slice 11: Implementation Proof
 
@@ -1315,6 +1333,83 @@ Exit evidence:
 4. platform context and wiki truth match repo-local implementation reality,
 5. final closure notes include the skills/guidance/context review outcome,
 6. branch and CI posture are clean.
+
+## Gold-Pass Assessment
+
+Assessment date: 2026-05-02
+
+Current decision: **not yet final gold-pass complete**. Slices 0 through 10 have substantial
+implementation evidence and multiple hardening passes. Slices 11 through 13 are still open because
+live canonical runtime proof, second-last implementation review, and final closure evidence have
+not fully converged.
+
+### Slice-By-Slice Completeness
+
+| Slice | Current assessment | Evidence and residual gap |
+| --- | --- | --- |
+| Slice 0 Platform automation | Completed for the identified scaffolding gap | Platform commit `9c79860` added endpoint-certification scaffolding and passed Remote Feature Lane. |
+| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; `sgajbi/lotus-core#330` tracks the missing DPM execution-context contract; stateful promotion remains blocked. |
+| Slice 2 Cleanup and structure | Completed for first-pass cleanup | Review controls and documentation regression tests are in place; historical advisory rationale is deliberately retained only where it states ownership boundaries. |
+| Slice 3 Endpoint consolidation | Completed | Duplicate unversioned product routes and platform capability aliases were removed; route inventory and vocabulary gates prove canonical `/api/v1` posture. |
+| Slice 4 Advisory cleanup | Completed for active runtime ownership | Advisory/proposal routes and active proposal namespaces are absent; `lotus-advise` remains documented as the owner of advisor-led workflows. |
+| Slice 5 Stateless envelope | Completed | Simulate/analyze/async analyze use explicit `input_mode=stateless` envelopes; direct legacy bodies are rejected. |
+| Slice 6 Core resolver seam | Completed for modeled disabled state | Typed stateful selector/context models, bounded resolver client, transformation helpers, and lineage fields exist; live core-backed execution remains blocked by the upstream contract gap. |
+| Slice 7 Stateful certification | Partially completed | Capability publication is safely gated and mocked stateful execution paths are tested. Live stateful promotion is intentionally incomplete until core issue #330 is resolved. |
+| Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. New stateful DPM source-data products must wait for the upstream resolver contract. |
+| Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
+| Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
+| Slice 11 Implementation proof | Not complete | Direct canonical manage API evidence found stale deployed OpenAPI on the running stack. The stack must be refreshed and live validator rerun to 0 failures. |
+| Slice 12 Second-last hardening | Not complete | Requires post-proof review after refreshed live evidence is clean. |
+| Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
+
+### What Was Truly Completed
+
+1. `lotus-manage` now has a canonical versioned DPM API surface with unversioned product aliases
+   removed.
+2. Advisory proposal ownership has been removed from active runtime/API surface and documented as
+   `lotus-advise` responsibility.
+3. Stateless execution is explicit through request envelopes.
+4. Stateful `portfolio_id` execution is modeled with a bounded `lotus-core` resolver seam and
+   lineage fields, but remains disabled by default.
+5. Capability discovery truthfully reports only `stateless` mode until resolver readiness is proven.
+6. Mesh, observability, OpenAPI, API vocabulary, no-alias, supportability, and documentation
+   regression gates now cover the implemented surface.
+
+### Quality Improvements Made
+
+1. Centralized unsupported-query rejection and applied it to control-plane capability discovery.
+2. Added endpoint-certification wiki coverage enforcement against the live OpenAPI route inventory.
+3. Added schema-derived Swagger examples and promoted request/response example checks into the
+   repo-native OpenAPI quality gate.
+4. Corrected `/metrics` Swagger semantics to Prometheus text exposition in branch code.
+5. Expanded live API validation so stale deployed OpenAPI cannot pass implementation proof.
+6. Added bounded metrics and monitoring contracts for execution, async operations, policy-pack
+   resolution, workflow decisions, run supportability, and stateful resolver posture.
+
+### Debt Removed
+
+1. Duplicate unversioned product endpoints and stale platform capability aliases.
+2. Advisory/proposal active runtime remnants and generated proposal package remnants.
+3. Advisory-era client-consent vocabulary in DPM workflow policy and error semantics.
+4. Prose-only endpoint certification coverage and prose-only monitoring/dashboard posture.
+5. Silent direct-source camelCase query fallback on the capabilities endpoint.
+
+### Testing And Evidence
+
+1. Local `make check` passed after live-validator hardening with 491 unit tests.
+2. Remote Feature Lane passed for the latest pushed certification commits.
+3. Direct canonical-host manage API validation against `http://manage.dev.lotus` captured a useful
+   partial proof: 9 passing probes and 1 stale OpenAPI failure.
+4. The live proof failure is actionable and correctly blocks final closure until the canonical
+   runtime is refreshed to the current branch image.
+
+### Standard Assessment
+
+The implementation has not yet genuinely reached the expected gold standard because Slice 11 found
+runtime/schema drift in the canonical environment. The codebase is stronger than it was before this
+pass, and the new validator prevents the same superficial live proof from passing again, but final
+gold-pass status requires refreshed live evidence with 0 manage API failures and a second-last
+review over that evidence.
 
 ## Test Plan
 

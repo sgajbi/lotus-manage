@@ -21,6 +21,15 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Solver target generation | `POST /api/v1/rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
 | Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; not advertised in capabilities unless stateful sourcing is enabled and `DPM_CORE_BASE_URL` is configured; live promotion remains blocked by `sgajbi/lotus-core#330` | resolver unit tests, transformation tests, feature-gate API test, mocked simulate/analyze/async lineage tests, RFC-0036 evidence |
 
+```mermaid
+flowchart LR
+    Stateless[Stateless execution] --> Supported[Advertised today]
+    Stateful[Stateful portfolio_id execution] --> Modeled[Modeled and guarded]
+    Modeled --> Blocked[Not promoted until lotus-core DPM execution context is certified]
+    Supported --> Evidence[Demo pack, OpenAPI, live API probes]
+    Blocked --> CoreIssue[sgajbi/lotus-core#330]
+```
+
 ## Non-Functional Capabilities
 
 | Capability | Current state | Evidence |
@@ -41,6 +50,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Stateful resolver metrics | Enforced with bounded labels | observability tests and stateful resolver API tests |
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
+| Live manage API proof | Strengthened; final gold-pass pending refreshed runtime evidence | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` now checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
 
 ## Explicit Non-Goals
 
@@ -54,3 +64,12 @@ performance analytics authority, or UI composition.
 
 Use `docs/demo/README.md` for executable API demo payloads. Demo evidence should be captured from
 the live application only after the relevant API, persistence, and supportability checks pass.
+
+For RFC-0036 final proof, use the direct manage API path first:
+
+```powershell
+python scripts/validate_live_api.py --base-url http://manage.dev.lotus --json-output output/rfc-0036-gold-pass/live-api-summary.json
+```
+
+Final proof is not complete if the validator reports stale OpenAPI certification drift, even when
+business execution probes pass.

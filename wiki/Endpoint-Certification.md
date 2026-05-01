@@ -87,9 +87,13 @@ Downstream consumers:
 Evidence commands:
 
 ```bash
-python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/api/test_observability_api.py::test_action_register_supportability_metric_labels_are_bounded tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_json_requests_and_responses_have_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_metrics_openapi_documents_prometheus_text_response -q
+python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/api/test_observability_api.py::test_action_register_supportability_metric_labels_are_bounded tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_json_requests_and_responses_have_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_metrics_openapi_documents_prometheus_text_response tests/unit/test_validate_live_api.py -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+The live validator now also checks the deployed OpenAPI certification contract. A runtime with
+passing business probes but stale Swagger examples or a JSON `/metrics` contract is not considered
+gold-pass certified.
 
 ## Certified endpoint: capabilities discovery
 
