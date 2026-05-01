@@ -3,7 +3,13 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
+from src.api.simulation_examples import (
+    SIMULATE_BLOCKED_EXAMPLE,
+    SIMULATE_PENDING_EXAMPLE,
+    SIMULATE_READY_EXAMPLE,
+)
 from src.api.main import app
+from src.core.models import RebalanceResult
 
 
 def _strict_openapi_validation_enabled() -> bool:
@@ -318,6 +324,25 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
     ]
 
 
+@pytest.mark.parametrize(
+    "example",
+    [SIMULATE_READY_EXAMPLE, SIMULATE_PENDING_EXAMPLE, SIMULATE_BLOCKED_EXAMPLE],
+)
+def test_simulate_response_examples_are_complete_rebalance_results(example):
+    _guard_strict_validation()
+
+    result = RebalanceResult.model_validate(example["value"])
+
+    assert result.before.total_value.currency
+    assert result.after_simulated.total_value.currency
+    assert result.universe.coverage.price_coverage_pct is not None
+    assert result.target.targets
+    assert result.reconciliation is not None
+    assert result.diagnostics.data_quality
+    assert result.gate_decision is not None
+    assert result.lineage.request_hash.startswith("sha256:")
+
+
 def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():
     _guard_strict_validation()
     with TestClient(app) as client:
@@ -344,6 +369,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     header_names = {param["name"] for param in analyze_async["parameters"]}
     assert "x-correlation-id" in header_names
     assert "x-policy-pack-id" in header_names
+    assert "x-tenant-policy-pack-id" in header_names
     assert "x-tenant-id" in header_names
 
     simulate = openapi["paths"]["/api/v1/rebalance/simulate"]["post"]
@@ -353,6 +379,19 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert simulate["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/RebalanceResult"
     )
+    assert "Do not use it for advisor-led proposal workflows" in simulate["description"]
+    assert (
+        "Reusing an idempotency key with a different canonical request hash returns `409`"
+        in (simulate["description"])
+    )
+    simulate_params = {param["name"] for param in simulate["parameters"]}
+    assert {
+        "idempotency-key",
+        "x-correlation-id",
+        "x-policy-pack-id",
+        "x-tenant-policy-pack-id",
+        "x-tenant-id",
+    }.issubset(simulate_params)
 
     analyze = openapi["paths"]["/api/v1/rebalance/analyze"]["post"]
     assert analyze["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
@@ -365,6 +404,13 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "Use this synchronous route when the caller needs immediate results"
         in analyze["description"]
     )
+    analyze_params = {param["name"] for param in analyze["parameters"]}
+    assert {
+        "x-correlation-id",
+        "x-policy-pack-id",
+        "x-tenant-policy-pack-id",
+        "x-tenant-id",
+    }.issubset(analyze_params)
     analyze_examples = analyze["responses"]["200"]["content"]["application/json"]["examples"]
     assert "batch_result" in analyze_examples
     analyze_value = analyze_examples["batch_result"]["value"]

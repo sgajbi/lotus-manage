@@ -1620,6 +1620,55 @@ def test_dpm_policy_pack_catalog_overrides_options_using_tenant_resolver(client,
         assert simulate_options.max_turnover_pct == Decimal("0.02")
 
 
+def test_simulate_policy_pack_explicit_tenant_header_precedence_over_resolver(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_MAP_JSON", '{"tenant_001":"tenant_resolver_pack"}')
+    monkeypatch.setenv(
+        "DPM_POLICY_PACK_CATALOG_JSON",
+        (
+            '{"tenant_resolver_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.02"}},'
+            '"tenant_header_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.07"}}}'
+        ),
+    )
+    payload = get_valid_payload()
+    from src.core.models import (
+        EngineOptions,
+        MarketDataSnapshot,
+        ModelPortfolio,
+        PortfolioSnapshot,
+        ShelfEntry,
+    )
+    from src.core.rebalance.engine import run_simulation as real_run
+
+    seed_payload = get_valid_payload()
+    real_result = real_run(
+        portfolio=PortfolioSnapshot(**seed_payload["portfolio_snapshot"]),
+        market_data=MarketDataSnapshot(**seed_payload["market_data_snapshot"]),
+        model=ModelPortfolio(**seed_payload["model_portfolio"]),
+        shelf=[ShelfEntry(**entry) for entry in seed_payload["shelf_entries"]],
+        options=EngineOptions(**seed_payload["options"]),
+        request_hash="seed-policy-pack-tenant-header",
+    )
+
+    with patch("src.api.main.run_simulation") as mock_run:
+        mock_run.return_value = real_result
+
+        simulate = client.post(
+            "/api/v1/rebalance/simulate",
+            json=payload,
+            headers={
+                "Idempotency-Key": "test-key-policy-pack-tenant-header-simulate",
+                "X-Tenant-Id": "tenant_001",
+                "X-Tenant-Policy-Pack-Id": "tenant_header_pack",
+            },
+        )
+
+    assert simulate.status_code == 200
+    simulate_options = mock_run.call_args.kwargs["options"]
+    assert simulate_options.max_turnover_pct == Decimal("0.07")
+
+
 def test_dpm_policy_pack_idempotency_override_disables_replay(client, monkeypatch):
     monkeypatch.setenv("DPM_IDEMPOTENCY_REPLAY_ENABLED", "true")
     monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")

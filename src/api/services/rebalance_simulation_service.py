@@ -145,7 +145,8 @@ def simulate_rebalance(
     idempotency_key: str,
     correlation_id: Optional[str],
     policy_pack_id: Optional[str],
-    tenant_id: Optional[str],
+    tenant_default_policy_pack_id: Optional[str] = None,
+    tenant_id: Optional[str] = None,
 ) -> RebalanceResult:
     current_logger = _resolved_logger()
     resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
@@ -159,6 +160,7 @@ def simulate_rebalance(
     request_hash = hash_canonical_payload(request_payload)
     policy_pack = resolve_dpm_policy_pack(
         request_policy_pack_id=policy_pack_id,
+        tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
     )
     policy_pack_definition = resolve_selected_policy_pack_definition(policy_pack)
@@ -368,7 +370,8 @@ def submit_and_optionally_execute_async_analysis(
     request: BatchRebalanceRequest,
     correlation_id: Optional[str],
     policy_pack_id: Optional[str],
-    tenant_id: Optional[str],
+    tenant_default_policy_pack_id: Optional[str] = None,
+    tenant_id: Optional[str] = None,
 ) -> DpmAsyncAcceptedResponse:
     current_logger = _resolved_logger()
     if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
@@ -379,6 +382,7 @@ def submit_and_optionally_execute_async_analysis(
     service = get_dpm_run_support_service()
     policy_pack = resolve_dpm_policy_pack(
         request_policy_pack_id=policy_pack_id,
+        tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
     )
     current_logger.debug(
@@ -394,7 +398,7 @@ def submit_and_optionally_execute_async_analysis(
                 "batch_request": request.model_dump(mode="json"),
                 "policy_context": {
                     "request_policy_pack_id": policy_pack_id,
-                    "tenant_default_policy_pack_id": None,
+                    "tenant_default_policy_pack_id": tenant_default_policy_pack_id,
                     "tenant_id": tenant_id,
                 },
             },

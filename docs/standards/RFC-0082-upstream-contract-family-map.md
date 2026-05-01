@@ -25,6 +25,8 @@ composition.
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
 7. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
    `sgajbi/lotus-gateway#178`.
+8. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
+   tracked in `sgajbi/lotus-workbench#135`.
 
 ## `lotus-core` Contract Family Posture
 
@@ -114,10 +116,13 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
    `GET /api/v1/platform/capabilities`; `lotus-manage` remains canonical on snake_case
    `consumer_system` and `tenant_id`, so the downstream client should be corrected rather than
    expanding manage-side aliases. Tracked as `sgajbi/lotus-gateway#178`.
-2. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
+2. Workbench proposal simulation docs and routes still need explicit ownership cleanup so advisory
+   proposal simulation does not couple back to `lotus-manage` DPM execution. Tracked as
+   `sgajbi/lotus-workbench#135`.
+3. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
    authority. Keep snapshot identifiers, request hashes, and supportability bundles mandatory for
    traceability.
-3. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
+4. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
    caching, and source-data retrieval design before considering a transport change.
 
 ## Validation Lane

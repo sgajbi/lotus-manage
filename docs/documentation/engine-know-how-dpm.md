@@ -30,6 +30,7 @@ Implementation scope:
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
+- Optional header: `X-Tenant-Policy-Pack-Id` (explicit tenant default when no request pack is supplied)
 - Optional header: `X-Tenant-Id` (used for tenant default policy-pack resolver lookup)
   - Current policy transformations:
     - `max_turnover_pct`
@@ -47,7 +48,7 @@ Implementation scope:
 - Output: `RebalanceResult` with status `READY | PENDING_REVIEW | BLOCKED` and `gate_decision`
 - Correlation behavior:
   - response `correlation_id` echoes request `X-Correlation-Id` when provided
-  - otherwise defaults to `c_none`
+  - otherwise a `corr_` identifier is generated for supportability lookup
 - Idempotency behavior:
   - same key + same canonical request payload returns cached result
   - same key + different canonical request payload returns `409 Conflict`

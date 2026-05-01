@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-01T08:21:09.254659+00:00",
+  "generatedAt": "2026-05-01T09:29:07.441669+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -4805,6 +4805,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
     },
     {
+      "name": "x_tenant_policy_pack_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional explicit tenant-default policy-pack identifier. Used when no `X-Policy-Pack-Id` request override is supplied and policy packs are enabled.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_policy_pack_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+    },
+    {
       "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
@@ -4841,6 +4853,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
     },
     {
+      "name": "x_tenant_policy_pack_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional explicit tenant-default policy-pack identifier. Used when no `X-Policy-Pack-Id` request override is supplied and policy packs are enabled.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_policy_pack_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+    },
+    {
       "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
@@ -4875,6 +4899,18 @@
       "allowedValues": [],
       "semanticId": "lotus.x_policy_pack_id",
       "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
+    },
+    {
+      "name": "x_tenant_policy_pack_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional explicit tenant-default policy-pack identifier. Used when no `X-Policy-Pack-Id` request override is supplied and policy packs are enabled.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_policy_pack_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
     },
     {
       "name": "x_tenant_id",
@@ -5885,6 +5921,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
     },
     {
+      "name": "x_tenant_policy_pack_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional explicit tenant-default policy-pack identifier. Used when no `X-Policy-Pack-Id` request override is supplied and policy packs are enabled.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_policy_pack_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+    },
+    {
       "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
@@ -5921,6 +5969,18 @@
       "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
     },
     {
+      "name": "x_tenant_policy_pack_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional explicit tenant-default policy-pack identifier. Used when no `X-Policy-Pack-Id` request override is supplied and policy packs are enabled.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_policy_pack_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+    },
+    {
       "name": "x_tenant_id",
       "kind": "request_option",
       "location": "header",
@@ -5955,6 +6015,18 @@
       "allowedValues": [],
       "semanticId": "lotus.x_policy_pack_id",
       "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
+    },
+    {
+      "name": "x_tenant_policy_pack_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional explicit tenant-default policy-pack identifier. Used when no `X-Policy-Pack-Id` request override is supplied and policy packs are enabled.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_tenant_policy_pack_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
     },
     {
       "name": "x_tenant_id",
@@ -21910,6 +21982,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
           },
           {
+            "name": "x-tenant-policy-pack-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_policy_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+          },
+          {
             "name": "x-tenant-id",
             "location": "header",
             "required": false,
@@ -23933,6 +24013,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
           },
           {
+            "name": "x-tenant-policy-pack-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_policy_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+          },
+          {
             "name": "x-tenant-id",
             "location": "header",
             "required": false,
@@ -24370,6 +24458,14 @@
             "type": "object",
             "semanticId": "lotus.x_policy_pack_id",
             "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
+          },
+          {
+            "name": "x-tenant-policy-pack-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_policy_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
           },
           {
             "name": "x-tenant-id",
@@ -41078,6 +41174,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
           },
           {
+            "name": "x-tenant-policy-pack-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_policy_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+          },
+          {
             "name": "x-tenant-id",
             "location": "header",
             "required": false,
@@ -43101,6 +43205,14 @@
             "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
           },
           {
+            "name": "x-tenant-policy-pack-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_policy_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
+          },
+          {
             "name": "x-tenant-id",
             "location": "header",
             "required": false,
@@ -43538,6 +43650,14 @@
             "type": "object",
             "semanticId": "lotus.x_policy_pack_id",
             "attributeRef": "#/attributeCatalog/lotus.x_policy_pack_id"
+          },
+          {
+            "name": "x-tenant-policy-pack-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_tenant_policy_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_tenant_policy_pack_id"
           },
           {
             "name": "x-tenant-id",

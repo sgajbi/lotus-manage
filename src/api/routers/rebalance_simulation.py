@@ -33,10 +33,16 @@ router = APIRouter()
     tags=["lotus-manage Simulation"],
     summary="Simulate a Portfolio Rebalance",
     description=(
-        "Runs one deterministic rebalance simulation.\\n\\n"
-        "Required header: `Idempotency-Key`.\\n"
-        "Optional header: `X-Correlation-Id`.\\n\\n"
-        "For valid payloads, domain outcomes are returned in the response body status field."
+        "Use this route when a caller needs one deterministic discretionary mandate rebalance "
+        "simulation from a complete inline portfolio, market-data, model, shelf, and options "
+        "bundle. Do not use it for advisor-led proposal workflows; those belong in "
+        "`lotus-advise`. Do not use it as a portfolio source-data read; source snapshots must "
+        "remain governed by upstream portfolio-data authority.\\n\\n"
+        "Required header: `Idempotency-Key`. Optional headers: `X-Correlation-Id`, "
+        "`X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`, and `X-Tenant-Id`.\\n\\n"
+        "For valid payloads, domain outcomes are returned in the response body `status` field: "
+        "`READY`, `PENDING_REVIEW`, or `BLOCKED`. Reusing an idempotency key with a different "
+        "canonical request hash returns `409`."
     ),
     responses={
         200: {
@@ -87,6 +93,16 @@ def simulate_rebalance(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
+    x_tenant_policy_pack_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional explicit tenant-default policy-pack identifier. Used when no "
+                "`X-Policy-Pack-Id` request override is supplied and policy packs are enabled."
+            ),
+            examples=["dpm_tenant_default_v1"],
+        ),
+    ] = None,
     x_tenant_id: Annotated[
         Optional[str],
         Header(
@@ -101,6 +117,7 @@ def simulate_rebalance(
         idempotency_key=idempotency_key,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
     )
 
@@ -159,6 +176,16 @@ def analyze_scenarios(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
+    x_tenant_policy_pack_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional explicit tenant-default policy-pack identifier. Used when no "
+                "`X-Policy-Pack-Id` request override is supplied and policy packs are enabled."
+            ),
+            examples=["dpm_tenant_default_v1"],
+        ),
+    ] = None,
     x_tenant_id: Annotated[
         Optional[str],
         Header(
@@ -172,7 +199,7 @@ def analyze_scenarios(
         request=request,
         correlation_id=x_correlation_id,
         request_policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=None,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
     )
 
@@ -248,6 +275,16 @@ def analyze_scenarios_async(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
+    x_tenant_policy_pack_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional explicit tenant-default policy-pack identifier. Used when no "
+                "`X-Policy-Pack-Id` request override is supplied and policy packs are enabled."
+            ),
+            examples=["dpm_tenant_default_v1"],
+        ),
+    ] = None,
     x_tenant_id: Annotated[
         Optional[str],
         Header(
@@ -261,6 +298,7 @@ def analyze_scenarios_async(
         request=request,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
     )
     response.headers["X-Correlation-Id"] = accepted.correlation_id

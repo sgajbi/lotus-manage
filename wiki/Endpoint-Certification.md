@@ -83,3 +83,71 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: single rebalance simulation
+
+Route:
+
+- `POST /rebalance/simulate`
+
+Purpose:
+
+Runs one deterministic discretionary mandate portfolio rebalance from a complete inline request
+bundle. This is the core manage-owned execution endpoint for portfolio management, policy-pack
+application, run supportability, lineage, idempotency, and workflow-gate outcome publication. It is
+not an advisory proposal endpoint and must not be used as a canonical portfolio read API.
+
+Request surface:
+
+- Body: `portfolio_snapshot`, `market_data_snapshot`, `model_portfolio`, `shelf_entries`, `options`
+- Required header: `Idempotency-Key`
+- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
+  `X-Tenant-Id`
+
+Functional coverage:
+
+- success response with all audit families: before state, universe, target trace, intents,
+  after-state, reconciliation, tax impact, rule results, explanation, diagnostics, gate decision,
+  and lineage,
+- missing idempotency header validation,
+- invalid payload validation,
+- idempotent replay and hash-conflict behavior,
+- optional replay disablement,
+- generated correlation id when caller omits `X-Correlation-Id`,
+- policy-pack request override,
+- explicit tenant policy-pack override,
+- tenant resolver fallback,
+- blocked and pending-review domain statuses,
+- settlement, tax, turnover, group-constraint, and missing-price control branches,
+- supportability persistence, artifact, workflow, lineage, idempotency, and summary integration.
+
+Non-functional posture:
+
+- Synchronous execution is intended for one bounded simulation request.
+- Idempotency protects client retries and prevents same-key/different-request ambiguity.
+- The endpoint records supportability state when persistence is enabled; replay-enabled persistence
+  failures return service-unavailable responses rather than falsely accepting a run.
+- For multi-scenario or deferred execution, use `/rebalance/analyze` or `/rebalance/analyze/async`.
+
+Upstream integration posture:
+
+The current route accepts inline snapshots and does not make outbound source-data reads. Upstream
+portfolio, price, FX, and instrument-source authority remains outside `lotus-manage`; callers must
+provide source-governed snapshots and preserve lineage identifiers. Stateful `portfolio_id`
+execution remains disabled in capabilities until governed `lotus-core` resolution is implemented.
+
+Downstream consumers:
+
+- No strategic Gateway or Workbench consumer should call this endpoint as an advisory proposal
+  surface.
+- Current stale Gateway proposal routing and Workbench proposal documentation are tracked under
+  `sgajbi/lotus-gateway#178` and `sgajbi/lotus-workbench#135` for migration away from removed
+  manage proposal endpoints and toward strategic advisory or DPM run/operation/workflow contracts
+  where needed.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
