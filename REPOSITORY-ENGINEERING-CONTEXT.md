@@ -145,7 +145,10 @@ Most relevant current governance:
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
 4. stateful `portfolio_id` mode is disabled by default through
    `DPM_STATEFUL_CORE_SOURCING_ENABLED=false` until a governed `lotus-core` resolver is configured
-   and live-proofed; inline bundle source-data lineage remains an RFC-0082 watchlist area,
+   and live-proofed; integration capabilities must not publish `stateful` unless
+   `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`, `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, and
+   `DPM_CORE_BASE_URL` is configured; inline bundle source-data lineage remains an RFC-0082
+   watchlist area,
 5. this repo should stay operationally aligned with gateway and platform startup sequences,
 6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,

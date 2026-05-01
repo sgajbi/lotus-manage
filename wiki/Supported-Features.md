@@ -19,7 +19,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Policy-pack supportability | `/api/v1/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
 | Integration capabilities | `/api/v1/integration/capabilities` | Supported | capability contract tests |
 | Solver target generation | `POST /api/v1/rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
-| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; disabled by default until governed `lotus-core` resolution is certified | resolver unit tests, transformation tests, feature-gate API test, RFC-0036 evidence |
+| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; not advertised in capabilities unless stateful sourcing is enabled and `DPM_CORE_BASE_URL` is configured; live promotion remains blocked by `sgajbi/lotus-core#330` | resolver unit tests, transformation tests, feature-gate API test, mocked simulate/analyze/async lineage tests, RFC-0036 evidence |
 
 ## Non-Functional Capabilities
 
@@ -34,7 +34,8 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Docker startup readiness | Enforced | local Docker runtime contract tests |
 | Live API evidence | Enforced before API readiness claims | `scripts/validate_live_api.py` and `make live-api-validate` |
 | Async correlation conflict handling | Enforced | API tests and live API duplicate-correlation probe |
-| Source-safe core resolver errors | Enforced for modeled stateful mode | resolver timeout/retry tests and stateful feature-gate API test |
+| Source-safe core resolver errors | Enforced for modeled stateful mode | resolver timeout/retry tests, no-core-base-url API test, and stateful feature-gate API test |
+| Capability truth gating | Enforced | integration capability tests proving stateful is not published without resolver readiness |
 
 ## Explicit Non-Goals
 

@@ -45,7 +45,7 @@ def test_integration_capabilities_default_contract(monkeypatch):
     ]
 
 
-def test_integration_capabilities_env_overrides(monkeypatch):
+def test_integration_capabilities_does_not_publish_stateful_without_resolver(monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "false")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", "false")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")
@@ -64,16 +64,18 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     assert body["policy_version"] == "tenant-x-v2"
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.workflow.review_gate"] is False
-    assert features["dpm.execution.stateful_portfolio_id"] is True
+    assert features["dpm.execution.stateful_portfolio_id"] is False
     assert features["dpm.execution.stateless"] is False
     assert features["dpm.execution.solver_target_generation"] is False
-    assert body["supported_input_modes"] == ["stateful"]
+    assert body["supported_input_modes"] == []
     assert body["workflows"][0]["enabled"] is False
 
 
 def test_integration_capabilities_can_publish_both_supported_input_modes(monkeypatch):
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", "true")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setenv("DPM_CORE_BASE_URL", "http://lotus-core.test")
     monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
 
     with TestClient(app) as client:

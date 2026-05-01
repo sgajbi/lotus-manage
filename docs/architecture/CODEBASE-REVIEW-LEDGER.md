@@ -103,6 +103,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint certification and supported-features source updated because modeled
   stateful API and lineage truth changed.
 
+## RFC36-S7-001: Stateful capability publication required stronger readiness gating
+
+- Date: 2026-05-01
+- Scope: integration capabilities, stateful simulate/analyze certification
+- Finding: capability discovery could advertise `dpm.execution.stateful_portfolio_id` when
+  `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true` even if stateful core sourcing was disabled or no
+  `DPM_CORE_BASE_URL` was configured.
+- Action: changed capability publication so `stateful` appears in `supported_input_modes` only when
+  the capability flag, `DPM_STATEFUL_CORE_SOURCING_ENABLED`, and `DPM_CORE_BASE_URL` are all present.
+  Added API tests for no-false-publish behavior and local stateful simulate, sync analyze, and async
+  analyze source-lineage proof with a mocked core resolver.
+- Status: fixed for publication safety and local executable proof; live stateful promotion remains
+  blocked by `sgajbi/lotus-core#330`.
+- Wiki decision: wiki endpoint certification and supported-features source updated because
+  capability publication and stateful proof posture changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

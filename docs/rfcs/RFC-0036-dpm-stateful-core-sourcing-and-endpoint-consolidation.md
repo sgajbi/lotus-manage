@@ -867,6 +867,9 @@ Slice 6 implementation evidence captured on 2026-05-01:
    when available.
 4. Verify every output family: valuation, target, intents, tax, settlement, diagnostics,
    gate decision, lineage, supportability, and artifacts.
+5. Do not publish `dpm.execution.stateful_portfolio_id` in integration capabilities unless all
+   resolver readiness gates are true: `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`,
+   `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, and `DPM_CORE_BASE_URL` is configured.
 
 Exit evidence:
 
@@ -874,6 +877,31 @@ Exit evidence:
 2. figure tie-outs reviewed critically,
 3. supportability and lineage verified,
 4. Remote Feature Lane and PR Merge Gate pass.
+
+Implementation evidence captured on 2026-05-01:
+
+1. Upstream live proof is blocked. `sgajbi/lotus-core#330` remains open and confirms that
+   `lotus-core` does not yet expose the required
+   `POST /integration/portfolios/{portfolio_id}/dpm-execution-context` source-data product.
+2. Existing `lotus-core` `POST /integration/portfolios/{portfolio_id}/core-snapshot` remains useful
+   as partial portfolio-state input, but is not sufficient to promote stateful DPM execution because
+   it does not provide complete model, shelf, FX, target-instrument market-data, mandate, tax-lot,
+   DPM supportability, and lineage families.
+3. Capability publication was hardened so stateful mode is not advertised from
+   `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED` alone. `supported_input_modes` includes `stateful` only
+   when the stateful sourcing gate is enabled and a core base URL is configured.
+4. Local executable proof was added for:
+   - default disabled state returning `409 DPM_STATEFUL_INPUT_DISABLED`,
+   - enabled state with no core base URL returning `503 DPM_CORE_RESOLVER_UNAVAILABLE`,
+   - mocked core resolver execution for stateful simulate with complete source lineage,
+   - mocked core resolver execution for synchronous analyze with shared source context,
+   - mocked core resolver execution for async analyze with persisted source-context lineage.
+5. Focused validation passed:
+   - `python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/api/test_api_rebalance.py -q`
+     returned 106 passed.
+6. Promotion no-go remains active. Slice 7 cannot be closed as live-certified until `lotus-core`
+   delivers the governed DPM execution-context contract or an equivalent certified source-data
+   bundle and `lotus-manage` captures live evidence against it.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 

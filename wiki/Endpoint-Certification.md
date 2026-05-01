@@ -878,6 +878,9 @@ Functional coverage:
 - settlement, tax, turnover, group-constraint, and missing-price control branches,
 - supportability persistence, artifact, workflow, lineage, idempotency, and summary integration,
 - stateful mode feature gate returning `DPM_STATEFUL_INPUT_DISABLED` by default,
+- stateful mode returning `DPM_CORE_RESOLVER_UNAVAILABLE` when enabled without core resolver
+  configuration,
+- mocked stateful simulate proof that resolved core source lineage is emitted on the result,
 - core resolver transformation and source-safe resolver failure behavior covered by unit tests.
 
 Non-functional posture:
@@ -897,6 +900,16 @@ and instrument-source authority remains outside `lotus-manage`; callers must pro
 source-governed snapshots in stateless mode, and stateful mode must use certified `lotus-core`
 source-data products before promotion.
 
+Stateful promotion status:
+
+- blocked by `sgajbi/lotus-core#330` until
+  `POST /integration/portfolios/{portfolio_id}/dpm-execution-context` or an equivalent certified
+  source-data bundle exists,
+- `POST /integration/portfolios/{portfolio_id}/core-snapshot` is useful partial source data but not
+  sufficient as the DPM execution context,
+- integration capabilities do not advertise `stateful` unless the stateful capability flag,
+  `DPM_STATEFUL_CORE_SOURCING_ENABLED`, and `DPM_CORE_BASE_URL` are all configured.
+
 Downstream consumers:
 
 - No strategic Gateway or Workbench consumer should call this endpoint as an advisory proposal
@@ -910,6 +923,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/api/test_api_rebalance.py -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 

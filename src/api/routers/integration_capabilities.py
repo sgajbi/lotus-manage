@@ -192,28 +192,36 @@ def _env_bool(name: str, default: bool) -> bool:
 
 def _supported_input_modes(
     *,
-    portfolio_id_enabled: bool,
+    stateful_enabled: bool,
     stateless_enabled: bool,
 ) -> list[str]:
     supported_input_modes: list[str] = []
-    if portfolio_id_enabled:
+    if stateful_enabled:
         supported_input_modes.append("stateful")
     if stateless_enabled:
         supported_input_modes.append("stateless")
     return supported_input_modes
 
 
+def _stateful_execution_publishable() -> bool:
+    return (
+        _env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False)
+        and _env_bool("DPM_STATEFUL_CORE_SOURCING_ENABLED", False)
+        and bool(os.getenv("DPM_CORE_BASE_URL", "").strip())
+    )
+
+
 def _build_feature_capabilities(
     *,
     workflow_enabled: bool,
-    portfolio_id_enabled: bool,
+    stateful_enabled: bool,
     stateless_enabled: bool,
     solver_available: bool,
 ) -> list[FeatureCapability]:
     return [
         FeatureCapability(
             key="dpm.execution.stateful_portfolio_id",
-            enabled=portfolio_id_enabled,
+            enabled=stateful_enabled,
             owner_service="lotus-manage",
             description="Stateful lotus-manage rebalance execution using a governed portfolio identifier; enable only when a governed lotus-core resolver is configured.",
         ),
@@ -260,7 +268,7 @@ def _build_capabilities_response(
     tenant_id: str,
 ) -> IntegrationCapabilitiesResponse:
     workflow_enabled = _env_bool("DPM_WORKFLOW_ENABLED", False)
-    portfolio_id_enabled = _env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False)
+    stateful_enabled = _stateful_execution_publishable()
     stateless_enabled = _env_bool("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", True)
     solver_available = has_solver_dependencies()
 
@@ -273,12 +281,12 @@ def _build_capabilities_response(
         as_of_date=date.today(),
         policy_version=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
         supported_input_modes=_supported_input_modes(
-            portfolio_id_enabled=portfolio_id_enabled,
+            stateful_enabled=stateful_enabled,
             stateless_enabled=stateless_enabled,
         ),
         features=_build_feature_capabilities(
             workflow_enabled=workflow_enabled,
-            portfolio_id_enabled=portfolio_id_enabled,
+            stateful_enabled=stateful_enabled,
             stateless_enabled=stateless_enabled,
             solver_available=solver_available,
         ),

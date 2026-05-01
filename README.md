@@ -43,7 +43,9 @@ Current posture under RFC-0082:
 2. `input_mode=stateless` is the supported default execution mode for caller-supplied source
    bundles
 3. stateful `portfolio_id` mode has a modeled resolver seam but is disabled by default and must
-   remain anchored to governed `lotus-core` authority when enabled
+   remain anchored to governed `lotus-core` authority when enabled; it is not advertised in
+   `/api/v1/integration/capabilities` unless the stateful capability flag, stateful sourcing gate,
+   and `DPM_CORE_BASE_URL` are all configured
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 

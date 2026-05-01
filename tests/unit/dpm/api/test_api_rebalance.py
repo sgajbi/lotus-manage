@@ -15,12 +15,14 @@ import pytest
 from fastapi.testclient import TestClient
 
 import src.api.routers.rebalance_runs as dpm_runs_router
+import src.api.services.rebalance_simulation_service as rebalance_service
 from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
 )
 from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.dpm_source_context import DpmCoreExecutionContext
 from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
     DpmRunNotFoundError,
@@ -81,6 +83,86 @@ def get_valid_payload():
     return valid_api_payload()
 
 
+def _stateful_input_payload() -> dict[str, object]:
+    return {
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of": "2026-03-25",
+        "mandate_id": "mandate_balanced_discretionary",
+        "model_portfolio_id": "model_balanced_sgd",
+        "tenant_id": "tenant_001",
+        "booking_center_code": "SG",
+    }
+
+
+def _core_execution_context() -> DpmCoreExecutionContext:
+    return DpmCoreExecutionContext.model_validate(
+        {
+            "portfolio_snapshot": {
+                "snapshot_id": "core-pf-snap-001",
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "base_currency": "SGD",
+                "positions": [{"instrument_id": "EQ_1", "quantity": "100"}],
+                "cash_balances": [{"currency": "SGD", "amount": "10000"}],
+            },
+            "market_data_snapshot": {
+                "snapshot_id": "core-md-snap-001",
+                "prices": [{"instrument_id": "EQ_1", "price": "100", "currency": "SGD"}],
+                "fx_rates": [],
+            },
+            "model_portfolio": {"targets": [{"instrument_id": "EQ_1", "weight": "1.0"}]},
+            "shelf_entries": [
+                {
+                    "instrument_id": "EQ_1",
+                    "status": "APPROVED",
+                    "asset_class": "EQUITY",
+                    "issuer_id": "ISSUER_1",
+                    "settlement_days": 2,
+                }
+            ],
+            "policy_context": {
+                "recommended_policy_pack_id": "dpm_standard_v1",
+                "tenant_id": "tenant_001",
+                "booking_center_code": "SG",
+                "mandate_id": "mandate_balanced_discretionary",
+            },
+            "source_lineage": {
+                "portfolio_snapshot_id": "core-pf-snap-001",
+                "market_data_snapshot_id": "core-md-snap-001",
+                "model_portfolio_id": "model_balanced_sgd",
+                "model_portfolio_version": "2026-03-25",
+                "shelf_version": "shelf_sg_v1",
+                "integration_policy_version": "dpm-core-context.v1",
+                "source_lineage_bundle_id": "lineage-bundle-001",
+            },
+            "supportability": {
+                "state": "READY",
+                "reason": "DPM_CORE_CONTEXT_READY",
+                "freshness_bucket": "same_day",
+            },
+        }
+    )
+
+
+class _FakeCoreResolver:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str | None]] = []
+
+    def resolve_execution_context(self, *, stateful_input, correlation_id):
+        self.calls.append((stateful_input.portfolio_id, correlation_id))
+        return _core_execution_context()
+
+
+def _install_fake_core_resolver(monkeypatch) -> _FakeCoreResolver:
+    fake_resolver = _FakeCoreResolver()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: fake_resolver,
+    )
+    return fake_resolver
+
+
 def test_direct_stateless_body_is_rejected_without_envelope():
     with TestClient(app) as raw_client:
         response = raw_client.post(
@@ -113,6 +195,118 @@ def test_stateful_simulate_is_feature_gated_by_default():
 
     assert response.status_code == 409
     assert response.json()["detail"] == "DPM_STATEFUL_INPUT_DISABLED"
+
+
+def test_stateful_simulate_enabled_without_core_base_url_returns_unavailable(monkeypatch):
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.delenv("DPM_CORE_BASE_URL", raising=False)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+            },
+            headers={"Idempotency-Key": "test-key-stateful-no-core"},
+        )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "DPM_CORE_RESOLVER_UNAVAILABLE"
+
+
+def test_stateful_simulate_uses_resolved_core_context_and_lineage(monkeypatch):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "options_override": {"enable_settlement_awareness": True},
+            },
+            headers={
+                "Idempotency-Key": "test-key-stateful-simulate-ready",
+                "X-Correlation-Id": "corr-stateful-simulate",
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-simulate")]
+    assert body["correlation_id"] == "corr-stateful-simulate"
+    assert body["lineage"]["input_mode"] == "stateful"
+    assert body["lineage"]["source_system"] == "lotus-core"
+    assert body["lineage"]["portfolio_snapshot_id"] == "core-pf-snap-001"
+    assert body["lineage"]["market_data_snapshot_id"] == "core-md-snap-001"
+    assert body["lineage"]["model_portfolio_id"] == "model_balanced_sgd"
+    assert body["lineage"]["model_portfolio_version"] == "2026-03-25"
+    assert body["lineage"]["shelf_version"] == "shelf_sg_v1"
+    assert body["lineage"]["integration_policy_version"] == "dpm-core-context.v1"
+    assert body["lineage"]["source_lineage_bundle_id"] == "lineage-bundle-001"
+    assert body["lineage"]["source_supportability_state"] == "READY"
+    assert body["lineage"]["stateful_context_hash"].startswith("sha256:")
+
+
+def test_stateful_analyze_uses_shared_core_context_for_each_scenario(monkeypatch):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/analyze",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "scenarios": {
+                    "baseline": {"options": {}},
+                    "position_cap": {"options": {"single_position_max_weight": "0.5"}},
+                },
+            },
+            headers={"X-Correlation-Id": "corr-stateful-analyze"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-analyze")]
+    assert set(body["results"]) == {"baseline", "position_cap"}
+    assert body["base_snapshot_ids"] == {
+        "portfolio_snapshot_id": "core-pf-snap-001",
+        "market_data_snapshot_id": "core-md-snap-001",
+    }
+    for scenario_name, result in body["results"].items():
+        assert result["correlation_id"] == f"corr-stateful-analyze:{scenario_name}"
+        assert result["lineage"]["input_mode"] == "stateful"
+        assert result["lineage"]["source_system"] == "lotus-core"
+        assert result["lineage"]["stateful_context_hash"].startswith("sha256:")
+
+
+def test_stateful_analyze_async_persists_resolved_core_lineage(monkeypatch):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+
+    with TestClient(app) as raw_client:
+        accepted = raw_client.post(
+            "/api/v1/rebalance/analyze/async",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "scenarios": {"baseline": {"options": {}}},
+            },
+            headers={"X-Correlation-Id": "corr-stateful-async"},
+        )
+        operation = raw_client.get(
+            f"/api/v1/rebalance/operations/{accepted.json()['operation_id']}"
+        )
+
+    assert accepted.status_code == 202
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-async")]
+    assert operation.status_code == 200
+    operation_body = operation.json()
+    assert operation_body["status"] == "SUCCEEDED"
+    result = operation_body["result"]["results"]["baseline"]
+    assert result["lineage"]["input_mode"] == "stateful"
+    assert result["lineage"]["source_system"] == "lotus-core"
+    assert result["lineage"]["stateful_context_hash"].startswith("sha256:")
 
 
 def test_simulate_endpoint_success(client):
