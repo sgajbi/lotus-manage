@@ -314,7 +314,8 @@ ANALYZE_ASYNC_ACCEPTED_EXAMPLE = {
         "status": "PENDING",
         "correlation_id": "corr-batch-async-1",
         "created_at": "2026-02-20T12:00:00+00:00",
-        "status_url": "/rebalance/operations/dop_abc12345",
+        "status_url": "/api/v1/rebalance/operations/dop_abc12345",
+        "execute_url": "/api/v1/rebalance/operations/dop_abc12345/execute",
     },
 }
 ANALYZE_ASYNC_409_EXAMPLE = {

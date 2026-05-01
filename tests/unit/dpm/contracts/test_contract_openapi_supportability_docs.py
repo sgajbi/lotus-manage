@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.simulation_examples import (
+    ANALYZE_ASYNC_ACCEPTED_EXAMPLE,
     ANALYZE_RESPONSE_EXAMPLE,
     SIMULATE_BLOCKED_EXAMPLE,
     SIMULATE_PENDING_EXAMPLE,
@@ -11,6 +12,7 @@ from src.api.simulation_examples import (
 )
 from src.api.main import app
 from src.core.models import BatchRebalanceResult, RebalanceResult
+from src.core.rebalance_runs import DpmAsyncAcceptedResponse
 
 
 def _strict_openapi_validation_enabled() -> bool:
@@ -363,6 +365,18 @@ def test_analyze_response_example_is_complete_batch_result():
     )
     assert metric.security_intent_count == 1
     assert metric.gross_turnover_notional_base.amount == expected_turnover
+
+
+def test_analyze_async_accepted_example_is_complete_response():
+    _guard_strict_validation()
+
+    accepted = DpmAsyncAcceptedResponse.model_validate(ANALYZE_ASYNC_ACCEPTED_EXAMPLE["value"])
+
+    assert accepted.operation_id.startswith("dop_")
+    assert accepted.operation_type == "ANALYZE_SCENARIOS"
+    assert accepted.status == "PENDING"
+    assert accepted.status_url == f"/api/v1/rebalance/operations/{accepted.operation_id}"
+    assert accepted.execute_url == f"/api/v1/rebalance/operations/{accepted.operation_id}/execute"
 
 
 def test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts():

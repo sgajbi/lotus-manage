@@ -213,3 +213,66 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: async what-if analysis submission
+
+Route:
+
+- `POST /rebalance/analyze/async`
+
+Purpose:
+
+Accepts the same named discretionary mandate scenario batch as synchronous analysis, but returns an
+operation handle for polling or accept-now/execute-later orchestration. Use this endpoint when the
+caller needs deferred execution, operation-level supportability, or explicit manual execution in
+`DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`.
+
+Request surface:
+
+- Body: `BatchRebalanceRequest`.
+- Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
+  `X-Tenant-Id`.
+- Response: `DpmAsyncAcceptedResponse` with `operation_id`, initial `status`, `correlation_id`,
+  `status_url`, and `execute_url`.
+- Retrieval: `GET /rebalance/operations/{operation_id}` or
+  `GET /rebalance/operations/by-correlation/{correlation_id}`.
+
+Functional coverage:
+
+- inline execution accepts and then persists terminal `SUCCEEDED` operation state,
+- accept-only mode keeps operation `PENDING` and executable,
+- manual execution transitions pending operation to terminal status,
+- duplicate correlation ids return `409` with `DPM_ASYNC_OPERATION_CORRELATION_CONFLICT`,
+- generated correlation ids are echoed in the response body and `X-Correlation-Id` response header,
+- operation failures are captured as `FAILED` status with structured error details,
+- async disabled/manual-execution disabled modes return governed `404` responses,
+- invalid execution mode falls back to inline execution,
+- request and tenant-default policy-pack context is persisted and applied during manual execution,
+- accepted Swagger example validates against `DpmAsyncAcceptedResponse`.
+
+Non-functional posture:
+
+- The accepted response is deliberately small and stable for low-latency submission.
+- Terminal results are retrieved through operation status endpoints rather than overloading the
+  submission response.
+- Correlation ids are unique operation handles to prevent ambiguous supportability lookups.
+- Accept-only mode enables external orchestration without losing policy context.
+
+Upstream integration posture:
+
+The endpoint persists caller-supplied inline snapshots and policy context for later execution. It
+does not perform outbound source-data reads; snapshot authority and lineage remain with upstream
+callers and `lotus-core`-governed data products.
+
+Downstream consumers:
+
+- No direct strategic Gateway or Workbench consumer was found for `/rebalance/analyze/async`.
+- Future downstream integration should treat this endpoint as the strategic deferred DPM analysis
+  submission route, not as an advisory proposal lifecycle route.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```

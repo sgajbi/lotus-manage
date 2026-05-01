@@ -91,6 +91,15 @@ Implementation scope:
   - polling-based orchestration
   - accept-now/execute-later flows
   - `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`
+- Optional headers:
+  - `X-Correlation-Id`
+  - `X-Policy-Pack-Id`
+  - `X-Tenant-Policy-Pack-Id`
+  - `X-Tenant-Id`
+- The accepted response reports the initial operation status. In inline mode, retrieve the operation
+  status URL to inspect terminal `SUCCEEDED` or `FAILED` state and result payload.
+- In accept-only mode, submitted policy context is persisted with the operation and applied during
+  manual execution.
 - Retrieval:
   - `GET /rebalance/operations/{operation_id}`
   - `GET /rebalance/operations/by-correlation/{correlation_id}`
