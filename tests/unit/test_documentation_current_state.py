@@ -63,6 +63,23 @@ def test_removed_advisory_demo_and_rfc_sources_stay_retired() -> None:
     assert unexpected == []
 
 
+def test_removed_dpm_python_compatibility_shims_stay_retired() -> None:
+    retired_paths = [
+        ROOT / "src" / "api" / "routers" / "dpm_policy_packs.py",
+        ROOT / "src" / "api" / "routers" / "dpm_runs.py",
+        ROOT / "src" / "api" / "routers" / "dpm_runs_config.py",
+        ROOT / "src" / "api" / "routers" / "dpm_runs_operations_routes.py",
+        ROOT / "src" / "api" / "routers" / "dpm_runs_workflow_routes.py",
+        ROOT / "src" / "api" / "routers" / "dpm_simulation.py",
+        ROOT / "src" / "api" / "services" / "dpm_simulation_service.py",
+        ROOT / "src" / "core" / "dpm_engine.py",
+        ROOT / "src" / "core" / "engine.py",
+    ]
+    unexpected = [str(path.relative_to(ROOT)) for path in retired_paths if path.exists()]
+
+    assert unexpected == []
+
+
 def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:
     sidebar = (ROOT / "wiki" / "_Sidebar.md").read_text(encoding="utf-8")
     missing: list[str] = []

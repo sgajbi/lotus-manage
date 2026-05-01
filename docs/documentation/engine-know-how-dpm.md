@@ -421,7 +421,8 @@ Dependency policy note:
 - Goldens: `tests/unit/dpm/golden/test_golden_scenarios.py`
 - Batch goldens: `tests/unit/dpm/golden/test_golden_batch_analysis.py`
 
-## Deprecation Notes
+## Stable Import Path
 
-- `src/core/dpm_engine.py` is a compatibility shim and emits `DeprecationWarning`.
 - Use `src/core/rebalance/engine.py` as the stable lotus-manage engine import path.
+- Legacy Python compatibility shims such as `src/core/dpm_engine.py` and `src/core/engine.py`
+  have been retired. New code must import directly from the rebalance domain module.
