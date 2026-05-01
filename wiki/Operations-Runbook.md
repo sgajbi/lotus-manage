@@ -28,6 +28,9 @@
   `surface`, `supportability_state`, `reason`, and `freshness_bucket` labels. The recorder
   allowlists label values and falls back to `unknown_surface`, `supportability_summary_error`, or
   `unknown` rather than emitting raw caller values.
+- `/metrics` exposes `lotus_manage_core_resolver_total` with only bounded `operation`, `outcome`,
+  `supportability_state`, and `reason` labels for future stateful core resolver calls. It must not
+  include portfolio ids, source payload identifiers, request hashes, or raw upstream error text.
 - Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
   content to supportability metric labels or log dimensions.
 - HTTP access logs use route templates such as

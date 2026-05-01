@@ -121,6 +121,36 @@ def test_action_register_supportability_metric_labels_are_bounded(monkeypatch):
     assert "client_name:private-bank-client" not in captured.values()
 
 
+def test_core_resolver_metric_labels_are_bounded(monkeypatch):
+    captured: dict[str, str] = {}
+
+    class _Counter:
+        def labels(self, **labels):
+            captured.update(labels)
+            return self
+
+        def inc(self):
+            return None
+
+    monkeypatch.setattr(observability_module, "DPM_CORE_RESOLVER_TOTAL", _Counter())
+
+    observability_module.record_core_resolver_call(
+        operation="dpm_execution_context/PB_SG_GLOBAL_BAL_001",
+        outcome="timeout_for_portfolio",
+        supportability_state="client:private-bank-client",
+        reason="request_hash:sha256:secret",
+    )
+
+    assert captured == {
+        "operation": "dpm_execution_context",
+        "outcome": "error",
+        "supportability_state": "unknown",
+        "reason": "unexpected_error",
+    }
+    assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
+    assert "sha256:secret" not in json.dumps(captured)
+
+
 def test_json_formatter_redacts_sensitive_extra_fields():
     formatter = observability_module.JsonFormatter()
     record = logging.LogRecord(

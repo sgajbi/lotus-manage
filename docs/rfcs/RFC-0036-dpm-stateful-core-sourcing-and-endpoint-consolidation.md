@@ -1025,6 +1025,24 @@ Implementation evidence captured on 2026-05-01:
    - monetary float guard passed,
    - no-alias, mypy, OpenAPI, API vocabulary, and mesh validation gates passed,
    - unit suite returned 476 passed.
+7. Added bounded stateful core resolver metric instrumentation through
+   `lotus_manage_core_resolver_total` with allowlisted `operation`, `outcome`,
+   `supportability_state`, and `reason` labels. The metric is emitted from the stateful resolver seam
+   for success, resolver-unavailable, invalid-response, and context-incomplete outcomes without
+   exposing portfolio ids, request hashes, or raw upstream error text.
+8. Focused resolver metric validation passed:
+   - `python -m pytest tests/unit/dpm/api/test_observability_api.py tests/unit/dpm/api/test_api_rebalance.py::test_stateful_simulate_enabled_without_core_base_url_returns_unavailable tests/unit/dpm/api/test_api_rebalance.py::test_stateful_simulate_uses_resolved_core_context_and_lineage -q`
+     returned 14 passed,
+   - `python -m ruff check src/api/observability.py src/api/services/rebalance_simulation_service.py tests/unit/dpm/api/test_observability_api.py`
+     passed,
+   - `python -m ruff format --check src/api/observability.py src/api/services/rebalance_simulation_service.py tests/unit/dpm/api/test_observability_api.py`
+     passed after formatting,
+   - `python -m mypy --config-file mypy.ini` passed.
+9. Repository-native `make check` passed:
+   - lint and format checks passed,
+   - monetary float guard passed,
+   - no-alias, mypy, OpenAPI, API vocabulary, and mesh validation gates passed,
+   - unit suite returned 477 passed.
 
 ### Slice 10: Enterprise API Certification
 

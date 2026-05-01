@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
+from src.api.observability import DPM_CORE_RESOLVER_OPERATION, record_core_resolver_call
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -211,15 +212,44 @@ def _resolve_stateful_source_context(
             correlation_id=correlation_id,
         )
     except DpmCoreResolverUnavailableError as exc:
+        record_core_resolver_call(
+            operation=DPM_CORE_RESOLVER_OPERATION,
+            outcome="unavailable",
+            supportability_state="unavailable",
+            reason="resolver_unavailable",
+        )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="DPM_CORE_RESOLVER_UNAVAILABLE",
         ) from exc
-    except (DpmCoreResolverError, ValidationError) as exc:
+    except ValidationError as exc:
+        record_core_resolver_call(
+            operation=DPM_CORE_RESOLVER_OPERATION,
+            outcome="incomplete",
+            supportability_state="unknown",
+            reason="invalid_response",
+        )
         raise HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
             detail="DPM_CORE_CONTEXT_INCOMPLETE",
         ) from exc
+    except DpmCoreResolverError as exc:
+        record_core_resolver_call(
+            operation=DPM_CORE_RESOLVER_OPERATION,
+            outcome="incomplete",
+            supportability_state="unknown",
+            reason="context_incomplete",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="DPM_CORE_CONTEXT_INCOMPLETE",
+        ) from exc
+    record_core_resolver_call(
+        operation=DPM_CORE_RESOLVER_OPERATION,
+        outcome="success",
+        supportability_state=context.supportability.state.lower(),
+        reason="degraded" if context.supportability.state == "DEGRADED" else "ready",
+    )
 
     stateful_context_hash = hash_canonical_payload(context.model_dump(mode="json"))
     return DpmResolvedSourceContext(

@@ -20,9 +20,15 @@ MANAGE_SUPPORTABILITY_TOTAL = Counter(
     "lotus-manage action register supportability outcomes.",
     ["surface", "supportability_state", "reason", "freshness_bucket"],
 )
+DPM_CORE_RESOLVER_TOTAL = Counter(
+    "lotus_manage_core_resolver_total",
+    "lotus-manage stateful core resolver call outcomes.",
+    ["operation", "outcome", "supportability_state", "reason"],
+)
 
 ACTION_REGISTER_SUPPORTABILITY_SURFACE = "rebalance/supportability/summary"
 UNKNOWN_ACTION_REGISTER_SURFACE = "unknown_surface"
+DPM_CORE_RESOLVER_OPERATION = "dpm_execution_context"
 
 _ALLOWED_ACTION_REGISTER_SURFACES = frozenset({ACTION_REGISTER_SUPPORTABILITY_SURFACE})
 _ALLOWED_SUPPORTABILITY_STATES = frozenset(
@@ -48,6 +54,21 @@ _ALLOWED_SUPPORTABILITY_REASONS = frozenset(
     }
 )
 _ALLOWED_FRESHNESS_BUCKETS = frozenset({"current", "same_day", "stale", "unknown"})
+_ALLOWED_CORE_RESOLVER_OPERATIONS = frozenset({DPM_CORE_RESOLVER_OPERATION})
+_ALLOWED_CORE_RESOLVER_OUTCOMES = frozenset({"success", "unavailable", "incomplete", "error"})
+_ALLOWED_CORE_SUPPORTABILITY_STATES = frozenset(
+    {"ready", "degraded", "incomplete", "unavailable", "unknown"}
+)
+_ALLOWED_CORE_RESOLVER_REASONS = frozenset(
+    {
+        "ready",
+        "degraded",
+        "resolver_unavailable",
+        "context_incomplete",
+        "invalid_response",
+        "unexpected_error",
+    }
+)
 _SENSITIVE_LOG_FIELD_NAMES = frozenset(
     {
         "account_id",
@@ -221,5 +242,36 @@ def record_action_register_supportability(
             freshness_bucket,
             allowed_values=_ALLOWED_FRESHNESS_BUCKETS,
             fallback="unknown",
+        ),
+    ).inc()
+
+
+def record_core_resolver_call(
+    *,
+    operation: str,
+    outcome: str,
+    supportability_state: str,
+    reason: str,
+) -> None:
+    DPM_CORE_RESOLVER_TOTAL.labels(
+        operation=_safe_metric_label(
+            operation,
+            allowed_values=_ALLOWED_CORE_RESOLVER_OPERATIONS,
+            fallback=DPM_CORE_RESOLVER_OPERATION,
+        ),
+        outcome=_safe_metric_label(
+            outcome,
+            allowed_values=_ALLOWED_CORE_RESOLVER_OUTCOMES,
+            fallback="error",
+        ),
+        supportability_state=_safe_metric_label(
+            supportability_state,
+            allowed_values=_ALLOWED_CORE_SUPPORTABILITY_STATES,
+            fallback="unknown",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_CORE_RESOLVER_REASONS,
+            fallback="unexpected_error",
         ),
     ).inc()

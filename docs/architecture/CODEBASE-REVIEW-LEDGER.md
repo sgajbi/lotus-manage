@@ -152,6 +152,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki operations and supported-features source updated because operator-facing
   logging behavior changed.
 
+## RFC36-S9-002: Stateful core resolver had no bounded metric
+
+- Date: 2026-05-01
+- Scope: stateful resolver seam, metrics, observability tests
+- Finding: the modeled `lotus-core` resolver seam returned source-safe API errors, but emitted no
+  bounded metric for future stateful resolver success, unavailability, invalid response, or
+  incomplete context outcomes.
+- Action: added `lotus_manage_core_resolver_total` with allowlisted `operation`, `outcome`,
+  `supportability_state`, and `reason` labels; instrumented resolver success and failure branches;
+  added tests proving untrusted label values are bounded and stateful API paths remain green.
+- Status: fixed for the modeled resolver seam.
+- Wiki decision: wiki operations and supported-features source updated because operator-facing
+  metric behavior changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01
