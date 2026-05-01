@@ -151,6 +151,99 @@ def test_core_resolver_metric_labels_are_bounded(monkeypatch):
     assert "sha256:secret" not in json.dumps(captured)
 
 
+def test_execution_metric_labels_are_bounded(monkeypatch):
+    captured: dict[str, str] = {}
+
+    class _Counter:
+        def labels(self, **labels):
+            captured.update(labels)
+            return self
+
+        def inc(self):
+            return None
+
+    monkeypatch.setattr(observability_module, "DPM_EXECUTION_TOTAL", _Counter())
+
+    observability_module.record_execution_call(
+        operation="simulate/PB_SG_GLOBAL_BAL_001",
+        input_mode="portfolio:PB_SG_GLOBAL_BAL_001",
+        outcome="failed_for_request_hash",
+        result_status="client:private-bank-client",
+    )
+
+    assert captured == {
+        "operation": "simulate",
+        "input_mode": "unknown",
+        "outcome": "error",
+        "result_status": "unknown",
+    }
+    assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
+
+
+def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
+    captured: dict[str, dict[str, str]] = {}
+
+    class _Counter:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def labels(self, **labels):
+            captured[self.name] = labels
+            return self
+
+        def inc(self):
+            return None
+
+    monkeypatch.setattr(observability_module, "DPM_ASYNC_OPERATION_TOTAL", _Counter("async"))
+    monkeypatch.setattr(
+        observability_module,
+        "DPM_POLICY_PACK_RESOLUTION_TOTAL",
+        _Counter("policy"),
+    )
+    monkeypatch.setattr(
+        observability_module,
+        "DPM_WORKFLOW_DECISION_TOTAL",
+        _Counter("workflow"),
+    )
+
+    observability_module.record_async_operation(
+        event="submit/PB_SG_GLOBAL_BAL_001",
+        execution_mode="request_hash:sha256:secret",
+        outcome="timeout_for_actor",
+    )
+    observability_module.record_policy_pack_resolution(
+        surface="simulate/client",
+        enabled="yes_for_private_bank_client",
+        source="policy_pack_id:dpm_standard",
+        selected="policy_pack_id:dpm_standard",
+    )
+    observability_module.record_workflow_decision(
+        surface="run_id:rr_secret",
+        action="actor:reviewer_001",
+        outcome="portfolio_conflict",
+    )
+
+    assert captured["async"] == {
+        "event": "submit",
+        "execution_mode": "unknown",
+        "outcome": "failed",
+    }
+    assert captured["policy"] == {
+        "surface": "api",
+        "enabled": "false",
+        "source": "unknown",
+        "selected": "false",
+    }
+    assert captured["workflow"] == {
+        "surface": "run",
+        "action": "unknown",
+        "outcome": "error",
+    }
+    assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
+    assert "sha256:secret" not in json.dumps(captured)
+    assert "reviewer_001" not in json.dumps(captured)
+
+
 def test_json_formatter_redacts_sensitive_extra_fields():
     formatter = observability_module.JsonFormatter()
     record = logging.LogRecord(

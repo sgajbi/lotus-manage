@@ -31,6 +31,19 @@
 - `/metrics` exposes `lotus_manage_core_resolver_total` with only bounded `operation`, `outcome`,
   `supportability_state`, and `reason` labels for future stateful core resolver calls. It must not
   include portfolio ids, source payload identifiers, request hashes, or raw upstream error text.
+- `/metrics` exposes `lotus_manage_execution_total` with bounded `operation`, `input_mode`,
+  `outcome`, and `result_status` labels for simulate, analyze, and async-analyze execution
+  surfaces. Use it to monitor blocked, replayed, accepted, partial-failure, and error posture
+  without inspecting request payloads.
+- `/metrics` exposes `lotus_manage_async_operation_total` with bounded `event`, `execution_mode`,
+  and `outcome` labels for async submit and execute lifecycle events.
+- `/metrics` exposes `lotus_manage_policy_pack_resolution_total` with bounded `surface`,
+  `enabled`, `source`, and `selected` labels for simulate, analyze, async analyze, and policy API
+  lookups.
+- `/metrics` exposes `lotus_manage_workflow_decision_total` with bounded `surface`, `action`, and
+  `outcome` labels for mandate workflow actions. `surface` uses route-family values such as `run`,
+  `trace`, and `retry`; it must not use raw correlation, idempotency, request, actor, run, or
+  portfolio identifiers.
 - Dashboard panels and alert rules are governed by
   `contracts/observability/lotus-manage-monitoring.v1.json`. Add metrics to code and tests before
   referencing them in dashboard or alert contracts; `make mesh-contract-validate` checks that the

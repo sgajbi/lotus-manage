@@ -9,7 +9,13 @@ from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
-from src.api.observability import DPM_CORE_RESOLVER_OPERATION, record_core_resolver_call
+from src.api.observability import (
+    DPM_CORE_RESOLVER_OPERATION,
+    record_async_operation,
+    record_core_resolver_call,
+    record_execution_call,
+    record_policy_pack_resolution,
+)
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -188,6 +194,31 @@ def resolve_selected_policy_pack_definition(
     )
 
 
+def _source_input_mode(source_context: Optional[DpmResolvedSourceContext]) -> str:
+    return "stateful" if source_context is not None else "stateless"
+
+
+def _record_policy_resolution(
+    *,
+    surface: str,
+    policy_pack: DpmEffectivePolicyPackResolution,
+) -> None:
+    record_policy_pack_resolution(
+        surface=surface,
+        enabled=str(policy_pack.enabled).lower(),
+        source=policy_pack.source.lower(),
+        selected=str(policy_pack.selected_policy_pack_id is not None).lower(),
+    )
+
+
+def _execution_outcome_for_status(status_value: str) -> str:
+    return "blocked" if status_value == "BLOCKED" else "success"
+
+
+def _execution_status_label(status_value: str) -> str:
+    return status_value.lower()
+
+
 def _resolve_stateful_source_context(
     *,
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
@@ -363,6 +394,7 @@ def simulate_rebalance(
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
     )
+    _record_policy_resolution(surface="simulate", policy_pack=policy_pack)
     policy_pack_definition = resolve_selected_policy_pack_definition(policy_pack)
     effective_options = apply_policy_pack_to_engine_options(
         options=request.options,
@@ -387,6 +419,12 @@ def simulate_rebalance(
         except DpmRunNotFoundError:
             existing = None
         if existing is not None and existing.request_hash != request_hash:
+            record_execution_call(
+                operation="simulate",
+                input_mode=_source_input_mode(source_context),
+                outcome="conflict",
+                result_status="failed",
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="IDEMPOTENCY_KEY_CONFLICT: request hash mismatch",
@@ -397,11 +435,24 @@ def simulate_rebalance(
                     rebalance_run_id=existing.rebalance_run_id
                 )
             except DpmRunNotFoundError as exc:
+                record_execution_call(
+                    operation="simulate",
+                    input_mode=_source_input_mode(source_context),
+                    outcome="error",
+                    result_status="failed",
+                )
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="DPM_IDEMPOTENCY_STORE_INCONSISTENT",
                 ) from exc
-            return RebalanceResult.model_validate(replay_run.result)
+            replay_result = RebalanceResult.model_validate(replay_run.result)
+            record_execution_call(
+                operation="simulate",
+                input_mode=_source_input_mode(source_context),
+                outcome="replayed",
+                result_status=_execution_status_label(replay_result.status),
+            )
+            return replay_result
 
     run_fn = _main_override("run_simulation") or run_simulation
     result = run_fn(
@@ -427,6 +478,12 @@ def simulate_rebalance(
         )
     except (HTTPException, RuntimeError, ValueError) as exc:
         if replay_enabled:
+            record_execution_call(
+                operation="simulate",
+                input_mode=_source_input_mode(source_context),
+                outcome="error",
+                result_status="failed",
+            )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="DPM_IDEMPOTENCY_STORE_WRITE_FAILED",
@@ -436,6 +493,12 @@ def simulate_rebalance(
     if result.status == "BLOCKED":
         current_logger.warning("Run blocked by DPM engine safety rules")
 
+    record_execution_call(
+        operation="simulate",
+        input_mode=_source_input_mode(source_context),
+        outcome=_execution_outcome_for_status(result.status),
+        result_status=_execution_status_label(result.status),
+    )
     return result
 
 
@@ -461,6 +524,7 @@ def execute_batch_analysis(
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
     )
+    _record_policy_resolution(surface="analyze", policy_pack=policy_resolution)
     policy_definition = resolve_selected_policy_pack_definition(policy_resolution)
 
     for scenario_name in sorted(request.scenarios.keys()):
@@ -516,6 +580,12 @@ def execute_batch_analysis(
 
     if failed_scenarios:
         warnings.append("PARTIAL_BATCH_FAILURE")
+    record_execution_call(
+        operation="analyze",
+        input_mode=_source_input_mode(source_context),
+        outcome="partial_failure" if failed_scenarios else "success",
+        result_status="partial_success" if failed_scenarios else "ready",
+    )
 
     return BatchRebalanceResult(
         batch_run_id=batch_id,
@@ -528,7 +598,12 @@ def execute_batch_analysis(
     )
 
 
-def run_analyze_async_operation(*, operation_id: str, service: DpmRunSupportService) -> None:
+def run_analyze_async_operation(
+    *,
+    operation_id: str,
+    service: DpmRunSupportService,
+    execution_mode: str = "inline",
+) -> None:
     current_logger = _resolved_logger()
     request_json, operation_correlation_id = service.prepare_analyze_operation_execution(
         operation_id=operation_id
@@ -566,12 +641,22 @@ def run_analyze_async_operation(*, operation_id: str, service: DpmRunSupportServ
             operation_id=operation_id,
             result_json=result.model_dump(mode="json"),
         )
+        record_async_operation(
+            event="execute",
+            execution_mode=execution_mode,
+            outcome="succeeded",
+        )
     except (DpmRunNotFoundError, ValidationError, HTTPException, RuntimeError, ValueError) as exc:
         current_logger.exception("Asynchronous batch analysis failed")
         service.complete_operation_failure(
             operation_id=operation_id,
             code=type(exc).__name__,
             message=str(exc),
+        )
+        record_async_operation(
+            event="execute",
+            execution_mode=execution_mode,
+            outcome="failed",
         )
 
 
@@ -596,6 +681,7 @@ def submit_and_optionally_execute_async_analysis(
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
     )
+    _record_policy_resolution(surface="analyze_async", policy_pack=policy_pack)
     current_logger.debug(
         "Resolved lotus-manage policy pack for analyze async. enabled=%s source=%s policy_pack_id=%s",
         policy_pack.enabled,
@@ -618,10 +704,36 @@ def submit_and_optionally_execute_async_analysis(
             },
         )
     except DpmAsyncOperationConflictError as exc:
+        record_async_operation(
+            event="submit",
+            execution_mode=resolve_async_execution_mode().lower(),
+            outcome="conflict",
+        )
+        record_execution_call(
+            operation="analyze_async",
+            input_mode=_source_input_mode(source_context),
+            outcome="conflict",
+            result_status="failed",
+        )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    record_async_operation(
+        event="submit",
+        execution_mode=resolve_async_execution_mode().lower(),
+        outcome="accepted",
+    )
+    record_execution_call(
+        operation="analyze_async",
+        input_mode=_source_input_mode(source_context),
+        outcome="accepted",
+        result_status="accepted",
+    )
     if resolve_async_execution_mode() == "ACCEPT_ONLY":
         return accepted
-    run_analyze_async_operation(operation_id=accepted.operation_id, service=service)
+    run_analyze_async_operation(
+        operation_id=accepted.operation_id,
+        service=service,
+        execution_mode="inline",
+    )
     return accepted
 
 
@@ -639,11 +751,25 @@ def execute_dpm_async_operation(
             detail="DPM_ASYNC_MANUAL_EXECUTION_DISABLED",
         )
     try:
-        run_analyze_async_operation(operation_id=operation_id, service=service)
+        run_analyze_async_operation(
+            operation_id=operation_id,
+            service=service,
+            execution_mode="manual",
+        )
     except DpmRunNotFoundError as exc:
         detail = str(exc)
         if detail == "DPM_ASYNC_OPERATION_NOT_EXECUTABLE":
+            record_async_operation(
+                event="execute",
+                execution_mode="manual",
+                outcome="not_executable",
+            )
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from exc
+        record_async_operation(
+            event="execute",
+            execution_mode="manual",
+            outcome="not_found",
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail) from exc
     return service.get_async_operation(operation_id=operation_id)
 

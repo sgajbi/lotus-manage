@@ -67,6 +67,76 @@
         ]
       },
       "source": "src.api.observability.record_core_resolver_call"
+    },
+    {
+      "name": "lotus_manage_execution_total",
+      "type": "counter",
+      "description": "Counts DPM simulate, analyze, and async analyze execution outcomes.",
+      "labels": {
+        "operation": ["simulate", "analyze", "analyze_async"],
+        "input_mode": ["stateless", "stateful", "unknown"],
+        "outcome": [
+          "success",
+          "partial_failure",
+          "blocked",
+          "replayed",
+          "accepted",
+          "conflict",
+          "error"
+        ],
+        "result_status": [
+          "ready",
+          "pending_review",
+          "blocked",
+          "accepted",
+          "partial_success",
+          "failed",
+          "unknown"
+        ]
+      },
+      "source": "src.api.observability.record_execution_call"
+    },
+    {
+      "name": "lotus_manage_async_operation_total",
+      "type": "counter",
+      "description": "Counts async operation submission and execution lifecycle outcomes.",
+      "labels": {
+        "event": ["submit", "execute"],
+        "execution_mode": ["inline", "accept_only", "manual", "unknown"],
+        "outcome": [
+          "accepted",
+          "succeeded",
+          "failed",
+          "conflict",
+          "not_found",
+          "not_executable",
+          "disabled"
+        ]
+      },
+      "source": "src.api.observability.record_async_operation"
+    },
+    {
+      "name": "lotus_manage_policy_pack_resolution_total",
+      "type": "counter",
+      "description": "Counts policy-pack resolution posture for execution and diagnostic policy surfaces.",
+      "labels": {
+        "surface": ["simulate", "analyze", "analyze_async", "api"],
+        "enabled": ["true", "false"],
+        "source": ["disabled", "request", "tenant_default", "global_default", "none", "unknown"],
+        "selected": ["true", "false"]
+      },
+      "source": "src.api.observability.record_policy_pack_resolution"
+    },
+    {
+      "name": "lotus_manage_workflow_decision_total",
+      "type": "counter",
+      "description": "Counts workflow action outcomes for discretionary mandate review gates.",
+      "labels": {
+        "surface": ["run", "trace", "retry"],
+        "action": ["approve", "reject", "request_changes", "unknown"],
+        "outcome": ["success", "not_found", "disabled", "conflict", "error"]
+      },
+      "source": "src.api.observability.record_workflow_decision"
     }
   ],
   "dashboards": [
@@ -87,6 +157,34 @@
           "metric": "lotus_manage_core_resolver_total",
           "query": "sum by (outcome, supportability_state, reason) (rate(lotus_manage_core_resolver_total[5m]))",
           "use_when": "Monitor stateful resolver readiness after the governed lotus-core DPM execution-context contract is available."
+        },
+        {
+          "panel_id": "dpm-execution-outcomes",
+          "title": "DPM Execution Outcomes",
+          "metric": "lotus_manage_execution_total",
+          "query": "sum by (operation, input_mode, outcome, result_status) (rate(lotus_manage_execution_total[5m]))",
+          "use_when": "Monitor simulate, analyze, and async analyze behavior across stateless and future stateful modes."
+        },
+        {
+          "panel_id": "async-operation-lifecycle",
+          "title": "Async Operation Lifecycle",
+          "metric": "lotus_manage_async_operation_total",
+          "query": "sum by (event, execution_mode, outcome) (rate(lotus_manage_async_operation_total[5m]))",
+          "use_when": "Monitor async submission and execution health, including conflicts and failed executions."
+        },
+        {
+          "panel_id": "policy-pack-resolution",
+          "title": "Policy-Pack Resolution",
+          "metric": "lotus_manage_policy_pack_resolution_total",
+          "query": "sum by (surface, enabled, source, selected) (rate(lotus_manage_policy_pack_resolution_total[5m]))",
+          "use_when": "Monitor whether execution and diagnostic surfaces are using request, tenant, global, or disabled policy-pack posture."
+        },
+        {
+          "panel_id": "workflow-decision-outcomes",
+          "title": "Workflow Decision Outcomes",
+          "metric": "lotus_manage_workflow_decision_total",
+          "query": "sum by (surface, action, outcome) (rate(lotus_manage_workflow_decision_total[5m]))",
+          "use_when": "Monitor discretionary mandate review-gate action outcomes without actor, run, or portfolio identifiers."
         }
       ]
     }
@@ -117,6 +215,42 @@
       "expression": "sum(rate(lotus_manage_core_resolver_total{outcome=\"incomplete\"}[15m])) > 0",
       "for": "15m",
       "description": "lotus-core returned an incomplete or invalid DPM execution context.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-execution-errors",
+      "severity": "critical",
+      "metric": "lotus_manage_execution_total",
+      "expression": "sum(rate(lotus_manage_execution_total{outcome=\"error\"}[5m])) > 0",
+      "for": "5m",
+      "description": "DPM execution requests are failing before producing a governed result.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-async-failures",
+      "severity": "warning",
+      "metric": "lotus_manage_async_operation_total",
+      "expression": "sum(rate(lotus_manage_async_operation_total{outcome=\"failed\"}[10m])) > 0",
+      "for": "10m",
+      "description": "Async operation execution is failing.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-policy-pack-resolution-disabled",
+      "severity": "info",
+      "metric": "lotus_manage_policy_pack_resolution_total",
+      "expression": "sum(rate(lotus_manage_policy_pack_resolution_total{enabled=\"false\"}[30m])) > 0",
+      "for": "30m",
+      "description": "Policy-pack resolution is disabled for observed execution or diagnostic surfaces.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-workflow-decision-conflicts",
+      "severity": "warning",
+      "metric": "lotus_manage_workflow_decision_total",
+      "expression": "sum(rate(lotus_manage_workflow_decision_total{outcome=\"conflict\"}[10m])) > 0",
+      "for": "10m",
+      "description": "Workflow action requests are conflicting with current discretionary mandate review state.",
       "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
     }
   ],

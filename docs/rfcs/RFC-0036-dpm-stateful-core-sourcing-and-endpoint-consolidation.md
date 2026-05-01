@@ -1088,6 +1088,42 @@ Implementation evidence captured on 2026-05-01:
     `Simulating rebalance request` and `Analyzing scenario batch` without embedded `CID=`,
     `Idempotency=`, `BatchID=`, `OperationID=`, or diagnostics payload text. Correlation, request,
     and trace fields remain structured observability context.
+18. Added bounded execution and control-plane metric instrumentation:
+    - `lotus_manage_execution_total` for simulate, analyze, and async-analyze execution outcomes,
+    - `lotus_manage_async_operation_total` for async submit and execute lifecycle events,
+    - `lotus_manage_policy_pack_resolution_total` for policy-pack resolution posture across
+      execution and policy API surfaces,
+    - `lotus_manage_workflow_decision_total` for mandate workflow decisions.
+19. Expanded `contracts/observability/lotus-manage-monitoring.v1.json` so dashboards and alerts
+    cover execution outcomes, async operation failures, missing policy-pack resolution, and
+    workflow-action failures. The validator now checks these metric families alongside run
+    supportability and core resolver metrics.
+20. Added bounded-label tests proving untrusted operation, input-mode, status, policy, workflow,
+    and lifecycle values fall back to allowlisted labels instead of becoming Prometheus label
+    cardinality or sensitive-data leaks.
+21. Focused execution/workflow metrics validation passed:
+    - `python scripts/validate_observability_contracts.py` passed,
+    - `python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_simulate_endpoint_success tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_workflow_endpoints_happy_path_and_invalid_transition tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py -q`
+      returned 20 passed,
+    - `python -m ruff check src/api/observability.py src/api/services/rebalance_simulation_service.py src/api/routers/rebalance_policy_packs.py src/api/routers/rebalance_runs_workflow_routes.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py scripts/validate_observability_contracts.py`
+      passed,
+    - `python -m ruff format --check src/api/observability.py src/api/services/rebalance_simulation_service.py src/api/routers/rebalance_policy_packs.py src/api/routers/rebalance_runs_workflow_routes.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py scripts/validate_observability_contracts.py`
+      passed after formatting,
+    - `python -m mypy --config-file mypy.ini` passed.
+22. Repository-native `make check` passed after execution/workflow metrics hardening:
+    - lint and format checks passed,
+    - monetary float guard passed,
+    - no-alias, mypy, OpenAPI, API vocabulary, domain product, trust telemetry, and observability
+      contract gates passed,
+    - unit suite returned 483 passed.
+23. Docker-backed live proof passed for the expanded metrics slice:
+    - `docker compose down -v`,
+    - `LOTUS_MANAGE_HOST_PORT=8001 docker compose up -d --build`,
+    - `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate` returned 0 failures
+      across 8 probes,
+    - `/metrics` exposed `lotus_manage_execution_total`,
+      `lotus_manage_async_operation_total`, `lotus_manage_policy_pack_resolution_total`, and
+      `lotus_manage_workflow_decision_total` from the live container.
 
 ### Slice 10: Enterprise API Certification
 

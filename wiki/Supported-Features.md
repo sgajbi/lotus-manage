@@ -39,6 +39,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Mesh product validation | Enforced for repo-native declarations and trust telemetry | `make mesh-contract-validate`, domain product tests, trust telemetry tests |
 | Sensitive-safe access and service logging | Enforced | observability and API tests proving route-template logging, redaction of sensitive extra fields, and no raw identifiers in service messages |
 | Stateful resolver metrics | Enforced with bounded labels | observability tests and stateful resolver API tests |
+| DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
 
 ## Explicit Non-Goals

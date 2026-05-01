@@ -3,6 +3,7 @@ from typing import Annotated, Any, Optional, cast
 
 from fastapi import APIRouter, Header, HTTPException, Path, Request, status
 
+from src.api.observability import record_policy_pack_resolution
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
     env_flag,
@@ -230,6 +231,15 @@ def reset_dpm_policy_pack_repository_for_tests() -> None:
     return None
 
 
+def _record_policy_pack_api_resolution(resolution: DpmEffectivePolicyPackResolution) -> None:
+    record_policy_pack_resolution(
+        surface="api",
+        enabled=str(resolution.enabled).lower(),
+        source=resolution.source.lower(),
+        selected=str(resolution.selected_policy_pack_id is not None).lower(),
+    )
+
+
 @router.get(
     "/rebalance/policies/effective",
     response_model=DpmEffectivePolicyPackResolution,
@@ -263,11 +273,13 @@ def get_effective_dpm_policy_pack(
     ] = None,
 ) -> DpmEffectivePolicyPackResolution:
     _reject_unexpected_query_params(request, allowed_params=set())
-    return resolve_dpm_policy_pack(
+    resolution = resolve_dpm_policy_pack(
         request_policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
     )
+    _record_policy_pack_api_resolution(resolution)
+    return resolution
 
 
 @router.get(
@@ -308,6 +320,7 @@ def get_dpm_policy_pack_catalog(
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
     )
+    _record_policy_pack_api_resolution(resolution)
     catalog = load_dpm_policy_pack_catalog()
     items = sorted(catalog.values(), key=lambda item: item.policy_pack_id)
     selected_policy_pack_id = resolution.selected_policy_pack_id

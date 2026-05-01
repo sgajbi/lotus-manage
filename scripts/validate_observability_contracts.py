@@ -38,6 +38,18 @@ def implemented_metric_contract() -> dict[str, tuple[str, ...]]:
         f"{observability.DPM_CORE_RESOLVER_TOTAL._name}_total": tuple(
             observability.DPM_CORE_RESOLVER_TOTAL._labelnames
         ),
+        f"{observability.DPM_EXECUTION_TOTAL._name}_total": tuple(
+            observability.DPM_EXECUTION_TOTAL._labelnames
+        ),
+        f"{observability.DPM_ASYNC_OPERATION_TOTAL._name}_total": tuple(
+            observability.DPM_ASYNC_OPERATION_TOTAL._labelnames
+        ),
+        f"{observability.DPM_POLICY_PACK_RESOLUTION_TOTAL._name}_total": tuple(
+            observability.DPM_POLICY_PACK_RESOLUTION_TOTAL._labelnames
+        ),
+        f"{observability.DPM_WORKFLOW_DECISION_TOTAL._name}_total": tuple(
+            observability.DPM_WORKFLOW_DECISION_TOTAL._labelnames
+        ),
     }
 
 

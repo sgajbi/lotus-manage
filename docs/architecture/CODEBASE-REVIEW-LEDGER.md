@@ -196,6 +196,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki operations and supported-features source updated because operator-facing
   logging behavior changed.
 
+## RFC36-S9-005: Execution and workflow metrics were incomplete
+
+- Date: 2026-05-01
+- Scope: DPM execution APIs, async operation lifecycle, policy-pack resolution, workflow decisions,
+  monitoring contracts, observability tests
+- Finding: the service had bounded supportability and stateful resolver metrics, but no governed
+  metric families for execution outcomes, async lifecycle transitions, policy-pack resolution
+  posture, or mandate-workflow decisions. Operators could not distinguish accepted, replayed,
+  blocked, partial-failure, policy-disabled, or workflow-action outcomes without inspecting API
+  payloads or persistence state.
+- Action: added bounded Prometheus counters for execution, async operations, policy-pack
+  resolution, and workflow decisions; instrumented simulate, analyze, async submit/execute,
+  policy-pack lookup, and workflow action routes; expanded the monitoring contract, dashboards,
+  alerts, validator, and tests to keep labels bounded and non-sensitive.
+- Status: fixed for current DPM execution and supportability workflow surfaces.
+- Wiki decision: wiki operations and supported-features source updated because operator-facing
+  monitoring behavior changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

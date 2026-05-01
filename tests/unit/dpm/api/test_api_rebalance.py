@@ -330,6 +330,14 @@ def test_simulate_endpoint_success(client):
         "EXECUTION_READY",
         "NONE",
     }
+    metrics = client.get("/metrics")
+    assert metrics.status_code == 200
+    assert "lotus_manage_execution_total" in metrics.text
+    assert 'input_mode="stateless"' in metrics.text
+    assert 'operation="simulate"' in metrics.text
+    assert "lotus_manage_policy_pack_resolution_total" in metrics.text
+    assert 'enabled="false"' in metrics.text
+    assert 'surface="simulate"' in metrics.text
 
 
 def test_simulate_skips_policy_catalog_when_policy_packs_disabled(client, monkeypatch):
