@@ -163,6 +163,8 @@ APIs cannot look healthy while their backing store is missing or unmigrated.
 Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
 proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled
 with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden.
+Lineage lookup remains feature-gated by default; set `DPM_LINEAGE_APIS_ENABLED=true` when running
+lineage endpoint certification or supportability incident drills.
 
 Operationally important truths:
 

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-01T09:29:07.441669+00:00",
+  "generatedAt": "2026-05-01T10:27:34.416337+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -4354,7 +4354,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional lineage edge-type filter.",
+      "description": "Optional lineage edge-type filter. Valid values are `CORRELATION_TO_RUN`, `IDEMPOTENCY_TO_RUN`, and `OPERATION_TO_CORRELATION`.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
       "semanticId": "lotus.edge_type",
@@ -5470,7 +5470,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional lineage edge-type filter.",
+      "description": "Optional lineage edge-type filter. Valid values are `CORRELATION_TO_RUN`, `IDEMPOTENCY_TO_RUN`, and `OPERATION_TO_CORRELATION`.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
       "semanticId": "lotus.edge_type",

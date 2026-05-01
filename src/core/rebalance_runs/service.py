@@ -351,20 +351,7 @@ class DpmRunSupportService:
                 edge.target_entity_id,
             ),
         )
-        return DpmLineageResponse(
-            entity_id=entity_id,
-            edges=[
-                DpmLineageEdgeResponse(
-                    source_entity_id=edge.source_entity_id,
-                    edge_type=edge.edge_type,
-                    target_entity_id=edge.target_entity_id,
-                    created_at=edge.created_at.isoformat(),
-                    metadata=edge.metadata_json,
-                )
-                for edge in edges
-            ],
-            next_cursor=None,
-        )
+        return _to_lineage_response(entity_id=entity_id, edges=edges, next_cursor=None)
 
     def get_lineage_filtered(
         self,
@@ -406,20 +393,7 @@ class DpmRunSupportService:
 
         page = edges[:limit]
         next_cursor = _lineage_cursor(page[-1]) if len(edges) > limit else None
-        return DpmLineageResponse(
-            entity_id=entity_id,
-            edges=[
-                DpmLineageEdgeResponse(
-                    source_entity_id=edge.source_entity_id,
-                    edge_type=edge.edge_type,
-                    target_entity_id=edge.target_entity_id,
-                    created_at=edge.created_at.isoformat(),
-                    metadata=edge.metadata_json,
-                )
-                for edge in page
-            ],
-            next_cursor=next_cursor,
-        )
+        return _to_lineage_response(entity_id=entity_id, edges=page, next_cursor=next_cursor)
 
     def get_supportability_summary(
         self, *, store_backend: str, retention_days: int
@@ -1000,4 +974,26 @@ def _lineage_cursor(edge: DpmLineageEdgeRecord) -> str:
     return (
         f"{edge.created_at.isoformat()}|{edge.source_entity_id}|"
         f"{edge.edge_type}|{edge.target_entity_id}"
+    )
+
+
+def _to_lineage_response(
+    *,
+    entity_id: str,
+    edges: list[DpmLineageEdgeRecord],
+    next_cursor: Optional[str],
+) -> DpmLineageResponse:
+    return DpmLineageResponse(
+        entity_id=entity_id,
+        edges=[
+            DpmLineageEdgeResponse(
+                source_entity_id=edge.source_entity_id,
+                edge_type=edge.edge_type,
+                target_entity_id=edge.target_entity_id,
+                created_at=edge.created_at.isoformat(),
+                metadata=edge.metadata_json,
+            )
+            for edge in edges
+        ],
+        next_cursor=next_cursor,
     )

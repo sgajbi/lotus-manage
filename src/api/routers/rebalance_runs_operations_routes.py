@@ -6,6 +6,7 @@ from src.api.routers import rebalance_runs as shared
 from src.core.rebalance_runs import (
     DpmAsyncOperationListResponse,
     DpmAsyncOperationStatusResponse,
+    DpmLineageEdgeType,
     DpmLineageResponse,
     DpmRunNotFoundError,
     DpmRunSupportService,
@@ -202,13 +203,22 @@ def get_dpm_async_operation_by_correlation(
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Supportability Lineage by Entity Id",
     description=(
-        "Returns supportability lineage edges for an entity id, including correlation, "
-        "idempotency, run, and operation relations. Supported filters are `edge_type`, "
-        "`created_from`, `created_to`, `limit`, and `cursor`; unsupported aliases are rejected."
+        "Returns supportability lineage edges where the requested entity id is either the source "
+        "or target of a persisted relation. Use this endpoint for incident reconstruction, audit "
+        "evidence, run-to-correlation traversal, idempotency retry analysis, and async operation "
+        "traceability. Supported filters are `edge_type`, `created_from`, `created_to`, `limit`, "
+        "and `cursor`; unsupported aliases are rejected. Unknown entity ids return an empty page "
+        "rather than `404`, because lineage lookup is a search surface."
     ),
     responses={
+        200: {
+            "description": (
+                "Lineage page ordered by creation timestamp, source entity id, edge type, and "
+                "target entity id, with `next_cursor` when more edges are available."
+            ),
+        },
         422: {
-            "description": "Unsupported query parameters were supplied.",
+            "description": "Unsupported query parameters or invalid filter values were supplied.",
         },
     },
 )
@@ -225,9 +235,12 @@ def get_dpm_lineage(
         ),
     ],
     edge_type: Annotated[
-        Optional[str],
+        Optional[DpmLineageEdgeType],
         Query(
-            description="Optional lineage edge-type filter.",
+            description=(
+                "Optional lineage edge-type filter. Valid values are `CORRELATION_TO_RUN`, "
+                "`IDEMPOTENCY_TO_RUN`, and `OPERATION_TO_CORRELATION`."
+            ),
             examples=["CORRELATION_TO_RUN"],
         ),
     ] = None,

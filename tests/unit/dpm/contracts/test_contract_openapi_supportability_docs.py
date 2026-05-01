@@ -740,12 +740,24 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
         "Supported filters are `edge_type`, `created_from`, `created_to`, `limit`, and `cursor`"
         in lineage["description"]
     )
+    assert "Unknown entity ids return an empty page" in lineage["description"]
+    assert "source or target" in lineage["description"]
     assert lineage["responses"]["422"]["description"] == (
-        "Unsupported query parameters were supplied."
+        "Unsupported query parameters or invalid filter values were supplied."
     )
     expected_params = {"entity_id", "edge_type", "created_from", "created_to", "limit", "cursor"}
     actual_params = {param["name"] for param in lineage["parameters"]}
     assert expected_params.issubset(actual_params)
+    edge_type_param = next(param for param in lineage["parameters"] if param["name"] == "edge_type")
+    assert edge_type_param["description"]
+    edge_type_schema = next(
+        schema for schema in edge_type_param["schema"]["anyOf"] if "enum" in schema
+    )
+    assert set(edge_type_schema["enum"]) == {
+        "CORRELATION_TO_RUN",
+        "IDEMPOTENCY_TO_RUN",
+        "OPERATION_TO_CORRELATION",
+    }
 
     idempotency_history = openapi["paths"][
         "/api/v1/rebalance/idempotency/{idempotency_key}/history"

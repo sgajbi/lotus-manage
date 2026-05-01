@@ -282,6 +282,13 @@ Swagger contract quality:
 
 ### `GET /rebalance/lineage/{entity_id}`
 - Purpose: retrieve supportability lineage edges for entity ids (correlation, idempotency, run, operation).
+- Matching behavior:
+  - returns edges where `entity_id` is either `source_entity_id` or `target_entity_id`
+  - unknown entity ids return an empty lineage page, not `404`
+- Edge types:
+  - `CORRELATION_TO_RUN`
+  - `IDEMPOTENCY_TO_RUN`
+  - `OPERATION_TO_CORRELATION`
 - Filters:
   - `edge_type`
   - `created_from`
@@ -289,8 +296,14 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Ordering:
+  - `created_at`
+  - `source_entity_id`
+  - `edge_type`
+  - `target_entity_id`
 - Contract hardening:
   - unsupported query aliases are rejected with `422`
+  - invalid edge types are rejected with `422`
   - use canonical snake_case filter names only
 
 ### `GET /rebalance/idempotency/{idempotency_key}/history`

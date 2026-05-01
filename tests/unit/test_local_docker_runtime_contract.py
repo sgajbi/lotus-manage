@@ -32,6 +32,12 @@ def test_local_docker_runtime_exposes_async_execution_controls() -> None:
     )
 
 
+def test_local_docker_runtime_exposes_lineage_feature_gate() -> None:
+    compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
+
+    assert "DPM_LINEAGE_APIS_ENABLED=${DPM_LINEAGE_APIS_ENABLED:-false}" in compose_text
+
+
 def test_ci_local_docker_compose_does_not_publish_internal_postgres_port() -> None:
     compose_text = Path("docker-compose.ci-local.yml").read_text(encoding="utf-8")
 

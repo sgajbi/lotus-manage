@@ -84,6 +84,67 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: supportability lineage lookup
+
+Route:
+
+- `GET /rebalance/lineage/{entity_id}`
+
+Purpose:
+
+Returns persisted supportability lineage edges where `entity_id` is either the source or target of a
+relation. Use this endpoint for incident reconstruction, audit evidence, run-to-correlation
+traversal, idempotency retry analysis, and async operation traceability.
+
+Request surface:
+
+- Path parameter: `entity_id`.
+- Filters: `edge_type`, `created_from`, `created_to`.
+- Pagination: `limit` and opaque `cursor`.
+- Valid edge types: `CORRELATION_TO_RUN`, `IDEMPOTENCY_TO_RUN`,
+  `OPERATION_TO_CORRELATION`.
+- Response: `DpmLineageResponse`.
+- Unknown entity ids return an empty lineage page rather than `404`.
+
+Functional coverage:
+
+- run-id lookup returns both correlation-to-run and idempotency-to-run edges,
+- correlation, idempotency, run, and operation entity ids are supported by the repository lookup,
+- edge-type filtering validates against the governed enum,
+- created-at windows can produce an empty bounded page,
+- cursor pagination is deterministic,
+- unsupported query aliases return `422`,
+- invalid edge types return `422`,
+- metadata preserves request hashes for run and idempotency lineage edges.
+
+Non-functional posture:
+
+- Results are ordered by `created_at`, `source_entity_id`, `edge_type`, and `target_entity_id` for
+  deterministic audit review.
+- The endpoint is page-bounded with a maximum `limit` of 200.
+- Lineage lookup is a local supportability read and never calls upstream portfolio, market-data, or
+  advisory systems.
+
+Upstream integration posture:
+
+The endpoint reports lineage captured during `lotus-manage` supportability writes. Upstream systems
+remain responsible for source-governed portfolio, model, market, and policy identifiers passed into
+the original request.
+
+Downstream consumers:
+
+- Integration tests use lineage lookup for supportability round trips.
+- No direct strategic Gateway or Workbench consumer was found for `/rebalance/lineage/{entity_id}`.
+- Future downstream incident tooling should use this endpoint for DPM supportability graph
+  traversal rather than adding duplicate lineage routes.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_dpm_lineage_filters.py tests/unit/dpm/api/test_api_rebalance.py::test_dpm_lineage_api_disabled_and_enabled tests/unit/dpm/api/test_api_rebalance.py::test_lineage_supportability_route_rejects_unexpected_query_params tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: single rebalance simulation
 
 Route:
