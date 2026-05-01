@@ -84,6 +84,69 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: run supportability bundle
+
+Route:
+
+- `GET /rebalance/runs/{rebalance_run_id}/support-bundle`
+
+Purpose:
+
+Returns one aggregated supportability bundle for a discretionary mandate rebalance run so operator
+or audit investigations can start from a single payload. Use this endpoint when the caller already
+has the run id. Use the by-correlation, by-idempotency, or by-operation variants when the caller has
+only one of those alternate handles.
+
+Request surface:
+
+- Path parameter: `rebalance_run_id`.
+- Optional include flags: `include_artifact`, `include_async_operation`,
+  `include_idempotency_history`.
+- Always included: `run`, `workflow_history`, and `lineage`.
+- Optional: `artifact`, `async_operation`, and `idempotency_history`.
+- Unsupported query parameters return `422`.
+
+Functional coverage:
+
+- full bundle includes run payload, deterministic artifact, async operation, workflow history,
+  lineage, and idempotency history when each backing record exists,
+- compact bundle excludes optional artifact, async operation, and idempotency history while
+  retaining core workflow and lineage context,
+- by-correlation, by-idempotency, and by-operation variants resolve to the same run bundle,
+- missing run, idempotency key, or operation ids return governed `404` details,
+- disabled support-bundle feature gate returns governed `404`,
+- unsupported query parameters are rejected instead of silently ignored.
+
+Non-functional posture:
+
+- The route performs local supportability aggregation only; it does not call upstream portfolio,
+  market-data, advisory, or gateway services.
+- Optional include flags let callers reduce payload size and latency when artifact, async detail,
+  or idempotency history are not needed.
+- `workflow_history` and `lineage` remain always included because they are core audit context for
+  run reconstruction.
+
+Upstream integration posture:
+
+The endpoint reports persisted `lotus-manage` supportability records captured during simulation and
+async operation handling. Upstream systems remain responsible for source-governed portfolio, model,
+market, and policy identifiers in the original run payload.
+
+Downstream consumers:
+
+- Integration and e2e tests use support-bundle variants for supportability proof.
+- No direct strategic Gateway or Workbench consumer was found for source-service support-bundle
+  routes.
+- Future incident tooling should use this endpoint instead of adding duplicate bundle or lineage
+  joins downstream.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_support_bundle_endpoint tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_support_bundle_endpoint_by_operation tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint: supportability lineage lookup
 
 Route:

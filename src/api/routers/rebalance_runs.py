@@ -28,6 +28,11 @@ router = APIRouter(tags=["lotus-manage Run Supportability"])
 
 _REPOSITORY = None
 _SERVICE: Optional[DpmRunSupportService] = None
+_SUPPORT_BUNDLE_QUERY_PARAMS = {
+    "include_artifact",
+    "include_async_operation",
+    "include_idempotency_history",
+}
 
 
 def _backend_init_error_detail(detail: str) -> str:
@@ -461,10 +466,18 @@ def get_run_by_run_id(
     description=(
         "Returns an aggregated supportability bundle for one run, including run payload, "
         "lineage, workflow history, optional deterministic artifact, and optional mapped async "
-        "operation/idempotency history."
+        "operation/idempotency history. Optional sections are controlled only by "
+        "`include_artifact`, `include_async_operation`, and `include_idempotency_history`; "
+        "unsupported query parameters are rejected."
     ),
+    responses={
+        200: {"description": "Aggregated run supportability bundle for investigation."},
+        404: {"description": "Run not found or support-bundle APIs disabled."},
+        422: {"description": "Unsupported query parameters were supplied."},
+    },
 )
 def get_dpm_run_support_bundle(
+    request: Request,
     rebalance_run_id: Annotated[
         str,
         Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
@@ -496,6 +509,7 @@ def get_dpm_run_support_bundle(
 ) -> DpmRunSupportBundleResponse:
     _assert_support_apis_enabled()
     _assert_support_bundle_apis_enabled()
+    _reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle(
             rebalance_run_id=rebalance_run_id,
@@ -514,10 +528,18 @@ def get_dpm_run_support_bundle(
     summary="Get lotus-manage Run Support Bundle by Correlation Id",
     description=(
         "Returns aggregated supportability bundle for run resolved by correlation id, "
-        "including optional artifact, async operation, and idempotency history."
+        "including optional artifact, async operation, and idempotency history. Optional sections "
+        "are controlled only by `include_artifact`, `include_async_operation`, and "
+        "`include_idempotency_history`; unsupported query parameters are rejected."
     ),
+    responses={
+        200: {"description": "Aggregated run supportability bundle for investigation."},
+        404: {"description": "Run not found or support-bundle APIs disabled."},
+        422: {"description": "Unsupported query parameters were supplied."},
+    },
 )
 def get_dpm_run_support_bundle_by_correlation(
+    request: Request,
     correlation_id: Annotated[
         str,
         Path(
@@ -552,6 +574,7 @@ def get_dpm_run_support_bundle_by_correlation(
 ) -> DpmRunSupportBundleResponse:
     _assert_support_apis_enabled()
     _assert_support_bundle_apis_enabled()
+    _reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle_by_correlation(
             correlation_id=correlation_id,
@@ -570,10 +593,18 @@ def get_dpm_run_support_bundle_by_correlation(
     summary="Get lotus-manage Run Support Bundle by Idempotency Key",
     description=(
         "Returns aggregated supportability bundle for run resolved by idempotency key mapping, "
-        "including optional artifact, async operation, and idempotency history."
+        "including optional artifact, async operation, and idempotency history. Optional sections "
+        "are controlled only by `include_artifact`, `include_async_operation`, and "
+        "`include_idempotency_history`; unsupported query parameters are rejected."
     ),
+    responses={
+        200: {"description": "Aggregated run supportability bundle for investigation."},
+        404: {"description": "Idempotency key not found or support-bundle APIs disabled."},
+        422: {"description": "Unsupported query parameters were supplied."},
+    },
 )
 def get_dpm_run_support_bundle_by_idempotency(
+    request: Request,
     idempotency_key: Annotated[
         str,
         Path(
@@ -608,6 +639,7 @@ def get_dpm_run_support_bundle_by_idempotency(
 ) -> DpmRunSupportBundleResponse:
     _assert_support_apis_enabled()
     _assert_support_bundle_apis_enabled()
+    _reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle_by_idempotency(
             idempotency_key=idempotency_key,
@@ -626,10 +658,18 @@ def get_dpm_run_support_bundle_by_idempotency(
     summary="Get lotus-manage Run Support Bundle by Operation Id",
     description=(
         "Returns aggregated supportability bundle for run resolved by asynchronous operation id, "
-        "including optional artifact, async operation, and idempotency history."
+        "including optional artifact, async operation, and idempotency history. Optional sections "
+        "are controlled only by `include_artifact`, `include_async_operation`, and "
+        "`include_idempotency_history`; unsupported query parameters are rejected."
     ),
+    responses={
+        200: {"description": "Aggregated run supportability bundle for investigation."},
+        404: {"description": "Operation or mapped run not found, or support-bundle APIs disabled."},
+        422: {"description": "Unsupported query parameters were supplied."},
+    },
 )
 def get_dpm_run_support_bundle_by_operation(
+    request: Request,
     operation_id: Annotated[
         str,
         Path(
@@ -664,6 +704,7 @@ def get_dpm_run_support_bundle_by_operation(
 ) -> DpmRunSupportBundleResponse:
     _assert_support_apis_enabled()
     _assert_support_bundle_apis_enabled()
+    _reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle_by_operation(
             operation_id=operation_id,

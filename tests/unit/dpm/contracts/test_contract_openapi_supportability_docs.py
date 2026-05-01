@@ -653,6 +653,11 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in support_bundle["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert "unsupported query parameters are rejected" in support_bundle["description"]
+    assert support_bundle["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
+    assert "404" in support_bundle["responses"]
 
     support_bundle_by_correlation = openapi["paths"][
         "/api/v1/rebalance/runs/by-correlation/{correlation_id}/support-bundle"
@@ -669,6 +674,12 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in support_bundle_by_correlation["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert (
+        "unsupported query parameters are rejected" in support_bundle_by_correlation["description"]
+    )
+    assert support_bundle_by_correlation["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     workflow_decisions = openapi["paths"]["/api/v1/rebalance/workflow/decisions"]["get"]
     assert workflow_decisions["responses"]["200"]["content"]["application/json"]["schema"][
@@ -715,6 +726,12 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in support_bundle_by_idempotency["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert (
+        "unsupported query parameters are rejected" in support_bundle_by_idempotency["description"]
+    )
+    assert support_bundle_by_idempotency["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     support_bundle_by_operation = openapi["paths"][
         "/api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle"
@@ -731,6 +748,10 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     }
     actual_params = {param["name"] for param in support_bundle_by_operation["parameters"]}
     assert expected_params.issubset(actual_params)
+    assert "unsupported query parameters are rejected" in support_bundle_by_operation["description"]
+    assert support_bundle_by_operation["responses"]["422"]["description"] == (
+        "Unsupported query parameters were supplied."
+    )
 
     lineage = openapi["paths"]["/api/v1/rebalance/lineage/{entity_id}"]["get"]
     assert lineage["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(

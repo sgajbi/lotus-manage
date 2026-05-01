@@ -222,26 +222,9 @@ class DpmRunSupportService:
         history = self._repository.list_idempotency_history(idempotency_key=idempotency_key)
         if not history:
             raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
-        ordered_history = sorted(
-            history,
-            key=lambda item: (
-                item.created_at,
-                item.rebalance_run_id,
-                item.correlation_id,
-                item.request_hash,
-            ),
-        )
-        return DpmRunIdempotencyHistoryResponse(
+        return _to_idempotency_history_response(
             idempotency_key=idempotency_key,
-            history=[
-                DpmRunIdempotencyHistoryItem(
-                    rebalance_run_id=item.rebalance_run_id,
-                    correlation_id=item.correlation_id,
-                    request_hash=item.request_hash,
-                    created_at=item.created_at.isoformat(),
-                )
-                for item in ordered_history
-            ],
+            history=history,
         )
 
     def get_run_artifact(self, *, rebalance_run_id: str) -> DpmRunArtifactResponse:
@@ -462,26 +445,9 @@ class DpmRunSupportService:
         idempotency_history = None
         if include_idempotency_history and run.idempotency_key is not None:
             history = self._repository.list_idempotency_history(idempotency_key=run.idempotency_key)
-            ordered_history = sorted(
-                history,
-                key=lambda item: (
-                    item.created_at,
-                    item.rebalance_run_id,
-                    item.correlation_id,
-                    item.request_hash,
-                ),
-            )
-            idempotency_history = DpmRunIdempotencyHistoryResponse(
+            idempotency_history = _to_idempotency_history_response(
                 idempotency_key=run.idempotency_key,
-                history=[
-                    DpmRunIdempotencyHistoryItem(
-                        rebalance_run_id=item.rebalance_run_id,
-                        correlation_id=item.correlation_id,
-                        request_hash=item.request_hash,
-                        created_at=item.created_at.isoformat(),
-                    )
-                    for item in ordered_history
-                ],
+                history=history,
             )
 
         decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
@@ -501,19 +467,7 @@ class DpmRunSupportService:
                 edge.target_entity_id,
             ),
         )
-        lineage = DpmLineageResponse(
-            entity_id=rebalance_run_id,
-            edges=[
-                DpmLineageEdgeResponse(
-                    source_entity_id=edge.source_entity_id,
-                    edge_type=edge.edge_type,
-                    target_entity_id=edge.target_entity_id,
-                    created_at=edge.created_at.isoformat(),
-                    metadata=edge.metadata_json,
-                )
-                for edge in edges
-            ],
-        )
+        lineage = _to_lineage_response(entity_id=rebalance_run_id, edges=edges, next_cursor=None)
 
         return DpmRunSupportBundleResponse(
             run=to_lookup_response(run),
@@ -996,4 +950,32 @@ def _to_lineage_response(
             for edge in edges
         ],
         next_cursor=next_cursor,
+    )
+
+
+def _to_idempotency_history_response(
+    *,
+    idempotency_key: str,
+    history: list[DpmRunIdempotencyHistoryRecord],
+) -> DpmRunIdempotencyHistoryResponse:
+    ordered_history = sorted(
+        history,
+        key=lambda item: (
+            item.created_at,
+            item.rebalance_run_id,
+            item.correlation_id,
+            item.request_hash,
+        ),
+    )
+    return DpmRunIdempotencyHistoryResponse(
+        idempotency_key=idempotency_key,
+        history=[
+            DpmRunIdempotencyHistoryItem(
+                rebalance_run_id=item.rebalance_run_id,
+                correlation_id=item.correlation_id,
+                request_hash=item.request_hash,
+                created_at=item.created_at.isoformat(),
+            )
+            for item in ordered_history
+        ],
     )

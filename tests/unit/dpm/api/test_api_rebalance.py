@@ -876,6 +876,16 @@ def test_dpm_run_support_bundle_endpoint(client):
     assert compact_body["artifact"] is None
     assert compact_body["async_operation"] is None
     assert compact_body["idempotency_history"] is None
+    assert compact_body["lineage"]["entity_id"] == run_id
+    assert compact_body["workflow_history"]["run_id"] == run_id
+
+    unsupported_query = client.get(
+        f"/api/v1/rebalance/runs/{run_id}/support-bundle?include_lineage=false"
+    )
+    assert unsupported_query.status_code == 422
+    assert unsupported_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: include_lineage not supported for this endpoint"
+    )
 
 
 def test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency(client):
@@ -922,6 +932,14 @@ def test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency(client):
     assert missing_by_idempotency.status_code == 404
     assert missing_by_idempotency.json()["detail"] == "DPM_IDEMPOTENCY_KEY_NOT_FOUND"
 
+    unsupported_by_correlation = client.get(
+        "/api/v1/rebalance/runs/by-correlation/corr-support-bundle-2/support-bundle?lineage=true"
+    )
+    assert unsupported_by_correlation.status_code == 422
+    assert unsupported_by_correlation.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: lineage not supported for this endpoint"
+    )
+
 
 def test_dpm_run_support_bundle_endpoint_by_operation(client):
     payload = get_valid_payload()
@@ -954,6 +972,14 @@ def test_dpm_run_support_bundle_endpoint_by_operation(client):
     missing = client.get("/api/v1/rebalance/runs/by-operation/dop_missing/support-bundle")
     assert missing.status_code == 404
     assert missing.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
+
+    unsupported_by_operation = client.get(
+        f"/api/v1/rebalance/runs/by-operation/{accepted.operation_id}/support-bundle?artifact=false"
+    )
+    assert unsupported_by_operation.status_code == 422
+    assert unsupported_by_operation.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: artifact not supported for this endpoint"
+    )
 
 
 def test_dpm_run_support_bundle_endpoint_disabled_and_not_found(client, monkeypatch):

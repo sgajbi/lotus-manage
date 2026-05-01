@@ -236,6 +236,8 @@ Swagger contract quality:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- `workflow_history` and `lineage` are always included because they are core audit context.
+- Unsupported query parameters return `422`; use only the three canonical include flags above.
 
 ### `GET /rebalance/runs/by-correlation/{correlation_id}/support-bundle`
 - Purpose: retrieve the same supportability bundle when run id is not known.
@@ -243,6 +245,7 @@ Swagger contract quality:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- Unsupported query parameters return `422`.
 
 ### `GET /rebalance/runs/idempotency/{idempotency_key}/support-bundle`
 - Purpose: retrieve the same supportability bundle when only idempotency key is available.
@@ -250,6 +253,7 @@ Swagger contract quality:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- Unsupported query parameters return `422`.
 
 ### `GET /rebalance/runs/by-operation/{operation_id}/support-bundle`
 - Purpose: retrieve the same supportability bundle when asynchronous operation id is available.
@@ -257,6 +261,7 @@ Swagger contract quality:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- Unsupported query parameters return `422`.
 
 ### `GET /rebalance/runs`
 - Purpose: list lotus-manage runs for supportability investigations.
