@@ -9,7 +9,11 @@ from typing import Any, Dict, Optional
 from fastapi import HTTPException, status
 from pydantic import ValidationError
 
-from src.api.request_models import RebalanceRequest
+from src.api.request_models import (
+    BatchExecutionRequestEnvelope,
+    RebalanceExecutionRequestEnvelope,
+    RebalanceRequest,
+)
 from src.api.routers.rebalance_policy_packs import (
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
@@ -19,6 +23,12 @@ from src.api.routers.rebalance_runs import (
     record_dpm_run_for_support,
 )
 from src.core.common.canonical import hash_canonical_payload
+from src.core.dpm_source_context import (
+    DpmCoreContextIncompleteError,
+    DpmResolvedSourceContext,
+    build_batch_rebalance_request_from_core_context,
+    build_rebalance_request_from_core_context,
+)
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
@@ -42,6 +52,12 @@ from src.core.models import (
     EngineOptions,
     Money,
     RebalanceResult,
+)
+from src.infrastructure.core_sourcing import (
+    DpmCoreResolverClient,
+    DpmCoreResolverConfig,
+    DpmCoreResolverError,
+    DpmCoreResolverUnavailableError,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,6 +94,38 @@ def env_int(name: str, default: int) -> int:
     except ValueError:
         return default
     return parsed if parsed >= 1 else default
+
+
+def env_float(name: str, default: float) -> float:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
+
+
+def stateful_core_sourcing_enabled() -> bool:
+    return env_flag("DPM_STATEFUL_CORE_SOURCING_ENABLED", False)
+
+
+def build_core_resolver_client() -> DpmCoreResolverClient:
+    base_url = os.getenv("DPM_CORE_BASE_URL", "").strip()
+    if not base_url:
+        raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
+    return DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url=base_url,
+            path_template=os.getenv(
+                "DPM_CORE_RESOLVER_PATH_TEMPLATE",
+                "/integration/portfolios/{portfolio_id}/dpm-execution-context",
+            ),
+            timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
+            max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),
+        )
+    )
 
 
 def resolve_async_execution_mode() -> str:
@@ -139,6 +187,131 @@ def resolve_selected_policy_pack_definition(
     )
 
 
+def _resolve_stateful_source_context(
+    *,
+    envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
+    correlation_id: Optional[str],
+) -> DpmResolvedSourceContext:
+    if envelope.stateful_input is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="DPM_STATEFUL_INPUT_REQUIRED",
+        )
+    if not stateful_core_sourcing_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="DPM_STATEFUL_INPUT_DISABLED",
+        )
+
+    resolver_factory = _main_override("build_core_resolver_client") or build_core_resolver_client
+    try:
+        resolver = resolver_factory()
+        context = resolver.resolve_execution_context(
+            stateful_input=envelope.stateful_input,
+            correlation_id=correlation_id,
+        )
+    except DpmCoreResolverUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="DPM_CORE_RESOLVER_UNAVAILABLE",
+        ) from exc
+    except (DpmCoreResolverError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="DPM_CORE_CONTEXT_INCOMPLETE",
+        ) from exc
+
+    stateful_context_hash = hash_canonical_payload(context.model_dump(mode="json"))
+    return DpmResolvedSourceContext(
+        stateful_context_hash=stateful_context_hash,
+        context=context,
+    )
+
+
+def _apply_source_lineage(
+    *,
+    result: RebalanceResult,
+    source_context: Optional[DpmResolvedSourceContext],
+) -> RebalanceResult:
+    if source_context is None:
+        result.lineage.input_mode = "stateless"
+        return result
+
+    lineage = source_context.context.source_lineage
+    result.lineage.input_mode = "stateful"
+    result.lineage.source_system = source_context.source_system
+    result.lineage.portfolio_snapshot_id = lineage.portfolio_snapshot_id
+    result.lineage.market_data_snapshot_id = lineage.market_data_snapshot_id
+    result.lineage.model_portfolio_id = lineage.model_portfolio_id
+    result.lineage.model_portfolio_version = lineage.model_portfolio_version
+    result.lineage.shelf_version = lineage.shelf_version
+    result.lineage.integration_policy_version = lineage.integration_policy_version
+    result.lineage.source_lineage_bundle_id = lineage.source_lineage_bundle_id
+    result.lineage.source_supportability_state = source_context.context.supportability.state
+    result.lineage.stateful_context_hash = source_context.stateful_context_hash
+    return result
+
+
+def resolve_rebalance_request_envelope(
+    *,
+    envelope: RebalanceExecutionRequestEnvelope,
+    correlation_id: Optional[str],
+) -> tuple[RebalanceRequest, Optional[DpmResolvedSourceContext]]:
+    if envelope.input_mode == "stateless":
+        if envelope.stateless_input is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="DPM_STATELESS_INPUT_REQUIRED",
+            )
+        return envelope.stateless_input, None
+
+    source_context = _resolve_stateful_source_context(
+        envelope=envelope,
+        correlation_id=correlation_id,
+    )
+    try:
+        resolved = build_rebalance_request_from_core_context(
+            context=source_context.context,
+            options_override=envelope.options_override,
+        )
+    except (DpmCoreContextIncompleteError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="DPM_CORE_CONTEXT_INCOMPLETE",
+        ) from exc
+    return RebalanceRequest.model_validate(resolved.model_dump(mode="python")), source_context
+
+
+def resolve_batch_request_envelope(
+    *,
+    envelope: BatchExecutionRequestEnvelope,
+    correlation_id: Optional[str],
+) -> tuple[BatchRebalanceRequest, Optional[DpmResolvedSourceContext]]:
+    if envelope.input_mode == "stateless":
+        if envelope.stateless_input is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="DPM_STATELESS_INPUT_REQUIRED",
+            )
+        return envelope.stateless_input, None
+
+    source_context = _resolve_stateful_source_context(
+        envelope=envelope,
+        correlation_id=correlation_id,
+    )
+    try:
+        request = build_batch_rebalance_request_from_core_context(
+            context=source_context.context,
+            scenarios=envelope.scenarios,
+        )
+    except (DpmCoreContextIncompleteError, ValidationError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail="DPM_CORE_CONTEXT_INCOMPLETE",
+        ) from exc
+    return request, source_context
+
+
 def simulate_rebalance(
     *,
     request: RebalanceRequest,
@@ -147,6 +320,7 @@ def simulate_rebalance(
     policy_pack_id: Optional[str],
     tenant_default_policy_pack_id: Optional[str] = None,
     tenant_id: Optional[str] = None,
+    source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> RebalanceResult:
     current_logger = _resolved_logger()
     resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
@@ -213,6 +387,7 @@ def simulate_rebalance(
         request_hash=request_hash,
         correlation_id=resolved_correlation_id,
     )
+    result = _apply_source_lineage(result=result, source_context=source_context)
 
     try:
         record_for_support = (
@@ -249,6 +424,7 @@ def execute_batch_analysis(
     request_policy_pack_id: Optional[str] = None,
     tenant_default_policy_pack_id: Optional[str] = None,
     tenant_id: Optional[str] = None,
+    source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> BatchRebalanceResult:
     current_logger = _resolved_logger()
     batch_id = f"batch_{uuid.uuid4().hex[:8]}"
@@ -294,6 +470,10 @@ def execute_batch_analysis(
                 request_hash=request_hash,
                 correlation_id=scenario_correlation_id,
             )
+            scenario_result = _apply_source_lineage(
+                result=scenario_result,
+                source_context=source_context,
+            )
             record_for_support = (
                 _main_override("record_dpm_run_for_support") or record_dpm_run_for_support
             )
@@ -335,15 +515,22 @@ def run_analyze_async_operation(*, operation_id: str, service: DpmRunSupportServ
         if isinstance(request_json, dict) and "batch_request" in request_json:
             batch_payload = request_json.get("batch_request") or {}
             policy_context = request_json.get("policy_context") or {}
+            source_context_payload = request_json.get("source_context")
             request_policy_pack_id = policy_context.get("request_policy_pack_id")
             tenant_default_policy_pack_id = policy_context.get("tenant_default_policy_pack_id")
             tenant_id = policy_context.get("tenant_id")
         else:
             batch_payload = request_json
+            source_context_payload = None
             request_policy_pack_id = None
             tenant_default_policy_pack_id = None
             tenant_id = None
         batch_request = BatchRebalanceRequest.model_validate(batch_payload)
+        source_context = (
+            DpmResolvedSourceContext.model_validate(source_context_payload)
+            if source_context_payload
+            else None
+        )
         execute_batch_fn = _main_override("_execute_batch_analysis") or execute_batch_analysis
         result = execute_batch_fn(
             request=batch_request,
@@ -351,6 +538,7 @@ def run_analyze_async_operation(*, operation_id: str, service: DpmRunSupportServ
             request_policy_pack_id=request_policy_pack_id,
             tenant_default_policy_pack_id=tenant_default_policy_pack_id,
             tenant_id=tenant_id,
+            source_context=source_context,
         )
         service.complete_operation_success(
             operation_id=operation_id,
@@ -372,6 +560,7 @@ def submit_and_optionally_execute_async_analysis(
     policy_pack_id: Optional[str],
     tenant_default_policy_pack_id: Optional[str] = None,
     tenant_id: Optional[str] = None,
+    source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> DpmAsyncAcceptedResponse:
     current_logger = _resolved_logger()
     if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
@@ -401,6 +590,9 @@ def submit_and_optionally_execute_async_analysis(
                     "tenant_default_policy_pack_id": tenant_default_policy_pack_id,
                     "tenant_id": tenant_id,
                 },
+                "source_context": (
+                    source_context.model_dump(mode="json") if source_context is not None else None
+                ),
             },
         )
     except DpmAsyncOperationConflictError as exc:

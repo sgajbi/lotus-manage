@@ -61,7 +61,7 @@ def client():
             }:
                 body = kwargs.get("json")
                 if isinstance(body, dict) and "stateless_input" not in body:
-                    kwargs["json"] = {"stateless_input": body}
+                    kwargs["json"] = {"input_mode": "stateless", "stateless_input": body}
             return self._test_client.post(url, *args, **kwargs)
 
         def get(self, url: str, *args, **kwargs):
@@ -90,7 +90,29 @@ def test_direct_stateless_body_is_rejected_without_envelope():
         )
 
     assert response.status_code == 422
-    assert any("stateless_input" in error["loc"] for error in response.json()["detail"])
+    assert "DPM_STATELESS_INPUT_REQUIRED" in response.text
+
+
+def test_stateful_simulate_is_feature_gated_by_default():
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": {
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "as_of": "2026-03-25",
+                    "mandate_id": "mandate_balanced_discretionary",
+                    "model_portfolio_id": "model_balanced_sgd",
+                    "tenant_id": "tenant_001",
+                    "booking_center_code": "SG",
+                },
+            },
+            headers={"Idempotency-Key": "test-key-stateful-disabled"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "DPM_STATEFUL_INPUT_DISABLED"
 
 
 def test_simulate_endpoint_success(client):

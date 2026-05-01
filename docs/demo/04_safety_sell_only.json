@@ -1,4 +1,5 @@
 {
+  "input_mode": "stateless",
   "stateless_input": {
     "portfolio_snapshot": {
       "portfolio_id": "demo_04",

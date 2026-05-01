@@ -1,8 +1,8 @@
 # lotus-manage Rebalance Engine Demo Scenarios
 
 This folder contains JSON input files demonstrating key capabilities of the lotus-manage Rebalance
-Engine. Each request uses the canonical `stateless_input` envelope. Run these scenarios through the
-API endpoints.
+Engine. Each request uses the canonical explicit envelope with `input_mode=stateless` and
+`stateless_input`. Run these scenarios through the API endpoints.
 
 Canonical local service identity:
 - `http://manage.dev.lotus`

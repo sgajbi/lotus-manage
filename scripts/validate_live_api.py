@@ -58,9 +58,9 @@ def _probe_capabilities(client: httpx.Client) -> ProbeResult:
     return _result(
         "capabilities_truthful_default",
         response.status_code == 200
-        and body.get("supported_input_modes") == ["inline_bundle"]
+        and body.get("supported_input_modes") == ["stateless"]
         and features.get("dpm.execution.stateful_portfolio_id") is False
-        and features.get("dpm.execution.stateless_inline_bundle") is True,
+        and features.get("dpm.execution.stateless") is True,
         {
             "status_code": response.status_code,
             "supported_input_modes": body.get("supported_input_modes"),

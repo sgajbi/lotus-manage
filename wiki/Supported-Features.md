@@ -10,7 +10,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Rebalance simulation | `POST /api/v1/rebalance/simulate` | Supported | unit goldens, OpenAPI gate, API vocabulary gate |
 | What-if analysis | `POST /api/v1/rebalance/analyze` | Supported | unit and demo scenarios |
 | Async what-if execution | `POST /api/v1/rebalance/analyze/async`, `/api/v1/rebalance/operations/*` | Supported | async operation tests and demo scenario 26 |
-| Stateless input envelope | simulate, analyze, async analyze | Supported through `stateless_input` | envelope contract tests and demo payloads |
+| Explicit execution envelope | simulate, analyze, async analyze | Supported with `input_mode=stateless`; `input_mode=stateful` is modeled and feature-gated | envelope contract tests and demo payloads |
 | Run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | Supported | supportability service tests and contract docs tests |
 | Deterministic run artifact | `/api/v1/rebalance/runs/{rebalance_run_id}/artifact` | Supported | artifact service tests and demo scenario 27 |
 | Lineage lookup | `/api/v1/rebalance/lineage/*` | Feature-gated | lineage service tests |
@@ -19,7 +19,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Policy-pack supportability | `/api/v1/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
 | Integration capabilities | `/api/v1/integration/capabilities` | Supported | capability contract tests |
 | Solver target generation | `POST /api/v1/rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
-| Stateful `portfolio_id` execution | `/api/v1/integration/capabilities` | Disabled by default until governed core resolution is configured | capability contract tests and RFC-0082 map |
+| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; disabled by default until governed `lotus-core` resolution is certified | resolver unit tests, transformation tests, feature-gate API test, RFC-0036 evidence |
 
 ## Non-Functional Capabilities
 
@@ -34,6 +34,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Docker startup readiness | Enforced | local Docker runtime contract tests |
 | Live API evidence | Enforced before API readiness claims | `scripts/validate_live_api.py` and `make live-api-validate` |
 | Async correlation conflict handling | Enforced | API tests and live API duplicate-correlation probe |
+| Source-safe core resolver errors | Enforced for modeled stateful mode | resolver timeout/retry tests and stateful feature-gate API test |
 
 ## Explicit Non-Goals
 

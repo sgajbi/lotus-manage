@@ -106,13 +106,13 @@ Functional coverage:
 - explicit consumer and tenant resolution,
 - conservative default input-mode posture,
 - environment-controlled stateful `portfolio_id` publication,
-- environment-controlled `inline_bundle` publication,
+- environment-controlled `stateless` publication,
 - runtime solver dependency discovery,
 - noncanonical camelCase direct-source query parameters do not override defaults.
 
 Default capability posture:
 
-- `inline_bundle` execution is enabled,
+- `stateless` execution is enabled,
 - stateful `portfolio_id` execution is disabled until governed `lotus-core` state resolution is
   configured,
 - workflow review gates are disabled until explicitly enabled,
@@ -841,16 +841,22 @@ Route:
 
 Purpose:
 
-Runs one deterministic discretionary mandate portfolio rebalance from a complete `stateless_input`
-inline request bundle. This is the core manage-owned execution endpoint for portfolio management, policy-pack
-application, run supportability, lineage, idempotency, and workflow-gate outcome publication. It is
-not an advisory proposal endpoint and must not be used as a canonical portfolio read API.
+Runs one deterministic discretionary mandate portfolio rebalance from an explicit execution
+envelope. `input_mode=stateless` uses a complete inline request bundle. `input_mode=stateful`
+is modeled for governed `lotus-core` source-data resolution, but remains feature-gated until live
+core-backed proof is complete. This is the core manage-owned execution endpoint for portfolio
+management, policy-pack application, run supportability, lineage, idempotency, and workflow-gate
+outcome publication. It is not an advisory proposal endpoint and must not be used as a canonical
+portfolio read API.
 
 Request surface:
 
-- Body: `stateless_input.portfolio_snapshot`, `stateless_input.market_data_snapshot`,
-  `stateless_input.model_portfolio`, `stateless_input.shelf_entries`,
-  `stateless_input.options`
+- Body: `input_mode`
+- For `input_mode=stateless`: `stateless_input.portfolio_snapshot`,
+  `stateless_input.market_data_snapshot`, `stateless_input.model_portfolio`,
+  `stateless_input.shelf_entries`, `stateless_input.options`
+- For `input_mode=stateful`: `stateful_input.portfolio_id`, `stateful_input.as_of`,
+  optional mandate/model/policy/tenant/booking-center selectors, and optional `options_override`
 - Required header: `Idempotency-Key`
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
   `X-Tenant-Id`
@@ -870,7 +876,9 @@ Functional coverage:
 - tenant resolver fallback,
 - blocked and pending-review domain statuses,
 - settlement, tax, turnover, group-constraint, and missing-price control branches,
-- supportability persistence, artifact, workflow, lineage, idempotency, and summary integration.
+- supportability persistence, artifact, workflow, lineage, idempotency, and summary integration,
+- stateful mode feature gate returning `DPM_STATEFUL_INPUT_DISABLED` by default,
+- core resolver transformation and source-safe resolver failure behavior covered by unit tests.
 
 Non-functional posture:
 
@@ -882,10 +890,12 @@ Non-functional posture:
 
 Upstream integration posture:
 
-The current route accepts inline snapshots and does not make outbound source-data reads. Upstream
-portfolio, price, FX, and instrument-source authority remains outside `lotus-manage`; callers must
-provide source-governed snapshots and preserve lineage identifiers. Stateful `portfolio_id`
-execution remains disabled in capabilities until governed `lotus-core` resolution is implemented.
+The route accepts inline snapshots for stateless mode. For stateful mode, `lotus-manage` now has a
+bounded `lotus-core` resolver client and source-context transformation seam, but the route is
+disabled by default with `DPM_STATEFUL_CORE_SOURCING_ENABLED=false`. Upstream portfolio, price, FX,
+and instrument-source authority remains outside `lotus-manage`; callers must provide
+source-governed snapshots in stateless mode, and stateful mode must use certified `lotus-core`
+source-data products before promotion.
 
 Downstream consumers:
 
@@ -911,15 +921,19 @@ Route:
 
 Purpose:
 
-Runs a bounded set of named discretionary mandate what-if scenarios against shared inline snapshots
-inside a `stateless_input` envelope and returns the full batch result synchronously. Use this endpoint when the caller needs immediate
-scenario comparison. Use `/api/v1/rebalance/analyze/async` for polling-based orchestration or
-accept-now/execute-later flows.
+Runs a bounded set of named discretionary mandate what-if scenarios from an explicit execution
+envelope and returns the full batch result synchronously. `input_mode=stateless` uses shared inline
+snapshots. `input_mode=stateful` is modeled for shared `lotus-core` context plus scenario overrides,
+but remains disabled by default until live core-backed proof is complete. Use this endpoint when the
+caller needs immediate scenario comparison. Use `/api/v1/rebalance/analyze/async` for polling-based
+orchestration or accept-now/execute-later flows.
 
 Request surface:
 
-- Body: `stateless_input` with shared `portfolio_snapshot`, `market_data_snapshot`,
-  `model_portfolio`, `shelf_entries`, plus a named `scenarios` map.
+- Body: `input_mode`
+- For `input_mode=stateless`: `stateless_input` with shared `portfolio_snapshot`,
+  `market_data_snapshot`, `model_portfolio`, `shelf_entries`, plus a named `scenarios` map.
+- For `input_mode=stateful`: `stateful_input` selectors plus a top-level named `scenarios` map.
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
   `X-Tenant-Id`.
 - Scenario names must match `[a-z0-9_\-]{1,64}`.
@@ -948,9 +962,11 @@ Non-functional posture:
 
 Upstream integration posture:
 
-The endpoint accepts inline source-governed snapshots and does not perform outbound source-data reads.
-Upstream data authority remains outside `lotus-manage`; lineage and snapshot identifiers must be
-preserved by callers. Policy-pack resolution is local to `lotus-manage`.
+The endpoint accepts inline source-governed snapshots in stateless mode. Stateful mode is wired to
+the resolver seam but feature-gated until certified `lotus-core` source-data products and live proof
+exist. Upstream data authority remains outside `lotus-manage`; lineage and snapshot identifiers must
+be preserved by callers or carried from the resolved core context. Policy-pack resolution is local to
+`lotus-manage`.
 
 Downstream consumers:
 
@@ -980,8 +996,9 @@ caller needs deferred execution, operation-level supportability, or explicit man
 
 Request surface:
 
-- Body: `StatelessBatchRebalanceRequestEnvelope` with `stateless_input` containing the
-  `BatchRebalanceRequest`.
+- Body: explicit batch execution envelope. `input_mode=stateless` carries `stateless_input`
+  containing the `BatchRebalanceRequest`; `input_mode=stateful` carries `stateful_input` selectors
+  plus top-level `scenarios` and remains disabled by default until live core-backed proof exists.
 - Optional headers: `X-Correlation-Id`, `X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`,
   `X-Tenant-Id`.
 - Response: `DpmAsyncAcceptedResponse` with `operation_id`, initial `status`, `correlation_id`,
@@ -1012,9 +1029,10 @@ Non-functional posture:
 
 Upstream integration posture:
 
-The endpoint persists caller-supplied inline snapshots and policy context for later execution. It
-does not perform outbound source-data reads; snapshot authority and lineage remain with upstream
-callers and `lotus-core`-governed data products.
+The endpoint persists caller-supplied inline snapshots and policy context for later execution in
+stateless mode. Stateful mode stores resolved source-context lineage with the async operation when
+enabled, but remains feature-gated until `lotus-core` proof exists. Snapshot authority and lineage
+remain with upstream callers and `lotus-core`-governed data products.
 
 Downstream consumers:
 

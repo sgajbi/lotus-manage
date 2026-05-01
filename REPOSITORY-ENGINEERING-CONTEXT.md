@@ -41,9 +41,11 @@ Current repository posture:
 6. it carries the RFC-0091 repo-native producer declaration and telemetry fixture for
    `PortfolioActionRegister`,
 7. the service remains part of the canonical front-office validation path through `lotus-gateway`,
-8. current execution APIs consume caller-supplied inline portfolio, market-data, model, shelf, and
-   option bundles; stateful `portfolio_id` retrieval is disabled until a governed `lotus-core`
-   resolver is enabled.
+8. current execution APIs support explicit `input_mode=stateless` caller-supplied portfolio,
+   market-data, model, shelf, and option bundles,
+9. stateful `portfolio_id` execution has typed selector/context models, a bounded `lotus-core`
+   resolver client, transformation helpers, and lineage fields, but remains disabled by default
+   until governed `lotus-core` live proof is complete.
 
 ## Architecture And Module Map
 
@@ -70,8 +72,8 @@ Primary areas:
 Runtime model:
 
 1. FastAPI service,
-2. depends on `lotus-core` as source-data authority for future governed state resolution, while
-   current execution consumes inline request bundles,
+2. depends on `lotus-core` as source-data authority for governed stateful source-data resolution,
+   while default execution consumes explicit stateless request bundles,
 3. primarily consumed through `lotus-gateway`,
 4. canonical host runtime is exposed through `manage.dev.lotus`.
 
@@ -141,8 +143,9 @@ Most relevant current governance:
 1. management/advisory boundary clarity remains a real quality concern after the split,
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
-4. stateful `portfolio_id` mode is disabled by default until a governed `lotus-core` resolver is
-   configured; inline bundle source-data lineage remains an RFC-0082 watchlist area,
+4. stateful `portfolio_id` mode is disabled by default through
+   `DPM_STATEFUL_CORE_SOURCING_ENABLED=false` until a governed `lotus-core` resolver is configured
+   and live-proofed; inline bundle source-data lineage remains an RFC-0082 watchlist area,
 5. this repo should stay operationally aligned with gateway and platform startup sequences,
 6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,

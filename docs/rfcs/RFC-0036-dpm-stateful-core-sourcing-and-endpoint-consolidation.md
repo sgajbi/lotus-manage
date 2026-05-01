@@ -807,6 +807,58 @@ Exit evidence:
    lineage,
 3. no sensitive identifiers appear in metrics labels.
 
+Slice 6 implementation evidence captured on 2026-05-01:
+
+1. Added stateful source-data contract models in `src/core/dpm_source_context.py`:
+   - `DpmStatefulInput` for portfolio, as-of, mandate, model, policy, tenant, booking-center, and
+     inclusion selectors;
+   - `DpmCoreExecutionContext` for core-provided portfolio snapshot, market-data snapshot, model
+     portfolio, shelf entries, policy context, source lineage, and supportability;
+   - transformation helpers for simulate and batch analysis.
+2. Added `src/infrastructure/core_sourcing/client.py` with a bounded synchronous
+   `DpmCoreResolverClient`:
+   - default route template:
+     `/integration/portfolios/{portfolio_id}/dpm-execution-context`;
+   - correlation propagation through `X-Correlation-Id`;
+   - bounded timeout from `DPM_CORE_RESOLVER_TIMEOUT_SECONDS`;
+   - bounded retry count from `DPM_CORE_RESOLVER_MAX_ATTEMPTS`;
+   - source-safe error mapping to `DPM_CORE_RESOLVER_UNAVAILABLE` or
+     `DPM_CORE_CONTEXT_INCOMPLETE`.
+3. Extended execution request envelopes so simulate, analyze, and async analyze accept
+   `input_mode=stateless` and modeled `input_mode=stateful`. The Slice 5 stateless-only envelope
+   classes were removed after this unified envelope replaced them.
+4. Kept stateful execution disabled by default through `DPM_STATEFUL_CORE_SOURCING_ENABLED=false`.
+   Stateful API calls return `409` with `DPM_STATEFUL_INPUT_DISABLED` until live resolver proof is
+   complete.
+5. Added optional lineage fields to `LineageData` for:
+   - `input_mode`,
+   - `source_system`,
+   - `model_portfolio_id`,
+   - `model_portfolio_version`,
+   - `shelf_version`,
+   - `integration_policy_version`,
+   - `source_lineage_bundle_id`,
+   - `source_supportability_state`,
+   - `stateful_context_hash`.
+6. Async analyze persists resolved source-context lineage with the operation payload when stateful
+   mode is eventually enabled, so manual execution does not lose core lineage.
+7. Added tests:
+   - `tests/unit/dpm/core/test_dpm_source_context.py`;
+   - `tests/unit/dpm/infrastructure/test_core_sourcing_client.py`;
+   - stateful feature-gate API coverage in `tests/unit/dpm/api/test_api_rebalance.py`.
+8. Validation evidence:
+   - source-context and resolver tests: 6 passed;
+   - focused stateful/core/API/capability contract tests: 118 passed;
+   - full unit suite: 466 passed;
+   - integration and e2e suites: 101 passed;
+   - `python -m mypy --config-file mypy.ini`: passed;
+   - `python scripts/openapi_quality_gate.py`: passed;
+   - `python scripts/no_alias_contract_guard.py`: passed;
+   - API vocabulary regenerated and validated for the new stateful envelope and lineage fields.
+9. Promotion no-go remains active: stateful mode must not be enabled until Slice 7 proves the
+   governed `lotus-core` resolver contract live against a governed portfolio and records reviewed
+   evidence.
+
 ### Slice 7: Stateful Simulate And Analyze Certification
 
 1. Enable stateful simulate under controlled configuration.

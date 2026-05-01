@@ -5,8 +5,8 @@ from pydantic import Field
 
 from src.api.dependencies import get_db_session
 from src.api.request_models import (
-    StatelessBatchRebalanceRequestEnvelope,
-    StatelessRebalanceRequestEnvelope,
+    BatchExecutionRequestEnvelope,
+    RebalanceExecutionRequestEnvelope,
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import rebalance_simulation_service as service
@@ -70,7 +70,7 @@ router = APIRouter()
     },
 )
 def simulate_rebalance(
-    request: StatelessRebalanceRequestEnvelope,
+    request: RebalanceExecutionRequestEnvelope,
     idempotency_key: Annotated[
         str,
         Header(
@@ -115,13 +115,18 @@ def simulate_rebalance(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> RebalanceResult:
+    rebalance_request, source_context = service.resolve_rebalance_request_envelope(
+        envelope=request,
+        correlation_id=x_correlation_id,
+    )
     return service.simulate_rebalance(
-        request=request.stateless_input,
+        request=rebalance_request,
         idempotency_key=idempotency_key,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
+        source_context=source_context,
     )
 
 
@@ -155,7 +160,7 @@ def simulate_rebalance(
 )
 def analyze_scenarios(
     request: Annotated[
-        StatelessBatchRebalanceRequestEnvelope,
+        BatchExecutionRequestEnvelope,
         Field(
             description="Stateless envelope containing shared snapshots plus scenario overrides."
         ),
@@ -200,12 +205,17 @@ def analyze_scenarios(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> BatchRebalanceResult:
+    batch_request, source_context = service.resolve_batch_request_envelope(
+        envelope=request,
+        correlation_id=x_correlation_id,
+    )
     return service.execute_batch_analysis(
-        request=request.stateless_input,
+        request=batch_request,
         correlation_id=x_correlation_id,
         request_policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
+        source_context=source_context,
     )
 
 
@@ -258,7 +268,7 @@ def analyze_scenarios(
 )
 def analyze_scenarios_async(
     request: Annotated[
-        StatelessBatchRebalanceRequestEnvelope,
+        BatchExecutionRequestEnvelope,
         Field(
             description="Stateless envelope containing shared snapshots plus scenario overrides."
         ),
@@ -301,12 +311,17 @@ def analyze_scenarios_async(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> DpmAsyncAcceptedResponse:
+    batch_request, source_context = service.resolve_batch_request_envelope(
+        envelope=request,
+        correlation_id=x_correlation_id,
+    )
     accepted = service.submit_and_optionally_execute_async_analysis(
-        request=request.stateless_input,
+        request=batch_request,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
         tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
+        source_context=source_context,
     )
     response.headers["X-Correlation-Id"] = accepted.correlation_id
     return accepted

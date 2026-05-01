@@ -307,10 +307,10 @@ def test_integration_capabilities_paths_have_route_and_query_docs():
         "examples"
     ]
     default_example = integration_examples["default"]["value"]
-    assert default_example["supported_input_modes"] == ["inline_bundle"]
+    assert default_example["supported_input_modes"] == ["stateless"]
     example_features = {item["key"]: item for item in default_example["features"]}
     assert example_features["dpm.execution.stateful_portfolio_id"]["enabled"] is False
-    assert example_features["dpm.execution.stateless_inline_bundle"]["enabled"] is True
+    assert example_features["dpm.execution.stateless"]["enabled"] is True
     assert example_features["dpm.workflow.review_gate"]["enabled"] is False
     assert (
         example_features["manage.observability.action_register_supportability"]["enabled"] is True
@@ -383,7 +383,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     analyze_async = openapi["paths"]["/api/v1/rebalance/analyze/async"]["post"]
     assert analyze_async["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/StatelessBatchRebalanceRequestEnvelope"
+        "/BatchExecutionRequestEnvelope"
     )
     assert analyze_async["responses"]["202"]["content"]["application/json"]["schema"][
         "$ref"
@@ -407,7 +407,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     simulate = openapi["paths"]["/api/v1/rebalance/simulate"]["post"]
     assert simulate["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/StatelessRebalanceRequestEnvelope"
+        "/RebalanceExecutionRequestEnvelope"
     )
     assert simulate["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/RebalanceResult"
@@ -428,7 +428,7 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
 
     analyze = openapi["paths"]["/api/v1/rebalance/analyze"]["post"]
     assert analyze["requestBody"]["content"]["application/json"]["schema"]["$ref"].endswith(
-        "/StatelessBatchRebalanceRequestEnvelope"
+        "/BatchExecutionRequestEnvelope"
     )
     assert analyze["responses"]["200"]["content"]["application/json"]["schema"]["$ref"].endswith(
         "/BatchRebalanceResult"

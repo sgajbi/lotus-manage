@@ -6,7 +6,7 @@ from src.api.main import app
 
 EXPECTED_FEATURE_KEYS = [
     "dpm.execution.stateful_portfolio_id",
-    "dpm.execution.stateless_inline_bundle",
+    "dpm.execution.stateless",
     "dpm.workflow.review_gate",
     "dpm.execution.solver_target_generation",
     "manage.observability.action_register_supportability",
@@ -29,11 +29,11 @@ def test_integration_capabilities_default_contract(monkeypatch):
     assert body["tenant_id"] == "default"
     assert "features" in body
     assert "workflows" in body
-    assert body["supported_input_modes"] == ["inline_bundle"]
+    assert body["supported_input_modes"] == ["stateless"]
     assert [item["key"] for item in body["features"]] == EXPECTED_FEATURE_KEYS
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.execution.stateful_portfolio_id"] is False
-    assert features["dpm.execution.stateless_inline_bundle"] is True
+    assert features["dpm.execution.stateless"] is True
     assert features["dpm.execution.solver_target_generation"] is True
     assert features["manage.observability.action_register_supportability"] is True
     assert body["workflows"] == [
@@ -47,7 +47,7 @@ def test_integration_capabilities_default_contract(monkeypatch):
 
 def test_integration_capabilities_env_overrides(monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "false")
-    monkeypatch.setenv("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", "false")
+    monkeypatch.setenv("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", "false")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")
     monkeypatch.setenv("DPM_POLICY_VERSION", "tenant-x-v2")
     monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
@@ -65,14 +65,14 @@ def test_integration_capabilities_env_overrides(monkeypatch):
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.workflow.review_gate"] is False
     assert features["dpm.execution.stateful_portfolio_id"] is True
-    assert features["dpm.execution.stateless_inline_bundle"] is False
+    assert features["dpm.execution.stateless"] is False
     assert features["dpm.execution.solver_target_generation"] is False
-    assert body["supported_input_modes"] == ["portfolio_id"]
+    assert body["supported_input_modes"] == ["stateful"]
     assert body["workflows"][0]["enabled"] is False
 
 
 def test_integration_capabilities_can_publish_both_supported_input_modes(monkeypatch):
-    monkeypatch.setenv("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", "true")
+    monkeypatch.setenv("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", "true")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")
     monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
 
@@ -81,10 +81,10 @@ def test_integration_capabilities_can_publish_both_supported_input_modes(monkeyp
 
     assert response.status_code == 200
     body = response.json()
-    assert body["supported_input_modes"] == ["portfolio_id", "inline_bundle"]
+    assert body["supported_input_modes"] == ["stateful", "stateless"]
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.execution.stateful_portfolio_id"] is True
-    assert features["dpm.execution.stateless_inline_bundle"] is True
+    assert features["dpm.execution.stateless"] is True
 
 
 def test_integration_capabilities_uses_default_query_resolution_when_omitted():

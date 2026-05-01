@@ -85,6 +85,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: wiki endpoint certification and supported-features source updated because request
   contract truth changed.
 
+## RFC36-S6-001: Stateful resolver seam added behind feature gate
+
+- Date: 2026-05-01
+- Scope: stateful request models, `lotus-core` resolver client, source-context transformation,
+  lineage fields, API feature gate, OpenAPI vocabulary
+- Finding: RFC-0036 required stateful `portfolio_id` execution, but the codebase had no typed
+  selector model, no outbound resolver seam, and no deterministic way to tie core source lineage
+  into run results.
+- Action: added `DpmStatefulInput`, `DpmCoreExecutionContext`, source-lineage/supportability
+  models, a bounded `DpmCoreResolverClient`, transformation helpers for simulate and batch
+  analysis, optional stateful lineage fields on `LineageData`, and API routing that accepts
+  `input_mode=stateful` but returns `DPM_STATEFUL_INPUT_DISABLED` unless
+  `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`.
+- Status: fixed for modeled disabled state; live promotion remains deferred to Slice 7 pending
+  governed `lotus-core` resolver evidence.
+- Wiki decision: wiki endpoint certification and supported-features source updated because modeled
+  stateful API and lineage truth changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

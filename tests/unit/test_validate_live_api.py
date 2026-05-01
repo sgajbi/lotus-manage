@@ -13,7 +13,8 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",
         lambda _filename: {
-            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}}
+            "input_mode": "stateless",
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
         },
     )
     async_posts = 0
@@ -27,10 +28,10 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
             return _json_response(
                 200,
                 {
-                    "supported_input_modes": ["inline_bundle"],
+                    "supported_input_modes": ["stateless"],
                     "features": [
                         {"key": "dpm.execution.stateful_portfolio_id", "enabled": False},
-                        {"key": "dpm.execution.stateless_inline_bundle", "enabled": True},
+                        {"key": "dpm.execution.stateless", "enabled": True},
                     ],
                 },
             )
@@ -78,7 +79,8 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",
         lambda _filename: {
-            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}}
+            "input_mode": "stateless",
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
         },
     )
 
@@ -90,10 +92,10 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
             return _json_response(
                 200,
                 {
-                    "supported_input_modes": ["inline_bundle"],
+                    "supported_input_modes": ["stateless"],
                     "features": [
                         {"key": "dpm.execution.stateful_portfolio_id", "enabled": False},
-                        {"key": "dpm.execution.stateless_inline_bundle", "enabled": True},
+                        {"key": "dpm.execution.stateless", "enabled": True},
                     ],
                 },
             )

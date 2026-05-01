@@ -65,6 +65,23 @@ def _resolve_schema(schema: dict[str, Any], components: dict[str, Any]) -> dict[
     return components.get("schemas", {}).get(ref.rsplit("/", 1)[-1], {})
 
 
+def _schema_variants(schema: dict[str, Any], components: dict[str, Any]) -> list[dict[str, Any]]:
+    resolved = _resolve_schema(schema, components)
+    variants: list[dict[str, Any]] = []
+    for key in ("anyOf", "oneOf", "allOf"):
+        candidates = resolved.get(key)
+        if not isinstance(candidates, list):
+            continue
+        for candidate in candidates:
+            if not isinstance(candidate, dict):
+                continue
+            candidate_resolved = _resolve_schema(candidate, components)
+            if candidate_resolved.get("type") == "null":
+                continue
+            variants.append(candidate_resolved)
+    return variants
+
+
 def _fallback_description(name: str) -> str:
     readable = _canonical_term(name).replace("_", " ")
     return f"Canonical {readable} used by lotus-manage APIs."
@@ -105,6 +122,20 @@ def _extract_fields(
     prefix: str = "",
     location: str = "body",
 ) -> list[dict[str, Any]]:
+    variants = _schema_variants(schema, components)
+    if variants:
+        fields: list[dict[str, Any]] = []
+        for variant in variants:
+            fields.extend(
+                _extract_fields(
+                    variant,
+                    components=components,
+                    prefix=prefix,
+                    location=location,
+                )
+            )
+        return fields
+
     resolved = _resolve_schema(schema, components)
     properties = resolved.get("properties", {})
     required = set(resolved.get("required", []))
@@ -134,7 +165,18 @@ def _extract_fields(
         fields.append(field)
 
         nested_type = prop_resolved.get("type")
-        if nested_type == "object" or "$ref" in prop_schema:
+        variants = _schema_variants(prop_schema, components)
+        if variants:
+            for variant in variants:
+                fields.extend(
+                    _extract_fields(
+                        variant,
+                        components=components,
+                        prefix=field_name,
+                        location=location,
+                    )
+                )
+        elif nested_type == "object" or "$ref" in prop_schema:
             fields.extend(
                 _extract_fields(
                     prop_schema,

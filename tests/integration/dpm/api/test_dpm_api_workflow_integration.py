@@ -29,7 +29,7 @@ def teardown_function() -> None:
 
 
 def _stateless_envelope(payload: dict) -> dict:
-    return {"stateless_input": payload}
+    return {"input_mode": "stateless", "stateless_input": payload}
 
 
 def test_simulate_then_supportability_endpoints_roundtrip() -> None:
@@ -241,7 +241,7 @@ def test_integration_capabilities_contract_default_consumer() -> None:
     body = response.json()
     assert body["contract_version"] == "v1"
     assert body["source_service"] == "lotus-manage"
-    assert body["supported_input_modes"] == ["inline_bundle"]
+    assert body["supported_input_modes"] == ["stateless"]
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.execution.stateful_portfolio_id"] is False
 

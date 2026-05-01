@@ -377,7 +377,7 @@ def test_demo_dpm_lineage_filtering_via_api(monkeypatch):
 def test_demo_dpm_workflow_decision_listing_via_api(monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     reset_dpm_run_support_service_for_tests()
-    data = {"stateless_input": valid_api_payload()}
+    data = {"input_mode": "stateless", "stateless_input": valid_api_payload()}
     data["stateless_input"]["options"]["single_position_max_weight"] = "0.5"
     with TestClient(app) as client:
         original_overrides = dict(app.dependency_overrides)

@@ -9,13 +9,15 @@ Implementation scope:
 - lotus-manage run supportability DTO mappers: `src/core/rebalance_runs/serializers.py`
 - lotus-manage run supportability workflow transition helpers: `src/core/rebalance_runs/workflow.py`
 - Models: `src/core/models.py`
-- Core orchestration: `src/core/api/v1/rebalance/engine.py` (`run_simulation`)
+- Core orchestration: `src/core/rebalance/engine.py` (`run_simulation`)
 - lotus-manage modular internals:
-  - `src/core/api/v1/rebalance/universe.py` (universe construction and shelf filtering)
-  - `src/core/api/v1/rebalance/targets.py` (target generation and group-constraint application)
-  - `src/core/api/v1/rebalance/intents.py` (security intent generation, tax-aware sell controls)
-  - `src/core/api/v1/rebalance/turnover.py` (turnover ranking and budget enforcement)
-  - `src/core/api/v1/rebalance/execution.py` (FX generation, settlement ladder, simulation execution)
+  - `src/core/rebalance/universe.py` (universe construction and shelf filtering)
+  - `src/core/rebalance/targets.py` (target generation and group-constraint application)
+  - `src/core/rebalance/intents.py` (security intent generation, tax-aware sell controls)
+  - `src/core/rebalance/turnover.py` (turnover ranking and budget enforcement)
+  - `src/core/rebalance/execution.py` (FX generation, settlement ladder, simulation execution)
+- Stateful core-sourcing contract models and transformations: `src/core/dpm_source_context.py`
+- Stateful `lotus-core` resolver client: `src/infrastructure/core_sourcing/client.py`
 - Shared simulation primitives: `src/core/common/simulation_shared.py`
 - Shared intent dependency linker: `src/core/common/intent_dependencies.py`
 - Shared workflow gate evaluator: `src/core/common/workflow_gates.py`
@@ -27,8 +29,13 @@ Implementation scope:
 
 ### `POST /api/v1/rebalance/simulate`
 - Purpose: deterministic rebalance simulation.
-- Body: `stateless_input` envelope containing `portfolio_snapshot`, `market_data_snapshot`,
-  `model_portfolio`, `shelf_entries`, and `options`.
+- Body: explicit envelope with `input_mode`.
+  - `input_mode=stateless`: `stateless_input` contains `portfolio_snapshot`,
+    `market_data_snapshot`, `model_portfolio`, `shelf_entries`, and `options`.
+  - `input_mode=stateful`: `stateful_input` contains `portfolio_id`, `as_of`, optional mandate,
+    model, policy, tenant, and booking-center selectors. This mode is feature-gated by
+    `DPM_STATEFUL_CORE_SOURCING_ENABLED=false` by default and returns
+    `DPM_STATEFUL_INPUT_DISABLED` until governed `lotus-core` resolver evidence exists.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
@@ -58,8 +65,12 @@ Implementation scope:
 
 ### `POST /api/v1/rebalance/analyze`
 - Purpose: multi-scenario what-if analysis using shared snapshots.
-- Body: `stateless_input` envelope containing shared `portfolio_snapshot`,
-  `market_data_snapshot`, `model_portfolio`, `shelf_entries`, and named `scenarios`.
+- Body: explicit envelope with `input_mode`.
+  - `input_mode=stateless`: `stateless_input` contains shared `portfolio_snapshot`,
+    `market_data_snapshot`, `model_portfolio`, `shelf_entries`, and named `scenarios`.
+  - `input_mode=stateful`: `stateful_input` resolves shared portfolio context from `lotus-core`
+    and top-level `scenarios` provide the scenario option overrides. This mode remains disabled by
+    default until live core-backed proof is complete.
 - When to use:
   - immediate caller-facing what-if analysis where the full batch result should return in one response
   - up to 20 scenarios per request
@@ -91,7 +102,7 @@ Implementation scope:
 
 ### `POST /api/v1/rebalance/analyze/async`
 - Purpose: asynchronous what-if batch submission returning an operation handle instead of full batch results.
-- Body: same `stateless_input` envelope as `POST /api/v1/rebalance/analyze`.
+- Body: same explicit execution envelope as `POST /api/v1/rebalance/analyze`.
 - When to use:
   - polling-based orchestration
   - accept-now/execute-later flows
@@ -529,6 +540,6 @@ Dependency policy note:
 
 ## Stable Import Path
 
-- Use `src/core/api/v1/rebalance/engine.py` as the stable lotus-manage engine import path.
+- Use `src/core/rebalance/engine.py` as the stable lotus-manage engine import path.
 - Legacy Python compatibility shims such as `src/core/dpm_engine.py` and `src/core/engine.py`
   have been retired. New code must import directly from the rebalance domain module.

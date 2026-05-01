@@ -715,6 +715,42 @@ class LineageData(BaseModel):
     portfolio_snapshot_id: str = Field(description="Portfolio snapshot id used by run.")
     market_data_snapshot_id: str = Field(description="Market-data snapshot id used by run.")
     request_hash: str = Field(description="Request hash/idempotency marker used in lineage.")
+    input_mode: Literal["stateless", "stateful"] = Field(
+        default="stateless",
+        description="Execution input mode used by the run.",
+    )
+    source_system: Optional[str] = Field(
+        default=None,
+        description="Upstream source-data system used for stateful runs.",
+    )
+    model_portfolio_id: Optional[str] = Field(
+        default=None,
+        description="Source-governed model portfolio id used by stateful runs.",
+    )
+    model_portfolio_version: Optional[str] = Field(
+        default=None,
+        description="Source-governed model portfolio version used by stateful runs.",
+    )
+    shelf_version: Optional[str] = Field(
+        default=None,
+        description="Source-governed product shelf version used by stateful runs.",
+    )
+    integration_policy_version: Optional[str] = Field(
+        default=None,
+        description="Source-data resolver policy version used by stateful runs.",
+    )
+    source_lineage_bundle_id: Optional[str] = Field(
+        default=None,
+        description="Source-data lineage bundle id used by stateful runs.",
+    )
+    source_supportability_state: Optional[str] = Field(
+        default=None,
+        description="Source-data supportability state for stateful runs.",
+    )
+    stateful_context_hash: Optional[str] = Field(
+        default=None,
+        description="Canonical hash of the resolved stateful execution context.",
+    )
     idempotency_key: Optional[str] = Field(
         default=None,
         description="Request idempotency key.",

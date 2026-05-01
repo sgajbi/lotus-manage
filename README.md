@@ -40,9 +40,11 @@ Current posture under RFC-0082:
 
 1. rebalance simulation, policy-pack behavior, async operations, and run-support contracts are
    owned here
-2. stateful `portfolio_id` mode is disabled by default and must remain anchored to governed
-   `lotus-core` authority when enabled
-3. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
+2. `input_mode=stateless` is the supported default execution mode for caller-supplied source
+   bundles
+3. stateful `portfolio_id` mode has a modeled resolver seam but is disabled by default and must
+   remain anchored to governed `lotus-core` authority when enabled
+4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
 ## Current Operational Posture
@@ -66,7 +68,7 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
 - policy-pack supportability
   `/api/v1/rebalance/policies/*`
 - integration capabilities
-  `/api/v1/integration/capabilities`, `/api/v1/integration/capabilities`
+  `/api/v1/integration/capabilities`
 - platform surfaces
   `/health`, `/health/live`, `/health/ready`, `/docs`
 
@@ -76,8 +78,12 @@ Key code areas:
   FastAPI entrypoints, routers, readiness, observability, and OpenAPI enrichment
 - `src/core/dpm/`
   discretionary portfolio-management simulation engine and supporting rebalance modules
+- `src/core/dpm_source_context.py`
+  stateful source-context models and transformation helpers for governed core sourcing
 - `src/core/dpm_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
+- `src/infrastructure/core_sourcing/`
+  bounded `lotus-core` resolver client for future stateful execution promotion
 - `src/infrastructure/`
   PostgreSQL migrations, repository backends, and policy-pack persistence
 - `docs/`
