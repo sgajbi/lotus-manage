@@ -51,7 +51,7 @@ flowchart LR
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
 | Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality including error examples, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
-| Manage/core integration posture proof | Passed for current blocked state | `make live-api-validate-core` proves manage stays stateless-only while the target core DPM execution-context route returns `404`; rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` only after core implements the certified route |
+| Manage/core integration posture proof | Passed for current blocked state | `make live-api-validate-core` proves manage stays stateless-only while RFC-087 core source products are not yet available; update the validator and rerun only after core implements the certified composed products |
 | Swagger error-response examples | Enforced | central OpenAPI enrichment, `scripts/openapi_quality_gate.py`, contract tests, and live validation require bounded JSON examples for every documented `4xx`, `5xx`, and `default` response |
 
 ## Explicit Non-Goals
@@ -82,5 +82,5 @@ make live-api-validate-core
 
 Final proof is not complete if the validator reports stale OpenAPI certification drift, including
 missing request, response, or error examples, even when business execution probes pass. Stateful
-execution is also not complete until `lotus-core` exposes a certified DPM execution-context route
-and manage live proof shows stateful source lineage.
+execution is also not complete until `lotus-core` exposes the RFC-087 certified composed DPM
+source-data products and manage live proof shows stateful source lineage.

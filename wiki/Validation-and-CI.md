@@ -21,8 +21,7 @@
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
-  live API evidence against `lotus-manage` plus the current `lotus-core` DPM execution-context
-  route posture
+  live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture
 
 ## Live API evidence
 
@@ -55,10 +54,9 @@ posture:
 make live-api-validate-core
 ```
 
-The default expectation is the current RFC-0036 blocked state:
-`LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=absent`. After `lotus-core` exposes the certified DPM
-execution-context route, rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` and do not
-promote stateful capability truth unless that proof passes.
+The default expectation is the current RFC-0036 blocked state. After `lotus-core` exposes the
+RFC-087 certified composed DPM source-data products, update the validator for composed-source proof
+and do not promote stateful capability truth unless that proof passes.
 
 ## Documentation contract proof
 

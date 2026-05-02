@@ -927,11 +927,10 @@ source-data products before promotion.
 
 Stateful promotion status:
 
-- blocked by `sgajbi/lotus-core#330` until
-  `POST /integration/portfolios/{portfolio_id}/dpm-execution-context` or an equivalent certified
-  source-data bundle exists,
+- blocked by RFC-087 and updated `sgajbi/lotus-core#330` until the composed DPM source-data
+  products exist,
 - `POST /integration/portfolios/{portfolio_id}/core-snapshot` is useful partial source data but not
-  sufficient as the DPM execution context,
+  sufficient as the complete DPM stateful source context,
 - integration capabilities do not advertise `stateful` unless the stateful capability flag,
   `DPM_STATEFUL_CORE_SOURCING_ENABLED`, and `DPM_CORE_BASE_URL` are all configured.
 

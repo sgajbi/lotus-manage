@@ -134,8 +134,8 @@ Repo-native gate mapping:
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
-  live API evidence against `lotus-manage` plus current `lotus-core` DPM execution-context route
-  posture; defaults to the current RFC-0036 blocked state where the core route is expected absent
+  live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture;
+  defaults to the current RFC-0036 blocked state until RFC-087 products are implemented
 - `make mesh-contract-validate`
   repo-native domain product, trust telemetry, and observability monitoring contract validation
   against Lotus platform governance
@@ -188,9 +188,9 @@ Operationally important truths:
 2. capability discovery through `/api/v1/integration/capabilities` remains backend-owned and uses
    canonical snake_case query parameters
 3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
-4. stateful DPM promotion requires `make live-api-validate-core` to pass with
-   `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` after `lotus-core` exposes the certified DPM
-   execution-context route; until then, the expected posture remains `absent`
+4. stateful DPM promotion requires `make live-api-validate-core` to pass after `lotus-core`
+   exposes the RFC-087 certified source-data products; until then, the expected posture remains
+   blocked and stateless-only
 
 ## Documentation Map
 

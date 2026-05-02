@@ -10,8 +10,7 @@
     alignment
 - Target repositories:
   - `lotus-manage`
-  - `lotus-core` if the required DPM execution-context source-data contract is not already
-    sufficient
+  - `lotus-core` for the RFC-087 composed DPM source-data products required by stateful execution
   - `lotus-platform` only for shared context, vocabulary, and source-data-product catalog updates
 - Depends on:
   - `RFC-0013` what-if analysis mode
@@ -35,6 +34,31 @@
   - The older `docs/rfcs/RFC-CONVENTIONS.md` rule that treated unversioned
     `POST /rebalance/simulate` as the long-term canonical endpoint. This RFC defines the target
     strategic API as versioned only.
+
+## RFC-087 Core Source-Data Rebaseline
+
+On 2026-05-02, `lotus-core` RFC-087 superseded the earlier expectation that core should provide one
+monolithic `POST /integration/portfolios/{portfolio_id}/dpm-execution-context` route.
+
+The corrected target architecture is composed source-data products:
+
+1. `PortfolioStateSnapshot:v1` and `HoldingsAsOf:v1` for portfolio state, holdings, and cash,
+2. `DpmModelPortfolioTarget:v1` for model portfolio target weights, bands, approvals, and effective
+   dates,
+3. `DiscretionaryMandateBinding:v1` for mandate, model, policy pack, booking-center, jurisdiction,
+   authority, and rebalance constraints,
+4. `InstrumentEligibilityProfile:v1` for product shelf, buy/sell eligibility, restrictions,
+   settlement profile, liquidity, issuer, and taxonomy context,
+5. `PortfolioTaxLotWindow:v1` for tax-aware sell and cost-basis context without per-security
+   production fan-out,
+6. `MarketDataCoverageWindow:v1` for held and target universe prices and FX with coverage
+   diagnostics,
+7. readiness, lineage, trust telemetry, and supportability products for DPM source-family evidence.
+
+All older mentions of a DPM execution-context route in this RFC are historical evidence or obsolete
+implementation notes. Runtime implementation must follow RFC-087 composed source products.
+Stateful promotion remains blocked until those products are implemented, certified, and proven
+through live `lotus-core` plus `lotus-manage` evidence.
 
 ## Summary
 
@@ -205,7 +229,7 @@ For stateful mode, the user-facing outcome is:
 flowchart LR
     Caller[Gateway, operator, certification probe] --> Manage[lotus-manage API]
     Manage -->|stateful resolver| Core[lotus-core source-data products]
-    Core -->|DPM execution context| Manage
+    Core -->|composed DPM source-data products| Manage
     Manage --> Engine[DPM rebalance engine]
     Engine --> Result[Run result, gate decision, lineage, supportability]
     Manage --> Store[(lotus-manage supportability store)]
@@ -332,95 +356,59 @@ target API.
 
 ## `lotus-core` Source-Data Requirements
 
-Stateful execution needs a single governed resolver response that can be transformed into the
-current DPM engine input without ad hoc Gateway assembly.
+Stateful execution needs governed source-data products that can be composed into the current DPM
+engine input without ad hoc Gateway assembly. RFC-087 is the authoritative core implementation
+program.
 
-### Preferred Core Contract
+### Required Core Product Families
 
-Add or certify a `lotus-core` control-plane source-data product:
+`lotus-manage` stateful source assembly must compose these core product families:
 
-`POST /integration/portfolios/{portfolio_id}/dpm-execution-context`
+1. portfolio state:
+   - `PortfolioStateSnapshot:v1`,
+   - `HoldingsAsOf:v1` when operational read augmentation is required.
+2. model target:
+   - `DpmModelPortfolioTarget:v1`.
+3. mandate and policy binding:
+   - `DiscretionaryMandateBinding:v1`.
+4. eligibility, restriction, shelf, and settlement:
+   - `InstrumentEligibilityProfile:v1`.
+5. tax lots:
+   - `PortfolioTaxLotWindow:v1`.
+6. prices and FX:
+   - `MarketDataCoverageWindow:v1`.
+7. supportability:
+   - DPM source-family readiness, lineage, trust telemetry, and data-quality evidence.
 
-Request:
+### Composed Resolver Call Plan
 
-```json
-{
-  "as_of": "2026-03-25",
-  "mandate_id": "mandate_balanced_discretionary",
-  "model_portfolio_id": "model_balanced_sgd",
-  "tenant_id": "tenant_001",
-  "booking_center_code": "SG",
-  "include_tax_lots": true,
-  "include_settlement_profile": true,
-  "include_shelf": true,
-  "include_model_portfolio": true
-}
-```
+The future `lotus-manage` resolver should use bounded, parallelizable calls:
 
-Response must include:
+1. portfolio state first,
+2. mandate binding to resolve model and policy selectors,
+3. model target using resolved model/mandate context,
+4. eligibility for the union of held and target instruments,
+5. price and FX coverage for all required instruments/currency pairs,
+6. tax lots only when tax-aware mode is requested or required by mandate,
+7. readiness/lineage support routes for operator evidence.
 
-1. `portfolio_snapshot`
-   - portfolio id,
-   - base currency,
-   - positions,
-   - cash balances,
-   - tax lots where available,
-   - snapshot id,
-   - valuation/as-of metadata.
-2. `market_data_snapshot`
-   - prices for held and target/shelf instruments,
-   - FX rates required for portfolio base-currency conversion,
-   - market-data snapshot id,
-   - completeness/freshness posture.
-3. `model_portfolio`
-   - target weights by instrument,
-   - model id,
-   - model version/as-of,
-   - mandate alignment metadata.
-4. `shelf_entries`
-   - instrument id,
-   - status,
-   - asset class,
-   - issuer id,
-   - liquidity tier,
-   - settlement days,
-   - eligibility and restriction reason codes.
-5. `policy_context`
-   - recommended `policy_pack_id` when core owns selector inputs,
-   - tenant, booking center, mandate, and jurisdiction selectors.
-6. `source_lineage`
-   - portfolio snapshot id,
-   - market-data snapshot id,
-   - model portfolio id/version,
-   - shelf version,
-   - integration policy version,
-   - source-data product ids,
-   - restatement/completeness indicators.
-7. `supportability`
-   - state,
-   - reason,
-   - freshness bucket,
-   - missing or degraded source families.
+`lotus-manage` must not loop over every position for prices, FX, tax lots, eligibility, or
+enrichment in production paths once the RFC-087 source products are available.
 
-### Acceptable Interim Core Contract
+### Current Blocking Gaps
 
-If `POST /integration/portfolios/{portfolio_id}/core-snapshot` already provides enough portfolio,
-valuation, market-data, enrichment, and source-lineage data, `lotus-manage` may consume it as the
-first resolver input. Any missing DPM-specific data must be explicitly sourced through certified
-core contracts, not inferred in Gateway.
-
-Known likely gaps to verify in `lotus-core` before implementation:
+Known gaps before stateful promotion:
 
 1. model portfolio target resolution by `model_portfolio_id`,
 2. discretionary mandate metadata and mandate-to-model binding,
 3. product shelf / eligibility export with settlement days and restriction reason codes,
-4. tax-lot completeness for tax-aware sell allocation,
+4. bulk tax-lot completeness for tax-aware sell allocation,
 5. market price coverage for target instruments that are not currently held,
 6. FX coverage for all portfolio, cash, price, and target instrument currencies,
-7. explicit DPM supportability/completeness object.
+7. explicit DPM supportability/completeness by source family.
 
-If any of these are absent, the implementation must open `lotus-core` issues or PRs before enabling
-stateful `lotus-manage`.
+Stateful `lotus-manage` must remain disabled until RFC-087 core products are implemented,
+certified, and proven with live core/manage evidence.
 
 ## Output And Lineage Requirements
 
@@ -550,8 +538,8 @@ Slice 0 implementation evidence captured on 2026-05-01:
 ### Slice 1: Contract Audit And No-Go Decisions
 
 1. Reconfirm `lotus-core` source-data products available for DPM execution.
-2. Decide whether to use existing core-snapshot plus supplemental reads or add the preferred
-   `dpm-execution-context` route.
+2. Decide which existing and new RFC-087 source-data products are required for composed stateful
+   source assembly.
 3. Record exact core endpoint paths, request examples, response examples, timeout budget, retry
    policy, and supportability fields.
 4. Confirm no Gateway integration work is included in the first implementation branch.
@@ -577,17 +565,15 @@ Slice 1 implementation evidence captured on 2026-05-01:
    product shelf eligibility, settlement metadata, tax-lot completeness, complete target-instrument
    market data, complete FX coverage, or DPM-specific supportability in one certified source-data
    contract.
-3. Target resolver contract remains the preferred route:
-   `POST /integration/portfolios/{portfolio_id}/dpm-execution-context`.
-4. Upstream gap filed: `lotus-core` issue
+3. Original target resolver route was rejected by RFC-087. The target is now composed core
+   source-data products rather than `POST /integration/portfolios/{portfolio_id}/dpm-execution-context`.
+4. Upstream gap is tracked through RFC-087 and updated `lotus-core` issue
    `https://github.com/sgajbi/lotus-core/issues/330`.
-5. Stateful promotion no-go: `lotus-manage` must keep stateful mode disabled until issue #330 or an
-   equivalent certified `lotus-core` source-data bundle exists and live evidence proves resolver
-   readiness.
+5. Stateful promotion no-go: `lotus-manage` must keep stateful mode disabled until RFC-087 source
+   products exist and live evidence proves composed resolver readiness.
 6. Implementation guidance for later slices:
-   - use `core-snapshot` only as a partial portfolio-state input if the final resolver contract
-     explicitly composes it with separately certified model, shelf, tax-lot, market-data, FX, and
-     supportability products;
+   - use `core-snapshot` only as a partial portfolio-state input and compose it with separately
+     certified model, mandate, eligibility, tax-lot, market-data, FX, and supportability products;
    - do not infer missing DPM context in Gateway;
    - propagate correlation and trace headers to `lotus-core`;
    - use bounded resolver calls with no sensitive identifiers in metric labels;
@@ -794,9 +780,9 @@ Slice 5 implementation evidence captured on 2026-05-01:
 ### Slice 6: Core Resolver Client And Stateful Models
 
 1. Add `stateful_input` models.
-2. Add a `lotus-core` resolver client with bounded timeout, retry, correlation propagation, and
-   source-safe errors.
-3. Transform core execution context into DPM engine input.
+2. Add a `lotus-core` composed-source resolver with bounded timeout, retry, correlation
+   propagation, and source-safe errors.
+3. Transform composed core source products into DPM engine input.
 4. Capture resolver lineage into run records and artifacts.
 5. Keep stateful mode feature-gated until live proof passes.
 
@@ -816,9 +802,8 @@ Slice 6 implementation evidence captured on 2026-05-01:
      portfolio, shelf entries, policy context, source lineage, and supportability;
    - transformation helpers for simulate and batch analysis.
 2. Added `src/infrastructure/core_sourcing/client.py` with a bounded synchronous
-   `DpmCoreResolverClient`:
-   - default route template:
-     `/integration/portfolios/{portfolio_id}/dpm-execution-context`;
+   `DpmCoreResolverClient` as an initial modeled seam. RFC-087 now requires this seam to be
+   replaced with composed source-product calls before stateful promotion:
    - correlation propagation through `X-Correlation-Id`;
    - bounded timeout from `DPM_CORE_RESOLVER_TIMEOUT_SECONDS`;
    - bounded retry count from `DPM_CORE_RESOLVER_MAX_ATTEMPTS`;
@@ -856,8 +841,8 @@ Slice 6 implementation evidence captured on 2026-05-01:
    - `python scripts/no_alias_contract_guard.py`: passed;
    - API vocabulary regenerated and validated for the new stateful envelope and lineage fields.
 9. Promotion no-go remains active: stateful mode must not be enabled until Slice 7 proves the
-   governed `lotus-core` resolver contract live against a governed portfolio and records reviewed
-   evidence.
+   governed RFC-087 `lotus-core` source products live against a governed portfolio and records
+   reviewed evidence.
 
 ### Slice 7: Stateful Simulate And Analyze Certification
 
@@ -880,9 +865,9 @@ Exit evidence:
 
 Implementation evidence captured on 2026-05-01:
 
-1. Upstream live proof is blocked. `sgajbi/lotus-core#330` remains open and confirms that
-   `lotus-core` does not yet expose the required
-   `POST /integration/portfolios/{portfolio_id}/dpm-execution-context` source-data product.
+1. Upstream live proof is blocked. RFC-087 and updated `sgajbi/lotus-core#330` track the required
+   composed source-data products. `lotus-core` does not yet expose the full product set required
+   for stateful DPM promotion.
 2. Existing `lotus-core` `POST /integration/portfolios/{portfolio_id}/core-snapshot` remains useful
    as partial portfolio-state input, but is not sufficient to promote stateful DPM execution because
    it does not provide complete model, shelf, FX, target-instrument market-data, mandate, tax-lot,
@@ -900,8 +885,8 @@ Implementation evidence captured on 2026-05-01:
    - `python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/api/test_api_rebalance.py -q`
      returned 106 passed.
 6. Promotion no-go remains active. Slice 7 cannot be closed as live-certified until `lotus-core`
-   delivers the governed DPM execution-context contract or an equivalent certified source-data
-   bundle and `lotus-manage` captures live evidence against it.
+   delivers the governed RFC-087 source-data products and `lotus-manage` captures live evidence
+   against the composed-source resolver.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 
@@ -943,8 +928,8 @@ Implementation evidence captured on 2026-05-01:
    - repo-native domain product validation passes,
    - repo-native trust telemetry validation passes,
    - telemetry identity and observed trust metadata match the product declaration,
-   - `lotus-manage` does not promote a stateful DPM execution-context dependency before
-     `sgajbi/lotus-core#330` is resolved.
+  - `lotus-manage` does not promote a stateful DPM source-product dependency before RFC-087 core
+    products are resolved.
 5. Updated RFC-0082 boundary documentation and wiki mesh product material to reflect the
    implemented feature-gated core resolver seam without declaring a promoted live API-read
    dependency.
@@ -1266,17 +1251,16 @@ Implementation evidence captured on 2026-05-01:
       `corr_`, `rr_`, or `dop_`,
     - live capabilities returned `supported_input_modes=["stateless"]` and
       `dpm.execution.stateful_portfolio_id=false`.
-23. Direct `lotus-core` integration posture probes confirmed the target stateful resolver route is
-    not yet live:
+23. Historical direct `lotus-core` integration posture probes confirmed the old target stateful
+    resolver route is not live and should not be pursued after RFC-087:
     - `POST http://core-control.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
       returned `404`,
     - `POST http://core-query.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
       returned `404`.
 24. Evidence conclusion: `lotus-manage` current branch is gold-pass clean for the implemented
     stateless API surface, supportability APIs, OpenAPI certification, and stateful feature gate.
-    Full RFC closure remains blocked for stateful core-sourced execution until `lotus-core` issue
-    `sgajbi/lotus-core#330` or an equivalent certified resolver contract is implemented and live
-    proof is captured.
+    Full RFC closure remains blocked for stateful core-sourced execution until RFC-087 source
+    products are implemented and live proof is captured.
 25. Slice 12 hardening converted the manual manage/core integration probe into executable live
     validation:
     - `scripts/validate_live_api.py` now accepts `--core-base-url` and
@@ -1306,9 +1290,8 @@ Implementation evidence captured on 2026-05-01:
     - default expectation: `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=absent`,
     - result on 2026-05-02: passed 12/12 probes against `manage.dev.lotus`,
       `core-control.dev.lotus`, and `core-query.dev.lotus`,
-    - promotion rule: rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` only after the
-      certified `lotus-core` DPM execution-context route exists, and keep stateful capability
-      publication disabled until that proof passes.
+    - promotion rule: update this target to validate RFC-087 composed source products, and keep
+      stateful capability publication disabled until that proof passes.
 28. Repository gate evidence after adding the repo-native live proof target:
     - `make check` passed with 497 unit tests,
     - `powershell -ExecutionPolicy Bypass -File ../lotus-platform/automation/Sync-RepoWikis.ps1
@@ -1407,8 +1390,8 @@ complete**. Slices 0 through 12 have substantial implementation evidence and mul
 passes for the implemented surface. Slice 11 has clean direct canonical-host `lotus-manage` API
 evidence after refreshing the manage container to the branch image, and Slice 12 now has
 machine-enforced manage/core integration posture proof. Full RFC completion remains blocked because
-stateful core-sourced execution is intentionally disabled until the target `lotus-core` DPM
-execution-context route is implemented and live-certified. Slice 13 final closure remains blocked
+stateful core-sourced execution is intentionally disabled until the RFC-087 `lotus-core` DPM
+source-data products are implemented and live-certified. Slice 13 final closure remains blocked
 until the upstream dependency is resolved or the RFC is explicitly rebaselined to close only the
 implemented stateless surface.
 
@@ -1417,7 +1400,7 @@ implemented stateless surface.
 | Slice | Current assessment | Evidence and residual gap |
 | --- | --- | --- |
 | Slice 0 Platform automation | Completed for the identified scaffolding gap | Platform commit `9c79860` added endpoint-certification scaffolding and passed Remote Feature Lane. |
-| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; `sgajbi/lotus-core#330` tracks the missing DPM execution-context contract; stateful promotion remains blocked. |
+| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; RFC-087 and updated `sgajbi/lotus-core#330` track missing composed DPM source products; stateful promotion remains blocked. |
 | Slice 2 Cleanup and structure | Completed for first-pass cleanup | Review controls and documentation regression tests are in place; historical advisory rationale is deliberately retained only where it states ownership boundaries. |
 | Slice 3 Endpoint consolidation | Completed | Duplicate unversioned product routes and platform capability aliases were removed; route inventory and vocabulary gates prove canonical `/api/v1` posture. |
 | Slice 4 Advisory cleanup | Completed for active runtime ownership | Advisory/proposal routes and active proposal namespaces are absent; `lotus-advise` remains documented as the owner of advisor-led workflows. |
@@ -1427,7 +1410,7 @@ implemented stateless surface.
 | Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. New stateful DPM source-data products must wait for the upstream resolver contract. |
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
-| Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Direct core probes showed the target DPM execution-context route returns 404, so stateful promotion remains blocked by `sgajbi/lotus-core#330`. |
+| Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Historical direct core probes showed the old DPM execution-context route returns 404; RFC-087 now tracks the required composed source products. |
 | Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, stricter deployed Swagger error-example checks, focused unit tests, the repo-native `make live-api-validate-core` target, and 12/12 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
 | Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
 
@@ -1454,8 +1437,9 @@ implemented stateless surface.
 5. Expanded live API validation so stale deployed OpenAPI cannot pass implementation proof.
 6. Added bounded metrics and monitoring contracts for execution, async operations, policy-pack
    resolution, workflow decisions, run supportability, and stateful resolver posture.
-7. Converted direct `lotus-core` DPM execution-context route checks into reusable validator
-   coverage so manage/core integration posture is proven by automation rather than manual notes.
+7. Converted direct `lotus-core` route posture checks into reusable validator coverage so
+   manage/core integration posture is proven by automation rather than manual notes. RFC-087 will
+   replace that validator scope with composed source-product checks.
 8. Added central bounded JSON examples for every documented error response and promoted that rule
    into both local and live OpenAPI certification.
 9. Added `make live-api-validate-core` so the current manage/core integration posture is proven by
@@ -1477,11 +1461,11 @@ implemented stateless surface.
    10/10 probes after refreshing only `lotus-manage` to the branch image.
 4. Critical artifact review confirmed route inventory, Swagger examples, metrics media type,
    capability truth, and sampled no-sensitive-metric posture.
-5. Direct `lotus-core` probes confirmed the target stateful DPM execution-context route is not yet
-   live, which correctly blocks stateful mode promotion.
+5. Direct `lotus-core` probes confirmed the old stateful DPM execution-context route is not live.
+   RFC-087 rebaselines the blocker to composed source products, which correctly keeps stateful mode
+   unpromoted.
 6. Enhanced manage/core live validation passed 11/11 probes, including executable checks against
-   `core-control.dev.lotus` and `core-query.dev.lotus` for the expected missing DPM
-   execution-context route.
+   `core-control.dev.lotus` and `core-query.dev.lotus` for the historical blocked route posture.
 7. Refreshed live API proof passed 12/12 probes after strict deployed Swagger error-example
    validation was added.
 8. `make live-api-validate-core` passed 12/12 probes against `manage.dev.lotus`,
@@ -1497,7 +1481,7 @@ this stage: local gates pass, remote Feature Lane is green, direct canonical-hos
 passes, the previous stale Swagger runtime drift is now caught by validation and resolved by a
 targeted manage refresh, and manage/core integration posture is now checked by executable live
 validation. The full RFC has not reached final gold-standard closure because stateful core-sourced
-execution depends on a `lotus-core` DPM execution-context route that is not yet live, and final
+execution depends on RFC-087 `lotus-core` DPM source-data products that are not yet live, and final
 closure remains to be completed after that dependency is resolved or explicitly rebaselined.
 
 ## Test Plan

@@ -35,7 +35,7 @@ This repo does not own:
 - proposal simulation, artifacts, consent, and lifecycle routes are owned by `lotus-advise`
 - stateless execution is the implemented and advertised runtime mode
 - stateful `portfolio_id` execution is modeled behind guardrails, but not promoted until
-  `lotus-core` exposes a certified DPM execution-context source-data contract
+  `lotus-core` exposes the RFC-087 certified composed DPM source-data products
 
 ```mermaid
 flowchart LR
@@ -43,7 +43,7 @@ flowchart LR
     Gateway --> Manage[lotus-manage]
     Manage --> Decision[Rebalance decision: READY, PENDING_REVIEW, or BLOCKED]
     Manage --> Evidence[Run artifact, lineage, idempotency, workflow, metrics]
-    Core[lotus-core] -. future certified DPM execution context .-> Manage
+    Core[lotus-core] -. future RFC-087 DPM source products .-> Manage
     Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
 ```
 
@@ -54,4 +54,5 @@ refreshing only the `lotus-manage` container to the branch image on 2026-05-02, 
 canonical-host manage API proof passed 10/10 probes against `http://manage.dev.lotus`.
 
 That proof covers the implemented stateless API surface. Stateful `portfolio_id` execution remains
-blocked because the target `lotus-core` DPM execution-context route is not yet live-certified.
+blocked because the RFC-087 `lotus-core` DPM source-data products are not yet implemented and
+live-certified.

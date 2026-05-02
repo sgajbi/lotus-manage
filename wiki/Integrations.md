@@ -31,8 +31,8 @@ sequenceDiagram
     alt current guarded state
         Manage-->>Gateway: 409 DPM_STATEFUL_INPUT_DISABLED
     else future certified state
-        Manage->>Core: POST /integration/portfolios/{portfolio_id}/dpm-execution-context
-        Core-->>Manage: Portfolio, model, shelf, market data, FX, policy, lineage
+        Manage->>Core: Compose RFC-087 source-data products
+        Core-->>Manage: Portfolio, model, mandate, eligibility, tax lots, market data, FX, lineage
         Manage->>Manage: Transform context and run DPM engine
         Manage-->>Gateway: Result with source lineage and supportability
     end
@@ -42,13 +42,14 @@ Current state:
 
 1. `lotus-manage` has the typed stateful request models, resolver client, transformation helpers,
    and lineage fields.
-2. `lotus-core` does not yet expose the certified DPM execution-context contract required for
-   production stateful promotion.
+2. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
+   for production stateful promotion.
 3. Capability discovery does not advertise stateful execution unless the stateful gate,
    `DPM_CORE_BASE_URL`, and capability flag are all enabled.
-4. RFC-0036 tracks the upstream gap through `sgajbi/lotus-core#330`.
+4. RFC-0036 now tracks the upstream gap through `lotus-core` RFC-087 and updated
+   `sgajbi/lotus-core#330`.
 
-Live proof on 2026-05-02:
+Historical blocked-route proof on 2026-05-02:
 
 1. `POST http://core-control.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
    returned `404`.
@@ -62,12 +63,12 @@ Live proof on 2026-05-02:
 make live-api-validate-core
 ```
 
-The default command expects the current blocked posture. After `lotus-core` exposes the certified
-DPM execution-context route, rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` before
+The default command expects the current blocked posture. After `lotus-core` exposes the RFC-087
+certified source-data products, update the validator to prove composed-source readiness before
 promoting stateful capability truth.
 
 This is the correct current behavior: manage is ready for the implemented stateless surface, while
-stateful core-sourced execution remains withheld until the upstream route is certified.
+stateful core-sourced execution remains withheld until the upstream source products are certified.
 
 ## Manage API Consumers
 

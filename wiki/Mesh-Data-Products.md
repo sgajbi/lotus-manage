@@ -26,5 +26,5 @@
 Portfolio action state and lifecycle evidence belong in `lotus-manage`. Platform certification can block publication when action-register telemetry, lifecycle, access, SLO, or evidence posture drifts.
 
 Stateful `portfolio_id` execution is not yet a promoted mesh consumption mode. The resolver seam is
-implemented, but live source-data dependency declaration waits for `sgajbi/lotus-core#330` or an
-equivalent certified DPM execution-context source-data product.
+implemented, but live source-data dependency declaration waits for RFC-087 `lotus-core` composed
+DPM source-data products and the updated `sgajbi/lotus-core#330` dependency.

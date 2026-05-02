@@ -74,6 +74,6 @@ def test_manage_core_live_validation_has_repo_native_command_and_docs() -> None:
         makefile_text
     )
     assert "`make live-api-validate-core`" in readme_text
-    assert "`LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available`" in readme_text
+    assert "RFC-087 certified source-data products" in readme_text
     assert "make live-api-validate-core" in validation_wiki_text
-    assert "LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available" in validation_wiki_text
+    assert "RFC-087 certified composed DPM source-data products" in validation_wiki_text

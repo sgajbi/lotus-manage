@@ -13,9 +13,10 @@ composition.
 1. REST/OpenAPI remains the governed integration contract for current `lotus-manage` public and
    integration-facing APIs.
 2. No current `lotus-manage` integration requires or justifies gRPC.
-3. The current codebase contains a modeled, feature-gated outbound resolver client to `lotus-core`
-   for future stateful DPM execution-context sourcing, but does not declare a promoted live
-   API-read dependency while `sgajbi/lotus-core#330` remains open.
+3. The current codebase contains a modeled, feature-gated outbound resolver seam to `lotus-core`.
+   RFC-087 rebaselines that seam to composed DPM source-data products rather than a monolithic
+   execution-context route, and `lotus-manage` does not declare a promoted live API-read dependency
+   while those products remain unavailable.
 4. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
    options through request contracts. When those inputs are core-referenced, `lotus-core` remains the
    source-data authority.
