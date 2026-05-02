@@ -43,5 +43,5 @@ Governance boundary:
 | RFC-0033 | lotus-manage Pyramid Wave 4 (Integration and E2E Expansion) | IMPLEMENTED | RFC-0032 | `docs/rfcs/RFC-0033-dpm-pyramid-wave-4-integration-e2e-expansion.md` |
 | RFC-0034 | lotus-manage Pyramid Wave 5 (Integration Boundary Expansion) | IMPLEMENTED | RFC-0033 | `docs/rfcs/RFC-0034-dpm-pyramid-wave-5-integration-boundary-expansion.md` |
 | RFC-0035 | lotus-manage Pyramid Wave 6 (Repository Integration Depth Expansion) | PROPOSED | RFC-0034 | `docs/rfcs/RFC-0035-dpm-pyramid-wave-6-repository-integration-depth-expansion.md` |
-| RFC-0036 | lotus-manage Stateful Core Sourcing And Endpoint Consolidation | PROPOSED | RFC-0013, RFC-0016, RFC-0017, RFC-0018, RFC-0021, RFC-0022, RFC-0023, RFC-0028 | `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` |
+| RFC-0036 | lotus-manage Stateful Core Sourcing And Endpoint Consolidation | IMPLEMENTED | RFC-0013, RFC-0016, RFC-0017, RFC-0018, RFC-0021, RFC-0022, RFC-0023, RFC-0028 | `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` |
 

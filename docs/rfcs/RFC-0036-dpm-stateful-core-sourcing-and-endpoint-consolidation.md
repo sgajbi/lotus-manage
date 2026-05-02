@@ -1,6 +1,6 @@
 # RFC-0036: lotus-manage Stateful Core Sourcing And Endpoint Consolidation
 
-- Status: PROPOSED
+- Status: IMPLEMENTED
 - Date: 2026-05-01
 - Gold-standard execution review: 2026-05-01
 - Owners:
@@ -723,9 +723,8 @@ Slice 3 implementation evidence captured on 2026-05-01:
    - `git diff --check`.
 8. Wiki source check:
    - `powershell -ExecutionPolicy Bypass -File ..\lotus-platform\automation\Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage`
-     reports expected pre-merge drift for the five wiki pages updated by this slice. Repo-local
-     `wiki/` source is the branch-authored truth; publication remains a final closure action after
-     merge.
+     reported expected pre-merge drift for the five wiki pages updated by this slice. Repo-local
+     `wiki/` source was the branch-authored truth, and the GitHub wiki was published after merge.
 
 ### Slice 4: Advisory Leftover Cleanup
 
@@ -1362,9 +1361,9 @@ Implementation evidence captured on 2026-05-01:
 28. Repository gate evidence after adding the repo-native live proof target:
     - `make check` passed with 497 unit tests,
     - `powershell -ExecutionPolicy Bypass -File ../lotus-platform/automation/Sync-RepoWikis.ps1
-      -CheckOnly -Repository lotus-manage` failed only because the published GitHub wiki is behind
-      the repo-authored wiki source for RFC-0036 pages; publication remains a post-merge Slice 13
-      action.
+      -CheckOnly -Repository lotus-manage` failed only because the published GitHub wiki was behind
+      the repo-authored wiki source for RFC-0036 pages; post-merge publication has completed and
+      check-only validation now passes.
 
 ### Slice 11: Implementation Proof
 
@@ -1478,7 +1477,7 @@ route. Remote Feature Lane CI is green for the latest pushed `lotus-manage` bran
 | Slice 10 API certification | Completed for the implemented surface | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI and passed against the branch runtime. |
 | Slice 11 Implementation proof | Completed for direct core/manage API proof | Refreshed canonical core RFC-087 validation passed 7/7 probes, and manage validation passed 11/11 probes with stateful core sourcing available. |
 | Slice 12 Second-last hardening | Completed for the proven surface | The live validator now includes executable composed-source stateful proof, stricter deployed Swagger error-example checks, focused unit tests, and the repo-native `make live-api-validate-core` expectation switch. |
-| Slice 13 Final closure | Completed for branch source | RFC, context, supported-features, and wiki source are updated; branch is clean and remote Feature Lane is green. GitHub wiki publication remains the governed post-merge synchronization step. |
+| Slice 13 Final closure | Completed | RFC, context, supported-features, wiki source, GitHub wiki publication, branch hygiene, and PR merge closure are complete. |
 
 ### What Was Truly Completed
 
@@ -1544,8 +1543,9 @@ route. Remote Feature Lane CI is green for the latest pushed `lotus-manage` bran
    `lineage.model_portfolio_id=MODEL_PB_SG_GLOBAL_BAL_DPM`,
    `lineage.model_portfolio_version=2026.04`, `lineage.shelf_version=rfc_087_v1`,
    `lineage.integration_policy_version=rfc_087_v1`, and a populated `stateful_context_hash`.
-9. Wiki check-only currently fails only because repo-authored RFC-0036 wiki source is ahead of the
-   published GitHub wiki, which is the expected pre-merge posture before Slice 13 publication.
+9. Wiki check-only originally failed only because repo-authored RFC-0036 wiki source was ahead of
+   the published GitHub wiki, which was the expected pre-merge posture before Slice 13 publication.
+   Post-merge publication completed and check-only validation now passes.
 10. RFC-087 gold-pass audit added a reusable core source-product live validator. The latest
     `core-control.dev.lotus` run passed 7/7 probes: OpenAPI publication, model targets, mandate
     binding, instrument eligibility, tax lots, market-data/FX coverage, and DPM source readiness
