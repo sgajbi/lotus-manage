@@ -9,10 +9,6 @@ from src.api.routers.rebalance_runs_config import (
     supportability_postgres_dsn,
     supportability_store_backend_name,
 )
-from src.api.routers.proposals_config import (
-    proposal_postgres_dsn,
-    proposal_store_backend_name,
-)
 
 _PRODUCTION_PROFILE = "PRODUCTION"
 _LOCAL_PROFILE = "LOCAL"
@@ -36,10 +32,6 @@ def validate_persistence_profile_guardrails() -> None:
         raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES")
     if not supportability_postgres_dsn():
         raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN")
-    if proposal_store_backend_name() != "POSTGRES":
-        raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_ADVISORY_POSTGRES")
-    if not proposal_postgres_dsn():
-        raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_ADVISORY_POSTGRES_DSN")
     if (
         policy_pack_catalog_required_in_profile()
         and policy_pack_catalog_backend_name() != "POSTGRES"

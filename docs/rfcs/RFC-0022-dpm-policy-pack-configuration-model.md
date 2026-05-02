@@ -167,8 +167,8 @@ Policy pack selection must not alter run status vocabulary semantics.
 - Implemented (slice 9):
   - Additional `EngineOptions` workflow transformations from selected policy-pack:
     - `workflow_policy.enable_workflow_gates` -> `options.enable_workflow_gates`
-    - `workflow_policy.workflow_requires_client_consent` -> `options.workflow_requires_client_consent`
-    - `workflow_policy.client_consent_already_obtained` -> `options.client_consent_already_obtained`
+    - `workflow_policy.workflow_requires_mandate_approval` -> `options.workflow_requires_mandate_approval`
+    - `workflow_policy.mandate_approval_already_obtained` -> `options.mandate_approval_already_obtained`
   - Applied on:
     - `POST /rebalance/simulate`
     - `POST /rebalance/analyze`

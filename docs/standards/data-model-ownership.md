@@ -7,7 +7,6 @@
 
 - lotus-manage policy-pack persistence model.
 - lotus-manage run, supportability, lineage, and workflow persistence model.
-- Any remaining manage-local proposal workflow persistence while split-governance cleanup is in progress.
 - Schema migration history (`schema_migrations`) for lotus-manage namespaces.
 
 ## Service Boundaries
@@ -18,6 +17,6 @@
 
 ## Schema Rules
 
-- Namespaces (`dpm`, `proposals`) separate bounded contexts.
+- Namespace `dpm` stores lotus-manage supportability, workflow, and policy-pack schema history.
 - No cross-service shared database access.
 

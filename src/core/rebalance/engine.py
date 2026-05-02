@@ -43,8 +43,8 @@ from src.core.models import (
     LineageData,
     MarketDataSnapshot,
     ModelPortfolio,
+    OrderIntent,
     PortfolioSnapshot,
-    ProposalOrderIntent,
     RebalanceResult,
     FxSpotIntent,
     SecurityTradeIntent,
@@ -102,7 +102,7 @@ def _make_blocked_result(
             suitability=None,
             diagnostics=diagnostics,
             options=options,
-            default_requires_client_consent=False,
+            default_requires_mandate_approval=False,
         )
     return RebalanceResult(
         rebalance_run_id=run_id,
@@ -269,7 +269,7 @@ def _generate_fx_and_simulate(
     total_val_before: Decimal,
     diagnostics: DiagnosticsData,
 ) -> tuple[
-    list[ProposalOrderIntent],
+    list[OrderIntent],
     Any,
     list[Any],
     Literal["READY", "BLOCKED", "PENDING_REVIEW"],
@@ -397,7 +397,7 @@ def run_simulation(
             suitability=None,
             diagnostics=diag_data,
             options=options,
-            default_requires_client_consent=False,
+            default_requires_mandate_approval=False,
         )
     result_intents: list[SecurityTradeIntent | FxSpotIntent] = [
         intent

@@ -97,27 +97,19 @@ That means:
 - `lotus-core` remains source-data authority for core-referenced portfolio, market-data, price,
   and FX inputs.
 
-Some advisory proposal routes still remain in this repository as compatibility surfaces during
-cleanup. They should not be treated as a mandate to grow new advisory scope here.
-
-For compatibility-surface details, use:
-
-- `docs/documentation/engine-know-how-advisory.md`
-
 ## API Surface Summary
 
 Primary management surfaces:
 
-- `POST /rebalance/simulate`
-- `POST /rebalance/analyze`
-- `POST /rebalance/analyze/async`
-- `/rebalance/runs/*`
-- `/rebalance/operations/*`
-- `/rebalance/lineage/*`
-- `/rebalance/idempotency/*`
-- `/rebalance/policies/*`
-- `/integration/capabilities`
-- `/platform/capabilities`
+- `POST /api/v1/rebalance/simulate`
+- `POST /api/v1/rebalance/analyze`
+- `POST /api/v1/rebalance/analyze/async`
+- `/api/v1/rebalance/runs/*`
+- `/api/v1/rebalance/operations/*`
+- `/api/v1/rebalance/lineage/*`
+- `/api/v1/rebalance/idempotency/*`
+- `/api/v1/rebalance/policies/*`
+- `/api/v1/integration/capabilities`
 
 For grouped route documentation, use the repo wiki and router-level docs rather than extending this
 overview into an endpoint catalog.
@@ -132,8 +124,6 @@ Key module areas:
   rebalance engine and management-side simulation logic
 - `src/core/dpm_runs/`
   async operation, workflow, artifact, and supportability services
-- `src/core/proposals/`
-  compatibility proposal-lifecycle modules still present after the split
 - `src/infrastructure/`
   PostgreSQL migrations, repository backends, and policy-pack persistence
 
@@ -143,8 +133,6 @@ Use the focused documents for detail:
 
 - management engine detail:
   `docs/documentation/engine-know-how-dpm.md`
-- compatibility advisory surface detail:
-  `docs/documentation/engine-know-how-advisory.md`
 - migration rollout:
   `docs/documentation/postgres-migration-rollout-runbook.md`
 - service operations:

@@ -13,7 +13,7 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
-from src.core.rebalance_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 
 
 class InMemoryDpmRunRepository(DpmRunRepository):
@@ -125,11 +125,23 @@ class InMemoryDpmRunRepository(DpmRunRepository):
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None:
         with self._lock:
+            existing_operation_id = self._operation_by_correlation.get(operation.correlation_id)
+            if (
+                existing_operation_id is not None
+                and existing_operation_id != operation.operation_id
+            ):
+                raise DpmRunRepositoryConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
             self._operations[operation.operation_id] = deepcopy(operation)
             self._operation_by_correlation[operation.correlation_id] = operation.operation_id
 
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None:
         with self._lock:
+            existing_operation_id = self._operation_by_correlation.get(operation.correlation_id)
+            if (
+                existing_operation_id is not None
+                and existing_operation_id != operation.operation_id
+            ):
+                raise DpmRunRepositoryConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
             self._operations[operation.operation_id] = deepcopy(operation)
             self._operation_by_correlation[operation.correlation_id] = operation.operation_id
 

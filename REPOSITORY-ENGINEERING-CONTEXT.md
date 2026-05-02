@@ -10,19 +10,23 @@ For platform-wide truth, read:
 
 ## Repository Role
 
-`lotus-manage` is the discretionary portfolio-management and operational workflow service.
+`lotus-manage` is the discretionary mandate portfolio-management execution and operational
+supportability service.
 
-It owns management-side execution, supportability, and lifecycle workflows that are not advisory-only.
+It owns management-side rebalance execution, what-if orchestration, run supportability, policy-pack
+controls, and mandate workflow review for discretionary portfolio management.
 
 ## Business And Domain Responsibility
 
 This repository owns:
 
-1. discretionary portfolio-management workflow APIs,
-2. management-side lifecycle and execution support,
-3. operational supportability and related management contracts.
+1. discretionary mandate rebalance simulation and what-if workflow APIs,
+2. management-side lifecycle, workflow review, and execution support,
+3. operational supportability, deterministic artifacts, lineage, idempotency, and policy-pack
+   contracts.
 
-Advisor-led proposal workflows are intentionally owned by `lotus-advise`.
+Advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are intentionally
+owned by `lotus-advise`.
 
 ## Current-State Summary
 
@@ -36,7 +40,21 @@ Current repository posture:
    product used by management execution request contracts,
 6. it carries the RFC-0091 repo-native producer declaration and telemetry fixture for
    `PortfolioActionRegister`,
-7. the service remains part of the canonical front-office validation path through `lotus-gateway`.
+7. the service remains part of the canonical front-office validation path through `lotus-gateway`,
+8. current execution APIs support explicit `input_mode=stateless` caller-supplied portfolio,
+   market-data, model, shelf, and option bundles,
+9. stateful `portfolio_id` execution has typed selector/context models, a bounded `lotus-core`
+   resolver client, transformation helpers, and lineage fields; it is disabled by default but
+   live-proven when explicit stateful gates and `DPM_CORE_BASE_URL` are configured,
+10. RFC-087 composed source-product integrations are implemented and live-proven for
+    `DpmModelPortfolioTarget:v1` through
+    `/integration/model-portfolios/{model_portfolio_id}/targets` and
+    `DiscretionaryMandateBinding:v1` through
+    `/integration/portfolios/{portfolio_id}/mandate-binding`, and
+    `InstrumentEligibilityProfile:v1` through `/integration/instruments/eligibility-bulk`, and
+    `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`,
+    `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
+    `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
 
 ## Architecture And Module Map
 
@@ -63,14 +81,15 @@ Primary areas:
 Runtime model:
 
 1. FastAPI service,
-2. depends on `lotus-core`,
+2. depends on `lotus-core` as source-data authority for governed stateful source-data resolution,
+   while default execution consumes explicit stateless request bundles,
 3. primarily consumed through `lotus-gateway`,
 4. canonical host runtime is exposed through `manage.dev.lotus`.
 
 Boundary rules:
 
 1. management workflows belong here,
-2. proposal and advisor-led flows belong in `lotus-advise`,
+2. proposal and advisor-led flows belong in `lotus-advise` and should not be reintroduced here,
 3. host runtime identity and coexistence with `lotus-advise` are part of the operational contract,
 4. management capabilities should remain aligned with gateway-facing product expectations,
 5. `lotus-core` remains the source-data authority for core-referenced portfolio, market-data, price, and FX inputs,
@@ -130,18 +149,26 @@ Most relevant current governance:
 
 ## Known Constraints And Implementation Notes
 
-1. management/advisory boundary clarity is a real quality concern after the split,
+1. management/advisory boundary clarity remains a real quality concern after the split,
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
-4. `portfolio_id` stateful-mode semantics, inline bundle source-data lineage, and remaining advisory/proposal compatibility surfaces are RFC-0082 watchlist areas,
-5. this repo should stay operationally aligned with gateway and platform startup sequences,
-6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
+4. stateful `portfolio_id` mode is disabled by default through
+   `DPM_STATEFUL_CORE_SOURCING_ENABLED=false`; integration capabilities must not publish
+   `stateful` unless `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`,
+   `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, `DPM_CORE_BASE_URL` is configured, and any configured
+   core resolver path is not the retired monolithic `dpm-execution-context` route,
+5. `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
+   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`,
+   `MarketDataCoverageWindow:v1`, and `DpmSourceReadiness:v1` are the core source products used to
+   prove stateful manage execution against the canonical mandate portfolio,
+6. this repo should stay operationally aligned with gateway and platform startup sequences,
+7. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,
-7. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
+8. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
    stale split-era names,
-8. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
+9. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
-9. the current repo-native domain-data-product declaration intentionally records only governed
+10. the current repo-native domain-data-product declaration intentionally records only governed
    `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
    market-data and future stateful `portfolio_id` resolution must be added only after upstream
    producer approval and an explicit source-data retrieval design.

@@ -4,7 +4,11 @@ import pytest
 
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord
-from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
+from src.core.rebalance_runs.service import (
+    DpmAsyncOperationConflictError,
+    DpmRunNotFoundError,
+    DpmRunSupportService,
+)
 from src.core.models import EngineOptions
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from tests.shared.factories import (
@@ -78,6 +82,23 @@ def test_service_operation_state_mutation_and_missing_operation_errors():
 
     with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):
         service.mark_operation_running(operation_id="dop_missing")
+
+
+def test_service_rejects_duplicate_async_operation_correlation():
+    service = _build_service()
+    service.submit_analyze_async(
+        correlation_id="corr-service-duplicate",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+    )
+
+    with pytest.raises(
+        DpmAsyncOperationConflictError,
+        match="DPM_ASYNC_OPERATION_CORRELATION_CONFLICT",
+    ):
+        service.submit_analyze_async(
+            correlation_id="corr-service-duplicate",
+            request_json={"scenarios": {"baseline": {"options": {}}}},
+        )
     with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):
         service.complete_operation_success(operation_id="dop_missing", result_json={"ok": True})
     with pytest.raises(DpmRunNotFoundError, match="DPM_ASYNC_OPERATION_NOT_FOUND"):

@@ -2,11 +2,12 @@
 
 import logging
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
+from typing import Any, AsyncIterator, Literal
 
 from fastapi import FastAPI, Request, status
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 from src.api.dependencies import get_db_session
 from src.api.enterprise_readiness import (
@@ -18,13 +19,6 @@ from src.api.openapi_enrichment import enrich_openapi_schema
 from src.api.persistence_profile import validate_persistence_profile_guardrails
 from src.api.persistence_profile import app_persistence_profile_name
 from src.api.production_cutover_contract import validate_cutover_migrations_applied
-from src.api.routers.advisory_simulation import (
-    build_proposal_artifact_endpoint,
-    simulate_proposal,
-)
-from src.api.routers.advisory_simulation import (
-    router as advisory_simulation_router,
-)
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
@@ -44,15 +38,6 @@ from src.api.routers.rebalance_simulation import (
 )
 from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
-)
-from src.api.routers.proposals import router as proposal_lifecycle_router
-from src.api.services.advisory_simulation_service import (
-    MAX_PROPOSAL_IDEMPOTENCY_CACHE_SIZE,
-    PROPOSAL_IDEMPOTENCY_CACHE,
-    run_proposal_simulation,
-)
-from src.api.services.advisory_simulation_service import (
-    simulate_proposal_response as _simulate_proposal_response,
 )
 from src.api.services.rebalance_simulation_service import (
     DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
@@ -77,6 +62,32 @@ from src.api.services.rebalance_simulation_service import (
 from src.api.services.rebalance_simulation_service import (
     run_analyze_async_operation as _run_analyze_async_operation,
 )
+
+
+class HealthStatusResponse(BaseModel):
+    status: Literal["ok", "live", "ready"] = Field(
+        description=(
+            "Health state returned by the selected probe: ok for general service health, "
+            "live for process liveness, or ready when runtime guardrails and production "
+            "persistence migration checks have passed."
+        ),
+        examples=["ready"],
+    )
+
+
+_HEALTH_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {"description": "Health probe succeeded."},
+}
+
+_READY_RESPONSES: dict[int | str, dict[str, Any]] = {
+    200: {"description": "Readiness probe succeeded."},
+    500: {
+        "description": (
+            "Readiness guardrails failed, including production persistence profile or migration "
+            "cutover checks."
+        )
+    },
+}
 
 
 @asynccontextmanager
@@ -106,14 +117,6 @@ app = FastAPI(
             "name": "lotus-manage Run Supportability",
             "description": "Run, operation, idempotency, and artifact retrieval endpoints.",
         },
-        {
-            "name": "Advisory Simulation",
-            "description": "Advisory proposal simulation and artifact endpoints.",
-        },
-        {
-            "name": "Advisory Proposal Lifecycle",
-            "description": "Advisory proposal persistence, workflow, and support endpoints.",
-        },
     ],
     lifespan=_app_lifespan,
 )
@@ -140,42 +143,62 @@ setup_observability(app)
 validate_enterprise_runtime_config()
 app.middleware("http")(build_enterprise_audit_middleware())
 
-# Unversioned compatibility routes.
-app.include_router(proposal_lifecycle_router)
-app.include_router(rebalance_run_support_router)
-app.include_router(rebalance_policy_pack_router)
-app.include_router(rebalance_simulation_router)
-app.include_router(advisory_simulation_router)
-app.include_router(integration_capabilities_router)
-
 # Canonical versioned API surface.
-app.include_router(proposal_lifecycle_router, prefix="/api/v1")
 app.include_router(rebalance_run_support_router, prefix="/api/v1")
 app.include_router(rebalance_policy_pack_router, prefix="/api/v1")
 app.include_router(rebalance_simulation_router, prefix="/api/v1")
-app.include_router(advisory_simulation_router, prefix="/api/v1")
 app.include_router(integration_capabilities_router, prefix="/api/v1")
 
 
-@app.get("/health")
-@app.get("/api/v1/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+@app.get(
+    "/health",
+    response_model=HealthStatusResponse,
+    summary="General lotus-manage Health",
+    description=(
+        "Returns a minimal service health response for lightweight operator and ingress checks. "
+        "Use `/health/live` for process liveness and `/health/ready` for readiness that validates "
+        "runtime guardrails."
+    ),
+    responses=_HEALTH_RESPONSES,
+    tags=["Health"],
+)
+def health() -> HealthStatusResponse:
+    return HealthStatusResponse(status="ok")
 
 
-@app.get("/health/live")
-@app.get("/api/v1/health/live")
-def health_live() -> dict[str, str]:
-    return {"status": "live"}
+@app.get(
+    "/health/live",
+    response_model=HealthStatusResponse,
+    summary="lotus-manage Liveness Probe",
+    description=(
+        "Returns process liveness without touching persistence dependencies. Use this endpoint "
+        "for container liveness probes so transient database issues do not trigger unnecessary "
+        "process restarts."
+    ),
+    responses=_HEALTH_RESPONSES,
+    tags=["Health"],
+)
+def health_live() -> HealthStatusResponse:
+    return HealthStatusResponse(status="live")
 
 
-@app.get("/health/ready")
-@app.get("/api/v1/health/ready")
-def health_ready() -> dict[str, str]:
+@app.get(
+    "/health/ready",
+    response_model=HealthStatusResponse,
+    summary="lotus-manage Readiness Probe",
+    description=(
+        "Returns readiness only after runtime persistence guardrails pass. In production profile "
+        "this also validates that required cutover migrations have been applied, so supportability "
+        "APIs do not appear ready while their backing store is missing or unmigrated."
+    ),
+    responses=_READY_RESPONSES,
+    tags=["Health"],
+)
+def health_ready() -> HealthStatusResponse:
     validate_persistence_profile_guardrails()
     if app_persistence_profile_name() == "PRODUCTION":
         validate_cutover_migrations_applied()
-    return {"status": "ready"}
+    return HealthStatusResponse(status="ready")
 
 
 @app.exception_handler(Exception)
@@ -198,26 +221,21 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
 __all__ = [
     "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
     "DPM_IDEMPOTENCY_CACHE",
-    "MAX_PROPOSAL_IDEMPOTENCY_CACHE_SIZE",
-    "PROPOSAL_IDEMPOTENCY_CACHE",
+    "HealthStatusResponse",
     "_async_manual_execution_enabled",
     "_env_flag",
     "_env_int",
     "_execute_batch_analysis",
     "_resolve_async_execution_mode",
     "_run_analyze_async_operation",
-    "_simulate_proposal_response",
     "analyze_scenarios",
     "analyze_scenarios_async",
     "app",
-    "build_proposal_artifact_endpoint",
     "execute_dpm_async_operation",
     "get_db_session",
     "get_dpm_run_support_service",
     "record_dpm_run_for_support",
-    "run_proposal_simulation",
     "run_simulation",
-    "simulate_proposal",
     "simulate_rebalance",
     "unhandled_exception_to_problem_details",
 ]

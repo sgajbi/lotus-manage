@@ -15,17 +15,21 @@ import pytest
 from fastapi.testclient import TestClient
 
 import src.api.routers.rebalance_runs as dpm_runs_router
+import src.api.services.rebalance_simulation_service as rebalance_service
 from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
 )
+from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.dpm_source_context import DpmCoreExecutionContext
 from src.core.rebalance_runs import (
+    DpmAsyncOperationStatusResponse,
     DpmRunNotFoundError,
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,
 )
-from src.core.models import RebalanceResult
+from src.core.models import BatchRebalanceResult, RebalanceResult
 from tests.shared.factories import valid_api_payload
 
 
@@ -47,12 +51,262 @@ def override_db_dependency():
 
 @pytest.fixture
 def client():
+    class _StatelessEnvelopeClient:
+        def __init__(self, test_client: TestClient) -> None:
+            self._test_client = test_client
+
+        def post(self, url: str, *args, **kwargs):
+            if url in {
+                "/api/v1/rebalance/simulate",
+                "/api/v1/rebalance/analyze",
+                "/api/v1/rebalance/analyze/async",
+            }:
+                body = kwargs.get("json")
+                if isinstance(body, dict) and "stateless_input" not in body:
+                    kwargs["json"] = {"input_mode": "stateless", "stateless_input": body}
+            return self._test_client.post(url, *args, **kwargs)
+
+        def get(self, url: str, *args, **kwargs):
+            return self._test_client.get(url, *args, **kwargs)
+
+        def put(self, url: str, *args, **kwargs):
+            return self._test_client.put(url, *args, **kwargs)
+
+        def delete(self, url: str, *args, **kwargs):
+            return self._test_client.delete(url, *args, **kwargs)
+
     with TestClient(app) as test_client:
-        yield test_client
+        yield _StatelessEnvelopeClient(test_client)
 
 
 def get_valid_payload():
     return valid_api_payload()
+
+
+def _stateful_input_payload() -> dict[str, object]:
+    return {
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of": "2026-03-25",
+        "mandate_id": "mandate_balanced_discretionary",
+        "model_portfolio_id": "model_balanced_sgd",
+        "tenant_id": "tenant_001",
+        "booking_center_code": "SG",
+    }
+
+
+def _core_execution_context() -> DpmCoreExecutionContext:
+    return DpmCoreExecutionContext.model_validate(
+        {
+            "portfolio_snapshot": {
+                "snapshot_id": "core-pf-snap-001",
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "base_currency": "SGD",
+                "positions": [{"instrument_id": "EQ_1", "quantity": "100"}],
+                "cash_balances": [{"currency": "SGD", "amount": "10000"}],
+            },
+            "market_data_snapshot": {
+                "snapshot_id": "core-md-snap-001",
+                "prices": [{"instrument_id": "EQ_1", "price": "100", "currency": "SGD"}],
+                "fx_rates": [],
+            },
+            "model_portfolio": {"targets": [{"instrument_id": "EQ_1", "weight": "1.0"}]},
+            "shelf_entries": [
+                {
+                    "instrument_id": "EQ_1",
+                    "status": "APPROVED",
+                    "asset_class": "EQUITY",
+                    "issuer_id": "ISSUER_1",
+                    "settlement_days": 2,
+                }
+            ],
+            "policy_context": {
+                "recommended_policy_pack_id": "dpm_standard_v1",
+                "tenant_id": "tenant_001",
+                "booking_center_code": "SG",
+                "mandate_id": "mandate_balanced_discretionary",
+            },
+            "source_lineage": {
+                "portfolio_snapshot_id": "core-pf-snap-001",
+                "market_data_snapshot_id": "core-md-snap-001",
+                "model_portfolio_id": "model_balanced_sgd",
+                "model_portfolio_version": "2026-03-25",
+                "shelf_version": "shelf_sg_v1",
+                "integration_policy_version": "dpm-core-context.v1",
+                "source_lineage_bundle_id": "lineage-bundle-001",
+            },
+            "supportability": {
+                "state": "READY",
+                "reason": "DPM_CORE_CONTEXT_READY",
+                "freshness_bucket": "same_day",
+            },
+        }
+    )
+
+
+class _FakeCoreResolver:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str | None]] = []
+
+    def resolve_execution_context(self, *, stateful_input, correlation_id):
+        self.calls.append((stateful_input.portfolio_id, correlation_id))
+        return _core_execution_context()
+
+
+def _install_fake_core_resolver(monkeypatch) -> _FakeCoreResolver:
+    fake_resolver = _FakeCoreResolver()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: fake_resolver,
+    )
+    return fake_resolver
+
+
+def test_direct_stateless_body_is_rejected_without_envelope():
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json=get_valid_payload(),
+            headers={"Idempotency-Key": "test-key-direct-body-rejected"},
+        )
+
+    assert response.status_code == 422
+    assert "DPM_STATELESS_INPUT_REQUIRED" in response.text
+
+
+def test_stateful_simulate_is_feature_gated_by_default():
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": {
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "as_of": "2026-03-25",
+                    "mandate_id": "mandate_balanced_discretionary",
+                    "model_portfolio_id": "model_balanced_sgd",
+                    "tenant_id": "tenant_001",
+                    "booking_center_code": "SG",
+                },
+            },
+            headers={"Idempotency-Key": "test-key-stateful-disabled"},
+        )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "DPM_STATEFUL_INPUT_DISABLED"
+
+
+def test_stateful_simulate_enabled_without_core_base_url_returns_unavailable(monkeypatch):
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.delenv("DPM_CORE_BASE_URL", raising=False)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+            },
+            headers={"Idempotency-Key": "test-key-stateful-no-core"},
+        )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "DPM_CORE_RESOLVER_UNAVAILABLE"
+
+
+def test_stateful_simulate_uses_resolved_core_context_and_lineage(monkeypatch):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/simulate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "options_override": {"enable_settlement_awareness": True},
+            },
+            headers={
+                "Idempotency-Key": "test-key-stateful-simulate-ready",
+                "X-Correlation-Id": "corr-stateful-simulate",
+            },
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-simulate")]
+    assert body["correlation_id"] == "corr-stateful-simulate"
+    assert body["lineage"]["input_mode"] == "stateful"
+    assert body["lineage"]["source_system"] == "lotus-core"
+    assert body["lineage"]["portfolio_snapshot_id"] == "core-pf-snap-001"
+    assert body["lineage"]["market_data_snapshot_id"] == "core-md-snap-001"
+    assert body["lineage"]["model_portfolio_id"] == "model_balanced_sgd"
+    assert body["lineage"]["model_portfolio_version"] == "2026-03-25"
+    assert body["lineage"]["shelf_version"] == "shelf_sg_v1"
+    assert body["lineage"]["integration_policy_version"] == "dpm-core-context.v1"
+    assert body["lineage"]["source_lineage_bundle_id"] == "lineage-bundle-001"
+    assert body["lineage"]["source_supportability_state"] == "READY"
+    assert body["lineage"]["stateful_context_hash"].startswith("sha256:")
+
+
+def test_stateful_analyze_uses_shared_core_context_for_each_scenario(monkeypatch):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+
+    with TestClient(app) as raw_client:
+        response = raw_client.post(
+            "/api/v1/rebalance/analyze",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "scenarios": {
+                    "baseline": {"options": {}},
+                    "position_cap": {"options": {"single_position_max_weight": "0.5"}},
+                },
+            },
+            headers={"X-Correlation-Id": "corr-stateful-analyze"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-analyze")]
+    assert set(body["results"]) == {"baseline", "position_cap"}
+    assert body["base_snapshot_ids"] == {
+        "portfolio_snapshot_id": "core-pf-snap-001",
+        "market_data_snapshot_id": "core-md-snap-001",
+    }
+    for scenario_name, result in body["results"].items():
+        assert result["correlation_id"] == f"corr-stateful-analyze:{scenario_name}"
+        assert result["lineage"]["input_mode"] == "stateful"
+        assert result["lineage"]["source_system"] == "lotus-core"
+        assert result["lineage"]["stateful_context_hash"].startswith("sha256:")
+
+
+def test_stateful_analyze_async_persists_resolved_core_lineage(monkeypatch):
+    fake_resolver = _install_fake_core_resolver(monkeypatch)
+
+    with TestClient(app) as raw_client:
+        accepted = raw_client.post(
+            "/api/v1/rebalance/analyze/async",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "scenarios": {"baseline": {"options": {}}},
+            },
+            headers={"X-Correlation-Id": "corr-stateful-async"},
+        )
+        operation = raw_client.get(
+            f"/api/v1/rebalance/operations/{accepted.json()['operation_id']}"
+        )
+
+    assert accepted.status_code == 202
+    assert fake_resolver.calls == [("PB_SG_GLOBAL_BAL_001", "corr-stateful-async")]
+    assert operation.status_code == 200
+    operation_body = operation.json()
+    assert operation_body["status"] == "SUCCEEDED"
+    result = operation_body["result"]["results"]["baseline"]
+    assert result["lineage"]["input_mode"] == "stateful"
+    assert result["lineage"]["source_system"] == "lotus-core"
+    assert result["lineage"]["stateful_context_hash"].startswith("sha256:")
 
 
 def test_simulate_endpoint_success(client):
@@ -72,10 +326,39 @@ def test_simulate_endpoint_success(client):
         "BLOCKED",
         "RISK_REVIEW_REQUIRED",
         "COMPLIANCE_REVIEW_REQUIRED",
-        "CLIENT_CONSENT_REQUIRED",
+        "MANDATE_APPROVAL_REQUIRED",
         "EXECUTION_READY",
         "NONE",
     }
+    metrics = client.get("/metrics")
+    assert metrics.status_code == 200
+    assert "lotus_manage_execution_total" in metrics.text
+    assert 'input_mode="stateless"' in metrics.text
+    assert 'operation="simulate"' in metrics.text
+    assert "lotus_manage_policy_pack_resolution_total" in metrics.text
+    assert 'enabled="false"' in metrics.text
+    assert 'surface="simulate"' in metrics.text
+
+
+def test_simulate_skips_policy_catalog_when_policy_packs_disabled(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "false")
+
+    def _fail_if_catalog_loaded():
+        raise AssertionError("policy catalog should not be loaded when policy packs are disabled")
+
+    monkeypatch.setattr(
+        "src.api.services.rebalance_simulation_service.load_dpm_policy_pack_catalog",
+        _fail_if_catalog_loaded,
+    )
+
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=get_valid_payload(),
+        headers={"Idempotency-Key": "test-key-policy-disabled-no-catalog"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "READY"
 
 
 def test_simulate_missing_idempotency_key_422(client):
@@ -151,23 +434,38 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     assert run_body["idempotency_key"] == "test-key-support-1"
     assert run_body["request_hash"].startswith("sha256:")
     assert run_body["result"]["rebalance_run_id"] == body["rebalance_run_id"]
+    assert run_body["portfolio_id"] == payload["portfolio_snapshot"]["portfolio_id"]
+    assert run_body["result"]["lineage"]["request_hash"] == run_body["request_hash"]
 
     by_correlation = client.get("/api/v1/rebalance/runs/by-correlation/corr-support-1")
     assert by_correlation.status_code == 200
-    assert by_correlation.json()["rebalance_run_id"] == body["rebalance_run_id"]
+    correlation_body = by_correlation.json()
+    assert correlation_body == run_body
 
     by_request_hash = client.get(
         f"/api/v1/rebalance/runs/by-request-hash/{run_body['request_hash']}"
     )
     assert by_request_hash.status_code == 200
-    assert by_request_hash.json()["rebalance_run_id"] == body["rebalance_run_id"]
+    assert by_request_hash.json() == run_body
 
     by_idempotency = client.get("/api/v1/rebalance/runs/idempotency/test-key-support-1")
     assert by_idempotency.status_code == 200
     idem_body = by_idempotency.json()
     assert idem_body["idempotency_key"] == "test-key-support-1"
     assert idem_body["rebalance_run_id"] == body["rebalance_run_id"]
-    assert idem_body["request_hash"].startswith("sha256:")
+    assert idem_body["request_hash"] == run_body["request_hash"]
+    assert idem_body["created_at"] == run_body["created_at"]
+
+    unsupported_lookup_queries = [
+        f"/api/v1/rebalance/runs/{body['rebalance_run_id']}?include_artifact=true",
+        "/api/v1/rebalance/runs/by-correlation/corr-support-1?limit=1",
+        f"/api/v1/rebalance/runs/by-request-hash/{run_body['request_hash']}?include_lineage=true",
+        "/api/v1/rebalance/runs/idempotency/test-key-support-1?history=true",
+    ]
+    for url in unsupported_lookup_queries:
+        unsupported = client.get(url)
+        assert unsupported.status_code == 422
+        assert unsupported.json()["detail"].startswith("UNSUPPORTED_QUERY_PARAMETER:")
 
     artifact = client.get(f"/api/v1/rebalance/runs/{body['rebalance_run_id']}/artifact")
     assert artifact.status_code == 200
@@ -186,6 +484,10 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     )
     assert artifact_body["evidence"]["hashes"]["request_hash"].startswith("sha256:")
     assert artifact_body["evidence"]["hashes"]["artifact_hash"].startswith("sha256:")
+    expected_artifact_hash = hash_canonical_payload(
+        strip_keys(artifact_body, exclude={"artifact_hash"})
+    )
+    assert artifact_body["evidence"]["hashes"]["artifact_hash"] == expected_artifact_hash
     assert artifact_body["result"]["rebalance_run_id"] == body["rebalance_run_id"]
 
     artifact_again = client.get(f"/api/v1/rebalance/runs/{body['rebalance_run_id']}/artifact")
@@ -193,6 +495,14 @@ def test_dpm_support_apis_lookup_by_run_correlation_and_idempotency(client):
     assert (
         artifact_again.json()["evidence"]["hashes"]["artifact_hash"]
         == artifact_body["evidence"]["hashes"]["artifact_hash"]
+    )
+
+    unsupported_query = client.get(
+        f"/api/v1/rebalance/runs/{body['rebalance_run_id']}/artifact?include_lineage=true"
+    )
+    assert unsupported_query.status_code == 422
+    assert unsupported_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: include_lineage not supported for this endpoint"
     )
 
 
@@ -280,6 +590,12 @@ def test_dpm_support_runs_list_filters_and_cursor(client):
     assert (
         page_two_body["items"][0]["rebalance_run_id"]
         != page_one_body["items"][0]["rebalance_run_id"]
+    )
+
+    unsupported_status_alias = client.get("/api/v1/rebalance/runs?status=READY")
+    assert unsupported_status_alias.status_code == 422
+    assert unsupported_status_alias.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
     )
 
 
@@ -402,6 +718,10 @@ def test_dpm_idempotency_history_api_disabled_enabled_and_history_payload(client
     body = history.json()
     assert body["idempotency_key"] == "test-key-history-1"
     assert len(body["history"]) == 2
+    assert [event["correlation_id"] for event in body["history"]] == [
+        "corr-history-1",
+        "corr-history-2",
+    ]
     assert body["history"][0]["rebalance_run_id"] == run_one
     assert body["history"][0]["correlation_id"] == "corr-history-1"
     assert body["history"][0]["request_hash"].startswith("sha256:")
@@ -412,6 +732,14 @@ def test_dpm_idempotency_history_api_disabled_enabled_and_history_payload(client
     missing = client.get("/api/v1/rebalance/idempotency/test-key-history-missing/history")
     assert missing.status_code == 404
     assert missing.json()["detail"] == "DPM_IDEMPOTENCY_KEY_NOT_FOUND"
+
+    unsupported_query = client.get(
+        "/api/v1/rebalance/idempotency/test-key-history-1/history?limit=1"
+    )
+    assert unsupported_query.status_code == 422
+    assert unsupported_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: limit not supported for this endpoint"
+    )
 
 
 def test_dpm_support_apis_not_found_and_disabled(client, monkeypatch):
@@ -436,9 +764,16 @@ def test_dpm_support_apis_not_found_and_disabled(client, monkeypatch):
     assert missing_artifact.json()["detail"] == "DPM_RUN_NOT_FOUND"
 
     monkeypatch.setenv("DPM_SUPPORT_APIS_ENABLED", "false")
-    disabled = client.get("/api/v1/rebalance/runs/rr_missing")
-    assert disabled.status_code == 404
-    assert disabled.json()["detail"] == "DPM_SUPPORT_APIS_DISABLED"
+    disabled_urls = [
+        "/api/v1/rebalance/runs/rr_missing",
+        "/api/v1/rebalance/runs/by-correlation/corr-missing",
+        "/api/v1/rebalance/runs/by-request-hash/sha256:missing",
+        "/api/v1/rebalance/runs/idempotency/idem-missing",
+    ]
+    for url in disabled_urls:
+        disabled = client.get(url)
+        assert disabled.status_code == 404
+        assert disabled.json()["detail"] == "DPM_SUPPORT_APIS_DISABLED"
 
     monkeypatch.setenv("DPM_SUPPORT_APIS_ENABLED", "true")
     monkeypatch.setenv("DPM_ARTIFACTS_ENABLED", "false")
@@ -521,6 +856,67 @@ def test_dpm_async_operation_lookup_by_id_and_correlation(client):
     assert by_correlation.json()["operation_id"] == accepted.operation_id
 
 
+def test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result(client):
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {
+        "baseline": {"options": {}},
+        "invalid_case": {"options": {"group_constraints": {"sectorTECH": {"max_weight": "0.2"}}}},
+    }
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": "corr-dpm-async-terminal-detail"},
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    by_operation = client.get(f"/api/v1/rebalance/operations/{operation_id}")
+
+    assert by_operation.status_code == 200
+    typed_status = DpmAsyncOperationStatusResponse.model_validate(by_operation.json())
+    assert typed_status.operation_id == operation_id
+    assert typed_status.status == "SUCCEEDED"
+    assert typed_status.is_executable is False
+    assert typed_status.error is None
+    assert typed_status.result is not None
+    typed_result = BatchRebalanceResult.model_validate(typed_status.result)
+    assert set(typed_result.results) == {"baseline"}
+    assert set(typed_result.comparison_metrics) == {"baseline"}
+    assert set(typed_result.failed_scenarios) == {"invalid_case"}
+    assert "PARTIAL_BATCH_FAILURE" in typed_result.warnings
+
+
+def test_dpm_async_operation_lookup_by_correlation_returns_typed_terminal_result(client):
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+    correlation_id = "corr-dpm-async-correlation-terminal-detail"
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": correlation_id},
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    by_correlation = client.get(f"/api/v1/rebalance/operations/by-correlation/{correlation_id}")
+
+    assert by_correlation.status_code == 200
+    typed_status = DpmAsyncOperationStatusResponse.model_validate(by_correlation.json())
+    assert typed_status.operation_id == operation_id
+    assert typed_status.correlation_id == correlation_id
+    assert typed_status.status == "SUCCEEDED"
+    assert typed_status.is_executable is False
+    assert typed_status.error is None
+    assert typed_status.result is not None
+    typed_result = BatchRebalanceResult.model_validate(typed_status.result)
+    assert set(typed_result.results) == {"baseline"}
+    assert set(typed_result.failed_scenarios) == set()
+
+
 def test_dpm_async_operation_list_rejects_unsupported_query_parameters(client):
     response = client.get("/api/v1/rebalance/operations?status=SUCCEEDED")
 
@@ -569,6 +965,48 @@ def test_dpm_async_operation_list_filters_and_cursor(client):
     page_two_body = page_two.json()
     assert len(page_two_body["items"]) == 1
     assert page_one_body["items"][0]["operation_id"] != page_two_body["items"][0]["operation_id"]
+
+
+def test_dpm_async_operation_list_filters_by_created_window_and_operation_type(client):
+    service = get_dpm_run_support_service()
+    now = datetime.now(timezone.utc)
+    old_created_at = now - timedelta(hours=3)
+    in_window_created_at = now - timedelta(hours=1)
+    out_of_window_created_at = now + timedelta(hours=1)
+    old = service.submit_analyze_async(
+        correlation_id="corr-dpm-ops-old",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+        created_at=old_created_at,
+    )
+    in_window = service.submit_analyze_async(
+        correlation_id="corr-dpm-ops-window",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+        created_at=in_window_created_at,
+    )
+    future = service.submit_analyze_async(
+        correlation_id="corr-dpm-ops-future",
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+        created_at=out_of_window_created_at,
+    )
+
+    response = client.get(
+        "/api/v1/rebalance/operations",
+        params={
+            "created_from": (now - timedelta(hours=2)).isoformat(),
+            "created_to": now.isoformat(),
+            "operation_type": "ANALYZE_SCENARIOS",
+            "status_filter": "PENDING",
+            "limit": 10,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["operation_id"] for item in body["items"]] == [in_window.operation_id]
+    assert old.operation_id not in {item["operation_id"] for item in body["items"]}
+    assert future.operation_id not in {item["operation_id"] for item in body["items"]}
+    assert body["items"][0]["operation_type"] == "ANALYZE_SCENARIOS"
+    assert body["items"][0]["status"] == "PENDING"
 
 
 def test_dpm_async_operation_ttl_expiry_by_id_and_correlation(client, monkeypatch):
@@ -650,6 +1088,17 @@ def test_dpm_supportability_summary_endpoint_disabled(client, monkeypatch):
     response = client.get("/api/v1/rebalance/supportability/summary")
     assert response.status_code == 404
     assert response.json()["detail"] == "DPM_SUPPORTABILITY_SUMMARY_APIS_DISABLED"
+
+
+def test_dpm_supportability_summary_backend_init_error_returns_503(client, monkeypatch):
+    monkeypatch.setenv("DPM_SUPPORTABILITY_STORE_BACKEND", "POSTGRES")
+    monkeypatch.delenv("DPM_SUPPORTABILITY_POSTGRES_DSN", raising=False)
+    reset_dpm_run_support_service_for_tests()
+
+    response = client.get("/api/v1/rebalance/supportability/summary")
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED"
 
 
 def test_dpm_supportability_summary_rejects_unexpected_query_params(client):
@@ -739,6 +1188,16 @@ def test_dpm_run_support_bundle_endpoint(client):
     assert compact_body["artifact"] is None
     assert compact_body["async_operation"] is None
     assert compact_body["idempotency_history"] is None
+    assert compact_body["lineage"]["entity_id"] == run_id
+    assert compact_body["workflow_history"]["run_id"] == run_id
+
+    unsupported_query = client.get(
+        f"/api/v1/rebalance/runs/{run_id}/support-bundle?include_lineage=false"
+    )
+    assert unsupported_query.status_code == 422
+    assert unsupported_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: include_lineage not supported for this endpoint"
+    )
 
 
 def test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency(client):
@@ -785,6 +1244,14 @@ def test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency(client):
     assert missing_by_idempotency.status_code == 404
     assert missing_by_idempotency.json()["detail"] == "DPM_IDEMPOTENCY_KEY_NOT_FOUND"
 
+    unsupported_by_correlation = client.get(
+        "/api/v1/rebalance/runs/by-correlation/corr-support-bundle-2/support-bundle?lineage=true"
+    )
+    assert unsupported_by_correlation.status_code == 422
+    assert unsupported_by_correlation.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: lineage not supported for this endpoint"
+    )
+
 
 def test_dpm_run_support_bundle_endpoint_by_operation(client):
     payload = get_valid_payload()
@@ -817,6 +1284,14 @@ def test_dpm_run_support_bundle_endpoint_by_operation(client):
     missing = client.get("/api/v1/rebalance/runs/by-operation/dop_missing/support-bundle")
     assert missing.status_code == 404
     assert missing.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_FOUND"
+
+    unsupported_by_operation = client.get(
+        f"/api/v1/rebalance/runs/by-operation/{accepted.operation_id}/support-bundle?artifact=false"
+    )
+    assert unsupported_by_operation.status_code == 422
+    assert unsupported_by_operation.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: artifact not supported for this endpoint"
+    )
 
 
 def test_dpm_run_support_bundle_endpoint_disabled_and_not_found(client, monkeypatch):
@@ -1072,6 +1547,28 @@ def test_simulate_blocked_logs_warning(client):
         mock_logger.warning.assert_called()
         args, _ = mock_logger.warning.call_args
         assert "Run blocked" in args[0]
+        assert len(args) == 1
+        assert "Diagnostics" not in args[0]
+
+
+def test_simulate_logs_do_not_embed_request_identifiers(client):
+    payload = get_valid_payload()
+    headers = {
+        "Idempotency-Key": "test-key-log-redaction",
+        "X-Correlation-Id": "corr-log-redaction",
+    }
+
+    with patch("src.api.main.logger") as mock_logger:
+        response = client.post("/api/v1/rebalance/simulate", json=payload, headers=headers)
+
+    assert response.status_code == 200
+    logged_text = " ".join(
+        str(arg) for call in mock_logger.info.call_args_list for arg in call.args
+    )
+    assert "corr-log-redaction" not in logged_text
+    assert "test-key-log-redaction" not in logged_text
+    assert "Idempotency" not in logged_text
+    assert "CID=" not in logged_text
 
 
 def test_simulate_missing_price_can_continue_when_non_blocking(client):
@@ -1143,6 +1640,26 @@ def test_analyze_endpoint_success(client):
         )
 
 
+def test_analyze_skips_policy_catalog_when_policy_packs_disabled(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "false")
+
+    def _fail_if_catalog_loaded():
+        raise AssertionError("policy catalog should not be loaded when policy packs are disabled")
+
+    monkeypatch.setattr(
+        "src.api.services.rebalance_simulation_service.load_dpm_policy_pack_catalog",
+        _fail_if_catalog_loaded,
+    )
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+
+    response = client.post("/api/v1/rebalance/analyze", json=payload)
+
+    assert response.status_code == 200
+    assert set(response.json()["results"].keys()) == {"baseline"}
+
+
 def test_analyze_async_accept_and_lookup_succeeded(client):
     payload = get_valid_payload()
     payload.pop("options")
@@ -1191,6 +1708,20 @@ def test_analyze_async_generates_and_echoes_correlation_header_when_missing(clie
     accepted_body = accepted.json()
     assert accepted_body["correlation_id"].startswith("corr_")
     assert accepted.headers["X-Correlation-Id"] == accepted_body["correlation_id"]
+
+
+def test_analyze_async_duplicate_correlation_returns_domain_conflict(client):
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+    headers = {"X-Correlation-Id": "corr-batch-async-duplicate"}
+
+    first = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+    second = client.post("/api/v1/rebalance/analyze/async", json=payload, headers=headers)
+
+    assert first.status_code == 202
+    assert second.status_code == 409
+    assert second.json()["detail"] == "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
 
 
 def test_analyze_async_failure_is_captured_in_operation_status(client):
@@ -1256,8 +1787,8 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
             '"constraint_policy":{"single_position_max_weight":"0.25",'
             '"group_constraints":{"sector:TECH":{"max_weight":"0.20"}}},'
             '"workflow_policy":{"enable_workflow_gates":false,'
-            '"workflow_requires_client_consent":true,'
-            '"client_consent_already_obtained":true}}}'
+            '"workflow_requires_mandate_approval":true,'
+            '"mandate_approval_already_obtained":true}}}'
         ),
     )
 
@@ -1303,8 +1834,8 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
         assert "sector:TECH" in simulate_options.group_constraints
         assert simulate_options.group_constraints["sector:TECH"].max_weight == Decimal("0.20")
         assert simulate_options.enable_workflow_gates is False
-        assert simulate_options.workflow_requires_client_consent is True
-        assert simulate_options.client_consent_already_obtained is True
+        assert simulate_options.workflow_requires_mandate_approval is True
+        assert simulate_options.mandate_approval_already_obtained is True
 
         batch_payload = get_valid_payload()
         batch_payload.pop("options")
@@ -1325,8 +1856,8 @@ def test_dpm_policy_pack_catalog_overrides_turnover_option(client, monkeypatch):
         assert "sector:TECH" in analyze_options.group_constraints
         assert analyze_options.group_constraints["sector:TECH"].max_weight == Decimal("0.20")
         assert analyze_options.enable_workflow_gates is False
-        assert analyze_options.workflow_requires_client_consent is True
-        assert analyze_options.client_consent_already_obtained is True
+        assert analyze_options.workflow_requires_mandate_approval is True
+        assert analyze_options.mandate_approval_already_obtained is True
 
 
 def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatch):
@@ -1378,17 +1909,19 @@ def test_effective_policy_pack_endpoint_resolution_precedence(client, monkeypatc
 
 
 def test_policy_pack_supportability_routes_reject_unexpected_query_params(client):
-    effective = client.get("/api/v1/rebalance/policies/effective?tenant_id=tenant_001")
-    assert effective.status_code == 422
-    assert effective.json()["detail"] == (
-        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
-    )
+    unsupported_urls = {
+        "/api/v1/rebalance/policies/effective?tenant_id=tenant_001": "tenant_id",
+        "/api/v1/rebalance/policies/effective?policyPackId=pack_001": "policyPackId",
+        "/api/v1/rebalance/policies/catalog?tenant_id=tenant_001": "tenant_id",
+        "/api/v1/rebalance/policies/catalog?include_disabled=true": "include_disabled",
+    }
 
-    catalog = client.get("/api/v1/rebalance/policies/catalog?tenant_id=tenant_001")
-    assert catalog.status_code == 422
-    assert catalog.json()["detail"] == (
-        "UNSUPPORTED_QUERY_PARAMETER: tenant_id not supported for this endpoint"
-    )
+    for url, unsupported_param in unsupported_urls.items():
+        response = client.get(url)
+        assert response.status_code == 422
+        assert response.json()["detail"] == (
+            f"UNSUPPORTED_QUERY_PARAMETER: {unsupported_param} not supported for this endpoint"
+        )
 
 
 def test_lineage_supportability_route_rejects_unexpected_query_params(client, monkeypatch):
@@ -1481,6 +2014,11 @@ def test_policy_pack_catalog_endpoint_returns_resolution_and_items(client, monke
     assert [item["policy_pack_id"] for item in body["items"]] == ["dpm_request_pack", "global_pack"]
     assert body["items"][0]["version"] == "2"
     assert body["items"][0]["turnover_policy"]["max_turnover_pct"] == "0.03"
+    assert body["items"][0]["tax_policy"]["enable_tax_awareness"] is None
+    assert body["items"][0]["settlement_policy"]["settlement_horizon_days"] is None
+    assert body["items"][0]["constraint_policy"]["group_constraints"] == {}
+    assert body["items"][0]["workflow_policy"]["enable_workflow_gates"] is None
+    assert body["items"][0]["idempotency_policy"]["replay_enabled"] is None
 
 
 def test_policy_pack_catalog_endpoint_uses_tenant_resolver(client, monkeypatch):
@@ -1563,6 +2101,105 @@ def test_dpm_policy_pack_catalog_overrides_options_using_tenant_resolver(client,
         assert simulate.status_code == 200
         simulate_options = mock_run.call_args.kwargs["options"]
         assert simulate_options.max_turnover_pct == Decimal("0.02")
+
+
+def test_simulate_policy_pack_explicit_tenant_header_precedence_over_resolver(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_MAP_JSON", '{"tenant_001":"tenant_resolver_pack"}')
+    monkeypatch.setenv(
+        "DPM_POLICY_PACK_CATALOG_JSON",
+        (
+            '{"tenant_resolver_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.02"}},'
+            '"tenant_header_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.07"}}}'
+        ),
+    )
+    payload = get_valid_payload()
+    from src.core.models import (
+        EngineOptions,
+        MarketDataSnapshot,
+        ModelPortfolio,
+        PortfolioSnapshot,
+        ShelfEntry,
+    )
+    from src.core.rebalance.engine import run_simulation as real_run
+
+    seed_payload = get_valid_payload()
+    real_result = real_run(
+        portfolio=PortfolioSnapshot(**seed_payload["portfolio_snapshot"]),
+        market_data=MarketDataSnapshot(**seed_payload["market_data_snapshot"]),
+        model=ModelPortfolio(**seed_payload["model_portfolio"]),
+        shelf=[ShelfEntry(**entry) for entry in seed_payload["shelf_entries"]],
+        options=EngineOptions(**seed_payload["options"]),
+        request_hash="seed-policy-pack-tenant-header",
+    )
+
+    with patch("src.api.main.run_simulation") as mock_run:
+        mock_run.return_value = real_result
+
+        simulate = client.post(
+            "/api/v1/rebalance/simulate",
+            json=payload,
+            headers={
+                "Idempotency-Key": "test-key-policy-pack-tenant-header-simulate",
+                "X-Tenant-Id": "tenant_001",
+                "X-Tenant-Policy-Pack-Id": "tenant_header_pack",
+            },
+        )
+
+    assert simulate.status_code == 200
+    simulate_options = mock_run.call_args.kwargs["options"]
+    assert simulate_options.max_turnover_pct == Decimal("0.07")
+
+
+def test_analyze_policy_pack_explicit_tenant_header_precedence_over_resolver(client, monkeypatch):
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_MAP_JSON", '{"tenant_001":"tenant_resolver_pack"}')
+    monkeypatch.setenv(
+        "DPM_POLICY_PACK_CATALOG_JSON",
+        (
+            '{"tenant_resolver_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.02"}},'
+            '"tenant_header_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.07"}}}'
+        ),
+    )
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+    from src.core.models import (
+        EngineOptions,
+        MarketDataSnapshot,
+        ModelPortfolio,
+        PortfolioSnapshot,
+        ShelfEntry,
+    )
+    from src.core.rebalance.engine import run_simulation as real_run
+
+    seed_payload = get_valid_payload()
+    real_result = real_run(
+        portfolio=PortfolioSnapshot(**seed_payload["portfolio_snapshot"]),
+        market_data=MarketDataSnapshot(**seed_payload["market_data_snapshot"]),
+        model=ModelPortfolio(**seed_payload["model_portfolio"]),
+        shelf=[ShelfEntry(**entry) for entry in seed_payload["shelf_entries"]],
+        options=EngineOptions(**seed_payload["options"]),
+        request_hash="seed-policy-pack-analyze-tenant-header",
+    )
+
+    with patch("src.api.main.run_simulation") as mock_run:
+        mock_run.return_value = real_result
+
+        analyze = client.post(
+            "/api/v1/rebalance/analyze",
+            json=payload,
+            headers={
+                "X-Tenant-Id": "tenant_001",
+                "X-Tenant-Policy-Pack-Id": "tenant_header_pack",
+            },
+        )
+
+    assert analyze.status_code == 200
+    analyze_options = mock_run.call_args.kwargs["options"]
+    assert analyze_options.max_turnover_pct == Decimal("0.07")
 
 
 def test_dpm_policy_pack_idempotency_override_disables_replay(client, monkeypatch):
@@ -1662,6 +2299,94 @@ def test_analyze_async_accept_only_mode_can_be_executed_manually(client, monkeyp
     assert executed_body["result"]["batch_run_id"].startswith("batch_")
 
 
+def test_analyze_async_accept_only_manual_execute_captures_failure(client, monkeypatch):
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "ACCEPT_ONLY")
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={"X-Correlation-Id": "corr-batch-async-manual-failure"},
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    with patch("src.api.main._execute_batch_analysis", side_effect=RuntimeError("boom")):
+        executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+
+    assert executed.status_code == 200
+    executed_body = executed.json()
+    assert executed_body["operation_id"] == operation_id
+    assert executed_body["status"] == "FAILED"
+    assert executed_body["is_executable"] is False
+    assert executed_body["result"] is None
+    assert executed_body["error"] == {"code": "RuntimeError", "message": "boom"}
+
+    repeated = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+    assert repeated.status_code == 409
+    assert repeated.json()["detail"] == "DPM_ASYNC_OPERATION_NOT_EXECUTABLE"
+
+
+def test_analyze_async_accept_only_manual_execute_preserves_tenant_policy_context(
+    client, monkeypatch
+):
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "ACCEPT_ONLY")
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED", "true")
+    monkeypatch.setenv("DPM_TENANT_POLICY_PACK_MAP_JSON", '{"tenant_001":"tenant_resolver_pack"}')
+    monkeypatch.setenv(
+        "DPM_POLICY_PACK_CATALOG_JSON",
+        (
+            '{"tenant_resolver_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.02"}},'
+            '"tenant_header_pack":{"version":"1","turnover_policy":{"max_turnover_pct":"0.07"}}}'
+        ),
+    )
+    payload = get_valid_payload()
+    payload.pop("options")
+    payload["scenarios"] = {"baseline": {"options": {}}}
+    from src.core.models import (
+        EngineOptions,
+        MarketDataSnapshot,
+        ModelPortfolio,
+        PortfolioSnapshot,
+        ShelfEntry,
+    )
+    from src.core.rebalance.engine import run_simulation as real_run
+
+    seed_payload = get_valid_payload()
+    real_result = real_run(
+        portfolio=PortfolioSnapshot(**seed_payload["portfolio_snapshot"]),
+        market_data=MarketDataSnapshot(**seed_payload["market_data_snapshot"]),
+        model=ModelPortfolio(**seed_payload["model_portfolio"]),
+        shelf=[ShelfEntry(**entry) for entry in seed_payload["shelf_entries"]],
+        options=EngineOptions(**seed_payload["options"]),
+        request_hash="seed-policy-pack-async-manual-tenant-header",
+    )
+
+    accepted = client.post(
+        "/api/v1/rebalance/analyze/async",
+        json=payload,
+        headers={
+            "X-Correlation-Id": "corr-batch-async-policy-context",
+            "X-Tenant-Id": "tenant_001",
+            "X-Tenant-Policy-Pack-Id": "tenant_header_pack",
+        },
+    )
+    assert accepted.status_code == 202
+    operation_id = accepted.json()["operation_id"]
+
+    with patch("src.api.main.run_simulation") as mock_run:
+        mock_run.return_value = real_result
+        executed = client.post(f"/api/v1/rebalance/operations/{operation_id}/execute")
+
+    assert executed.status_code == 200
+    assert executed.json()["status"] == "SUCCEEDED"
+    executed_options = mock_run.call_args.kwargs["options"]
+    assert executed_options.max_turnover_pct == Decimal("0.07")
+
+
 def test_analyze_async_manual_execute_not_found_not_executable_and_disabled(client, monkeypatch):
     missing = client.post("/api/v1/rebalance/operations/dop_missing/execute")
     assert missing.status_code == 404
@@ -1735,8 +2460,8 @@ def test_openapi_title_and_tag_grouping(client):
     assert "lotus-manage Simulation" in tags
     assert "lotus-manage What-If Analysis" in tags
     assert "lotus-manage Run Supportability" in tags
-    assert "Advisory Simulation" in tags
-    assert "Advisory Proposal Lifecycle" in tags
+    assert "Advisory Simulation" not in tags
+    assert "Advisory Proposal Lifecycle" not in tags
 
     assert openapi["paths"]["/api/v1/rebalance/simulate"]["post"]["tags"] == [
         "lotus-manage Simulation"
@@ -1753,31 +2478,31 @@ def test_openapi_title_and_tag_grouping(client):
     assert openapi["paths"]["/api/v1/rebalance/policies/catalog"]["get"]["tags"] == [
         "lotus-manage Run Supportability"
     ]
-    assert openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["tags"] == [
-        "Advisory Simulation"
-    ]
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/simulate"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/artifact"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/async"]["post"]["description"]
-    )
-    assert (
-        "Compatibility route only"
-        in openapi["paths"]["/api/v1/rebalance/proposals/{proposal_id}/workflow-events"]["get"][
-            "description"
-        ]
-    )
+    assert "/api/v1/rebalance/proposals/simulate" not in openapi["paths"]
+    assert "/api/v1/rebalance/proposals/artifact" not in openapi["paths"]
+    assert "/api/v1/rebalance/proposals" not in openapi["paths"]
+
+
+def test_openapi_exposes_only_canonical_product_routes(client):
+    openapi = client.get("/openapi.json").json()
+    paths = set(openapi["paths"])
+
+    assert "/api/v1/integration/capabilities" in paths
+    assert "/platform/capabilities" not in paths
+    assert "/api/v1/platform/capabilities" not in paths
+    assert "/api/v1/health" not in paths
+    assert "/api/v1/health/live" not in paths
+    assert "/api/v1/health/ready" not in paths
+
+    allowed_unversioned_infrastructure_paths = {
+        "/health",
+        "/health/live",
+        "/health/ready",
+        "/metrics",
+    }
+    unversioned_paths = {path for path in paths if not path.startswith("/api/v1")}
+
+    assert unversioned_paths == allowed_unversioned_infrastructure_paths
 
 
 def test_openapi_async_analyze_documents_correlation_header(client):
@@ -1815,6 +2540,10 @@ def test_openapi_async_analyze_documents_correlation_header(client):
     assert "X-Correlation-Id" in response_headers
     assert response_headers["X-Correlation-Id"]["description"]
     assert response_headers["X-Correlation-Id"]["schema"]["type"] == "string"
+    conflict_example = analyze_async["responses"]["409"]["content"]["application/json"]["examples"][
+        "correlation_conflict"
+    ]["value"]
+    assert conflict_example["detail"] == "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
 
     policy_pack_header = next(
         parameter
@@ -2332,6 +3061,34 @@ def test_dpm_run_workflow_endpoints_happy_path_and_invalid_transition(client, mo
     workflow_decisions_by_correlation_body = workflow_decisions_by_correlation.json()
     assert workflow_decisions_by_correlation_body["run_id"] == run_id
     assert len(workflow_decisions_by_correlation_body["decisions"]) == 4
+
+    unsupported_workflow_queries = [
+        f"/api/v1/rebalance/runs/{run_id}/workflow?include_history=true",
+        "/api/v1/rebalance/runs/by-correlation/corr-workflow-1/workflow?runId=legacy",
+        "/api/v1/rebalance/runs/idempotency/test-key-workflow-1/workflow?history=true",
+        f"/api/v1/rebalance/runs/{run_id}/workflow/history?limit=1",
+        "/api/v1/rebalance/runs/by-correlation/corr-workflow-1/workflow/history?limit=1",
+        "/api/v1/rebalance/runs/idempotency/test-key-workflow-1/workflow/history?limit=1",
+        "/api/v1/rebalance/workflow/decisions/by-correlation/corr-workflow-1?limit=1",
+    ]
+    for url in unsupported_workflow_queries:
+        unsupported = client.get(url)
+        assert unsupported.status_code == 422
+        assert unsupported.json()["detail"].startswith("UNSUPPORTED_QUERY_PARAMETER:")
+
+    unsupported_action_query = client.post(
+        f"/api/v1/rebalance/runs/{run_id}/workflow/actions?dry_run=true",
+        json={
+            "action": "APPROVE",
+            "reason_code": "REVIEW_APPROVED",
+            "comment": None,
+            "actor_id": "reviewer_2",
+        },
+    )
+    assert unsupported_action_query.status_code == 422
+    assert unsupported_action_query.json()["detail"] == (
+        "UNSUPPORTED_QUERY_PARAMETER: dry_run not supported for this endpoint"
+    )
 
     invalid = client.post(
         f"/api/v1/rebalance/runs/{run_id}/workflow/actions",

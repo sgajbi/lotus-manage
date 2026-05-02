@@ -2,10 +2,88 @@ import os
 from datetime import UTC, date, datetime
 from typing import Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel, Field
 
+from src.api.routers.runtime_utils import reject_unexpected_query_params
+from src.core.common.capabilities import has_solver_dependencies
+
 ConsumerSystem = Literal["lotus-gateway", "lotus-performance", "lotus-manage", "UI", "UNKNOWN"]
+
+
+CAPABILITIES_RESPONSE_EXAMPLES = {
+    "default": {
+        "summary": "Default discretionary mandate capability posture",
+        "description": (
+            "Default posture for lotus-manage before stateful portfolio-id execution and "
+            "workflow gates are explicitly enabled."
+        ),
+        "value": {
+            "contract_version": "v1",
+            "source_service": "lotus-manage",
+            "consumer_system": "lotus-gateway",
+            "tenant_id": "default",
+            "generated_at": "2026-02-24T12:00:00Z",
+            "as_of_date": "2026-02-24",
+            "policy_version": "dpm.policy.v1",
+            "supported_input_modes": ["stateless"],
+            "features": [
+                {
+                    "key": "dpm.execution.stateful_portfolio_id",
+                    "enabled": False,
+                    "owner_service": "lotus-manage",
+                    "description": (
+                        "Stateful lotus-manage rebalance execution using a governed "
+                        "portfolio identifier; enable only when a governed lotus-core "
+                        "resolver is configured."
+                    ),
+                },
+                {
+                    "key": "dpm.execution.stateless",
+                    "enabled": True,
+                    "owner_service": "lotus-manage",
+                    "description": (
+                        "Stateless lotus-manage rebalance execution using explicit request bundles."
+                    ),
+                },
+                {
+                    "key": "dpm.workflow.review_gate",
+                    "enabled": False,
+                    "owner_service": "lotus-manage",
+                    "description": (
+                        "Discretionary mandate run review gates for approve, reject, and "
+                        "request-changes decisions."
+                    ),
+                },
+                {
+                    "key": "dpm.execution.solver_target_generation",
+                    "enabled": True,
+                    "owner_service": "lotus-manage",
+                    "description": (
+                        "Optional solver-backed target generation for discretionary mandate "
+                        "rebalance requests when solver dependencies are installed."
+                    ),
+                },
+                {
+                    "key": "manage.observability.action_register_supportability",
+                    "enabled": True,
+                    "owner_service": "lotus-manage",
+                    "description": (
+                        "Source-backed action register and supportability summary posture "
+                        "with bounded states, reasons, and metrics."
+                    ),
+                },
+            ],
+            "workflows": [
+                {
+                    "workflow_key": "dpm_rebalance_lifecycle",
+                    "enabled": False,
+                    "required_features": ["dpm.workflow.review_gate"],
+                }
+            ],
+        },
+    }
+}
 
 
 class FeatureCapability(BaseModel):
@@ -39,7 +117,7 @@ class WorkflowCapability(BaseModel):
     required_features: list[str] = Field(
         default_factory=list,
         description="Feature keys that must be enabled before this workflow should be surfaced.",
-        examples=[["dpm.proposals.lifecycle"]],
+        examples=[["dpm.workflow.review_gate"]],
     )
 
 
@@ -74,7 +152,7 @@ class IntegrationCapabilitiesResponse(BaseModel):
     )
     supported_input_modes: list[str] = Field(
         description="Supported execution input modes that downstream callers may use for rebalance flows.",
-        examples=[["portfolio_id", "inline_bundle"]],
+        examples=[["stateless"]],
     )
     features: list[FeatureCapability] = Field(
         description="Feature-level capability flags for downstream orchestration and UI gating.",
@@ -82,9 +160,9 @@ class IntegrationCapabilitiesResponse(BaseModel):
             [
                 {
                     "key": "dpm.execution.stateful_portfolio_id",
-                    "enabled": True,
+                    "enabled": False,
                     "owner_service": "lotus-manage",
-                    "description": "Stateful lotus-manage execution using a governed portfolio identifier and lotus-core-referenced data.",
+                    "description": "Stateful lotus-manage execution using a governed portfolio identifier; disabled unless a governed lotus-core resolver is configured.",
                 }
             ]
         ],
@@ -96,7 +174,7 @@ class IntegrationCapabilitiesResponse(BaseModel):
                 {
                     "workflow_key": "dpm_rebalance_lifecycle",
                     "enabled": True,
-                    "required_features": ["dpm.proposals.lifecycle"],
+                    "required_features": ["dpm.workflow.review_gate"],
                 }
             ]
         ],
@@ -113,6 +191,115 @@ def _env_bool(name: str, default: bool) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _supported_input_modes(
+    *,
+    stateful_enabled: bool,
+    stateless_enabled: bool,
+) -> list[str]:
+    supported_input_modes: list[str] = []
+    if stateful_enabled:
+        supported_input_modes.append("stateful")
+    if stateless_enabled:
+        supported_input_modes.append("stateless")
+    return supported_input_modes
+
+
+def _stateful_execution_publishable() -> bool:
+    resolver_path_template = os.getenv("DPM_CORE_RESOLVER_PATH_TEMPLATE", "").strip()
+    uses_legacy_monolithic_resolver = (
+        bool(resolver_path_template) and "dpm-execution-context" in resolver_path_template
+    )
+    return (
+        _env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False)
+        and _env_bool("DPM_STATEFUL_CORE_SOURCING_ENABLED", False)
+        and bool(os.getenv("DPM_CORE_BASE_URL", "").strip())
+        and not uses_legacy_monolithic_resolver
+    )
+
+
+def _build_feature_capabilities(
+    *,
+    workflow_enabled: bool,
+    stateful_enabled: bool,
+    stateless_enabled: bool,
+    solver_available: bool,
+) -> list[FeatureCapability]:
+    return [
+        FeatureCapability(
+            key="dpm.execution.stateful_portfolio_id",
+            enabled=stateful_enabled,
+            owner_service="lotus-manage",
+            description="Stateful lotus-manage rebalance execution using a governed portfolio identifier; enable only when a governed lotus-core resolver is configured.",
+        ),
+        FeatureCapability(
+            key="dpm.execution.stateless",
+            enabled=stateless_enabled,
+            owner_service="lotus-manage",
+            description="Stateless lotus-manage rebalance execution using explicit request bundles.",
+        ),
+        FeatureCapability(
+            key="dpm.workflow.review_gate",
+            enabled=workflow_enabled,
+            owner_service="lotus-manage",
+            description="Discretionary mandate run review gates for approve, reject, and request-changes decisions.",
+        ),
+        FeatureCapability(
+            key="dpm.execution.solver_target_generation",
+            enabled=solver_available,
+            owner_service="lotus-manage",
+            description="Optional solver-backed target generation for discretionary mandate rebalance requests when solver dependencies are installed.",
+        ),
+        FeatureCapability(
+            key="manage.observability.action_register_supportability",
+            enabled=True,
+            owner_service="lotus-manage",
+            description="Source-backed action register and supportability summary posture with bounded states, reasons, and metrics.",
+        ),
+    ]
+
+
+def _build_workflow_capabilities(*, workflow_enabled: bool) -> list[WorkflowCapability]:
+    return [
+        WorkflowCapability(
+            workflow_key="dpm_rebalance_lifecycle",
+            enabled=workflow_enabled,
+            required_features=["dpm.workflow.review_gate"],
+        ),
+    ]
+
+
+def _build_capabilities_response(
+    *,
+    consumer_system: ConsumerSystem,
+    tenant_id: str,
+) -> IntegrationCapabilitiesResponse:
+    workflow_enabled = _env_bool("DPM_WORKFLOW_ENABLED", False)
+    stateful_enabled = _stateful_execution_publishable()
+    stateless_enabled = _env_bool("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", True)
+    solver_available = has_solver_dependencies()
+
+    return IntegrationCapabilitiesResponse(
+        contract_version="v1",
+        source_service=os.getenv("DPM_CAP_SOURCE_SERVICE", "lotus-manage"),
+        consumer_system=consumer_system,
+        tenant_id=tenant_id,
+        generated_at=datetime.now(UTC),
+        as_of_date=date.today(),
+        policy_version=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
+        supported_input_modes=_supported_input_modes(
+            stateful_enabled=stateful_enabled,
+            stateless_enabled=stateless_enabled,
+        ),
+        features=_build_feature_capabilities(
+            workflow_enabled=workflow_enabled,
+            stateful_enabled=stateful_enabled,
+            stateless_enabled=stateless_enabled,
+            solver_available=solver_available,
+        ),
+        workflows=_build_workflow_capabilities(workflow_enabled=workflow_enabled),
+    )
+
+
 @router.get(
     "/integration/capabilities",
     response_model=IntegrationCapabilitiesResponse,
@@ -123,19 +310,22 @@ def _env_bool(name: str, default: bool) -> bool:
         "control-plane discovery contract, not a source-data or simulation-state read. Callers must use the "
         "canonical snake_case query parameters `consumer_system` and `tenant_id`."
     ),
-)
-@router.get(
-    "/platform/capabilities",
-    response_model=IntegrationCapabilitiesResponse,
-    summary="Get rebalance platform capabilities",
-    description=(
-        "Alias of `/integration/capabilities` for platform-facing capability discovery. Use it when "
-        "the caller needs the same backend-governed rebalance feature/workflow posture through the "
-        "platform namespace. Callers must use the canonical snake_case query parameters "
-        "`consumer_system` and `tenant_id`."
-    ),
+    responses={
+        200: {
+            "description": "Backend-governed discretionary mandate capability posture.",
+            "content": {
+                "application/json": {
+                    "examples": CAPABILITIES_RESPONSE_EXAMPLES,
+                }
+            },
+        },
+        422: {
+            "description": "Unsupported query parameters or invalid consumer values were supplied."
+        },
+    },
 )
 async def get_integration_capabilities(
+    request: Request,
     consumer_system: ConsumerSystem = Query(
         "lotus-gateway",
         description=(
@@ -154,53 +344,11 @@ async def get_integration_capabilities(
         examples=["default"],
     ),
 ) -> IntegrationCapabilitiesResponse:
-    lifecycle_enabled = _env_bool("DPM_CAP_PROPOSAL_LIFECYCLE_ENABLED", True)
-    inline_bundle_enabled = _env_bool("DPM_CAP_INPUT_MODE_INLINE_BUNDLE_ENABLED", True)
-
-    supported_input_modes = ["portfolio_id"]
-    if inline_bundle_enabled:
-        supported_input_modes.append("inline_bundle")
-
-    return IntegrationCapabilitiesResponse(
-        contract_version="v1",
-        source_service=os.getenv("DPM_CAP_SOURCE_SERVICE", "lotus-manage"),
+    reject_unexpected_query_params(
+        request,
+        allowed_params={"consumer_system", "tenant_id"},
+    )
+    return _build_capabilities_response(
         consumer_system=consumer_system,
         tenant_id=tenant_id,
-        generated_at=datetime.now(UTC),
-        as_of_date=date.today(),
-        policy_version=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
-        supported_input_modes=supported_input_modes,
-        features=[
-            FeatureCapability(
-                key="dpm.execution.stateful_portfolio_id",
-                enabled=True,
-                owner_service="lotus-manage",
-                description="Stateful lotus-manage rebalance execution using a governed portfolio identifier and lotus-core-referenced data.",
-            ),
-            FeatureCapability(
-                key="dpm.execution.stateless_inline_bundle",
-                enabled=inline_bundle_enabled,
-                owner_service="lotus-manage",
-                description="Stateless lotus-manage rebalance execution using inline request bundles.",
-            ),
-            FeatureCapability(
-                key="dpm.proposals.lifecycle",
-                enabled=lifecycle_enabled,
-                owner_service="lotus-manage",
-                description="lotus-manage lifecycle proposal and supportability workflows.",
-            ),
-            FeatureCapability(
-                key="manage.observability.action_register_supportability",
-                enabled=True,
-                owner_service="lotus-manage",
-                description="Source-backed action register and supportability summary posture with bounded states, reasons, and metrics.",
-            ),
-        ],
-        workflows=[
-            WorkflowCapability(
-                workflow_key="dpm_rebalance_lifecycle",
-                enabled=lifecycle_enabled,
-                required_features=["dpm.proposals.lifecycle"],
-            ),
-        ],
     )

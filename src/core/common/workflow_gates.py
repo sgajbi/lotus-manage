@@ -113,7 +113,7 @@ def evaluate_gate_decision(
     suitability: SuitabilityResult | None,
     diagnostics: DiagnosticsData | None,
     options: EngineOptions,
-    default_requires_client_consent: bool,
+    default_requires_mandate_approval: bool,
 ) -> GateDecision:
     reasons, hard_fail_count, soft_fail_count = _rule_reasons(rule_results)
     dq_reasons = _dq_reasons(diagnostics)
@@ -121,15 +121,15 @@ def evaluate_gate_decision(
     reasons.extend(suitability_reasons)
     reasons.extend(dq_reasons)
 
-    requires_client_consent = (
-        options.workflow_requires_client_consent or default_requires_client_consent
+    requires_mandate_approval = (
+        options.workflow_requires_mandate_approval or default_requires_mandate_approval
     )
 
     gate: Literal[
         "BLOCKED",
         "RISK_REVIEW_REQUIRED",
         "COMPLIANCE_REVIEW_REQUIRED",
-        "CLIENT_CONSENT_REQUIRED",
+        "MANDATE_APPROVAL_REQUIRED",
         "EXECUTION_READY",
         "NONE",
     ]
@@ -137,7 +137,7 @@ def evaluate_gate_decision(
         "FIX_INPUT",
         "RISK_REVIEW",
         "COMPLIANCE_REVIEW",
-        "REQUEST_CLIENT_CONSENT",
+        "REQUEST_MANDATE_APPROVAL",
         "EXECUTE",
         "NONE",
     ]
@@ -151,12 +151,12 @@ def evaluate_gate_decision(
     elif soft_fail_count > 0 or new_medium > 0:
         gate = "RISK_REVIEW_REQUIRED"
         next_step = "RISK_REVIEW"
-    elif options.client_consent_already_obtained:
+    elif options.mandate_approval_already_obtained:
         gate = "EXECUTION_READY"
         next_step = "EXECUTE"
-    elif requires_client_consent:
-        gate = "CLIENT_CONSENT_REQUIRED"
-        next_step = "REQUEST_CLIENT_CONSENT"
+    elif requires_mandate_approval:
+        gate = "MANDATE_APPROVAL_REQUIRED"
+        next_step = "REQUEST_MANDATE_APPROVAL"
     else:
         gate = "EXECUTION_READY"
         next_step = "EXECUTE"

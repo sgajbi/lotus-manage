@@ -8,3 +8,4 @@ dist/
 build/
 *.pyc
 manage-*.log
+output/

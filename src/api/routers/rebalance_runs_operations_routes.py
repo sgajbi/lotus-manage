@@ -6,6 +6,7 @@ from src.api.routers import rebalance_runs as shared
 from src.core.rebalance_runs import (
     DpmAsyncOperationListResponse,
     DpmAsyncOperationStatusResponse,
+    DpmLineageEdgeType,
     DpmLineageResponse,
     DpmRunNotFoundError,
     DpmRunSupportService,
@@ -16,13 +17,23 @@ from src.core.rebalance_runs import (
     "/rebalance/operations",
     response_model=DpmAsyncOperationListResponse,
     status_code=status.HTTP_200_OK,
+    tags=["lotus-manage Run Supportability"],
     summary="List lotus-manage Async Operations",
     description=(
-        "Returns asynchronous operation records with optional filters and cursor pagination. "
-        "Use the canonical query parameter `status_filter` for operation status filtering; "
-        "unsupported aliases are rejected."
+        "Returns asynchronous operation records for discretionary mandate supportability, "
+        "operator triage, and downstream polling dashboards. Use this endpoint when a caller needs "
+        "a bounded page of operations filtered by creation window, operation type, status, or "
+        "correlation id. Use `GET /api/v1/rebalance/operations/{operation_id}` when the caller already "
+        "has a single operation handle. Use the canonical query parameter `status_filter` for "
+        "operation status filtering; unsupported aliases are rejected."
     ),
     responses={
+        200: {
+            "description": (
+                "Filtered async operation page ordered by newest creation timestamp, then "
+                "operation id, with an opaque `next_cursor` when another page exists."
+            ),
+        },
         422: {
             "description": "Unsupported query parameters were supplied.",
         },
@@ -113,7 +124,22 @@ def list_dpm_async_operations(
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Async Operation",
-    description="Returns asynchronous operation status and terminal result/error payload.",
+    description=(
+        "Returns one asynchronous operation status record by operation id. Use this endpoint after "
+        "`POST /api/v1/rebalance/analyze/async`, after `GET /api/v1/rebalance/operations`, or from operator "
+        "support tooling when the exact operation handle is known. Terminal `SUCCEEDED` operations "
+        "include the batch analysis result payload; terminal `FAILED` operations include structured "
+        "error details. Use `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` when the "
+        "caller has only a correlation id."
+    ),
+    responses={
+        200: {
+            "description": (
+                "Operation status, executability flag, timestamps, and terminal result or error."
+            ),
+        },
+        404: {"description": "Operation not found or async operations disabled."},
+    },
 )
 def get_dpm_async_operation(
     operation_id: Annotated[
@@ -135,12 +161,31 @@ def get_dpm_async_operation(
     response_model=DpmAsyncOperationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Async Operation by Correlation Id",
-    description="Returns asynchronous operation associated with correlation id.",
+    description=(
+        "Returns one asynchronous operation status record by correlation id. Use this endpoint when "
+        "the caller submitted `X-Correlation-Id` to `POST /api/v1/rebalance/analyze/async` and does not "
+        "have the generated operation id. Terminal `SUCCEEDED` operations include the batch "
+        "analysis result payload; terminal `FAILED` operations include structured error details. "
+        "Use `GET /api/v1/rebalance/operations/{operation_id}` when the operation id is already known."
+    ),
+    responses={
+        200: {
+            "description": (
+                "Operation status, executability flag, timestamps, and terminal result or error."
+            ),
+        },
+        404: {
+            "description": "Operation not found for correlation id or async operations disabled."
+        },
+    },
 )
 def get_dpm_async_operation_by_correlation(
     correlation_id: Annotated[
         str,
-        Path(description="Correlation identifier associated with async operation."),
+        Path(
+            description="Correlation identifier associated with async operation.",
+            examples=["corr-dpm-async-001"],
+        ),
     ],
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmAsyncOperationStatusResponse:
@@ -158,13 +203,22 @@ def get_dpm_async_operation_by_correlation(
     status_code=status.HTTP_200_OK,
     summary="Get lotus-manage Supportability Lineage by Entity Id",
     description=(
-        "Returns supportability lineage edges for an entity id, including correlation, "
-        "idempotency, run, and operation relations. Supported filters are `edge_type`, "
-        "`created_from`, `created_to`, `limit`, and `cursor`; unsupported aliases are rejected."
+        "Returns supportability lineage edges where the requested entity id is either the source "
+        "or target of a persisted relation. Use this endpoint for incident reconstruction, audit "
+        "evidence, run-to-correlation traversal, idempotency retry analysis, and async operation "
+        "traceability. Supported filters are `edge_type`, `created_from`, `created_to`, `limit`, "
+        "and `cursor`; unsupported aliases are rejected. Unknown entity ids return an empty page "
+        "rather than `404`, because lineage lookup is a search surface."
     ),
     responses={
+        200: {
+            "description": (
+                "Lineage page ordered by creation timestamp, source entity id, edge type, and "
+                "target entity id, with `next_cursor` when more edges are available."
+            ),
+        },
         422: {
-            "description": "Unsupported query parameters were supplied.",
+            "description": "Unsupported query parameters or invalid filter values were supplied.",
         },
     },
 )
@@ -181,9 +235,12 @@ def get_dpm_lineage(
         ),
     ],
     edge_type: Annotated[
-        Optional[str],
+        Optional[DpmLineageEdgeType],
         Query(
-            description="Optional lineage edge-type filter.",
+            description=(
+                "Optional lineage edge-type filter. Valid values are `CORRELATION_TO_RUN`, "
+                "`IDEMPOTENCY_TO_RUN`, and `OPERATION_TO_CORRELATION`."
+            ),
             examples=["CORRELATION_TO_RUN"],
         ),
     ] = None,

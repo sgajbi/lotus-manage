@@ -1,7 +1,7 @@
 # lotus-manage Rebalance Engine Know-How
 
 Implementation scope:
-- API: `src/api/main.py` (`/rebalance/simulate`, `/rebalance/analyze`)
+- API: `src/api/main.py` (`/api/v1/rebalance/simulate`, `/api/v1/rebalance/analyze`)
 - lotus-manage run supportability router: `src/api/routers/rebalance_runs.py`
 - lotus-manage policy-pack supportability router: `src/api/routers/rebalance_policy_packs.py`
 - lotus-manage run supportability runtime config/env parsing: `src/api/routers/rebalance_runs_config.py`
@@ -16,6 +16,8 @@ Implementation scope:
   - `src/core/rebalance/intents.py` (security intent generation, tax-aware sell controls)
   - `src/core/rebalance/turnover.py` (turnover ranking and budget enforcement)
   - `src/core/rebalance/execution.py` (FX generation, settlement ladder, simulation execution)
+- Stateful core-sourcing contract models and transformations: `src/core/dpm_source_context.py`
+- Stateful `lotus-core` resolver client: `src/infrastructure/core_sourcing/client.py`
 - Shared simulation primitives: `src/core/common/simulation_shared.py`
 - Shared intent dependency linker: `src/core/common/intent_dependencies.py`
 - Shared workflow gate evaluator: `src/core/common/workflow_gates.py`
@@ -25,11 +27,20 @@ Implementation scope:
 
 ## API Surface
 
-### `POST /rebalance/simulate`
+### `POST /api/v1/rebalance/simulate`
 - Purpose: deterministic rebalance simulation.
+- Body: explicit envelope with `input_mode`.
+  - `input_mode=stateless`: `stateless_input` contains `portfolio_snapshot`,
+    `market_data_snapshot`, `model_portfolio`, `shelf_entries`, and `options`.
+  - `input_mode=stateful`: `stateful_input` contains `portfolio_id`, `as_of`, optional mandate,
+    model, policy, tenant, and booking-center selectors. This mode is feature-gated by
+    `DPM_STATEFUL_CORE_SOURCING_ENABLED=false` by default and returns
+    `DPM_STATEFUL_INPUT_DISABLED` or `DPM_CORE_RESOLVER_UNAVAILABLE` until governed
+    `lotus-core` RFC-087 source-product resolver evidence exists.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
+- Optional header: `X-Tenant-Policy-Pack-Id` (explicit tenant default when no request pack is supplied)
 - Optional header: `X-Tenant-Id` (used for tenant default policy-pack resolver lookup)
   - Current policy transformations:
     - `max_turnover_pct`
@@ -40,28 +51,35 @@ Implementation scope:
     - `single_position_max_weight`
     - `group_constraints`
     - `enable_workflow_gates`
-    - `workflow_requires_client_consent`
-    - `client_consent_already_obtained`
+    - `workflow_requires_mandate_approval`
+    - `mandate_approval_already_obtained`
   - Current non-options policy transformation:
     - `idempotency_policy.replay_enabled` controls simulate replay semantics.
 - Output: `RebalanceResult` with status `READY | PENDING_REVIEW | BLOCKED` and `gate_decision`
 - Correlation behavior:
   - response `correlation_id` echoes request `X-Correlation-Id` when provided
-  - otherwise defaults to `c_none`
+  - otherwise a `corr_` identifier is generated for supportability lookup
 - Idempotency behavior:
   - same key + same canonical request payload returns cached result
   - same key + different canonical request payload returns `409 Conflict`
   - replay semantics can be disabled with `DPM_IDEMPOTENCY_REPLAY_ENABLED=false`
 
-### `POST /rebalance/analyze`
+### `POST /api/v1/rebalance/analyze`
 - Purpose: multi-scenario what-if analysis using shared snapshots.
+- Body: explicit envelope with `input_mode`.
+  - `input_mode=stateless`: `stateless_input` contains shared `portfolio_snapshot`,
+    `market_data_snapshot`, `model_portfolio`, `shelf_entries`, and named `scenarios`.
+  - `input_mode=stateful`: `stateful_input` resolves shared portfolio context from `lotus-core`
+    and top-level `scenarios` provide the scenario option overrides. This mode remains disabled by
+    default until live core-backed proof is complete.
 - When to use:
   - immediate caller-facing what-if analysis where the full batch result should return in one response
   - up to 20 scenarios per request
 - When not to use:
-  - deferred or polling-based orchestration; use `POST /rebalance/analyze/async`
+  - deferred or polling-based orchestration; use `POST /api/v1/rebalance/analyze/async`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)
+- Optional header: `X-Tenant-Policy-Pack-Id` (explicit tenant default when no request pack is supplied)
 - Optional header: `X-Tenant-Id` (used for tenant default policy-pack resolver lookup)
   - Current policy transformations:
     - `max_turnover_pct`
@@ -72,25 +90,58 @@ Implementation scope:
     - `single_position_max_weight`
     - `group_constraints`
     - `enable_workflow_gates`
-    - `workflow_requires_client_consent`
-    - `client_consent_already_obtained`
+    - `workflow_requires_mandate_approval`
+    - `mandate_approval_already_obtained`
 - Output: `BatchRebalanceResult` with scenario-level results/metrics/failures.
+- Partial failure behavior:
+  - invalid scenario options are isolated to `failed_scenarios`
+  - runtime failures in one scenario do not suppress successful scenario outputs
+  - `PARTIAL_BATCH_FAILURE` is emitted when any scenario fails
 - Scenario correlation behavior:
   - when `X-Correlation-Id` is provided, each scenario result uses `{header}:{scenario_name}`
   - when omitted, each scenario result uses `{batch_run_id}:{scenario_name}`
 
-### `POST /rebalance/analyze/async`
+### `POST /api/v1/rebalance/analyze/async`
 - Purpose: asynchronous what-if batch submission returning an operation handle instead of full batch results.
+- Body: same explicit execution envelope as `POST /api/v1/rebalance/analyze`.
 - When to use:
   - polling-based orchestration
   - accept-now/execute-later flows
   - `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`
+- Optional headers:
+  - `X-Correlation-Id`
+  - `X-Policy-Pack-Id`
+  - `X-Tenant-Policy-Pack-Id`
+  - `X-Tenant-Id`
+- The accepted response reports the initial operation status. In inline mode, retrieve the operation
+  status URL to inspect terminal `SUCCEEDED` or `FAILED` state and result payload.
+- In accept-only mode, submitted policy context is persisted with the operation and applied during
+  manual execution.
 - Retrieval:
-  - `GET /rebalance/operations/{operation_id}`
-  - `GET /rebalance/operations/by-correlation/{correlation_id}`
+  - `GET /api/v1/rebalance/operations/{operation_id}`
+  - `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}`
 
-### `GET /rebalance/operations`
+### `POST /api/v1/rebalance/operations/{operation_id}/execute`
+- Purpose: explicitly execute a pending async scenario-analysis operation accepted in
+  `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`.
+- When to use:
+  - external orchestration needs to separate operation acceptance from execution
+  - the caller has a pending `operation_id` from `POST /api/v1/rebalance/analyze/async`
+- Body: none; execution uses the persisted request and policy context from submission.
+- Response: `DpmAsyncOperationStatusResponse`.
+- Terminal behavior:
+  - `SUCCEEDED` includes the batch analysis result payload in `result`
+  - `FAILED` includes structured error details in `error`
+  - already terminal operations are not replayed and return `409`
+- Manual execution can be disabled with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false`.
+
+### `GET /api/v1/rebalance/operations`
 - Purpose: list asynchronous operations for supportability investigations.
+- When to use:
+  - bounded polling dashboards
+  - operator triage by status or correlation id
+  - recent operation review after async submission
+- Use `GET /api/v1/rebalance/operations/{operation_id}` when a single operation handle is available.
 - Filters:
   - `created_from` (created-at lower bound)
   - `created_to` (created-at upper bound)
@@ -99,9 +150,32 @@ Implementation scope:
   - `correlation_id`
 - Pagination:
   - `limit`
-  - `cursor`
+  - `cursor` from the previous page's `next_cursor`
+- Ordering: newest `created_at` first, then operation id descending.
+- Unsupported query aliases such as `status` are rejected; use `status_filter`.
 
-### `GET /rebalance/supportability/summary`
+### `GET /api/v1/rebalance/operations/{operation_id}`
+- Purpose: retrieve one asynchronous operation status record when the operation handle is known.
+- When to use:
+  - poll a submitted async analysis operation
+  - inspect terminal result or error payload for supportability
+  - verify manual-execution eligibility through `is_executable`
+- Successful terminal operations include a `BatchRebalanceResult` payload in `result`.
+- Failed terminal operations include structured `error.code` and `error.message`.
+- Use `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` when only the correlation id is
+  available.
+
+### `GET /api/v1/rebalance/operations/by-correlation/{correlation_id}`
+- Purpose: retrieve one asynchronous operation status record when the caller has the correlation id
+  but not the generated operation id.
+- When to use:
+  - polling after submitting `X-Correlation-Id` to `POST /api/v1/rebalance/analyze/async`
+  - supportability lookup from external logs keyed by correlation id
+- Successful terminal operations include a `BatchRebalanceResult` payload in `result`.
+- Failed terminal operations include structured `error.code` and `error.message`.
+- Use `GET /api/v1/rebalance/operations/{operation_id}` when the generated operation id is available.
+
+### `GET /api/v1/rebalance/supportability/summary`
 - Purpose: return operational supportability summary metrics without direct data store access.
 - Output:
   - configured store backend and retention policy
@@ -120,24 +194,35 @@ Implementation scope:
 - Metrics: each successful summary read records
   `lotus_manage_action_register_supportability_total` with bounded `surface`,
   `supportability_state`, `reason`, and `freshness_bucket` labels only.
+- Persistent repositories aggregate run status counts in storage instead of loading every run
+  result payload into application memory.
+- Unsupported query parameters return `422`; this endpoint has no query options.
 
-### `GET /rebalance/policies/effective`
+### `GET /api/v1/rebalance/policies/effective`
 - Purpose: resolve and return effective lotus-manage policy-pack selection for integration/support diagnostics.
+- Resolution precedence:
+  - request-scoped `X-Policy-Pack-Id`
+  - tenant default `X-Tenant-Policy-Pack-Id`
+  - tenant resolver lookup by `X-Tenant-Id`
+  - global default `DPM_DEFAULT_POLICY_PACK_ID`
 - Optional headers:
   - `X-Policy-Pack-Id`
   - `X-Tenant-Policy-Pack-Id`
   - `X-Tenant-Id`
+- Query parameters are not accepted; callers must use headers for resolution context.
 - Output:
   - `enabled`
   - `selected_policy_pack_id`
   - `source`
 
-### `GET /rebalance/policies/catalog`
+### `GET /api/v1/rebalance/policies/catalog`
 - Purpose: inspect configured policy-pack definitions and effective selection context for supportability.
+- Backend: governed PostgreSQL policy-pack repository.
 - Optional headers:
   - `X-Policy-Pack-Id`
   - `X-Tenant-Policy-Pack-Id`
   - `X-Tenant-Id`
+- Query parameters are not accepted; callers must use headers for resolution context.
 - Output:
   - `enabled`
   - `total`
@@ -146,27 +231,47 @@ Implementation scope:
   - `selected_policy_pack_source`
   - `items`
 
-### `GET /rebalance/policies/catalog/{policy_pack_id}`
+### `GET /api/v1/rebalance/policies/catalog/{policy_pack_id}`
 - Purpose: retrieve one policy-pack definition by identifier.
+- Backend: governed PostgreSQL policy-pack repository.
+- Query parameters are not accepted.
+- Missing identifiers return `DPM_POLICY_PACK_NOT_FOUND`.
+- Use this read route when a caller already has a policy-pack id and needs the exact policy controls
+  that would be applied by execution.
 
-### `PUT /rebalance/policies/catalog/{policy_pack_id}`
+### `PUT /api/v1/rebalance/policies/catalog/{policy_pack_id}`
 - Purpose: create or update one policy-pack definition by identifier.
 - Feature flag:
   - `DPM_POLICY_PACK_ADMIN_APIS_ENABLED` (default `false`)
+- Backend: governed PostgreSQL policy-pack repository.
+- The path `policy_pack_id` is authoritative; the request body does not carry a second identifier.
+- Query parameters are not accepted.
+- Disabled admin APIs return `DPM_POLICY_PACK_ADMIN_APIS_DISABLED`.
 
-### `DELETE /rebalance/policies/catalog/{policy_pack_id}`
+### `DELETE /api/v1/rebalance/policies/catalog/{policy_pack_id}`
 - Purpose: delete one policy-pack definition by identifier.
 - Feature flag:
   - `DPM_POLICY_PACK_ADMIN_APIS_ENABLED` (default `false`)
+- Backend: governed PostgreSQL policy-pack repository.
+- Query parameters are not accepted.
+- Missing identifiers return `DPM_POLICY_PACK_NOT_FOUND`.
 
 Swagger contract quality:
 - Policy-pack and supportability DTOs are contract-tested for field-level `description` and `examples`.
 - Policy endpoints are contract-tested as response-only (`GET` without request body).
 
-### `GET /rebalance/runs/{rebalance_run_id}`
+### `GET /api/v1/rebalance/runs/{rebalance_run_id}`
 - Purpose: retrieve one lotus-manage run with full result payload and lineage metadata for support investigations.
 
-### `GET /rebalance/runs/{rebalance_run_id}/support-bundle`
+### `GET /api/v1/rebalance/runs/{rebalance_run_id}/artifact`
+- Purpose: retrieve only the deterministic run artifact for audit, replay, or incident-support workflows.
+- Use the support-bundle endpoint instead when workflow history, lineage, async-operation, or idempotency context is also required.
+- Artifact mode:
+  - `DERIVED` builds the artifact deterministically from persisted run data.
+  - `PERSISTED` reads the stored artifact and backfills it when the stored artifact is missing.
+- Unsupported query parameters return `422`; this endpoint has no query options.
+
+### `GET /api/v1/rebalance/runs/{rebalance_run_id}/support-bundle`
 - Purpose: retrieve one aggregated supportability bundle so investigations can run from one payload.
 - Includes:
   - run payload (`run`)
@@ -179,29 +284,34 @@ Swagger contract quality:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- `workflow_history` and `lineage` are always included because they are core audit context.
+- Unsupported query parameters return `422`; use only the three canonical include flags above.
 
-### `GET /rebalance/runs/by-correlation/{correlation_id}/support-bundle`
+### `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}/support-bundle`
 - Purpose: retrieve the same supportability bundle when run id is not known.
 - Query options:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- Unsupported query parameters return `422`.
 
-### `GET /rebalance/runs/idempotency/{idempotency_key}/support-bundle`
+### `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}/support-bundle`
 - Purpose: retrieve the same supportability bundle when only idempotency key is available.
 - Query options:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- Unsupported query parameters return `422`.
 
-### `GET /rebalance/runs/by-operation/{operation_id}/support-bundle`
+### `GET /api/v1/rebalance/runs/by-operation/{operation_id}/support-bundle`
 - Purpose: retrieve the same supportability bundle when asynchronous operation id is available.
 - Query options:
   - `include_artifact`
   - `include_async_operation`
   - `include_idempotency_history`
+- Unsupported query parameters return `422`.
 
-### `GET /rebalance/runs`
+### `GET /api/v1/rebalance/runs`
 - Purpose: list lotus-manage runs for supportability investigations.
 - Filters:
   - `created_from` (created-at lower bound)
@@ -212,19 +322,38 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Ordering: `created_at` descending, then `rebalance_run_id` descending for deterministic ties.
+- `next_cursor` is the last returned `rebalance_run_id`; pass it back as `cursor` for the next page.
+- Persistent repositories push status and cursor predicates into storage to avoid loading the full run set.
+- Unsupported query aliases such as `status`, `from`, or `to` return `422`.
 
-### `GET /rebalance/runs/by-correlation/{correlation_id}`
+### `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}`
 - Purpose: retrieve latest lotus-manage run mapped to correlation id.
+- Use when the caller has a submitted `X-Correlation-Id` from Gateway, logs, or an incident ticket
+  and needs the exact persisted run payload.
+- Does not accept query parameters; use `/api/v1/rebalance/runs` for filtered inventory search.
 
-### `GET /rebalance/runs/by-request-hash/{request_hash}`
+### `GET /api/v1/rebalance/runs/by-request-hash/{request_hash}`
 - Purpose: retrieve latest lotus-manage run mapped to canonical request hash.
 - Note: URL-encode `request_hash` when calling via path parameter.
+- Does not accept query parameters; use this only when the canonical `sha256:` request fingerprint
+  is the investigation handle.
 
-### `GET /rebalance/runs/idempotency/{idempotency_key}`
+### `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}`
 - Purpose: retrieve idempotency key to run mapping for retry and incident analysis.
+- Returns the current mapping only. Use `/api/v1/rebalance/idempotency/{idempotency_key}/history` when
+  replay-disabled history or conflict reconstruction is required.
+- Does not accept query parameters.
 
-### `GET /rebalance/lineage/{entity_id}`
+### `GET /api/v1/rebalance/lineage/{entity_id}`
 - Purpose: retrieve supportability lineage edges for entity ids (correlation, idempotency, run, operation).
+- Matching behavior:
+  - returns edges where `entity_id` is either `source_entity_id` or `target_entity_id`
+  - unknown entity ids return an empty lineage page, not `404`
+- Edge types:
+  - `CORRELATION_TO_RUN`
+  - `IDEMPOTENCY_TO_RUN`
+  - `OPERATION_TO_CORRELATION`
 - Filters:
   - `edge_type`
   - `created_from`
@@ -232,41 +361,73 @@ Swagger contract quality:
 - Pagination:
   - `limit`
   - `cursor`
+- Ordering:
+  - `created_at`
+  - `source_entity_id`
+  - `edge_type`
+  - `target_entity_id`
 - Contract hardening:
   - unsupported query aliases are rejected with `422`
+  - invalid edge types are rejected with `422`
   - use canonical snake_case filter names only
 
-### `GET /rebalance/idempotency/{idempotency_key}/history`
+### `GET /api/v1/rebalance/idempotency/{idempotency_key}/history`
 - Purpose: retrieve append-only idempotency key mapping history across recorded runs.
+- Enablement: `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true`.
+- When to use:
+  - retry support investigations
+  - idempotency conflict reconstruction
+  - audit evidence for replay-disabled runs sharing an idempotency key
+- Response ordering:
+  - `created_at`
+  - `rebalance_run_id`
+  - `correlation_id`
+  - `request_hash`
+- Query parameters are not accepted; unsupported query parameters return `422`.
+- Missing idempotency keys return `404` with `DPM_IDEMPOTENCY_KEY_NOT_FOUND`.
 
-### `GET /rebalance/runs/{rebalance_run_id}/workflow`
+### `GET /api/v1/rebalance/runs/{rebalance_run_id}/workflow`
 - Purpose: retrieve workflow gate status and latest reviewer decision for a run.
+- Enablement: `DPM_WORKFLOW_ENABLED=true`.
+- Does not accept query parameters; use workflow history when the append-only decision trail is
+  required.
 
-### `GET /rebalance/runs/by-correlation/{correlation_id}/workflow`
+### `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow`
 - Purpose: retrieve workflow gate status when only correlation id is known.
+- Does not accept query parameters.
 
-### `GET /rebalance/runs/idempotency/{idempotency_key}/workflow`
+### `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow`
 - Purpose: retrieve workflow gate status when only idempotency key is known.
+- Does not accept query parameters.
 
-### `POST /rebalance/runs/{rebalance_run_id}/workflow/actions`
+### `POST /api/v1/rebalance/runs/{rebalance_run_id}/workflow/actions`
 - Purpose: apply one workflow action (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) with actor/reason trace.
+- Body: `action`, `reason_code`, optional `comment`, and `actor_id`.
+- Optional header: `X-Correlation-Id` for action tracing.
+- Does not accept query parameters.
 
-### `POST /rebalance/runs/by-correlation/{correlation_id}/workflow/actions`
+### `POST /api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow/actions`
 - Purpose: apply one workflow action when only run correlation id is known.
+- Does not accept query parameters.
 
-### `POST /rebalance/runs/idempotency/{idempotency_key}/workflow/actions`
+### `POST /api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/actions`
 - Purpose: apply one workflow action when only idempotency key is known.
+- Does not accept query parameters.
 
-### `GET /rebalance/runs/{rebalance_run_id}/workflow/history`
+### `GET /api/v1/rebalance/runs/{rebalance_run_id}/workflow/history`
 - Purpose: retrieve append-only workflow decision history for audit and investigation.
+- Does not accept query parameters; use `/api/v1/rebalance/workflow/decisions` for filtered decision
+  search.
 
-### `GET /rebalance/runs/by-correlation/{correlation_id}/workflow/history`
+### `GET /api/v1/rebalance/runs/by-correlation/{correlation_id}/workflow/history`
 - Purpose: retrieve workflow decision history when only correlation id is known.
+- Does not accept query parameters.
 
-### `GET /rebalance/runs/idempotency/{idempotency_key}/workflow/history`
+### `GET /api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/history`
 - Purpose: retrieve workflow decision history when only idempotency key is known.
+- Does not accept query parameters.
 
-### `GET /rebalance/workflow/decisions`
+### `GET /api/v1/rebalance/workflow/decisions`
 - Purpose: list workflow decisions across runs for supportability investigations.
 - Filters:
   - `rebalance_run_id`
@@ -282,7 +443,7 @@ Swagger contract quality:
   - unsupported query aliases are rejected with `422`
   - use canonical snake_case filter names only
 
-### `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}`
+### `GET /api/v1/rebalance/workflow/decisions/by-correlation/{correlation_id}`
 - Purpose: retrieve workflow decision history when only correlation id is available in incident context.
 
 ## Pipeline (`run_simulation`)
@@ -327,8 +488,8 @@ Swagger contract quality:
 - `fx_settlement_days`
 - `max_overdraft_by_ccy`
 - `enable_workflow_gates`
-- `workflow_requires_client_consent`
-- `client_consent_already_obtained`
+- `workflow_requires_mandate_approval`
+- `mandate_approval_already_obtained`
 - `link_buy_to_same_currency_sell_dependency`
 - plus shared controls (`valuation_mode`, cash bands, dust/min-notional, data quality blocking)
 - runtime API toggles:
@@ -362,16 +523,12 @@ Dependency policy note:
 
 - Forward-only Postgres migrations are applied from versioned SQL files:
   - `src/infrastructure/postgres_migrations/dpm/`
-  - `src/infrastructure/postgres_migrations/proposals/`
 - Migration history is tracked in `schema_migrations`.
 - Migration checksums are enforced to prevent edited-in-place migration drift.
 - Manual migration command:
   - `python scripts/postgres_migrate.py --target dpm`
-  - `python scripts/postgres_migrate.py --target proposals`
-  - `python scripts/postgres_migrate.py --target all`
 - DSN configuration sources:
   - `--dpm-dsn` / `DPM_SUPPORTABILITY_POSTGRES_DSN`
-  - `--proposals-dsn` / `PROPOSAL_POSTGRES_DSN`
 - Production rollout runbook:
   - `docs/documentation/postgres-migration-rollout-runbook.md`
 
@@ -382,7 +539,8 @@ Dependency policy note:
 - Goldens: `tests/unit/dpm/golden/test_golden_scenarios.py`
 - Batch goldens: `tests/unit/dpm/golden/test_golden_batch_analysis.py`
 
-## Deprecation Notes
+## Stable Import Path
 
-- `src/core/dpm_engine.py` is a compatibility shim and emits `DeprecationWarning`.
 - Use `src/core/rebalance/engine.py` as the stable lotus-manage engine import path.
+- Legacy Python compatibility shims such as `src/core/dpm_engine.py` and `src/core/engine.py`
+  have been retired. New code must import directly from the rebalance domain module.

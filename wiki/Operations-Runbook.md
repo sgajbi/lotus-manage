@@ -19,7 +19,7 @@
 
 ## RFC-0108 action register supportability
 
-- `GET /rebalance/supportability/summary` returns `supportability.state`,
+- `GET /api/v1/rebalance/supportability/summary` returns `supportability.state`,
   `supportability.reason`, and `supportability.freshness_bucket` for management action register
   surfaces.
 - Operators should treat `empty` as no persisted run or operation evidence, `stale` as old
@@ -28,23 +28,53 @@
   `surface`, `supportability_state`, `reason`, and `freshness_bucket` labels. The recorder
   allowlists label values and falls back to `unknown_surface`, `supportability_summary_error`, or
   `unknown` rather than emitting raw caller values.
-- Do not add portfolio ids, request hashes, idempotency keys, correlation ids, actor ids, or client
-  content to supportability metric labels or log dimensions.
+- `/metrics` exposes `lotus_manage_core_resolver_total` with only bounded `operation`, `outcome`,
+  `supportability_state`, and `reason` labels for future stateful core resolver calls. It must not
+  include portfolio ids, source payload identifiers, request hashes, or raw upstream error text.
+- `/metrics` exposes `lotus_manage_execution_total` with bounded `operation`, `input_mode`,
+  `outcome`, and `result_status` labels for simulate, analyze, and async-analyze execution
+  surfaces. Use it to monitor blocked, replayed, accepted, partial-failure, and error posture
+  without inspecting request payloads.
+- `/metrics` exposes `lotus_manage_async_operation_total` with bounded `event`, `execution_mode`,
+  and `outcome` labels for async submit and execute lifecycle events.
+- `/metrics` exposes `lotus_manage_policy_pack_resolution_total` with bounded `surface`,
+  `enabled`, `source`, and `selected` labels for simulate, analyze, async analyze, and policy API
+  lookups.
+- `/metrics` exposes `lotus_manage_workflow_decision_total` with bounded `surface`, `action`, and
+  `outcome` labels for mandate workflow actions. `surface` uses route-family values such as `run`,
+  `trace`, and `retry`; it must not use raw correlation, idempotency, request, actor, run, or
+  portfolio identifiers.
+- Dashboard panels and alert rules are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`. Add metrics to code and tests before
+  referencing them in dashboard or alert contracts; `make mesh-contract-validate` checks that the
+  contract only references implemented metrics.
+- Do not add portfolio ids, request hashes, idempotency keys, actor ids, client content, raw
+  upstream errors, or diagnostics payloads to supportability metric labels or free-text log
+  messages. Correlation, request, and trace identifiers are allowed only as structured tracing
+  context fields.
+- HTTP access logs use route templates such as
+  `/api/v1/rebalance/runs/by-request-hash/{request_hash}` rather than raw request paths, and emit
+  bounded `status_family` and `latency_bucket_ms` fields. Do not replace those with raw path values
+  or precise caller identifiers.
+- Service-level log messages must use bounded event text. Do not embed correlation ids,
+  idempotency keys, run ids, operation ids, request hashes, portfolio ids, diagnostics payloads, or
+  raw upstream error text in message strings.
 - Capability consumers should gate this posture on
-  `manage.observability.action_register_supportability` from `/integration/capabilities` or
-  `/platform/capabilities`.
+  `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
+  `/api/v1/integration/capabilities`.
 
 ## Docker production readiness
 
 - Compose waits for the internal PostgreSQL service to be healthy before starting
   `lotus-manage`.
-- The application command runs `python scripts/postgres_migrate.py --target all` before `uvicorn`.
+- The application command runs `python scripts/postgres_migrate.py --target dpm` before `uvicorn`.
 - The runtime image includes the migration script and the `psycopg` runtime driver required for
   Postgres-backed supportability stores.
-- A healthy container should have the `schema_migrations` table plus DPM and proposal persistence
-  tables. If `/rebalance/supportability/summary` returns a Postgres connection or migration error,
-  inspect the startup logs first for migration failures.
-- For canonical front-office proof, `GET /rebalance/supportability/summary` should return HTTP
+- A healthy container should have the `schema_migrations` table plus DPM supportability,
+  workflow, lineage, and policy-pack persistence tables. If `/api/v1/rebalance/supportability/summary`
+  returns a Postgres connection or migration error, inspect the startup logs first for migration
+  failures.
+- For canonical front-office proof, `GET /api/v1/rebalance/supportability/summary` should return HTTP
   `200`. An `empty` supportability state is acceptable for a freshly seeded stack with no recorded
   management actions; HTTP `503` is not acceptable demo evidence.
 

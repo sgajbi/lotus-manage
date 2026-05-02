@@ -1,6 +1,6 @@
 """
 FILE: tests/conftest.py
-Shared fixtures for lotus-manage/advisory tests.
+Shared fixtures for lotus-manage tests.
 """
 
 import os
@@ -13,7 +13,6 @@ import pytest
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition, parse_policy_pack_catalog
 from src.core.models import CashBalance, EngineOptions, PortfolioSnapshot
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
-from src.infrastructure.proposals import InMemoryProposalRepository
 
 TESTS_ROOT = Path(__file__).resolve().parent
 UNIT_TESTS_PATH = str(TESTS_ROOT / "unit")
@@ -96,12 +95,10 @@ class _TestPolicyPackRepository:
 @pytest.fixture(autouse=True)
 def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("DPM_SUPPORTABILITY_STORE_BACKEND", "POSTGRES")
-    monkeypatch.setenv("PROPOSAL_STORE_BACKEND", "POSTGRES")
     monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
     monkeypatch.setenv(
         "DPM_SUPPORTABILITY_POSTGRES_DSN", "postgresql://test:test@localhost:5432/dpm"
     )
-    monkeypatch.setenv("PROPOSAL_POSTGRES_DSN", "postgresql://test:test@localhost:5432/proposals")
     monkeypatch.setenv(
         "DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://test:test@localhost:5432/policy"
     )
@@ -111,10 +108,6 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         "src.api.routers.rebalance_runs_config.PostgresDpmRunRepository",
         lambda **_kwargs: InMemoryDpmRunRepository(),
-    )
-    monkeypatch.setattr(
-        "src.api.routers.proposals_config.PostgresProposalRepository",
-        lambda **_kwargs: InMemoryProposalRepository(),
     )
     monkeypatch.setattr(
         "src.api.routers.rebalance_policy_packs.PostgresDpmPolicyPackRepository",

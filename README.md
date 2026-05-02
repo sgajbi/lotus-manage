@@ -1,7 +1,7 @@
 # lotus-manage
 
-Discretionary portfolio-management execution, supportability, and lifecycle service for the Lotus
-ecosystem.
+Discretionary mandate portfolio-management execution, workflow review, and operational
+supportability service for the Lotus ecosystem.
 
 Repository-local engineering context:
 [REPOSITORY-ENGINEERING-CONTEXT.md](REPOSITORY-ENGINEERING-CONTEXT.md)
@@ -40,9 +40,14 @@ Current posture under RFC-0082:
 
 1. rebalance simulation, policy-pack behavior, async operations, and run-support contracts are
    owned here
-2. stateful `portfolio_id` mode must remain anchored to governed `lotus-core` authority
-3. remaining advisory or proposal-lifecycle routes in this repo are compatibility or cleanup
-   surfaces, not a mandate to expand advisory scope here
+2. `input_mode=stateless` is the supported default execution mode for caller-supplied source
+   bundles
+3. stateful `portfolio_id` mode is implemented behind explicit runtime gates and remains anchored
+   to governed `lotus-core` authority; it is advertised in `/api/v1/integration/capabilities` only
+   when the stateful capability flag, stateful sourcing gate, and `DPM_CORE_BASE_URL` are all
+   configured, and the retired monolithic core route is not configured
+4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
+   for this repository and belong in `lotus-advise`
 
 ## Current Operational Posture
 
@@ -58,16 +63,14 @@ Current posture under RFC-0082:
 Main runtime surfaces come from [src/api/main.py](src/api/main.py):
 
 - rebalance simulation
-  `/rebalance/simulate`, `/rebalance/analyze`, `/rebalance/analyze/async`
+  `/api/v1/rebalance/simulate`, `/api/v1/rebalance/analyze`, `/api/v1/rebalance/analyze/async`
 - run supportability
-  `/rebalance/runs/*`, `/rebalance/operations/*`, `/rebalance/supportability/summary`,
-  `/rebalance/lineage/*`, `/rebalance/idempotency/*`
+  `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/operations/*`, `/api/v1/rebalance/supportability/summary`,
+  `/api/v1/rebalance/lineage/*`, `/api/v1/rebalance/idempotency/*`
 - policy-pack supportability
-  `/rebalance/policies/*`
+  `/api/v1/rebalance/policies/*`
 - integration capabilities
-  `/integration/capabilities`, `/platform/capabilities`
-- compatibility advisory surfaces
-  proposal simulation and proposal lifecycle routes that remain present during split cleanup
+  `/api/v1/integration/capabilities`
 - platform surfaces
   `/health`, `/health/live`, `/health/ready`, `/docs`
 
@@ -77,10 +80,12 @@ Key code areas:
   FastAPI entrypoints, routers, readiness, observability, and OpenAPI enrichment
 - `src/core/dpm/`
   discretionary portfolio-management simulation engine and supporting rebalance modules
+- `src/core/dpm_source_context.py`
+  stateful source-context models and transformation helpers for governed core sourcing
 - `src/core/dpm_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
-- `src/core/proposals/`
-  compatibility proposal-lifecycle models and services still carried in this repo
+- `src/infrastructure/core_sourcing/`
+  bounded `lotus-core` resolver client that composes RFC-087 source products for stateful execution
 - `src/infrastructure/`
   PostgreSQL migrations, repository backends, and policy-pack persistence
 - `docs/`
@@ -126,6 +131,15 @@ Repo-native gate mapping:
   local feature-lane split by unit, integration, and e2e coverage phases
 - `make ci-local-docker`
   Docker parity for the local CI contract
+- `make live-api-validate`
+  live API evidence against a running `lotus-manage` instance
+- `make live-api-validate-core`
+  live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture;
+  set `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` when RFC-087 source products and
+  stateful manage gates are active
+- `make mesh-contract-validate`
+  repo-native domain product, trust telemetry, and observability monitoring contract validation
+  against Lotus platform governance
 
 When the README changes, also run:
 
@@ -161,17 +175,30 @@ container healthcheck uses `/health/ready` rather than `/docs`. In production pr
 `/health/ready` validates persistence guardrails and applied migration versions so supportability
 APIs cannot look healthy while their backing store is missing or unmigrated.
 
+Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
+proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled
+with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden.
+Lineage lookup remains feature-gated by default; set `DPM_LINEAGE_APIS_ENABLED=true` when running
+lineage endpoint certification or supportability incident drills.
+Idempotency history remains feature-gated by default; set
+`DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true` for retry-history certification or incident drills.
+
 Operationally important truths:
 
 1. readiness and migration posture matter because supportability flows depend on persistence truth
-2. capability discovery through `/integration/capabilities` remains backend-owned and uses
+2. capability discovery through `/api/v1/integration/capabilities` remains backend-owned and uses
    canonical snake_case query parameters
-3. compatibility advisory routes should be maintained carefully but should not grow advisory scope
+3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
+4. stateful DPM promotion requires `make live-api-validate-core` to pass with
+   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` after `lotus-core` exposes the
+   RFC-087 certified source-data products and canonical data is seeded
 
 ## Documentation Map
 
 - project overview:
   [docs/documentation/project-overview.md](docs/documentation/project-overview.md)
+- architecture review ledger:
+  [docs/architecture/CODEBASE-REVIEW-LEDGER.md](docs/architecture/CODEBASE-REVIEW-LEDGER.md)
 - operations and CI strategy:
   [docs/operations/development-workflow-and-ci-strategy.md](docs/operations/development-workflow-and-ci-strategy.md)
 - service runbook:

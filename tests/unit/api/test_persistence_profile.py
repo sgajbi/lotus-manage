@@ -34,19 +34,6 @@ def test_validate_persistence_profile_requires_dpm_postgres(
         profile.validate_persistence_profile_guardrails()
 
 
-def test_validate_persistence_profile_requires_advisory_postgres_dsn(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "PRODUCTION")
-    monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
-    monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
-    monkeypatch.setattr(profile, "proposal_store_backend_name", lambda: "POSTGRES")
-    monkeypatch.setattr(profile, "proposal_postgres_dsn", lambda: "")
-
-    with pytest.raises(RuntimeError, match="PERSISTENCE_PROFILE_REQUIRES_ADVISORY_POSTGRES_DSN"):
-        profile.validate_persistence_profile_guardrails()
-
-
 def test_validate_persistence_profile_requires_policy_pack_postgres_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -54,8 +41,6 @@ def test_validate_persistence_profile_requires_policy_pack_postgres_when_enabled
     monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
     monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
     monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
-    monkeypatch.setattr(profile, "proposal_store_backend_name", lambda: "POSTGRES")
-    monkeypatch.setattr(profile, "proposal_postgres_dsn", lambda: "postgresql://proposal")
     monkeypatch.setattr(profile, "policy_pack_catalog_backend_name", lambda: "ENV_JSON")
 
     with pytest.raises(RuntimeError, match="PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES"):
@@ -70,8 +55,6 @@ def test_validate_persistence_profile_accepts_valid_production_configuration(
     monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://policy")
     monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
     monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
-    monkeypatch.setattr(profile, "proposal_store_backend_name", lambda: "POSTGRES")
-    monkeypatch.setattr(profile, "proposal_postgres_dsn", lambda: "postgresql://proposal")
     monkeypatch.setattr(profile, "policy_pack_catalog_backend_name", lambda: "POSTGRES")
 
     profile.validate_persistence_profile_guardrails()

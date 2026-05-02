@@ -452,11 +452,11 @@ class DpmAsyncAcceptedResponse(BaseModel):
     )
     status_url: str = Field(
         description="Relative API path for operation status retrieval.",
-        examples=["/rebalance/operations/dop_001"],
+        examples=["/api/v1/rebalance/operations/dop_001"],
     )
     execute_url: str = Field(
         description="Relative API path to manually execute pending operation.",
-        examples=["/rebalance/operations/dop_001/execute"],
+        examples=["/api/v1/rebalance/operations/dop_001/execute"],
     )
 
 

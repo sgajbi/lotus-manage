@@ -16,10 +16,12 @@ services:
       - APP_PERSISTENCE_PROFILE=${APP_PERSISTENCE_PROFILE:-PRODUCTION}
       - DPM_SUPPORTABILITY_STORE_BACKEND=${DPM_SUPPORTABILITY_STORE_BACKEND:-POSTGRES}
       - DPM_SUPPORTABILITY_POSTGRES_DSN=${DPM_SUPPORTABILITY_POSTGRES_DSN:-postgresql://manage:manage@postgres:5432/manage_supportability}
-      - PROPOSAL_STORE_BACKEND=${PROPOSAL_STORE_BACKEND:-POSTGRES}
-      - PROPOSAL_POSTGRES_DSN=${PROPOSAL_POSTGRES_DSN:-postgresql://manage:manage@postgres:5432/manage_supportability}
       - DPM_POLICY_PACK_CATALOG_BACKEND=${DPM_POLICY_PACK_CATALOG_BACKEND:-POSTGRES}
       - DPM_POLICY_PACK_POSTGRES_DSN=${DPM_POLICY_PACK_POSTGRES_DSN:-postgresql://manage:manage@postgres:5432/manage_supportability}
+      - DPM_ASYNC_EXECUTION_MODE=${DPM_ASYNC_EXECUTION_MODE:-INLINE}
+      - DPM_ASYNC_MANUAL_EXECUTION_ENABLED=${DPM_ASYNC_MANUAL_EXECUTION_ENABLED:-true}
+      - DPM_LINEAGE_APIS_ENABLED=${DPM_LINEAGE_APIS_ENABLED:-false}
+      - DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=${DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED:-false}
     healthcheck:
       test:
         [
@@ -41,7 +43,7 @@ services:
       [
         "sh",
         "-lc",
-        "python scripts/postgres_migrate.py --target all && python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000"
+        "python scripts/postgres_migrate.py --target dpm && python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000"
       ]
 
   postgres:

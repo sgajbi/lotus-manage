@@ -22,7 +22,7 @@ def _simulate(client: TestClient, *, correlation_id: str, idempotency_key: str) 
     }
     response = client.post(
         "/api/v1/rebalance/simulate",
-        json=payload,
+        json={"input_mode": "stateless", "stateless_input": payload},
         headers={
             "Idempotency-Key": idempotency_key,
             "X-Correlation-Id": correlation_id,
@@ -42,7 +42,44 @@ def test_lineage_api_supports_filters_and_pagination(monkeypatch):
         all_edges = client.get(f"/api/v1/rebalance/lineage/{run_id}")
         assert all_edges.status_code == 200
         all_items = all_edges.json()["edges"]
-        assert len(all_items) >= 2
+        assert all_edges.json()["entity_id"] == run_id
+        assert all_edges.json()["next_cursor"] is None
+        assert len(all_items) == 2
+        assert {edge["edge_type"] for edge in all_items} == {
+            "CORRELATION_TO_RUN",
+            "IDEMPOTENCY_TO_RUN",
+        }
+        assert {edge["target_entity_id"] for edge in all_items} == {run_id}
+        assert {edge["source_entity_id"] for edge in all_items} == {
+            "corr-lineage-1",
+            "idem-lineage-1",
+        }
+        assert all(edge["metadata"]["request_hash"].startswith("sha256:") for edge in all_items)
+
+        filtered = client.get(
+            f"/api/v1/rebalance/lineage/{run_id}",
+            params={"edge_type": "IDEMPOTENCY_TO_RUN"},
+        )
+        assert filtered.status_code == 200
+        assert [edge["edge_type"] for edge in filtered.json()["edges"]] == ["IDEMPOTENCY_TO_RUN"]
+
+        future_window = client.get(
+            f"/api/v1/rebalance/lineage/{run_id}",
+            params={"created_from": "2999-01-01T00:00:00Z"},
+        )
+        assert future_window.status_code == 200
+        assert future_window.json()["edges"] == []
+        assert future_window.json()["next_cursor"] is None
+
+        missing = client.get("/api/v1/rebalance/lineage/missing-entity")
+        assert missing.status_code == 200
+        assert missing.json() == {"entity_id": "missing-entity", "edges": [], "next_cursor": None}
+
+        invalid_edge_type = client.get(
+            f"/api/v1/rebalance/lineage/{run_id}",
+            params={"edge_type": "UNKNOWN_EDGE"},
+        )
+        assert invalid_edge_type.status_code == 422
 
         typed = client.get(
             f"/api/v1/rebalance/lineage/{run_id}",

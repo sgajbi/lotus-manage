@@ -1,6 +1,7 @@
 # lotus-manage wiki
 
-`lotus-manage` is the discretionary portfolio-management and operational workflow service in Lotus.
+`lotus-manage` is the discretionary mandate portfolio-management execution and operational
+supportability service in Lotus.
 
 ## Start here
 
@@ -31,6 +32,8 @@ This repo does not own:
 - [Overview](Overview)
 - [Architecture](Architecture)
 - [API Surface](API-Surface)
+- [Endpoint Certification](Endpoint-Certification)
+- [Supported Features](Supported-Features)
 - [Getting Started](Getting-Started)
 - [Development Workflow](Development-Workflow)
 - [Validation and CI](Validation-and-CI)

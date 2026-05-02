@@ -1,7 +1,7 @@
 # Enterprise Readiness Baseline (lotus-manage)
 
 - Standard reference: `lotus-platform/Enterprise Readiness Standard.md`
-- Scope: discretionary/advisory decision workflows, policy enforcement, and run supportability APIs.
+- Scope: discretionary mandate decision workflows, policy enforcement, and run supportability APIs.
 - Change control: RFC for platform-level changes, ADR for temporary exceptions.
 
 ## Security and IAM Baseline

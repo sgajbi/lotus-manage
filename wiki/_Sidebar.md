@@ -6,6 +6,8 @@
 
 [API Surface](API-Surface)
 
+[Supported Features](Supported-Features)
+
 [Getting Started](Getting-Started)
 
 [Development Workflow](Development-Workflow)

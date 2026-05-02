@@ -74,7 +74,7 @@ class _FakeConnection:
             }
             self.runs[args[0]] = row
             return _FakeCursor(None)
-        if "FROM dpm_runs WHERE rebalance_run_id = %s" in sql:
+        if "FROM dpm_runs WHERE rebalance_run_id = %s" in sql and "ORDER BY" not in sql:
             return _FakeCursor(self.runs.get(args[0]))
         if "FROM dpm_runs WHERE correlation_id = %s" in sql:
             row = next(
@@ -107,12 +107,44 @@ class _FakeConnection:
                 rows = [row for row in rows if row["portfolio_id"] == portfolio_id]
             if "request_hash = %s" in sql:
                 request_hash = args[arg_index]
+                arg_index += 1
                 rows = [row for row in rows if row["request_hash"] == request_hash]
+            if "result_json::jsonb ->> 'status' = %s" in sql:
+                status = args[arg_index]
+                arg_index += 1
+                rows = [
+                    row
+                    for row in rows
+                    if postgres_module.json.loads(row["result_json"]).get("status") == status
+                ]
+            if (
+                "SELECT created_at FROM dpm_runs WHERE rebalance_run_id = %s" in sql
+                and "rebalance_run_id < %s" in sql
+            ):
+                cursor = args[arg_index]
+                arg_index += 3
+                cursor_row = self.runs.get(cursor)
+                if cursor_row is None:
+                    rows = []
+                else:
+                    cursor_created_at = cursor_row["created_at"]
+                    rows = [
+                        row
+                        for row in rows
+                        if row["created_at"] < cursor_created_at
+                        or (
+                            row["created_at"] == cursor_created_at
+                            and row["rebalance_run_id"] < cursor
+                        )
+                    ]
             rows = sorted(
                 rows,
                 key=lambda row: (row["created_at"], row["rebalance_run_id"]),
                 reverse=True,
             )
+            if "LIMIT %s" in sql:
+                limit = args[arg_index]
+                rows = rows[:limit]
             return _FakeCursor(rows=rows)
         if "INSERT INTO dpm_run_artifacts" in sql:
             self.artifacts[args[0]] = {"artifact_json": args[1]}
@@ -304,8 +336,13 @@ class _FakeConnection:
                 counts[operation["status"]] = counts.get(operation["status"], 0) + 1
             rows = [{"status": key, "status_count": value} for key, value in counts.items()]
             return _FakeCursor(rows=rows)
-        if "SELECT result_json FROM dpm_runs" in sql:
-            rows = [{"result_json": row["result_json"]} for row in self.runs.values()]
+        if "SELECT result_json::jsonb ->> 'status' AS status" in sql:
+            counts = {}
+            for run in self.runs.values():
+                status = postgres_module.json.loads(run["result_json"]).get("status")
+                if status is not None:
+                    counts[status] = counts.get(status, 0) + 1
+            rows = [{"status": key, "status_count": value} for key, value in counts.items()]
             return _FakeCursor(rows=rows)
         if "SELECT COUNT(*) AS workflow_decision_count" in sql:
             return _FakeCursor(row={"workflow_decision_count": len(self.workflow_decisions)})

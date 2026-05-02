@@ -9,9 +9,11 @@
 
 ## Health and Readiness
 
-- Liveness: /health/live
-- Readiness: /health/ready
-- General health: /health
+- Liveness: `/health/live` returns `{"status":"live"}` and does not touch persistence dependencies.
+- Readiness: `/health/ready` returns `{"status":"ready"}` after persistence guardrails pass; in
+  production profile it also validates required cutover migrations.
+- General health: `/health` returns `{"status":"ok"}` for lightweight service health checks.
+- Health probes are infrastructure endpoints and intentionally remain unversioned.
 - OpenAPI docs: /docs
 
 ## Incident First Checks

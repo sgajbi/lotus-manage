@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate no-alias-gate openapi-gate api-vocabulary-gate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 92
 
@@ -14,7 +14,7 @@ install-ci:
 pre-commit:
 	pre-commit run --all-files
 
-check: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate test
+check: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate mesh-contract-validate test
 
 ci: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate migration-smoke test-all security-audit
 
@@ -84,11 +84,17 @@ no-alias-gate:
 api-vocabulary-gate:
 	python scripts/api_vocabulary_inventory.py --validate-only
 
+live-api-validate:
+	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://127.0.0.1:8001}
+
+live-api-validate-core:
+	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://manage.dev.lotus} --skip-demo-pack --core-base-url $${LOTUS_CORE_CONTROL_BASE_URL:-http://core-control.dev.lotus} --core-base-url $${LOTUS_CORE_QUERY_BASE_URL:-http://core-query.dev.lotus} --expect-core-dpm-route $${LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE:-absent} --expect-stateful-core-sourcing $${LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING:-disabled} --portfolio-id $${LOTUS_MANAGE_CANONICAL_PORTFOLIO_ID:-PB_SG_GLOBAL_BAL_001} --as-of $${LOTUS_MANAGE_CANONICAL_AS_OF:-2026-04-10}
+
 migration-smoke:
 	python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py tests/unit/shared/dependencies/test_production_cutover_contract.py -q
 
 migration-apply:
-	python scripts/postgres_migrate.py --target all
+	python scripts/postgres_migrate.py --target dpm
 
 lint:
 	python -m ruff check .
@@ -100,6 +106,14 @@ monetary-float-guard:
 
 domain-product-validate:
 	python scripts/validate_domain_data_product_contracts.py
+
+trust-telemetry-validate:
+	python scripts/validate_trust_telemetry_contracts.py
+
+observability-contract-validate:
+	python scripts/validate_observability_contracts.py
+
+mesh-contract-validate: domain-product-validate trust-telemetry-validate observability-contract-validate
 
 format:
 	python -m ruff format .

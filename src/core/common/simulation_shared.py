@@ -7,10 +7,11 @@ from typing import Literal
 
 from src.core.models import (
     CashBalance,
+    FxSpotIntent,
     Money,
+    OrderIntent,
     PortfolioSnapshot,
     Position,
-    ProposalOrderIntent,
     Reconciliation,
     RuleResult,
     SecurityTradeIntent,
@@ -63,7 +64,7 @@ def apply_security_trade_to_portfolio(
         cash_balance.amount += intent.notional.amount
 
 
-def apply_fx_spot_to_portfolio(portfolio: PortfolioSnapshot, intent: ProposalOrderIntent) -> None:
+def apply_fx_spot_to_portfolio(portfolio: PortfolioSnapshot, intent: FxSpotIntent) -> None:
     if intent.intent_type != "FX_SPOT":
         return
     ensure_cash_balance(portfolio, intent.sell_currency).amount -= intent.sell_amount_estimated
@@ -76,15 +77,13 @@ def quantize_amount_for_currency(amount: Decimal, currency: str) -> Decimal:
     return to_decimal(amount).quantize(quantum)
 
 
-def sort_execution_intents(intents: list[ProposalOrderIntent]) -> list[ProposalOrderIntent]:
-    def _sort_key(intent: ProposalOrderIntent) -> int:
-        if intent.intent_type == "CASH_FLOW":
-            return 0
+def sort_execution_intents(intents: list[OrderIntent]) -> list[OrderIntent]:
+    def _sort_key(intent: OrderIntent) -> int:
         if intent.intent_type == "SECURITY_TRADE":
             if intent.side == "SELL":
-                return 1
-            return 3
-        return 2
+                return 0
+            return 2
+        return 1
 
     return sorted(intents, key=_sort_key)
 

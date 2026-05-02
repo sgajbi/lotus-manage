@@ -18,16 +18,19 @@ This repository adopts the platform-wide standard defined in lotus-platform/Scal
 
 ## Database Scalability Fundamentals
 
-- Query plan review is required for proposal retrieval, run supportability, and operation lookup endpoints.
+- Query plan review is required for run supportability, workflow lookup, lineage, idempotency,
+  policy-pack, and operation lookup endpoints.
 - Index definitions must support correlation-id, workflow status, and time-window query paths.
 - Data growth assumptions are tracked for async operation logs and persisted run artifacts.
 - Retention and archival controls are mandatory for supportability records and audit-linked payloads.
 
 ## Availability Baseline
 
-- Internal SLO baseline: p95 synchronous proposal API latency < 400 ms; error rate < 1%.
+- Internal SLO baseline: p95 synchronous rebalance simulation API latency < 400 ms for governed
+  demo-sized payloads; error rate < 1%.
 - Recovery targets: RTO 30 minutes and RPO 15 minutes for persisted lotus-manage operations.
-- Backup and restore validation is required for proposal/run stores in every deployment environment.
+- Backup and restore validation is required for run, workflow, lineage, idempotency, and
+  policy-pack stores in every deployment environment.
 
 ## Caching Policy Baseline
 

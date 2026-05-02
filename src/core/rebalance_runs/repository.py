@@ -12,6 +12,10 @@ from src.core.rebalance_runs.models import (
 )
 
 
+class DpmRunRepositoryConflictError(Exception):
+    pass
+
+
 class DpmRunRepository(Protocol):
     def save_run(self, run: DpmRunRecord) -> None: ...
 

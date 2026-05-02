@@ -37,7 +37,7 @@ from src.core.rebalance_runs.models import (
     DpmWorkflowDecisionListResponse,
     DpmWorkflowStatus,
 )
-from src.core.rebalance_runs.repository import DpmRunRepository
+from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 from src.core.rebalance_runs.serializers import (
     to_async_accepted,
     to_async_status,
@@ -53,6 +53,10 @@ from src.core.models import RebalanceResult
 
 
 class DpmRunNotFoundError(Exception):
+    pass
+
+
+class DpmAsyncOperationConflictError(Exception):
     pass
 
 
@@ -218,26 +222,9 @@ class DpmRunSupportService:
         history = self._repository.list_idempotency_history(idempotency_key=idempotency_key)
         if not history:
             raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
-        ordered_history = sorted(
-            history,
-            key=lambda item: (
-                item.created_at,
-                item.rebalance_run_id,
-                item.correlation_id,
-                item.request_hash,
-            ),
-        )
-        return DpmRunIdempotencyHistoryResponse(
+        return _to_idempotency_history_response(
             idempotency_key=idempotency_key,
-            history=[
-                DpmRunIdempotencyHistoryItem(
-                    rebalance_run_id=item.rebalance_run_id,
-                    correlation_id=item.correlation_id,
-                    request_hash=item.request_hash,
-                    created_at=item.created_at.isoformat(),
-                )
-                for item in ordered_history
-            ],
+            history=history,
         )
 
     def get_run_artifact(self, *, rebalance_run_id: str) -> DpmRunArtifactResponse:
@@ -257,6 +244,11 @@ class DpmRunSupportService:
         self._cleanup_expired_operations()
         now = created_at or _utc_now()
         resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
+        existing_operation = self._repository.get_operation_by_correlation(
+            correlation_id=resolved_correlation_id
+        )
+        if existing_operation is not None:
+            raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
         operation = DpmAsyncOperationRecord(
             operation_id=f"dop_{uuid.uuid4().hex[:12]}",
             operation_type="ANALYZE_SCENARIOS",
@@ -269,7 +261,10 @@ class DpmRunSupportService:
             error_json=None,
             request_json=request_json,
         )
-        self._repository.create_operation(operation)
+        try:
+            self._repository.create_operation(operation)
+        except DpmRunRepositoryConflictError as exc:
+            raise DpmAsyncOperationConflictError(str(exc)) from exc
         self._record_lineage_edge(
             source_entity_id=operation.operation_id,
             edge_type="OPERATION_TO_CORRELATION",
@@ -339,20 +334,7 @@ class DpmRunSupportService:
                 edge.target_entity_id,
             ),
         )
-        return DpmLineageResponse(
-            entity_id=entity_id,
-            edges=[
-                DpmLineageEdgeResponse(
-                    source_entity_id=edge.source_entity_id,
-                    edge_type=edge.edge_type,
-                    target_entity_id=edge.target_entity_id,
-                    created_at=edge.created_at.isoformat(),
-                    metadata=edge.metadata_json,
-                )
-                for edge in edges
-            ],
-            next_cursor=None,
-        )
+        return _to_lineage_response(entity_id=entity_id, edges=edges, next_cursor=None)
 
     def get_lineage_filtered(
         self,
@@ -394,20 +376,7 @@ class DpmRunSupportService:
 
         page = edges[:limit]
         next_cursor = _lineage_cursor(page[-1]) if len(edges) > limit else None
-        return DpmLineageResponse(
-            entity_id=entity_id,
-            edges=[
-                DpmLineageEdgeResponse(
-                    source_entity_id=edge.source_entity_id,
-                    edge_type=edge.edge_type,
-                    target_entity_id=edge.target_entity_id,
-                    created_at=edge.created_at.isoformat(),
-                    metadata=edge.metadata_json,
-                )
-                for edge in page
-            ],
-            next_cursor=next_cursor,
-        )
+        return _to_lineage_response(entity_id=entity_id, edges=page, next_cursor=next_cursor)
 
     def get_supportability_summary(
         self, *, store_backend: str, retention_days: int
@@ -476,26 +445,9 @@ class DpmRunSupportService:
         idempotency_history = None
         if include_idempotency_history and run.idempotency_key is not None:
             history = self._repository.list_idempotency_history(idempotency_key=run.idempotency_key)
-            ordered_history = sorted(
-                history,
-                key=lambda item: (
-                    item.created_at,
-                    item.rebalance_run_id,
-                    item.correlation_id,
-                    item.request_hash,
-                ),
-            )
-            idempotency_history = DpmRunIdempotencyHistoryResponse(
+            idempotency_history = _to_idempotency_history_response(
                 idempotency_key=run.idempotency_key,
-                history=[
-                    DpmRunIdempotencyHistoryItem(
-                        rebalance_run_id=item.rebalance_run_id,
-                        correlation_id=item.correlation_id,
-                        request_hash=item.request_hash,
-                        created_at=item.created_at.isoformat(),
-                    )
-                    for item in ordered_history
-                ],
+                history=history,
             )
 
         decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
@@ -515,19 +467,7 @@ class DpmRunSupportService:
                 edge.target_entity_id,
             ),
         )
-        lineage = DpmLineageResponse(
-            entity_id=rebalance_run_id,
-            edges=[
-                DpmLineageEdgeResponse(
-                    source_entity_id=edge.source_entity_id,
-                    edge_type=edge.edge_type,
-                    target_entity_id=edge.target_entity_id,
-                    created_at=edge.created_at.isoformat(),
-                    metadata=edge.metadata_json,
-                )
-                for edge in edges
-            ],
-        )
+        lineage = _to_lineage_response(entity_id=rebalance_run_id, edges=edges, next_cursor=None)
 
         return DpmRunSupportBundleResponse(
             run=to_lookup_response(run),
@@ -988,4 +928,54 @@ def _lineage_cursor(edge: DpmLineageEdgeRecord) -> str:
     return (
         f"{edge.created_at.isoformat()}|{edge.source_entity_id}|"
         f"{edge.edge_type}|{edge.target_entity_id}"
+    )
+
+
+def _to_lineage_response(
+    *,
+    entity_id: str,
+    edges: list[DpmLineageEdgeRecord],
+    next_cursor: Optional[str],
+) -> DpmLineageResponse:
+    return DpmLineageResponse(
+        entity_id=entity_id,
+        edges=[
+            DpmLineageEdgeResponse(
+                source_entity_id=edge.source_entity_id,
+                edge_type=edge.edge_type,
+                target_entity_id=edge.target_entity_id,
+                created_at=edge.created_at.isoformat(),
+                metadata=edge.metadata_json,
+            )
+            for edge in edges
+        ],
+        next_cursor=next_cursor,
+    )
+
+
+def _to_idempotency_history_response(
+    *,
+    idempotency_key: str,
+    history: list[DpmRunIdempotencyHistoryRecord],
+) -> DpmRunIdempotencyHistoryResponse:
+    ordered_history = sorted(
+        history,
+        key=lambda item: (
+            item.created_at,
+            item.rebalance_run_id,
+            item.correlation_id,
+            item.request_hash,
+        ),
+    )
+    return DpmRunIdempotencyHistoryResponse(
+        idempotency_key=idempotency_key,
+        history=[
+            DpmRunIdempotencyHistoryItem(
+                rebalance_run_id=item.rebalance_run_id,
+                correlation_id=item.correlation_id,
+                request_hash=item.request_hash,
+                created_at=item.created_at.isoformat(),
+            )
+            for item in ordered_history
+        ],
     )

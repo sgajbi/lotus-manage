@@ -1,3 +1,3 @@
-from src.api.routers.proposals import router
+from src.api.routers.rebalance_simulation import router
 
 __all__ = ["router"]

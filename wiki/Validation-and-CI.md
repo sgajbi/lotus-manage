@@ -18,6 +18,46 @@
   split local validation across unit, integration, and e2e phases
 - `make ci-local-docker`
   Docker parity for the local CI contract
+- `make live-api-validate`
+  live API evidence against a running `lotus-manage` instance
+- `make live-api-validate-core`
+  live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture
+
+## Live API evidence
+
+Use this before claiming `lotus-manage` API readiness:
+
+```bash
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
+The validator runs the live demo pack and focused production-readiness probes:
+
+1. readiness,
+2. backend-owned capability truth,
+3. OpenAPI advisory/proposal boundary cleanliness,
+4. removed proposal route behavior,
+5. duplicate async correlation conflict handling,
+6. PostgreSQL-backed supportability summary,
+7. bounded supportability metrics.
+
+For reusable evidence, write the JSON summary directly:
+
+```bash
+python scripts/validate_live_api.py --base-url http://127.0.0.1:8001 --json-output output/live-api/summary.json
+```
+
+Use this before claiming manage/core integration readiness with stateful sourcing enabled:
+
+```bash
+LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available \
+make live-api-validate-core
+```
+
+The validator proves capability truth against the RFC-087 certified composed DPM source-data products,
+a live stateful simulate call with READY `lotus-core` lineage, duplicate async correlation handling,
+supportability persistence, metrics, and continued absence of the retired monolithic core DPM
+execution-context route.
 
 ## Documentation contract proof
 
@@ -36,9 +76,8 @@ python -m pytest tests/unit/test_local_docker_runtime_contract.py tests/unit/dpm
 docker compose config
 ```
 
-For canonical front-office proof, rebuild with `LOTUS_MANAGE_HOST_PORT=8001`, verify that
-`/api/v1/rebalance/supportability/summary` returns HTTP `200`, and confirm Gateway overview no
-longer reports `MANAGE_REBALANCE_UNAVAILABLE`.
+Gateway and Workbench proof should be treated as downstream integration validation. `lotus-manage`
+API certification should first pass `make check` and `make live-api-validate`.
 
 When DPM supportability or OpenAPI-facing docs change, run:
 

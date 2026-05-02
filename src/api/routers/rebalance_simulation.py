@@ -4,10 +4,14 @@ from fastapi import APIRouter, Depends, Header, Path, Response, status
 from pydantic import Field
 
 from src.api.dependencies import get_db_session
-from src.api.request_models import RebalanceRequest
+from src.api.request_models import (
+    BatchExecutionRequestEnvelope,
+    RebalanceExecutionRequestEnvelope,
+)
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import (
+    ANALYZE_ASYNC_409_EXAMPLE,
     ANALYZE_ASYNC_ACCEPTED_EXAMPLE,
     ANALYZE_RESPONSE_EXAMPLE,
     SIMULATE_409_EXAMPLE,
@@ -20,7 +24,7 @@ from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
     DpmRunSupportService,
 )
-from src.core.models import BatchRebalanceRequest, BatchRebalanceResult, RebalanceResult
+from src.core.models import BatchRebalanceResult, RebalanceResult
 
 router = APIRouter()
 
@@ -32,10 +36,16 @@ router = APIRouter()
     tags=["lotus-manage Simulation"],
     summary="Simulate a Portfolio Rebalance",
     description=(
-        "Runs one deterministic rebalance simulation.\\n\\n"
-        "Required header: `Idempotency-Key`.\\n"
-        "Optional header: `X-Correlation-Id`.\\n\\n"
-        "For valid payloads, domain outcomes are returned in the response body status field."
+        "Use this route when a caller needs one deterministic discretionary mandate rebalance "
+        "simulation from a complete inline portfolio, market-data, model, shelf, and options "
+        "bundle. Do not use it for advisor-led proposal workflows; those belong in "
+        "`lotus-advise`. Do not use it as a portfolio source-data read; source snapshots must "
+        "remain governed by upstream portfolio-data authority.\\n\\n"
+        "Required header: `Idempotency-Key`. Optional headers: `X-Correlation-Id`, "
+        "`X-Policy-Pack-Id`, `X-Tenant-Policy-Pack-Id`, and `X-Tenant-Id`.\\n\\n"
+        "For valid payloads, domain outcomes are returned in the response body `status` field: "
+        "`READY`, `PENDING_REVIEW`, or `BLOCKED`. Reusing an idempotency key with a different "
+        "canonical request hash returns `409`."
     ),
     responses={
         200: {
@@ -60,7 +70,7 @@ router = APIRouter()
     },
 )
 def simulate_rebalance(
-    request: RebalanceRequest,
+    request: RebalanceExecutionRequestEnvelope,
     idempotency_key: Annotated[
         str,
         Header(
@@ -86,6 +96,16 @@ def simulate_rebalance(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
+    x_tenant_policy_pack_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional explicit tenant-default policy-pack identifier. Used when no "
+                "`X-Policy-Pack-Id` request override is supplied and policy packs are enabled."
+            ),
+            examples=["dpm_tenant_default_v1"],
+        ),
+    ] = None,
     x_tenant_id: Annotated[
         Optional[str],
         Header(
@@ -95,12 +115,18 @@ def simulate_rebalance(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> RebalanceResult:
+    rebalance_request, source_context = service.resolve_rebalance_request_envelope(
+        envelope=request,
+        correlation_id=x_correlation_id,
+    )
     return service.simulate_rebalance(
-        request=request,
+        request=rebalance_request,
         idempotency_key=idempotency_key,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
+        source_context=source_context,
     )
 
 
@@ -114,7 +140,7 @@ def simulate_rebalance(
         "Runs multiple named what-if scenarios using shared snapshots and returns the full batch "
         "result in one response.\\n\\n"
         "Use this synchronous route when the caller needs immediate results for up to 20 "
-        "scenarios in one request. Use `POST /rebalance/analyze/async` when the caller needs "
+        "scenarios in one request. Use `POST /api/v1/rebalance/analyze/async` when the caller needs "
         "polling-based orchestration or `ACCEPT_ONLY` execution.\\n\\n"
         "Each scenario validates `options` independently, executes in sorted scenario-key order, "
         "and contributes to `results`, `comparison_metrics`, `failed_scenarios`, and batch-level "
@@ -134,8 +160,10 @@ def simulate_rebalance(
 )
 def analyze_scenarios(
     request: Annotated[
-        BatchRebalanceRequest,
-        Field(description="Shared snapshots plus scenario map of option overrides."),
+        BatchExecutionRequestEnvelope,
+        Field(
+            description="Stateless envelope containing shared snapshots plus scenario overrides."
+        ),
     ],
     x_correlation_id: Annotated[
         Optional[str],
@@ -158,6 +186,16 @@ def analyze_scenarios(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
+    x_tenant_policy_pack_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional explicit tenant-default policy-pack identifier. Used when no "
+                "`X-Policy-Pack-Id` request override is supplied and policy packs are enabled."
+            ),
+            examples=["dpm_tenant_default_v1"],
+        ),
+    ] = None,
     x_tenant_id: Annotated[
         Optional[str],
         Header(
@@ -167,12 +205,17 @@ def analyze_scenarios(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> BatchRebalanceResult:
+    batch_request, source_context = service.resolve_batch_request_envelope(
+        envelope=request,
+        correlation_id=x_correlation_id,
+    )
     return service.execute_batch_analysis(
-        request=request,
+        request=batch_request,
         correlation_id=x_correlation_id,
         request_policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=None,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
+        source_context=source_context,
     )
 
 
@@ -186,11 +229,11 @@ def analyze_scenarios(
         "Accepts named what-if scenarios for asynchronous execution and returns a polling handle "
         "instead of the full batch result.\\n\\n"
         "Use this route when the caller needs polling-based orchestration, deferred execution, "
-        "or `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use `POST /rebalance/analyze` when immediate "
+        "or `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use `POST /api/v1/rebalance/analyze` when immediate "
         "batch results are required.\\n\\n"
         "Execution mode is controlled by `DPM_ASYNC_EXECUTION_MODE` (`INLINE` or `ACCEPT_ONLY`).\\n"
-        "Use `GET /rebalance/operations/{operation_id}` or "
-        "`GET /rebalance/operations/by-correlation/{correlation_id}` for status/result retrieval."
+        "Use `GET /api/v1/rebalance/operations/{operation_id}` or "
+        "`GET /api/v1/rebalance/operations/by-correlation/{correlation_id}` for status/result retrieval."
     ),
     responses={
         202: {
@@ -212,13 +255,23 @@ def analyze_scenarios(
             },
         },
         404: {"description": "Async operations disabled by configuration."},
+        409: {
+            "description": "Correlation id already belongs to an existing async operation.",
+            "content": {
+                "application/json": {
+                    "examples": {"correlation_conflict": ANALYZE_ASYNC_409_EXAMPLE}
+                }
+            },
+        },
         422: {"description": "Validation error (invalid shared payload or scenario key format)."},
     },
 )
 def analyze_scenarios_async(
     request: Annotated[
-        BatchRebalanceRequest,
-        Field(description="Shared snapshots plus scenario map of option overrides."),
+        BatchExecutionRequestEnvelope,
+        Field(
+            description="Stateless envelope containing shared snapshots plus scenario overrides."
+        ),
     ],
     response: Response,
     x_correlation_id: Annotated[
@@ -239,6 +292,16 @@ def analyze_scenarios_async(
             examples=["dpm_standard_v1"],
         ),
     ] = None,
+    x_tenant_policy_pack_id: Annotated[
+        Optional[str],
+        Header(
+            description=(
+                "Optional explicit tenant-default policy-pack identifier. Used when no "
+                "`X-Policy-Pack-Id` request override is supplied and policy packs are enabled."
+            ),
+            examples=["dpm_tenant_default_v1"],
+        ),
+    ] = None,
     x_tenant_id: Annotated[
         Optional[str],
         Header(
@@ -248,11 +311,17 @@ def analyze_scenarios_async(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> DpmAsyncAcceptedResponse:
+    batch_request, source_context = service.resolve_batch_request_envelope(
+        envelope=request,
+        correlation_id=x_correlation_id,
+    )
     accepted = service.submit_and_optionally_execute_async_analysis(
-        request=request,
+        request=batch_request,
         correlation_id=x_correlation_id,
         policy_pack_id=x_policy_pack_id,
+        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
         tenant_id=x_tenant_id,
+        source_context=source_context,
     )
     response.headers["X-Correlation-Id"] = accepted.correlation_id
     return accepted
@@ -265,11 +334,21 @@ def analyze_scenarios_async(
     tags=["lotus-manage Run Supportability"],
     summary="Execute Pending lotus-manage Async Operation",
     description=(
-        "Executes one pending asynchronous lotus-manage analyze operation. "
-        "Intended for orchestrated `ACCEPT_ONLY` mode flows."
+        "Executes one pending asynchronous lotus-manage scenario-analysis operation that was "
+        "accepted through `POST /api/v1/rebalance/analyze/async` while "
+        "`DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`. Use this endpoint for governed external "
+        "orchestration where the caller first records an operation handle, then explicitly "
+        "starts execution. Do not use it for already terminal operations; they are returned by "
+        "`GET /api/v1/rebalance/operations/{operation_id}` and are rejected here with `409`."
     ),
     responses={
-        200: {"description": "Operation execution completed; returns terminal status payload."},
+        200: {
+            "description": (
+                "Execution attempt completed and returned terminal operation status. "
+                "The status may be `SUCCEEDED` with a batch result or `FAILED` with structured "
+                "error details."
+            ),
+        },
         404: {"description": "Operation not found or manual execution disabled."},
         409: {"description": "Operation is not in executable pending state."},
     },

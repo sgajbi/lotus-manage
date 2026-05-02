@@ -7,7 +7,13 @@
 ## Governed product
 
 - Product ID: `lotus-manage:PortfolioActionRegister:v1`
-- Product role: governed portfolio action register for management, advisory, reporting, gateway, and Workbench discovery flows
+- Product role: governed portfolio action register for management, reporting, gateway, and
+  Workbench discovery flows
+- Implemented route families:
+  - `/api/v1/rebalance/supportability/summary`
+  - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
+  - `/api/v1/rebalance/runs/{rebalance_run_id}/workflow`
+  - `/api/v1/rebalance/workflow/decisions`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Trust telemetry: `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
 
@@ -18,3 +24,7 @@
 ## Operating rule
 
 Portfolio action state and lifecycle evidence belong in `lotus-manage`. Platform certification can block publication when action-register telemetry, lifecycle, access, SLO, or evidence posture drifts.
+
+Stateful `portfolio_id` execution is not yet a promoted mesh consumption mode. The resolver seam is
+implemented, but live source-data dependency declaration waits for RFC-087 `lotus-core` composed
+DPM source-data products and the updated `sgajbi/lotus-core#330` dependency.

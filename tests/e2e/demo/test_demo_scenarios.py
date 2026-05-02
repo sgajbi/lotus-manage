@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 
 from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
-from src.api.routers.proposals import reset_proposal_workflow_service_for_tests
 from src.core.common.capabilities import has_solver_dependencies
 from src.core.rebalance.engine import run_simulation
 from src.core.models import (
@@ -34,40 +33,6 @@ def load_demo_scenario(filename):
     return data
 
 
-def _proposal_create_payload(portfolio_id: str) -> dict:
-    return {
-        "created_by": "advisor_e2e",
-        "metadata": {
-            "title": "E2E proposal",
-            "advisor_notes": "workflow validation",
-            "jurisdiction": "SG",
-            "mandate_id": "mandate_e2e",
-        },
-        "simulate_request": {
-            "portfolio_snapshot": {
-                "portfolio_id": portfolio_id,
-                "base_currency": "USD",
-                "positions": [{"instrument_id": "EQ_OLD", "quantity": "10"}],
-                "cash_balances": [{"currency": "USD", "amount": "1000"}],
-            },
-            "market_data_snapshot": {
-                "prices": [
-                    {"instrument_id": "EQ_OLD", "price": "100", "currency": "USD"},
-                    {"instrument_id": "EQ_NEW", "price": "50", "currency": "USD"},
-                ],
-                "fx_rates": [],
-            },
-            "shelf_entries": [
-                {"instrument_id": "EQ_OLD", "status": "APPROVED"},
-                {"instrument_id": "EQ_NEW", "status": "APPROVED"},
-            ],
-            "options": {"enable_proposal_simulation": True},
-            "proposed_cash_flows": [{"currency": "USD", "amount": "100"}],
-            "proposed_trades": [{"side": "BUY", "instrument_id": "EQ_NEW", "quantity": "2"}],
-        },
-    }
-
-
 @pytest.mark.parametrize(
     "filename, expected_status",
     [
@@ -82,7 +47,7 @@ def _proposal_create_payload(portfolio_id: str) -> dict:
     ],
 )
 def test_demo_scenario_execution(filename, expected_status):
-    data = load_demo_scenario(filename)
+    data = load_demo_scenario(filename)["stateless_input"]
 
     portfolio = PortfolioSnapshot(**data["portfolio_snapshot"])
     market_data = MarketDataSnapshot(**data["market_data_snapshot"])
@@ -229,7 +194,7 @@ def test_demo_dpm_idempotency_history_supportability_via_api(monkeypatch):
             assert first.status_code == 200
             first_run = first.json()["rebalance_run_id"]
 
-            data["options"]["single_position_max_weight"] = "0.50"
+            data["stateless_input"]["options"]["single_position_max_weight"] = "0.50"
             second = client.post(
                 "/api/v1/rebalance/simulate",
                 json=data,
@@ -412,8 +377,8 @@ def test_demo_dpm_lineage_filtering_via_api(monkeypatch):
 def test_demo_dpm_workflow_decision_listing_via_api(monkeypatch):
     monkeypatch.setenv("DPM_WORKFLOW_ENABLED", "true")
     reset_dpm_run_support_service_for_tests()
-    data = valid_api_payload()
-    data["options"]["single_position_max_weight"] = "0.5"
+    data = {"input_mode": "stateless", "stateless_input": valid_api_payload()}
+    data["stateless_input"]["options"]["single_position_max_weight"] = "0.5"
     with TestClient(app) as client:
         original_overrides = dict(app.dependency_overrides)
         app.dependency_overrides[get_db_session] = _override_get_db_session
@@ -446,146 +411,6 @@ def test_demo_dpm_workflow_decision_listing_via_api(monkeypatch):
     assert approve.status_code == 200
     assert decision_list.status_code == 200
     assert any(item["run_id"] == run_id for item in decision_list.json()["items"])
-
-
-def test_demo_advisory_async_create_and_lookup_via_api():
-    with TestClient(app) as client:
-        original_overrides = dict(app.dependency_overrides)
-        app.dependency_overrides[get_db_session] = _override_get_db_session
-        reset_proposal_workflow_service_for_tests()
-        try:
-            accepted = client.post(
-                "/api/v1/rebalance/proposals/async",
-                json=_proposal_create_payload("pf_demo_async_1"),
-                headers={
-                    "Idempotency-Key": "demo-36-proposal-async",
-                    "X-Correlation-Id": "demo-corr-36-proposal-async",
-                },
-            )
-            assert accepted.status_code == 202
-            operation_id = accepted.json()["operation_id"]
-            by_operation = client.get(f"/api/v1/rebalance/proposals/operations/{operation_id}")
-            by_correlation = client.get(
-                "/api/v1/rebalance/proposals/operations/by-correlation/demo-corr-36-proposal-async"
-            )
-        finally:
-            app.dependency_overrides = original_overrides
-            reset_proposal_workflow_service_for_tests()
-
-    assert by_operation.status_code == 200
-    assert by_correlation.status_code == 200
-    assert by_operation.json()["operation_id"] == operation_id
-    assert by_correlation.json()["operation_id"] == operation_id
-
-
-def test_demo_advisory_async_version_via_api():
-    with TestClient(app) as client:
-        original_overrides = dict(app.dependency_overrides)
-        app.dependency_overrides[get_db_session] = _override_get_db_session
-        reset_proposal_workflow_service_for_tests()
-        try:
-            created = client.post(
-                "/api/v1/rebalance/proposals",
-                json=_proposal_create_payload("pf_demo_async_2"),
-                headers={"Idempotency-Key": "demo-37-proposal-async-base"},
-            )
-            assert created.status_code == 200
-            proposal_id = created.json()["proposal"]["proposal_id"]
-
-            accepted = client.post(
-                f"/api/v1/rebalance/proposals/{proposal_id}/versions/async",
-                json={
-                    "created_by": "advisor_e2e",
-                    "metadata": {"title": "E2E async version"},
-                    "simulate_request": _proposal_create_payload("pf_demo_async_2")[
-                        "simulate_request"
-                    ],
-                },
-                headers={"X-Correlation-Id": "demo-corr-37-proposal-async-version"},
-            )
-            assert accepted.status_code == 202
-            operation_id = accepted.json()["operation_id"]
-            operation = client.get(f"/api/v1/rebalance/proposals/operations/{operation_id}")
-        finally:
-            app.dependency_overrides = original_overrides
-            reset_proposal_workflow_service_for_tests()
-
-    assert operation.status_code == 200
-    assert operation.json()["operation_id"] == operation_id
-
-
-@pytest.mark.parametrize(
-    "filename, expected_status",
-    [
-        ("10_advisory_proposal_simulate.json", "READY"),
-        ("11_advisory_auto_funding_single_ccy.json", "READY"),
-        ("12_advisory_partial_funding.json", "READY"),
-        ("13_advisory_missing_fx_blocked.json", "BLOCKED"),
-        ("14_advisory_drift_asset_class.json", "READY"),
-        ("15_advisory_drift_instrument.json", "READY"),
-        ("16_advisory_suitability_resolved_single_position.json", "READY"),
-        ("17_advisory_suitability_new_issuer_breach.json", "READY"),
-        ("18_advisory_suitability_sell_only_violation.json", "BLOCKED"),
-    ],
-)
-def test_demo_advisory_scenarios_via_api(filename, expected_status):
-    data = load_demo_scenario(filename)
-    with TestClient(app) as client:
-        original_overrides = dict(app.dependency_overrides)
-        app.dependency_overrides[get_db_session] = _override_get_db_session
-        reset_proposal_workflow_service_for_tests()
-        try:
-            response = client.post(
-                "/api/v1/rebalance/proposals/simulate",
-                json=data,
-                headers={"Idempotency-Key": f"demo-{filename}"},
-            )
-        finally:
-            app.dependency_overrides = original_overrides
-            reset_proposal_workflow_service_for_tests()
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == expected_status
-
-    if filename in {"11_advisory_auto_funding_single_ccy.json", "12_advisory_partial_funding.json"}:
-        assert [intent["intent_type"] for intent in body["intents"]] == [
-            "FX_SPOT",
-            "SECURITY_TRADE",
-        ]
-        assert body["intents"][1]["dependencies"] == [body["intents"][0]["intent_id"]]
-    if filename in {"14_advisory_drift_asset_class.json", "15_advisory_drift_instrument.json"}:
-        assert "drift_analysis" in body
-    if filename in {
-        "16_advisory_suitability_resolved_single_position.json",
-        "17_advisory_suitability_new_issuer_breach.json",
-        "18_advisory_suitability_sell_only_violation.json",
-    }:
-        assert "suitability" in body
-
-
-def test_demo_advisory_artifact_scenario_via_api():
-    data = load_demo_scenario("19_advisory_proposal_artifact.json")
-    with TestClient(app) as client:
-        original_overrides = dict(app.dependency_overrides)
-        app.dependency_overrides[get_db_session] = _override_get_db_session
-        reset_proposal_workflow_service_for_tests()
-        try:
-            response = client.post(
-                "/api/v1/rebalance/proposals/artifact",
-                json=data,
-                headers={"Idempotency-Key": "demo-19-advisory-artifact"},
-            )
-        finally:
-            app.dependency_overrides = original_overrides
-            reset_proposal_workflow_service_for_tests()
-
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "READY"
-    assert body["summary"]["recommended_next_step"] == "CLIENT_CONSENT"
-    assert body["trades_and_funding"]["trade_list"]
-    assert body["evidence_bundle"]["hashes"]["artifact_hash"].startswith("sha256:")
 
 
 @pytest.mark.parametrize(

@@ -13,6 +13,7 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
     DpmSupportabilitySummaryData,
 )
+from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
@@ -134,7 +135,7 @@ class PostgresDpmRunRepository:
         cursor: Optional[str],
     ) -> tuple[list[DpmRunRecord], Optional[str]]:
         where_clauses = []
-        args: list[str] = []
+        args: list[Any] = []
         if created_from is not None:
             where_clauses.append("created_at >= %s")
             args.append(created_from.isoformat())
@@ -147,6 +148,22 @@ class PostgresDpmRunRepository:
         if request_hash is not None:
             where_clauses.append("request_hash = %s")
             args.append(request_hash)
+        if status is not None:
+            where_clauses.append("result_json::jsonb ->> 'status' = %s")
+            args.append(status)
+        if cursor is not None:
+            where_clauses.append(
+                """
+                (
+                    created_at < (SELECT created_at FROM dpm_runs WHERE rebalance_run_id = %s)
+                    OR (
+                        created_at = (SELECT created_at FROM dpm_runs WHERE rebalance_run_id = %s)
+                        AND rebalance_run_id < %s
+                    )
+                )
+                """
+            )
+            args.extend([cursor, cursor, cursor])
         where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
         query = f"""
             SELECT
@@ -160,7 +177,9 @@ class PostgresDpmRunRepository:
             FROM dpm_runs
             {where_sql}
             ORDER BY created_at DESC, rebalance_run_id DESC
+            LIMIT %s
         """
+        args.append(limit + 1)
         with closing(self._connect()) as connection:
             rows = connection.execute(query, tuple(args)).fetchall()
         run_candidates = [self._to_run(row) for row in rows]
@@ -168,16 +187,6 @@ class PostgresDpmRunRepository:
             list[DpmRunRecord],
             [run for run in run_candidates if run is not None],
         )
-        if status is not None:
-            runs = [run for run in runs if str(run.result_json.get("status", "")) == status]
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(runs) if row.rebalance_run_id == cursor),
-                None,
-            )
-            if cursor_index is None:
-                return [], None
-            runs = runs[cursor_index + 1 :]
         page = runs[:limit]
         next_cursor = page[-1].rebalance_run_id if len(runs) > limit else None
         return page, next_cursor
@@ -304,10 +313,24 @@ class PostgresDpmRunRepository:
         ]
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        self._upsert_operation(operation)
+        try:
+            self._upsert_operation(operation)
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                raise DpmRunRepositoryConflictError(
+                    "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
+                ) from exc
+            raise
 
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        self._upsert_operation(operation)
+        try:
+            self._upsert_operation(operation)
+        except Exception as exc:
+            if _is_unique_violation(exc):
+                raise DpmRunRepositoryConflictError(
+                    "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
+                ) from exc
+            raise
 
     def get_operation(self, *, operation_id: str) -> Optional[DpmAsyncOperationRecord]:
         query = """
@@ -631,8 +654,9 @@ class PostgresDpmRunRepository:
             GROUP BY status
         """
         run_status_query = """
-            SELECT result_json
+            SELECT result_json::jsonb ->> 'status' AS status, COUNT(*) AS status_count
             FROM dpm_runs
+            GROUP BY result_json::jsonb ->> 'status'
         """
         workflow_decision_count_query = (
             "SELECT COUNT(*) AS workflow_decision_count FROM dpm_workflow_decisions"
@@ -652,7 +676,7 @@ class PostgresDpmRunRepository:
             run_row = connection.execute(run_query).fetchone()
             operation_row = connection.execute(operation_query).fetchone()
             status_rows = connection.execute(operation_status_query).fetchall()
-            run_rows = connection.execute(run_status_query).fetchall()
+            run_status_rows = connection.execute(run_status_query).fetchall()
             workflow_row = connection.execute(workflow_decision_count_query).fetchone()
             workflow_action_rows = connection.execute(workflow_action_counts_query).fetchall()
             workflow_reason_code_rows = connection.execute(
@@ -665,11 +689,11 @@ class PostgresDpmRunRepository:
             for row in status_rows
             if row["status"] is not None
         }
-        run_status_counts: dict[str, int] = {}
-        for row in run_rows:
-            status = str(json.loads(row["result_json"]).get("status", ""))
-            if status:
-                run_status_counts[status] = run_status_counts.get(status, 0) + 1
+        run_status_counts = {
+            row["status"]: int(row["status_count"])
+            for row in run_status_rows
+            if row["status"] is not None
+        }
         workflow_action_counts = {
             row["action"]: int(row["action_count"])
             for row in workflow_action_rows
@@ -851,6 +875,10 @@ def _import_psycopg() -> tuple[Any, Any]:
     from psycopg.rows import dict_row
 
     return psycopg, dict_row
+
+
+def _is_unique_violation(exc: Exception) -> bool:
+    return exc.__class__.__name__ == "UniqueViolation"
 
 
 def _json_dump(value: dict[str, Any]) -> str:

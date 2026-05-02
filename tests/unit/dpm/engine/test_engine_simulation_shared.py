@@ -10,7 +10,7 @@ from src.core.common.simulation_shared import (
     sort_execution_intents,
 )
 from src.core.compliance import RuleEngine
-from src.core.models import CashFlowIntent, EngineOptions, FxSpotIntent, SecurityTradeIntent
+from src.core.models import EngineOptions, FxSpotIntent, SecurityTradeIntent
 from src.core.valuation import build_simulated_state
 from tests.shared.factories import cash, market_data_snapshot, portfolio_snapshot
 from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics
@@ -104,8 +104,7 @@ def test_apply_fx_spot_to_portfolio_mutates_both_currencies():
     assert eur_cash.amount == Decimal("100")
 
 
-def test_sort_execution_intents_orders_cashflow_sell_fx_buy():
-    cash_intent = CashFlowIntent(intent_id="oi_cf_1", currency="USD", amount=Decimal("100"))
+def test_sort_execution_intents_orders_sell_fx_buy():
     buy_intent = SecurityTradeIntent(
         intent_id="oi_buy_1",
         instrument_id="EQ_B",
@@ -131,15 +130,14 @@ def test_sort_execution_intents_orders_cashflow_sell_fx_buy():
         sell_amount_estimated=Decimal("110"),
     )
 
-    ordered = sort_execution_intents([buy_intent, fx_intent, cash_intent, sell_intent])
+    ordered = sort_execution_intents([buy_intent, fx_intent, sell_intent])
     assert [intent.intent_type for intent in ordered] == [
-        "CASH_FLOW",
         "SECURITY_TRADE",
         "FX_SPOT",
         "SECURITY_TRADE",
     ]
-    assert ordered[1].side == "SELL"
-    assert ordered[3].side == "BUY"
+    assert ordered[0].side == "SELL"
+    assert ordered[2].side == "BUY"
 
 
 def test_apply_security_trade_to_portfolio_ignores_incomplete_trade_intent():

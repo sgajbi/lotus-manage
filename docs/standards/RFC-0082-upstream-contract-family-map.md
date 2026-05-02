@@ -13,16 +13,24 @@ composition.
 1. REST/OpenAPI remains the governed integration contract for current `lotus-manage` public and
    integration-facing APIs.
 2. No current `lotus-manage` integration requires or justifies gRPC.
-3. The current codebase does not contain an active outbound HTTP client to `lotus-core`,
-   `lotus-performance`, or `lotus-risk`.
+3. The current codebase contains a modeled, feature-gated outbound resolver seam to `lotus-core`.
+   RFC-087 rebaselines that seam to composed DPM source-data products rather than a monolithic
+   execution-context route, and `lotus-manage` does not declare a promoted live API-read dependency
+   while the complete product set remains unavailable. Dedicated client methods currently exist for
+   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`, and
+   `InstrumentEligibilityProfile:v1`.
 4. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
    options through request contracts. When those inputs are core-referenced, `lotus-core` remains the
    source-data authority.
 5. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
    surfaces.
 6. Current downstream evidence for capability discovery flows through
-   `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/platform/capabilities`; the
+   `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/integration/capabilities`; the
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
+7. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
+   `sgajbi/lotus-gateway#178`.
+8. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
+   tracked in `sgajbi/lotus-workbench#135`.
 
 ## `lotus-core` Contract Family Posture
 
@@ -30,29 +38,29 @@ composition.
 | --- | --- | --- | --- | --- |
 | `portfolio_snapshot` request payloads | source data should be `lotus-core`-governed when populated from platform state | Snapshot and simulation / Operational Read input | rebalance and what-if source state | manage may transform for execution, but must not become the ledger or portfolio read authority |
 | `market_data_snapshot` request payloads | prices and FX should remain core-governed source data when populated from platform state | Operational Read input / Analytics Input watchlist | valuation, settlement, tax, and rebalance execution support | manage may use inputs for execution, but source truth remains upstream |
-| `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | stateful rebalance execution posture advertised through capabilities | future stateful resolution must use governed core contracts rather than ad hoc reads |
+| `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | disabled by default in capabilities until a governed state resolver is configured | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
 
 ## Manage-Owned Contract Families
 
 | Surface | Route family | Owner | Boundary rule |
 | --- | --- | --- | --- |
-| rebalance simulation | `POST /rebalance/simulate` | `lotus-manage` | owns deterministic rebalance execution result, policy application, controls, and workflow gate output |
-| what-if analysis | `POST /rebalance/analyze`, `POST /rebalance/analyze/async` | `lotus-manage` | owns scenario orchestration and run correlation semantics |
-| async operation execution | `/rebalance/operations/*` | `lotus-manage` | owns management-side operation state and supportability |
-| run supportability | `/rebalance/runs/*`, `/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
-| policy-pack supportability | `/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
-| integration capabilities | `/integration/capabilities`, `/platform/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
+| rebalance simulation | `POST /api/v1/rebalance/simulate` | `lotus-manage` | owns deterministic rebalance execution result, policy application, controls, and workflow gate output |
+| what-if analysis | `POST /api/v1/rebalance/analyze`, `POST /api/v1/rebalance/analyze/async` | `lotus-manage` | owns scenario orchestration and run correlation semantics |
+| async operation execution | `/api/v1/rebalance/operations/*` | `lotus-manage` | owns management-side operation state and supportability |
+| run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
+| policy-pack supportability | `/api/v1/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
+| integration capabilities | `/api/v1/integration/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
 
 ## Split-Boundary Posture
 
 `lotus-advise` is the advisory workflow and proposal simulation authority after the repository split.
-Any remaining advisory-labeled or proposal-lifecycle surface in `lotus-manage` is treated as
-compatibility or managed cleanup surface unless a current repo RFC explicitly keeps it here.
+`lotus-manage` no longer exposes proposal simulation, proposal artifact, or proposal lifecycle
+routes.
 
 Boundary rules:
 
-1. advisor-led proposal workflow should not expand in `lotus-manage`,
+1. advisor-led proposal workflow should not be reintroduced in `lotus-manage`,
 2. new advisory decision-summary, alternatives, suitability, or consent behavior belongs in
    `lotus-advise`,
 3. gateway-facing management workflow should consume `lotus-manage` for rebalance execution and
@@ -69,7 +77,7 @@ Boundary rules:
 4. Inline bundle behavior must preserve lineage identifiers for portfolio and market-data snapshots so
    callers can trace source authority.
 5. Gateway capability consumers must receive backend-owned feature and workflow truth from
-   `/integration/capabilities`; UI or gateway layers must not infer manage feature flags.
+   `/api/v1/integration/capabilities`; UI or gateway layers must not infer manage feature flags.
 6. Transport optimization discussions start with request shape, payload size, async execution,
    idempotency, caching, and supportability. gRPC is not a default answer for management workflows.
 
@@ -91,12 +99,12 @@ Existing tests that cover this posture include:
 12. `tests/integration/dpm/supportability/test_dpm_policy_pack_postgres_repository_integration.py`
 
 RFC-0108 Slice 12 adds implementation-backed management supportability posture to
-`/rebalance/supportability/summary` and capability discovery:
+`/api/v1/rebalance/supportability/summary` and capability discovery:
 
-1. `GET /rebalance/supportability/summary` returns a `supportability` object with bounded
+1. `GET /api/v1/rebalance/supportability/summary` returns a `supportability` object with bounded
    `state`, `reason`, `freshness_bucket`, and aggregate counts derived from persisted run,
    operation, and workflow-decision records.
-2. `/integration/capabilities` and `/platform/capabilities` publish
+2. `/api/v1/integration/capabilities` publishes
    `manage.observability.action_register_supportability` as the backend-owned feature key for
    Gateway and Workbench gating.
 3. `/metrics` exposes `lotus_manage_action_register_supportability_total` with bounded
@@ -108,19 +116,17 @@ RFC-0108 Slice 12 adds implementation-backed management supportability posture t
 
 ## Gap Register
 
-1. `portfolio_id` is advertised as a supported input mode, but the current code inspection did not find an
-   active outbound state-resolution client. When that becomes active, classify the exact `lotus-core`
-   routes before stabilizing the contract.
-2. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
-   `GET /api/v1/platform/capabilities`; `lotus-manage` remains canonical on snake_case
+1. Current gateway code uses camelCase query keys (`consumerSystem`, `tenantId`) when calling
+   `GET /api/v1/integration/capabilities`; `lotus-manage` remains canonical on snake_case
    `consumer_system` and `tenant_id`, so the downstream client should be corrected rather than
-   expanding manage-side aliases.
+   expanding manage-side aliases. Tracked as `sgajbi/lotus-gateway#178`.
+2. Workbench proposal simulation docs and routes still need explicit ownership cleanup so advisory
+   proposal simulation does not couple back to `lotus-manage` DPM execution. Tracked as
+   `sgajbi/lotus-workbench#135`.
 3. Inline portfolio and market-data bundles are operationally useful, but they can blur source-data
    authority. Keep snapshot identifiers, request hashes, and supportability bundles mandatory for
    traceability.
-4. Remaining advisory/proposal-lifecycle surfaces in `lotus-manage` should not receive new advisory
-   scope unless a split-governance decision explicitly keeps them here.
-5. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
+4. If rebalance simulation becomes latency-constrained, prefer async execution, payload shaping, policy-pack
    caching, and source-data retrieval design before considering a transport change.
 
 ## Validation Lane

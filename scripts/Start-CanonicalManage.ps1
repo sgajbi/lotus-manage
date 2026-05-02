@@ -1,6 +1,8 @@
 param(
   [int]$Port = 8001,
   [string]$ListenHost = "0.0.0.0",
+  [string]$PostgresContainerName = "lotus-manage-postgres-local",
+  [int]$PostgresHostPort = 55433,
   [switch]$Foreground
 )
 
@@ -10,6 +12,88 @@ $python = if (Test-Path (Join-Path $repoRoot ".venv\\Scripts\\python.exe")) {
   Join-Path $repoRoot ".venv\\Scripts\\python.exe"
 } else {
   "C:\\Python313\\python.exe"
+}
+
+function Test-PythonModule {
+  param(
+    [string]$PythonPath,
+    [string]$ModuleName
+  )
+
+  & $PythonPath -c "import $ModuleName" 2>$null
+  return $LASTEXITCODE -eq 0
+}
+
+function Ensure-CanonicalPostgres {
+  $backend = if ($env:DPM_SUPPORTABILITY_STORE_BACKEND) {
+    $env:DPM_SUPPORTABILITY_STORE_BACKEND
+  } else {
+    "POSTGRES"
+  }
+  if ($backend.ToUpperInvariant() -ne "POSTGRES") {
+    return
+  }
+  $env:DPM_SUPPORTABILITY_STORE_BACKEND = "POSTGRES"
+  if ([string]::IsNullOrWhiteSpace($env:DPM_POLICY_PACK_CATALOG_BACKEND)) {
+    $env:DPM_POLICY_PACK_CATALOG_BACKEND = "POSTGRES"
+  }
+
+  if (-not [string]::IsNullOrWhiteSpace($env:DPM_SUPPORTABILITY_POSTGRES_DSN)) {
+    return
+  }
+
+  $existing = docker ps -a --format "{{.Names}}" | Where-Object { $_ -eq $PostgresContainerName }
+  if (-not $existing) {
+    docker run -d `
+      --name $PostgresContainerName `
+      -e POSTGRES_DB=manage_supportability `
+      -e POSTGRES_USER=manage `
+      -e POSTGRES_PASSWORD=manage `
+      -p "${PostgresHostPort}:5432" `
+      postgres:17.6 | Out-Null
+  } else {
+    docker start $PostgresContainerName | Out-Null
+  }
+
+  $ready = $false
+  for ($i = 0; $i -lt 30; $i++) {
+    docker exec $PostgresContainerName pg_isready -U manage -d manage_supportability *> $null
+    if ($LASTEXITCODE -eq 0) {
+      $ready = $true
+      break
+    }
+    Start-Sleep -Seconds 2
+  }
+  if (-not $ready) {
+    throw "lotus-manage canonical Postgres did not become ready on :$PostgresHostPort."
+  }
+
+  $dsn = "postgresql://manage:manage@127.0.0.1:$PostgresHostPort/manage_supportability"
+  $env:DPM_SUPPORTABILITY_POSTGRES_DSN = $dsn
+  if ([string]::IsNullOrWhiteSpace($env:DPM_POLICY_PACK_POSTGRES_DSN)) {
+    $env:DPM_POLICY_PACK_POSTGRES_DSN = $dsn
+  }
+}
+
+Ensure-CanonicalPostgres
+
+if (
+  $env:DPM_SUPPORTABILITY_STORE_BACKEND.ToUpperInvariant() -eq "POSTGRES" -and
+  -not (Test-PythonModule -PythonPath $python -ModuleName "psycopg")
+) {
+  $globalPython = "C:\\Python313\\python.exe"
+  if ((Test-Path $globalPython) -and (Test-PythonModule -PythonPath $globalPython -ModuleName "psycopg")) {
+    $python = $globalPython
+  } else {
+    throw "lotus-manage canonical startup requires psycopg for POSTGRES supportability."
+  }
+}
+
+if ($env:DPM_SUPPORTABILITY_STORE_BACKEND.ToUpperInvariant() -eq "POSTGRES") {
+  & $python (Join-Path $repoRoot "scripts\\postgres_migrate.py") --target dpm
+  if ($LASTEXITCODE -ne 0) {
+    throw "lotus-manage canonical Postgres migration failed."
+  }
 }
 
 $env:PYTHONPATH = Join-Path $repoRoot "src"
