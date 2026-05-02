@@ -66,14 +66,18 @@ Implementation note, 2026-05-02:
    `POST /integration/model-portfolios/{model_portfolio_id}/targets` source-product endpoint.
 2. `lotus-core` RFC-087 Slice 5 introduced the dedicated
    `POST /integration/portfolios/{portfolio_id}/mandate-binding` source-product endpoint.
-3. `lotus-manage` now has dedicated client methods and transformers for those products:
+3. `lotus-core` RFC-087 Slice 6 introduced the dedicated
+   `POST /integration/instruments/eligibility-bulk` source-product endpoint.
+4. `lotus-manage` now has dedicated client methods and transformers for those products:
    `DpmCoreResolverClient.resolve_model_portfolio_targets` and
    `build_model_portfolio_from_core_targets`, plus
    `DpmCoreResolverClient.resolve_mandate_binding` and
-   `build_policy_context_from_core_mandate`.
-4. This is not stateful execution promotion. It proves the first composed source-product
-   integration paths while keeping `input_mode=stateful` gated until portfolio state, eligibility,
-   tax-lot, market-data, and readiness source products are also available and live proven.
+   `build_policy_context_from_core_mandate`, plus
+   `DpmCoreResolverClient.resolve_instrument_eligibility` and
+   `build_shelf_entries_from_core_eligibility`.
+5. This is not stateful execution promotion. It proves the first composed source-product
+   integration paths while keeping `input_mode=stateful` gated until portfolio state, tax-lot,
+   market-data, readiness source products, and live end-to-end proof are also available.
 
 ## Summary
 
@@ -102,8 +106,9 @@ Current implementation:
 2. The FastAPI app mounts the same routers twice: once unversioned and once under `/api/v1`.
 3. `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED` defaults to disabled.
 4. `lotus-manage` has bounded outbound `lotus-core` source-product clients for
-   `DpmModelPortfolioTarget:v1` and `DiscretionaryMandateBinding:v1`; the older monolithic DPM
-   execution-context route remains blocked and must not be used.
+   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`, and
+   `InstrumentEligibilityProfile:v1`; the older monolithic DPM execution-context route remains
+   blocked and must not be used.
 5. Current source-data authority is documented as upstream: callers must provide source-governed
    portfolio, market-data, model, shelf, and option bundles.
 6. `lotus-gateway` currently consumes only run lookup, supportability summary, and capabilities
@@ -916,8 +921,16 @@ Additional composed-source integration evidence captured on 2026-05-02:
    incomplete supportability, non-discretionary mandates, and inactive discretionary authority.
 3. Added focused unit proof for the outbound request shape, correlation header propagation,
    bounded 4xx error mapping, response parsing, and policy-context transformation.
-4. Promotion no-go remains active because eligibility, tax-lot, market-data/FX coverage, and
-   readiness/source-family completeness products are still pending in RFC-087.
+4. Added a bounded `InstrumentEligibilityProfile:v1` client call to
+   `POST /integration/instruments/eligibility-bulk`.
+5. Added a typed eligibility response model and shelf transformer that converts core product-shelf,
+   restriction, settlement, liquidity, issuer, and taxonomy fields into the existing DPM
+   `ShelfEntry` model while rejecting incomplete source supportability.
+6. Added focused unit proof for the outbound request shape, correlation header propagation,
+   bounded 4xx error mapping, response parsing, and shelf-entry transformation.
+7. Promotion no-go remains active because portfolio state, tax-lot, market-data/FX coverage, and
+   readiness/source-family completeness products are still pending in RFC-087 live proof for
+   stateful DPM promotion.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 

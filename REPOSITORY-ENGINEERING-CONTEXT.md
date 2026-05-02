@@ -50,8 +50,9 @@ Current repository posture:
     `DpmModelPortfolioTarget:v1` through
     `/integration/model-portfolios/{model_portfolio_id}/targets` and
     `DiscretionaryMandateBinding:v1` through
-    `/integration/portfolios/{portfolio_id}/mandate-binding`; they are not sufficient on their own
-    to promote stateful execution.
+    `/integration/portfolios/{portfolio_id}/mandate-binding`, and
+    `InstrumentEligibilityProfile:v1` through `/integration/instruments/eligibility-bulk`; they
+    are not sufficient on their own to promote stateful execution.
 
 ## Architecture And Module Map
 

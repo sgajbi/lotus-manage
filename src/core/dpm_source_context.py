@@ -221,6 +221,94 @@ class DpmCoreMandateBindingResponse(BaseModel):
     )
 
 
+class DpmCoreInstrumentEligibilityRecord(BaseModel):
+    security_id: str = Field(description="Core-governed security identifier.")
+    found: bool = Field(description="Whether lotus-core found an effective eligibility profile.")
+    eligibility_status: Literal["APPROVED", "RESTRICTED", "SELL_ONLY", "BANNED", "UNKNOWN"] = Field(
+        description="Core-governed instrument eligibility status."
+    )
+    product_shelf_status: Literal["APPROVED", "RESTRICTED", "SELL_ONLY", "BANNED", "SUSPENDED"] = (
+        Field(description="Core product-shelf status.")
+    )
+    buy_allowed: bool = Field(description="Whether DPM may create buy intents.")
+    sell_allowed: bool = Field(description="Whether DPM may create sell intents.")
+    restriction_reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Bounded restriction reason codes from lotus-core.",
+    )
+    settlement_days: Optional[int] = Field(
+        default=None,
+        description="Instrument settlement cycle in business days.",
+    )
+    settlement_calendar_id: Optional[str] = Field(
+        default=None,
+        description="Settlement calendar identifier.",
+    )
+    liquidity_tier: Optional[Literal["L1", "L2", "L3", "L4", "L5"]] = Field(
+        default=None,
+        description="Liquidity tier used for suitability and execution controls.",
+    )
+    issuer_id: Optional[str] = Field(default=None, description="Direct issuer identifier.")
+    issuer_name: Optional[str] = Field(default=None, description="Direct issuer name.")
+    ultimate_parent_issuer_id: Optional[str] = Field(
+        default=None,
+        description="Ultimate parent issuer identifier.",
+    )
+    ultimate_parent_issuer_name: Optional[str] = Field(
+        default=None,
+        description="Ultimate parent issuer name.",
+    )
+    asset_class: Optional[str] = Field(default=None, description="Asset-class label.")
+    country_of_risk: Optional[str] = Field(default=None, description="Country of risk.")
+    effective_from: Optional[date] = Field(default=None, description="Effective start date.")
+    effective_to: Optional[date] = Field(default=None, description="Effective end date.")
+    source_record_id: Optional[str] = Field(
+        default=None,
+        description="Core source record identifier for replay and audit.",
+    )
+    quality_status: str = Field(description="Core row-level data quality status.")
+
+
+class DpmCoreInstrumentEligibilitySupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for instrument eligibility consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    requested_count: int = Field(description="Number of securities requested.")
+    found_count: int = Field(description="Number of securities resolved from core source data.")
+    missing_security_ids: list[str] = Field(
+        default_factory=list,
+        description="Requested securities without an effective eligibility profile.",
+    )
+
+
+class DpmCoreInstrumentEligibilityBulkResponse(BaseModel):
+    product_name: Literal["InstrumentEligibilityProfile"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    as_of_date: date = Field(description="As-of date used to resolve eligibility.")
+    tenant_id: Optional[str] = Field(default=None, description="Optional tenant selector.")
+    eligibility: list[DpmCoreInstrumentEligibilityRecord] = Field(
+        description="Resolved eligibility records in request order."
+    )
+    supportability: DpmCoreInstrumentEligibilitySupportability = Field(
+        description="Completeness and readiness posture for the eligibility product."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -343,6 +431,51 @@ def build_policy_context_from_core_mandate(
         booking_center_code=response.booking_center_code,
         mandate_id=response.mandate_id,
     )
+
+
+def _shelf_attribute_value(value: object) -> str:
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if value is None:
+        return ""
+    return str(value)
+
+
+def build_shelf_entries_from_core_eligibility(
+    response: DpmCoreInstrumentEligibilityBulkResponse,
+) -> list[ShelfEntry]:
+    if response.supportability.state not in {"READY", "DEGRADED"}:
+        raise DpmCoreContextIncompleteError(response.supportability.reason)
+
+    eligible_records = [record for record in response.eligibility if record.found]
+    if not eligible_records:
+        raise DpmCoreContextIncompleteError("DPM_CORE_INSTRUMENT_ELIGIBILITY_EMPTY")
+
+    shelf_entries: list[ShelfEntry] = []
+    for record in eligible_records:
+        shelf_entries.append(
+            ShelfEntry(
+                instrument_id=record.security_id,
+                status=record.product_shelf_status,
+                asset_class=record.asset_class or "UNKNOWN",
+                issuer_id=record.issuer_id,
+                liquidity_tier=record.liquidity_tier,
+                settlement_days=record.settlement_days if record.settlement_days is not None else 2,
+                attributes={
+                    "buy_allowed": _shelf_attribute_value(record.buy_allowed),
+                    "sell_allowed": _shelf_attribute_value(record.sell_allowed),
+                    "eligibility_status": record.eligibility_status,
+                    "country_of_risk": _shelf_attribute_value(record.country_of_risk),
+                    "settlement_calendar_id": _shelf_attribute_value(record.settlement_calendar_id),
+                    "ultimate_parent_issuer_id": _shelf_attribute_value(
+                        record.ultimate_parent_issuer_id
+                    ),
+                    "restriction_reason_codes": ",".join(record.restriction_reason_codes),
+                    "source_record_id": _shelf_attribute_value(record.source_record_id),
+                },
+            )
+        )
+    return shelf_entries
 
 
 def build_rebalance_request_from_core_context(

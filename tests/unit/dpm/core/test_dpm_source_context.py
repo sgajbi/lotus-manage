@@ -4,12 +4,14 @@ from decimal import Decimal
 from src.core.dpm_source_context import (
     DpmCoreContextIncompleteError,
     DpmCoreExecutionContext,
+    DpmCoreInstrumentEligibilityBulkResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreModelPortfolioTargetResponse,
     build_batch_rebalance_request_from_core_context,
     build_model_portfolio_from_core_targets,
     build_policy_context_from_core_mandate,
     build_rebalance_request_from_core_context,
+    build_shelf_entries_from_core_eligibility,
 )
 from src.core.models import SimulationScenario
 
@@ -245,6 +247,128 @@ def test_core_mandate_binding_rejects_non_discretionary_or_inactive_authority():
         match="DPM_CORE_DISCRETIONARY_AUTHORITY_NOT_ACTIVE",
     ):
         build_policy_context_from_core_mandate(inactive_authority)
+
+
+def _core_eligibility_payload(**overrides: object) -> dict:
+    payload = {
+        "product_name": "InstrumentEligibilityProfile",
+        "product_version": "v1",
+        "as_of_date": "2026-04-10",
+        "tenant_id": "tenant_sg_pb",
+        "eligibility": [
+            {
+                "security_id": "EQ_US_AAPL",
+                "found": True,
+                "eligibility_status": "APPROVED",
+                "product_shelf_status": "APPROVED",
+                "buy_allowed": True,
+                "sell_allowed": True,
+                "restriction_reason_codes": [],
+                "settlement_days": 2,
+                "settlement_calendar_id": "US_NYSE",
+                "liquidity_tier": "L1",
+                "issuer_id": "APPLE",
+                "issuer_name": "Apple Inc.",
+                "ultimate_parent_issuer_id": "APPLE_PARENT",
+                "ultimate_parent_issuer_name": "Apple Inc.",
+                "asset_class": "Equity",
+                "country_of_risk": "US",
+                "effective_from": "2026-04-01",
+                "effective_to": None,
+                "source_record_id": "AAPL-elig-20260401",
+                "quality_status": "accepted",
+            },
+            {
+                "security_id": "FO_PRIV_PRIVATE_CREDIT_A",
+                "found": True,
+                "eligibility_status": "RESTRICTED",
+                "product_shelf_status": "RESTRICTED",
+                "buy_allowed": False,
+                "sell_allowed": True,
+                "restriction_reason_codes": ["PRIVATE_ASSET_REVIEW"],
+                "settlement_days": 5,
+                "settlement_calendar_id": "SGX",
+                "liquidity_tier": "L4",
+                "issuer_id": "PRIVATE_CREDIT_FUND_A",
+                "issuer_name": "Private Credit Fund A",
+                "ultimate_parent_issuer_id": "ALT_PARENT",
+                "ultimate_parent_issuer_name": "Alternative Investments Parent",
+                "asset_class": "Alternatives",
+                "country_of_risk": "SG",
+                "effective_from": "2026-04-01",
+                "effective_to": None,
+                "source_record_id": "priv-credit-elig-20260401",
+                "quality_status": "accepted",
+            },
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "INSTRUMENT_ELIGIBILITY_READY",
+            "requested_count": 2,
+            "found_count": 2,
+            "missing_security_ids": [],
+        },
+        "lineage": {
+            "source_system": "instrument_eligibility",
+            "contract_version": "rfc_087_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_core_instrument_eligibility_transforms_to_shelf_entries():
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(_core_eligibility_payload())
+
+    shelf_entries = build_shelf_entries_from_core_eligibility(response)
+
+    assert [(entry.instrument_id, entry.status) for entry in shelf_entries] == [
+        ("EQ_US_AAPL", "APPROVED"),
+        ("FO_PRIV_PRIVATE_CREDIT_A", "RESTRICTED"),
+    ]
+    restricted_entry = shelf_entries[1]
+    assert restricted_entry.asset_class == "Alternatives"
+    assert restricted_entry.issuer_id == "PRIVATE_CREDIT_FUND_A"
+    assert restricted_entry.liquidity_tier == "L4"
+    assert restricted_entry.settlement_days == 5
+    assert restricted_entry.attributes["buy_allowed"] == "false"
+    assert restricted_entry.attributes["sell_allowed"] == "true"
+    assert restricted_entry.attributes["restriction_reason_codes"] == "PRIVATE_ASSET_REVIEW"
+    assert restricted_entry.attributes["settlement_calendar_id"] == "SGX"
+    assert restricted_entry.attributes["ultimate_parent_issuer_id"] == "ALT_PARENT"
+
+
+def test_core_instrument_eligibility_rejects_missing_supportability():
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(
+        _core_eligibility_payload(
+            eligibility=[
+                {
+                    "security_id": "UNKNOWN_SEC",
+                    "found": False,
+                    "eligibility_status": "UNKNOWN",
+                    "product_shelf_status": "SUSPENDED",
+                    "buy_allowed": False,
+                    "sell_allowed": False,
+                    "restriction_reason_codes": ["ELIGIBILITY_PROFILE_MISSING"],
+                    "settlement_days": None,
+                    "settlement_calendar_id": None,
+                    "quality_status": "MISSING",
+                }
+            ],
+            supportability={
+                "state": "INCOMPLETE",
+                "reason": "INSTRUMENT_ELIGIBILITY_MISSING",
+                "requested_count": 1,
+                "found_count": 0,
+                "missing_security_ids": ["UNKNOWN_SEC"],
+            },
+        )
+    )
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="INSTRUMENT_ELIGIBILITY_MISSING"):
+        build_shelf_entries_from_core_eligibility(response)
 
 
 def test_incomplete_core_context_is_not_transformed():

@@ -45,7 +45,9 @@ Current state:
 2. The first RFC-087 source-product integrations exist for `DpmModelPortfolioTarget:v1` through
    `POST /integration/model-portfolios/{model_portfolio_id}/targets` and
    `DiscretionaryMandateBinding:v1` through
-   `POST /integration/portfolios/{portfolio_id}/mandate-binding`.
+   `POST /integration/portfolios/{portfolio_id}/mandate-binding`, and
+   `InstrumentEligibilityProfile:v1` through
+   `POST /integration/instruments/eligibility-bulk`.
 3. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
    for production stateful promotion.
 4. Capability discovery does not advertise stateful execution unless the stateful gate,
@@ -59,7 +61,8 @@ Current source-product integration status:
 | --- | --- | --- |
 | `DpmModelPortfolioTarget:v1` | Client method and transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
 | `DiscretionaryMandateBinding:v1` | Client method and policy-context transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| Portfolio state, instrument eligibility, tax lots, market-data coverage | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
+| `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
+| Portfolio state, tax lots, market-data coverage, readiness | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
 
 Historical blocked-route proof on 2026-05-02:
 

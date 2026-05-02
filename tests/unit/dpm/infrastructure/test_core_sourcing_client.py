@@ -129,6 +129,52 @@ def _mandate_binding_payload() -> dict:
     }
 
 
+def _instrument_eligibility_payload() -> dict:
+    return {
+        "product_name": "InstrumentEligibilityProfile",
+        "product_version": "v1",
+        "as_of_date": "2026-04-10",
+        "tenant_id": "tenant_sg_pb",
+        "eligibility": [
+            {
+                "security_id": "EQ_US_AAPL",
+                "found": True,
+                "eligibility_status": "APPROVED",
+                "product_shelf_status": "APPROVED",
+                "buy_allowed": True,
+                "sell_allowed": True,
+                "restriction_reason_codes": [],
+                "settlement_days": 2,
+                "settlement_calendar_id": "US_NYSE",
+                "liquidity_tier": "L1",
+                "issuer_id": "APPLE",
+                "issuer_name": "Apple Inc.",
+                "ultimate_parent_issuer_id": "APPLE_PARENT",
+                "ultimate_parent_issuer_name": "Apple Inc.",
+                "asset_class": "Equity",
+                "country_of_risk": "US",
+                "effective_from": "2026-04-01",
+                "effective_to": None,
+                "source_record_id": "AAPL-elig-20260401",
+                "quality_status": "accepted",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "INSTRUMENT_ELIGIBILITY_READY",
+            "requested_count": 1,
+            "found_count": 1,
+            "missing_security_ids": [],
+        },
+        "lineage": {
+            "source_system": "instrument_eligibility",
+            "contract_version": "rfc_087_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -272,6 +318,39 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
     assert response.rebalance_bands.default_band == Decimal("0.0250000000")
 
 
+def test_core_resolver_fetches_instrument_eligibility_from_dedicated_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_instrument_eligibility_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_instrument_eligibility(
+        security_ids=["EQ_US_AAPL"],
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        include_restricted_rationale=False,
+        correlation_id="corr-eligibility-001",
+    )
+
+    assert seen["url"] == "https://core.example.test/integration/instruments/eligibility-bulk"
+    assert seen["correlation_id"] == "corr-eligibility-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"security_ids":["EQ_US_AAPL"]' in seen["payload"]
+    assert b'"tenant_id":"tenant_sg_pb"' in seen["payload"]
+    assert b'"include_restricted_rationale":false' in seen["payload"]
+    assert response.product_name == "InstrumentEligibilityProfile"
+    assert response.supportability.state == "READY"
+    assert response.eligibility[0].security_id == "EQ_US_AAPL"
+
+
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(base_url="https://core.example.test"),
@@ -283,6 +362,22 @@ def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
     with pytest.raises(DpmCoreResolverError, match="DPM_CORE_MANDATE_BINDING_INCOMPLETE"):
         client.resolve_mandate_binding(
             portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+
+def test_core_resolver_maps_instrument_eligibility_4xx_to_incomplete_error():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(404, json={"detail": "x"}))
+        ),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_INSTRUMENT_ELIGIBILITY_INCOMPLETE"):
+        client.resolve_instrument_eligibility(
+            security_ids=["UNKNOWN_SEC"],
             as_of_date=date(2026, 4, 10),
             correlation_id=None,
         )
