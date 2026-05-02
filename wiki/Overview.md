@@ -43,16 +43,18 @@ flowchart LR
     Gateway --> Manage[lotus-manage]
     Manage --> Decision[Rebalance decision: READY, PENDING_REVIEW, or BLOCKED]
     Manage --> Evidence[Run artifact, lineage, idempotency, workflow, metrics]
-    Core[lotus-core] -. future RFC-087 DPM source products .-> Manage
+    Core[lotus-core] -->|RFC-087 DPM source products| Manage
     Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
 ```
 
 ## Current Proof Posture
 
-Current branch code has strengthened API, OpenAPI, mesh, and observability validation. After
-refreshing only the `lotus-manage` container to the branch image on 2026-05-02, direct
-canonical-host manage API proof passed 10/10 probes against `http://manage.dev.lotus`.
+Current branch code has strengthened API, OpenAPI, mesh, observability, and live core-sourcing
+validation. After bringing up the core/manage proof path on 2026-05-02, direct canonical-host
+manage API proof passed 11/11 probes against `http://manage.dev.lotus`,
+`http://core-control.dev.lotus`, and `http://core-query.dev.lotus`.
 
-That proof covers the implemented stateless API surface. Stateful `portfolio_id` execution remains
-blocked because the RFC-087 `lotus-core` DPM source-data products are not yet implemented and
-live-certified.
+That proof covers the implemented stateless API surface and the explicitly gated stateful
+`portfolio_id` path. Stateful mode composes RFC-087 `lotus-core` source products and publishes
+`stateful` capability truth only when the stateful capability flag, stateful core-sourcing flag,
+and core base URL are configured.

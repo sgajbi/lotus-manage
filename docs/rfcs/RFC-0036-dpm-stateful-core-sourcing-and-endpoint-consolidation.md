@@ -57,8 +57,9 @@ The corrected target architecture is composed source-data products:
 
 All older mentions of a DPM execution-context route in this RFC are historical evidence or obsolete
 implementation notes. Runtime implementation must follow RFC-087 composed source products.
-Stateful promotion remains blocked until those products are implemented, certified, and proven
-through live `lotus-core` plus `lotus-manage` evidence.
+Stateful promotion is no longer blocked at the service level: those products are implemented,
+certified through live `lotus-core` evidence, and proven through live `lotus-manage` stateful
+execution evidence when the explicit stateful feature gates are enabled.
 
 Implementation note, 2026-05-02:
 
@@ -1324,9 +1325,9 @@ Implementation evidence captured on 2026-05-01:
     - `POST http://core-query.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
       returned `404`.
 24. Evidence conclusion: `lotus-manage` current branch is gold-pass clean for the implemented
-    stateless API surface, supportability APIs, OpenAPI certification, and stateful feature gate.
-    Full RFC closure remains blocked for stateful core-sourced execution until RFC-087 source
-    products are implemented and live proof is captured.
+    stateless API surface, supportability APIs, OpenAPI certification, stateful feature gate, and
+    RFC-087 composed core-sourced execution path. Full RFC closure is no longer blocked by source
+    products; the remaining wiki publication step is governed post-merge synchronization.
 25. Slice 12 hardening converted the manual manage/core integration probe into executable live
     validation:
     - `scripts/validate_live_api.py` now accepts `--core-base-url` and
@@ -1452,33 +1453,32 @@ Exit evidence:
 Assessment date: 2026-05-02
 
 Current decision: **gold-pass clean for the implemented manage API surface and stateful
-core-sourced execution path, pending final branch/CI closure**. Slices 0 through 12 have
-implementation evidence and multiple hardening passes. RFC-087 source products are live on the
-canonical core/control plane, and `lotus-manage` now composes those products for a stateful
-`/api/v1/rebalance/simulate` execution against `PB_SG_GLOBAL_BAL_001`. The live manage proof shows
-truthful capability publication, READY `lotus-core` source lineage, supportability persistence,
-metrics, and continued absence of the retired monolithic core DPM execution-context route. Slice 13
-remains open for final docs/wiki/context review, commit hygiene, remote CI monitoring, and wiki
-publication after merge.
+core-sourced execution path, with post-merge wiki publication as the only remaining closure
+activity**. Slices 0 through 13 have implementation or closure evidence. RFC-087 source products
+are live on the canonical core/control plane, and `lotus-manage` now composes those products for a
+stateful `/api/v1/rebalance/simulate` execution against `PB_SG_GLOBAL_BAL_001`. The live manage
+proof shows truthful capability publication, READY `lotus-core` source lineage, supportability
+persistence, metrics, and continued absence of the retired monolithic core DPM execution-context
+route. Remote Feature Lane CI is green for the latest pushed `lotus-manage` branch.
 
 ### Slice-By-Slice Completeness
 
 | Slice | Current assessment | Evidence and residual gap |
 | --- | --- | --- |
 | Slice 0 Platform automation | Completed for the identified scaffolding gap | Platform commit `9c79860` added endpoint-certification scaffolding and passed Remote Feature Lane. |
-| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; RFC-087 replaced the old monolithic route assumption with product-specific source products. Stateful promotion remains blocked by source-family readiness and live proof. |
+| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; RFC-087 replaced the old monolithic route assumption with product-specific source products. Stateful service promotion is now unblocked by live source-family readiness and manage proof, while runtime publication remains explicitly gated by configuration. |
 | Slice 2 Cleanup and structure | Completed for first-pass cleanup | Review controls and documentation regression tests are in place; historical advisory rationale is deliberately retained only where it states ownership boundaries. |
 | Slice 3 Endpoint consolidation | Completed | Duplicate unversioned product routes and platform capability aliases were removed; route inventory and vocabulary gates prove canonical `/api/v1` posture. |
 | Slice 4 Advisory cleanup | Completed for active runtime ownership | Advisory/proposal routes and active proposal namespaces are absent; `lotus-advise` remains documented as the owner of advisor-led workflows. |
 | Slice 5 Stateless envelope | Completed | Simulate/analyze/async analyze use explicit `input_mode=stateless` envelopes; direct legacy bodies are rejected. |
-| Slice 6 Core resolver seam | Completed for modeled disabled state | Typed stateful selector/context models, bounded resolver client, transformation helpers, lineage fields, and client calls for the five first-wave RFC-087 core source products exist; live core-backed execution remains blocked by readiness and proof gaps. |
+| Slice 6 Core resolver seam | Completed and live-proven | Typed stateful selector/context models, bounded resolver client, transformation helpers, lineage fields, and client calls for the RFC-087 core source products exist; live core-backed execution passed with READY lineage. |
 | Slice 7 Stateful certification | Completed for simulate; analyze/async use the same resolver seam and remain covered by focused API tests | Capability publication is gated, composed RFC-087 source products are live-proven, and stateful simulate returns READY core lineage. |
 | Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. New stateful DPM source-data products must wait for the upstream resolver contract. |
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
-| Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
+| Slice 10 API certification | Completed for the implemented surface | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI and passed against the branch runtime. |
 | Slice 11 Implementation proof | Completed for direct core/manage API proof | Refreshed canonical core RFC-087 validation passed 7/7 probes, and manage validation passed 11/11 probes with stateful core sourcing available. |
 | Slice 12 Second-last hardening | Completed for the proven surface | The live validator now includes executable composed-source stateful proof, stricter deployed Swagger error-example checks, focused unit tests, and the repo-native `make live-api-validate-core` expectation switch. |
-| Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
+| Slice 13 Final closure | Completed for branch source | RFC, context, supported-features, and wiki source are updated; branch is clean and remote Feature Lane is green. GitHub wiki publication remains the governed post-merge synchronization step. |
 
 ### What Was Truly Completed
 
@@ -1547,20 +1547,23 @@ publication after merge.
 9. Wiki check-only currently fails only because repo-authored RFC-0036 wiki source is ahead of the
    published GitHub wiki, which is the expected pre-merge posture before Slice 13 publication.
 10. RFC-087 gold-pass audit added a reusable core source-product live validator. The latest
-    `core-control.dev.lotus` run failed 6/6 probes with `[WinError 10061]`, so no stateful
-    endpoint-level live proof is accepted yet.
+    `core-control.dev.lotus` run passed 7/7 probes: OpenAPI publication, model targets, mandate
+    binding, instrument eligibility, tax lots, market-data/FX coverage, and DPM source readiness
+    all returned READY evidence.
 11. The manage live validator now converts demo-pack and probe connectivity failures into
     structured JSON evidence. The latest `manage.dev.lotus`, `core-control.dev.lotus`, and
-    `core-query.dev.lotus` run failed 12/12 probes with `[WinError 10061]`; this proves runtime
-    unavailability, not functional API readiness.
+    `core-query.dev.lotus` run passed 11/11 probes with stateful sourcing available, PostgreSQL
+    supportability persistence, Prometheus metrics, and explicit 404 proof for the retired
+    monolithic core DPM execution-context route.
 
 ### Standard Assessment
 
-The implemented `lotus-manage` API surface has reached the expected evidence standard for this
-stage: local focused gates pass, direct canonical-host manage API proof passes, the previous stale
-Swagger runtime drift is now caught by validation, and manage/core integration is checked by
-executable live validation. The full RFC is ready for final closure work once branch commits are
-pushed and remote CI is green.
+The implemented `lotus-manage` API surface has reached the expected gold-standard evidence level
+for the RFC scope: local focused gates pass, direct canonical-host manage API proof passes, stale
+Swagger runtime drift is caught by validation, manage/core integration is checked by executable
+live validation, and the latest remote Feature Lane is green. No additional implementation slice is
+needed before integration through `lotus-gateway`; that future gateway work should consume the
+certified service surface rather than reintroducing advisory or monolithic context assumptions.
 
 ## Test Plan
 

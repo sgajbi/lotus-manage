@@ -919,18 +919,19 @@ Non-functional posture:
 Upstream integration posture:
 
 The route accepts inline snapshots for stateless mode. For stateful mode, `lotus-manage` now has a
-bounded `lotus-core` resolver client and source-context transformation seam, but the route is
-disabled by default with `DPM_STATEFUL_CORE_SOURCING_ENABLED=false`. Upstream portfolio, price, FX,
-and instrument-source authority remains outside `lotus-manage`; callers must provide
-source-governed snapshots in stateless mode, and stateful mode must use certified `lotus-core`
-source-data products before promotion.
+bounded `lotus-core` resolver client and source-context transformation seam over the RFC-087 DPM
+source products. The route is disabled by default with `DPM_STATEFUL_CORE_SOURCING_ENABLED=false`.
+Upstream portfolio, price, FX, tax-lot, model, mandate, and instrument-source authority remains
+outside `lotus-manage`; callers must provide source-governed snapshots in stateless mode, and
+stateful mode must use certified `lotus-core` source-data products before being advertised.
 
 Stateful promotion status:
 
-- blocked by RFC-087 and updated `sgajbi/lotus-core#330` until the composed DPM source-data
-  products exist,
-- `POST /integration/portfolios/{portfolio_id}/core-snapshot` is useful partial source data but not
-  sufficient as the complete DPM stateful source context,
+- unblocked at service level by RFC-087 live proof: model targets, mandate binding, eligibility,
+  portfolio tax lots, market-data/FX coverage, and source readiness returned READY evidence for
+  `PB_SG_GLOBAL_BAL_001`,
+- the retired monolithic DPM execution-context route remains absent by design, and
+  `lotus-manage` composes product-specific core routes instead,
 - integration capabilities do not advertise `stateful` unless the stateful capability flag,
   `DPM_STATEFUL_CORE_SOURCING_ENABLED`, and `DPM_CORE_BASE_URL` are all configured.
 
