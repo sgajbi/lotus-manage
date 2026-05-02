@@ -77,7 +77,8 @@ def test_manage_declaration_does_not_claim_live_source_data_api_reads() -> None:
     upstream_family_map = UPSTREAM_FAMILY_MAP_PATH.read_text(encoding="utf-8")
 
     assert consumption_modes == {"caller_supplied_contract_payload"}
-    assert "modeled, feature-gated outbound resolver client" in upstream_family_map
+    assert "modeled, feature-gated outbound resolver seam" in upstream_family_map
+    assert "RFC-087 rebaselines that seam to composed DPM source-data products" in upstream_family_map
     assert "does not declare a promoted live" in upstream_family_map
     assert "API-read dependency" in upstream_family_map
 
