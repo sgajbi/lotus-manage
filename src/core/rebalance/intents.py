@@ -130,17 +130,21 @@ def generate_intents(
             dq_log["fx_missing"].append(f"{price_ent.currency}/{portfolio.base_currency}")
             continue
 
-        target_instr_val = (total_val * target_w) / rate
         curr = next((p for p in portfolio.positions if p.instrument_id == i_id), None)
         curr_instr_val = (
             curr.market_value.amount
             if curr and curr.market_value
             else (curr.quantity * price_ent.price if curr else Decimal("0"))
         )
+        unit_value = price_ent.price
+        if curr and curr.market_value and curr.quantity > Decimal("0"):
+            unit_value = curr.market_value.amount / curr.quantity
+
+        target_instr_val = (total_val * target_w) / rate
 
         delta = target_instr_val - curr_instr_val
         side: Literal["BUY", "SELL"] = "BUY" if delta > 0 else "SELL"
-        qty = int(abs(delta) // price_ent.price)
+        qty = int(abs(delta) // unit_value)
         quantity = Decimal(qty)
 
         sell_quantity_before_tax: Decimal | None = None
@@ -157,7 +161,7 @@ def generate_intents(
             quantity = apply_tax_budget_sell_limit(
                 position=curr,
                 requested_qty=sell_quantity_before_tax,
-                sell_price=price_ent.price,
+                sell_price=unit_value,
                 price_ccy=price_ent.currency,
                 base_rate=rate,
             )
@@ -174,7 +178,7 @@ def generate_intents(
                     )
                 )
 
-        notional = quantity * price_ent.price
+        notional = quantity * unit_value
         notional_base = notional * rate
 
         shelf_ent = next((s for s in shelf if s.instrument_id == i_id), None)

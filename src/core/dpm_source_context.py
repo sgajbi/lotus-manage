@@ -17,6 +17,7 @@ from src.core.models import (
     ShelfEntry,
     SimulationScenario,
     TaxLot,
+    ValuationMode,
 )
 
 
@@ -565,8 +566,15 @@ def build_core_resolver_payload(stateful_input: DpmStatefulInput) -> dict[str, A
     }
 
 
-def _options_from_override(options_override: dict[str, Any]) -> EngineOptions:
-    return EngineOptions.model_validate(options_override)
+def _options_from_override(
+    options_override: dict[str, Any],
+    *,
+    default_valuation_mode: ValuationMode | None = None,
+) -> EngineOptions:
+    payload = dict(options_override)
+    if default_valuation_mode is not None and "valuation_mode" not in payload:
+        payload["valuation_mode"] = default_valuation_mode
+    return EngineOptions.model_validate(payload)
 
 
 def build_model_portfolio_from_core_targets(
@@ -743,7 +751,10 @@ def build_rebalance_request_from_core_context(
         market_data_snapshot=context.market_data_snapshot,
         model_portfolio=context.model_portfolio,
         shelf_entries=context.shelf_entries,
-        options=_options_from_override(options_override),
+        options=_options_from_override(
+            options_override,
+            default_valuation_mode=ValuationMode.TRUST_SNAPSHOT,
+        ),
     )
 
 
@@ -762,5 +773,14 @@ def build_batch_rebalance_request_from_core_context(
         market_data_snapshot=context.market_data_snapshot,
         model_portfolio=context.model_portfolio,
         shelf_entries=context.shelf_entries,
-        scenarios=scenarios,
+        scenarios={
+            name: SimulationScenario(
+                description=scenario.description,
+                options={
+                    "valuation_mode": ValuationMode.TRUST_SNAPSHOT,
+                    **scenario.options,
+                },
+            )
+            for name, scenario in scenarios.items()
+        },
     )

@@ -234,7 +234,12 @@ def generate_fx_and_simulate(
         elif i.intent_type == "FX_SPOT":
             apply_fx_spot_to_portfolio(after, i)
 
-    after_opts = options.model_copy(update={"valuation_mode": ValuationMode.CALCULATED})
+    after_valuation_mode = (
+        ValuationMode.TRUST_SNAPSHOT
+        if options.valuation_mode == ValuationMode.TRUST_SNAPSHOT
+        else ValuationMode.CALCULATED
+    )
+    after_opts = options.model_copy(update={"valuation_mode": after_valuation_mode})
     state = build_simulated_state(
         after, market_data, shelf, diagnostics.data_quality, diagnostics.warnings, after_opts
     )
