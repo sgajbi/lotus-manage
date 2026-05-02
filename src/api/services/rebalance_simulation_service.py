@@ -127,7 +127,7 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
             base_url=base_url,
             path_template=os.getenv(
                 "DPM_CORE_RESOLVER_PATH_TEMPLATE",
-                "/integration/portfolios/{portfolio_id}/dpm-execution-context",
+                "",
             ),
             timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
             max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),

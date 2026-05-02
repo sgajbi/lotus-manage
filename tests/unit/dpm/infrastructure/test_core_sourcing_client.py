@@ -56,7 +56,10 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         return httpx.Response(200, json=_context_payload())
 
     client = DpmCoreResolverClient(
-        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            path_template="/integration/portfolios/{portfolio_id}/core-snapshot",
+        ),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
@@ -66,8 +69,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     )
 
     assert seen["url"] == (
-        "https://core.example.test/integration/portfolios/"
-        "PB_SG_GLOBAL_BAL_001/dpm-execution-context"
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/core-snapshot"
     )
     assert seen["correlation_id"] == "corr-core-001"
     assert b'"include_tax_lots":true' in seen["payload"]
@@ -85,7 +87,11 @@ def test_core_resolver_retries_transient_unavailable_response():
         return httpx.Response(200, json=_context_payload())
 
     client = DpmCoreResolverClient(
-        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=2),
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            path_template="/integration/portfolios/{portfolio_id}/core-snapshot",
+            max_attempts=2,
+        ),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
@@ -103,9 +109,33 @@ def test_core_resolver_timeout_maps_to_source_safe_error():
         raise httpx.TimeoutException("timeout")
 
     client = DpmCoreResolverClient(
-        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=1),
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            path_template="/integration/portfolios/{portfolio_id}/core-snapshot",
+            max_attempts=1,
+        ),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
     with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_RESOLVER_UNAVAILABLE"):
         client.resolve_execution_context(stateful_input=_stateful_input(), correlation_id=None)
+
+
+def test_core_resolver_rejects_missing_or_legacy_monolithic_route():
+    for path_template in ("", "/integration/portfolios/{portfolio_id}/dpm-execution-context"):
+        client = DpmCoreResolverClient(
+            config=DpmCoreResolverConfig(
+                base_url="https://core.example.test",
+                path_template=path_template,
+            ),
+            client=httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200))),
+        )
+
+        with pytest.raises(
+            DpmCoreResolverUnavailableError,
+            match="DPM_CORE_RESOLVER_UNAVAILABLE",
+        ):
+            client.resolve_execution_context(
+                stateful_input=_stateful_input(),
+                correlation_id=None,
+            )

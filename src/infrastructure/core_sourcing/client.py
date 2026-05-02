@@ -18,14 +18,21 @@ class DpmCoreResolverUnavailableError(DpmCoreResolverError):
     pass
 
 
+LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-execution-context"
+
+
 @dataclass(frozen=True)
 class DpmCoreResolverConfig:
     base_url: str
-    path_template: str = "/integration/portfolios/{portfolio_id}/dpm-execution-context"
+    path_template: str = ""
     timeout_seconds: float = 2.0
     max_attempts: int = 2
 
     def resolve_url(self, portfolio_id: str) -> str:
+        if not self.path_template.strip():
+            raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
+        if self.path_template.strip() == LEGACY_DPM_EXECUTION_CONTEXT_PATH:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = self.path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"

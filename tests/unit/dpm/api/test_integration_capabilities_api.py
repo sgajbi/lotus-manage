@@ -76,6 +76,10 @@ def test_integration_capabilities_can_publish_both_supported_input_modes(monkeyp
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setenv("DPM_CORE_BASE_URL", "http://lotus-core.test")
+    monkeypatch.setenv(
+        "DPM_CORE_RESOLVER_PATH_TEMPLATE",
+        "/integration/portfolios/{portfolio_id}/core-snapshot",
+    )
     monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
 
     with TestClient(app) as client:
@@ -87,6 +91,27 @@ def test_integration_capabilities_can_publish_both_supported_input_modes(monkeyp
     features = {item["key"]: item["enabled"] for item in body["features"]}
     assert features["dpm.execution.stateful_portfolio_id"] is True
     assert features["dpm.execution.stateless"] is True
+
+
+def test_integration_capabilities_do_not_publish_stateful_mode_for_legacy_core_route(monkeypatch):
+    monkeypatch.setenv("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", "true")
+    monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setenv("DPM_CORE_BASE_URL", "http://lotus-core.test")
+    monkeypatch.setenv(
+        "DPM_CORE_RESOLVER_PATH_TEMPLATE",
+        "/integration/portfolios/{portfolio_id}/dpm-execution-context",
+    )
+    monkeypatch.setattr(capabilities_router, "has_solver_dependencies", lambda: False)
+
+    with TestClient(app) as client:
+        response = client.get("/api/v1/integration/capabilities")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["supported_input_modes"] == ["stateless"]
+    features = {item["key"]: item["enabled"] for item in body["features"]}
+    assert features["dpm.execution.stateful_portfolio_id"] is False
 
 
 def test_integration_capabilities_uses_default_query_resolution_when_omitted():

@@ -45,7 +45,7 @@ Current state:
 2. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
    for production stateful promotion.
 3. Capability discovery does not advertise stateful execution unless the stateful gate,
-   `DPM_CORE_BASE_URL`, and capability flag are all enabled.
+   `DPM_CORE_BASE_URL`, non-legacy resolver configuration, and capability flag are all enabled.
 4. RFC-0036 now tracks the upstream gap through `lotus-core` RFC-087 and updated
    `sgajbi/lotus-core#330`.
 
@@ -66,6 +66,10 @@ make live-api-validate-core
 The default command expects the current blocked posture. After `lotus-core` exposes the RFC-087
 certified source-data products, update the validator to prove composed-source readiness before
 promoting stateful capability truth.
+
+Runtime guardrail: `lotus-manage` no longer defaults to the retired monolithic
+`/integration/portfolios/{portfolio_id}/dpm-execution-context` route. Stateful sourcing remains
+unavailable until RFC-087 product-specific core routes are integrated and proven.
 
 This is the correct current behavior: manage is ready for the implemented stateless surface, while
 stateful core-sourced execution remains withheld until the upstream source products are certified.

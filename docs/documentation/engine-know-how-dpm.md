@@ -35,7 +35,8 @@ Implementation scope:
   - `input_mode=stateful`: `stateful_input` contains `portfolio_id`, `as_of`, optional mandate,
     model, policy, tenant, and booking-center selectors. This mode is feature-gated by
     `DPM_STATEFUL_CORE_SOURCING_ENABLED=false` by default and returns
-    `DPM_STATEFUL_INPUT_DISABLED` until governed `lotus-core` resolver evidence exists.
+    `DPM_STATEFUL_INPUT_DISABLED` or `DPM_CORE_RESOLVER_UNAVAILABLE` until governed
+    `lotus-core` RFC-087 source-product resolver evidence exists.
 - Required header: `Idempotency-Key`
 - Optional header: `X-Correlation-Id`
 - Optional header: `X-Policy-Pack-Id` (selected pack may override configured engine options)

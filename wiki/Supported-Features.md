@@ -19,13 +19,13 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Policy-pack supportability | `/api/v1/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
 | Integration capabilities | `/api/v1/integration/capabilities` | Supported | capability contract tests |
 | Solver target generation | `POST /api/v1/rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
-| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; not advertised in capabilities unless stateful sourcing is enabled and `DPM_CORE_BASE_URL` is configured; live promotion remains blocked by `sgajbi/lotus-core#330` | resolver unit tests, transformation tests, feature-gate API test, mocked simulate/analyze/async lineage tests, RFC-0036 evidence |
+| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; not advertised in capabilities unless stateful sourcing is enabled, `DPM_CORE_BASE_URL` is configured, and resolver configuration is non-legacy; live promotion remains blocked by `sgajbi/lotus-core#330` and `lotus-core` RFC-087 product-specific source APIs | resolver unit tests, transformation tests, feature-gate API test, mocked simulate/analyze/async lineage tests, RFC-0036 evidence |
 
 ```mermaid
 flowchart LR
     Stateless[Stateless execution] --> Supported[Advertised today]
     Stateful[Stateful portfolio_id execution] --> Modeled[Modeled and guarded]
-    Modeled --> Blocked[Not promoted until lotus-core DPM execution context is certified]
+    Modeled --> Blocked[Not promoted until lotus-core RFC-087 source products are certified]
     Supported --> Evidence[Demo pack, OpenAPI, live API probes]
     Blocked --> CoreIssue[sgajbi/lotus-core#330]
 ```
