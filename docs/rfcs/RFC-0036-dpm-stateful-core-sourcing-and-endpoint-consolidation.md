@@ -1301,6 +1301,20 @@ Implementation evidence captured on 2026-05-01:
     - deployed OpenAPI had zero missing JSON request, response, or error examples,
     - demo pack, readiness, capability truth, stateful-disabled guard, supportability summary,
       metrics, and core route posture all passed.
+27. Slice 12 closure hardening added a repo-native proof target for the same manage/core posture:
+    - command: `make live-api-validate-core`,
+    - default expectation: `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=absent`,
+    - result on 2026-05-02: passed 12/12 probes against `manage.dev.lotus`,
+      `core-control.dev.lotus`, and `core-query.dev.lotus`,
+    - promotion rule: rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` only after the
+      certified `lotus-core` DPM execution-context route exists, and keep stateful capability
+      publication disabled until that proof passes.
+28. Repository gate evidence after adding the repo-native live proof target:
+    - `make check` passed with 497 unit tests,
+    - `powershell -ExecutionPolicy Bypass -File ../lotus-platform/automation/Sync-RepoWikis.ps1
+      -CheckOnly -Repository lotus-manage` failed only because the published GitHub wiki is behind
+      the repo-authored wiki source for RFC-0036 pages; publication remains a post-merge Slice 13
+      action.
 
 ### Slice 11: Implementation Proof
 
@@ -1414,7 +1428,7 @@ implemented stateless surface.
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
 | Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Direct core probes showed the target DPM execution-context route returns 404, so stateful promotion remains blocked by `sgajbi/lotus-core#330`. |
-| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, stricter deployed Swagger error-example checks, focused unit tests, and 12/12 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
+| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, stricter deployed Swagger error-example checks, focused unit tests, the repo-native `make live-api-validate-core` target, and 12/12 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
 | Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
 
 ### What Was Truly Completed
@@ -1444,6 +1458,8 @@ implemented stateless surface.
    coverage so manage/core integration posture is proven by automation rather than manual notes.
 8. Added central bounded JSON examples for every documented error response and promoted that rule
    into both local and live OpenAPI certification.
+9. Added `make live-api-validate-core` so the current manage/core integration posture is proven by
+   a short repo-native target instead of a reconstructed long command.
 
 ### Debt Removed
 
@@ -1455,7 +1471,7 @@ implemented stateless surface.
 
 ### Testing And Evidence
 
-1. Local `make check` passed after live-validator hardening with 491 unit tests.
+1. Local `make check` passed after live-validator hardening with 497 unit tests.
 2. Remote Feature Lane passed for the latest pushed certification commits.
 3. Refreshed direct canonical-host manage API validation against `http://manage.dev.lotus` passed
    10/10 probes after refreshing only `lotus-manage` to the branch image.
@@ -1468,6 +1484,11 @@ implemented stateless surface.
    execution-context route.
 7. Refreshed live API proof passed 12/12 probes after strict deployed Swagger error-example
    validation was added.
+8. `make live-api-validate-core` passed 12/12 probes against `manage.dev.lotus`,
+   `core-control.dev.lotus`, and `core-query.dev.lotus`, proving the current blocked posture
+   through a repo-native command.
+9. Wiki check-only currently fails only because repo-authored RFC-0036 wiki source is ahead of the
+   published GitHub wiki, which is the expected pre-merge posture before Slice 13 publication.
 
 ### Standard Assessment
 

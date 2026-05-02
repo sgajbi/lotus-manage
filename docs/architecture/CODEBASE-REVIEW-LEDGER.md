@@ -365,6 +365,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: supported-feature source updated because Swagger certification and live proof
   evidence changed; endpoint certification source already states the error-example standard.
 
+## RFC36-S12-003: Manage/core live proof was not repo-native
+
+- Date: 2026-05-02
+- Scope: `Makefile`, README, validation wiki, supported-features wiki, local runtime contract tests
+- Finding: The enhanced live validator proved the current manage/core posture, but the command was
+  still long and easy to reconstruct incorrectly. That left a final-closure risk where future proof
+  could omit either `core-control`, `core-query`, or the explicit expected route posture.
+- Action: added `make live-api-validate-core` as the repo-native live proof target. The target
+  validates `lotus-manage`, probes both canonical `lotus-core` hosts for the DPM
+  execution-context route, and defaults to the current RFC-0036 blocked posture
+  `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=absent`. Added documentation and a runtime contract test so
+  the command remains discoverable and governed. Ran the target against the local canonical hosts;
+  it passed 12/12 probes with both core hosts returning `404`.
+- Status: fixed for repeatable current-state manage/core proof. Rerun with
+  `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` only after the certified core route is live.
+- Wiki decision: validation and supported-feature wiki source updated because the repeatable proof
+  command changed.
+
 ## RFC36-S2-004: Advisory vocabulary remains in historical rationale and boundary docs
 
 - Date: 2026-05-01

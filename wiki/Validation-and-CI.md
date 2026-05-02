@@ -20,6 +20,9 @@
   Docker parity for the local CI contract
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
+- `make live-api-validate-core`
+  live API evidence against `lotus-manage` plus the current `lotus-core` DPM execution-context
+  route posture
 
 ## Live API evidence
 
@@ -44,6 +47,18 @@ For reusable evidence, write the JSON summary directly:
 ```bash
 python scripts/validate_live_api.py --base-url http://127.0.0.1:8001 --json-output output/live-api/summary.json
 ```
+
+Use this before claiming manage/core integration readiness or before changing stateful promotion
+posture:
+
+```bash
+make live-api-validate-core
+```
+
+The default expectation is the current RFC-0036 blocked state:
+`LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=absent`. After `lotus-core` exposes the certified DPM
+execution-context route, rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` and do not
+promote stateful capability truth unless that proof passes.
 
 ## Documentation contract proof
 

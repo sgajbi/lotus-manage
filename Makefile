@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 92
 
@@ -86,6 +86,9 @@ api-vocabulary-gate:
 
 live-api-validate:
 	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://127.0.0.1:8001}
+
+live-api-validate-core:
+	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://manage.dev.lotus} --core-base-url $${LOTUS_CORE_CONTROL_BASE_URL:-http://core-control.dev.lotus} --core-base-url $${LOTUS_CORE_QUERY_BASE_URL:-http://core-query.dev.lotus} --expect-core-dpm-route $${LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE:-absent}
 
 migration-smoke:
 	python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py tests/unit/shared/dependencies/test_production_cutover_contract.py -q

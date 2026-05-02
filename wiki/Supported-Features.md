@@ -51,7 +51,7 @@ flowchart LR
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
 | Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality including error examples, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
-| Manage/core integration posture proof | Passed for current blocked state | `scripts/validate_live_api.py --base-url http://manage.dev.lotus --skip-demo-pack --core-base-url http://core-control.dev.lotus --core-base-url http://core-query.dev.lotus --expect-core-dpm-route absent` proves manage stays stateless-only while the target core DPM execution-context route returns `404` |
+| Manage/core integration posture proof | Passed for current blocked state | `make live-api-validate-core` proves manage stays stateless-only while the target core DPM execution-context route returns `404`; rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` only after core implements the certified route |
 | Swagger error-response examples | Enforced | central OpenAPI enrichment, `scripts/openapi_quality_gate.py`, contract tests, and live validation require bounded JSON examples for every documented `4xx`, `5xx`, and `default` response |
 
 ## Explicit Non-Goals
@@ -77,7 +77,7 @@ For current manage/core integration proof before stateful promotion, add the cor
 checks:
 
 ```powershell
-python scripts/validate_live_api.py --base-url http://manage.dev.lotus --core-base-url http://core-control.dev.lotus --core-base-url http://core-query.dev.lotus --expect-core-dpm-route absent --json-output output/rfc-0036-s12-error-openapi-core-manage-summary.json
+make live-api-validate-core
 ```
 
 Final proof is not complete if the validator reports stale OpenAPI certification drift, including

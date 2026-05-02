@@ -59,3 +59,21 @@ def test_readme_documents_internal_postgres_port_stays_unpublished() -> None:
 
     assert "does not publish the internal PostgreSQL port by default" in readme_text
     assert "`postgres:5432` remains internal to the Compose network" in readme_text
+
+
+def test_manage_core_live_validation_has_repo_native_command_and_docs() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+    readme_text = Path("README.md").read_text(encoding="utf-8")
+    validation_wiki_text = Path("wiki/Validation-and-CI.md").read_text(encoding="utf-8")
+
+    assert "live-api-validate-core:" in makefile_text
+    assert "--core-base-url $${LOTUS_CORE_CONTROL_BASE_URL:-http://core-control.dev.lotus}" in (
+        makefile_text
+    )
+    assert "--expect-core-dpm-route $${LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE:-absent}" in (
+        makefile_text
+    )
+    assert "`make live-api-validate-core`" in readme_text
+    assert "`LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available`" in readme_text
+    assert "make live-api-validate-core" in validation_wiki_text
+    assert "LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available" in validation_wiki_text
