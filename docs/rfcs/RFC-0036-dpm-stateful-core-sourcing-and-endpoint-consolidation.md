@@ -71,7 +71,12 @@ Implementation note, 2026-05-02:
    `POST /integration/instruments/eligibility-bulk` source-product endpoint.
 4. `lotus-core` RFC-087 Slice 7 introduced the dedicated
    `POST /integration/portfolios/{portfolio_id}/tax-lots` source-product endpoint.
-5. `lotus-manage` now has dedicated client methods and transformers for those products:
+5. `lotus-core` RFC-087 Slice 8 introduced the dedicated
+   `POST /integration/market-data/coverage` source-product endpoint.
+6. `lotus-core` RFC-087 Slice 9 introduced the dedicated
+   `POST /integration/portfolios/{portfolio_id}/dpm-source-readiness` supportability endpoint.
+7. `lotus-manage` now has dedicated client methods and transformers for the execution-input
+   source products:
    `DpmCoreResolverClient.resolve_model_portfolio_targets` and
    `build_model_portfolio_from_core_targets`, plus
    `DpmCoreResolverClient.resolve_mandate_binding` and
@@ -79,10 +84,12 @@ Implementation note, 2026-05-02:
    `DpmCoreResolverClient.resolve_instrument_eligibility` and
    `build_shelf_entries_from_core_eligibility`, plus
    `DpmCoreResolverClient.resolve_portfolio_tax_lots` and
-   `build_portfolio_snapshot_with_core_tax_lots`.
-6. This is not stateful execution promotion. It proves the first composed source-product
-   integration paths while keeping `input_mode=stateful` gated until portfolio state,
-   market-data/FX, readiness source products, and live end-to-end proof are also available.
+   `build_portfolio_snapshot_with_core_tax_lots`, plus
+   `DpmCoreResolverClient.resolve_market_data_coverage` and
+   `build_market_data_snapshot_from_core_coverage`.
+8. Direct core/manage stateful source assembly is implemented and live-proven. External runtime
+   publication remains controlled by explicit feature gates so Gateway and Workbench can be
+   re-integrated later against the certified contract instead of advisory-era routes.
 
 ## Summary
 
@@ -106,16 +113,19 @@ redone later against the corrected target contract.
 
 Current implementation:
 
-1. `lotus-manage` accepts direct inline request bodies for `POST /rebalance/simulate`,
-   `POST /rebalance/analyze`, and `POST /rebalance/analyze/async`.
-2. The FastAPI app mounts the same routers twice: once unversioned and once under `/api/v1`.
+1. `lotus-manage` accepts direct inline request bodies for versioned
+   `POST /api/v1/rebalance/simulate`, `POST /api/v1/rebalance/analyze`, and
+   `POST /api/v1/rebalance/analyze/async`.
+2. Duplicate unversioned product routes have been removed from the advertised API surface.
 3. `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED` defaults to disabled.
-4. `lotus-manage` has bounded outbound `lotus-core` source-product clients for
-   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`, and
-   `InstrumentEligibilityProfile:v1`; the older monolithic DPM execution-context route remains
-   blocked and must not be used.
-5. Current source-data authority is documented as upstream: callers must provide source-governed
-   portfolio, market-data, model, shelf, and option bundles.
+4. `lotus-manage` has bounded outbound `lotus-core` source-product clients and transformers for
+   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
+   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, and
+   `MarketDataCoverageWindow:v1`; the older monolithic DPM execution-context route remains
+   rejected and must not be used.
+5. Source-data authority is documented as upstream. Stateless callers provide source-governed
+   bundles directly, while stateful execution assembles those inputs through the RFC-087
+   `lotus-core` source products.
 6. `lotus-gateway` currently consumes only run lookup, supportability summary, and capabilities
    from `lotus-manage`; it does not currently consume `simulate` or `analyze` for product DPM
    execution.
@@ -440,8 +450,10 @@ Partial source-product integrations already implemented:
 4. portfolio tax-lot enrichment for tax-aware sell allocation,
 5. market-data and FX coverage transformation with stale/missing coverage rejection.
 
-Stateful `lotus-manage` must remain disabled until RFC-087 core products are implemented,
-certified, and proven with live core/manage evidence.
+Stateful `lotus-manage` source assembly is implemented over the RFC-087 core products, certified,
+and proven with live core/manage evidence. External product publication remains controlled by
+explicit feature gates until Gateway and Workbench are re-integrated against the certified DPM
+contract.
 
 ## Output And Lineage Requirements
 
@@ -951,8 +963,9 @@ Additional composed-source integration evidence captured on 2026-05-02:
 12. Added focused unit proof for the outbound request shape, correlation header propagation,
     bounded 4xx error mapping, response parsing, price/FX conversion, and stale/missing
     supportability rejection.
-13. Promotion no-go remains active because portfolio state readiness/source-family completeness
-    and live canonical proof are still pending in RFC-087/RFC-0036 for stateful DPM promotion.
+13. The earlier promotion no-go has been superseded by RFC-087 live source-family proof and
+    `lotus-manage` live core-sourcing proof. External publication remains feature-gated until the
+    downstream Gateway and Workbench contracts are rebuilt against the certified DPM API surface.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 
@@ -1326,7 +1339,7 @@ Implementation evidence captured on 2026-05-01:
 24. Evidence conclusion: `lotus-manage` current branch is gold-pass clean for the implemented
     stateless API surface, supportability APIs, OpenAPI certification, stateful feature gate, and
     RFC-087 composed core-sourced execution path. Full RFC closure is no longer blocked by source
-    products; the remaining wiki publication step is governed post-merge synchronization.
+    products; GitHub wiki publication from repo-local source is complete.
 25. Slice 12 hardening converted the manual manage/core integration probe into executable live
     validation:
     - `scripts/validate_live_api.py` now accepts `--core-base-url` and
