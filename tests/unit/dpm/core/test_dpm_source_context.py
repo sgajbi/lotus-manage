@@ -344,6 +344,20 @@ def test_core_instrument_eligibility_transforms_to_shelf_entries():
     assert restricted_entry.attributes["ultimate_parent_issuer_id"] == "ALT_PARENT"
 
 
+def test_core_instrument_eligibility_accepts_rfc087_record_aliases():
+    payload = _core_eligibility_payload()
+    payload["records"] = payload.pop("eligibility")
+    payload["supportability"]["resolved_count"] = payload["supportability"].pop("found_count")
+
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(payload)
+
+    assert response.supportability.found_count == 2
+    assert [record.security_id for record in response.eligibility] == [
+        "EQ_US_AAPL",
+        "FO_PRIV_PRIVATE_CREDIT_A",
+    ]
+
+
 def test_core_instrument_eligibility_rejects_missing_supportability():
     response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(
         _core_eligibility_payload(

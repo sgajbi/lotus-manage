@@ -28,9 +28,9 @@ sequenceDiagram
     participant Core as lotus-core
     Gateway->>Manage: POST /api/v1/rebalance/simulate input_mode=stateful
     Manage->>Manage: Check feature gate and resolver configuration
-    alt current guarded state
+    alt stateful gates disabled
         Manage-->>Gateway: 409 DPM_STATEFUL_INPUT_DISABLED
-    else future certified state
+    else stateful gates enabled and core source products ready
         Manage->>Core: Compose RFC-087 source-data products
         Core-->>Manage: Portfolio, model, mandate, eligibility, tax lots, market data, FX, lineage
         Manage->>Manage: Transform context and run DPM engine
@@ -49,9 +49,8 @@ Current state:
    `InstrumentEligibilityProfile:v1` through `POST /integration/instruments/eligibility-bulk`, and
    `PortfolioTaxLotWindow:v1` through `POST /integration/portfolios/{portfolio_id}/tax-lots`, and
    `MarketDataCoverageWindow:v1` through `POST /integration/market-data/coverage`.
-3. `lotus-core` now has first-wave product-specific RFC-087 source APIs in branch code, but live
-   canonical proof and source-family readiness/supportability are still missing for production
-   stateful promotion.
+3. `lotus-core` RFC-087 source APIs passed canonical live proof for the governed
+   `PB_SG_GLOBAL_BAL_001` mandate portfolio.
 4. Capability discovery does not advertise stateful execution unless the stateful gate,
    `DPM_CORE_BASE_URL`, non-legacy resolver configuration, and capability flag are all enabled.
 5. RFC-0036 now tracks the upstream gap through `lotus-core` RFC-087 and updated
@@ -61,38 +60,33 @@ Current source-product integration status:
 
 | Source product | lotus-manage posture | Promotion impact |
 | --- | --- | --- |
-| `DpmModelPortfolioTarget:v1` | Client method and transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| `DiscretionaryMandateBinding:v1` | Client method and policy-context transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| Source-family readiness/supportability | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
+| `DpmModelPortfolioTarget:v1` | Client method and transformer implemented; live proof passed. | Supplies discretionary model targets. |
+| `DiscretionaryMandateBinding:v1` | Client method and policy-context transformer implemented; live proof passed. | Supplies mandate authority, policy pack, and booking context. |
+| `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof passed. | Supplies buy/sell eligibility, restrictions, settlement, issuer, and taxonomy. |
+| `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof passed. | Supplies tax-aware lot context. |
+| `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof passed. | Supplies price and FX coverage. |
+| `DpmSourceReadiness:v1` | Core source-family readiness product implemented; live proof passed. | Operator/control-plane readiness summary for source families. |
 
-Historical blocked-route proof on 2026-05-02:
+Live proof on 2026-05-02:
 
 1. `POST http://core-control.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
    returned `404`.
 2. `POST http://core-query.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
    returned `404`.
 3. `POST http://manage.dev.lotus/api/v1/rebalance/simulate` with `input_mode=stateful` returned
-   `409 DPM_STATEFUL_INPUT_DISABLED`.
-4. The executable proof command now covers both manage behavior and core route posture:
+   `200` with `lineage.input_mode=stateful`, `lineage.source_system=lotus-core`,
+   `lineage.source_supportability_state=READY`, model version `2026.04`, and a populated
+   `stateful_context_hash`.
+4. The executable proof command covers manage behavior, composed source posture, and historical
+   monolithic route absence:
 
 ```powershell
+$env:LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING="available"
 make live-api-validate-core
 ```
 
-The default command expects the current blocked posture. After the RFC-087 core source products are
-reachable in the canonical runtime and source-family readiness is available, update the validator to
-prove composed-source readiness before promoting stateful capability truth.
-
 Runtime guardrail: `lotus-manage` no longer defaults to the retired monolithic
-`/integration/portfolios/{portfolio_id}/dpm-execution-context` route. Stateful sourcing remains
-unavailable until all required RFC-087 product-specific core routes are integrated and proven.
-
-This is the correct current behavior: manage is ready for the implemented stateless surface, while
-stateful core-sourced execution remains withheld until the upstream source products and readiness
-evidence are live-certified.
+`/integration/portfolios/{portfolio_id}/dpm-execution-context` route.
 
 ## Manage API Consumers
 

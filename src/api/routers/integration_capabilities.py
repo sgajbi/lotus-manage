@@ -206,12 +206,14 @@ def _supported_input_modes(
 
 def _stateful_execution_publishable() -> bool:
     resolver_path_template = os.getenv("DPM_CORE_RESOLVER_PATH_TEMPLATE", "").strip()
+    uses_legacy_monolithic_resolver = (
+        bool(resolver_path_template) and "dpm-execution-context" in resolver_path_template
+    )
     return (
         _env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False)
         and _env_bool("DPM_STATEFUL_CORE_SOURCING_ENABLED", False)
         and bool(os.getenv("DPM_CORE_BASE_URL", "").strip())
-        and bool(resolver_path_template)
-        and "dpm-execution-context" not in resolver_path_template
+        and not uses_legacy_monolithic_resolver
     )
 
 

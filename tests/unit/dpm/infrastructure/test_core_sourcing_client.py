@@ -37,6 +37,32 @@ def _context_payload() -> dict:
     }
 
 
+def _core_snapshot_payload() -> dict:
+    return {
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "snapshot_id": "core-pf-snap-001",
+        "valuation_context": {"portfolio_currency": "SGD", "reporting_currency": "SGD"},
+        "sections": {
+            "positions_baseline": [
+                {
+                    "security_id": "EQ_US_AAPL",
+                    "quantity": "100",
+                    "market_value_local": "18712",
+                    "currency": "USD",
+                },
+                {
+                    "security_id": "CASH_SGD_BOOK_OPERATING",
+                    "quantity": "10000",
+                    "market_value_local": "10000",
+                    "currency": "SGD",
+                },
+            ],
+            "portfolio_totals": {"baseline_total_market_value_base": "35298.2052"},
+        },
+    }
+
+
 def _model_portfolio_target_payload() -> dict:
     return {
         "product_name": "DpmModelPortfolioTarget",
@@ -284,19 +310,39 @@ def _stateful_input() -> DpmStatefulInput:
     )
 
 
+def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
+    path = request.url.path
+    if path.endswith("/mandate-binding"):
+        return httpx.Response(200, json=_mandate_binding_payload())
+    if path.endswith("/targets"):
+        return httpx.Response(200, json=_model_portfolio_target_payload())
+    if path.endswith("/core-snapshot"):
+        return httpx.Response(200, json=_core_snapshot_payload())
+    if path.endswith("/eligibility-bulk"):
+        return httpx.Response(200, json=_instrument_eligibility_payload())
+    if path.endswith("/tax-lots"):
+        return httpx.Response(200, json=_portfolio_tax_lots_payload())
+    if path.endswith("/coverage"):
+        return httpx.Response(200, json=_market_data_coverage_payload())
+    return httpx.Response(404, json={"detail": "unexpected path"})
+
+
 def test_core_resolver_posts_selector_payload_and_correlation_header():
-    seen: dict[str, object] = {}
+    seen: list[tuple[str, str | None, bytes]] = []
 
     def handler(request: httpx.Request) -> httpx.Response:
-        seen["url"] = str(request.url)
-        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
-        seen["payload"] = request.read()
-        return httpx.Response(200, json=_context_payload())
+        seen.append(
+            (
+                str(request.url),
+                request.headers.get("X-Correlation-Id"),
+                request.read(),
+            )
+        )
+        return _composed_context_response_for(request)
 
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(
             base_url="https://core.example.test",
-            path_template="/integration/portfolios/{portfolio_id}/core-snapshot",
         ),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
@@ -306,28 +352,35 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         correlation_id="corr-core-001",
     )
 
-    assert seen["url"] == (
-        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/core-snapshot"
-    )
-    assert seen["correlation_id"] == "corr-core-001"
-    assert b'"include_tax_lots":true' in seen["payload"]
+    assert [url for url, _, _ in seen] == [
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/mandate-binding",
+        "https://core.example.test/integration/model-portfolios/model_balanced_sgd/targets",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/core-snapshot",
+        "https://core.example.test/integration/instruments/eligibility-bulk",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots",
+        "https://core.example.test/integration/market-data/coverage",
+    ]
+    assert {correlation_id for _, correlation_id, _ in seen} == {"corr-core-001"}
+    assert b'"sections":["positions_baseline","portfolio_totals"]' in seen[2][2]
+    assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
+    assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
+    assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
+    assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
 
 
 def test_core_resolver_retries_transient_unavailable_response():
-    calls = 0
+    calls: dict[str, int] = {}
 
     def handler(request: httpx.Request) -> httpx.Response:
-        nonlocal calls
-        calls += 1
-        if calls == 1:
+        calls[request.url.path] = calls.get(request.url.path, 0) + 1
+        if request.url.path.endswith("/mandate-binding") and calls[request.url.path] == 1:
             return httpx.Response(503, json={"detail": "not ready"})
-        return httpx.Response(200, json=_context_payload())
+        return _composed_context_response_for(request)
 
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(
             base_url="https://core.example.test",
-            path_template="/integration/portfolios/{portfolio_id}/core-snapshot",
             max_attempts=2,
         ),
         client=httpx.Client(transport=httpx.MockTransport(handler)),
@@ -338,8 +391,46 @@ def test_core_resolver_retries_transient_unavailable_response():
         correlation_id=None,
     )
 
-    assert calls == 2
+    assert calls["/integration/portfolios/PB_SG_GLOBAL_BAL_001/mandate-binding"] == 2
     assert context.supportability.state == "READY"
+
+
+def test_core_resolver_rejects_legacy_monolithic_route():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            path_template="/integration/portfolios/{portfolio_id}/dpm-execution-context",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200))),
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_RESOLVER_UNAVAILABLE",
+    ):
+        client.resolve_execution_context(
+            stateful_input=_stateful_input(),
+            correlation_id=None,
+        )
+
+
+def test_core_resolver_rejects_missing_composed_snapshot_route():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            portfolio_snapshot_path_template="",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(_composed_context_response_for)),
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_RESOLVER_UNAVAILABLE",
+    ):
+        client.resolve_execution_context(
+            stateful_input=_stateful_input(),
+            correlation_id=None,
+        )
 
 
 def test_core_resolver_fetches_model_portfolio_targets_from_dedicated_source_product():
@@ -605,25 +696,7 @@ def test_core_resolver_timeout_maps_to_source_safe_error():
         client=httpx.Client(transport=httpx.MockTransport(handler)),
     )
 
-    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_RESOLVER_UNAVAILABLE"):
+    with pytest.raises(
+        DpmCoreResolverUnavailableError, match="DPM_CORE_MANDATE_BINDING_UNAVAILABLE"
+    ):
         client.resolve_execution_context(stateful_input=_stateful_input(), correlation_id=None)
-
-
-def test_core_resolver_rejects_missing_or_legacy_monolithic_route():
-    for path_template in ("", "/integration/portfolios/{portfolio_id}/dpm-execution-context"):
-        client = DpmCoreResolverClient(
-            config=DpmCoreResolverConfig(
-                base_url="https://core.example.test",
-                path_template=path_template,
-            ),
-            client=httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200))),
-        )
-
-        with pytest.raises(
-            DpmCoreResolverUnavailableError,
-            match="DPM_CORE_RESOLVER_UNAVAILABLE",
-        ):
-            client.resolve_execution_context(
-                stateful_input=_stateful_input(),
-                correlation_id=None,
-            )

@@ -88,7 +88,7 @@ live-api-validate:
 	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://127.0.0.1:8001}
 
 live-api-validate-core:
-	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://manage.dev.lotus} --core-base-url $${LOTUS_CORE_CONTROL_BASE_URL:-http://core-control.dev.lotus} --core-base-url $${LOTUS_CORE_QUERY_BASE_URL:-http://core-query.dev.lotus} --expect-core-dpm-route $${LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE:-absent}
+	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://manage.dev.lotus} --skip-demo-pack --core-base-url $${LOTUS_CORE_CONTROL_BASE_URL:-http://core-control.dev.lotus} --core-base-url $${LOTUS_CORE_QUERY_BASE_URL:-http://core-query.dev.lotus} --expect-core-dpm-route $${LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE:-absent} --expect-stateful-core-sourcing $${LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING:-disabled} --portfolio-id $${LOTUS_MANAGE_CANONICAL_PORTFOLIO_ID:-PB_SG_GLOBAL_BAL_001} --as-of $${LOTUS_MANAGE_CANONICAL_AS_OF:-2026-04-10}
 
 migration-smoke:
 	python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py tests/unit/shared/dependencies/test_production_cutover_contract.py -q

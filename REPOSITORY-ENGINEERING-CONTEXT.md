@@ -44,17 +44,17 @@ Current repository posture:
 8. current execution APIs support explicit `input_mode=stateless` caller-supplied portfolio,
    market-data, model, shelf, and option bundles,
 9. stateful `portfolio_id` execution has typed selector/context models, a bounded `lotus-core`
-   resolver client, transformation helpers, and lineage fields, but remains disabled by default
-   until governed `lotus-core` live proof is complete,
-10. the first RFC-087 composed source-product integrations are implemented for
+   resolver client, transformation helpers, and lineage fields; it is disabled by default but
+   live-proven when explicit stateful gates and `DPM_CORE_BASE_URL` are configured,
+10. RFC-087 composed source-product integrations are implemented and live-proven for
     `DpmModelPortfolioTarget:v1` through
     `/integration/model-portfolios/{model_portfolio_id}/targets` and
     `DiscretionaryMandateBinding:v1` through
     `/integration/portfolios/{portfolio_id}/mandate-binding`, and
     `InstrumentEligibilityProfile:v1` through `/integration/instruments/eligibility-bulk`, and
-    `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`, and
-    `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`; they are not
-    sufficient on their own to promote stateful execution.
+    `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`,
+    `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
+    `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
 
 ## Architecture And Module Map
 
@@ -153,16 +153,14 @@ Most relevant current governance:
 2. canonical local host runtime matters because port coexistence with `lotus-advise` is intentional,
 3. local `pip check` and project-scoped security posture still matter for repo truth here,
 4. stateful `portfolio_id` mode is disabled by default through
-   `DPM_STATEFUL_CORE_SOURCING_ENABLED=false` until a governed `lotus-core` resolver is configured
-   and live-proofed; integration capabilities must not publish `stateful` unless
-   `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`, `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, and
-   `DPM_CORE_BASE_URL` is configured; inline bundle source-data lineage remains an RFC-0082
-   watchlist area,
+   `DPM_STATEFUL_CORE_SOURCING_ENABLED=false`; integration capabilities must not publish
+   `stateful` unless `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`,
+   `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, `DPM_CORE_BASE_URL` is configured, and any configured
+   core resolver path is not the retired monolithic `dpm-execution-context` route,
 5. `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
-   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, and
-   `MarketDataCoverageWindow:v1` are the first product-specific core source endpoints integrated
-   in the client layer; remaining RFC-087 source products and live proof must be added before
-   stateful mode can be advertised or enabled,
+   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`,
+   `MarketDataCoverageWindow:v1`, and `DpmSourceReadiness:v1` are the core source products used to
+   prove stateful manage execution against the canonical mandate portfolio,
 6. this repo should stay operationally aligned with gateway and platform startup sequences,
 7. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,

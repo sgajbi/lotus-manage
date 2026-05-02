@@ -47,16 +47,17 @@ For reusable evidence, write the JSON summary directly:
 python scripts/validate_live_api.py --base-url http://127.0.0.1:8001 --json-output output/live-api/summary.json
 ```
 
-Use this before claiming manage/core integration readiness or before changing stateful promotion
-posture:
+Use this before claiming manage/core integration readiness with stateful sourcing enabled:
 
 ```bash
+LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available \
 make live-api-validate-core
 ```
 
-The default expectation is the current RFC-0036 blocked state. After `lotus-core` exposes the
-RFC-087 certified composed DPM source-data products, update the validator for composed-source proof
-and do not promote stateful capability truth unless that proof passes.
+The validator proves capability truth against the RFC-087 certified composed DPM source-data products,
+a live stateful simulate call with READY `lotus-core` lineage, duplicate async correlation handling,
+supportability persistence, metrics, and continued absence of the retired monolithic core DPM
+execution-context route.
 
 ## Documentation contract proof
 

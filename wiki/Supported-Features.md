@@ -19,20 +19,20 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Policy-pack supportability | `/api/v1/rebalance/policies/*` | Supported when policy packs are enabled | policy-pack tests and demo scenario 31 |
 | Integration capabilities | `/api/v1/integration/capabilities` | Supported | capability contract tests |
 | Solver target generation | `POST /api/v1/rebalance/simulate` | Runtime-discovered optional capability | capability contract tests and live demo scenario 08 |
-| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Resolver client, source-context models, transformation, and lineage fields implemented; not advertised in capabilities unless stateful sourcing is enabled, `DPM_CORE_BASE_URL` is configured, and resolver configuration is non-legacy; composed source-product integrations exist for `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, and `MarketDataCoverageWindow:v1`, but live promotion remains blocked until those core products pass canonical live proof and source-family readiness/supportability is available | resolver unit tests, transformation tests, feature-gate API test, mocked simulate/analyze/async lineage tests, RFC-0036/RFC-087 evidence |
-| Core model portfolio target sourcing | internal stateful source assembly | Dedicated client method for `DpmModelPortfolioTarget:v1` and transformer to the DPM engine `ModelPortfolio`; live canonical proof pending refreshed `lotus-core` runtime | core-sourcing client tests and source-context transformation tests |
-| Core mandate binding sourcing | internal stateful source assembly | Dedicated client method for `DiscretionaryMandateBinding:v1` and transformer to management policy context; live canonical proof pending refreshed `lotus-core` runtime | core-sourcing client tests and source-context transformation tests |
-| Core instrument eligibility sourcing | internal stateful source assembly | Dedicated client method for `InstrumentEligibilityProfile:v1` and transformer to DPM engine `ShelfEntry` records carrying shelf status, buy/sell flags, restriction codes, settlement days, liquidity tier, issuer, and taxonomy attributes; live canonical proof pending refreshed `lotus-core` runtime | core-sourcing client tests and source-context transformation tests |
-| Core portfolio tax-lot sourcing | internal stateful source assembly | Dedicated client method for `PortfolioTaxLotWindow:v1` and transformer to DPM engine `TaxLot` records carrying lot quantity, unit cost, purchase date, and core lineage-backed cost basis for tax-aware sell allocation; live canonical proof pending refreshed `lotus-core` runtime | core-sourcing client tests and source-context transformation tests |
-| Core market-data coverage sourcing | internal stateful source assembly | Dedicated client method for `MarketDataCoverageWindow:v1` and transformer to DPM engine `MarketDataSnapshot`; stale or missing price/FX coverage is rejected before stateful execution can run | core-sourcing client tests and source-context transformation tests |
+| Stateful `portfolio_id` execution | simulate, analyze, async analyze | Implemented behind explicit runtime gates. When `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`, `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, and `DPM_CORE_BASE_URL` is configured, manage advertises `stateful` and composes governed core data for execution. | resolver unit tests, transformation tests, feature-gate API tests, live `manage.dev.lotus` stateful proof |
+| Core model portfolio target sourcing | internal stateful source assembly | Dedicated client method for `DpmModelPortfolioTarget:v1` and transformer to the DPM engine `ModelPortfolio`; live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
+| Core mandate binding sourcing | internal stateful source assembly | Dedicated client method for `DiscretionaryMandateBinding:v1` and transformer to management policy context; live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
+| Core instrument eligibility sourcing | internal stateful source assembly | Dedicated client method for `InstrumentEligibilityProfile:v1` and transformer to DPM engine `ShelfEntry` records carrying shelf status, buy/sell flags, restriction codes, settlement days, liquidity tier, issuer, and taxonomy attributes; live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
+| Core portfolio tax-lot sourcing | internal stateful source assembly | Dedicated client method for `PortfolioTaxLotWindow:v1` and transformer to DPM engine `TaxLot` records carrying lot quantity, unit cost, purchase date, and core lineage-backed cost basis for tax-aware sell allocation; live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
+| Core market-data coverage sourcing | internal stateful source assembly | Dedicated client method for `MarketDataCoverageWindow:v1` and transformer to DPM engine `MarketDataSnapshot`; stale or missing price/FX coverage is rejected before stateful execution can run. Live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
 
 ```mermaid
 flowchart LR
     Stateless[Stateless execution] --> Supported[Advertised today]
-    Stateful[Stateful portfolio_id execution] --> Modeled[Modeled and guarded]
-    Modeled --> Blocked[Not promoted until lotus-core RFC-087 source products are certified]
+    Stateful[Stateful portfolio_id execution] --> Gated[Implemented behind runtime gates]
+    Gated --> Core[Composes lotus-core RFC-087 source products]
     Supported --> Evidence[Demo pack, OpenAPI, live API probes]
-    Blocked --> CoreIssue[sgajbi/lotus-core#330]
+    Core --> Lineage[Result lineage shows lotus-core READY source supportability]
 ```
 
 ## Non-Functional Capabilities
@@ -56,7 +56,7 @@ flowchart LR
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
 | Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality including error examples, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
-| Manage/core integration posture proof | Passed for current blocked state | `make live-api-validate-core` proves manage stays stateless-only while RFC-087 core source products are not yet available; update the validator and rerun only after core implements the certified composed products |
+| Manage/core integration posture proof | Passed for stateful available posture | `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available make live-api-validate-core` proves capability truth, composed core sourcing, READY lineage, supportability persistence, metrics, and old monolithic core route absence |
 | Swagger error-response examples | Enforced | central OpenAPI enrichment, `scripts/openapi_quality_gate.py`, contract tests, and live validation require bounded JSON examples for every documented `4xx`, `5xx`, and `default` response |
 
 ## Explicit Non-Goals
@@ -78,15 +78,14 @@ For RFC-0036 final proof, use the direct manage API path first:
 python scripts/validate_live_api.py --base-url http://manage.dev.lotus --json-output output/rfc-0036-gold-pass/live-api-summary.json
 ```
 
-For current manage/core integration proof before stateful promotion, add the core route posture
-checks:
+For manage/core integration proof with stateful sourcing active, add the explicit expectation:
 
 ```powershell
+$env:LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING="available"
 make live-api-validate-core
 ```
 
 Final proof is not complete if the validator reports stale OpenAPI certification drift, including
 missing request, response, or error examples, even when business execution probes pass. Stateful
-execution is also not complete until the RFC-087 `lotus-core` product-specific source APIs pass
-canonical live proof, source-family readiness/supportability is available, and manage live proof
-shows stateful source lineage.
+execution is not complete unless the RFC-087 `lotus-core` product-specific source APIs pass
+canonical live proof and manage live proof shows READY stateful source lineage.

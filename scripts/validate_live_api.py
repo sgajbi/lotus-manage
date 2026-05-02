@@ -48,18 +48,29 @@ def _probe_ready(client: httpx.Client) -> ProbeResult:
     )
 
 
-def _probe_capabilities(client: httpx.Client) -> ProbeResult:
+StatefulSourcingExpectation = Literal["disabled", "available"]
+
+
+def _probe_capabilities(
+    client: httpx.Client,
+    *,
+    stateful_expectation: StatefulSourcingExpectation,
+) -> ProbeResult:
     response = client.get(
         "/api/v1/integration/capabilities",
         params={"consumer_system": "lotus-gateway", "tenant_id": "default"},
     )
     body = response.json()
     features = _feature_flags(body)
+    expected_modes = (
+        ["stateful", "stateless"] if stateful_expectation == "available" else ["stateless"]
+    )
+    expected_stateful_enabled = stateful_expectation == "available"
     return _result(
-        "capabilities_truthful_default",
+        f"capabilities_truthful_{stateful_expectation}",
         response.status_code == 200
-        and body.get("supported_input_modes") == ["stateless"]
-        and features.get("dpm.execution.stateful_portfolio_id") is False
+        and body.get("supported_input_modes") == expected_modes
+        and features.get("dpm.execution.stateful_portfolio_id") is expected_stateful_enabled
         and features.get("dpm.execution.stateless") is True,
         {
             "status_code": response.status_code,
@@ -169,25 +180,76 @@ def _probe_stateful_core_sourcing_guard(client: httpx.Client) -> ProbeResult:
     )
 
 
+def _probe_stateful_core_sourcing_available(
+    client: httpx.Client,
+    *,
+    portfolio_id: str,
+    as_of: str,
+) -> ProbeResult:
+    response = client.post(
+        "/api/v1/rebalance/simulate",
+        json=_stateful_simulate_payload(portfolio_id=portfolio_id, as_of=as_of),
+        headers={
+            "Idempotency-Key": f"live-stateful-available-{uuid.uuid4().hex[:10]}",
+            "X-Correlation-Id": f"corr-live-stateful-available-{uuid.uuid4().hex[:10]}",
+        },
+    )
+    body = response.json() if response.content else {}
+    lineage = body.get("lineage") if isinstance(body, dict) else None
+    lineage = lineage if isinstance(lineage, dict) else {}
+    return _result(
+        "stateful_core_sourcing_available",
+        response.status_code == 200
+        and lineage.get("input_mode") == "stateful"
+        and lineage.get("source_system") == "lotus-core"
+        and lineage.get("source_supportability_state") == "READY"
+        and bool(lineage.get("stateful_context_hash"))
+        and lineage.get("model_portfolio_id") == "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        {
+            "status_code": response.status_code,
+            "lineage": {
+                "input_mode": lineage.get("input_mode"),
+                "source_system": lineage.get("source_system"),
+                "source_supportability_state": lineage.get("source_supportability_state"),
+                "model_portfolio_id": lineage.get("model_portfolio_id"),
+                "model_portfolio_version": lineage.get("model_portfolio_version"),
+                "shelf_version": lineage.get("shelf_version"),
+                "integration_policy_version": lineage.get("integration_policy_version"),
+                "source_lineage_bundle_id": lineage.get("source_lineage_bundle_id"),
+                "stateful_context_hash_present": bool(lineage.get("stateful_context_hash")),
+            },
+            "detail": body.get("detail") if isinstance(body, dict) else None,
+        },
+    )
+
+
 def _stateful_selector_payload(
     *,
     portfolio_id: str = "PB_SG_GLOBAL_BAL_001",
-    as_of: str = "2026-03-25",
+    as_of: str = "2026-04-10",
 ) -> dict[str, str]:
     return {
         "portfolio_id": portfolio_id,
         "as_of": as_of,
-        "mandate_id": "mandate_balanced_discretionary",
-        "model_portfolio_id": "model_balanced_sgd",
-        "tenant_id": "tenant_001",
-        "booking_center_code": "SG",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "tenant_id": "default",
+        "booking_center_code": "Singapore",
     }
 
 
-def _stateful_simulate_payload() -> dict[str, Any]:
+def _stateful_simulate_payload(
+    *,
+    portfolio_id: str = "PB_SG_GLOBAL_BAL_001",
+    as_of: str = "2026-04-10",
+) -> dict[str, Any]:
     return {
         "input_mode": "stateful",
-        "stateful_input": _stateful_selector_payload(),
+        "stateful_input": _stateful_selector_payload(portfolio_id=portfolio_id, as_of=as_of),
+        "options_override": {
+            "enable_settlement_awareness": True,
+            "enable_tax_awareness": True,
+        },
     }
 
 
@@ -284,8 +346,9 @@ def run_live_api_validation(
     include_demo_pack: bool = True,
     core_base_urls: list[str] | None = None,
     expect_core_dpm_route: Literal["absent", "available"] = "absent",
+    expect_stateful_core_sourcing: StatefulSourcingExpectation = "disabled",
     portfolio_id: str = "PB_SG_GLOBAL_BAL_001",
-    as_of: str = "2026-03-25",
+    as_of: str = "2026-04-10",
     transport: httpx.BaseTransport | None = None,
 ) -> list[ProbeResult]:
     results: list[ProbeResult] = []
@@ -299,20 +362,53 @@ def run_live_api_validation(
             results.append(_result("demo_pack", False, {"error": str(exc)}))
 
     with httpx.Client(base_url=base_url, timeout=timeout, transport=transport) as client:
-        probes = [
-            ("ready", _probe_ready),
-            ("capabilities_truthful_default", _probe_capabilities),
-            ("openapi_no_advisory_or_proposals", _probe_openapi_boundary),
-            ("openapi_certification_contract", _probe_openapi_certification_contract),
-            ("removed_proposal_route_404", _probe_removed_proposal_route),
-            ("stateful_core_sourcing_guard", _probe_stateful_core_sourcing_guard),
-            ("async_duplicate_correlation_conflict", _probe_async_duplicate_correlation),
-            ("supportability_postgres_summary", _probe_supportability_summary),
-            ("metrics_exposed_bounded_supportability", _probe_metrics),
+        probe_calls = [
+            ("ready", lambda: _probe_ready(client)),
+            (
+                f"capabilities_truthful_{expect_stateful_core_sourcing}",
+                lambda: _probe_capabilities(
+                    client,
+                    stateful_expectation=expect_stateful_core_sourcing,
+                ),
+            ),
+            ("openapi_no_advisory_or_proposals", lambda: _probe_openapi_boundary(client)),
+            (
+                "openapi_certification_contract",
+                lambda: _probe_openapi_certification_contract(client),
+            ),
+            ("removed_proposal_route_404", lambda: _probe_removed_proposal_route(client)),
         ]
-        for probe_name, probe in probes:
+        if expect_stateful_core_sourcing == "available":
+            probe_calls.append(
+                (
+                    "stateful_core_sourcing_available",
+                    lambda: _probe_stateful_core_sourcing_available(
+                        client,
+                        portfolio_id=portfolio_id,
+                        as_of=as_of,
+                    ),
+                )
+            )
+        else:
+            probe_calls.append(
+                (
+                    "stateful_core_sourcing_guard",
+                    lambda: _probe_stateful_core_sourcing_guard(client),
+                )
+            )
+        probe_calls.extend(
+            [
+                (
+                    "async_duplicate_correlation_conflict",
+                    lambda: _probe_async_duplicate_correlation(client),
+                ),
+                ("supportability_postgres_summary", lambda: _probe_supportability_summary(client)),
+                ("metrics_exposed_bounded_supportability", lambda: _probe_metrics(client)),
+            ]
+        )
+        for probe_name, probe in probe_calls:
             try:
-                results.append(probe(client))
+                results.append(probe())
             except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
                 results.append(_result(probe_name, False, {"error": str(exc)}))
 
@@ -387,6 +483,15 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--expect-stateful-core-sourcing",
+        choices=["disabled", "available"],
+        default="disabled",
+        help=(
+            "Expected lotus-manage stateful core-sourcing posture. Use 'available' when "
+            "RFC-087 source products and DPM_STATEFUL_CORE_SOURCING_ENABLED are active."
+        ),
+    )
+    parser.add_argument(
         "--portfolio-id",
         default="PB_SG_GLOBAL_BAL_001",
         help="Portfolio id used for optional lotus-core DPM execution-context probing.",
@@ -403,6 +508,7 @@ def main() -> int:
         include_demo_pack=not args.skip_demo_pack,
         core_base_urls=args.core_base_url,
         expect_core_dpm_route=args.expect_core_dpm_route,
+        expect_stateful_core_sourcing=args.expect_stateful_core_sourcing,
         portfolio_id=args.portfolio_id,
         as_of=args.as_of,
     )

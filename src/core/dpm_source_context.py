@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 from src.core.models import (
     BatchRebalanceRequest,
@@ -279,7 +279,10 @@ class DpmCoreInstrumentEligibilitySupportability(BaseModel):
     )
     reason: str = Field(description="Bounded core readiness reason code.")
     requested_count: int = Field(description="Number of securities requested.")
-    found_count: int = Field(description="Number of securities resolved from core source data.")
+    found_count: int = Field(
+        validation_alias=AliasChoices("found_count", "resolved_count"),
+        description="Number of securities resolved from core source data.",
+    )
     missing_security_ids: list[str] = Field(
         default_factory=list,
         description="Requested securities without an effective eligibility profile.",
@@ -294,7 +297,8 @@ class DpmCoreInstrumentEligibilityBulkResponse(BaseModel):
     as_of_date: date = Field(description="As-of date used to resolve eligibility.")
     tenant_id: Optional[str] = Field(default=None, description="Optional tenant selector.")
     eligibility: list[DpmCoreInstrumentEligibilityRecord] = Field(
-        description="Resolved eligibility records in request order."
+        validation_alias=AliasChoices("eligibility", "records"),
+        description="Resolved eligibility records in request order.",
     )
     supportability: DpmCoreInstrumentEligibilitySupportability = Field(
         description="Completeness and readiness posture for the eligibility product."

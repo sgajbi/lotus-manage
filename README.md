@@ -42,10 +42,10 @@ Current posture under RFC-0082:
    owned here
 2. `input_mode=stateless` is the supported default execution mode for caller-supplied source
    bundles
-3. stateful `portfolio_id` mode has a modeled resolver seam but is disabled by default and must
-   remain anchored to governed `lotus-core` authority when enabled; it is not advertised in
-   `/api/v1/integration/capabilities` unless the stateful capability flag, stateful sourcing gate,
-   and `DPM_CORE_BASE_URL` are all configured
+3. stateful `portfolio_id` mode is implemented behind explicit runtime gates and remains anchored
+   to governed `lotus-core` authority; it is advertised in `/api/v1/integration/capabilities` only
+   when the stateful capability flag, stateful sourcing gate, and `DPM_CORE_BASE_URL` are all
+   configured, and the retired monolithic core route is not configured
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
@@ -85,7 +85,7 @@ Key code areas:
 - `src/core/dpm_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/infrastructure/core_sourcing/`
-  bounded `lotus-core` resolver client for future stateful execution promotion
+  bounded `lotus-core` resolver client that composes RFC-087 source products for stateful execution
 - `src/infrastructure/`
   PostgreSQL migrations, repository backends, and policy-pack persistence
 - `docs/`
@@ -135,7 +135,8 @@ Repo-native gate mapping:
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
   live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture;
-  defaults to the current RFC-0036 blocked state until RFC-087 products are implemented
+  set `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` when RFC-087 source products and
+  stateful manage gates are active
 - `make mesh-contract-validate`
   repo-native domain product, trust telemetry, and observability monitoring contract validation
   against Lotus platform governance
@@ -188,9 +189,9 @@ Operationally important truths:
 2. capability discovery through `/api/v1/integration/capabilities` remains backend-owned and uses
    canonical snake_case query parameters
 3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
-4. stateful DPM promotion requires `make live-api-validate-core` to pass after `lotus-core`
-   exposes the RFC-087 certified source-data products; until then, the expected posture remains
-   blocked and stateless-only
+4. stateful DPM promotion requires `make live-api-validate-core` to pass with
+   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` after `lotus-core` exposes the
+   RFC-087 certified source-data products and canonical data is seeded
 
 ## Documentation Map
 
