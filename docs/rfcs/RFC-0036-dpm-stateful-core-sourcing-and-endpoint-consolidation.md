@@ -64,13 +64,16 @@ Implementation note, 2026-05-02:
 
 1. `lotus-core` RFC-087 Slice 4 introduced the dedicated
    `POST /integration/model-portfolios/{model_portfolio_id}/targets` source-product endpoint.
-2. `lotus-manage` now has a dedicated client method and transformer for that product:
+2. `lotus-core` RFC-087 Slice 5 introduced the dedicated
+   `POST /integration/portfolios/{portfolio_id}/mandate-binding` source-product endpoint.
+3. `lotus-manage` now has dedicated client methods and transformers for those products:
    `DpmCoreResolverClient.resolve_model_portfolio_targets` and
-   `build_model_portfolio_from_core_targets`.
-3. This is not stateful execution promotion. It proves the first composed source-product
-   integration path while keeping `input_mode=stateful` gated until portfolio state, mandate
-   binding, eligibility, tax-lot, and market-data source products are also available and live
-   proven.
+   `build_model_portfolio_from_core_targets`, plus
+   `DpmCoreResolverClient.resolve_mandate_binding` and
+   `build_policy_context_from_core_mandate`.
+4. This is not stateful execution promotion. It proves the first composed source-product
+   integration paths while keeping `input_mode=stateful` gated until portfolio state, eligibility,
+   tax-lot, market-data, and readiness source products are also available and live proven.
 
 ## Summary
 
@@ -98,9 +101,9 @@ Current implementation:
    `POST /rebalance/analyze`, and `POST /rebalance/analyze/async`.
 2. The FastAPI app mounts the same routers twice: once unversioned and once under `/api/v1`.
 3. `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED` defaults to disabled.
-4. `lotus-manage` has a bounded outbound `lotus-core` source-product client for
-   `DpmModelPortfolioTarget:v1`; the older monolithic DPM execution-context route remains blocked
-   and must not be used.
+4. `lotus-manage` has bounded outbound `lotus-core` source-product clients for
+   `DpmModelPortfolioTarget:v1` and `DiscretionaryMandateBinding:v1`; the older monolithic DPM
+   execution-context route remains blocked and must not be used.
 5. Current source-data authority is documented as upstream: callers must provide source-governed
    portfolio, market-data, model, shelf, and option bundles.
 6. `lotus-gateway` currently consumes only run lookup, supportability summary, and capabilities
@@ -413,13 +416,16 @@ enrichment in production paths once the RFC-087 source products are available.
 
 Known gaps before stateful promotion:
 
+1. product shelf / eligibility export with settlement days and restriction reason codes,
+2. bulk tax-lot completeness for tax-aware sell allocation,
+3. market price coverage for target instruments that are not currently held,
+4. FX coverage for all portfolio, cash, price, and target instrument currencies,
+5. explicit DPM supportability/completeness by source family.
+
+Partial source-product integrations already implemented:
+
 1. model portfolio target resolution by `model_portfolio_id`,
-2. discretionary mandate metadata and mandate-to-model binding,
-3. product shelf / eligibility export with settlement days and restriction reason codes,
-4. bulk tax-lot completeness for tax-aware sell allocation,
-5. market price coverage for target instruments that are not currently held,
-6. FX coverage for all portfolio, cash, price, and target instrument currencies,
-7. explicit DPM supportability/completeness by source family.
+2. discretionary mandate metadata and mandate-to-model/policy binding.
 
 Stateful `lotus-manage` must remain disabled until RFC-087 core products are implemented,
 certified, and proven with live core/manage evidence.
@@ -901,6 +907,17 @@ Implementation evidence captured on 2026-05-01:
 6. Promotion no-go remains active. Slice 7 cannot be closed as live-certified until `lotus-core`
    delivers the governed RFC-087 source-data products and `lotus-manage` captures live evidence
    against the composed-source resolver.
+
+Additional composed-source integration evidence captured on 2026-05-02:
+
+1. Added a bounded `DiscretionaryMandateBinding:v1` client call to
+   `POST /integration/portfolios/{portfolio_id}/mandate-binding`.
+2. Added a typed mandate-binding response model and policy-context transformer that rejects
+   incomplete supportability, non-discretionary mandates, and inactive discretionary authority.
+3. Added focused unit proof for the outbound request shape, correlation header propagation,
+   bounded 4xx error mapping, response parsing, and policy-context transformation.
+4. Promotion no-go remains active because eligibility, tax-lot, market-data/FX coverage, and
+   readiness/source-family completeness products are still pending in RFC-087.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 

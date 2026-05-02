@@ -4,9 +4,11 @@ from decimal import Decimal
 from src.core.dpm_source_context import (
     DpmCoreContextIncompleteError,
     DpmCoreExecutionContext,
+    DpmCoreMandateBindingResponse,
     DpmCoreModelPortfolioTargetResponse,
     build_batch_rebalance_request_from_core_context,
     build_model_portfolio_from_core_targets,
+    build_policy_context_from_core_mandate,
     build_rebalance_request_from_core_context,
 )
 from src.core.models import SimulationScenario
@@ -161,6 +163,88 @@ def test_core_model_targets_reject_incomplete_supportability():
 
     with pytest.raises(DpmCoreContextIncompleteError, match="MODEL_TARGETS_EMPTY"):
         build_model_portfolio_from_core_targets(response)
+
+
+def _core_mandate_binding_payload(**overrides: object) -> dict:
+    payload = {
+        "product_name": "DiscretionaryMandateBinding",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_type": "discretionary",
+        "discretionary_authority_status": "active",
+        "booking_center_code": "Singapore",
+        "jurisdiction_code": "SG",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "risk_profile": "balanced",
+        "investment_horizon": "long_term",
+        "leverage_allowed": False,
+        "tax_awareness_allowed": True,
+        "settlement_awareness_required": True,
+        "rebalance_frequency": "monthly",
+        "rebalance_bands": {
+            "default_band": "0.0250000000",
+            "cash_reserve_weight": "0.0200000000",
+        },
+        "effective_from": "2026-04-01",
+        "binding_version": 1,
+        "supportability": {
+            "state": "READY",
+            "reason": "MANDATE_BINDING_READY",
+            "missing_data_families": [],
+        },
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_core_mandate_binding_transforms_to_policy_context():
+    response = DpmCoreMandateBindingResponse.model_validate(_core_mandate_binding_payload())
+
+    policy_context = build_policy_context_from_core_mandate(
+        response,
+        tenant_id="tenant_sg_pb",
+    )
+
+    assert policy_context.recommended_policy_pack_id == "POLICY_DPM_SG_BALANCED_V1"
+    assert policy_context.tenant_id == "tenant_sg_pb"
+    assert policy_context.booking_center_code == "Singapore"
+    assert policy_context.mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"
+
+
+def test_core_mandate_binding_rejects_incomplete_supportability():
+    response = DpmCoreMandateBindingResponse.model_validate(
+        _core_mandate_binding_payload(
+            supportability={
+                "state": "INCOMPLETE",
+                "reason": "MANDATE_POLICY_PACK_MISSING",
+                "missing_data_families": ["policy_pack"],
+            }
+        )
+    )
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="MANDATE_POLICY_PACK_MISSING"):
+        build_policy_context_from_core_mandate(response)
+
+
+def test_core_mandate_binding_rejects_non_discretionary_or_inactive_authority():
+    non_discretionary = DpmCoreMandateBindingResponse.model_validate(
+        _core_mandate_binding_payload(mandate_type="advisory")
+    )
+    inactive_authority = DpmCoreMandateBindingResponse.model_validate(
+        _core_mandate_binding_payload(discretionary_authority_status="suspended")
+    )
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_MANDATE_NOT_DISCRETIONARY"):
+        build_policy_context_from_core_mandate(non_discretionary)
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_DISCRETIONARY_AUTHORITY_NOT_ACTIVE",
+    ):
+        build_policy_context_from_core_mandate(inactive_authority)
 
 
 def test_incomplete_core_context_is_not_transformed():

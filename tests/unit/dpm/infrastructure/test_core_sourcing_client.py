@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 import httpx
 import pytest
@@ -7,6 +8,7 @@ from src.core.dpm_source_context import DpmStatefulInput
 from src.infrastructure.core_sourcing import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,
+    DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
 )
 
@@ -83,6 +85,47 @@ def _model_portfolio_target_payload() -> dict:
         },
         "data_quality_status": "COMPLETE",
         "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+    }
+
+
+def _mandate_binding_payload() -> dict:
+    return {
+        "product_name": "DiscretionaryMandateBinding",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_type": "discretionary",
+        "discretionary_authority_status": "active",
+        "booking_center_code": "Singapore",
+        "jurisdiction_code": "SG",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "risk_profile": "balanced",
+        "investment_horizon": "long_term",
+        "leverage_allowed": False,
+        "tax_awareness_allowed": True,
+        "settlement_awareness_required": True,
+        "rebalance_frequency": "monthly",
+        "rebalance_bands": {
+            "default_band": "0.0250000000",
+            "cash_reserve_weight": "0.0200000000",
+        },
+        "effective_from": "2026-04-01",
+        "effective_to": None,
+        "binding_version": 1,
+        "supportability": {
+            "state": "READY",
+            "reason": "MANDATE_BINDING_READY",
+            "missing_data_families": [],
+        },
+        "lineage": {
+            "source_system": "mandate_admin",
+            "source_record_id": "mandate_001_v1",
+            "contract_version": "rfc_087_v1",
+        },
+        "data_quality_status": "ACCEPTED",
+        "latest_evidence_timestamp": "2026-04-01T09:00:00Z",
     }
 
 
@@ -188,6 +231,61 @@ def test_core_resolver_fetches_model_portfolio_targets_from_dedicated_source_pro
         "EQ_US_AAPL",
         "FI_US_TREASURY_10Y",
     ]
+
+
+def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_mandate_binding_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_mandate_binding(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        booking_center_code="Singapore",
+        include_policy_pack=True,
+        correlation_id="corr-mandate-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/mandate-binding"
+    )
+    assert seen["correlation_id"] == "corr-mandate-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"tenant_id":"tenant_sg_pb"' in seen["payload"]
+    assert b'"mandate_id":"MANDATE_PB_SG_GLOBAL_BAL_001"' in seen["payload"]
+    assert b'"booking_center_code":"Singapore"' in seen["payload"]
+    assert b'"include_policy_pack":true' in seen["payload"]
+    assert response.product_name == "DiscretionaryMandateBinding"
+    assert response.supportability.state == "READY"
+    assert response.policy_pack_id == "POLICY_DPM_SG_BALANCED_V1"
+    assert response.rebalance_bands.default_band == Decimal("0.0250000000")
+
+
+def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(404, json={"detail": "x"}))
+        ),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_MANDATE_BINDING_INCOMPLETE"):
+        client.resolve_mandate_binding(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
 
 
 def test_core_resolver_timeout_maps_to_source_safe_error():

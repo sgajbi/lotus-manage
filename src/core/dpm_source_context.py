@@ -151,6 +151,76 @@ class DpmCoreModelPortfolioTargetResponse(BaseModel):
     )
 
 
+class DpmCoreRebalanceBands(BaseModel):
+    default_band: Decimal = Field(description="Default rebalance band as a decimal ratio.")
+    cash_reserve_weight: Optional[Decimal] = Field(
+        default=None,
+        description="Optional mandate cash reserve target as a decimal ratio.",
+    )
+
+
+class DpmCoreMandateBindingSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for mandate binding consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    missing_data_families: list[str] = Field(
+        default_factory=list,
+        description="Source families missing from the mandate binding product.",
+    )
+
+
+class DpmCoreMandateBindingResponse(BaseModel):
+    product_name: Literal["DiscretionaryMandateBinding"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    mandate_id: str = Field(description="Core-governed discretionary mandate identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    mandate_type: str = Field(description="Resolved mandate type.")
+    discretionary_authority_status: str = Field(description="Resolved discretionary authority.")
+    booking_center_code: str = Field(description="Resolved booking-center code.")
+    jurisdiction_code: str = Field(description="Resolved jurisdiction code.")
+    model_portfolio_id: str = Field(description="Model portfolio selected by the mandate.")
+    policy_pack_id: Optional[str] = Field(
+        default=None,
+        description="Policy pack selected by the mandate.",
+    )
+    risk_profile: str = Field(description="Mandate risk profile.")
+    investment_horizon: str = Field(description="Mandate investment horizon.")
+    leverage_allowed: bool = Field(description="Whether mandate leverage is allowed.")
+    tax_awareness_allowed: bool = Field(description="Whether tax-aware execution is allowed.")
+    settlement_awareness_required: bool = Field(
+        description="Whether settlement-aware execution is required."
+    )
+    rebalance_frequency: str = Field(description="Mandate rebalance cadence.")
+    rebalance_bands: DpmCoreRebalanceBands = Field(
+        description="Mandate rebalance bands and cash reserve policy."
+    )
+    effective_from: date = Field(description="Resolved binding effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None,
+        description="Resolved binding effective end date.",
+    )
+    binding_version: int = Field(description="Resolved binding version.")
+    supportability: DpmCoreMandateBindingSupportability = Field(
+        description="Completeness and readiness posture for the mandate binding product."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -253,6 +323,25 @@ def build_model_portfolio_from_core_targets(
             for target in response.targets
             if target.target_status.lower() == "active"
         ]
+    )
+
+
+def build_policy_context_from_core_mandate(
+    response: DpmCoreMandateBindingResponse,
+    *,
+    tenant_id: Optional[str] = None,
+) -> DpmCorePolicyContext:
+    if response.supportability.state not in {"READY", "DEGRADED"}:
+        raise DpmCoreContextIncompleteError(response.supportability.reason)
+    if response.mandate_type.lower() != "discretionary":
+        raise DpmCoreContextIncompleteError("DPM_CORE_MANDATE_NOT_DISCRETIONARY")
+    if response.discretionary_authority_status.lower() != "active":
+        raise DpmCoreContextIncompleteError("DPM_CORE_DISCRETIONARY_AUTHORITY_NOT_ACTIVE")
+    return DpmCorePolicyContext(
+        recommended_policy_pack_id=response.policy_pack_id,
+        tenant_id=tenant_id,
+        booking_center_code=response.booking_center_code,
+        mandate_id=response.mandate_id,
     )
 
 
