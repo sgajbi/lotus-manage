@@ -1,9 +1,12 @@
 from decimal import Decimal
 
-from src.core.rebalance.engine import run_simulation
+from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.models import (
+    EngineOptions,
     Money,
+    SecurityTradeIntent,
 )
+from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics
 from tests.shared.factories import (
     cash,
     fx,
@@ -30,17 +33,55 @@ def get_base_data():
     return portfolio, market_data, model, shelf
 
 
-def test_safety_no_shorting_block(base_options):
+def test_generated_sell_intents_are_clamped_to_available_holding(base_options):
     portfolio, market_data, model, shelf = get_base_data()
     portfolio.positions[0].quantity = Decimal("10")
     portfolio.positions[0].market_value = Money(amount=Decimal("10000.0"), currency="SGD")
 
     result = run_simulation(portfolio, market_data, model, shelf, base_options)
 
-    assert result.status == "BLOCKED"
-    assert "SIMULATION_SAFETY_CHECK_FAILED" in result.diagnostics.warnings
+    assert result.status in {"READY", "PENDING_REVIEW"}
+    assert "SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING" in result.diagnostics.warnings
+    assert "SIMULATION_SAFETY_CHECK_FAILED" not in result.diagnostics.warnings
+
+    sell = next(intent for intent in result.intents if intent.instrument_id == "EQ_1")
+    assert sell.side == "SELL"
+    assert sell.quantity == Decimal("10")
+    assert "AVAILABLE_HOLDING" in sell.constraints_applied
 
     rule = next((r for r in result.rule_results if r.rule_id == "NO_SHORTING"), None)
+    assert rule is not None
+    assert rule.status == "PASS"
+
+
+def test_safety_no_shorting_still_blocks_invalid_external_intent():
+    portfolio, market_data, _, shelf = get_base_data()
+    diagnostics = empty_diagnostics()
+    invalid_intents = [
+        SecurityTradeIntent(
+            intent_id="oi_invalid_oversell",
+            instrument_id="EQ_1",
+            side="SELL",
+            quantity=Decimal("101"),
+            notional=Money(amount=Decimal("1010"), currency="SGD"),
+            notional_base=Money(amount=Decimal("1010"), currency="SGD"),
+        )
+    ]
+
+    _, _, rules, status, _ = _generate_fx_and_simulate(
+        portfolio=portfolio,
+        market_data=market_data,
+        shelf=shelf,
+        intents=invalid_intents,
+        options=EngineOptions(),
+        total_val_before=Decimal("2000"),
+        diagnostics=diagnostics,
+    )
+
+    assert status == "BLOCKED"
+    assert "SIMULATION_SAFETY_CHECK_FAILED" in diagnostics.warnings
+
+    rule = next((r for r in rules if r.rule_id == "NO_SHORTING"), None)
     assert rule is not None
     assert rule.status == "FAIL"
     assert rule.reason_code == "SELL_EXCEEDS_HOLDINGS"

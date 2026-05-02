@@ -143,23 +143,32 @@ def generate_intents(
         qty = int(abs(delta) // price_ent.price)
         quantity = Decimal(qty)
 
+        sell_quantity_before_tax: Decimal | None = None
         if side == "SELL" and qty > 0:
             requested_qty = Decimal(qty)
+            available_qty = curr.quantity if curr is not None else Decimal("0")
+            if requested_qty > available_qty:
+                quantity = max(available_qty, Decimal("0"))
+                if "SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING" not in diagnostics.warnings:
+                    diagnostics.warnings.append("SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING")
+            else:
+                quantity = requested_qty
+            sell_quantity_before_tax = quantity
             quantity = apply_tax_budget_sell_limit(
                 position=curr,
-                requested_qty=requested_qty,
+                requested_qty=sell_quantity_before_tax,
                 sell_price=price_ent.price,
                 price_ccy=price_ent.currency,
                 base_rate=rate,
             )
-            if options.enable_tax_awareness and quantity < requested_qty:
+            if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
                 constraints = [c for c in diagnostics.warnings if c == "TAX_BUDGET_LIMIT_REACHED"]
                 if not constraints:
                     diagnostics.warnings.append("TAX_BUDGET_LIMIT_REACHED")
                 diagnostics.tax_budget_constraint_events.append(
                     TaxBudgetConstraintEvent(
                         instrument_id=i_id,
-                        requested_quantity=requested_qty,
+                        requested_quantity=sell_quantity_before_tax,
                         allowed_quantity=quantity,
                         reason_code="TAX_BUDGET_LIMIT_REACHED",
                     )
@@ -189,9 +198,10 @@ def generate_intents(
 
         if quantity > 0:
             applied_constraints = ["MIN_NOTIONAL"] if threshold else []
+            if side == "SELL" and quantity < Decimal(qty):
+                applied_constraints.append("AVAILABLE_HOLDING")
             if side == "SELL" and options.enable_tax_awareness:
-                requested_qty = Decimal(qty)
-                if quantity < requested_qty:
+                if sell_quantity_before_tax is not None and quantity < sell_quantity_before_tax:
                     applied_constraints.append("TAX_BUDGET")
             intents.append(
                 SecurityTradeIntent(
