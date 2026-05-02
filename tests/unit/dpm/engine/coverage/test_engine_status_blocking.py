@@ -7,7 +7,7 @@ from tests.shared.factories import position, price, shelf_entry
 
 
 class TestFinalStatusAndBlocking:
-    def test_reconciliation_failure_block(self, base_inputs):
+    def test_trusted_snapshot_reconciliation_preserves_source_value(self, base_inputs):
         pf, mkt, model, shelf = base_inputs
         pf.positions[0].market_value = Money(amount=Decimal("9999999"), currency="USD")
 
@@ -19,9 +19,9 @@ class TestFinalStatusAndBlocking:
             EngineOptions(valuation_mode=ValuationMode.TRUST_SNAPSHOT),
         )
 
-        assert_status(result, "BLOCKED")
-        blocker = next(r for r in result.rule_results if r.rule_id == "RECONCILIATION")
-        assert blocker.status == "FAIL"
+        assert result.status in {"READY", "PENDING_REVIEW"}
+        assert result.reconciliation is not None
+        assert result.reconciliation.status == "OK"
 
     def test_hard_fail_shorting(self, base_inputs):
         pf, mkt, model, shelf = base_inputs

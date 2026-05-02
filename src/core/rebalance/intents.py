@@ -130,42 +130,55 @@ def generate_intents(
             dq_log["fx_missing"].append(f"{price_ent.currency}/{portfolio.base_currency}")
             continue
 
-        target_instr_val = (total_val * target_w) / rate
         curr = next((p for p in portfolio.positions if p.instrument_id == i_id), None)
         curr_instr_val = (
             curr.market_value.amount
             if curr and curr.market_value
             else (curr.quantity * price_ent.price if curr else Decimal("0"))
         )
+        unit_value = price_ent.price
+        if curr and curr.market_value and curr.quantity > Decimal("0"):
+            unit_value = curr.market_value.amount / curr.quantity
+
+        target_instr_val = (total_val * target_w) / rate
 
         delta = target_instr_val - curr_instr_val
         side: Literal["BUY", "SELL"] = "BUY" if delta > 0 else "SELL"
-        qty = int(abs(delta) // price_ent.price)
+        qty = int(abs(delta) // unit_value)
         quantity = Decimal(qty)
 
+        sell_quantity_before_tax: Decimal | None = None
         if side == "SELL" and qty > 0:
             requested_qty = Decimal(qty)
+            available_qty = curr.quantity if curr is not None else Decimal("0")
+            if requested_qty > available_qty:
+                quantity = max(available_qty, Decimal("0"))
+                if "SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING" not in diagnostics.warnings:
+                    diagnostics.warnings.append("SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING")
+            else:
+                quantity = requested_qty
+            sell_quantity_before_tax = quantity
             quantity = apply_tax_budget_sell_limit(
                 position=curr,
-                requested_qty=requested_qty,
-                sell_price=price_ent.price,
+                requested_qty=sell_quantity_before_tax,
+                sell_price=unit_value,
                 price_ccy=price_ent.currency,
                 base_rate=rate,
             )
-            if options.enable_tax_awareness and quantity < requested_qty:
+            if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
                 constraints = [c for c in diagnostics.warnings if c == "TAX_BUDGET_LIMIT_REACHED"]
                 if not constraints:
                     diagnostics.warnings.append("TAX_BUDGET_LIMIT_REACHED")
                 diagnostics.tax_budget_constraint_events.append(
                     TaxBudgetConstraintEvent(
                         instrument_id=i_id,
-                        requested_quantity=requested_qty,
+                        requested_quantity=sell_quantity_before_tax,
                         allowed_quantity=quantity,
                         reason_code="TAX_BUDGET_LIMIT_REACHED",
                     )
                 )
 
-        notional = quantity * price_ent.price
+        notional = quantity * unit_value
         notional_base = notional * rate
 
         shelf_ent = next((s for s in shelf if s.instrument_id == i_id), None)
@@ -189,9 +202,10 @@ def generate_intents(
 
         if quantity > 0:
             applied_constraints = ["MIN_NOTIONAL"] if threshold else []
+            if side == "SELL" and quantity < Decimal(qty):
+                applied_constraints.append("AVAILABLE_HOLDING")
             if side == "SELL" and options.enable_tax_awareness:
-                requested_qty = Decimal(qty)
-                if quantity < requested_qty:
+                if sell_quantity_before_tax is not None and quantity < sell_quantity_before_tax:
                     applied_constraints.append("TAX_BUDGET")
             intents.append(
                 SecurityTradeIntent(

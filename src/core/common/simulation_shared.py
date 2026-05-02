@@ -58,9 +58,21 @@ def apply_security_trade_to_portfolio(
 
     if intent.side == "BUY":
         position.quantity += intent.quantity
+        if position.market_value and position.market_value.currency == intent.notional.currency:
+            position.market_value.amount += intent.notional.amount
+        elif position.market_value is None:
+            position.market_value = Money(
+                amount=intent.notional.amount,
+                currency=intent.notional.currency,
+            )
         cash_balance.amount -= intent.notional.amount
     else:
         position.quantity -= intent.quantity
+        if position.market_value and position.market_value.currency == intent.notional.currency:
+            position.market_value.amount = max(
+                Decimal("0"),
+                position.market_value.amount - intent.notional.amount,
+            )
         cash_balance.amount += intent.notional.amount
 
 

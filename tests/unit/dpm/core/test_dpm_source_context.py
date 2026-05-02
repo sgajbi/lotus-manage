@@ -82,6 +82,16 @@ def test_core_context_transforms_all_engine_inputs_and_options():
     assert request.shelf_entries[0].settlement_days == 2
     assert request.options.enable_tax_awareness is True
     assert request.options.enable_settlement_awareness is True
+    assert request.options.valuation_mode == "TRUST_SNAPSHOT"
+
+
+def test_core_context_respects_explicit_valuation_mode_override():
+    request = build_rebalance_request_from_core_context(
+        context=_core_context(),
+        options_override={"valuation_mode": "CALCULATED"},
+    )
+
+    assert request.options.valuation_mode == "CALCULATED"
 
 
 def test_core_context_transforms_stateful_batch_scenarios():
@@ -96,6 +106,8 @@ def test_core_context_transforms_stateful_batch_scenarios():
     assert sorted(request.scenarios) == ["baseline", "tax_budget"]
     assert request.portfolio_snapshot.snapshot_id == "core-pf-snap-001"
     assert request.market_data_snapshot.snapshot_id == "core-md-snap-001"
+    assert request.scenarios["baseline"].options["valuation_mode"] == "TRUST_SNAPSHOT"
+    assert request.scenarios["tax_budget"].options["valuation_mode"] == "TRUST_SNAPSHOT"
 
 
 def test_core_model_targets_transform_to_manage_model_portfolio():
