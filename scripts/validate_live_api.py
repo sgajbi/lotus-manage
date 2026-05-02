@@ -295,26 +295,26 @@ def run_live_api_validation(
         try:
             run_demo_pack(base_url)
             results.append(_result("demo_pack", True, {"base_url": base_url}))
-        except DemoRunError as exc:
+        except (DemoRunError, httpx.HTTPError) as exc:
             results.append(_result("demo_pack", False, {"error": str(exc)}))
 
     with httpx.Client(base_url=base_url, timeout=timeout, transport=transport) as client:
         probes = [
-            _probe_ready,
-            _probe_capabilities,
-            _probe_openapi_boundary,
-            _probe_openapi_certification_contract,
-            _probe_removed_proposal_route,
-            _probe_stateful_core_sourcing_guard,
-            _probe_async_duplicate_correlation,
-            _probe_supportability_summary,
-            _probe_metrics,
+            ("ready", _probe_ready),
+            ("capabilities_truthful_default", _probe_capabilities),
+            ("openapi_no_advisory_or_proposals", _probe_openapi_boundary),
+            ("openapi_certification_contract", _probe_openapi_certification_contract),
+            ("removed_proposal_route_404", _probe_removed_proposal_route),
+            ("stateful_core_sourcing_guard", _probe_stateful_core_sourcing_guard),
+            ("async_duplicate_correlation_conflict", _probe_async_duplicate_correlation),
+            ("supportability_postgres_summary", _probe_supportability_summary),
+            ("metrics_exposed_bounded_supportability", _probe_metrics),
         ]
-        for probe in probes:
+        for probe_name, probe in probes:
             try:
                 results.append(probe(client))
             except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
-                results.append(_result(probe.__name__, False, {"error": str(exc)}))
+                results.append(_result(probe_name, False, {"error": str(exc)}))
 
     for core_base_url in core_base_urls or []:
         with httpx.Client(base_url=core_base_url, timeout=timeout, transport=transport) as client:

@@ -1457,27 +1457,29 @@ passes for the implemented surface. Slice 11 has clean direct canonical-host `lo
 evidence after refreshing the manage container to the branch image, and Slice 12 now has
 machine-enforced manage/core integration posture proof. Full RFC completion remains blocked because
 stateful core-sourced execution is intentionally disabled until the RFC-087 `lotus-core` DPM
-source-data products are implemented and live-certified. Slice 13 final closure remains blocked
-until the upstream dependency is resolved or the RFC is explicitly rebaselined to close only the
-implemented stateless surface.
+source-data products, source-family readiness/supportability, and live canonical proof are complete.
+Five first-wave product-specific source integrations now exist in both core and manage, but they are
+not sufficient to promote stateful execution without live proof and readiness evidence. Slice 13
+final closure remains blocked until the upstream dependency is resolved or the RFC is explicitly
+rebaselined to close only the implemented stateless surface.
 
 ### Slice-By-Slice Completeness
 
 | Slice | Current assessment | Evidence and residual gap |
 | --- | --- | --- |
 | Slice 0 Platform automation | Completed for the identified scaffolding gap | Platform commit `9c79860` added endpoint-certification scaffolding and passed Remote Feature Lane. |
-| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; RFC-087 and updated `sgajbi/lotus-core#330` track missing composed DPM source products; stateful promotion remains blocked. |
+| Slice 1 Contract audit | Completed with an explicit no-go | `lotus-core` `PortfolioStateSnapshot:v1` was audited; RFC-087 replaced the old monolithic route assumption with product-specific source products. Stateful promotion remains blocked by source-family readiness and live proof. |
 | Slice 2 Cleanup and structure | Completed for first-pass cleanup | Review controls and documentation regression tests are in place; historical advisory rationale is deliberately retained only where it states ownership boundaries. |
 | Slice 3 Endpoint consolidation | Completed | Duplicate unversioned product routes and platform capability aliases were removed; route inventory and vocabulary gates prove canonical `/api/v1` posture. |
 | Slice 4 Advisory cleanup | Completed for active runtime ownership | Advisory/proposal routes and active proposal namespaces are absent; `lotus-advise` remains documented as the owner of advisor-led workflows. |
 | Slice 5 Stateless envelope | Completed | Simulate/analyze/async analyze use explicit `input_mode=stateless` envelopes; direct legacy bodies are rejected. |
-| Slice 6 Core resolver seam | Completed for modeled disabled state | Typed stateful selector/context models, bounded resolver client, transformation helpers, and lineage fields exist; live core-backed execution remains blocked by the upstream contract gap. |
-| Slice 7 Stateful certification | Partially completed | Capability publication is safely gated and mocked stateful execution paths are tested. Live stateful promotion is intentionally incomplete until core issue #330 is resolved. |
+| Slice 6 Core resolver seam | Completed for modeled disabled state | Typed stateful selector/context models, bounded resolver client, transformation helpers, lineage fields, and client calls for the five first-wave RFC-087 core source products exist; live core-backed execution remains blocked by readiness and proof gaps. |
+| Slice 7 Stateful certification | Partially completed | Capability publication is safely gated and mocked stateful execution paths are tested. Live stateful promotion is intentionally incomplete until RFC-087 source products and source-family readiness pass canonical live proof. |
 | Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. New stateful DPM source-data products must wait for the upstream resolver contract. |
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Hardened, still under active audit | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI. |
-| Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Historical direct core probes showed the old DPM execution-context route returns 404; RFC-087 now tracks the required composed source products. |
-| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, stricter deployed Swagger error-example checks, focused unit tests, the repo-native `make live-api-validate-core` target, and 12/12 direct canonical-host evidence. Full stateful hardening still depends on `sgajbi/lotus-core#330`. |
+| Slice 11 Implementation proof | Completed for implemented stateless/manage API surface; blocked for stateful core-sourced execution | Refreshed direct canonical manage API proof passed 10/10 probes. Historical direct core probes showed the old DPM execution-context route returns 404; RFC-087 now supplies five product-specific source routes, but latest live core proof is blocked because `core-control.dev.lotus` refused connections. |
+| Slice 12 Second-last hardening | Completed for implemented stateless/manage API surface; blocked for stateful promotion | The live validator now includes executable manage/core posture probes, stricter deployed Swagger error-example checks, focused unit tests, the repo-native `make live-api-validate-core` target, and 12/12 direct canonical-host evidence for the guarded posture. Full stateful hardening still depends on RFC-087 live source-product proof and source-family readiness. |
 | Slice 13 Final closure | Not complete | Requires final docs/wiki/context/supported-features update, wiki publication after merge, branch hygiene, and explicit skills/context review outcome. |
 
 ### What Was Truly Completed
@@ -1490,7 +1492,11 @@ implemented stateless surface.
 4. Stateful `portfolio_id` execution is modeled with a bounded `lotus-core` resolver seam and
    lineage fields, but remains disabled by default.
 5. Capability discovery truthfully reports only `stateless` mode until resolver readiness is proven.
-6. Mesh, observability, OpenAPI, API vocabulary, no-alias, supportability, and documentation
+6. Typed `lotus-core` client methods and source-context transformers exist for
+   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
+   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, and
+   `MarketDataCoverageWindow:v1`.
+7. Mesh, observability, OpenAPI, API vocabulary, no-alias, supportability, and documentation
    regression gates now cover the implemented surface.
 
 ### Quality Improvements Made
@@ -1539,6 +1545,13 @@ implemented stateless surface.
    through a repo-native command.
 9. Wiki check-only currently fails only because repo-authored RFC-0036 wiki source is ahead of the
    published GitHub wiki, which is the expected pre-merge posture before Slice 13 publication.
+10. RFC-087 gold-pass audit added a reusable core source-product live validator. The latest
+    `core-control.dev.lotus` run failed 6/6 probes with `[WinError 10061]`, so no stateful
+    endpoint-level live proof is accepted yet.
+11. The manage live validator now converts demo-pack and probe connectivity failures into
+    structured JSON evidence. The latest `manage.dev.lotus`, `core-control.dev.lotus`, and
+    `core-query.dev.lotus` run failed 12/12 probes with `[WinError 10061]`; this proves runtime
+    unavailability, not functional API readiness.
 
 ### Standard Assessment
 
@@ -1547,8 +1560,10 @@ this stage: local gates pass, remote Feature Lane is green, direct canonical-hos
 passes, the previous stale Swagger runtime drift is now caught by validation and resolved by a
 targeted manage refresh, and manage/core integration posture is now checked by executable live
 validation. The full RFC has not reached final gold-standard closure because stateful core-sourced
-execution depends on RFC-087 `lotus-core` DPM source-data products that are not yet live, and final
-closure remains to be completed after that dependency is resolved or explicitly rebaselined.
+execution depends on RFC-087 `lotus-core` DPM source-data products being reachable and certified
+live, plus source-family readiness/supportability. The five first-wave integrations are implemented
+but not sufficient for promotion. Final closure remains to be completed after that dependency is
+resolved or explicitly rebaselined.
 
 ## Test Plan
 

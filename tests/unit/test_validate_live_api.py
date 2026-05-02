@@ -555,3 +555,26 @@ def test_live_api_validation_fails_when_core_route_posture_changes_unexpectedly(
 
     failure_names = {failure["name"] for failure in summary["failures"]}
     assert "core_dpm_execution_context_route" in failure_names
+
+
+def test_live_api_validation_records_demo_connectivity_failure(monkeypatch) -> None:
+    def fail_demo_pack(_base_url: str) -> None:
+        raise httpx.ConnectError("connection refused")
+
+    monkeypatch.setattr("scripts.validate_live_api.run_demo_pack", fail_demo_pack)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/health/ready":
+            return _json_response(503, {"status": "unavailable"})
+        return _json_response(404, {"detail": "not found"})
+
+    results = run_live_api_validation(
+        "http://manage.test",
+        include_demo_pack=True,
+        transport=httpx.MockTransport(handler),
+    )
+    summary = summarize(results)
+
+    failures = {failure["name"]: failure for failure in summary["failures"]}
+    assert failures["demo_pack"]["details"]["error"] == "connection refused"
+    assert "ready" in failures

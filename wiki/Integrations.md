@@ -49,8 +49,9 @@ Current state:
    `InstrumentEligibilityProfile:v1` through `POST /integration/instruments/eligibility-bulk`, and
    `PortfolioTaxLotWindow:v1` through `POST /integration/portfolios/{portfolio_id}/tax-lots`, and
    `MarketDataCoverageWindow:v1` through `POST /integration/market-data/coverage`.
-3. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
-   for production stateful promotion.
+3. `lotus-core` now has first-wave product-specific RFC-087 source APIs in branch code, but live
+   canonical proof and source-family readiness/supportability are still missing for production
+   stateful promotion.
 4. Capability discovery does not advertise stateful execution unless the stateful gate,
    `DPM_CORE_BASE_URL`, non-legacy resolver configuration, and capability flag are all enabled.
 5. RFC-0036 now tracks the upstream gap through `lotus-core` RFC-087 and updated
@@ -65,7 +66,7 @@ Current source-product integration status:
 | `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
 | `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
 | `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| Portfolio state, readiness | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
+| Source-family readiness/supportability | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
 
 Historical blocked-route proof on 2026-05-02:
 
@@ -81,16 +82,17 @@ Historical blocked-route proof on 2026-05-02:
 make live-api-validate-core
 ```
 
-The default command expects the current blocked posture. After `lotus-core` exposes the RFC-087
-certified source-data products, update the validator to prove composed-source readiness before
-promoting stateful capability truth.
+The default command expects the current blocked posture. After the RFC-087 core source products are
+reachable in the canonical runtime and source-family readiness is available, update the validator to
+prove composed-source readiness before promoting stateful capability truth.
 
 Runtime guardrail: `lotus-manage` no longer defaults to the retired monolithic
 `/integration/portfolios/{portfolio_id}/dpm-execution-context` route. Stateful sourcing remains
 unavailable until all required RFC-087 product-specific core routes are integrated and proven.
 
 This is the correct current behavior: manage is ready for the implemented stateless surface, while
-stateful core-sourced execution remains withheld until the upstream source products are certified.
+stateful core-sourced execution remains withheld until the upstream source products and readiness
+evidence are live-certified.
 
 ## Manage API Consumers
 
