@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
 
@@ -535,7 +535,7 @@ class DpmCoreResolverClient:
                 client.close()
 
 
-def _portfolio_snapshot_from_core_snapshot(payload: dict) -> PortfolioSnapshot:
+def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:
     sections = payload.get("sections") or {}
     rows = sections.get("positions_baseline") or []
     valuation_context = payload.get("valuation_context") or {}
