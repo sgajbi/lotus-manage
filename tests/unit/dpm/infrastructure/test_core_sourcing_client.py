@@ -224,6 +224,55 @@ def _portfolio_tax_lots_payload() -> dict:
     }
 
 
+def _market_data_coverage_payload() -> dict:
+    return {
+        "product_name": "MarketDataCoverageWindow",
+        "product_version": "v1",
+        "as_of_date": "2026-04-10",
+        "valuation_currency": "SGD",
+        "price_coverage": [
+            {
+                "instrument_id": "EQ_US_AAPL",
+                "found": True,
+                "price_date": "2026-04-10",
+                "price": "187.1200000000",
+                "currency": "USD",
+                "age_days": 0,
+                "quality_status": "READY",
+            }
+        ],
+        "fx_coverage": [
+            {
+                "from_currency": "USD",
+                "to_currency": "SGD",
+                "found": True,
+                "rate_date": "2026-04-10",
+                "rate": "1.3521000000",
+                "age_days": 0,
+                "quality_status": "READY",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "MARKET_DATA_READY",
+            "requested_price_count": 1,
+            "resolved_price_count": 1,
+            "requested_fx_count": 1,
+            "resolved_fx_count": 1,
+            "missing_instrument_ids": [],
+            "stale_instrument_ids": [],
+            "missing_currency_pairs": [],
+            "stale_currency_pairs": [],
+        },
+        "lineage": {
+            "source_system": "market_prices+fx_rates",
+            "contract_version": "rfc_087_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -441,6 +490,43 @@ def test_core_resolver_fetches_portfolio_tax_lots_from_dedicated_source_product(
     assert response.lots[0].lot_id == "LOT-AAPL-001"
 
 
+def test_core_resolver_fetches_market_data_coverage_from_dedicated_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_market_data_coverage_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_market_data_coverage(
+        instrument_ids=["EQ_US_AAPL"],
+        currency_pairs=[("USD", "SGD")],
+        as_of_date=date(2026, 4, 10),
+        valuation_currency="SGD",
+        max_staleness_days=5,
+        tenant_id="tenant_sg_pb",
+        correlation_id="corr-market-data-001",
+    )
+
+    assert seen["url"] == "https://core.example.test/integration/market-data/coverage"
+    assert seen["correlation_id"] == "corr-market-data-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"instrument_ids":["EQ_US_AAPL"]' in seen["payload"]
+    assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen["payload"]
+    assert b'"valuation_currency":"SGD"' in seen["payload"]
+    assert b'"max_staleness_days":5' in seen["payload"]
+    assert b'"tenant_id":"tenant_sg_pb"' in seen["payload"]
+    assert response.product_name == "MarketDataCoverageWindow"
+    assert response.supportability.state == "READY"
+    assert response.fx_coverage[0].rate == Decimal("1.3521000000")
+
+
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(base_url="https://core.example.test"),
@@ -484,6 +570,23 @@ def test_core_resolver_maps_portfolio_tax_lot_4xx_to_incomplete_error():
     with pytest.raises(DpmCoreResolverError, match="DPM_CORE_PORTFOLIO_TAX_LOTS_INCOMPLETE"):
         client.resolve_portfolio_tax_lots(
             portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+
+def test_core_resolver_maps_market_data_coverage_4xx_to_incomplete_error():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(404, json={"detail": "x"}))
+        ),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_MARKET_DATA_COVERAGE_INCOMPLETE"):
+        client.resolve_market_data_coverage(
+            instrument_ids=["UNKNOWN_SEC"],
+            currency_pairs=[],
             as_of_date=date(2026, 4, 10),
             correlation_id=None,
         )

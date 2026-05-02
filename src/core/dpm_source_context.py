@@ -7,11 +7,13 @@ from pydantic import BaseModel, Field
 from src.core.models import (
     BatchRebalanceRequest,
     EngineOptions,
+    FxRate,
     MarketDataSnapshot,
     Money,
     ModelPortfolio,
     ModelTarget,
     PortfolioSnapshot,
+    Price,
     ShelfEntry,
     SimulationScenario,
     TaxLot,
@@ -388,6 +390,92 @@ class DpmCorePortfolioTaxLotWindowResponse(BaseModel):
     )
 
 
+class DpmCoreMarketDataPriceCoverageRecord(BaseModel):
+    instrument_id: str = Field(description="Requested instrument identifier.")
+    found: bool = Field(description="Whether lotus-core found a price observation.")
+    price_date: Optional[date] = Field(default=None, description="Resolved price date.")
+    price: Optional[Decimal] = Field(default=None, description="Resolved price value.")
+    currency: Optional[str] = Field(default=None, description="Resolved price currency.")
+    age_days: Optional[int] = Field(default=None, description="Observation age in days.")
+    quality_status: Literal["READY", "STALE", "MISSING"] = Field(
+        description="Core price coverage quality status."
+    )
+
+
+class DpmCoreMarketDataFxCoverageRecord(BaseModel):
+    from_currency: str = Field(description="Source currency.")
+    to_currency: str = Field(description="Target currency.")
+    found: bool = Field(description="Whether lotus-core found an FX observation.")
+    rate_date: Optional[date] = Field(default=None, description="Resolved FX rate date.")
+    rate: Optional[Decimal] = Field(default=None, description="Resolved FX conversion rate.")
+    age_days: Optional[int] = Field(default=None, description="Observation age in days.")
+    quality_status: Literal["READY", "STALE", "MISSING"] = Field(
+        description="Core FX coverage quality status."
+    )
+
+
+class DpmCoreMarketDataCoverageSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for market-data consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    requested_price_count: int = Field(description="Number of requested price observations.")
+    resolved_price_count: int = Field(description="Number of resolved price observations.")
+    requested_fx_count: int = Field(description="Number of requested FX observations.")
+    resolved_fx_count: int = Field(description="Number of resolved FX observations.")
+    missing_instrument_ids: list[str] = Field(
+        default_factory=list,
+        description="Requested instruments without a price observation.",
+    )
+    stale_instrument_ids: list[str] = Field(
+        default_factory=list,
+        description="Requested instruments whose price observation is stale.",
+    )
+    missing_currency_pairs: list[str] = Field(
+        default_factory=list,
+        description="Requested FX pairs without a rate observation.",
+    )
+    stale_currency_pairs: list[str] = Field(
+        default_factory=list,
+        description="Requested FX pairs whose rate observation is stale.",
+    )
+
+
+class DpmCoreMarketDataCoverageWindowResponse(BaseModel):
+    product_name: Literal["MarketDataCoverageWindow"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    as_of_date: date = Field(description="As-of date used to resolve market data.")
+    valuation_currency: Optional[str] = Field(
+        default=None,
+        description="Requested valuation currency context.",
+    )
+    price_coverage: list[DpmCoreMarketDataPriceCoverageRecord] = Field(
+        default_factory=list,
+        description="Resolved price coverage records from lotus-core.",
+    )
+    fx_coverage: list[DpmCoreMarketDataFxCoverageRecord] = Field(
+        default_factory=list,
+        description="Resolved FX coverage records from lotus-core.",
+    )
+    supportability: DpmCoreMarketDataCoverageSupportability = Field(
+        description="Completeness and readiness posture for market-data consumption."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -592,6 +680,47 @@ def build_portfolio_snapshot_with_core_tax_lots(
         positions.append(type(position).model_validate(position_payload))
     return PortfolioSnapshot.model_validate(
         {**portfolio_snapshot.model_dump(mode="python"), "positions": positions}
+    )
+
+
+def build_market_data_snapshot_from_core_coverage(
+    response: DpmCoreMarketDataCoverageWindowResponse,
+) -> MarketDataSnapshot:
+    if response.supportability.state != "READY":
+        raise DpmCoreContextIncompleteError(response.supportability.reason)
+
+    prices: list[Price] = []
+    for record in response.price_coverage:
+        if (
+            not record.found
+            or record.quality_status != "READY"
+            or record.price is None
+            or record.currency is None
+        ):
+            raise DpmCoreContextIncompleteError("DPM_CORE_MARKET_DATA_PRICE_INCOMPLETE")
+        prices.append(
+            Price(
+                instrument_id=record.instrument_id,
+                price=record.price,
+                currency=record.currency,
+            )
+        )
+
+    fx_rates: list[FxRate] = []
+    for fx_record in response.fx_coverage:
+        if not fx_record.found or fx_record.quality_status != "READY" or fx_record.rate is None:
+            raise DpmCoreContextIncompleteError("DPM_CORE_MARKET_DATA_FX_INCOMPLETE")
+        fx_rates.append(
+            FxRate(
+                pair=f"{fx_record.from_currency.upper()}/{fx_record.to_currency.upper()}",
+                rate=fx_record.rate,
+            )
+        )
+
+    return MarketDataSnapshot(
+        snapshot_id=f"core-market-data-coverage:{response.as_of_date.isoformat()}",
+        prices=prices,
+        fx_rates=fx_rates,
     )
 
 

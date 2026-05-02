@@ -52,8 +52,9 @@ Current repository posture:
     `DiscretionaryMandateBinding:v1` through
     `/integration/portfolios/{portfolio_id}/mandate-binding`, and
     `InstrumentEligibilityProfile:v1` through `/integration/instruments/eligibility-bulk`, and
-    `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`; they are
-    not sufficient on their own to promote stateful execution.
+    `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`, and
+    `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`; they are not
+    sufficient on their own to promote stateful execution.
 
 ## Architecture And Module Map
 
@@ -158,9 +159,10 @@ Most relevant current governance:
    `DPM_CORE_BASE_URL` is configured; inline bundle source-data lineage remains an RFC-0082
    watchlist area,
 5. `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
-   `InstrumentEligibilityProfile:v1`, and `PortfolioTaxLotWindow:v1` are the first
-   product-specific core source endpoints integrated in the client layer; remaining RFC-087 source
-   products and live proof must be added before stateful mode can be advertised or enabled,
+   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, and
+   `MarketDataCoverageWindow:v1` are the first product-specific core source endpoints integrated
+   in the client layer; remaining RFC-087 source products and live proof must be added before
+   stateful mode can be advertised or enabled,
 6. this repo should stay operationally aligned with gateway and platform startup sequences,
 7. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,

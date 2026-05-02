@@ -47,7 +47,8 @@ Current state:
    `DiscretionaryMandateBinding:v1` through
    `POST /integration/portfolios/{portfolio_id}/mandate-binding`, and
    `InstrumentEligibilityProfile:v1` through `POST /integration/instruments/eligibility-bulk`, and
-   `PortfolioTaxLotWindow:v1` through `POST /integration/portfolios/{portfolio_id}/tax-lots`.
+   `PortfolioTaxLotWindow:v1` through `POST /integration/portfolios/{portfolio_id}/tax-lots`, and
+   `MarketDataCoverageWindow:v1` through `POST /integration/market-data/coverage`.
 3. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
    for production stateful promotion.
 4. Capability discovery does not advertise stateful execution unless the stateful gate,
@@ -63,7 +64,8 @@ Current source-product integration status:
 | `DiscretionaryMandateBinding:v1` | Client method and policy-context transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
 | `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
 | `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
-| Portfolio state, market-data coverage, readiness | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
+| `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
+| Portfolio state, readiness | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
 
 Historical blocked-route proof on 2026-05-02:
 

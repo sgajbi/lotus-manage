@@ -434,7 +434,10 @@ Known gaps before stateful promotion:
 Partial source-product integrations already implemented:
 
 1. model portfolio target resolution by `model_portfolio_id`,
-2. discretionary mandate metadata and mandate-to-model/policy binding.
+2. discretionary mandate metadata and mandate-to-model/policy binding,
+3. instrument eligibility and product shelf transformation,
+4. portfolio tax-lot enrichment for tax-aware sell allocation,
+5. market-data and FX coverage transformation with stale/missing coverage rejection.
 
 Stateful `lotus-manage` must remain disabled until RFC-087 core products are implemented,
 certified, and proven with live core/manage evidence.
@@ -940,9 +943,16 @@ Additional composed-source integration evidence captured on 2026-05-02:
 9. Added focused unit proof for the outbound request shape, correlation header propagation,
    bounded 4xx error mapping, response parsing, tax-lot unit-cost conversion, and supportability
    rejection.
-10. Promotion no-go remains active because portfolio state, market-data/FX coverage, and
-    readiness/source-family completeness products are still pending in RFC-087 live proof for
-    stateful DPM promotion.
+10. Added a bounded `MarketDataCoverageWindow:v1` client call to
+    `POST /integration/market-data/coverage`.
+11. Added a typed market-data coverage response model and transformer that converts core price and
+    FX coverage into the existing DPM engine `MarketDataSnapshot` model while rejecting stale or
+    missing price/FX coverage before stateful execution can run.
+12. Added focused unit proof for the outbound request shape, correlation header propagation,
+    bounded 4xx error mapping, response parsing, price/FX conversion, and stale/missing
+    supportability rejection.
+13. Promotion no-go remains active because portfolio state readiness/source-family completeness
+    and live canonical proof are still pending in RFC-087/RFC-0036 for stateful DPM promotion.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 
