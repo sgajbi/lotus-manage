@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from datetime import date
 from typing import Optional
 
 import httpx
 
 from src.core.dpm_source_context import (
     DpmCoreExecutionContext,
+    DpmCoreModelPortfolioTargetResponse,
     DpmStatefulInput,
     build_core_resolver_payload,
 )
@@ -25,6 +27,9 @@ LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-
 class DpmCoreResolverConfig:
     base_url: str
     path_template: str = ""
+    model_portfolio_targets_path_template: str = (
+        "/integration/model-portfolios/{model_portfolio_id}/targets"
+    )
     timeout_seconds: float = 2.0
     max_attempts: int = 2
 
@@ -35,6 +40,14 @@ class DpmCoreResolverConfig:
             raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = self.path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_model_portfolio_targets_url(self, model_portfolio_id: str) -> str:
+        path_template = self.model_portfolio_targets_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(model_portfolio_id=model_portfolio_id).lstrip("/")
         return f"{base}/{path}"
 
 
@@ -86,6 +99,54 @@ class DpmCoreResolverClient:
                             "DPM_CORE_RESOLVER_UNAVAILABLE"
                         ) from exc
             raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE") from last_error
+        finally:
+            if self._owns_client:
+                client.close()
+
+    def resolve_model_portfolio_targets(
+        self,
+        *,
+        model_portfolio_id: str,
+        as_of_date: date,
+        include_inactive_targets: bool = False,
+        tenant_id: Optional[str] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCoreModelPortfolioTargetResponse:
+        attempts = max(self._config.max_attempts, 1)
+        url = self._config.resolve_model_portfolio_targets_url(model_portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "include_inactive_targets": include_inactive_targets,
+            "tenant_id": tenant_id,
+        }
+        headers = {}
+        if correlation_id:
+            headers["X-Correlation-Id"] = correlation_id
+
+        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        try:
+            last_error: Exception | None = None
+            for attempt in range(attempts):
+                try:
+                    response = client.post(url, json=payload, headers=headers)
+                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
+                        continue
+                    if response.status_code >= 500:
+                        raise DpmCoreResolverUnavailableError(
+                            "DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE"
+                        )
+                    if response.status_code >= 400:
+                        raise DpmCoreResolverError("DPM_CORE_MODEL_TARGETS_INCOMPLETE")
+                    return DpmCoreModelPortfolioTargetResponse.model_validate(response.json())
+                except (httpx.TimeoutException, httpx.TransportError) as exc:
+                    last_error = exc
+                    if attempt + 1 >= attempts:
+                        raise DpmCoreResolverUnavailableError(
+                            "DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE"
+                        ) from exc
+            raise DpmCoreResolverUnavailableError(
+                "DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE"
+            ) from last_error
         finally:
             if self._owns_client:
                 client.close()

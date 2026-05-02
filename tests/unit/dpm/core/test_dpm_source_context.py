@@ -1,9 +1,12 @@
 import pytest
+from decimal import Decimal
 
 from src.core.dpm_source_context import (
     DpmCoreContextIncompleteError,
     DpmCoreExecutionContext,
+    DpmCoreModelPortfolioTargetResponse,
     build_batch_rebalance_request_from_core_context,
+    build_model_portfolio_from_core_targets,
     build_rebalance_request_from_core_context,
 )
 from src.core.models import SimulationScenario
@@ -85,6 +88,79 @@ def test_core_context_transforms_stateful_batch_scenarios():
     assert sorted(request.scenarios) == ["baseline", "tax_budget"]
     assert request.portfolio_snapshot.snapshot_id == "core-pf-snap-001"
     assert request.market_data_snapshot.snapshot_id == "core-md-snap-001"
+
+
+def test_core_model_targets_transform_to_manage_model_portfolio():
+    response = DpmCoreModelPortfolioTargetResponse.model_validate(
+        {
+            "product_name": "DpmModelPortfolioTarget",
+            "product_version": "v1",
+            "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+            "model_portfolio_version": "2026.04",
+            "as_of_date": "2026-04-10",
+            "display_name": "Singapore Global Balanced DPM Model",
+            "base_currency": "SGD",
+            "risk_profile": "balanced",
+            "mandate_type": "discretionary",
+            "approval_status": "approved",
+            "effective_from": "2026-04-10",
+            "targets": [
+                {
+                    "instrument_id": "EQ_US_AAPL",
+                    "target_weight": "0.6000000000",
+                    "target_status": "active",
+                    "quality_status": "accepted",
+                },
+                {
+                    "instrument_id": "FI_US_TREASURY_10Y",
+                    "target_weight": "0.4000000000",
+                    "target_status": "active",
+                    "quality_status": "accepted",
+                },
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "MODEL_TARGETS_READY",
+                "target_count": 2,
+                "total_target_weight": "1.0000000000",
+            },
+        }
+    )
+
+    model = build_model_portfolio_from_core_targets(response)
+
+    assert [(target.instrument_id, target.weight) for target in model.targets] == [
+        ("EQ_US_AAPL", Decimal("0.6000000000")),
+        ("FI_US_TREASURY_10Y", Decimal("0.4000000000")),
+    ]
+
+
+def test_core_model_targets_reject_incomplete_supportability():
+    response = DpmCoreModelPortfolioTargetResponse.model_validate(
+        {
+            "product_name": "DpmModelPortfolioTarget",
+            "product_version": "v1",
+            "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+            "model_portfolio_version": "2026.04",
+            "as_of_date": "2026-04-10",
+            "display_name": "Singapore Global Balanced DPM Model",
+            "base_currency": "SGD",
+            "risk_profile": "balanced",
+            "mandate_type": "discretionary",
+            "approval_status": "approved",
+            "effective_from": "2026-04-10",
+            "targets": [],
+            "supportability": {
+                "state": "INCOMPLETE",
+                "reason": "MODEL_TARGETS_EMPTY",
+                "target_count": 0,
+                "total_target_weight": "0",
+            },
+        }
+    )
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="MODEL_TARGETS_EMPTY"):
+        build_model_portfolio_from_core_targets(response)
 
 
 def test_incomplete_core_context_is_not_transformed():

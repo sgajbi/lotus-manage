@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -8,6 +9,7 @@ from src.core.models import (
     EngineOptions,
     MarketDataSnapshot,
     ModelPortfolio,
+    ModelTarget,
     PortfolioSnapshot,
     ShelfEntry,
     SimulationScenario,
@@ -72,6 +74,80 @@ class DpmCoreSupportability(BaseModel):
     degraded_source_families: list[str] = Field(
         default_factory=list,
         description="Source-data families present but degraded.",
+    )
+
+
+class DpmCoreModelPortfolioTargetRow(BaseModel):
+    instrument_id: str = Field(description="Core-governed target instrument identifier.")
+    target_weight: Decimal = Field(description="Target instrument weight as a decimal ratio.")
+    min_weight: Optional[Decimal] = Field(
+        default=None,
+        description="Optional lower target band as a decimal ratio.",
+    )
+    max_weight: Optional[Decimal] = Field(
+        default=None,
+        description="Optional upper target band as a decimal ratio.",
+    )
+    target_status: str = Field(description="Target lifecycle status from lotus-core.")
+    quality_status: str = Field(description="Data quality status from lotus-core.")
+    source_record_id: Optional[str] = Field(
+        default=None,
+        description="Core source record identifier for audit and replay.",
+    )
+
+
+class DpmCoreModelPortfolioTargetSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for model target consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    target_count: int = Field(description="Number of target rows returned by lotus-core.")
+    total_target_weight: Decimal = Field(description="Sum of returned target weights.")
+
+
+class DpmCoreModelPortfolioTargetResponse(BaseModel):
+    product_name: Literal["DpmModelPortfolioTarget"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    model_portfolio_id: str = Field(description="Core-governed model portfolio identifier.")
+    model_portfolio_version: str = Field(description="Core-governed model portfolio version.")
+    as_of_date: date = Field(description="As-of date used to resolve the target product.")
+    display_name: str = Field(description="Business display name for the model portfolio.")
+    base_currency: str = Field(description="Model portfolio base currency.")
+    risk_profile: str = Field(description="Mandate risk profile aligned to the model.")
+    mandate_type: str = Field(description="Mandate type for which this model is approved.")
+    rebalance_frequency: Optional[str] = Field(
+        default=None,
+        description="Expected rebalance cadence.",
+    )
+    approval_status: str = Field(description="Approval lifecycle status for the model version.")
+    approved_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp when the model version was approved.",
+    )
+    effective_from: date = Field(description="Resolved model version effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None,
+        description="Resolved model version effective end date.",
+    )
+    targets: list[DpmCoreModelPortfolioTargetRow] = Field(
+        description="Resolved target rows from lotus-core."
+    )
+    supportability: DpmCoreModelPortfolioTargetSupportability = Field(
+        description="Completeness and readiness posture for the model target product."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
     )
 
 
@@ -162,6 +238,22 @@ def build_core_resolver_payload(stateful_input: DpmStatefulInput) -> dict[str, A
 
 def _options_from_override(options_override: dict[str, Any]) -> EngineOptions:
     return EngineOptions.model_validate(options_override)
+
+
+def build_model_portfolio_from_core_targets(
+    response: DpmCoreModelPortfolioTargetResponse,
+) -> ModelPortfolio:
+    if response.supportability.state not in {"READY", "DEGRADED"}:
+        raise DpmCoreContextIncompleteError(response.supportability.reason)
+    if not response.targets:
+        raise DpmCoreContextIncompleteError("DPM_CORE_MODEL_TARGETS_EMPTY")
+    return ModelPortfolio(
+        targets=[
+            ModelTarget(instrument_id=target.instrument_id, weight=target.target_weight)
+            for target in response.targets
+            if target.target_status.lower() == "active"
+        ]
+    )
 
 
 def build_rebalance_request_from_core_context(

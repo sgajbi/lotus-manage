@@ -45,7 +45,11 @@ Current repository posture:
    market-data, model, shelf, and option bundles,
 9. stateful `portfolio_id` execution has typed selector/context models, a bounded `lotus-core`
    resolver client, transformation helpers, and lineage fields, but remains disabled by default
-   until governed `lotus-core` live proof is complete.
+   until governed `lotus-core` live proof is complete,
+10. the first RFC-087 composed source-product integration is implemented for
+    `DpmModelPortfolioTarget:v1` through the dedicated core endpoint
+    `/integration/model-portfolios/{model_portfolio_id}/targets`; it is not sufficient on its own
+    to promote stateful execution.
 
 ## Architecture And Module Map
 
@@ -149,14 +153,17 @@ Most relevant current governance:
    `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`, `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, and
    `DPM_CORE_BASE_URL` is configured; inline bundle source-data lineage remains an RFC-0082
    watchlist area,
-5. this repo should stay operationally aligned with gateway and platform startup sequences,
-6. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
+5. `DpmModelPortfolioTarget:v1` is the first product-specific core source endpoint integrated in
+   the client layer; remaining RFC-087 source products must be added before stateful mode can be
+   advertised or enabled,
+6. this repo should stay operationally aligned with gateway and platform startup sequences,
+7. repo-local `wiki/` content should stay concise, operator-focused, and derived from repo truth
    rather than duplicating the full `docs/` tree,
-7. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
+8. enterprise audit and readiness surfaces must emit `lotus-manage` service identity rather than
    stale split-era names,
-8. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
+9. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
-9. the current repo-native domain-data-product declaration intentionally records only governed
+10. the current repo-native domain-data-product declaration intentionally records only governed
    `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
    market-data and future stateful `portfolio_id` resolution must be added only after upstream
    producer approval and an explicit source-data retrieval design.

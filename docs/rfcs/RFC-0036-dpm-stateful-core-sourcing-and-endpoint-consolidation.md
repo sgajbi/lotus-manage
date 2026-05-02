@@ -60,6 +60,18 @@ implementation notes. Runtime implementation must follow RFC-087 composed source
 Stateful promotion remains blocked until those products are implemented, certified, and proven
 through live `lotus-core` plus `lotus-manage` evidence.
 
+Implementation note, 2026-05-02:
+
+1. `lotus-core` RFC-087 Slice 4 introduced the dedicated
+   `POST /integration/model-portfolios/{model_portfolio_id}/targets` source-product endpoint.
+2. `lotus-manage` now has a dedicated client method and transformer for that product:
+   `DpmCoreResolverClient.resolve_model_portfolio_targets` and
+   `build_model_portfolio_from_core_targets`.
+3. This is not stateful execution promotion. It proves the first composed source-product
+   integration path while keeping `input_mode=stateful` gated until portfolio state, mandate
+   binding, eligibility, tax-lot, and market-data source products are also available and live
+   proven.
+
 ## Summary
 
 `lotus-manage` must move from its current inline-only rebalance execution model to an enterprise
@@ -86,7 +98,9 @@ Current implementation:
    `POST /rebalance/analyze`, and `POST /rebalance/analyze/async`.
 2. The FastAPI app mounts the same routers twice: once unversioned and once under `/api/v1`.
 3. `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED` defaults to disabled.
-4. No active outbound `lotus-core` HTTP client exists in `lotus-manage`.
+4. `lotus-manage` has a bounded outbound `lotus-core` source-product client for
+   `DpmModelPortfolioTarget:v1`; the older monolithic DPM execution-context route remains blocked
+   and must not be used.
 5. Current source-data authority is documented as upstream: callers must provide source-governed
    portfolio, market-data, model, shelf, and option bundles.
 6. `lotus-gateway` currently consumes only run lookup, supportability summary, and capabilities

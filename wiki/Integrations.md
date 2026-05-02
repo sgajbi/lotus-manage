@@ -42,12 +42,21 @@ Current state:
 
 1. `lotus-manage` has the typed stateful request models, resolver client, transformation helpers,
    and lineage fields.
-2. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
+2. The first RFC-087 source-product integration exists for `DpmModelPortfolioTarget:v1` through
+   `POST /integration/model-portfolios/{model_portfolio_id}/targets`.
+3. `lotus-core` does not yet expose the full RFC-087 composed DPM source-data products required
    for production stateful promotion.
-3. Capability discovery does not advertise stateful execution unless the stateful gate,
+4. Capability discovery does not advertise stateful execution unless the stateful gate,
    `DPM_CORE_BASE_URL`, non-legacy resolver configuration, and capability flag are all enabled.
-4. RFC-0036 now tracks the upstream gap through `lotus-core` RFC-087 and updated
+5. RFC-0036 now tracks the upstream gap through `lotus-core` RFC-087 and updated
    `sgajbi/lotus-core#330`.
+
+Current source-product integration status:
+
+| Source product | lotus-manage posture | Promotion impact |
+| --- | --- | --- |
+| `DpmModelPortfolioTarget:v1` | Client method and transformer implemented; live proof pending canonical stack refresh. | Required but not sufficient for stateful execution. |
+| Portfolio state, mandate binding, instrument eligibility, tax lots, market-data coverage | Awaiting RFC-087 core implementation and certification. | Blocks stateful execution promotion. |
 
 Historical blocked-route proof on 2026-05-02:
 
@@ -69,7 +78,7 @@ promoting stateful capability truth.
 
 Runtime guardrail: `lotus-manage` no longer defaults to the retired monolithic
 `/integration/portfolios/{portfolio_id}/dpm-execution-context` route. Stateful sourcing remains
-unavailable until RFC-087 product-specific core routes are integrated and proven.
+unavailable until all required RFC-087 product-specific core routes are integrated and proven.
 
 This is the correct current behavior: manage is ready for the implemented stateless surface, while
 stateful core-sourced execution remains withheld until the upstream source products are certified.
