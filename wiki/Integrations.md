@@ -59,8 +59,12 @@ Live proof on 2026-05-02:
 4. The executable proof command now covers both manage behavior and core route posture:
 
 ```powershell
-python scripts/validate_live_api.py --base-url http://manage.dev.lotus --skip-demo-pack --core-base-url http://core-control.dev.lotus --core-base-url http://core-query.dev.lotus --expect-core-dpm-route absent --json-output output/rfc-0036-s12-core-manage-api-summary.json
+make live-api-validate-core
 ```
+
+The default command expects the current blocked posture. After `lotus-core` exposes the certified
+DPM execution-context route, rerun with `LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE=available` before
+promoting stateful capability truth.
 
 This is the correct current behavior: manage is ready for the implemented stateless surface, while
 stateful core-sourced execution remains withheld until the upstream route is certified.
