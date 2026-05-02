@@ -9,6 +9,7 @@ from src.core.dpm_source_context import (
     DpmCoreInstrumentEligibilityBulkResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioTaxLotWindowResponse,
     DpmStatefulInput,
     build_core_resolver_payload,
 )
@@ -34,6 +35,7 @@ class DpmCoreResolverConfig:
     )
     mandate_binding_path_template: str = "/integration/portfolios/{portfolio_id}/mandate-binding"
     instrument_eligibility_path_template: str = "/integration/instruments/eligibility-bulk"
+    portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
     timeout_seconds: float = 2.0
     max_attempts: int = 2
 
@@ -68,6 +70,14 @@ class DpmCoreResolverConfig:
             raise DpmCoreResolverUnavailableError("DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_portfolio_tax_lots_url(self, portfolio_id: str) -> str:
+        path_template = self.portfolio_tax_lots_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
 
 
@@ -267,6 +277,61 @@ class DpmCoreResolverClient:
                         ) from exc
             raise DpmCoreResolverUnavailableError(
                 "DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE"
+            ) from last_error
+        finally:
+            if self._owns_client:
+                client.close()
+
+    def resolve_portfolio_tax_lots(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        security_ids: Optional[list[str]] = None,
+        lot_status_filter: Optional[str] = None,
+        include_closed_lots: bool = False,
+        page_size: int = 250,
+        page_token: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCorePortfolioTaxLotWindowResponse:
+        attempts = max(self._config.max_attempts, 1)
+        url = self._config.resolve_portfolio_tax_lots_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "security_ids": security_ids,
+            "lot_status_filter": lot_status_filter,
+            "include_closed_lots": include_closed_lots,
+            "page": {"page_size": page_size, "page_token": page_token},
+            "tenant_id": tenant_id,
+        }
+        headers = {}
+        if correlation_id:
+            headers["X-Correlation-Id"] = correlation_id
+
+        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        try:
+            last_error: Exception | None = None
+            for attempt in range(attempts):
+                try:
+                    response = client.post(url, json=payload, headers=headers)
+                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
+                        continue
+                    if response.status_code >= 500:
+                        raise DpmCoreResolverUnavailableError(
+                            "DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE"
+                        )
+                    if response.status_code >= 400:
+                        raise DpmCoreResolverError("DPM_CORE_PORTFOLIO_TAX_LOTS_INCOMPLETE")
+                    return DpmCorePortfolioTaxLotWindowResponse.model_validate(response.json())
+                except (httpx.TimeoutException, httpx.TransportError) as exc:
+                    last_error = exc
+                    if attempt + 1 >= attempts:
+                        raise DpmCoreResolverUnavailableError(
+                            "DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE"
+                        ) from exc
+            raise DpmCoreResolverUnavailableError(
+                "DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE"
             ) from last_error
         finally:
             if self._owns_client:

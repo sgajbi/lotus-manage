@@ -7,13 +7,15 @@ from src.core.dpm_source_context import (
     DpmCoreInstrumentEligibilityBulkResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioTaxLotWindowResponse,
     build_batch_rebalance_request_from_core_context,
     build_model_portfolio_from_core_targets,
+    build_portfolio_snapshot_with_core_tax_lots,
     build_policy_context_from_core_mandate,
     build_rebalance_request_from_core_context,
     build_shelf_entries_from_core_eligibility,
 )
-from src.core.models import SimulationScenario
+from src.core.models import PortfolioSnapshot, SimulationScenario
 
 
 def _core_context(*, supportability_state: str = "READY") -> DpmCoreExecutionContext:
@@ -369,6 +371,133 @@ def test_core_instrument_eligibility_rejects_missing_supportability():
 
     with pytest.raises(DpmCoreContextIncompleteError, match="INSTRUMENT_ELIGIBILITY_MISSING"):
         build_shelf_entries_from_core_eligibility(response)
+
+
+def _core_tax_lot_payload(**overrides: object) -> dict:
+    payload = {
+        "product_name": "PortfolioTaxLotWindow",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "lots": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "security_id": "EQ_US_AAPL",
+                "instrument_id": "EQ_US_AAPL",
+                "lot_id": "LOT-AAPL-001",
+                "open_quantity": "60.0000000000",
+                "original_quantity": "60.0000000000",
+                "acquisition_date": "2026-03-25",
+                "cost_basis_base": "9000.0000000000",
+                "cost_basis_local": "9000.0000000000",
+                "local_currency": "USD",
+                "tax_lot_status": "OPEN",
+                "source_transaction_id": "TXN-BUY-AAPL-001",
+                "source_lineage": {
+                    "source_system": "position_lot_state",
+                    "calculation_policy_id": "BUY_DEFAULT_POLICY",
+                },
+            },
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "security_id": "EQ_US_AAPL",
+                "instrument_id": "EQ_US_AAPL",
+                "lot_id": "LOT-AAPL-002",
+                "open_quantity": "40.0000000000",
+                "original_quantity": "40.0000000000",
+                "acquisition_date": "2026-03-28",
+                "cost_basis_base": "6400.0000000000",
+                "cost_basis_local": "6400.0000000000",
+                "local_currency": "USD",
+                "tax_lot_status": "OPEN",
+                "source_transaction_id": "TXN-BUY-AAPL-002",
+                "source_lineage": {
+                    "source_system": "position_lot_state",
+                    "calculation_policy_id": "BUY_DEFAULT_POLICY",
+                },
+            },
+        ],
+        "page": {
+            "page_size": 250,
+            "sort_key": "acquisition_date:asc,lot_id:asc",
+            "returned_component_count": 2,
+            "request_scope_fingerprint": "tax-lot-scope-001",
+            "next_page_token": None,
+        },
+        "supportability": {
+            "state": "READY",
+            "reason": "TAX_LOTS_READY",
+            "requested_security_count": 1,
+            "returned_lot_count": 2,
+            "missing_security_ids": [],
+        },
+        "lineage": {
+            "source_system": "position_lot_state",
+            "contract_version": "rfc_087_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def test_core_tax_lots_attach_to_portfolio_snapshot_for_tax_aware_engine():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [
+                {
+                    "instrument_id": "EQ_US_AAPL",
+                    "quantity": "100.0000000000",
+                }
+            ],
+        }
+    )
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(_core_tax_lot_payload())
+
+    enriched = build_portfolio_snapshot_with_core_tax_lots(
+        portfolio_snapshot=portfolio,
+        response=response,
+    )
+
+    assert [lot.lot_id for lot in enriched.positions[0].lots] == [
+        "LOT-AAPL-001",
+        "LOT-AAPL-002",
+    ]
+    assert enriched.positions[0].lots[0].unit_cost.amount == Decimal("150.0000000000")
+    assert enriched.positions[0].lots[0].unit_cost.currency == "USD"
+    assert enriched.positions[0].lots[1].purchase_date == "2026-03-28"
+
+
+def test_core_tax_lots_reject_partial_or_wrong_portfolio_context():
+    partial_response = DpmCorePortfolioTaxLotWindowResponse.model_validate(
+        _core_tax_lot_payload(
+            supportability={
+                "state": "DEGRADED",
+                "reason": "TAX_LOTS_PAGE_PARTIAL",
+                "requested_security_count": 1,
+                "returned_lot_count": 1,
+                "missing_security_ids": [],
+            }
+        )
+    )
+    portfolio = _core_context().portfolio_snapshot
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="TAX_LOTS_PAGE_PARTIAL"):
+        build_portfolio_snapshot_with_core_tax_lots(
+            portfolio_snapshot=portfolio,
+            response=partial_response,
+        )
+
+    wrong_portfolio = DpmCorePortfolioTaxLotWindowResponse.model_validate(
+        _core_tax_lot_payload(portfolio_id="OTHER_PORTFOLIO")
+    )
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_TAX_LOT_PORTFOLIO_MISMATCH"):
+        build_portfolio_snapshot_with_core_tax_lots(
+            portfolio_snapshot=portfolio,
+            response=wrong_portfolio,
+        )
 
 
 def test_incomplete_core_context_is_not_transformed():

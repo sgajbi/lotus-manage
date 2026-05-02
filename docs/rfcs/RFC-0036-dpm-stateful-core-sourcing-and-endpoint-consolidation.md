@@ -68,16 +68,20 @@ Implementation note, 2026-05-02:
    `POST /integration/portfolios/{portfolio_id}/mandate-binding` source-product endpoint.
 3. `lotus-core` RFC-087 Slice 6 introduced the dedicated
    `POST /integration/instruments/eligibility-bulk` source-product endpoint.
-4. `lotus-manage` now has dedicated client methods and transformers for those products:
+4. `lotus-core` RFC-087 Slice 7 introduced the dedicated
+   `POST /integration/portfolios/{portfolio_id}/tax-lots` source-product endpoint.
+5. `lotus-manage` now has dedicated client methods and transformers for those products:
    `DpmCoreResolverClient.resolve_model_portfolio_targets` and
    `build_model_portfolio_from_core_targets`, plus
    `DpmCoreResolverClient.resolve_mandate_binding` and
    `build_policy_context_from_core_mandate`, plus
    `DpmCoreResolverClient.resolve_instrument_eligibility` and
-   `build_shelf_entries_from_core_eligibility`.
-5. This is not stateful execution promotion. It proves the first composed source-product
-   integration paths while keeping `input_mode=stateful` gated until portfolio state, tax-lot,
-   market-data, readiness source products, and live end-to-end proof are also available.
+   `build_shelf_entries_from_core_eligibility`, plus
+   `DpmCoreResolverClient.resolve_portfolio_tax_lots` and
+   `build_portfolio_snapshot_with_core_tax_lots`.
+6. This is not stateful execution promotion. It proves the first composed source-product
+   integration paths while keeping `input_mode=stateful` gated until portfolio state,
+   market-data/FX, readiness source products, and live end-to-end proof are also available.
 
 ## Summary
 
@@ -928,9 +932,17 @@ Additional composed-source integration evidence captured on 2026-05-02:
    `ShelfEntry` model while rejecting incomplete source supportability.
 6. Added focused unit proof for the outbound request shape, correlation header propagation,
    bounded 4xx error mapping, response parsing, and shelf-entry transformation.
-7. Promotion no-go remains active because portfolio state, tax-lot, market-data/FX coverage, and
-   readiness/source-family completeness products are still pending in RFC-087 live proof for
-   stateful DPM promotion.
+7. Added a bounded `PortfolioTaxLotWindow:v1` client call to
+   `POST /integration/portfolios/{portfolio_id}/tax-lots`.
+8. Added a typed tax-lot response model and portfolio transformer that attaches core lot/cost-basis
+   rows to the existing DPM engine `PortfolioSnapshot` tax-lot model while rejecting partial page
+   supportability and portfolio mismatches.
+9. Added focused unit proof for the outbound request shape, correlation header propagation,
+   bounded 4xx error mapping, response parsing, tax-lot unit-cost conversion, and supportability
+   rejection.
+10. Promotion no-go remains active because portfolio state, market-data/FX coverage, and
+    readiness/source-family completeness products are still pending in RFC-087 live proof for
+    stateful DPM promotion.
 
 ### Slice 8: Enterprise Data Mesh Onboarding
 

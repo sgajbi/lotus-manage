@@ -175,6 +175,55 @@ def _instrument_eligibility_payload() -> dict:
     }
 
 
+def _portfolio_tax_lots_payload() -> dict:
+    return {
+        "product_name": "PortfolioTaxLotWindow",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "lots": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "security_id": "EQ_US_AAPL",
+                "instrument_id": "EQ_US_AAPL",
+                "lot_id": "LOT-AAPL-001",
+                "open_quantity": "100.0000000000",
+                "original_quantity": "100.0000000000",
+                "acquisition_date": "2026-03-25",
+                "cost_basis_base": "15005.5000000000",
+                "cost_basis_local": "15005.5000000000",
+                "local_currency": "USD",
+                "tax_lot_status": "OPEN",
+                "source_transaction_id": "TXN-BUY-AAPL-001",
+                "source_lineage": {
+                    "source_system": "position_lot_state",
+                    "calculation_policy_id": "BUY_DEFAULT_POLICY",
+                },
+            }
+        ],
+        "page": {
+            "page_size": 250,
+            "sort_key": "acquisition_date:asc,lot_id:asc",
+            "returned_component_count": 1,
+            "request_scope_fingerprint": "tax-lot-scope-001",
+            "next_page_token": None,
+        },
+        "supportability": {
+            "state": "READY",
+            "reason": "TAX_LOTS_READY",
+            "requested_security_count": 1,
+            "returned_lot_count": 1,
+            "missing_security_ids": [],
+        },
+        "lineage": {
+            "source_system": "position_lot_state",
+            "contract_version": "rfc_087_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -351,6 +400,47 @@ def test_core_resolver_fetches_instrument_eligibility_from_dedicated_source_prod
     assert response.eligibility[0].security_id == "EQ_US_AAPL"
 
 
+def test_core_resolver_fetches_portfolio_tax_lots_from_dedicated_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_portfolio_tax_lots_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_portfolio_tax_lots(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        security_ids=["EQ_US_AAPL"],
+        lot_status_filter="OPEN",
+        include_closed_lots=False,
+        page_size=250,
+        page_token=None,
+        tenant_id="tenant_sg_pb",
+        correlation_id="corr-tax-lots-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots"
+    )
+    assert seen["correlation_id"] == "corr-tax-lots-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"security_ids":["EQ_US_AAPL"]' in seen["payload"]
+    assert b'"lot_status_filter":"OPEN"' in seen["payload"]
+    assert b'"include_closed_lots":false' in seen["payload"]
+    assert b'"page":{"page_size":250,"page_token":null}' in seen["payload"]
+    assert b'"tenant_id":"tenant_sg_pb"' in seen["payload"]
+    assert response.product_name == "PortfolioTaxLotWindow"
+    assert response.supportability.state == "READY"
+    assert response.lots[0].lot_id == "LOT-AAPL-001"
+
+
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(base_url="https://core.example.test"),
@@ -378,6 +468,22 @@ def test_core_resolver_maps_instrument_eligibility_4xx_to_incomplete_error():
     with pytest.raises(DpmCoreResolverError, match="DPM_CORE_INSTRUMENT_ELIGIBILITY_INCOMPLETE"):
         client.resolve_instrument_eligibility(
             security_ids=["UNKNOWN_SEC"],
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+
+def test_core_resolver_maps_portfolio_tax_lot_4xx_to_incomplete_error():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(404, json={"detail": "x"}))
+        ),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_PORTFOLIO_TAX_LOTS_INCOMPLETE"):
+        client.resolve_portfolio_tax_lots(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
             as_of_date=date(2026, 4, 10),
             correlation_id=None,
         )

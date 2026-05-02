@@ -8,11 +8,13 @@ from src.core.models import (
     BatchRebalanceRequest,
     EngineOptions,
     MarketDataSnapshot,
+    Money,
     ModelPortfolio,
     ModelTarget,
     PortfolioSnapshot,
     ShelfEntry,
     SimulationScenario,
+    TaxLot,
 )
 
 
@@ -309,6 +311,83 @@ class DpmCoreInstrumentEligibilityBulkResponse(BaseModel):
     )
 
 
+class DpmCoreTaxLotPageMetadata(BaseModel):
+    page_size: int = Field(description="Maximum tax lots requested from lotus-core.")
+    sort_key: str = Field(description="Deterministic sort key used by lotus-core.")
+    returned_component_count: int = Field(description="Number of tax lots returned in this page.")
+    request_scope_fingerprint: str = Field(description="Opaque request scope fingerprint.")
+    next_page_token: Optional[str] = Field(
+        default=None,
+        description="Opaque continuation token for the next tax-lot page.",
+    )
+
+
+class DpmCorePortfolioTaxLotRecord(BaseModel):
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    security_id: str = Field(description="Core-governed security identifier.")
+    instrument_id: str = Field(description="Core-governed instrument identifier.")
+    lot_id: str = Field(description="Stable core tax-lot identifier.")
+    open_quantity: Decimal = Field(description="Current open lot quantity.")
+    original_quantity: Decimal = Field(description="Original acquired lot quantity.")
+    acquisition_date: date = Field(description="Lot acquisition date.")
+    cost_basis_base: Decimal = Field(description="Current lot cost basis in portfolio currency.")
+    cost_basis_local: Decimal = Field(description="Current lot cost basis in local trade currency.")
+    local_currency: Optional[str] = Field(
+        default=None,
+        description="Local trade currency for this lot when available.",
+    )
+    tax_lot_status: Literal["OPEN", "CLOSED"] = Field(description="Current tax-lot status.")
+    source_transaction_id: str = Field(description="Core source transaction identifier.")
+    source_lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Lot-level core lineage metadata.",
+    )
+
+
+class DpmCorePortfolioTaxLotSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for tax-lot consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    requested_security_count: Optional[int] = Field(
+        default=None,
+        description="Number of securities explicitly requested from core.",
+    )
+    returned_lot_count: int = Field(description="Number of tax lots returned in this page.")
+    missing_security_ids: list[str] = Field(
+        default_factory=list,
+        description="Requested securities without tax lots after core exhausted the page scope.",
+    )
+
+
+class DpmCorePortfolioTaxLotWindowResponse(BaseModel):
+    product_name: Literal["PortfolioTaxLotWindow"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    as_of_date: date = Field(description="As-of date used to resolve tax lots.")
+    lots: list[DpmCorePortfolioTaxLotRecord] = Field(
+        description="Resolved tax lots from lotus-core."
+    )
+    page: DpmCoreTaxLotPageMetadata = Field(description="Core pagination metadata.")
+    supportability: DpmCorePortfolioTaxLotSupportability = Field(
+        description="Completeness and readiness posture for tax-lot consumption."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -476,6 +555,44 @@ def build_shelf_entries_from_core_eligibility(
             )
         )
     return shelf_entries
+
+
+def build_portfolio_snapshot_with_core_tax_lots(
+    *,
+    portfolio_snapshot: PortfolioSnapshot,
+    response: DpmCorePortfolioTaxLotWindowResponse,
+) -> PortfolioSnapshot:
+    if response.supportability.state != "READY":
+        raise DpmCoreContextIncompleteError(response.supportability.reason)
+    if response.portfolio_id != portfolio_snapshot.portfolio_id:
+        raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_PORTFOLIO_MISMATCH")
+
+    lots_by_instrument: dict[str, list[TaxLot]] = {}
+    for lot in response.lots:
+        if lot.tax_lot_status != "OPEN" or lot.open_quantity <= Decimal("0"):
+            continue
+        unit_cost_amount = lot.cost_basis_base / lot.open_quantity
+        unit_cost_currency = portfolio_snapshot.base_currency
+        if lot.local_currency:
+            unit_cost_amount = lot.cost_basis_local / lot.open_quantity
+            unit_cost_currency = lot.local_currency
+        lots_by_instrument.setdefault(lot.instrument_id, []).append(
+            TaxLot(
+                lot_id=lot.lot_id,
+                quantity=lot.open_quantity,
+                unit_cost=Money(amount=unit_cost_amount, currency=unit_cost_currency),
+                purchase_date=lot.acquisition_date.isoformat(),
+            )
+        )
+
+    positions = []
+    for position in portfolio_snapshot.positions:
+        position_payload = position.model_dump(mode="python")
+        position_payload["lots"] = lots_by_instrument.get(position.instrument_id, [])
+        positions.append(type(position).model_validate(position_payload))
+    return PortfolioSnapshot.model_validate(
+        {**portfolio_snapshot.model_dump(mode="python"), "positions": positions}
+    )
 
 
 def build_rebalance_request_from_core_context(
