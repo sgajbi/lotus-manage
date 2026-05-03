@@ -3,13 +3,16 @@ from typing import AsyncIterator
 
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
+from src.core.proof_packs.repository import DpmProofPackRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
+from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
 
 
 _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
 _CONSTRUCTION_REPOSITORY = InMemoryConstructionRepository()
+_PROOF_PACK_REPOSITORY = InMemoryDpmProofPackRepository()
 
 
 async def get_db_session() -> AsyncIterator[None]:
@@ -32,6 +35,12 @@ def get_construction_repository() -> ConstructionRepository:
     """Return the RFC-0039 construction repository for local and test runtimes."""
 
     return _CONSTRUCTION_REPOSITORY
+
+
+def get_proof_pack_repository() -> DpmProofPackRepository:
+    """Return the RFC-0040 proof-pack repository for local and test runtimes."""
+
+    return _PROOF_PACK_REPOSITORY
 
 
 def get_risk_authority_client() -> LotusRiskAuthorityClient | None:

@@ -1,14 +1,27 @@
 from decimal import Decimal
 
+import pytest
+
+from src.api.request_models import RebalanceRequest
+import src.api.services.construction_service as construction_service
 from src.core.construction import (
+    AuthoritativeCurrencyOverlayContext,
+    AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    ConstructionAuthorityContext,
     ConstructionMethodStatus,
     estimate_transaction_cost,
     summarize_enrichment_posture,
 )
+from src.core.construction.repository import (
+    ConstructionAlternativeSetNotFoundError,
+    ConstructionIdempotencyConflictError,
+)
+from src.core.construction.vocabulary import ConstructionMethod
 from src.core.models import EngineOptions, RebalanceResult
 from src.core.rebalance.engine import run_simulation
+from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import (
     cash,
     market_data_snapshot,
@@ -18,6 +31,7 @@ from tests.shared.factories import (
     price,
     shelf_entry,
     target,
+    valid_api_payload,
 )
 
 
@@ -77,6 +91,111 @@ def test_enrichment_summary_blocks_required_tax_without_tax_impact() -> None:
     assert "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE" in summary.reason_codes
     assert "RISK_ENRICHMENT_UNAVAILABLE" in summary.reason_codes
     assert "PERFORMANCE_CONTEXT_UNAVAILABLE" in summary.reason_codes
+
+
+def test_construction_service_error_mapping_and_missing_set() -> None:
+    with pytest.raises(ConstructionAlternativeSetNotFoundError):
+        construction_service.get_construction_alternative_set(
+            repository=InMemoryConstructionRepository(),
+            alternative_set_id="missing",
+        )
+
+    conflict = construction_service.to_api_http_exception(
+        ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
+    )
+    missing = construction_service.to_api_http_exception(
+        ConstructionAlternativeSetNotFoundError("CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND")
+    )
+    unknown = construction_service.to_api_http_exception(RuntimeError("boom"))
+
+    assert conflict.status_code == 409
+    assert missing.status_code == 404
+    assert unknown.status_code == 500
+    assert unknown.detail == "RuntimeError"
+
+
+def test_construction_service_supportability_helper_edges() -> None:
+    result = _trade_result(max_turnover_pct=Decimal("0.01"))
+    no_context = construction_service._authority_context_for_method(
+        method=ConstructionMethod.LIQUIDITY_AWARE,
+        result=result,
+        authority_context=ConstructionAuthorityContext(),
+        risk_authority_client=None,
+        correlation_id="corr-helper",
+    )
+    risk_unavailable = construction_service._authority_context_for_method(
+        method=ConstructionMethod.RISK_AWARE,
+        result=result,
+        authority_context=ConstructionAuthorityContext(),
+        risk_authority_client=_UnavailableRiskClient(),
+        correlation_id="corr-helper",
+    )
+    liquidity_context = AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.99"),
+        allowed_liquidity_tiers=["L1"],
+        reason_codes=["LIQUIDITY_READY"],
+    )
+
+    assert no_context.liquidity_context is not None
+    assert risk_unavailable.risk_context is None
+    assert (
+        construction_service._solver_method_status(result=result) == ConstructionMethodStatus.READY
+    )
+    assert (
+        construction_service._liquidity_status(result=result, context=None)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert (
+        construction_service._liquidity_status(result=result, context=liquidity_context)
+        == ConstructionMethodStatus.PENDING_REVIEW
+    )
+    assert "LIQUIDITY_POLICY_CONTEXT_DERIVED" in construction_service._liquidity_reason_codes(
+        result=result,
+        context=None,
+    )
+
+
+def test_construction_service_currency_overlay_helper_edges() -> None:
+    payload = valid_api_payload()
+    payload["portfolio_snapshot"]["base_currency"] = "SGD"
+    payload["market_data_snapshot"]["prices"][0]["currency"] = "USD"
+    payload["market_data_snapshot"]["fx_rates"] = []
+    request = RebalanceRequest.model_validate(payload)
+    context = AuthoritativeCurrencyOverlayContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-fx-policy",
+        policy_id="currency-policy.v1",
+        hedge_ratio_min=Decimal("0.00"),
+        hedge_ratio_max=Decimal("1.00"),
+        eligible_currencies=[],
+        reason_codes=["CURRENCY_POLICY_READY"],
+    )
+
+    assert (
+        construction_service._currency_overlay_status(request=request, context=context)
+        == ConstructionMethodStatus.BLOCKED
+    )
+    payload["market_data_snapshot"]["fx_rates"] = [
+        {"pair": "USD/SGD", "rate": "1.35", "as_of": "2026-05-03"}
+    ]
+    request = RebalanceRequest.model_validate(payload)
+
+    assert (
+        construction_service._currency_overlay_status(request=request, context=None)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert (
+        construction_service._currency_overlay_status(request=request, context=context)
+        == ConstructionMethodStatus.PENDING_REVIEW
+    )
+
+
+class _UnavailableRiskClient:
+    def concentration_context(self, *, result, correlation_id):
+        raise construction_service.LotusRiskAuthorityUnavailableError("risk down")
 
 
 def test_enrichment_summary_marks_turnover_pending_review_when_budget_drops_intents() -> None:

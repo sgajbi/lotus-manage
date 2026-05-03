@@ -79,6 +79,15 @@ Current repository posture:
     restriction and sustainability source products exist. Gateway and Workbench are not yet
     integrated with this surface; paired realization RFCs have been created and must be
     implemented/proven downstream before a full front-office product outcome is claimed.
+14. RFC-0040 has delivered the implementation-backed manage pre-trade proof-pack backend
+    foundation: durable `DpmPreTradeProofPack` JSON, deterministic Markdown summary, report-input
+    handoff, AI-evidence handoff with forbidden-action/field guardrails, immutable in-memory and
+    PostgreSQL persistence, append-only refs, retention metadata, section/content hashes, source
+    lineage, certified `/api/v1/rebalance/proof-packs/*` APIs, and canonical Postgres-backed live
+    proof under `output/rfc0040-proof/20260503-135112`. `lotus-gateway` and `lotus-workbench`
+    RFC-0098 documents have been aligned to consume manage truth without reconstruction. Gateway
+    composition, Workbench proof-pack review UX, report materialization, AI memo generation, and
+    full front-office product-outcome support remain downstream work in the owning repositories.
 
 ## Architecture And Module Map
 

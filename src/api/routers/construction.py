@@ -10,6 +10,7 @@ from src.api.dependencies import (
     get_db_session,
     get_risk_authority_client,
 )
+from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.request_models import RebalanceExecutionRequestEnvelope
 from src.api.services import construction_service
 from src.api.services.rebalance_simulation_service import resolve_rebalance_request_envelope
@@ -21,6 +22,7 @@ from src.core.construction.models import (
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import DpmStatefulInput
+from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
@@ -203,6 +205,7 @@ def generate_alternative_set(
     ] = None,
     repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+    run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:
     rebalance_request, source_context = resolve_rebalance_request_envelope(
@@ -219,6 +222,7 @@ def generate_alternative_set(
             source_context=source_context,
             authority_context=request.authority_context,
             risk_authority_client=risk_authority_client,
+            run_service=run_service,
         )
     except Exception as exc:
         raise construction_service.to_api_http_exception(exc) from exc
