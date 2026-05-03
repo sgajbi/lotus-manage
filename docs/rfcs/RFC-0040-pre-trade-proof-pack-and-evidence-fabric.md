@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED - GOLD-STANDARD TIGHTENED BEFORE IMPLEMENTATION |
+| **Status** | IN PROGRESS - SLICE 0 COMPLETE; IMPLEMENTATION NOT STARTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -11,6 +11,7 @@
 | **Downstream Realization Depends On** | Gateway proof-pack realization RFC, Workbench proof-pack realization RFC, later RFC-0043 AI PM memo |
 | **Implementation Branch** | `feat/rfc0040-gold-standard-tightening` |
 | **Doc Location** | `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md` |
+| **Slice 0 Evidence** | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
 
 ---
 
@@ -612,6 +613,18 @@ Evidence:
 2. implementation-gap list,
 3. cross-app dependency and ownership matrix,
 4. critical-review notes.
+
+Slice 0 result:
+
+1. completed in `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md`,
+2. confirmed RFC-0040 owns the first `DpmPreTradeProofPack` artifact implementation,
+3. confirmed current manage foundations from RFC-0038 and RFC-0039 are sufficient to start the
+   proof-pack design after platform/scaffold classification and local cleanup,
+4. identified deferred or conditional cross-app gaps for broader risk enrichment, performance
+   context, sustainability/restriction profiles, transaction-cost curves, scenario-pack authority,
+   report consumption, AI consumption, Gateway composition, and Workbench realization,
+5. identified an existing Gateway RFC ownership conflict where proof packs are described as
+   `lotus-report` owned; Slice 8 must correct that after manage contracts and evidence stabilize.
 
 ### Slice 1 - Platform Automation and Scaffolding Improvement
 
