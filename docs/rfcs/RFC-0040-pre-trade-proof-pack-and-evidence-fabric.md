@@ -12,6 +12,7 @@
 | **Implementation Branch** | `feat/rfc0040-gold-standard-tightening` |
 | **Doc Location** | `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
+| **Slice 1 Evidence** | `docs/rfcs/RFC-0040-platform-automation-slice1.md` |
 
 ---
 
@@ -666,6 +667,21 @@ Evidence:
 2. app-scaffold checklist update,
 3. validation command output,
 4. branch/PR references when platform changes are made separately.
+
+Slice 1 result:
+
+1. completed in `docs/rfcs/RFC-0040-platform-automation-slice1.md`,
+2. classified platform scaffold and automation coverage for OpenAPI, Swagger, health/readiness,
+   observability, structured logging, problem-details, test scaffolding, CI, supported features,
+   wiki sync, API vocabulary, no-alias, mesh/trust telemetry, heartbeat, and background-run
+   visibility,
+3. fixed the only reusable gap found by adding a platform service-scaffold
+   `evidence/rfc-implementation/evidence-manifest.template.json`,
+4. recorded the platform branch and commit:
+   `lotus-platform` `feat/rfc0040-evidence-manifest-scaffold`
+   `4679b07 feat: scaffold rfc evidence manifests`,
+5. introduced no manage-local scaffold workaround and made no proof-pack implementation support
+   claim.
 
 ### Slice 2 - Cleanup and Structure
 
