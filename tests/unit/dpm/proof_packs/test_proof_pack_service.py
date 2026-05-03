@@ -231,6 +231,31 @@ def test_selected_alternative_service_rejects_portfolio_mismatched_mandate_evide
     assert "mandate_twin" not in proof_pack.source_hashes
 
 
+def test_selected_alternative_service_degrades_when_mandate_repository_has_no_snapshot() -> None:
+    repository, alternative_set_id, selected_alternative_id = _construction_repository()
+    proof_repository = InMemoryDpmProofPackRepository()
+
+    proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        actor_id="pm_service",
+        reason="Initial proof.",
+        correlation_id="corr-service-proof",
+        mandate_id="mandate_service",
+        idempotency_key=None,
+        construction_repository=repository,
+        run_service=_RunService(),
+        mandate_repository=InMemoryDpmMandateRepository(),
+        proof_pack_repository=proof_repository,
+    )
+
+    mandate_section = next(
+        section for section in proof_pack.sections if section.section_type == "mandate_context"
+    )
+    assert mandate_section.state == "DEGRADED"
+    assert mandate_section.reason_codes == ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
+
+
 def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> None:
     repository = InMemoryDpmProofPackRepository()
     proof_pack = _proof_pack()
@@ -275,6 +300,56 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
     )
     repository.append_ref(ref=report_ref)
     repository.append_ref(ref=ai_ref)
+
+    assert (
+        proof_pack_service.get_report_input_ref(
+            proof_pack_id=proof_pack.proof_pack_id,
+            proof_pack_repository=repository,
+        ).content_hash
+        == "sha256:report"
+    )
+    assert (
+        proof_pack_service.get_ai_evidence_ref(
+            proof_pack_id=proof_pack.proof_pack_id,
+            proof_pack_repository=repository,
+        ).content_hash
+        == "sha256:ai"
+    )
+
+
+def test_handoff_ref_lookup_reads_stored_refs_when_pack_is_not_hydrated() -> None:
+    proof_pack = _proof_pack()
+    report_ref = DpmProofPackStoredRef(
+        proof_pack_id=proof_pack.proof_pack_id,
+        ref_type=proof_pack_service.REPORT_INPUT_REF_TYPE,
+        ref_id="dpri_service_001",
+        source_system="lotus-manage",
+        content_hash="sha256:report",
+        created_at=CREATED_AT.isoformat(),
+    )
+    ai_ref = DpmProofPackStoredRef(
+        proof_pack_id=proof_pack.proof_pack_id,
+        ref_type=proof_pack_service.AI_EVIDENCE_REF_TYPE,
+        ref_id="dpai_service_001",
+        source_system="lotus-manage",
+        content_hash="sha256:ai",
+        created_at=CREATED_AT.isoformat(),
+    )
+
+    class _StoredRefOnlyRepository:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get_proof_pack(self, *, proof_pack_id: str):
+            return proof_pack
+
+        def list_refs(self, *, proof_pack_id: str):
+            self.calls += 1
+            if self.calls in {1, 2, 4, 5}:
+                return []
+            return [report_ref, ai_ref]
+
+    repository = _StoredRefOnlyRepository()
 
     assert (
         proof_pack_service.get_report_input_ref(

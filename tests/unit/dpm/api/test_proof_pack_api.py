@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
@@ -9,6 +10,7 @@ from src.api.dependencies import (
 )
 from src.api.main import app
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
+from src.api.services import proof_pack_service
 from src.api.services.rebalance_simulation_service import DPM_IDEMPOTENCY_CACHE
 from src.core.mandates import (
     DpmMandateDigitalTwin,
@@ -257,6 +259,66 @@ def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None
     )
     assert missing_source.status_code == 422
     assert missing_source.json()["detail"] == "DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED"
+
+
+def test_generate_proof_pack_preserves_governed_http_exceptions(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_id = _simulate_run(client)
+
+    def raise_http_exception(**_kwargs):
+        raise HTTPException(status_code=409, detail="DPM_TEST_HTTP_EXCEPTION")
+
+    monkeypatch.setattr(
+        proof_pack_service,
+        "generate_proof_pack_from_run",
+        raise_http_exception,
+    )
+
+    response = client.post(
+        "/api/v1/rebalance/proof-packs",
+        json={
+            "source_type": "REBALANCE_RUN",
+            "rebalance_run_id": run_id,
+            "actor_id": "pm_api",
+            "mandate_id": "mandate_api_001",
+        },
+        headers={"Idempotency-Key": "proof-pack-api-http-exception"},
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "DPM_TEST_HTTP_EXCEPTION"
+
+
+def test_generate_proof_pack_maps_unexpected_service_exceptions(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run_id = _simulate_run(client)
+
+    def raise_unexpected_exception(**_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(
+        proof_pack_service,
+        "generate_proof_pack_from_run",
+        raise_unexpected_exception,
+    )
+
+    response = client.post(
+        "/api/v1/rebalance/proof-packs",
+        json={
+            "source_type": "REBALANCE_RUN",
+            "rebalance_run_id": run_id,
+            "actor_id": "pm_api",
+            "mandate_id": "mandate_api_001",
+        },
+        headers={"Idempotency-Key": "proof-pack-api-unexpected-exception"},
+    )
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "RuntimeError"
 
 
 def test_proof_pack_read_routes_return_404_for_missing_pack(client: TestClient) -> None:

@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import pytest
+
 from src.core.common.intent_dependencies import link_buy_intent_dependencies
 from src.core.common.simulation_shared import (
     apply_fx_spot_to_portfolio,
@@ -15,10 +17,13 @@ from src.core.common.workflow_gates import evaluate_gate_decision
 from src.core.compliance import RuleEngine
 from src.core.models import (
     AllocationMetric,
+    BatchRebalanceRequest,
     DiagnosticsData,
     EngineOptions,
     FxSpotIntent,
+    GroupConstraint,
     Money,
+    Position,
     PortfolioSnapshot,
     PositionSummary,
     RuleResult,
@@ -29,6 +34,7 @@ from src.core.models import (
     SuitabilityIssue,
     SuitabilityResult,
     SuitabilitySummary,
+    TaxLot,
 )
 
 
@@ -121,6 +127,42 @@ def test_simulation_shared_portfolio_mutation_and_status_edges() -> None:
         )[0].status
         == "OK"
     )
+
+
+def test_model_validation_edges_reject_malformed_constraints_and_lots() -> None:
+    with pytest.raises(ValueError, match="group_constraints keys"):
+        EngineOptions(group_constraints={"bad-key": GroupConstraint(max_weight=Decimal("0.2"))})
+    with pytest.raises(ValueError, match="group_constraints keys"):
+        EngineOptions(group_constraints={":TECH": GroupConstraint(max_weight=Decimal("0.2"))})
+    with pytest.raises(ValueError, match="max_overdraft_by_ccy keys"):
+        EngineOptions(max_overdraft_by_ccy={"": Decimal("1")})
+    with pytest.raises(ValueError, match="max_overdraft_by_ccy values"):
+        EngineOptions(max_overdraft_by_ccy={"USD": Decimal("-1")})
+    with pytest.raises(ValueError, match="max_weight"):
+        GroupConstraint(max_weight=Decimal("2"))
+    with pytest.raises(ValueError, match=r"sum\(lot.quantity\)"):
+        Position(
+            instrument_id="EQ_A",
+            quantity=Decimal("10"),
+            lots=[
+                TaxLot(
+                    lot_id="lot_1",
+                    quantity=Decimal("9"),
+                    unit_cost=Money(amount=Decimal("1"), currency="USD"),
+                    purchase_date="2026-01-01",
+                )
+            ],
+        )
+    with pytest.raises(ValueError, match="at least one scenario"):
+        BatchRebalanceRequest.model_validate(
+            {
+                "portfolio_snapshot": {"portfolio_id": "pf_1", "base_currency": "USD"},
+                "market_data_snapshot": {"prices": []},
+                "model_portfolio": {"targets": []},
+                "shelf_entries": [],
+                "scenarios": {},
+            }
+        )
 
 
 def test_workflow_gate_decision_covers_suitability_and_mandate_paths() -> None:

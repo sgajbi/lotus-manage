@@ -10,6 +10,7 @@ from src.core.construction.models import (
     ConstructionAlternativeSet,
 )
 from src.infrastructure.construction import InMemoryConstructionRepository
+from src.infrastructure.construction import postgres as postgres_module
 from src.infrastructure.construction.postgres import PostgresConstructionRepository
 from tests.unit.dpm.construction.test_alternative_engine import _ready_rebalance_result
 
@@ -139,6 +140,21 @@ def test_postgres_repository_records_latest_selection(monkeypatch: pytest.Monkey
 
     assert repository.get_selection(alternative_set_id="cas_repo_001") == selection
     assert connection.commits == 1
+
+
+def test_postgres_repository_returns_none_for_missing_selection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connection = _FakeConnection()
+    repository = _postgres_repository(monkeypatch, connection)
+
+    assert repository.get_selection(alternative_set_id="missing") is None
+
+
+def test_postgres_repository_payload_helpers_cover_missing_and_non_string_rows() -> None:
+    assert postgres_module._alternative_set_from_row(None) is None
+    assert postgres_module._payload({"payload_json": {"a": 1}}) == {"a": 1}
+    assert postgres_module._payload({"payload_json": 3}) == "3"
 
 
 def _postgres_repository(

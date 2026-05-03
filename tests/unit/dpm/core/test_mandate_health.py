@@ -242,6 +242,34 @@ def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> N
     assert {score.dimension for score in snapshot.dimension_scores} == set(MandateHealthDimension)
 
 
+def test_mandate_constraints_reject_invalid_ratio_and_cash_band() -> None:
+    with pytest.raises(ValueError, match="cash_band_min_weight"):
+        DpmMandateConstraintSet(cash_band_min_weight=Decimal("2"))
+    with pytest.raises(ValueError, match="cash_band_min_weight must not exceed"):
+        DpmMandateConstraintSet(
+            cash_band_min_weight=Decimal("0.20"),
+            cash_band_max_weight=Decimal("0.10"),
+        )
+
+
+def test_health_source_staleness_risk_ready_and_workflow_blocked_edges() -> None:
+    stale_snapshot = calculate_mandate_health(
+        _ready_input(source_readiness_state="DEGRADED", stale_source_families=["PRICE"])
+    )
+    risk_ready_snapshot = calculate_mandate_health(_ready_input(tracking_error=Decimal("0.01")))
+    workflow_blocked_snapshot = calculate_mandate_health(_ready_input(workflow_blocked=True))
+
+    assert _dimension(stale_snapshot, MandateHealthDimension.SOURCE_READINESS).reason_code == (
+        "DPM_SOURCE_STALE"
+    )
+    assert _dimension(risk_ready_snapshot, MandateHealthDimension.RISK_DRIFT).state == (
+        MandateHealthState.READY
+    )
+    assert _dimension(
+        workflow_blocked_snapshot, MandateHealthDimension.WORKFLOW_READINESS
+    ).state == (MandateHealthState.BLOCKED)
+
+
 @pytest.mark.parametrize(
     ("overrides", "dimension", "reason_code", "state", "action"),
     [
