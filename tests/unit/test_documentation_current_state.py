@@ -182,3 +182,44 @@ def test_foundation_rfcs_are_rebaselined_to_current_dpm_scope() -> None:
         text = (ROOT / "docs" / "rfcs" / rfc).read_text(encoding="utf-8")
         assert "ADVISORY PORTION SUPERSEDED BY LOTUS-ADVISE SPLIT" in text
         assert "not current lotus-manage" in text
+
+
+def test_rfc0039_source_map_preserves_first_wave_and_source_authority() -> None:
+    source_map = (
+        ROOT / "docs" / "rfcs" / "RFC-0039-source-data-and-method-map.md"
+    ).read_text(encoding="utf-8")
+    rfc = (
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md"
+    ).read_text(encoding="utf-8")
+
+    required_first_wave_methods = [
+        "`DO_NOTHING_BASELINE`",
+        "`HEURISTIC_EXPLAINABLE`",
+        "`MIN_TURNOVER`",
+        "`TAX_AWARE`",
+    ]
+    missing_methods = [
+        method for method in required_first_wave_methods if method not in source_map
+    ]
+
+    assert missing_methods == []
+    assert "RFC-0039-source-data-and-method-map.md" in rfc
+
+    required_source_authorities = [
+        "`lotus-core`",
+        "`lotus-risk`",
+        "`lotus-performance`",
+        "TransactionCostCurve:v1",
+        "CurrencyExposurePolicy:v1",
+        "RegimeScenarioPack:v1",
+    ]
+    missing_authorities = [
+        authority for authority in required_source_authorities if authority not in source_map
+    ]
+
+    assert missing_authorities == []
+    assert "must not fabricate" in source_map
+    assert "Gateway and Workbench realization RFCs must be produced after manage contracts" in source_map

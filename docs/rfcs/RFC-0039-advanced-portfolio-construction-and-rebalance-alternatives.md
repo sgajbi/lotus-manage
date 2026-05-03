@@ -672,6 +672,10 @@ Potential metrics:
 
 ## 13. Implementation Slices
 
+Slice 0 evidence is recorded in
+`docs/rfcs/RFC-0039-source-data-and-method-map.md`. That file is the governed source map for
+first-wave methods, current engine reuse, upstream authority, and missing data-product posture.
+
 ### Slice 0: RFC Tightening, Method Scope, and Source Map
 
 Scope:

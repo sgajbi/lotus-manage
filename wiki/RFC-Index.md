@@ -59,9 +59,11 @@ evidence, and supported-feature promotion.
   monitoring APIs, bounded command-center summary, local manage proof, local canonical manage plus
   live core proof, wiki publication, and downstream Gateway/Workbench/platform handoff issues.
 - RFC-0039
-  proposed implementation-ready advanced portfolio construction and rebalance alternatives RFC,
-  including first-wave alternatives, objective/constraint traces, source-aware degraded behavior,
-  and required paired Gateway/Workbench realization RFCs before the full business outcome is claimed
+  in progress with Slice 0 complete: advanced portfolio construction and rebalance alternatives now
+  have a governed source-data and method map covering first-wave alternatives, current engine reuse,
+  objective/constraint trace posture, source-aware degraded behavior, missing upstream products, and
+  the rule that paired Gateway/Workbench realization RFCs are created after manage proof/hardening
+  before the full business outcome is claimed
 - RFC-0040
   proposed pre-trade proof-pack, decision-timeline, and DPM evidence-fabric roadmap
 - RFC-0041
