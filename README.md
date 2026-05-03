@@ -86,6 +86,10 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/lineage/*`, `/api/v1/rebalance/idempotency/*`
 - policy-pack supportability
   `/api/v1/rebalance/policies/*`
+- mandate digital twin and health
+  `/api/v1/mandates/*`
+- DPM monitoring, exceptions, and command center
+  `/api/v1/dpm/monitoring/*`, `/api/v1/dpm/exceptions*`, `/api/v1/dpm/command-center`
 - integration capabilities
   `/api/v1/integration/capabilities`
 - platform surfaces
@@ -99,8 +103,15 @@ Key code areas:
   discretionary portfolio-management simulation engine and supporting rebalance modules
 - `src/core/dpm_source_context.py`
   stateful source-context models and transformation helpers for governed core sourcing
+- `src/core/mandates.py`
+  mandate digital-twin, mandate health, monitoring exception, monitoring run, and command-center
+  domain models
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
+- `src/api/routers/mandates.py` and `src/api/routers/monitoring.py`
+  mandate, health, monitoring-run, exception, and command-center API routers
+- `src/infrastructure/mandates/`
+  in-memory and PostgreSQL mandate/health/monitoring repository implementations
 - `src/infrastructure/core_sourcing/`
   bounded `lotus-core` resolver client that composes RFC-087 source products for stateful execution
 - `src/infrastructure/`
@@ -216,6 +227,8 @@ Operationally important truths:
   [docs/documentation/project-overview.md](docs/documentation/project-overview.md)
 - architecture review ledger:
   [docs/architecture/CODEBASE-REVIEW-LEDGER.md](docs/architecture/CODEBASE-REVIEW-LEDGER.md)
+- DPM command-center gateway and Workbench handoff:
+  [docs/architecture/dpm-command-center-gateway-workbench-handoff.md](docs/architecture/dpm-command-center-gateway-workbench-handoff.md)
 - operations and CI strategy:
   [docs/operations/development-workflow-and-ci-strategy.md](docs/operations/development-workflow-and-ci-strategy.md)
 - service runbook:

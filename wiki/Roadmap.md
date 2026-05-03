@@ -16,6 +16,9 @@ Current implementation-backed posture:
 3. stateful `portfolio_id` execution is implemented behind explicit runtime gates and composes
    governed `lotus-core` RFC-087 source products when the canonical core/manage stack is configured,
 4. advisory proposal workflows remain outside this repository and belong to `lotus-advise`.
+5. RFC-0038 has started with mandate digital-twin, health-engine, repository, migration,
+   mandate refresh/read/version/diff APIs, standalone health APIs, bounded monitoring/exception
+   APIs, and a bounded command-center summary API.
 
 Strategic posture:
 
@@ -76,3 +79,24 @@ flowchart TD
    audit, and supportability standards,
 5. documentation is part of the product and must serve business, engineering, sales, marketing,
    operations, and client-demo preparation.
+
+## RFC-0038 Current Implementation Progress
+
+```mermaid
+flowchart LR
+    FieldMap[Source-data field map] --> Twin[Pure mandate digital twin]
+    Twin --> Health[Pure mandate health engine]
+    Health --> Exceptions[Derived monitoring exceptions]
+    Exceptions --> Persistence[Repository and Postgres migration foundation]
+    Persistence --> APIs[Mandate refresh, read, version, diff APIs]
+    APIs --> HealthApis[Standalone health and monitoring APIs]
+    HealthApis --> Command[DPM command center]
+```
+
+The first RFC-0038 implementation wave establishes source-mapped domain primitives, a deterministic
+health engine, repository contracts, in-memory persistence, a Postgres repository foundation, and a
+Postgres migration. Slice 3 adds the first certified mandate API foundation for refreshing a twin
+from product-specific `lotus-core` source products and reading versioned mandate state. Slice 4
+adds standalone health read/recalculate plus bounded monitoring run and exception APIs. Slice 5 adds
+bounded command-center aggregation over persisted monitoring runs and active exceptions. Live
+core/manage proof and Workbench/Gateway handoff remain pending.

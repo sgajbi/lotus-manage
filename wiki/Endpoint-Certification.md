@@ -165,6 +165,111 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: mandate digital twin foundation
+
+Routes:
+
+- `GET /api/v1/mandates/by-portfolio/{portfolio_id}`
+- `GET /api/v1/mandates/{mandate_id}`
+- `GET /api/v1/mandates/{mandate_id}/versions`
+- `GET /api/v1/mandates/{mandate_id}/diff`
+- `POST /api/v1/mandates/{mandate_id}/refresh-from-core`
+- `GET /api/v1/mandates/{mandate_id}/health`
+- `POST /api/v1/mandates/{mandate_id}/health/recalculate`
+- `POST /api/v1/dpm/monitoring/run-once`
+- `GET /api/v1/dpm/monitoring/runs`
+- `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}`
+- `GET /api/v1/dpm/command-center`
+- `GET /api/v1/dpm/exceptions`
+- `POST /api/v1/dpm/exceptions/{exception_id}/resolve`
+
+Purpose:
+
+RFC-0038 mandate digital-twin foundation for discretionary portfolio management. These endpoints
+let lotus-manage refresh mandate state from product-specific `lotus-core` source products, persist
+the compiled mandate digital twin, read the latest portfolio or mandate view, inspect version
+history, explain what changed between versions, recalculate health, run bounded mandate monitoring,
+search monitoring runs, summarize a bounded command-center view, search exception queues, and
+resolve reviewed exceptions. They are not advisory proposal endpoints and do not claim Gateway or
+Workbench product-surface integration.
+
+Functional behavior:
+
+- `refresh-from-core` composes `DiscretionaryMandateBinding:v1`,
+  `DpmModelPortfolioTarget:v1`, and optional `MarketDataCoverageWindow:v1`.
+- Refresh returns the persisted `DpmMandateDigitalTwin`, a generated mandate-health snapshot,
+  derived monitoring exceptions, and explicit field-gap codes for source products not yet
+  available in core.
+- Read by portfolio and read by mandate return only previously refreshed state and return `404`
+  when no mandate snapshot exists.
+- Version listing returns persisted mandate twins newest first.
+- Diff compares the latest two versions by default, or caller-supplied `from_version` and
+  `to_version`, and labels materiality for changed mandate fields.
+- Health read returns the latest persisted mandate health snapshot.
+- Health recalculate persists a new snapshot and derived exceptions from explicit monitoring input.
+- Monitoring run-once evaluates caller-supplied mandate ids that have already been refreshed.
+- Monitoring run search and detail return persisted run records.
+- Command center aggregates persisted monitoring runs and active exceptions into health
+  distribution, attention buckets, recommended actions, and supportability state.
+- Exception search supports mandate, portfolio, state, cursor, and limit filters.
+- Exception resolve requires an auditable resolution reason and returns the resolved exception.
+- Core unavailable maps to `503 DPM_MANDATE_SOURCE_UNAVAILABLE`.
+- Core incomplete maps to `424 DPM_MANDATE_SOURCE_INCOMPLETE`.
+- Legacy unversioned aliases such as `/mandates/{mandate_id}` remain absent.
+
+```mermaid
+flowchart LR
+    Caller[Gateway, operator, or validation probe] --> Refresh[POST /api/v1/mandates/{mandate_id}/refresh-from-core]
+    Refresh --> Binding[lotus-core mandate binding]
+    Refresh --> Targets[lotus-core model targets]
+    Refresh --> Coverage[lotus-core market-data coverage]
+    Binding --> Twin[DPM mandate digital twin]
+    Targets --> Twin
+    Coverage --> Health[Mandate health snapshot]
+    Twin --> Repo[(Mandate repository)]
+    Health --> Repo
+    Repo --> Read[Read by portfolio or mandate]
+    Repo --> Versions[Version history]
+    Versions --> Diff[Version diff]
+    Repo --> HealthRead[Health read]
+    Health --> Monitoring[Monitoring run-once]
+    Monitoring --> CommandCenter[DPM command center]
+    Monitoring --> ExceptionQueue[Exception queue and resolution]
+```
+
+Non-functional posture:
+
+- The refresh command is a bounded source-product composition. It does not call the retired
+  monolithic DPM execution-context route and does not source raw portfolio ledger truth locally.
+- The API preserves source-lineage records from core and keeps missing source products explicit
+  through `field_gap_codes`.
+- Diff output is deterministic and ignores volatile source-lineage ordering.
+- The default repository profile is in-memory for local runtime and tests; the Postgres repository
+  and migrations exist for production profile wiring.
+- Swagger groups the endpoints under `lotus-manage Mandates` with route-local examples and bounded
+  failure descriptions.
+
+Upstream integration posture:
+
+`lotus-core` remains authoritative for mandate binding, model targets, market data, portfolio state,
+eligibility, tax lots, cash, prices, and FX. RFC-0038 Slice 3 uses only the source products required
+to compile the minimum viable mandate twin. Objective profile, client restriction profile,
+sustainability preference profile, and portfolio cash-flow forecast remain explicit source-data
+gaps until core exposes them as governed data products.
+
+Downstream consumers:
+
+- No production downstream consumer is assumed for the new RFC-0038 target APIs.
+- Future `lotus-gateway` and `lotus-workbench` integration should consume these routes through a
+  certified Gateway contract rather than reconstructing mandate state client-side.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_mandates_api.py tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py tests/integration/test_openapi_certification_matrix.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
 ## Certified endpoint family: policy-pack read supportability
 
 Routes:

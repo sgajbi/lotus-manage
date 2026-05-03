@@ -48,7 +48,11 @@ class _FakeConnection:
             return _FakeCursor(None)
         if sql == "SELECT pg_advisory_unlock(%s::bigint)":
             return _FakeCursor(None)
-        if sql.startswith("CREATE TABLE"):
+        if (
+            sql.startswith("CREATE TABLE")
+            or sql.startswith("CREATE INDEX")
+            or sql.startswith("ALTER TABLE")
+        ):
             return _FakeCursor(None)
         if "FROM schema_migrations" in sql:
             namespace = args[0]

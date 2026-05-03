@@ -94,6 +94,27 @@ flowchart TD
 This evidence path is API-first. It certifies `lotus-manage` and its managed core-sourcing posture
 before broader Gateway or Workbench product-surface integration is treated as proof.
 
+## Mandate Command-Center Flow
+
+RFC-0038 introduces a command-center foundation for discretionary mandate supervision. The
+backend-owned flow is:
+
+```mermaid
+flowchart TD
+    Core[lotus-core source products] --> Twin[Mandate digital twin]
+    Twin --> Health[Mandate health score]
+    Health --> Run[DPM monitoring run]
+    Run --> Exceptions[Monitoring exceptions]
+    Run --> Command[Command-center summary]
+    Exceptions --> Command
+    Command --> Gateway[lotus-gateway product contract]
+    Gateway --> Workbench[Workbench PM cockpit]
+```
+
+The important boundary is that `lotus-manage` owns health and command-center truth, while Gateway
+and Workbench own composition and presentation. Workbench should not call `lotus-manage` directly or
+reconstruct health state client-side.
+
 ## Code map
 
 - `src/api/`
@@ -102,6 +123,18 @@ before broader Gateway or Workbench product-surface integration is treated as pr
   rebalance engine, policy-pack resolution, turnover, settlement, tax, and constraint logic
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services
+- `src/core/mandates.py`
+  RFC-0038 mandate digital-twin, health-score, and monitoring-exception domain foundation
+- `src/core/mandate_repository.py` and `src/infrastructure/mandates/`
+  RFC-0038 mandate, health, and monitoring-exception repository contract plus in-memory and
+  Postgres-backed persistence foundation
+- `src/api/routers/mandates.py` and `src/api/services/mandate_service.py`
+  RFC-0038 mandate refresh, read, version, diff, health, monitoring orchestration, and exception
+  service foundation backed by product-specific `lotus-core` sourcing and the mandate repository
+- `src/api/routers/monitoring.py`
+  RFC-0038 bounded monitoring run, exception queue, and command-center summary APIs
+- `docs/architecture/dpm-command-center-gateway-workbench-handoff.md`
+  RFC-0038 downstream integration handoff for Gateway and Workbench command-center adoption
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
 - `src/infrastructure/`

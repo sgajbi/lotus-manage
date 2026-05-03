@@ -83,6 +83,17 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
     with pytest.raises(HTTPException) as incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert incomplete.value.status_code == 424
+    assert incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
+
+    class _DerivedIncompleteResolver:
+        def resolve_execution_context(self, **_kwargs):
+            raise DpmCoreContextIncompleteError("MARKET_DATA_STALE")
+
+    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver())
+    with pytest.raises(HTTPException) as derived_incomplete:
+        service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
+    assert derived_incomplete.value.status_code == 424
+    assert derived_incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
 
     class _InvalidResolver:
         def resolve_execution_context(self, **_kwargs):
