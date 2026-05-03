@@ -234,6 +234,65 @@ class DpmMonitoringException(BaseModel):
     resolution_reason: Optional[str] = None
 
 
+class DpmMonitoringRun(BaseModel):
+    monitoring_run_id: str = Field(
+        description="Stable monitoring run identifier.",
+        examples=["dmr_20260503_083000"],
+    )
+    as_of_date: date = Field(
+        description="Business date used to evaluate mandate health.",
+        examples=["2026-05-03"],
+    )
+    requested_at: datetime = Field(
+        description="UTC timestamp when monitoring was requested.",
+        examples=["2026-05-03T08:30:00Z"],
+    )
+    completed_at: Optional[datetime] = Field(
+        default=None,
+        description="UTC timestamp when monitoring completed.",
+        examples=["2026-05-03T08:30:02Z"],
+    )
+    status: Literal["SUCCEEDED", "FAILED"] = Field(
+        description="Monitoring run terminal status.",
+        examples=["SUCCEEDED"],
+    )
+    mandate_ids: list[str] = Field(
+        default_factory=list,
+        description="Mandate ids included in the monitoring run.",
+        examples=[["MANDATE_PB_SG_GLOBAL_BAL_001"]],
+    )
+    filters: dict[str, str] = Field(
+        default_factory=dict,
+        description="Caller-supplied monitoring filters used for audit and replay.",
+        examples=[{"tenant_id": "default"}],
+    )
+    total_mandates: int = Field(
+        ge=0,
+        description="Number of mandates evaluated by this monitoring run.",
+        examples=[1],
+    )
+    health_distribution: dict[str, int] = Field(
+        default_factory=dict,
+        description="Count of evaluated mandates by health state.",
+        examples=[{"READY": 0, "PENDING_REVIEW": 1, "BLOCKED": 0}],
+    )
+    exception_count: int = Field(
+        ge=0,
+        description="Number of monitoring exceptions generated or refreshed.",
+        examples=[1],
+    )
+    source_readiness_summary: dict[str, int] = Field(
+        default_factory=dict,
+        description="Count of evaluated mandates by source-readiness state.",
+        examples=[{"READY": 1}],
+    )
+    failure_reason: Optional[str] = Field(
+        default=None,
+        description="Bounded failure reason when the monitoring run failed.",
+        examples=["MANDATE_NOT_FOUND"],
+    )
+
+
 def compile_mandate_digital_twin_from_core(
     *,
     mandate: DpmCoreMandateBindingResponse,

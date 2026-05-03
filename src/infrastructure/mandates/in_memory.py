@@ -10,6 +10,7 @@ from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
+    DpmMonitoringRun,
 )
 
 
@@ -18,6 +19,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         self._lock = Lock()
         self._mandates_by_key: dict[tuple[str, str], DpmMandateDigitalTwin] = {}
         self._health_snapshots: dict[str, DpmMandateHealthSnapshot] = {}
+        self._monitoring_runs: dict[str, DpmMonitoringRun] = {}
         self._exceptions: dict[str, DpmMonitoringException] = {}
 
     def save_mandate_snapshot(self, twin: DpmMandateDigitalTwin) -> None:
@@ -81,6 +83,45 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
     def save_monitoring_exception(self, exception: DpmMonitoringException) -> None:
         with self._lock:
             self._exceptions[exception.exception_id] = deepcopy(exception)
+
+    def save_monitoring_run(self, run: DpmMonitoringRun) -> None:
+        with self._lock:
+            self._monitoring_runs[run.monitoring_run_id] = deepcopy(run)
+
+    def get_monitoring_run(
+        self,
+        *,
+        monitoring_run_id: str,
+    ) -> Optional[DpmMonitoringRun]:
+        with self._lock:
+            run = self._monitoring_runs.get(monitoring_run_id)
+            return deepcopy(run) if run is not None else None
+
+    def list_monitoring_runs(
+        self,
+        *,
+        status: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmMonitoringRun], Optional[str]]:
+        with self._lock:
+            rows = list(self._monitoring_runs.values())
+            if status is not None:
+                rows = [row for row in rows if row.status == status]
+            rows = sorted(
+                rows, key=lambda row: (row.requested_at, row.monitoring_run_id), reverse=True
+            )
+            if cursor is not None:
+                cursor_index = next(
+                    (index for index, row in enumerate(rows) if row.monitoring_run_id == cursor),
+                    None,
+                )
+                if cursor_index is None:
+                    return [], None
+                rows = rows[cursor_index + 1 :]
+            page = rows[:limit]
+            next_cursor = page[-1].monitoring_run_id if len(rows) > limit else None
+            return [deepcopy(row) for row in page], next_cursor
 
     def list_monitoring_exceptions(
         self,
@@ -156,9 +197,14 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
                 self._mandates_by_key.pop(mandate_key, None)
             for health_key in health_keys:
                 self._health_snapshots.pop(health_key, None)
+            run_keys = [
+                key for key, run in self._monitoring_runs.items() if run.requested_at < cutoff_utc
+            ]
+            for run_key in run_keys:
+                self._monitoring_runs.pop(run_key, None)
             for exception_key in exception_keys:
                 self._exceptions.pop(exception_key, None)
-            return len(mandate_keys) + len(health_keys) + len(exception_keys)
+            return len(mandate_keys) + len(health_keys) + len(run_keys) + len(exception_keys)
 
 
 def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> DpmMandateDigitalTwin:

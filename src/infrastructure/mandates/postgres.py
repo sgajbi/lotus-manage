@@ -10,6 +10,7 @@ from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
+    DpmMonitoringRun,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -233,6 +234,107 @@ class PostgresDpmMandateRepository:
             )
             connection.commit()
 
+    def save_monitoring_run(self, run: DpmMonitoringRun) -> None:
+        query = """
+            INSERT INTO dpm_monitoring_runs (
+                monitoring_run_id,
+                as_of_date,
+                status,
+                portfolio_manager_id,
+                tenant_id,
+                requested_by,
+                filters_json,
+                source_readiness_summary_json,
+                started_at,
+                completed_at,
+                failure_reason,
+                payload_json
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (monitoring_run_id) DO UPDATE SET
+                status=excluded.status,
+                filters_json=excluded.filters_json,
+                source_readiness_summary_json=excluded.source_readiness_summary_json,
+                completed_at=excluded.completed_at,
+                failure_reason=excluded.failure_reason,
+                payload_json=excluded.payload_json
+        """
+        with closing(self._connect()) as connection:
+            connection.execute(
+                query,
+                (
+                    run.monitoring_run_id,
+                    run.as_of_date.isoformat(),
+                    run.status,
+                    run.filters.get("portfolio_manager_id"),
+                    run.filters.get("tenant_id"),
+                    run.filters.get("requested_by", "lotus-manage"),
+                    json.dumps(run.filters, separators=(",", ":"), sort_keys=True),
+                    json.dumps(
+                        run.source_readiness_summary,
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    ),
+                    run.requested_at.isoformat(),
+                    _optional_iso(run.completed_at),
+                    run.failure_reason,
+                    dump_model_json(run),
+                ),
+            )
+            connection.commit()
+
+    def get_monitoring_run(
+        self,
+        *,
+        monitoring_run_id: str,
+    ) -> Optional[DpmMonitoringRun]:
+        query = "SELECT payload_json FROM dpm_monitoring_runs WHERE monitoring_run_id = %s"
+        with closing(self._connect()) as connection:
+            row = connection.execute(query, (monitoring_run_id,)).fetchone()
+        if row is None:
+            return None
+        return load_model_json(DpmMonitoringRun, str(row["payload_json"]))
+
+    def list_monitoring_runs(
+        self,
+        *,
+        status: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmMonitoringRun], Optional[str]]:
+        where_clauses: list[str] = []
+        args: list[Any] = []
+        if status is not None:
+            where_clauses.append("status = %s")
+            args.append(status)
+        if cursor is not None:
+            where_clauses.append(
+                """
+                (
+                    started_at < (SELECT started_at FROM dpm_monitoring_runs WHERE monitoring_run_id = %s)
+                    OR (
+                        started_at = (SELECT started_at FROM dpm_monitoring_runs WHERE monitoring_run_id = %s)
+                        AND monitoring_run_id < %s
+                    )
+                )
+                """
+            )
+            args.extend([cursor, cursor, cursor])
+        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        query = f"""
+            SELECT payload_json, monitoring_run_id
+            FROM dpm_monitoring_runs
+            {where_sql}
+            ORDER BY started_at DESC, monitoring_run_id DESC
+            LIMIT %s
+        """
+        args.append(limit + 1)
+        with closing(self._connect()) as connection:
+            rows = connection.execute(query, tuple(args)).fetchall()
+        runs = [load_model_json(DpmMonitoringRun, str(row["payload_json"])) for row in rows]
+        page = runs[:limit]
+        next_cursor = page[-1].monitoring_run_id if len(runs) > limit else None
+        return page, next_cursor
+
     def list_monitoring_exceptions(
         self,
         *,
@@ -313,6 +415,7 @@ class PostgresDpmMandateRepository:
             for table, column, predicate in [
                 ("dpm_mandate_snapshots", "created_at", ""),
                 ("dpm_mandate_health_snapshots", "created_at", ""),
+                ("dpm_monitoring_runs", "started_at", ""),
                 (
                     "dpm_monitoring_exceptions",
                     "detected_at",

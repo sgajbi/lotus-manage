@@ -10,20 +10,24 @@ from src.api.dependencies import get_mandate_repository
 from src.api.services.mandate_service import (
     DpmMandateDiff,
     DpmMandateDiffUnavailableError,
+    DpmMandateHealthNotFoundError,
     DpmMandateNotFoundError,
     DpmMandateRefreshResult,
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,
     diff_mandate_versions,
     get_latest_mandate,
+    get_latest_mandate_health,
     get_latest_mandate_by_portfolio,
     list_mandate_versions,
+    recalculate_mandate_health,
     refresh_mandate_from_core,
 )
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
     DpmMandateDigitalTwin,
+    DpmMandateHealthInput,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
 )
@@ -403,3 +407,57 @@ async def refresh_mandate(
             detail=str(exc),
         ) from exc
     return DpmMandateRefreshFromCoreResponse.from_result(result)
+
+
+@router.get(
+    "/{mandate_id}/health",
+    response_model=DpmMandateHealthSnapshot,
+    summary="Get latest discretionary mandate health snapshot",
+    description=(
+        "Use this endpoint when a PM, operator, or command-center surface needs the latest "
+        "persisted health state for a mandate, including dimension scores, top reasons, source "
+        "readiness, and recommended action."
+    ),
+    responses={
+        200: {"description": "Latest mandate health snapshot."},
+        404: {"description": "No health snapshot exists for this mandate id."},
+    },
+)
+async def read_mandate_health(
+    mandate_id: str,
+    repository: DpmMandateRepository = Depends(get_mandate_repository),
+) -> DpmMandateHealthSnapshot:
+    try:
+        return get_latest_mandate_health(repository=repository, mandate_id=mandate_id)
+    except DpmMandateHealthNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/{mandate_id}/health/recalculate",
+    response_model=DpmMandateHealthSnapshot,
+    summary="Recalculate discretionary mandate health",
+    description=(
+        "Use this endpoint to recalculate and persist mandate health from an explicit health "
+        "input. This is primarily for certification, operations, and later command-center "
+        "orchestration where the caller has already resolved the source-backed mandate twin and "
+        "current monitoring measurements."
+    ),
+    responses={
+        200: {"description": "Recalculated and persisted mandate health snapshot."},
+        424: {"description": "Health input did not match the mandate id or was incomplete."},
+    },
+)
+async def recalculate_health(
+    mandate_id: str,
+    request: DpmMandateHealthInput,
+    repository: DpmMandateRepository = Depends(get_mandate_repository),
+) -> DpmMandateHealthSnapshot:
+    try:
+        return recalculate_mandate_health(
+            repository=repository,
+            mandate_id=mandate_id,
+            health_input=request,
+        )
+    except DpmMandateSourceIncompleteError as exc:
+        raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY, detail=str(exc)) from exc

@@ -9,8 +9,10 @@ from pydantic import BaseModel, Field
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
     DpmMandateDigitalTwin,
+    DpmMandateHealthInput,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
+    DpmMonitoringRun,
     build_health_input_from_core_sources,
     calculate_mandate_health,
     compile_mandate_digital_twin_from_core,
@@ -36,6 +38,14 @@ class DpmMandateSourceUnavailableError(RuntimeError):
 
 
 class DpmMandateSourceIncompleteError(RuntimeError):
+    pass
+
+
+class DpmMandateHealthNotFoundError(LookupError):
+    pass
+
+
+class DpmMonitoringRunNotFoundError(LookupError):
     pass
 
 
@@ -193,6 +203,142 @@ def list_mandate_versions(
     if not versions:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
     return versions
+
+
+def get_latest_mandate_health(
+    *,
+    repository: DpmMandateRepository,
+    mandate_id: str,
+) -> DpmMandateHealthSnapshot:
+    snapshot = repository.get_latest_health_snapshot(mandate_id=mandate_id)
+    if snapshot is None:
+        raise DpmMandateHealthNotFoundError("DPM_MANDATE_HEALTH_NOT_FOUND")
+    return snapshot
+
+
+def recalculate_mandate_health(
+    *,
+    repository: DpmMandateRepository,
+    mandate_id: str,
+    health_input: DpmMandateHealthInput,
+) -> DpmMandateHealthSnapshot:
+    if health_input.twin.mandate_id != mandate_id:
+        raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
+    snapshot = calculate_mandate_health(health_input)
+    exceptions = monitoring_exceptions_from_health(
+        snapshot,
+        source_lineage=health_input.twin.source_lineage,
+    )
+    repository.save_mandate_snapshot(health_input.twin)
+    repository.save_health_snapshot(snapshot)
+    for exception in exceptions:
+        repository.save_monitoring_exception(exception)
+    return snapshot
+
+
+def run_mandate_monitoring_once(
+    *,
+    repository: DpmMandateRepository,
+    mandate_ids: list[str],
+    as_of_date: date,
+    filters: dict[str, str],
+) -> DpmMonitoringRun:
+    requested_at = datetime.now(timezone.utc)
+    health_distribution: dict[str, int] = {}
+    source_readiness_summary: dict[str, int] = {}
+    exception_count = 0
+
+    for mandate_id in mandate_ids:
+        twin = get_latest_mandate(repository=repository, mandate_id=mandate_id)
+        health_input = DpmMandateHealthInput(
+            twin=twin.model_copy(update={"as_of_date": as_of_date})
+        )
+        snapshot = calculate_mandate_health(health_input)
+        repository.save_health_snapshot(snapshot)
+        health_distribution[snapshot.health_state.value] = (
+            health_distribution.get(snapshot.health_state.value, 0) + 1
+        )
+        source_readiness_summary[snapshot.source_readiness_state] = (
+            source_readiness_summary.get(snapshot.source_readiness_state, 0) + 1
+        )
+        exceptions = monitoring_exceptions_from_health(
+            snapshot,
+            source_lineage=twin.source_lineage,
+        )
+        exception_count += len(exceptions)
+        for exception in exceptions:
+            repository.save_monitoring_exception(exception)
+
+    run = DpmMonitoringRun(
+        monitoring_run_id=f"dmr_{requested_at.strftime('%Y%m%d_%H%M%S_%f')}",
+        as_of_date=as_of_date,
+        requested_at=requested_at,
+        completed_at=datetime.now(timezone.utc),
+        status="SUCCEEDED",
+        mandate_ids=mandate_ids,
+        filters=filters,
+        total_mandates=len(mandate_ids),
+        health_distribution=health_distribution,
+        exception_count=exception_count,
+        source_readiness_summary=source_readiness_summary,
+    )
+    repository.save_monitoring_run(run)
+    return run
+
+
+def get_monitoring_run(
+    *,
+    repository: DpmMandateRepository,
+    monitoring_run_id: str,
+) -> DpmMonitoringRun:
+    run = repository.get_monitoring_run(monitoring_run_id=monitoring_run_id)
+    if run is None:
+        raise DpmMonitoringRunNotFoundError("DPM_MONITORING_RUN_NOT_FOUND")
+    return run
+
+
+def list_monitoring_runs(
+    *,
+    repository: DpmMandateRepository,
+    status: Optional[str],
+    limit: int,
+    cursor: Optional[str],
+) -> tuple[list[DpmMonitoringRun], Optional[str]]:
+    return repository.list_monitoring_runs(status=status, limit=limit, cursor=cursor)
+
+
+def list_monitoring_exceptions(
+    *,
+    repository: DpmMandateRepository,
+    mandate_id: Optional[str],
+    portfolio_id: Optional[str],
+    state: Optional[str],
+    limit: int,
+    cursor: Optional[str],
+) -> tuple[list[DpmMonitoringException], Optional[str]]:
+    return repository.list_monitoring_exceptions(
+        mandate_id=mandate_id,
+        portfolio_id=portfolio_id,
+        state=state,
+        limit=limit,
+        cursor=cursor,
+    )
+
+
+def resolve_monitoring_exception(
+    *,
+    repository: DpmMandateRepository,
+    exception_id: str,
+    resolution_reason: str,
+) -> DpmMonitoringException:
+    resolved = repository.resolve_monitoring_exception(
+        exception_id=exception_id,
+        resolved_at=datetime.now(timezone.utc),
+        resolution_reason=resolution_reason,
+    )
+    if resolved is None:
+        raise DpmMandateNotFoundError("DPM_MONITORING_EXCEPTION_NOT_FOUND")
+    return resolved
 
 
 def diff_mandate_versions(

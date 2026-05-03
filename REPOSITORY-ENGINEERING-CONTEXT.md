@@ -61,10 +61,9 @@ Current repository posture:
 12. RFC-0038 Slice 0-3 has started the target-state foundation with a source-mapped pure
     `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine, derived
     monitoring-exception taxonomy, repository contract, in-memory repository, Postgres repository
-    foundation, `0003_mandate_health_foundation.sql` migration, and certified mandate
-    refresh/read/version/diff API foundation. Standalone health, monitoring, and command-center
-    APIs remain unsupported until later slices add routes, live proof, and supported-feature
-    promotion.
+    foundation, mandate migrations, certified mandate refresh/read/version/diff APIs, standalone
+    health APIs, and bounded monitoring/exception APIs. Command-center APIs remain unsupported
+    until later slices add routes, live proof, and supported-feature promotion.
 
 ## Architecture And Module Map
 
@@ -75,7 +74,8 @@ Primary areas:
    RFC-0038 mandate digital-twin and health-scoring domain primitives live in
    `src/core/mandates.py`; repository and persistence primitives live in
    `src/core/mandate_repository.py` and `src/infrastructure/mandates/`; mandate API orchestration
-   lives in `src/api/services/mandate_service.py` and `src/api/routers/mandates.py`.
+   lives in `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, and
+   `src/api/routers/monitoring.py`.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.
 3. `docs/`

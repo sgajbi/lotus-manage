@@ -17,7 +17,7 @@ from src.core.dpm_source_context import (
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
 )
-from src.core.mandates import DpmMandateDigitalTwin
+from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthInput
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 
@@ -394,6 +394,46 @@ def test_response_contract_is_json_serializable() -> None:
         )
 
     httpx.Response(200, json=response.json())
+
+
+def test_health_recalculate_and_read_latest_health_snapshot() -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    health_input = DpmMandateHealthInput(
+        twin=twin,
+        current_weights={"EQ_US_AAPL": Decimal("0.60")},
+        target_weights={"EQ_US_AAPL": Decimal("0.60")},
+        cash_weight=Decimal("0.05"),
+    )
+
+    with _client(repository) as client:
+        recalculated = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate",
+            json=health_input.model_dump(mode="json"),
+        )
+        latest = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
+
+    assert recalculated.status_code == 200
+    assert recalculated.json()["health_state"] == "READY"
+    assert latest.status_code == 200
+    assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
+
+
+def test_health_read_and_recalculate_error_mapping() -> None:
+    wrong_twin = _twin().model_copy(update={"mandate_id": "OTHER_MANDATE"})
+    health_input = DpmMandateHealthInput(twin=wrong_twin, cash_weight=Decimal("0.05"))
+
+    with _client(InMemoryDpmMandateRepository()) as client:
+        missing = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
+        mismatch = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/health/recalculate",
+            json=health_input.model_dump(mode="json"),
+        )
+
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "DPM_MANDATE_HEALTH_NOT_FOUND"
+    assert mismatch.status_code == 424
+    assert mismatch.json()["detail"] == "DPM_MANDATE_HEALTH_INPUT_MISMATCH"
 
 
 def test_default_mandate_repository_dependency_is_available() -> None:

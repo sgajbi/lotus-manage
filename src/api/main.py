@@ -40,6 +40,7 @@ from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
 )
 from src.api.routers.mandates import router as mandates_router
+from src.api.routers.monitoring import router as monitoring_router
 from src.api.services.rebalance_simulation_service import (
     DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
     DPM_IDEMPOTENCY_CACHE,
@@ -125,6 +126,10 @@ app = FastAPI(
                 "endpoints for RFC-0038."
             ),
         },
+        {
+            "name": "lotus-manage Monitoring",
+            "description": "Mandate health monitoring runs and exception queue endpoints.",
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -157,6 +162,7 @@ app.include_router(rebalance_policy_pack_router, prefix="/api/v1")
 app.include_router(rebalance_simulation_router, prefix="/api/v1")
 app.include_router(integration_capabilities_router, prefix="/api/v1")
 app.include_router(mandates_router, prefix="/api/v1")
+app.include_router(monitoring_router, prefix="/api/v1")
 
 
 @app.get(

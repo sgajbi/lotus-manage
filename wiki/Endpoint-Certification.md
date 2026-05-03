@@ -174,14 +174,22 @@ Routes:
 - `GET /api/v1/mandates/{mandate_id}/versions`
 - `GET /api/v1/mandates/{mandate_id}/diff`
 - `POST /api/v1/mandates/{mandate_id}/refresh-from-core`
+- `GET /api/v1/mandates/{mandate_id}/health`
+- `POST /api/v1/mandates/{mandate_id}/health/recalculate`
+- `POST /api/v1/dpm/monitoring/run-once`
+- `GET /api/v1/dpm/monitoring/runs`
+- `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}`
+- `GET /api/v1/dpm/exceptions`
+- `POST /api/v1/dpm/exceptions/{exception_id}/resolve`
 
 Purpose:
 
 RFC-0038 mandate digital-twin foundation for discretionary portfolio management. These endpoints
 let lotus-manage refresh mandate state from product-specific `lotus-core` source products, persist
 the compiled mandate digital twin, read the latest portfolio or mandate view, inspect version
-history, and explain what changed between versions. They are not advisory proposal endpoints and
-do not claim command-center completion.
+history, explain what changed between versions, recalculate health, run bounded mandate monitoring,
+search monitoring runs, search exception queues, and resolve reviewed exceptions. They are not
+advisory proposal endpoints and do not claim command-center completion.
 
 Functional behavior:
 
@@ -195,6 +203,12 @@ Functional behavior:
 - Version listing returns persisted mandate twins newest first.
 - Diff compares the latest two versions by default, or caller-supplied `from_version` and
   `to_version`, and labels materiality for changed mandate fields.
+- Health read returns the latest persisted mandate health snapshot.
+- Health recalculate persists a new snapshot and derived exceptions from explicit monitoring input.
+- Monitoring run-once evaluates caller-supplied mandate ids that have already been refreshed.
+- Monitoring run search and detail return persisted run records.
+- Exception search supports mandate, portfolio, state, cursor, and limit filters.
+- Exception resolve requires an auditable resolution reason and returns the resolved exception.
 - Core unavailable maps to `503 DPM_MANDATE_SOURCE_UNAVAILABLE`.
 - Core incomplete maps to `424 DPM_MANDATE_SOURCE_INCOMPLETE`.
 - Legacy unversioned aliases such as `/mandates/{mandate_id}` remain absent.
@@ -213,6 +227,9 @@ flowchart LR
     Repo --> Read[Read by portfolio or mandate]
     Repo --> Versions[Version history]
     Versions --> Diff[Version diff]
+    Repo --> HealthRead[Health read]
+    Health --> Monitoring[Monitoring run-once]
+    Monitoring --> ExceptionQueue[Exception queue and resolution]
 ```
 
 Non-functional posture:
@@ -223,7 +240,7 @@ Non-functional posture:
   through `field_gap_codes`.
 - Diff output is deterministic and ignores volatile source-lineage ordering.
 - The default repository profile is in-memory for local runtime and tests; the Postgres repository
-  and migration foundation exists for production profile wiring.
+  and migrations exist for production profile wiring.
 - Swagger groups the endpoints under `lotus-manage Mandates` with route-local examples and bounded
   failure descriptions.
 

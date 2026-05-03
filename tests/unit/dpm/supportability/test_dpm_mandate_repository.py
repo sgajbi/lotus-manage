@@ -10,6 +10,7 @@ from src.core.mandates import (
     DpmMandateHealthSnapshot,
     DpmMandateHealthInput,
     DpmMandateReviewPolicy,
+    DpmMonitoringRun,
     MandateHealthDimension,
     MandateHealthState,
     calculate_mandate_health,
@@ -56,6 +57,27 @@ def _health_snapshot(twin: DpmMandateDigitalTwin) -> DpmMandateHealthSnapshot:
             },
             cash_weight=Decimal("0.05"),
         )
+    )
+
+
+def _monitoring_run(
+    *,
+    run_id: str = "dmr_20260503_120000",
+    status: str = "SUCCEEDED",
+    requested_at: datetime = datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
+) -> DpmMonitoringRun:
+    return DpmMonitoringRun(
+        monitoring_run_id=run_id,
+        as_of_date=date(2026, 5, 3),
+        requested_at=requested_at,
+        completed_at=requested_at + timedelta(seconds=2),
+        status=status,
+        mandate_ids=["MANDATE_PB_SG_GLOBAL_BAL_001"],
+        filters={"tenant_id": "default", "portfolio_manager_id": "PM_SG_DPM_001"},
+        total_mandates=1,
+        health_distribution={"READY": 1},
+        exception_count=0,
+        source_readiness_summary={"READY": 1},
     )
 
 
@@ -219,6 +241,58 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
     assert rows == []
 
 
+def test_repository_persists_pages_and_purges_monitoring_runs() -> None:
+    repository = InMemoryDpmMandateRepository()
+    old_run = _monitoring_run(
+        run_id="dmr_20240101_120000",
+        requested_at=datetime(2024, 1, 1, 12, 0, tzinfo=timezone.utc),
+    )
+    latest_run = _monitoring_run(run_id="dmr_20260503_120000")
+    failed_run = _monitoring_run(
+        run_id="dmr_20260502_120000",
+        status="FAILED",
+        requested_at=datetime(2026, 5, 2, 12, 0, tzinfo=timezone.utc),
+    ).model_copy(update={"failure_reason": "MANDATE_NOT_FOUND"})
+
+    repository.save_monitoring_run(old_run)
+    repository.save_monitoring_run(latest_run)
+    repository.save_monitoring_run(failed_run)
+
+    first_page, cursor = repository.list_monitoring_runs(status=None, limit=1, cursor=None)
+    second_page, second_cursor = repository.list_monitoring_runs(
+        status=None,
+        limit=1,
+        cursor=cursor,
+    )
+    failed_page, failed_cursor = repository.list_monitoring_runs(
+        status="FAILED",
+        limit=10,
+        cursor=None,
+    )
+    missing_page, missing_cursor = repository.list_monitoring_runs(
+        status=None,
+        limit=10,
+        cursor="UNKNOWN_RUN",
+    )
+    purged = repository.purge_mandate_records_before(
+        cutoff=datetime(2025, 1, 1, tzinfo=timezone.utc)
+    )
+
+    assert (
+        repository.get_monitoring_run(monitoring_run_id=latest_run.monitoring_run_id) == latest_run
+    )
+    assert first_page == [latest_run]
+    assert cursor == latest_run.monitoring_run_id
+    assert second_page == [failed_run]
+    assert second_cursor == failed_run.monitoring_run_id
+    assert failed_page == [failed_run]
+    assert failed_cursor is None
+    assert missing_page == []
+    assert missing_cursor is None
+    assert purged == 1
+    assert repository.get_monitoring_run(monitoring_run_id=old_run.monitoring_run_id) is None
+
+
 def test_repository_serialization_round_trip_preserves_domain_types() -> None:
     snapshot = _health_snapshot(_twin())
 
@@ -252,6 +326,7 @@ class _FakePostgresStore:
     def __init__(self) -> None:
         self.mandates: dict[tuple[str, str], dict[str, Any]] = {}
         self.health: dict[str, dict[str, Any]] = {}
+        self.monitoring_runs: dict[str, dict[str, Any]] = {}
         self.exceptions: dict[str, dict[str, Any]] = {}
         self.deleted_rowcount = 2
         self.commits = 0
@@ -305,6 +380,49 @@ class _FakeConnection:
             rows = [row for row in self.store.health.values() if row["mandate_id"] == params[0]]
             rows = sorted(rows, key=lambda row: row["created_at"], reverse=True)
             return _FakeResult(rows=[{"payload_json": row["payload_json"]} for row in rows])
+
+        if normalized.startswith("insert into dpm_monitoring_runs"):
+            self.store.monitoring_runs[str(params[0])] = {
+                "monitoring_run_id": params[0],
+                "status": params[2],
+                "started_at": params[8],
+                "payload_json": params[11],
+            }
+            return _FakeResult(rowcount=1)
+        if (
+            "select payload_json from dpm_monitoring_runs" in normalized
+            and "where monitoring_run_id" in normalized
+        ):
+            row = self.store.monitoring_runs.get(str(params[0]))
+            return (
+                _FakeResult(rows=[{"payload_json": row["payload_json"]}]) if row else _FakeResult()
+            )
+        if "select payload_json, monitoring_run_id from dpm_monitoring_runs" in normalized:
+            rows = list(self.store.monitoring_runs.values())
+            arg_index = 0
+            if "status = %s" in normalized:
+                rows = [row for row in rows if row["status"] == params[arg_index]]
+                arg_index += 1
+            if "monitoring_run_id < %s" in normalized:
+                cursor = params[arg_index]
+                arg_index += 3
+                rows = [row for row in rows if row["monitoring_run_id"] < cursor]
+            limit = int(params[-1])
+            rows = sorted(
+                rows,
+                key=lambda row: (row["started_at"], row["monitoring_run_id"]),
+                reverse=True,
+            )
+            rows = rows[:limit]
+            return _FakeResult(
+                rows=[
+                    {
+                        "payload_json": row["payload_json"],
+                        "monitoring_run_id": row["monitoring_run_id"],
+                    }
+                    for row in rows
+                ]
+            )
 
         if normalized.startswith("insert into dpm_monitoring_exceptions"):
             self.store.exceptions[str(params[0])] = {
@@ -474,5 +592,48 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
     assert resolved.state == "RESOLVED"
     assert resolved.resolution_reason == "PM_CONFIRMED_EXIT_REQUIRED"
     assert missing is None
-    assert removed == store.deleted_rowcount * 3
+    assert removed == store.deleted_rowcount * 4
     assert store.commits >= 4
+
+
+def test_postgres_repository_persists_reads_and_pages_monitoring_runs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, _ = _postgres_repository(monkeypatch)
+    latest_run = _monitoring_run(run_id="dmr_20260503_120000")
+    older_run = _monitoring_run(
+        run_id="dmr_20260502_120000",
+        requested_at=datetime(2026, 5, 2, 12, 0, tzinfo=timezone.utc),
+    )
+    failed_run = _monitoring_run(
+        run_id="dmr_20260501_120000",
+        status="FAILED",
+        requested_at=datetime(2026, 5, 1, 12, 0, tzinfo=timezone.utc),
+    ).model_copy(update={"failure_reason": "MANDATE_NOT_FOUND"})
+
+    repository.save_monitoring_run(older_run)
+    repository.save_monitoring_run(latest_run)
+    repository.save_monitoring_run(failed_run)
+
+    first_page, cursor = repository.list_monitoring_runs(status=None, limit=1, cursor=None)
+    second_page, second_cursor = repository.list_monitoring_runs(
+        status=None,
+        limit=1,
+        cursor=cursor,
+    )
+    failed_page, failed_cursor = repository.list_monitoring_runs(
+        status="FAILED",
+        limit=10,
+        cursor=None,
+    )
+
+    assert (
+        repository.get_monitoring_run(monitoring_run_id=latest_run.monitoring_run_id) == latest_run
+    )
+    assert repository.get_monitoring_run(monitoring_run_id="UNKNOWN_RUN") is None
+    assert first_page == [latest_run]
+    assert cursor == latest_run.monitoring_run_id
+    assert second_page == [older_run]
+    assert second_cursor == older_run.monitoring_run_id
+    assert failed_page == [failed_run]
+    assert failed_cursor is None

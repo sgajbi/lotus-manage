@@ -7,6 +7,7 @@ from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
+    DpmMonitoringRun,
 )
 
 
@@ -40,6 +41,22 @@ class DpmMandateRepository(Protocol):
     ) -> Optional[DpmMandateHealthSnapshot]: ...
 
     def save_monitoring_exception(self, exception: DpmMonitoringException) -> None: ...
+
+    def save_monitoring_run(self, run: DpmMonitoringRun) -> None: ...
+
+    def get_monitoring_run(
+        self,
+        *,
+        monitoring_run_id: str,
+    ) -> Optional[DpmMonitoringRun]: ...
+
+    def list_monitoring_runs(
+        self,
+        *,
+        status: Optional[str],
+        limit: int,
+        cursor: Optional[str],
+    ) -> tuple[list[DpmMonitoringRun], Optional[str]]: ...
 
     def list_monitoring_exceptions(
         self,
