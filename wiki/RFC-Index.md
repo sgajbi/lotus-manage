@@ -78,14 +78,15 @@ evidence, and supported-feature promotion.
   complete
 - RFC-0041
   rebalance-wave orchestration and CIO model-change impact implementation is in progress through
-  Slice 8. Source-map, platform-scaffold evidence improvement, cleanup review, wave domain
+  Slice 9. Source-map, platform-scaffold evidence improvement, cleanup review, wave domain
   contracts, persistence foundation, explicit affected-portfolio preview, idempotent durable
   create, durable source-check classification, ready-item simulation, item-level alternative
   selection, proof-pack linkage, approval, staging, and internal operations handoff evidence are
-  complete. Product-safe supportability diagnostics and bounded wave supportability telemetry are
-  also complete. Explicit portfolio-list waves remain the first implementation target; PM-book/CIO
-  automatic cohort discovery is deferred until source-owning products are proven. No full supported
-  feature claim has been promoted.
+  complete. Product-safe supportability diagnostics, bounded wave supportability telemetry, and
+  downstream Gateway/Workbench RFC-0098 wave realization addenda are also complete. Explicit
+  portfolio-list waves remain the first implementation target; PM-book/CIO automatic cohort
+  discovery is deferred until source-owning products are proven. No full supported feature claim
+  has been promoted.
 - RFC-0042
   proposed post-trade outcome feedback-loop roadmap
 - RFC-0043

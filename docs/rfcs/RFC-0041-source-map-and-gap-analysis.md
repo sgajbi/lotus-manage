@@ -377,6 +377,54 @@ Evidence:
 6. `tests/unit/dpm/api/test_observability_api.py`
 7. `tests/unit/test_observability_contracts.py`
 
+## Slice 9 Gateway and Workbench Realization RFC Result
+
+Slice 9 tightened the downstream realization RFCs now that manage wave contracts are stable through
+supportability and observability. No manage product behavior was moved downstream, and no Gateway
+or Workbench feature was promoted as supported.
+
+Gateway result:
+
+1. `lotus-gateway` RFC-0098 now includes an RFC-0041 rebalance-wave addendum.
+2. Gateway target routes are under `/api/v1/dpm/command-center/waves*`.
+3. Gateway must consume manage preview, create, source-check, simulate, select, approve, stage,
+   handoff, and supportability APIs through typed clients.
+4. Gateway must preserve manage `wave_id`, state, item states, reason codes, aggregate metrics,
+   selected alternative refs, proof-pack refs, handoff refs, supportability refs, retention policy,
+   and event refs.
+5. Gateway must not calculate affected portfolios, source readiness, aggregate metrics,
+   construction alternatives, proof-pack state, or execution posture.
+6. Gateway must compose risk, performance, report, archive, and AI posture only from owning
+   services.
+
+Workbench result:
+
+1. `lotus-workbench` RFC-0098 now includes an RFC-0041 rebalance-wave command-center workspace
+   addendum.
+2. Workbench must consume Gateway wave routes only through the Workbench BFF.
+3. Workbench target panels cover wave header, item matrix, action rail, construction drawer,
+   proof-pack evidence drawer, supportability drawer, and internal operations handoff rail.
+4. Workbench must not call `lotus-manage` directly, calculate readiness, override action
+   eligibility, or imply external execution from manage internal handoff refs.
+5. Workbench promotion requires Gateway implementation, Workbench BFF/browser implementation,
+   canonical `PB_SG_GLOBAL_BAL_001` live validation, visual and accessibility evidence, reviewed
+   screenshots, wiki updates, and implementation-backed support wording.
+
+Evidence:
+
+1. `lotus-gateway` PR #183, merge `e0e4b1b`, wiki publish `3fc30e8`
+2. `lotus-workbench` PR #143, merge `c4888d4`, wiki publish `25566cb`
+3. Gateway RFC: `lotus-gateway/docs/rfcs/RFC-0098-dpm-command-center-composition-contract.md`
+4. Workbench RFC: `lotus-workbench/docs/rfcs/RFC-0098-dpm-mandate-command-center-experience.md`
+
+Production boundary:
+
+1. Manage remains the RFC-0041 wave authority.
+2. Gateway remains the future composition boundary.
+3. Workbench remains the future product experience boundary.
+4. Full front-office support remains unpromoted until downstream implementation and live proof are
+   complete.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

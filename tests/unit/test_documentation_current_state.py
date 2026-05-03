@@ -343,8 +343,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN PROGRESS - SLICE 8 SUPPORTABILITY/OBSERVABILITY COMPLETE" in rfc
-    assert "IN PROGRESS - SLICE 8 SUPPORTABILITY/OBSERVABILITY COMPLETE" in index
+    assert "IN PROGRESS - SLICE 9 DOWNSTREAM REALIZATION RFCS COMPLETE" in rfc
+    assert "IN PROGRESS - SLICE 9 DOWNSTREAM REALIZATION RFCS COMPLETE" in index
     assert "feat/rfc0041-gold-standard-tightening" in rfc
     assert "feat/rfc0041-implementation" in rfc
     assert "RFC-0041-source-map-and-gap-analysis.md" in rfc
@@ -354,8 +354,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "create or tighten paired RFCs in" in rfc
     assert "`lotus-gateway` and `lotus-workbench`" in rfc
     assert "Do not mark RFC-0041 `DONE`" in rfc
-    assert "implementation is in progress through Slice 8" in wiki_index_normalized
-    assert "Implementation is complete through Slice 8" in roadmap
+    assert "implementation is in progress through Slice 9" in wiki_index_normalized
+    assert "Implementation is complete through Slice 9" in roadmap
     assert "Proposed only" in supported_features
     assert "Explicit portfolio-list waves" in supported_features
     assert "No supported feature claim may be promoted" in supported_features
@@ -389,6 +389,11 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "GET /api/v1/rebalance/waves/{wave_id}/supportability" in source_map
     assert "lotus_manage_wave_supportability_total" in source_map
     assert "portfolio identifiers, client identifiers, raw request" in source_map
+    assert "## Slice 9 Gateway and Workbench Realization RFC Result" in source_map
+    assert "`lotus-gateway` PR #183, merge `e0e4b1b`" in source_map
+    assert "`lotus-workbench` PR #143, merge `c4888d4`" in source_map
+    assert "/api/v1/dpm/command-center/waves*" in source_map
+    assert "Workbench must consume Gateway wave routes only" in source_map
     assert "misleading RFC-0041 documentation guardrail name" in source_map
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
     assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
