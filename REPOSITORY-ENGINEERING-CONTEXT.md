@@ -56,15 +56,18 @@ Current repository posture:
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
 11. RFC-0037 through RFC-0043 define the proposed strategic revamp into a DPM operating system.
-    These RFCs are target-state planning material until implementation-backed support, live proof,
-    and supported-feature promotion are completed.
-12. RFC-0038 Slice 0-5 has started the target-state foundation with a source-mapped pure
-    `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine, derived
-    monitoring-exception taxonomy, repository contract, in-memory repository, Postgres repository
-    foundation, mandate migrations, certified mandate refresh/read/version/diff APIs, standalone
+    RFC-0038 is now implementation-backed; the remaining roadmap RFCs stay target-state planning
+    material until implementation-backed support, live proof, and supported-feature promotion are
+    completed.
+12. RFC-0038 has delivered the first implementation-backed DPM operating-system foundation with a
+    source-mapped `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine,
+    derived monitoring-exception taxonomy, repository contract, in-memory and PostgreSQL
+    persistence, mandate migrations, certified mandate refresh/read/version/diff APIs, standalone
     health APIs, bounded monitoring/exception APIs, and a bounded command-center summary API.
-    Live proof, Gateway/Workbench handoff, and final supported-feature promotion remain later
-    slices.
+    Local manage proof, local canonical manage plus live `lotus-core` proof, supported-feature
+    promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
+    platform canonical seed automation remain governed downstream follow-up in the owning
+    repositories.
 
 ## Architecture And Module Map
 

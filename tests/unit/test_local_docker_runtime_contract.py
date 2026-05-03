@@ -47,6 +47,20 @@ def test_local_docker_runtime_exposes_idempotency_history_feature_gate() -> None
     )
 
 
+def test_local_docker_runtime_exposes_stateful_core_sourcing_gates() -> None:
+    compose_text = Path("docker-compose.yml").read_text(encoding="utf-8")
+
+    assert (
+        "DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=${DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED:-false}"
+        in compose_text
+    )
+    assert (
+        "DPM_STATEFUL_CORE_SOURCING_ENABLED=${DPM_STATEFUL_CORE_SOURCING_ENABLED:-false}"
+        in compose_text
+    )
+    assert "DPM_CORE_BASE_URL=${DPM_CORE_BASE_URL:-}" in compose_text
+
+
 def test_ci_local_docker_compose_does_not_publish_internal_postgres_port() -> None:
     compose_text = Path("docker-compose.ci-local.yml").read_text(encoding="utf-8")
 
