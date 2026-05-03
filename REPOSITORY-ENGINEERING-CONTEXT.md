@@ -68,15 +68,16 @@ Current repository posture:
     promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
     platform canonical seed automation remain governed downstream follow-up in the owning
     repositories.
-13. RFC-0039 Slices 0-8 have delivered the first implementation-backed construction-alternative
-    backend foundation: bounded construction vocabulary, pure alternative models, method registry,
-    enrichment posture, risk/performance seams, repository contract, in-memory and PostgreSQL
-    persistence foundation, migration `0005_construction_alternatives.sql`, and certified APIs for
-    generating, retrieving, and selecting persisted alternative sets. Postgres-backed canonical
-    manage proof passed through `scripts/validate_live_api.py`, including first-wave
-    generate/read/select behavior and supportability summary checks. Gateway and Workbench are not
-    yet integrated with this surface; paired realization RFCs have been created and must be
-    implemented/proven downstream before a full front-office product outcome is claimed.
+13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
+    bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
+    risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,
+    migration `0005_construction_alternatives.sql`, and certified APIs for generating, retrieving,
+    and selecting persisted alternative sets. First-wave and second-wave methods are supported as
+    manage backend postures, with unavailable risk, ESG, currency, and regime/scenario authority
+    carried as explicit degraded reason codes rather than fabricated local truth. Gateway and
+    Workbench are not yet integrated with this surface; paired realization RFCs have been created
+    and must be implemented/proven downstream before a full front-office product outcome is
+    claimed.
 
 ## Architecture And Module Map
 

@@ -351,7 +351,8 @@ def _method_specific_reason_codes(
             else "ESG_PROFILE_UNAVAILABLE"
         )
     if method == ConstructionMethod.CURRENCY_OVERLAY:
-        if result.diagnostics.missing_fx_pairs:
+        missing_pairs = _missing_currency_overlay_pairs(request=request)
+        if result.diagnostics.missing_fx_pairs or missing_pairs:
             reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_MISSING")
         elif _currency_overlay_status(request=request) == ConstructionMethodStatus.DEGRADED:
             reason_codes.append("CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE")
@@ -391,15 +392,30 @@ def _esg_status(*, request: RebalanceRequest) -> ConstructionMethodStatus:
 
 
 def _currency_overlay_status(*, request: RebalanceRequest) -> ConstructionMethodStatus:
+    if _missing_currency_overlay_pairs(request=request):
+        return ConstructionMethodStatus.BLOCKED
     base_currency = request.portfolio_snapshot.base_currency
     instrument_currencies = {
-        price.currency for price in request.market_data_snapshot.prices if price.currency != base_currency
+        price.currency
+        for price in request.market_data_snapshot.prices
+        if price.currency != base_currency
     }
     return (
         ConstructionMethodStatus.READY
         if instrument_currencies
         else ConstructionMethodStatus.DEGRADED
     )
+
+
+def _missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:
+    base_currency = request.portfolio_snapshot.base_currency
+    available_pairs = {fx_rate.pair for fx_rate in request.market_data_snapshot.fx_rates}
+    required_pairs = {
+        f"{price.currency}/{base_currency}"
+        for price in request.market_data_snapshot.prices
+        if price.currency != base_currency
+    }
+    return sorted(required_pairs - available_pairs)
 
 
 def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:

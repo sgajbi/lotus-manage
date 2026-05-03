@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_construction_repository, get_db_session
 from src.api.main import app
+import src.api.services.construction_service as construction_service
 import src.api.services.rebalance_simulation_service as rebalance_service
 from src.core.dpm_source_context import DpmCoreExecutionContext
 from src.infrastructure.construction import InMemoryConstructionRepository
@@ -203,22 +204,107 @@ def test_generate_construction_alternative_set_supports_second_wave_methods() ->
     app.dependency_overrides = {}
 
     assert response.status_code == 200
-    alternatives = {alternative["method"]: alternative for alternative in response.json()["alternatives"]}
+    alternatives = {
+        alternative["method"]: alternative for alternative in response.json()["alternatives"]
+    }
     assert set(alternatives) == set(payload["methods"])
     assert alternatives["SOLVER_CONSTRAINED"]["diagnostics"]["method_plan"]["requested_method"] == (
         "SOLVER_CONSTRAINED"
     )
-    assert "SETTLEMENT_AWARENESS_ENABLED" in (
-        alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert (
+        "SETTLEMENT_AWARENESS_ENABLED"
+        in (alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
-    assert "RISK_AUTHORITY_NOT_CONNECTED" in (
-        alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert (
+        "RISK_AUTHORITY_NOT_CONNECTED"
+        in (alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
-    assert "ESG_PROFILE_SOURCE_PRESENT" in (
-        alternatives["ESG_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert (
+        "ESG_PROFILE_SOURCE_PRESENT"
+        in (alternatives["ESG_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
-    assert "REGIME_SCENARIO_PACK_UNAVAILABLE" in (
-        alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert (
+        "REGIME_SCENARIO_PACK_UNAVAILABLE"
+        in (
+            alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+        )
+    )
+
+
+def test_solver_constrained_falls_back_when_solver_unavailable(monkeypatch) -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["SOLVER_CONSTRAINED"]
+    monkeypatch.setattr(construction_service, "has_solver_dependencies", lambda: False)
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-solver-fallback"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    assert alternative["method"] == "SOLVER_CONSTRAINED"
+    assert alternative["method_status"] == "PENDING_REVIEW"
+    assert alternative["diagnostics"]["method_plan"]["effective_method"] == "HEURISTIC_EXPLAINABLE"
+    assert alternative["diagnostics"]["method_plan"]["reason_codes"] == [
+        "SOLVER_UNAVAILABLE_FALLBACK_HEURISTIC"
+    ]
+
+
+def test_currency_overlay_blocks_missing_fx_source() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["stateless_input"]["portfolio_snapshot"]["base_currency"] = "SGD"
+    payload["stateless_input"]["market_data_snapshot"]["prices"] = [
+        {"instrument_id": "EQ_1", "price": "100.00", "currency": "USD"}
+    ]
+    payload["methods"] = ["CURRENCY_OVERLAY"]
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-currency-missing"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    assert alternative["method"] == "CURRENCY_OVERLAY"
+    assert alternative["method_status"] == "BLOCKED"
+    assert (
+        "CURRENCY_OVERLAY_FX_SOURCE_MISSING"
+        in (alternative["diagnostics"]["enrichment_summary"]["reason_codes"])
+    )
+
+
+def test_esg_aware_degrades_when_profile_source_is_missing() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["ESG_AWARE"]
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-esg-missing"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    assert alternative["method"] == "ESG_AWARE"
+    assert alternative["method_status"] == "DEGRADED"
+    assert (
+        "ESG_PROFILE_UNAVAILABLE"
+        in (alternative["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
 
 

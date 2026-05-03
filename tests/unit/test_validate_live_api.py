@@ -57,9 +57,48 @@ def _construction_alternative_set() -> dict:
     }
 
 
+def _construction_second_wave_alternative_set() -> dict:
+    methods = [
+        "SOLVER_CONSTRAINED",
+        "LIQUIDITY_AWARE",
+        "RISK_AWARE",
+        "ESG_AWARE",
+        "CURRENCY_OVERLAY",
+        "REGIME_STRESS_AWARE",
+    ]
+    reason_codes = {
+        "SOLVER_CONSTRAINED": ["TARGET_METHOD_COMPARISON_AVAILABLE"],
+        "LIQUIDITY_AWARE": ["SETTLEMENT_AWARENESS_ENABLED"],
+        "RISK_AWARE": ["RISK_AUTHORITY_NOT_CONNECTED"],
+        "ESG_AWARE": ["ESG_PROFILE_SOURCE_PRESENT"],
+        "CURRENCY_OVERLAY": ["CURRENCY_OVERLAY_FX_SOURCE_READY"],
+        "REGIME_STRESS_AWARE": ["REGIME_SCENARIO_PACK_UNAVAILABLE"],
+    }
+    return {
+        "alternative_set_id": "cas_live_test_second_wave",
+        "alternatives": [
+            {
+                "alternative_id": f"alt_{method.lower()}",
+                "method": method,
+                "method_status": "READY" if method != "REGIME_STRESS_AWARE" else "DEGRADED",
+                "comparison_metrics": {
+                    "drift_after": "0.0000",
+                    "turnover_weight": "1.0000",
+                    "trade_count": 2,
+                },
+                "diagnostics": {"enrichment_summary": {"reason_codes": reason_codes[method]}},
+            }
+            for method in methods
+        ],
+    }
+
+
 def _construction_response(request: httpx.Request) -> httpx.Response | None:
     path = request.url.path
     if path == "/api/v1/construction/alternative-sets/generate":
+        body = json.loads(request.content.decode("utf-8")) if request.content else {}
+        if "SOLVER_CONSTRAINED" in body.get("methods", []):
+            return _json_response(200, _construction_second_wave_alternative_set())
         return _json_response(200, _construction_alternative_set())
     if path == "/api/v1/construction/alternative-sets/cas_live_test":
         return _json_response(200, _construction_alternative_set())
@@ -187,6 +226,7 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
         "removed_proposal_route_404",
         "stateful_core_sourcing_guard",
         "construction_alternatives_first_wave",
+        "construction_alternatives_second_wave",
         "async_duplicate_correlation_conflict",
         "supportability_postgres_summary",
         "metrics_exposed_bounded_supportability",

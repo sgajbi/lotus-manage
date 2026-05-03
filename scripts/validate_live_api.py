@@ -223,8 +223,12 @@ def _probe_stateful_core_sourcing_available(
     )
 
 
-def _construction_alternatives_payload(*, portfolio_id: str) -> dict[str, Any]:
-    return {
+def _construction_alternatives_payload(
+    *,
+    portfolio_id: str,
+    methods: list[str] | None = None,
+) -> dict[str, Any]:
+    payload = {
         "input_mode": "stateless",
         "stateless_input": {
             "portfolio_snapshot": {
@@ -253,6 +257,9 @@ def _construction_alternatives_payload(*, portfolio_id: str) -> dict[str, Any]:
             "options": {},
         },
     }
+    if methods is not None:
+        payload["methods"] = methods
+    return payload
 
 
 def _probe_construction_alternatives(
@@ -344,6 +351,126 @@ def _probe_construction_alternatives(
                 "turnover_weight": min_turnover_metrics.get("turnover_weight"),
                 "trade_count": min_turnover_metrics.get("trade_count"),
             },
+        },
+    )
+
+
+def _probe_construction_second_wave(
+    client: httpx.Client,
+    *,
+    portfolio_id: str,
+) -> ProbeResult:
+    payload = _construction_alternatives_payload(
+        portfolio_id=portfolio_id,
+        methods=[
+            "SOLVER_CONSTRAINED",
+            "LIQUIDITY_AWARE",
+            "RISK_AWARE",
+            "ESG_AWARE",
+            "CURRENCY_OVERLAY",
+            "REGIME_STRESS_AWARE",
+        ],
+    )
+    stateless_input = payload["stateless_input"]
+    stateless_input["portfolio_snapshot"]["positions"] = [
+        {"instrument_id": "EQ_1", "quantity": "100"},
+        {"instrument_id": "EQ_US", "quantity": "0"},
+    ]
+    stateless_input["market_data_snapshot"]["prices"] = [
+        {"instrument_id": "EQ_1", "price": "100.00", "currency": "SGD"},
+        {"instrument_id": "EQ_US", "price": "50.00", "currency": "USD"},
+    ]
+    stateless_input["market_data_snapshot"]["fx_rates"] = [
+        {"pair": "USD/SGD", "rate": "1.35"}
+    ]
+    stateless_input["model_portfolio"]["targets"] = [
+        {"instrument_id": "EQ_1", "weight": "0.50"},
+        {"instrument_id": "EQ_US", "weight": "0.50"},
+    ]
+    stateless_input["shelf_entries"] = [
+        {
+            "instrument_id": "EQ_1",
+            "status": "APPROVED",
+            "attributes": {"sector": "GLOBAL_EQUITY", "esg_profile": "ARTICLE_8"},
+        },
+        {
+            "instrument_id": "EQ_US",
+            "status": "APPROVED",
+            "attributes": {"sector": "GLOBAL_EQUITY", "esg_profile": "ARTICLE_8"},
+        },
+    ]
+
+    response = client.post(
+        "/api/v1/construction/alternative-sets/generate",
+        json=payload,
+        headers={
+            "Idempotency-Key": f"live-construction-second-wave-{uuid.uuid4().hex[:10]}",
+            "X-Correlation-Id": f"corr-live-construction-second-wave-{uuid.uuid4().hex[:10]}",
+        },
+    )
+    body = response.json() if response.content else {}
+    alternatives = body.get("alternatives") if isinstance(body, dict) else []
+    alternatives = alternatives if isinstance(alternatives, list) else []
+    by_method = {
+        alternative.get("method"): alternative
+        for alternative in alternatives
+        if isinstance(alternative, dict)
+    }
+    expected_methods = {
+        "SOLVER_CONSTRAINED",
+        "LIQUIDITY_AWARE",
+        "RISK_AWARE",
+        "ESG_AWARE",
+        "CURRENCY_OVERLAY",
+        "REGIME_STRESS_AWARE",
+    }
+    risk_reason_codes = (
+        by_method.get("RISK_AWARE", {})
+        .get("diagnostics", {})
+        .get("enrichment_summary", {})
+        .get("reason_codes", [])
+    )
+    regime_reason_codes = (
+        by_method.get("REGIME_STRESS_AWARE", {})
+        .get("diagnostics", {})
+        .get("enrichment_summary", {})
+        .get("reason_codes", [])
+    )
+    esg_reason_codes = (
+        by_method.get("ESG_AWARE", {})
+        .get("diagnostics", {})
+        .get("enrichment_summary", {})
+        .get("reason_codes", [])
+    )
+    currency_reason_codes = (
+        by_method.get("CURRENCY_OVERLAY", {})
+        .get("diagnostics", {})
+        .get("enrichment_summary", {})
+        .get("reason_codes", [])
+    )
+    ok = (
+        response.status_code == 200
+        and set(by_method) == expected_methods
+        and "RISK_AUTHORITY_NOT_CONNECTED" in risk_reason_codes
+        and "REGIME_SCENARIO_PACK_UNAVAILABLE" in regime_reason_codes
+        and "ESG_PROFILE_SOURCE_PRESENT" in esg_reason_codes
+        and "CURRENCY_OVERLAY_FX_SOURCE_READY" in currency_reason_codes
+    )
+    return _result(
+        "construction_alternatives_second_wave",
+        ok,
+        {
+            "status_code": response.status_code,
+            "alternative_set_id": body.get("alternative_set_id") if isinstance(body, dict) else None,
+            "methods": sorted(by_method),
+            "statuses": {
+                method: alternative.get("method_status")
+                for method, alternative in sorted(by_method.items())
+            },
+            "risk_reason_codes": risk_reason_codes,
+            "regime_reason_codes": regime_reason_codes,
+            "esg_reason_codes": esg_reason_codes,
+            "currency_reason_codes": currency_reason_codes,
         },
     )
 
@@ -525,6 +652,15 @@ def run_live_api_validation(
             (
                 "construction_alternatives_first_wave",
                 lambda: _probe_construction_alternatives(
+                    client,
+                    portfolio_id=portfolio_id,
+                ),
+            )
+        )
+        probe_calls.append(
+            (
+                "construction_alternatives_second_wave",
+                lambda: _probe_construction_second_wave(
                     client,
                     portfolio_id=portfolio_id,
                 ),

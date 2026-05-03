@@ -67,10 +67,12 @@ a discretionary mandate portfolio-management operating system.
 
 RFC-0038 is now implementation-backed for the mandate digital-twin, health-score, monitoring, and
 command-center backend foundation. RFC-0039 is implementation-backed for the manage-side
-construction-alternative foundation: first-wave generate/read/select APIs, do-nothing baseline,
-explainable heuristic, minimum-turnover, tax-aware posture, Postgres persistence, live proof, and
-downstream Gateway/Workbench realization requirements. Full product-surface support still requires
-Gateway and Workbench implementation and proof. The remaining target-state RFCs cover pre-trade
+construction-alternative foundation: first-wave and second-wave generate/read/select APIs,
+do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained,
+liquidity-aware, risk-aware, ESG-aware, currency-overlay, and regime-stress-aware postures,
+Postgres persistence, live proof, and downstream Gateway/Workbench realization requirements. Full
+product-surface support still requires Gateway and Workbench implementation and proof. The remaining
+target-state RFCs cover pre-trade
 proof packs, decision timelines, CIO/model-change rebalance waves, post-trade outcome feedback, and
 governed AI PM support. Target-state features are not support claims until the owning RFC is
 implemented, certified, live-proven, and reflected in
