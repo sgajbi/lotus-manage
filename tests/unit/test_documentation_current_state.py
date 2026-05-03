@@ -271,12 +271,15 @@ def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> N
         "RFC-0040-persistence-slice5.md",
         "RFC-0040-api-slice6.md",
         "RFC-0040-handoffs-slice7.md",
+        "RFC-0040-gateway-workbench-realization-slice8.md",
     ]
     missing_evidence = [name for name in required_evidence if name not in rfc]
 
     assert missing_evidence == []
-    assert "SLICES 0-7 COMPLETE" in rfc
-    assert "SLICES 0-7 COMPLETE" in index
-    assert "REPORT AND AI HANDOFF ADAPTERS IMPLEMENTED" in rfc
+    assert "SLICES 0-8 COMPLETE" in rfc
+    assert "SLICES 0-8 COMPLETE" in index
+    assert "GATEWAY AND WORKBENCH REALIZATION RFCs ALIGNED" in rfc
+    assert "6099ffe" in rfc
+    assert "4b150d6" in rfc
     assert "Pre-trade proof pack | RFC-0040" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-7 COMPLETE; REPORT AND AI HANDOFF ADAPTERS IMPLEMENTED |
+| **Status** | IN PROGRESS - SLICES 0-8 COMPLETE; GATEWAY AND WORKBENCH REALIZATION RFCs ALIGNED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -19,6 +19,7 @@
 | **Slice 5 Evidence** | `docs/rfcs/RFC-0040-persistence-slice5.md` |
 | **Slice 6 Evidence** | `docs/rfcs/RFC-0040-api-slice6.md` |
 | **Slice 7 Evidence** | `docs/rfcs/RFC-0040-handoffs-slice7.md` |
+| **Slice 8 Evidence** | `docs/rfcs/RFC-0040-gateway-workbench-realization-slice8.md` |
 
 ---
 
@@ -976,6 +977,21 @@ Evidence:
 4. current manage OpenAPI/live proof refs used by downstream RFCs,
 5. downstream gap matrix and ownership decisions.
 
+Slice 8 result:
+
+1. completed in `docs/rfcs/RFC-0040-gateway-workbench-realization-slice8.md`,
+2. aligned `lotus-gateway` RFC-0098 on branch `feat/dpm-command-center-composition-rfc`
+   commit `6099ffe`,
+3. aligned `lotus-workbench` RFC-0098 on branch `feat/dpm-command-center-experience-rfc`
+   commit `4b150d6`,
+4. corrected downstream ownership so `lotus-manage` remains the proof-pack authority,
+   `lotus-gateway` composes Workbench-facing truth without reconstruction, and
+   `lotus-workbench` renders Gateway truth only,
+5. added downstream documentation-contract tests in Gateway and Workbench to prevent stale
+   `lotus-report` proof-pack authority language from returning,
+6. made no Gateway API implementation, Workbench UI implementation, report materialization,
+   AI memo, or full front-office product-realization supported-feature claim.
+
 ### Slice 9 - Implementation Proof
 
 Scope:
@@ -1254,7 +1270,7 @@ The final RFC closure update must include:
 | Report/AI handoff proof | TBD after implementation. |
 | Live evidence reviewed | TBD after implementation. |
 | Documentation/wiki result | TBD after implementation. |
-| Gateway/Workbench realization RFC result | TBD after implementation. |
+| Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` commit `6099ffe` and `lotus-workbench` commit `4b150d6`; implementation remains downstream future work. |
 | Skills/context/guidance decision | TBD after final closure review. |
 | Gold-standard conclusion | TBD after implementation and proof. |
 
