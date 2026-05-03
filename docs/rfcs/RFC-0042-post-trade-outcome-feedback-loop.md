@@ -348,3 +348,82 @@ RFC-0042 is complete when:
 5. APIs are certified,
 6. live proof shows at least one post-trade feedback story,
 7. outcome feedback can feed future PM dashboards without recomputing domain truth in UI.
+
+---
+
+## 12. Gold-Standard Execution Contract
+
+RFC-0042 closes the investment feedback loop. It must compare what `lotus-manage` expected before
+trade with what actually happened after execution, using source-authoritative evidence rather than
+PM anecdotes or UI-side recomputation.
+
+### 12.1 Supported-Features Ledger
+
+| Feature | Support state before implementation | Promotion rule |
+| --- | --- | --- |
+| Outcome review creation | Proposed | Promote only after expected and realized data are reconciled with source refs. |
+| Variance decomposition | Proposed | Promote only after drift, cost, tax, FX, risk, performance, and execution-quality dimensions are tested. |
+| Source-degraded outcome review | Proposed | Promote only after missing core/risk/performance data is explicit and non-misleading. |
+| Searchable outcome memory | Proposed | Promote only after reviews are persisted, searchable, and linked to runs, waves, and proof packs. |
+| Feedback to future construction | Proposed | Promote only after feedback outputs are safe for future PM dashboards and construction quality review. |
+
+### 12.2 Architecture and Domain Direction
+
+Implementation must preserve source authority:
+
+1. `lotus-core` owns fills, transactions, cash movements, FX executions, holdings, and tax
+   realizations,
+2. `lotus-risk` owns post-trade risk and stress posture,
+3. `lotus-performance` owns post-trade returns, attribution, contribution, and benchmark context,
+4. `lotus-manage` owns expected-versus-realized decision review and PM workflow memory,
+5. no UI or AI layer may recompute outcome truth from partial evidence.
+
+### 12.3 Mandatory Delivery Slices
+
+These slices are mandatory in addition to the feature-specific slices in Section 9.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Review whether platform scaffolding should provide reusable outcome-review evidence patterns,
+source-degraded examples, post-trade telemetry fields, and OpenAPI examples for reconciliation
+surfaces. Improve platform automation for repeatable gaps; otherwise record a no-change decision.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Separate pure variance calculations from source clients, persistence, and API presentation. Remove
+any generic "review result" naming that should be outcome, variance, execution-quality, or
+expected-versus-realized terminology.
+
+#### Mandatory Slice C - Implementation Proof
+
+Capture evidence for at least one post-trade review linked to a proof pack and selected alternative.
+Review every expected value, realized value, tolerance, variance, classification, and degraded-source
+reason.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Review numerical determinism, source staleness, tolerance policy, OpenAPI field examples, bounded
+metrics/logs, retention posture, error handling, and test-pyramid adequacy.
+
+#### Mandatory Slice E - Final Closure
+
+Update wiki with outcome-feedback behavior and business value, update supported-features only after
+live proof, update context/skills decisions, and leave branch/PR/CI clean.
+
+### 12.4 Evidence Expectations
+
+Closure evidence must include:
+
+1. outcome review creation request/response,
+2. source lineage for expected and realized values,
+3. variance/tolerance worked example,
+4. source-unavailable degraded example,
+5. search/filter example,
+6. OpenAPI/API certification summary,
+7. local and GitHub check summary.
+
+### 12.5 Enterprise Baseline
+
+This RFC inherits RFC-0037 Section 19.4. Completion requires expected-versus-realized lineage,
+source-readiness metadata, outcome audit events, bounded variance metrics, structured logs,
+operator diagnostics, API certification, and GitHub lane evidence for every outcome-review endpoint.

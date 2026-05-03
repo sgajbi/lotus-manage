@@ -82,6 +82,42 @@ This RFC also incorporates established portfolio-management concepts:
 | `lotus-gateway` | Experience API composition and partial-readiness-aware product boundary. |
 | `lotus-workbench` | Portfolio manager, advisor, operations, and leadership user experience. |
 
+### 1.4 Domain Vocabulary and Design Normalization
+
+This RFC family must use private-banking and institutional portfolio-management vocabulary. The
+implementation should not read like a generic task tracker wrapped around a rebalance API.
+
+Preferred language:
+
+| Domain concept | Preferred Lotus term | Avoid |
+| --- | --- | --- |
+| Client-authorized DPM scope | discretionary mandate, investment mandate, mandate policy statement | generic account settings |
+| Long-term policy allocation | strategic asset allocation, model portfolio, policy portfolio | target mix with no governance context |
+| Short-term CIO or PM tilt | tactical asset allocation, house-view tilt, CIO model change | manual adjustment |
+| Governed constraint set | mandate guidelines, investment restrictions, policy bands, hard/soft limits | arbitrary rules |
+| Ongoing supervision | mandate monitoring, exception surveillance, review cadence | background scan |
+| Rebalance decision | portfolio action, rebalance proposal, selected alternative | generated suggestion |
+| Analytical comparison | construction alternative, risk/return/tax/liquidity trade-off | option list |
+| Multi-currency control | reference currency, currency exposure, FX funding, hedge overlay | currency conversion only |
+| Evidence record | proof pack, source lineage, decision timeline, audit artifact | log dump |
+| Outcome review | expected-versus-realized review, post-trade feedback, execution-quality review | after-action note |
+| AI role | governed PM copilot, narrative assistant, evidence summarizer | autonomous decision agent |
+| Readiness posture | source readiness, supportability, degraded state, blocked state | success/failure flag |
+
+Methodology anchors:
+
+1. mandates should start from objectives, risk profile, time horizon, reference currency, liquidity
+   needs, tax position, regulatory constraints, sustainability preferences, and bespoke
+   restrictions,
+2. construction should distinguish strategic allocation discipline from tactical or dynamic tilts,
+3. construction and rebalancing must expose transaction cost, taxation, liquidity, risk, active
+   risk/tracking error, concentration, currency exposure, and operational readiness,
+4. scenario/stress analysis should be treated as a portfolio-construction and review control, not
+   as a decorative chart,
+5. portfolio memory should preserve decision rights, actor attribution, source lineage, and
+   expected-versus-realized outcome evidence,
+6. AI must consume structured evidence and never become the source of investment truth.
+
 ---
 
 ## 2. Problem Statement
@@ -170,6 +206,35 @@ evidence says, and what happened after action.
    `lotus-performance`.
 5. `lotus-manage` does not let AI choose trades. AI may summarize, explain, check, and prepare
    evidence, but deterministic domain services remain authoritative.
+
+### 3.4 Compatibility Posture
+
+This RFC family is a strategic revamp, not a backward-compatible extension of the current
+management API set.
+
+Current assumption:
+
+1. no downstream system is production-dependent on the target-state RFC-0037 through RFC-0043
+   surfaces,
+2. future `lotus-gateway` and `lotus-workbench` integration will be rebuilt against the certified
+   target contract,
+3. stale, duplicate, advisory-era, or misleading endpoints should be removed rather than wrapped,
+4. compatibility aliases should not be introduced unless a later downstream migration RFC proves a
+   real production dependency,
+5. the target contract should optimize for domain correctness, API quality, observability,
+   supportability, and evidence, not legacy payload shape preservation.
+
+Implementation rule:
+
+1. if downstream usage is discovered during implementation, document the consumer and migration
+   plan,
+2. prefer a short-lived migration issue over permanent compatibility code,
+3. keep the strategic endpoint vocabulary clean even when a downstream adapter is temporarily
+   required elsewhere,
+4. redesign current APIs where needed to create a coherent enterprise-grade contract,
+5. delete duplicate or poorly named endpoints instead of preserving them as aliases,
+6. certify the new contract through OpenAPI, tests, live evidence, and supported-feature updates
+   before gateway or Workbench integration is rebuilt.
 
 ---
 
@@ -1455,3 +1520,206 @@ first implementation RFC should be a smaller execution RFC for Slice 1 and Slice
 
 That follow-up RFC should include concrete API schemas, migrations, exact source-data contracts,
 OpenAPI examples, testing plan, and canonical demo data requirements.
+
+---
+
+## 19. Gold-Standard Execution Contract
+
+This section is the execution contract for RFC-0037 and the RFC-0038 through RFC-0043 delivery
+family. It exists to remove ambiguity before implementation begins.
+
+### 19.1 Supported-Features Ledger
+
+Target-state features must remain separate from implementation-backed features until live proof
+exists. Promotion requires API certification, tests, canonical evidence, and wiki/supported-feature
+updates.
+
+| Feature | Owning RFC | Initial support state | Promotion rule |
+| --- | --- | --- | --- |
+| Mandate digital twin | RFC-0038 | Proposed | Promote only after core sourcing, persistence, APIs, and live evidence are complete. |
+| Mandate health score | RFC-0038 | Proposed | Promote only after decomposed scoring, reason codes, tests, and command-center evidence exist. |
+| DPM command center | RFC-0038 | Proposed | Promote only after bounded portfolio-manager book summary APIs and gateway handoff are certified. |
+| CIO house-view propagation | RFC-0041 | Proposed | Promote only after model-change impact and wave preview are source-backed and audited. |
+| Advanced construction lab | RFC-0039 | Proposed | Promote only after alternatives are persisted, comparable, explainable, and solver posture is certified. |
+| Rebalance alternatives | RFC-0039 | Proposed | Promote only after selection, infeasibility, and fallback evidence are actor-attributed. |
+| Tax/liquidity/risk/ESG construction | RFC-0039 | Proposed | Promote only after each dimension has source supportability and degraded-state tests. |
+| Currency overlay and hedge governance | RFC-0039 | Proposed | Promote only after exposure, hedge-ratio, FX funding, and settlement evidence are complete. |
+| Regime and stress simulator | RFC-0039/RFC-0040 | Proposed | Promote only after scenario packs are sourced from risk-authoritative evidence. |
+| Pre-trade proof pack | RFC-0040 | Proposed | Promote only after durable JSON/Markdown/report/AI evidence artifacts are certified. |
+| Decision timeline and portfolio memory | RFC-0040 | Proposed | Promote only after mandate, exception, alternative, approval, wave, handoff, and outcome events link. |
+| Rebalance wave orchestration | RFC-0041 | Proposed | Promote only after multi-portfolio partial-readiness behavior is live-proven. |
+| Post-trade outcome feedback | RFC-0042 | Proposed | Promote only after expected-versus-realized review is linked to core, risk, and performance evidence. |
+| Governed PM copilot | RFC-0043 | Proposed | Promote only after `lotus-ai` workflow-pack guardrails and AI-unavailable fallbacks are proven. |
+| DPM sales/demo story | RFC-0037 plus wiki | Proposed | Promote only after implementation-backed demos are captured from the canonical stack. |
+
+### 19.2 Mandatory Delivery Slices
+
+The detailed RFCs may have feature-specific slices, but every implementation must also execute the
+following mandatory slices in order. Do not move to the next slice until the current slice has
+working code, tests, documentation posture, and evidence appropriate to its scope.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Run this slice before app-local implementation and again whenever repeated platform gaps appear.
+If no platform change is needed, record a deliberate no-change decision.
+
+Required checks:
+
+1. identify whether app scaffolding should already provide the needed API certification,
+   OpenAPI examples, health endpoints, structured logging, metrics, error models, migration smoke,
+   test scaffolding, CI defaults, documentation scaffolding, wiki source, and governance hooks,
+2. improve `lotus-platform` automation when a gap is repeatable across applications,
+3. keep app-local changes only where the concern is genuinely `lotus-manage` domain behavior,
+4. update central context, skills, or scaffolding docs when platform behavior changes.
+
+Exit evidence:
+
+1. list of platform gaps found,
+2. platform PR or explicit no-change decision,
+3. app-local implementation boundary recorded,
+4. impacted validators or templates documented.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Required checks:
+
+1. remove dead advisory leftovers, stale endpoints, duplicate RFC/documentation material, and
+   misleading target-state claims,
+2. simplify modules before adding new behavior,
+3. move long-lived operator and product material to wiki source where appropriate,
+4. avoid duplicating detailed RFC mechanics in the wiki,
+5. keep supported-features material implementation-backed.
+
+Exit evidence:
+
+1. dead-code and duplicate-doc review notes,
+2. updated repository structure when needed,
+3. wiki/source-doc split recorded,
+4. tests proving removed behavior is no longer exposed if endpoints are deleted.
+
+#### Mandatory Slice C - Implementation Proof
+
+Required checks:
+
+1. prove each endpoint and workflow against the RFC,
+2. capture full request/response evidence under non-git-tracked `output/`,
+3. validate every returned figure, readiness state, reason code, lineage ref, and degraded state,
+4. run canonical core/manage proof when source data is part of the feature,
+5. file or fix every gap discovered during evidence review.
+
+Exit evidence:
+
+1. live evidence folder path,
+2. request/response inventory,
+3. critical review notes,
+4. fixed-gap summary,
+5. remaining deferred items with owner and rationale.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Required checks:
+
+1. perform a code review focused on bugs, architecture, duplication, dead code, and test quality,
+2. certify every touched API and error path,
+3. verify Swagger grouping, what/when/how guidance, request examples, response examples, and
+   field-level descriptions, types, and examples,
+4. verify data-mesh declarations, telemetry, structured logging, bounded metrics, health,
+   readiness, and platform governance,
+5. run repository-native checks and monitor GitHub lanes.
+
+Exit evidence:
+
+1. review findings and fixes,
+2. OpenAPI/API vocabulary certification,
+3. test-pyramid adequacy statement,
+4. local and GitHub check posture,
+5. no unresolved P0/P1 implementation gaps.
+
+#### Mandatory Slice E - Final Closure
+
+Required checks:
+
+1. update README, RFC, runbook, context, wiki source, and supported-features truth,
+2. publish wiki after merge when wiki truth changed,
+3. record whether skills, agent guidance, documentation workflow, or context should change,
+4. mark the RFC implementation status truthfully,
+5. clean branch state, PR state, and local generated artifacts.
+
+Exit evidence:
+
+1. final evidence summary,
+2. wiki source and publication posture,
+3. supported-features update,
+4. skills/context decision,
+5. branch hygiene and CI closure.
+
+### 19.3 Documentation-As-Product Standard
+
+Documentation must be suitable for business, engineering, sales, marketing, operations, and client
+demo preparation:
+
+1. README stays concise and command-accurate,
+2. wiki explains feature behavior, integrations, operational posture, and diagrams in
+   business-readable language,
+3. RFCs carry implementation detail, architecture, test and evidence requirements,
+4. supported-features separates implemented, gated, and proposed features,
+5. no sales or demo material may claim target-state behavior before implementation-backed proof.
+
+### 19.4 Enterprise, Data-Mesh, and Observability Baseline
+
+Every implementation RFC in this family inherits this baseline. A feature is not complete until it
+meets the relevant Lotus platform standards as well as its business acceptance criteria.
+
+Data-mesh requirements:
+
+1. declare every produced or consumed domain data product in repo-native contracts where applicable,
+2. keep `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`, and `lotus-ai` source
+   authority explicit,
+3. attach lineage, freshness, completeness, source-readiness, and supportability metadata to
+   cross-service evidence,
+4. update trust telemetry, SLO, access, and evidence-policy posture when a feature becomes a
+   governed product,
+5. validate with repo-native mesh and platform certification gates before promotion.
+
+API and contract requirements:
+
+1. use clean strategic `/api/v1` contracts; do not preserve poor legacy shapes for compatibility,
+2. certify every endpoint through OpenAPI quality, API vocabulary, no-alias, request/response
+   examples, error examples, and field-level descriptions/types/examples,
+3. expose bounded problem-details errors and deterministic reason codes,
+4. make partial readiness and degraded source states first-class response states,
+5. keep downstream Gateway/Workbench integration out of scope until the target API is certified.
+
+Observability and operations requirements:
+
+1. structured logs must carry service, operation, state, supportability reason, correlation id, and
+   trace context where available,
+2. metrics must use bounded, non-sensitive labels only,
+3. health, liveness, readiness, supportability, and operator diagnostics must distinguish app
+   health from source-data readiness,
+4. audit events must record actor, decision, state transition, reason codes, and artifact refs,
+5. telemetry must never expose client identifiers, holdings, raw requests/responses, proof-pack
+   sensitive payloads, trace ids, or correlation ids as metric labels,
+6. live proof must include logs/metrics/supportability posture, not only business responses.
+
+Delivery requirements:
+
+1. use repo-native checks first and GitHub lanes for asynchronous heavy proof,
+2. monitor Feature Lane and PR Merge Gate while continuing non-overlapping work,
+3. fix CI failures promptly,
+4. keep branch history small, meaningful, and truthful,
+5. leave no open P0/P1 architecture, API, data-mesh, observability, or test-quality gap before
+   closure.
+
+Feature-expansion rule:
+
+1. every new feature must strengthen the enterprise posture or include explicit compensating
+   controls,
+2. no feature may close if it increases endpoint sprawl, source-authority ambiguity, undocumented
+   states, unbounded telemetry labels, weak error handling, or superficial tests,
+3. new capabilities should reduce operational effort, improve auditability, improve decision
+   quality, or make source-readiness clearer,
+4. if a valuable feature introduces unavoidable complexity, the implementation must add modular
+   boundaries, supportability, observability, and tests that make the complexity operationally
+   manageable,
+5. final review must explicitly state how enterprise posture improved versus the pre-RFC baseline.

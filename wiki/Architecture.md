@@ -7,8 +7,9 @@
 - PostgreSQL-backed persistence and migrations under `src/infrastructure/`
 - consumed primarily through `lotus-gateway`
 - stateless execution is active and advertised
-- stateful core-sourced execution is modeled, guarded, and intentionally disabled until upstream
-  resolver certification is complete
+- stateful core-sourced execution is implemented behind explicit runtime gates and advertised only
+  when core source-product readiness, stateful capability flags, and resolver configuration prove
+  the posture
 
 ```mermaid
 flowchart LR
@@ -31,17 +32,43 @@ flowchart TD
     Bundle --> Engine[DPM engine]
     Mode -->|stateful| Gate{Stateful sourcing enabled and core base URL configured?}
     Gate -->|no| Disabled[DPM_STATEFUL_INPUT_DISABLED or DPM_CORE_RESOLVER_UNAVAILABLE]
-    Gate -->|yes, future| Core[lotus-core DPM execution context]
+    Gate -->|yes| Core[lotus-core RFC-087 source products]
     Core --> Transform[Transform governed context to engine input]
     Transform --> Engine
     Engine --> Result[READY, PENDING_REVIEW, or BLOCKED]
     Result --> Supportability[Run record, artifact, lineage, workflow, metrics]
 ```
 
-The current implemented product mode is `stateless`. Stateful request models, resolver client,
-transformation helpers, and lineage fields are present so the integration boundary is explicit, but
-capabilities do not advertise stateful execution until the governed `lotus-core` source-data
-contract is live-certified.
+The default product mode is `stateless`. Stateful request models, resolver client, transformation
+helpers, and lineage fields are implemented behind explicit runtime gates. Capabilities advertise
+stateful execution only when `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED`,
+`DPM_STATEFUL_CORE_SOURCING_ENABLED`, and `DPM_CORE_BASE_URL` prove a usable core-sourcing posture.
+
+## Target DPM Operating System Architecture
+
+```mermaid
+flowchart TD
+    Core[lotus-core<br/>portfolio, mandate, model, tax, cash, FX, eligibility]
+    Risk[lotus-risk<br/>risk, stress, concentration]
+    Perf[lotus-performance<br/>returns, attribution, outcome]
+    Manage[lotus-manage<br/>DPM operating system]
+    Report[lotus-report<br/>client, PM, audit packs]
+    AI[lotus-ai<br/>governed PM copilot]
+    Gateway[lotus-gateway]
+    Workbench[lotus-workbench]
+
+    Core --> Manage
+    Risk --> Manage
+    Perf --> Manage
+    Manage --> Report
+    Manage --> AI
+    Manage --> Gateway
+    Gateway --> Workbench
+```
+
+Target-state RFCs may redesign or delete existing manage APIs. The architecture preference is a
+clean, certified, domain-driven `/api/v1` contract rather than backward-compatible aliases for stale
+or poorly named endpoints.
 
 ## Evidence flow
 

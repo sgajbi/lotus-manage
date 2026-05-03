@@ -55,6 +55,9 @@ Current repository posture:
     `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`,
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
+11. RFC-0037 through RFC-0043 define the proposed strategic revamp into a DPM operating system.
+    These RFCs are target-state planning material until implementation-backed support, live proof,
+    and supported-feature promotion are completed.
 
 ## Architecture And Module Map
 
@@ -169,9 +172,13 @@ Most relevant current governance:
 9. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
 10. the current repo-native domain-data-product declaration intentionally records only governed
-   `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
-   market-data and future stateful `portfolio_id` resolution must be added only after upstream
-   producer approval and an explicit source-data retrieval design.
+    `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
+    market-data and future stateful `portfolio_id` resolution must be added only after upstream
+    producer approval and an explicit source-data retrieval design.
+11. target-state RFC-0037 through RFC-0043 work may redesign or remove stale manage APIs because
+    no production downstream dependency is assumed for the revamp surface. Any downstream usage
+    discovered during implementation should be documented and migrated to the certified target
+    contract rather than preserved through permanent compatibility aliases.
 
 ## Context Maintenance Rule
 

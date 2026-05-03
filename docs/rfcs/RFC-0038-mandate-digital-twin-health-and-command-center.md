@@ -801,3 +801,85 @@ RFC-0038 is complete only when:
 8. wiki/README/supported-features reflect actual implemented state,
 9. target-state claims remain separate from implemented claims,
 10. branch, PR, CI, and wiki publication are clean.
+
+---
+
+## 14. Gold-Standard Execution Contract
+
+RFC-0038 is the first implementation foundation for the DPM operating system. It must establish
+portfolio-manager trust in the mandate record before later construction, proof-pack, wave, outcome,
+or AI features build on it.
+
+### 14.1 Supported-Features Ledger
+
+| Feature | Support state before implementation | Promotion rule |
+| --- | --- | --- |
+| Mandate digital twin | Proposed | Promote only after source fields, derived fields, local overlays, versions, lineage, and APIs are certified. |
+| Mandate health score | Proposed | Promote only after decomposed dimensions, weights, thresholds, reason codes, and tests are complete. |
+| Monitoring exceptions | Proposed | Promote only after repeatable monitoring runs create bounded, actor-reviewable exceptions. |
+| DPM command center | Proposed | Promote only after book-level summaries, attention queues, and partial-readiness behavior are live-proven. |
+
+### 14.2 Architecture and Domain Direction
+
+Implementation must preserve these boundaries:
+
+1. `lotus-core` remains source authority for portfolio, mandate-binding, model, eligibility,
+   market-data, cash, tax-lot, and reference data,
+2. `lotus-manage` owns the DPM interpretation layer: mandate digital twin, health score,
+   monitoring exception, and command-center summary,
+3. `lotus-risk` and `lotus-performance` remain enrichment authorities; missing enrichment must
+   degrade health dimensions instead of inventing values,
+4. `lotus-gateway` and `lotus-workbench` must consume supported APIs rather than reconstructing
+   health or command-center truth client-side.
+
+### 14.3 Mandatory Delivery Slices
+
+These slices are mandatory in addition to the feature-specific slices in Section 9.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Check whether platform scaffolding already enforces health/readiness endpoints, OpenAPI examples,
+bounded problem-details errors, structured logging, no-sensitive metrics, documentation scaffolding,
+and API certification tests. Fix repeatable gaps in `lotus-platform`; otherwise record a deliberate
+no-change decision.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Remove stale advisory language, duplicate mandate documentation, unused local health abstractions,
+and any generic "score" naming that should be domain-specific. Keep long-lived operator and product
+truth in wiki source; keep scoring methodology and schema details in `docs/`.
+
+#### Mandatory Slice C - Implementation Proof
+
+Bring up core/manage with seeded discretionary mandate data. Capture request and response evidence
+for mandate lookup, mandate refresh, health snapshot, monitoring run, exceptions, and command-center
+summary. Review dimension scores, thresholds, reason codes, lineage, and degraded-source states.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Perform a full review of source ownership, score transparency, OpenAPI field-level examples,
+metrics/logging labels, migration posture, repository boundaries, and tests. Every endpoint must be
+API-certified and every error path must have tests and Swagger examples.
+
+#### Mandatory Slice E - Final Closure
+
+Update README if orientation changes, update wiki with business-readable command-center behavior and
+diagrams, update supported-features only for proven support, update repository context if ownership
+or runtime truth changes, record skills/guidance decision, and leave branch/PR/CI clean.
+
+### 14.4 Evidence Expectations
+
+Closure evidence must include:
+
+1. field-by-field source map for the mandate twin,
+2. health-score worked example with source refs and reason codes,
+3. command-center response for a populated PM book and an empty/partial book,
+4. degraded-source proof,
+5. OpenAPI certification summary,
+6. local and GitHub check summary.
+
+### 14.5 Enterprise Baseline
+
+This RFC inherits RFC-0037 Section 19.4. Completion requires data-mesh posture, source-readiness
+lineage, structured logging, bounded metrics, supportability diagnostics, API certification, and
+GitHub lane evidence appropriate to every mandate, health, monitoring, and command-center endpoint.

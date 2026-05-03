@@ -646,3 +646,90 @@ RFC-0039 is complete when:
 6. OpenAPI is complete,
 7. live proof shows a realistic discretionary mandate comparison,
 8. no AI or UI layer chooses the alternative on behalf of the PM.
+
+---
+
+## 13. Gold-Standard Execution Contract
+
+RFC-0039 must make portfolio construction explainable enough for a PM, CIO office, risk reviewer,
+tax specialist, and operations team to understand why one rebalance path is better than another.
+
+### 13.1 Supported-Features Ledger
+
+| Feature | Support state before implementation | Promotion rule |
+| --- | --- | --- |
+| Alternative set generation | Proposed | Promote only after alternatives are persisted, comparable, and reproducible. |
+| Solver-constrained construction | Proposed | Promote only after solver status, objective terms, constraints, relaxations, and fallback are exposed. |
+| Minimum-turnover construction | Proposed | Promote only after turnover, trade count, drift reduction, and cost trade-offs are tested. |
+| Tax-aware construction | Proposed | Promote only after lot availability, lot selection, tax budget, and degraded-source behavior are proven. |
+| Liquidity-aware construction | Proposed | Promote only after cash, settlement, liquidity, and cashflow-readiness evidence is complete. |
+| Risk/performance-aware construction | Proposed | Promote only after enrichment seams or live integrations degrade truthfully when unavailable. |
+| ESG/restriction-aware construction | Proposed | Promote only after restriction, sustainability, and eligibility evidence is complete. |
+| Currency-overlay construction | Proposed | Promote only after FX exposure, hedge-ratio, funding, settlement, and hedge-blocking evidence exists. |
+| Regime/stress-aware construction | Proposed | Promote only after scenario packs and stress contribution evidence are risk-authoritative. |
+
+### 13.2 Architecture and Domain Direction
+
+Implementation must use a portfolio-construction vocabulary:
+
+1. strategic asset allocation, policy bands, and model targets are the baseline,
+2. tactical tilts and house views are controlled deviations, not free-form target edits,
+3. objective terms and constraints must be explicit, versioned, and explainable,
+4. infeasible portfolios must return `BLOCKED` or `PENDING_REVIEW` with reason codes instead of
+   hidden relaxations,
+5. every alternative must expose expected drift, active risk/tracking error, turnover, cost, tax,
+   liquidity, cash, FX, ESG, and source-readiness posture where available.
+
+### 13.3 Mandatory Delivery Slices
+
+These slices are mandatory in addition to the feature-specific slices in Section 10.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Review whether platform scaffolding should provide reusable objective/constraint OpenAPI examples,
+solver-availability supportability fields, no-sensitive optimization traces, and standard
+calculation evidence fixtures. Improve platform automation for repeatable gaps; otherwise record a
+no-change decision.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Separate pure construction logic from API orchestration, persistence, and upstream enrichment. Remove
+duplicated heuristic rules, stale advisory proposal terms, and any generic "option" language that
+should be "construction alternative" or "selected alternative."
+
+#### Mandatory Slice C - Implementation Proof
+
+Capture full request/response evidence for at least one realistic mandate with do-nothing,
+heuristic, solver, tax-aware, liquidity-aware, currency-overlay, and degraded-source alternatives.
+Review every metric and reason code critically before promotion.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Review numerical determinism, solver fallback, objective/constraint traceability, error handling,
+OpenAPI quality, performance, latency, and test-pyramid adequacy. Ensure Swagger explains when to
+use each method and every field has description, type, and example.
+
+#### Mandatory Slice E - Final Closure
+
+Update RFC evidence, README or wiki navigation if needed, supported-features promotion state,
+context/guidance decisions, and branch hygiene. Do not market a method as supported until canonical
+live evidence proves it.
+
+### 13.4 Evidence Expectations
+
+Closure evidence must include:
+
+1. alternative comparison matrix,
+2. objective and constraint trace sample,
+3. infeasible and fallback examples,
+4. source-unavailable degraded example,
+5. selected-alternative audit event,
+6. OpenAPI/API certification summary,
+7. local and GitHub check summary.
+
+### 13.5 Enterprise Baseline
+
+This RFC inherits RFC-0037 Section 19.4. Completion requires source-authority declarations,
+calculation lineage, solver/supportability telemetry, bounded objective/constraint traces,
+structured logs, API certification, and GitHub lane evidence for every construction and selection
+endpoint.

@@ -60,6 +60,21 @@ Current posture under RFC-0082:
 5. Solver-capable development and CI installs include the `solver` extra (`cvxpy` and `numpy`) so
    solver-mode target generation is validated instead of silently skipped.
 
+## Strategic DPM Roadmap
+
+RFC-0037 through RFC-0043 define the proposed revamp from a certified rebalance/supportability
+service into a discretionary mandate portfolio-management operating system.
+
+Those target-state RFCs cover mandate digital twins, health scoring, command-center workflows,
+advanced construction alternatives, pre-trade proof packs, decision timelines, CIO/model-change
+rebalance waves, post-trade outcome feedback, and governed AI PM support. They are not
+implementation-backed support claims until the owning RFC is implemented, certified, live-proven,
+and reflected in [wiki/Supported-Features.md](wiki/Supported-Features.md).
+
+The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
+or redesigned rather than preserved for backward compatibility. Future gateway and Workbench
+integration should be rebuilt against the certified target contract.
+
 ## Architecture At A Glance
 
 Main runtime surfaces come from [src/api/main.py](src/api/main.py):

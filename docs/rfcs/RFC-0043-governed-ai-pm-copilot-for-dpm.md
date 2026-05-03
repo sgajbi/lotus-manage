@@ -397,3 +397,82 @@ RFC-0043 is complete when:
 6. OpenAPI is certified,
 7. live proof captures AI-ready and AI-unavailable behavior,
 8. docs clearly state that AI assists PMs but does not decide trades.
+
+---
+
+## 13. Gold-Standard Execution Contract
+
+RFC-0043 introduces AI-assisted PM productivity without weakening deterministic investment
+governance. The copilot must be useful for PMs, CIO, compliance, operations, and sales demos while
+remaining evidence-bound and non-decisioning.
+
+### 13.1 Supported-Features Ledger
+
+| Feature | Support state before implementation | Promotion rule |
+| --- | --- | --- |
+| PM memo from proof pack | Proposed | Promote only after `lotus-ai` workflow-pack execution, provenance, review state, and fallback are proven. |
+| Exception narrative | Proposed | Promote only after exception evidence is structured, bounded, and no unsupported claims are generated. |
+| CIO model-change brief | Proposed | Promote only after wave/model-change evidence is accepted by the workflow-pack contract. |
+| Operations handoff summary | Proposed | Promote only after handoff evidence is bounded and does not expose raw sensitive details. |
+| AI safety evaluation | Proposed | Promote only after forbidden-action, forbidden-claim, missing-evidence, and AI-unavailable tests pass. |
+
+### 13.2 Architecture and Domain Direction
+
+Implementation must preserve the AI boundary:
+
+1. `lotus-manage` supplies structured DPM evidence and persists narrative posture,
+2. `lotus-ai` owns workflow-pack execution, provider policy, model telemetry, and AI artifacts,
+3. AI may summarize rationale, exceptions, handoffs, and review notes,
+4. AI must not select trades, change approval state, create hidden weights, suppress rule breaches,
+   or invent missing source data,
+5. AI output must be reviewable, provenance-backed, and safe to omit when unavailable.
+
+### 13.3 Mandatory Delivery Slices
+
+These slices are mandatory in addition to the feature-specific slices in Section 10.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Review whether platform scaffolding should provide reusable AI-evidence handoff schemas,
+workflow-pack client examples, no-sensitive telemetry guards, AI-unavailable fallback examples, and
+OpenAPI safety annotations. Improve platform automation for repeatable gaps; otherwise record a
+no-change decision.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Remove any code or wording that implies AI ownership of investment decisions. Keep AI request
+assembly separate from domain services and persistence. Use PM memo, CIO brief, exception narrative,
+and operations handoff terminology instead of generic "AI text."
+
+#### Mandatory Slice C - Implementation Proof
+
+Capture evidence for AI-ready and AI-unavailable behavior. Review the source evidence input,
+workflow-pack request, bounded response, safety checks, review posture, and persisted provenance.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Review no-domain-decision enforcement, no-sensitive content posture, OpenAPI examples, error
+handling, fallback behavior, structured logging, metrics labels, and test-pyramid adequacy.
+
+#### Mandatory Slice E - Final Closure
+
+Update wiki with AI boundary and business use cases, update supported-features only after proof,
+record context/skills decisions, and leave branch/PR/CI clean.
+
+### 13.4 Evidence Expectations
+
+Closure evidence must include:
+
+1. PM memo request/response,
+2. AI-unavailable fallback response,
+3. forbidden-action test evidence,
+4. forbidden-claim test evidence,
+5. no-sensitive telemetry proof,
+6. OpenAPI/API certification summary,
+7. local and GitHub check summary.
+
+### 13.5 Enterprise Baseline
+
+This RFC inherits RFC-0037 Section 19.4. Completion requires `lotus-ai` workflow-pack provenance,
+no-sensitive telemetry, bounded AI supportability states, actor review posture, structured logs,
+operator diagnostics, API certification, and GitHub lane evidence for every copilot endpoint.
