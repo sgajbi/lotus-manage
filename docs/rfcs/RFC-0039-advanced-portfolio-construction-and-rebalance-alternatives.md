@@ -716,6 +716,11 @@ Acceptance:
 
 ### Slice 2: Cleanup and Structure Slice
 
+Slice 2 structure starts with `src/core/construction/`, a dedicated domain package for
+construction-alternative vocabulary and future models. Existing `src/core/rebalance/` modules remain
+the execution engine boundary; construction modules must wrap and compare engine outputs rather than
+turning the rebalance engine into a monolithic alternatives service.
+
 Scope:
 
 1. separate pure construction logic from API orchestration, persistence, and enrichment,

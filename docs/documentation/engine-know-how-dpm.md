@@ -18,6 +18,11 @@ Implementation scope:
   - `src/core/rebalance/execution.py` (FX generation, settlement ladder, simulation execution)
 - Stateful core-sourcing contract models and transformations: `src/core/dpm_source_context.py`
 - Stateful `lotus-core` resolver client: `src/infrastructure/core_sourcing/client.py`
+- RFC-0039 construction-alternative domain vocabulary: `src/core/construction/`
+  - construction modules own comparable alternative sets, method status, source-aware traces, and
+    selected-alternative posture
+  - rebalance modules remain the execution mechanics boundary and should not become a monolithic
+    construction-alternatives service
 - Shared simulation primitives: `src/core/common/simulation_shared.py`
 - Shared intent dependency linker: `src/core/common/intent_dependencies.py`
 - Shared workflow gate evaluator: `src/core/common/workflow_gates.py`
