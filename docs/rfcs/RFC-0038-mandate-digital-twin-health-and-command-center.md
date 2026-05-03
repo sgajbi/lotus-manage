@@ -635,6 +635,17 @@ Validation:
 3. idempotent snapshot persistence,
 4. retention tests.
 
+Slice 2 implementation note:
+
+1. Repository contract lives in `src/core/mandate_repository.py`.
+2. In-memory repository lives in `src/infrastructure/mandates/in_memory.py`.
+3. Postgres repository foundation lives in `src/infrastructure/mandates/postgres.py`.
+4. Postgres migration lives in
+   `src/infrastructure/postgres_migrations/dpm/0003_mandate_health_foundation.sql`.
+5. Repository behavior and retention tests live in
+   `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`.
+6. This slice still does not expose APIs; persistence is ready for Slice 3/4 routes.
+
 ### Slice 3 - Core Resolver and Mandate APIs
 
 1. resolve mandate twin from existing core products,
@@ -903,11 +914,13 @@ GitHub lane evidence appropriate to every mandate, health, monitoring, and comma
 | --- | --- | --- | --- | --- |
 | 2026-05-03 | Slice 0 - Design Tightening and Source-Data Gap Review | In progress | `docs/rfcs/RFC-0038-source-data-field-map.md` | Minimum viable mandate twin fields are mapped to source-backed, derived, local policy, or explicit source-data gap. |
 | 2026-05-03 | Slice 1 - Domain Models and Pure Health Engine | In progress | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py` | Pure model/compiler/health engine implemented without API or persistence claims. |
+| 2026-05-03 | Slice 2 - Persistence and Repository Layer | In progress | `src/core/mandate_repository.py`, `src/infrastructure/mandates/`, `src/infrastructure/postgres_migrations/dpm/0003_mandate_health_foundation.sql`, `tests/unit/dpm/supportability/test_dpm_mandate_repository.py` | Repository and migration foundation implemented for mandate snapshots, health snapshots, monitoring exceptions, and retention hooks. |
 
 Current promotion posture:
 
 1. mandate digital twin is implemented as a pure domain model and compiler foundation only,
-2. mandate health score is implemented as a deterministic pure engine only,
-3. monitoring exception taxonomy is implemented as pure derived domain output only,
-4. DPM command-center, persistence, APIs, OpenAPI certification, live proof, and supported-feature
+2. mandate health score is implemented as a deterministic pure engine plus persistence foundation,
+3. monitoring exception taxonomy is implemented as pure derived domain output plus persistence
+   foundation,
+4. DPM command-center, API routes, OpenAPI certification, live proof, and supported-feature
    promotion are still pending later slices.

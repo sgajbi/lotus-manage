@@ -105,6 +105,9 @@ before broader Gateway or Workbench product-surface integration is treated as pr
 - `src/core/mandates.py`
   RFC-0038 mandate digital-twin, health-score, and monitoring-exception domain foundation; this
   is pure domain logic and does not yet expose mandate APIs or persistence
+- `src/core/mandate_repository.py` and `src/infrastructure/mandates/`
+  RFC-0038 mandate, health, and monitoring-exception repository contract plus in-memory and
+  Postgres-backed persistence foundation
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
 - `src/infrastructure/`
