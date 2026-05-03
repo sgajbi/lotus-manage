@@ -132,12 +132,33 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
                 recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
             )
         )
+        repository.save_monitoring_exception(
+            DpmMonitoringException(
+                exception_id="me_unrelated_newer_exception",
+                monitoring_run_id="dmr_unrelated_20260503_090000",
+                mandate_id=MANDATE_ID,
+                portfolio_id=PORTFOLIO_ID,
+                detected_at=datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+                as_of_date=date(2026, 5, 3),
+                dimension=MandateHealthDimension.SOURCE_READINESS,
+                severity=MonitoringSeverity.CRITICAL,
+                reason_code="UNRELATED_LATER_RUN",
+                recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
+            )
+        )
         command_center = client.get(
             "/api/v1/dpm/command-center"
             "?tenant_id=default"
             "&portfolio_manager_id=PM_SG_001"
             "&as_of_date=2026-05-03"
             "&health_state=PENDING_REVIEW"
+        )
+        limited_command_center = client.get(
+            "/api/v1/dpm/command-center"
+            "?tenant_id=default"
+            "&portfolio_manager_id=PM_SG_001"
+            "&as_of_date=2026-05-03"
+            "&limit=1"
         )
         partial_book = client.get("/api/v1/dpm/command-center?tenant_id=default&limit=1")
         empty_book = client.get(
@@ -152,12 +173,15 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
     assert command_center.status_code == 200
     assert payload["evaluated_mandates"] == 1
     assert payload["health_distribution"] == {"PENDING_REVIEW": 1}
-    assert payload["active_exception_count"] >= run_response.json()["exception_count"]
+    assert payload["active_exception_count"] == run_response.json()["exception_count"] + 2
     assert payload["attention_buckets"][0]["exception_count"] >= 1
     assert payload["recommended_actions"][0]["recommended_action"] == "FIX_SOURCE_DATA"
     assert payload["recommended_actions"][0]["highest_severity"] == "CRITICAL"
     assert payload["supportability"]["data_completeness_state"] == "COMPLETE"
     assert payload["supportability"]["source_run_id"] == run_response.json()["monitoring_run_id"]
+    assert limited_command_center.status_code == 200
+    assert limited_command_center.json()["active_exception_count"] == 1
+    assert limited_command_center.json()["supportability"]["source_run_id"] == run_id
     assert partial_book.status_code == 200
     assert partial_book.json()["supportability"]["data_completeness_state"] == "PARTIAL"
     assert (

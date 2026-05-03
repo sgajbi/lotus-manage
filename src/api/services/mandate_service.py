@@ -328,6 +328,7 @@ def list_monitoring_exceptions(
     cursor: Optional[str],
 ) -> tuple[list[DpmMonitoringException], Optional[str]]:
     return repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=mandate_id,
         portfolio_id=portfolio_id,
         state=state,
@@ -376,18 +377,13 @@ def get_command_center_summary(
     ]
     latest_run = matching_runs[0] if matching_runs else None
     active_exceptions, _ = repository.list_monitoring_exceptions(
+        monitoring_run_id=latest_run.monitoring_run_id if latest_run else None,
         mandate_id=None,
         portfolio_id=None,
         state="ACTIVE",
         limit=limit,
         cursor=None,
     )
-    if latest_run is not None:
-        active_exceptions = [
-            exception
-            for exception in active_exceptions
-            if exception.monitoring_run_id == latest_run.monitoring_run_id
-        ]
 
     health_distribution = dict(latest_run.health_distribution) if latest_run else {}
     if health_state is not None:

@@ -338,6 +338,7 @@ class PostgresDpmMandateRepository:
     def list_monitoring_exceptions(
         self,
         *,
+        monitoring_run_id: Optional[str],
         mandate_id: Optional[str],
         portfolio_id: Optional[str],
         state: Optional[str],
@@ -346,6 +347,9 @@ class PostgresDpmMandateRepository:
     ) -> tuple[list[DpmMonitoringException], Optional[str]]:
         where_clauses: list[str] = []
         args: list[Any] = []
+        if monitoring_run_id is not None:
+            where_clauses.append("monitoring_run_id = %s")
+            args.append(monitoring_run_id)
         if mandate_id is not None:
             where_clauses.append("mandate_id = %s")
             args.append(mandate_id)

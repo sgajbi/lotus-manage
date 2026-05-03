@@ -153,6 +153,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
     repository.save_monitoring_exception(exceptions[0])
 
     rows, cursor = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=twin.mandate_id,
         portfolio_id=twin.portfolio_id,
         state="ACTIVE",
@@ -172,6 +173,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
     assert resolved.resolution_reason == "PM_CONFIRMED_EXIT_REQUIRED"
 
     active_rows, _ = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=twin.mandate_id,
         portfolio_id=None,
         state="ACTIVE",
@@ -181,6 +183,7 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
     assert active_rows == []
 
     missing_cursor_rows, missing_cursor = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=twin.mandate_id,
         portfolio_id=None,
         state=None,
@@ -196,6 +199,49 @@ def test_repository_filters_pages_and_resolves_monitoring_exceptions() -> None:
         resolution_reason="NOT_FOUND",
     )
     assert missing_resolution is None
+
+
+def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    snapshot = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"EQ_US_AAPL": Decimal("0.60")},
+            target_weights={"EQ_US_AAPL": Decimal("0.60")},
+            cash_weight=Decimal("0.50"),
+        )
+    )
+    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
+    selected_run_exception = exception.model_copy(
+        update={
+            "exception_id": "me_selected_run",
+            "monitoring_run_id": "dmr_selected",
+            "detected_at": datetime(2026, 5, 3, 8, 0, tzinfo=timezone.utc),
+        }
+    )
+    unrelated_newer_exception = exception.model_copy(
+        update={
+            "exception_id": "me_unrelated_newer",
+            "monitoring_run_id": "dmr_unrelated",
+            "detected_at": datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        }
+    )
+
+    repository.save_monitoring_exception(unrelated_newer_exception)
+    repository.save_monitoring_exception(selected_run_exception)
+
+    rows, cursor = repository.list_monitoring_exceptions(
+        monitoring_run_id="dmr_selected",
+        mandate_id=None,
+        portfolio_id=None,
+        state="ACTIVE",
+        limit=1,
+        cursor=None,
+    )
+
+    assert [row.exception_id for row in rows] == ["me_selected_run"]
+    assert cursor is None
 
 
 def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_records() -> None:
@@ -232,6 +278,7 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
     assert repository.get_latest_mandate(mandate_id=old_twin.mandate_id) is None
     assert repository.get_latest_health_snapshot(mandate_id=old_twin.mandate_id) is None
     rows, _ = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=old_twin.mandate_id,
         portfolio_id=None,
         state=None,
@@ -427,6 +474,7 @@ class _FakeConnection:
         if normalized.startswith("insert into dpm_monitoring_exceptions"):
             self.store.exceptions[str(params[0])] = {
                 "exception_id": params[0],
+                "monitoring_run_id": params[1],
                 "mandate_id": params[2],
                 "portfolio_id": params[3],
                 "state": params[8],
@@ -447,6 +495,9 @@ class _FakeConnection:
         if "select payload_json, exception_id from dpm_monitoring_exceptions" in normalized:
             rows = list(self.store.exceptions.values())
             arg_index = 0
+            if "monitoring_run_id = %s" in normalized:
+                rows = [row for row in rows if row["monitoring_run_id"] == params[arg_index]]
+                arg_index += 1
             if "mandate_id = %s" in normalized:
                 rows = [row for row in rows if row["mandate_id"] == params[arg_index]]
                 arg_index += 1
@@ -552,11 +603,15 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         )
     )
     exception = monitoring_exceptions_from_health(snapshot, source_lineage=twin.source_lineage)[0]
-    second_exception = exception.model_copy(update={"exception_id": "me_second"})
+    exception = exception.model_copy(update={"monitoring_run_id": "dmr_selected"})
+    second_exception = exception.model_copy(
+        update={"exception_id": "me_second", "monitoring_run_id": "dmr_unrelated"}
+    )
 
     repository.save_monitoring_exception(exception)
     repository.save_monitoring_exception(second_exception)
     page, cursor = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=twin.mandate_id,
         portfolio_id=twin.portfolio_id,
         state="ACTIVE",
@@ -564,11 +619,20 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
         cursor=None,
     )
     cursor_page, cursor_page_next = repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
         mandate_id=twin.mandate_id,
         portfolio_id=twin.portfolio_id,
         state="ACTIVE",
         limit=1,
         cursor=page[0].exception_id,
+    )
+    selected_run_page, selected_run_cursor = repository.list_monitoring_exceptions(
+        monitoring_run_id="dmr_selected",
+        mandate_id=twin.mandate_id,
+        portfolio_id=twin.portfolio_id,
+        state="ACTIVE",
+        limit=1,
+        cursor=None,
     )
     resolved = repository.resolve_monitoring_exception(
         exception_id=page[0].exception_id,
@@ -588,6 +652,8 @@ def test_postgres_repository_lists_resolves_and_purges_exceptions(
     assert cursor == page[0].exception_id
     assert len(cursor_page) == 1
     assert cursor_page_next is None
+    assert [row.monitoring_run_id for row in selected_run_page] == ["dmr_selected"]
+    assert selected_run_cursor is None
     assert resolved is not None
     assert resolved.state == "RESOLVED"
     assert resolved.resolution_reason == "PM_CONFIRMED_EXIT_REQUIRED"

@@ -61,6 +61,7 @@ class DpmMandateRepository(Protocol):
     def list_monitoring_exceptions(
         self,
         *,
+        monitoring_run_id: Optional[str],
         mandate_id: Optional[str],
         portfolio_id: Optional[str],
         state: Optional[str],

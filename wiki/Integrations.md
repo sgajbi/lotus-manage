@@ -99,9 +99,54 @@ Strategic downstream consumption should use:
 5. `/api/v1/rebalance/runs/*` supportability and artifact routes
 6. `/api/v1/rebalance/operations/*` async-operation routes
 7. `/api/v1/rebalance/policies/*` policy-pack supportability routes
+8. `/api/v1/mandates/*` mandate digital-twin, health, version, and diff routes
+9. `/api/v1/dpm/monitoring/*` monitoring-run routes
+10. `/api/v1/dpm/exceptions*` exception queue and resolution routes
+11. `GET /api/v1/dpm/command-center` bounded command-center summary
 
 Removed or stale consumers should not call unversioned `/rebalance/*` routes, removed
 `/api/v1/platform/capabilities`, or proposal/advisory-era DPM endpoints.
+
+## DPM Command Center Downstream Handoff
+
+RFC-0038 adds the backend foundation for mandate digital twins, health scoring, monitoring
+exceptions, monitoring runs, and command-center summaries. Downstream integration should follow this
+boundary:
+
+1. `lotus-workbench` must consume the command center through `lotus-gateway`.
+2. `lotus-gateway` may compose `lotus-manage` APIs but must not recompute health, reason codes,
+   recommended actions, or source-readiness supportability.
+3. Workbench panels should surface complete, partial, and empty command-center states explicitly.
+4. Canonical demo data should include `PB_SG_GLOBAL_BAL_001`,
+   `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, and `BOOK_SG_BALANCED_DPM`.
+
+```mermaid
+sequenceDiagram
+    participant Workbench as lotus-workbench
+    participant Gateway as lotus-gateway
+    participant Manage as lotus-manage
+    participant Core as lotus-core
+
+    Workbench->>Gateway: Request PM-book command center
+    Gateway->>Manage: GET /api/v1/dpm/command-center
+    Manage-->>Gateway: Summary with supportability and source-run lineage
+    Workbench->>Gateway: Trigger monitoring run
+    Gateway->>Manage: POST /api/v1/dpm/monitoring/run-once
+    Manage->>Core: Source governed mandate and portfolio data
+    Core-->>Manage: Source products and lineage
+    Manage-->>Gateway: Monitoring run and exceptions
+    Gateway-->>Workbench: Cockpit panels and drill-down links
+```
+
+The implementation handoff contract is maintained in
+[`docs/architecture/dpm-command-center-gateway-workbench-handoff.md`](../docs/architecture/dpm-command-center-gateway-workbench-handoff.md).
+
+Downstream tracking:
+
+1. `lotus-gateway`: [sgajbi/lotus-gateway#180](https://github.com/sgajbi/lotus-gateway/issues/180)
+2. `lotus-workbench`:
+   [sgajbi/lotus-workbench#140](https://github.com/sgajbi/lotus-workbench/issues/140)
+3. `lotus-platform`: [sgajbi/lotus-platform#294](https://github.com/sgajbi/lotus-platform/issues/294)
 
 ## Reference
 

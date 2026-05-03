@@ -126,6 +126,7 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
     def list_monitoring_exceptions(
         self,
         *,
+        monitoring_run_id: Optional[str],
         mandate_id: Optional[str],
         portfolio_id: Optional[str],
         state: Optional[str],
@@ -134,6 +135,8 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
     ) -> tuple[list[DpmMonitoringException], Optional[str]]:
         with self._lock:
             rows = list(self._exceptions.values())
+            if monitoring_run_id is not None:
+                rows = [row for row in rows if row.monitoring_run_id == monitoring_run_id]
             if mandate_id is not None:
                 rows = [row for row in rows if row.mandate_id == mandate_id]
             if portfolio_id is not None:
