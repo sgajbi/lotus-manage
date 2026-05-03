@@ -216,7 +216,12 @@ fallback, infeasibility, and deterministic timeout behavior are production-grade
 
 ### 6.2 Later Methods
 
-Later methods remain proposed until individually proven:
+RFC-0039 is the owning RFC for both first-wave and second-wave construction alternatives. Later
+RFCs such as RFC-0040, RFC-0041, RFC-0042, and RFC-0043 consume selected alternatives for proof
+packs, waves, outcome learning, and AI summarization; they must not create duplicate construction
+method RFCs unless a genuinely separate business capability appears. The following second-wave
+methods remain proposed inside RFC-0039 until each method is individually implemented, tested,
+certified, and promoted:
 
 1. `SOLVER_CONSTRAINED`
 2. `RISK_AWARE`
@@ -224,6 +229,21 @@ Later methods remain proposed until individually proven:
 4. `CURRENCY_OVERLAY`
 5. `REGIME_STRESS_AWARE`
 6. advanced multi-objective blend methods
+
+Second-wave implementation must stay slice-driven within this RFC:
+
+1. `SOLVER_CONSTRAINED` only after deterministic solver timeouts, infeasibility taxonomy, fallback,
+   and objective/constraint traces are production-grade.
+2. `RISK_AWARE` only through `lotus-risk` authority or explicit degraded local diagnostics; manage
+   must not become risk methodology authority.
+3. `ESG_AWARE` only after restriction, sustainability, eligibility, and missing-profile behavior
+   are source-backed or explicitly degraded.
+4. `CURRENCY_OVERLAY` only after FX exposure, hedge-ratio bands, hedge eligibility, and settlement
+   readiness are documented and tested.
+5. `REGIME_STRESS_AWARE` only after scenario packs and stress contribution evidence are
+   risk-authoritative or explicitly unavailable.
+6. Advanced blends only after the component methods and objective weighting governance are already
+   proven.
 
 ### 6.3 Method Definitions
 
