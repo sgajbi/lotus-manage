@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SECOND-WAVE CONSTRUCTION METHODS |
+| **Status** | IMPLEMENTED - MANAGE CONSTRUCTION ALTERNATIVES COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -973,7 +973,7 @@ Evidence:
 
 1. `make check` passed: Ruff check/format, monetary-float guard, no-alias guard, mypy, OpenAPI
    quality gate, API vocabulary inventory, domain data product validation, trust telemetry
-   validation, observability contract validation, and 665 unit tests.
+   validation, observability contract validation, and 668 unit tests.
 2. `python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py tests/unit/test_validate_live_api.py tests/unit/test_documentation_current_state.py -q`
    passed with 47 tests.
 3. `python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`
@@ -995,6 +995,9 @@ Evidence:
     `python scripts/openapi_quality_gate.py`,
     `python -m mypy src/api/services/construction_service.py src/api/routers/construction.py`, and
     `python -m ruff check src/api/services/construction_service.py src/api/routers/construction.py tests/unit/dpm/api/test_construction_api.py`.
+11. Final second-wave proof added `construction_alternatives_second_wave` to
+    `scripts/validate_live_api.py` and passed against canonical Postgres-backed manage evidence in
+    `output/rfc0039-proof/20260503-182819-second-wave-canonical-postgres/summary.json`.
 
 Critical review:
 
@@ -1014,9 +1017,15 @@ Critical review:
    Gateway and Workbench RFCs still need to be authored from the now-stable manage contract before
    client-facing command-center outcomes can be claimed.
 7. Follow-up audit found one boundary gap: the request schema exposed the full `ConstructionMethod`
-   vocabulary while the service still treated second-wave methods as placeholders. RFC-0039 is now
-   reopened on the same branch to promote those methods with explicit method plans,
-   supportability, degraded states, tests, live proof, and documentation.
+   vocabulary while the service still treated second-wave methods as placeholders. The reopened
+   RFC-0039 slice promoted those methods with explicit method plans, supportability, degraded
+   states, tests, live proof, and documentation.
+8. Live proof critically reviewed the first second-wave evidence pass and rejected it because
+   artificial safety/overdraft blockers made too many methods `BLOCKED`. The proof payload was
+   corrected to include cash, FX, and bounded overdraft context, producing useful second-wave
+   evidence: `SOLVER_CONSTRAINED`, `ESG_AWARE`, and `CURRENCY_OVERLAY` are `READY`;
+   `LIQUIDITY_AWARE` is `PENDING_REVIEW`; `RISK_AWARE` and `REGIME_STRESS_AWARE` are `DEGRADED`
+   because risk/scenario authorities are absent.
 
 ### Slice 10: Gateway and Workbench Realization RFC Slice
 
@@ -1177,7 +1186,7 @@ Required artifacts:
 
 RFC-0039 is complete only when:
 
-1. at least four first-wave methods are implemented and certified,
+1. first-wave and second-wave construction methods are implemented and certified,
 2. alternative sets are persisted and retrievable,
 3. every alternative includes comparable decision metrics,
 4. objective and constraint traces are complete,
@@ -1199,30 +1208,28 @@ RFC-0039 is complete only when:
 
 | Assessment Area | Final Result |
 | --- | --- |
-| What was truly completed | Manage-side RFC-0039 foundation for first-wave construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, live validator probe, downstream realization handoff, and wiki/README/context updates. |
+| What was truly completed | Manage-side RFC-0039 construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, first-wave and second-wave live validator probes, downstream realization handoff, and wiki/README/context updates. |
 | Quality improvements made | Construction logic is isolated in `src/core/construction/`, API orchestration is separated in `src/api/services/construction_service.py`, persistence is behind `ConstructionRepository`, Postgres path has fast contract tests, OpenAPI and API vocabulary are refreshed, and the canonical startup helper now falls back correctly when the repo venv lacks the Postgres driver. |
 | Debt removed | Stale proof using an already-aligned portfolio was rejected and replaced with drifted-portfolio proof; construction API vocabulary drift was eliminated; missing Postgres repository unit coverage was closed; `Start-CanonicalManage.ps1` no longer aborts before its intended global-Python fallback. |
-| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, and `TAX_AWARE` are implemented and proven. The live proof shows do-nothing preserving drift with zero turnover, heuristic removing drift with two trades, minimum-turnover landing in `PENDING_REVIEW`, and tax-aware carrying explicit degraded enrichment reason codes where authoritative enrichment is absent. |
-| Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, and bounded reason codes for first-wave alternatives. |
-| Solver/fallback proof | RFC-0039 foundation includes method-registry solver posture and fallback modeling. Full solver-constrained construction methods beyond first-wave support remain governed follow-up under this RFC, not separate duplicate RFCs. |
+| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `LIQUIDITY_AWARE`, `RISK_AWARE`, `ESG_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` are implemented and proven at the manage backend layer. Live proof shows do-nothing preserving drift with zero turnover, heuristic removing drift with two trades, minimum-turnover landing in `PENDING_REVIEW`, tax-aware carrying explicit degraded enrichment reason codes, solver/currency/ESG alternatives becoming `READY` under supported sources, liquidity landing in `PENDING_REVIEW`, and risk/regime alternatives degrading truthfully when authorities are absent. |
+| Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, and bounded reason codes for first-wave and second-wave alternatives. |
+| Solver/fallback proof | RFC-0039 includes method-registry solver posture and fallback modeling plus live second-wave proof for `SOLVER_CONSTRAINED`. Unit tests prove explicit fallback to heuristic when solver dependencies are unavailable. |
 | Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; local proof includes degraded enrichment reason codes; Postgres-backed validator proof passed the construction probe and supportability summary. |
 | API certification result | OpenAPI quality gate, OpenAPI certification matrix, contract docs tests, no-alias guard, API vocabulary inventory, and live API validator passed after construction endpoints were added. |
 | Data mesh and observability result | Existing mesh product, trust telemetry, and observability contract gates passed through `make check`; construction proof preserves source supportability without moving core, risk, or performance authority into manage. |
 | Gateway/Workbench realization RFC result | Manage handoff document created; Gateway RFC-0098 and Workbench RFC-0098 were tightened with construction-specific composition and construction-lab requirements. No downstream implementation or support claim is made yet. |
 | Documentation/wiki result | README, repository context, RFC, wiki API surface, architecture, integrations, endpoint certification, supported features, RFC index, and roadmap were updated with implementation-backed wording and explicit downstream boundaries. |
-| Remaining governed follow-up | Gateway/Workbench construction lab implementation and canonical browser proof; second-wave construction methods such as liquidity-aware, ESG/restriction-aware, currency-overlay, regime/stress-aware, and fully solver-constrained methods are being implemented under this same RFC before final closure. |
-| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave construction alternatives, but the RFC is reopened and not final-closeable until second-wave construction methods and live proof are complete. |
+| Remaining governed follow-up | Gateway/Workbench construction lab implementation and canonical browser proof remain downstream product-realization work. Manage does not claim full front-office construction-lab outcome until those repositories implement and prove their paired RFCs. |
+| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave and second-wave construction alternatives. The full front-office business outcome is intentionally not claimed until Gateway and Workbench realization is implemented and live-proven. |
 
 Additional slice assessment:
 
 1. No new RFC should be created for second-wave construction alternatives. RFC-0039 remains the
    owning RFC for those methods.
-2. Additional RFC-0039 implementation slices are now mandatory before final closure:
-   `SOLVER_CONSTRAINED`, `LIQUIDITY_AWARE`, `RISK_AWARE`, `ESG_AWARE`, `CURRENCY_OVERLAY`, and
-   `REGIME_STRESS_AWARE`.
-3. Each second-wave slice must add source-authority proof, method-specific OpenAPI examples,
-   degraded behavior, unit/contract/live evidence, supported-feature promotion, and canonical
-   proof.
+2. Second-wave construction alternatives are complete at the manage backend layer and have
+   method-specific tests plus canonical Postgres-backed live proof.
+3. Future work should extend authoritative upstream integration depth, not create duplicate
+   construction-method RFCs.
 
 Wiki publication note:
 

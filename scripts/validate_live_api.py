@@ -374,14 +374,18 @@ def _probe_construction_second_wave(
     stateless_input = payload["stateless_input"]
     stateless_input["portfolio_snapshot"]["positions"] = [
         {"instrument_id": "EQ_1", "quantity": "100"},
-        {"instrument_id": "EQ_US", "quantity": "0"},
+    ]
+    stateless_input["portfolio_snapshot"]["cash_balances"] = [
+        {"currency": "SGD", "amount": "10000.00"},
+        {"currency": "USD", "amount": "10000.00"},
     ]
     stateless_input["market_data_snapshot"]["prices"] = [
         {"instrument_id": "EQ_1", "price": "100.00", "currency": "SGD"},
         {"instrument_id": "EQ_US", "price": "50.00", "currency": "USD"},
     ]
     stateless_input["market_data_snapshot"]["fx_rates"] = [
-        {"pair": "USD/SGD", "rate": "1.35"}
+        {"pair": "USD/SGD", "rate": "1.35"},
+        {"pair": "SGD/USD", "rate": "0.7407407407"},
     ]
     stateless_input["model_portfolio"]["targets"] = [
         {"instrument_id": "EQ_1", "weight": "0.50"},
@@ -399,6 +403,7 @@ def _probe_construction_second_wave(
             "attributes": {"sector": "GLOBAL_EQUITY", "esg_profile": "ARTICLE_8"},
         },
     ]
+    stateless_input["options"] = {"max_overdraft_by_ccy": {"SGD": "10000", "USD": "10000"}}
 
     response = client.post(
         "/api/v1/construction/alternative-sets/generate",
@@ -461,7 +466,9 @@ def _probe_construction_second_wave(
         ok,
         {
             "status_code": response.status_code,
-            "alternative_set_id": body.get("alternative_set_id") if isinstance(body, dict) else None,
+            "alternative_set_id": body.get("alternative_set_id")
+            if isinstance(body, dict)
+            else None,
             "methods": sorted(by_method),
             "statuses": {
                 method: alternative.get("method_status")
