@@ -120,7 +120,9 @@ def select_construction_alternative(
         repository=repository,
         alternative_set_id=alternative_set_id,
     )
-    if alternative_id not in {alternative.alternative_id for alternative in alternative_set.alternatives}:
+    if alternative_id not in {
+        alternative.alternative_id for alternative in alternative_set.alternatives
+    }:
         raise ConstructionAlternativeNotFoundError("CONSTRUCTION_ALTERNATIVE_NOT_FOUND")
     selection = ConstructionAlternativeSelection(
         selection_id=f"casel_{uuid.uuid4().hex[:12]}",
@@ -138,9 +140,13 @@ def select_construction_alternative(
 def to_api_http_exception(exc: Exception) -> HTTPException:
     if isinstance(exc, ConstructionIdempotencyConflictError):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    if isinstance(exc, (ConstructionAlternativeSetNotFoundError, ConstructionAlternativeNotFoundError)):
+    if isinstance(
+        exc, (ConstructionAlternativeSetNotFoundError, ConstructionAlternativeNotFoundError)
+    ):
         return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=type(exc).__name__)
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=type(exc).__name__
+    )
 
 
 def _build_alternatives(

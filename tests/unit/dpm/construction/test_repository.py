@@ -5,7 +5,10 @@ from typing import Any
 import pytest
 
 from src.core.construction import build_alternative_set, build_do_nothing_baseline
-from src.core.construction.models import ConstructionAlternativeSelection, ConstructionAlternativeSet
+from src.core.construction.models import (
+    ConstructionAlternativeSelection,
+    ConstructionAlternativeSet,
+)
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.construction.postgres import PostgresConstructionRepository
 from tests.unit.dpm.construction.test_alternative_engine import _ready_rebalance_result
@@ -31,9 +34,7 @@ def test_in_memory_repository_persists_alternative_set_and_idempotency_lookup() 
     )
 
     by_id = repository.get_alternative_set(alternative_set_id="cas_repo_001")
-    by_idempotency = repository.get_alternative_set_by_idempotency(
-        idempotency_key="idem-repo-001"
-    )
+    by_idempotency = repository.get_alternative_set_by_idempotency(idempotency_key="idem-repo-001")
 
     assert by_id == alternative_set
     assert by_idempotency == alternative_set
@@ -94,9 +95,7 @@ def test_postgres_repository_initializes_migrations(monkeypatch: pytest.MonkeyPa
         lambda *, connection, namespace: applied.append((connection, namespace)),
     )
 
-    repository = PostgresConstructionRepository(
-        dsn="postgresql://user:pass@localhost:5432/manage"
-    )
+    repository = PostgresConstructionRepository(dsn="postgresql://user:pass@localhost:5432/manage")
 
     assert repository._dsn == "postgresql://user:pass@localhost:5432/manage"
     assert applied == [(connection, "dpm")]

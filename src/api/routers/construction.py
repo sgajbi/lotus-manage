@@ -66,9 +66,7 @@ class ConstructionAlternativeSetGenerateRequest(BaseModel):
                         "cash_balances": [{"currency": "SGD", "amount": "10000.00"}],
                     },
                     "market_data_snapshot": {
-                        "prices": [
-                            {"instrument_id": "EQ_1", "price": "100.00", "currency": "SGD"}
-                        ],
+                        "prices": [{"instrument_id": "EQ_1", "price": "100.00", "currency": "SGD"}],
                         "fx_rates": [],
                     },
                     "model_portfolio": {"targets": [{"instrument_id": "EQ_1", "weight": "1.0"}]},
@@ -162,9 +160,7 @@ router = APIRouter(
     responses={
         200: {
             "description": "Construction alternatives generated or replayed idempotently.",
-            "content": {
-                "application/json": {"example": CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE}
-            },
+            "content": {"application/json": {"example": CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE}},
         },
         409: {"description": "Idempotency key conflict for a different request hash."},
         424: {"description": "Stateful core source context was incomplete."},
@@ -219,9 +215,7 @@ def generate_alternative_set(
     responses={
         200: {
             "description": "Construction alternative set.",
-            "content": {
-                "application/json": {"example": CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE}
-            },
+            "content": {"application/json": {"example": CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE}},
         },
         404: {"description": "Alternative set was not found."},
     },

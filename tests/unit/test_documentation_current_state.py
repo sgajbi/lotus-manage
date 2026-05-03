@@ -185,9 +185,9 @@ def test_foundation_rfcs_are_rebaselined_to_current_dpm_scope() -> None:
 
 
 def test_rfc0039_source_map_preserves_first_wave_and_source_authority() -> None:
-    source_map = (
-        ROOT / "docs" / "rfcs" / "RFC-0039-source-data-and-method-map.md"
-    ).read_text(encoding="utf-8")
+    source_map = (ROOT / "docs" / "rfcs" / "RFC-0039-source-data-and-method-map.md").read_text(
+        encoding="utf-8"
+    )
     rfc = (
         ROOT
         / "docs"
@@ -201,9 +201,7 @@ def test_rfc0039_source_map_preserves_first_wave_and_source_authority() -> None:
         "`MIN_TURNOVER`",
         "`TAX_AWARE`",
     ]
-    missing_methods = [
-        method for method in required_first_wave_methods if method not in source_map
-    ]
+    missing_methods = [method for method in required_first_wave_methods if method not in source_map]
 
     assert missing_methods == []
     assert "RFC-0039-source-data-and-method-map.md" in rfc
@@ -222,7 +220,10 @@ def test_rfc0039_source_map_preserves_first_wave_and_source_authority() -> None:
 
     assert missing_authorities == []
     assert "must not fabricate" in source_map
-    assert "Gateway and Workbench realization RFCs must be produced after manage contracts" in source_map
+    assert (
+        "Gateway and Workbench realization RFCs must be produced after manage contracts"
+        in source_map
+    )
 
 
 def test_rfc0039_scaffolding_standard_preserves_trace_and_status_governance() -> None:

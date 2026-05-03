@@ -166,8 +166,7 @@ def _constraint_trace(result: RebalanceResult) -> list[ConstructionConstraintTra
                 status=_method_status_from_run_status(result.status),
                 source_family=ConstructionSourceFamily.TAX_LOTS,
                 reason_codes=[
-                    event.reason_code
-                    for event in result.diagnostics.tax_budget_constraint_events
+                    event.reason_code for event in result.diagnostics.tax_budget_constraint_events
                 ],
                 description="Tax budget and lot-selection posture from tax-aware execution.",
             )

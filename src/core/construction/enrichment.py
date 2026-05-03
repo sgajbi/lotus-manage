@@ -82,9 +82,7 @@ def summarize_enrichment_posture(
         reason_codes=reason_codes,
     )
     performance_status = _authoritative_context_status(
-        context_status=(
-            performance_context.supportability_status if performance_context else None
-        ),
+        context_status=(performance_context.supportability_status if performance_context else None),
         missing_reason="PERFORMANCE_CONTEXT_UNAVAILABLE",
         context_reason_codes=performance_context.reason_codes if performance_context else [],
         reason_codes=reason_codes,

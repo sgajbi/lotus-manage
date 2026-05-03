@@ -122,12 +122,15 @@ def test_generate_construction_alternative_set_first_wave_and_replay() -> None:
         "MIN_TURNOVER"
     )
     assert body["alternatives"][3]["method_status"] == "READY"
-    assert "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE" in body["alternatives"][3]["diagnostics"][
-        "enrichment_summary"
-    ]["reason_codes"]
+    assert (
+        "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE"
+        in body["alternatives"][3]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
 
 
-def test_generate_construction_alternative_set_surfaces_pending_review_for_turnover_budget() -> None:
+def test_generate_construction_alternative_set_surfaces_pending_review_for_turnover_budget() -> (
+    None
+):
     repository = InMemoryConstructionRepository()
     payload = _payload()
     payload["stateless_input"]["model_portfolio"]["targets"] = [
@@ -147,9 +150,10 @@ def test_generate_construction_alternative_set_surfaces_pending_review_for_turno
     min_turnover = response.json()["alternatives"][2]
     assert min_turnover["method"] == "MIN_TURNOVER"
     assert min_turnover["method_status"] == "PENDING_REVIEW"
-    assert "TURNOVER_BUDGET_DROPPED_INTENTS" in min_turnover["diagnostics"][
-        "enrichment_summary"
-    ]["reason_codes"]
+    assert (
+        "TURNOVER_BUDGET_DROPPED_INTENTS"
+        in min_turnover["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
 
 
 def test_generate_construction_alternative_set_surfaces_blocked_method_status() -> None:

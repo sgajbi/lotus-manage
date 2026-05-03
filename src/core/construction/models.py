@@ -198,7 +198,9 @@ class ConstructionMethodDefinition(BaseModel):
 
 
 class ConstructionMethodPlan(BaseModel):
-    requested_method: ConstructionMethod = Field(description="Method requested by caller or engine.")
+    requested_method: ConstructionMethod = Field(
+        description="Method requested by caller or engine."
+    )
     effective_method: ConstructionMethod = Field(description="Method that should actually run.")
     method_status: ConstructionMethodStatus = Field(description="Planning-time method status.")
     fallback_method: ConstructionMethod | None = Field(
