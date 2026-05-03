@@ -46,14 +46,16 @@
 
 - RFC-0037
   proposed DPM operating-system and mandate-intelligence roadmap intended to make
-  `lotus-manage` the management-side crown jewel of the Lotus ecosystem
+  `lotus-manage` the management-side crown jewel of the Lotus ecosystem, with the 15 target
+  capability themes explicitly accounted for as implementation slices or dependent RFCs
 - RFC-0038
   proposed first implementation foundation for mandate digital twins, mandate health scoring,
   monitoring exceptions, and the DPM command-center API
 - RFC-0039
-  proposed advanced portfolio construction and rebalance alternatives roadmap
+  proposed advanced portfolio construction and rebalance alternatives roadmap, including tax,
+  turnover, liquidity, ESG, risk, currency-overlay, and regime-stress-aware construction methods
 - RFC-0040
-  proposed pre-trade proof-pack and DPM evidence-fabric roadmap
+  proposed pre-trade proof-pack, decision-timeline, and DPM evidence-fabric roadmap
 - RFC-0041
   proposed rebalance-wave orchestration and CIO model-change impact roadmap
 - RFC-0042

@@ -707,6 +707,70 @@ Demo rules:
 4. every business claim backed by source data and proof artifacts,
 5. demo data must include realistic DPM mandates, not only simple portfolios.
 
+### 6.13 Feature 13 - Currency Overlay and Hedge Governance
+
+Currency exposure is a first-class mandate dimension, not only a cash-conversion detail.
+
+Required capabilities:
+
+1. derive base-currency, local-currency, and settlement-currency exposure from `lotus-core`,
+2. compare unhedged, partially hedged, and fully hedged rebalance alternatives,
+3. support mandate-level hedge ratio bands by currency, asset class, sleeve, and instrument type,
+4. show expected cash, FX, cost, liquidity, and settlement effects before a plan is approved,
+5. identify when hedge instruments, FX rates, forward points, or settlement calendars are missing,
+6. distinguish strategic currency exposure from operational FX needed to fund trades,
+7. preserve deterministic reason codes for hedge suppression, hedge adjustment, and hedge breach.
+
+Business outcome:
+
+1. PMs can manage multi-currency mandates with clear risk, funding, and hedge evidence,
+2. operations can see settlement and funding readiness before trade staging,
+3. client-facing material can explain currency posture without reconstructing it from raw trades.
+
+### 6.14 Feature 14 - Market-Regime and Stress Simulator
+
+The platform must help a PM understand how a mandate behaves under plausible regime changes before
+action is taken.
+
+Required capabilities:
+
+1. consume stress, drawdown, concentration, and exposure data from `lotus-risk`,
+2. support named scenario packs such as rate shock, equity sell-off, credit widening, USD rally,
+   commodity shock, inflation surprise, liquidity freeze, and defensive-risk-off rotation,
+3. compare current, target, and alternative portfolios under the same scenario set,
+4. expose scenario loss, drawdown contribution, breached limits, and mitigation trades,
+5. allow CIO model-change waves to carry required scenario checks,
+6. mark results degraded when a scenario pack, risk model, or exposure dimension is unavailable,
+7. keep scenario evidence in proof packs and post-trade outcome reviews.
+
+Business outcome:
+
+1. investment-office users can demonstrate disciplined regime-aware construction,
+2. PMs can avoid alternatives that improve drift while worsening unacceptable tail exposure,
+3. risk and compliance reviewers can inspect scenario evidence before approval.
+
+### 6.15 Feature 15 - Portfolio Memory and Decision Timeline
+
+`lotus-manage` must remember why decisions were made, not only what the latest run produced.
+
+Required capabilities:
+
+1. maintain a portfolio-level timeline of mandate changes, monitoring exceptions, model-change
+   impacts, alternative sets, selected alternatives, proof packs, approvals, deferrals, wave states,
+   execution handoffs, and outcome reviews,
+2. link every timeline event to source lineage, actor, reason, status vocabulary, and artifacts,
+3. support PM, operations, compliance, CIO, and audit views over the same event record,
+4. distinguish automated observations from human decisions,
+5. expose decision memory to `lotus-ai` only through structured evidence packs,
+6. provide before/after and expected/realized context for future construction quality analysis,
+7. retain enough history to support client review, complaint handling, and internal supervision.
+
+Business outcome:
+
+1. PMs can explain the lifecycle of a mandate without manually stitching together run records,
+2. supervisors can review whether decisions were timely, disciplined, and mandate-consistent,
+3. future AI and analytics features have a governed memory substrate instead of inferred context.
+
 ---
 
 ## 7. Target Data Products
@@ -734,6 +798,11 @@ Additional target products likely required:
 8. `ClientRestrictionProfile:v1`
 9. `ModelChangeEvent:v1`
 10. `BenchmarkConstituentWindow:v1`
+11. `PortfolioCurrencyExposureWindow:v1`
+12. `CurrencyOverlayPolicy:v1`
+13. `HedgingInstrumentProfile:v1`
+14. `StressScenarioPack:v1`
+15. `MarketRegimeSignal:v1`
 
 ### 7.2 Required Inputs from lotus-risk
 
@@ -764,6 +833,9 @@ Potential governed data products:
 6. `DpmPortfolioActionRegister:v2`
 7. `DpmPostTradeOutcomeReview:v1`
 8. `DpmCioModelChangeImpact:v1`
+9. `DpmCurrencyOverlayPlan:v1`
+10. `DpmScenarioImpactRun:v1`
+11. `DpmDecisionTimeline:v1`
 
 ---
 
@@ -823,6 +895,33 @@ All public APIs must use `/api/v1`.
 2. `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/pm-memo`
 
 These routes would call `lotus-ai` workflow-pack execution seams and persist returned run posture.
+
+### 8.7 Currency Overlay
+
+1. `POST /api/v1/currency-overlays/simulate`
+2. `GET /api/v1/currency-overlays/{overlay_plan_id}`
+3. `POST /api/v1/currency-overlays/{overlay_plan_id}/select`
+
+These routes expose currency posture and hedge-governance evidence as part of construction and
+proof-pack workflows. They must not become independent FX-trading APIs.
+
+### 8.8 Regime and Stress Simulation
+
+1. `POST /api/v1/scenarios/impact-runs`
+2. `GET /api/v1/scenarios/impact-runs/{scenario_run_id}`
+3. `GET /api/v1/scenarios/packs`
+
+These routes consume risk-authoritative scenario packs and expose mandate-ready impact evidence for
+alternatives, waves, proof packs, and outcome reviews.
+
+### 8.9 Decision Timeline
+
+1. `GET /api/v1/portfolios/{portfolio_id}/decision-timeline`
+2. `GET /api/v1/mandates/{mandate_id}/decision-timeline`
+3. `GET /api/v1/decision-events/{decision_event_id}`
+
+These routes provide portfolio memory for PM, compliance, operations, CIO, report, and AI evidence
+workflows. Timeline APIs return decision facts and evidence refs, not AI-generated interpretation.
 
 ---
 
