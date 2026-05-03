@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-03T22:01:54.059740+00:00",
+  "generatedAt": "2026-05-03T22:12:45.315824+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -3390,6 +3390,22 @@
       ]
     },
     {
+      "semanticId": "lotus.issue_counts",
+      "canonicalTerm": "issue_counts",
+      "preferredName": "issue_counts",
+      "description": "Issue count by severity.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.issuer_coverage_status",
       "canonicalTerm": "issuer_coverage_status",
       "preferredName": "issuer_coverage_status",
@@ -3429,6 +3445,22 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.issues",
+      "canonicalTerm": "issues",
+      "preferredName": "issues",
+      "description": "Product-safe issues without portfolio ids, client ids, raw requests, raw responses, secrets, or trace values.",
+      "example": [
+        "issues_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -3491,6 +3523,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.item_state",
+      "canonicalTerm": "item_state",
+      "preferredName": "item_state",
+      "description": "Wave item workflow state.",
+      "example": "sample_item_state",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -4591,6 +4637,22 @@
       ]
     },
     {
+      "semanticId": "lotus.operator_actions",
+      "canonicalTerm": "operator_actions",
+      "preferredName": "operator_actions",
+      "description": "Deduplicated product-safe remediation actions.",
+      "example": [
+        "sample_operator_actions_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.options",
       "canonicalTerm": "options",
       "preferredName": "options",
@@ -5453,6 +5515,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.remediation_route",
+      "canonicalTerm": "remediation_route",
+      "preferredName": "remediation_route",
+      "description": "Product-safe remediation route or action.",
+      "example": "sample_remediation_route",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -6585,6 +6661,20 @@
       ]
     },
     {
+      "semanticId": "lotus.source_owner",
+      "canonicalTerm": "source_owner",
+      "preferredName": "source_owner",
+      "description": "Owning product or route responsible for remediation.",
+      "example": "sample_source_owner",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.source_readiness_state",
       "canonicalTerm": "source_readiness_state",
       "preferredName": "source_readiness_state",
@@ -6942,6 +7032,20 @@
       ]
     },
     {
+      "semanticId": "lotus.support_ref",
+      "canonicalTerm": "support_ref",
+      "preferredName": "support_ref",
+      "description": "Opaque support reference that avoids portfolio or client identifiers.",
+      "example": "sample_support_ref",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.supportability",
       "canonicalTerm": "supportability",
       "preferredName": "supportability",
@@ -6971,7 +7075,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -7895,6 +8000,20 @@
       "observedTypes": [
         "string",
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.wave_state",
+      "canonicalTerm": "wave_state",
+      "preferredName": "wave_state",
+      "description": "Current wave state.",
+      "example": "sample_wave_state",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -9871,6 +9990,18 @@
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
+      "name": "wave_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical wave id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.wave_id",
+      "attributeRef": "#/attributeCatalog/lotus.wave_id"
     }
   ],
   "endpoints": [
@@ -59765,6 +59896,141 @@
             "type": "boolean",
             "semanticId": "lotus.idempotent_replay",
             "attributeRef": "#/attributeCatalog/lotus.idempotent_replay"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_rebalance_waves",
+      "method": "GET",
+      "path": "/api/v1/rebalance/waves/{wave_id}/supportability",
+      "operationId": "get_wave_supportability_api_v1_rebalance_waves__wave_id__supportability_get",
+      "summary": "Get product-safe wave supportability diagnostics",
+      "request": {
+        "fields": [
+          {
+            "name": "wave_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
           }
         ]
       }

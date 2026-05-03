@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 7 APPROVAL/STAGING/HANDOFF COMPLETE |
+| **Status** | IN PROGRESS - SLICE 8 SUPPORTABILITY/OBSERVABILITY COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -19,6 +19,7 @@
 | **Slice 5 Source Check Evidence** | `POST /api/v1/rebalance/waves/{wave_id}/source-check`, `src/core/waves/source_readiness.py`, authoritative mandate twin and health classification, `tests/unit/dpm/api/test_waves_api.py` |
 | **Slice 6 Simulation/Selection Evidence** | `POST /api/v1/rebalance/waves/{wave_id}/simulate`, `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`, RFC-0039 construction delegation, RFC-0040 proof-pack linkage, `tests/unit/dpm/api/test_waves_api.py` |
 | **Slice 7 Approval/Handoff Evidence** | `POST /api/v1/rebalance/waves/{wave_id}/approve`, `POST /api/v1/rebalance/waves/{wave_id}/stage`, `POST /api/v1/rebalance/waves/{wave_id}/handoff`, append-only internal handoff refs, no external execution claim, `tests/unit/dpm/api/test_waves_api.py` |
+| **Slice 8 Supportability Evidence** | `GET /api/v1/rebalance/waves/{wave_id}/supportability`, product-safe diagnostics, bounded `lotus_manage_wave_supportability_total` metric, observability contract update, `tests/unit/dpm/api/test_waves_api.py`, `tests/unit/dpm/api/test_observability_api.py` |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 from decimal import Decimal
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,7 +15,7 @@ from src.api.dependencies import (
 )
 from src.api.main import app
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
-from src.api.services import construction_service, proof_pack_service
+from src.api.services import construction_service, proof_pack_service, wave_service
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -29,7 +30,14 @@ from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
-from src.core.waves import DpmRebalanceWave
+from src.core.waves import (
+    DpmRebalanceWave,
+    DpmRebalanceWaveItem,
+    DpmWaveAggregateMetrics,
+    DpmWaveTrigger,
+    WaveItemState,
+    WaveState,
+)
 
 
 MANDATE_ID = "MANDATE_PB_SG_GLOBAL_BAL_001"
@@ -149,6 +157,79 @@ def _client(
 
 def _run_service() -> DpmRunSupportService:
     return DpmRunSupportService(repository=InMemoryDpmRunRepository())
+
+
+def _wave_item(
+    *,
+    wave_item_id: str,
+    portfolio_id: str,
+    state: WaveItemState,
+    reason_codes: list[str] | None = None,
+    diagnostics: dict[str, object] | None = None,
+) -> DpmRebalanceWaveItem:
+    return DpmRebalanceWaveItem(
+        wave_item_id=wave_item_id,
+        portfolio_id=portfolio_id,
+        state=state,
+        reason_codes=reason_codes or [],
+        diagnostics=diagnostics or {},
+    )
+
+
+def _save_supportability_wave(
+    repository: InMemoryDpmWaveRepository,
+    *,
+    wave_id: str,
+    state: WaveState,
+    items: list[DpmRebalanceWaveItem],
+) -> None:
+    state_counts: dict[str, int] = {}
+    for item in items:
+        state_counts[item.state] = state_counts.get(item.state, 0) + 1
+    repository.save_wave(
+        wave=DpmRebalanceWave(
+            wave_id=wave_id,
+            state=state,
+            trigger=DpmWaveTrigger(
+                trigger_type="EXPLICIT_PORTFOLIO_LIST",
+                trigger_id=f"supportability-{wave_id}",
+                rationale="Exercise operator supportability diagnostics.",
+            ),
+            as_of_date="2026-05-03",
+            created_by="pm_001",
+            correlation_id=f"corr-{wave_id}",
+            items=items,
+            aggregate_metrics=DpmWaveAggregateMetrics(
+                item_count=len(items),
+                state_counts=state_counts,
+                ready_item_count=sum(
+                    1
+                    for item in items
+                    if item.state
+                    in {
+                        "SOURCE_READY",
+                        "SIMULATED",
+                        "SELECTED",
+                        "PROOF_PACK_READY",
+                        "APPROVED",
+                        "STAGED",
+                        "HANDOFF_READY",
+                    }
+                ),
+                blocked_item_count=sum(
+                    1 for item in items if item.state in {"SOURCE_BLOCKED", "SIMULATION_BLOCKED"}
+                ),
+                review_required_item_count=sum(
+                    1 for item in items if item.state == "REVIEW_REQUIRED"
+                ),
+                source_degraded_item_count=sum(
+                    1 for item in items if item.state == "SOURCE_DEGRADED"
+                ),
+            ),
+        ),
+        idempotency_key=None,
+        request_hash=None,
+    )
 
 
 def teardown_function() -> None:
@@ -1096,6 +1177,203 @@ def test_wave_workflow_commands_reject_invalid_states_and_empty_eligibility() ->
     assert handoff_invalid.json()["detail"]["code"] == "DPM_WAVE_HANDOFF_INVALID_STATE"
 
 
+def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={
+                **_request(),
+                "portfolios": [
+                    {"portfolio_id": PORTFOLIO_ID},
+                    {"portfolio_id": "PB_SG_CALLER_REF_ONLY_003"},
+                ],
+            },
+            headers={"Idempotency-Key": "idem-wave-supportability"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        supportability = client.get(f"/api/v1/rebalance/waves/{wave_id}/supportability")
+        missing = client.get("/api/v1/rebalance/waves/dwv_missing/supportability")
+        metrics = client.get("/metrics")
+
+    assert supportability.status_code == 200
+    payload = supportability.json()
+    assert payload["supportability_state"] == "blocked"
+    assert payload["reason"] == "wave_blocked_items"
+    assert payload["issue_counts"]["critical"] == 1
+    assert payload["issue_counts"]["info"] == 1
+    assert payload["issues"][0]["support_ref"].startswith(f"wave:{wave_id}:item:")
+    assert {issue["source_owner"] for issue in payload["issues"]} >= {"lotus-manage"}
+    assert "REFRESH_MANDATE_DIGITAL_TWIN" in payload["operator_actions"]
+    payload_text = supportability.text
+    assert PORTFOLIO_ID not in payload_text
+    assert "PB_SG_CALLER_REF_ONLY_003" not in payload_text
+    assert "source_refs" not in payload
+
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+    assert metrics.status_code == 200
+    assert "lotus_manage_wave_supportability_total" in metrics.text
+    assert 'surface="rebalance/waves/supportability"' in metrics.text
+    assert 'supportability_state="blocked"' in metrics.text
+    assert 'reason="wave_blocked_items"' in metrics.text
+    assert PORTFOLIO_ID not in metrics.text
+    assert "PB_SG_CALLER_REF_ONLY_003" not in metrics.text
+
+
+def test_wave_supportability_service_reports_ready_and_info_only_postures() -> None:
+    repository = InMemoryDpmWaveRepository()
+    _save_supportability_wave(
+        repository,
+        wave_id="dwv_support_ready",
+        state="HANDOFF_READY",
+        items=[
+            _wave_item(
+                wave_item_id="dwi_handoff_ready",
+                portfolio_id="PB_SG_CONFIDENTIAL_READY",
+                state="HANDOFF_READY",
+            )
+        ],
+    )
+    _save_supportability_wave(
+        repository,
+        wave_id="dwv_support_info",
+        state="CREATED",
+        items=[
+            _wave_item(
+                wave_item_id="dwi_candidate",
+                portfolio_id="PB_SG_CONFIDENTIAL_CANDIDATE",
+                state="CANDIDATE",
+            ),
+            _wave_item(
+                wave_item_id="dwi_source_ready",
+                portfolio_id="PB_SG_CONFIDENTIAL_SOURCE_READY",
+                state="SOURCE_READY",
+            ),
+        ],
+    )
+
+    ready = wave_service.wave_supportability(
+        wave_id="dwv_support_ready",
+        wave_repository=repository,
+    )
+    info_only = wave_service.wave_supportability(
+        wave_id="dwv_support_info",
+        wave_repository=repository,
+    )
+
+    assert ready["supportability_state"] == "ready"
+    assert ready["reason"] == "wave_supportability_ready"
+    assert ready["issues"] == []
+    assert ready["operator_actions"] == ["CONTINUE_GOVERNED_WAVE_WORKFLOW"]
+
+    assert info_only["supportability_state"] == "ready"
+    assert info_only["issue_counts"] == {"critical": 0, "warning": 0, "info": 2}
+    info_issues = cast(list[dict[str, object]], info_only["issues"])
+    assert [issue["reason_codes"] for issue in info_issues] == [
+        ["SOURCE_CHECK_PENDING"],
+        ["SIMULATION_PENDING"],
+    ]
+    assert info_only["operator_actions"] == ["CONTINUE_GOVERNED_WAVE_WORKFLOW"]
+    assert "PB_SG_CONFIDENTIAL" not in str(info_only)
+
+
+def test_wave_supportability_service_reports_degraded_and_blocked_actions() -> None:
+    repository = InMemoryDpmWaveRepository()
+    _save_supportability_wave(
+        repository,
+        wave_id="dwv_support_degraded",
+        state="SIMULATED",
+        items=[
+            _wave_item(
+                wave_item_id="dwi_source_degraded",
+                portfolio_id="PB_SG_CONFIDENTIAL_DEGRADED",
+                state="SOURCE_DEGRADED",
+            ),
+            _wave_item(
+                wave_item_id="dwi_review",
+                portfolio_id="PB_SG_CONFIDENTIAL_REVIEW",
+                state="REVIEW_REQUIRED",
+            ),
+            _wave_item(
+                wave_item_id="dwi_selected_degraded",
+                portfolio_id="PB_SG_CONFIDENTIAL_PROOF",
+                state="PROOF_PACK_READY",
+                diagnostics={"proof_pack_state": "DEGRADED"},
+            ),
+        ],
+    )
+    _save_supportability_wave(
+        repository,
+        wave_id="dwv_support_blocked",
+        state="SIMULATION_FAILED",
+        items=[
+            _wave_item(
+                wave_item_id="dwi_source_blocked",
+                portfolio_id="PB_SG_CONFIDENTIAL_SOURCE_BLOCKED",
+                state="SOURCE_BLOCKED",
+            ),
+            _wave_item(
+                wave_item_id="dwi_simulation_blocked",
+                portfolio_id="PB_SG_CONFIDENTIAL_SIM_BLOCKED",
+                state="SIMULATION_BLOCKED",
+                diagnostics={
+                    "source_owner": "lotus-risk",
+                    "required_action": "REFRESH_RISK_INPUTS",
+                },
+            ),
+        ],
+    )
+
+    degraded = wave_service.wave_supportability(
+        wave_id="dwv_support_degraded",
+        wave_repository=repository,
+    )
+    blocked = wave_service.wave_supportability(
+        wave_id="dwv_support_blocked",
+        wave_repository=repository,
+    )
+
+    assert degraded["supportability_state"] == "degraded"
+    assert degraded["reason"] == "wave_degraded_items"
+    assert degraded["issue_counts"] == {"critical": 0, "warning": 3, "info": 0}
+    assert degraded["operator_actions"] == [
+        "PERFORM_HUMAN_REVIEW",
+        "REFRESH_SOURCE_EVIDENCE",
+        "REVIEW_DEGRADED_PROOF_PACK",
+    ]
+    degraded_issues = cast(list[dict[str, object]], degraded["issues"])
+    blocked_issues = cast(list[dict[str, object]], blocked["issues"])
+    assert {issue["source_owner"] for issue in degraded_issues} == {
+        "lotus-manage",
+        "lotus-manage-proof-pack",
+    }
+    assert "PB_SG_CONFIDENTIAL" not in str(degraded)
+
+    assert blocked["supportability_state"] == "blocked"
+    assert blocked["reason"] == "wave_blocked_items"
+    assert blocked["issue_counts"] == {"critical": 2, "warning": 0, "info": 0}
+    assert blocked["operator_actions"] == ["REFRESH_RISK_INPUTS", "REPAIR_SOURCE_DATA"]
+    assert blocked_issues[1]["source_owner"] == "lotus-risk"
+    assert blocked_issues[1]["remediation_route"] == "REFRESH_RISK_INPUTS"
+    assert "PB_SG_CONFIDENTIAL" not in str(blocked)
+
+
 def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post(
@@ -1117,12 +1395,14 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]
+    supportability = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/supportability"]["get"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
     assert source_check["tags"] == ["lotus-manage Rebalance Waves"]
     assert approve["tags"] == ["lotus-manage Rebalance Waves"]
     assert stage["tags"] == ["lotus-manage Rebalance Waves"]
     assert handoff["tags"] == ["lotus-manage Rebalance Waves"]
+    assert supportability["tags"] == ["lotus-manage Rebalance Waves"]
     assert preview["responses"]["200"]["content"]["application/json"]["example"]["durable"] is False
     assert create["responses"]["201"]["content"]["application/json"]["example"]["durable"] is True
     assert (
@@ -1136,3 +1416,4 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "422" in source_check["responses"]
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
+    assert "excludes portfolio identifiers" in supportability["description"]

@@ -1586,7 +1586,7 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, and handoff
+## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, and supportability
 
 Routes:
 
@@ -1598,6 +1598,7 @@ Routes:
 - `POST /api/v1/rebalance/waves/{wave_id}/approve`
 - `POST /api/v1/rebalance/waves/{wave_id}/stage`
 - `POST /api/v1/rebalance/waves/{wave_id}/handoff`
+- `GET /api/v1/rebalance/waves/{wave_id}/supportability`
 
 Purpose:
 
@@ -1610,7 +1611,8 @@ for persisted waves, using manage-owned mandate twins, mandate health snapshots,
 state, and available upstream `lotus-core` lineage refs. Slice 6 adds ready-item construction
 simulation through RFC-0039 and item-level alternative selection with RFC-0040 proof-pack linkage.
 Slice 7 adds manage-owned approval, staging, and internal operations handoff evidence without
-external execution claims.
+external execution claims. Slice 8 adds product-safe operator supportability diagnostics and
+bounded wave supportability telemetry.
 
 Functional coverage:
 
@@ -1637,6 +1639,9 @@ Functional coverage:
 - staging promotes only approved items and records no-external-execution posture,
 - handoff creates append-only internal operations handoff refs with actor, reason, item ids,
   content hash, and `external_execution_claimed=false`,
+- supportability returns wave posture, issue counts, source owners, bounded reason codes,
+  remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
+  trace details,
 - no PM-book discovery, CIO model-change cohort discovery, Gateway composition, or Workbench
   product claim in these slices.
 
@@ -1657,18 +1662,21 @@ Non-functional posture:
   not append duplicate events or duplicate handoff refs.
 - Handoff evidence is an internal operations readiness package only; it is not an OMS handoff,
   order execution instruction, or client communication.
+- Supportability emits bounded structured logs and `lotus_manage_wave_supportability_total` with
+  allowlisted `surface`, `supportability_state`, and `reason` labels.
 - The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
-  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 7.
+  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 8.
 
 Upstream integration posture:
 
-The supported Slice 4-6 source inputs are existing manage-owned mandate digital twins, mandate
+The supported Slice 4-8 source inputs are existing manage-owned mandate digital twins, mandate
 health snapshots, their source-readiness state, their persisted source lineage, explicit
 caller-supplied affected-portfolio source refs, caller-supplied RFC-0039 construction inputs for
 ready items, RFC-0040 proof-pack outputs generated from selected alternatives, and manage-owned
-workflow decisions captured through actor-attributed approval/staging/handoff commands. Automatic
-PM-book or CIO model-change cohort discovery remains deferred until the owning app exposes a
-certified source product.
+workflow decisions captured through actor-attributed approval/staging/handoff commands.
+Supportability diagnostics are derived from persisted wave state and bounded item diagnostics.
+Automatic PM-book or CIO model-change cohort discovery remains deferred until the owning app exposes
+a certified source product.
 
 Downstream consumers:
 
@@ -1679,9 +1687,9 @@ Downstream consumers:
 Evidence commands:
 
 ```bash
-python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_wave_domain.py -q
-python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py tests/unit/dpm/api/test_waves_api.py
-python -m mypy --config-file mypy.ini src/api/services/wave_service.py src/api/routers/waves.py tests/unit/dpm/api/test_waves_api.py
+python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py tests/unit/dpm/waves/test_wave_domain.py -q
+python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py
+python -m mypy --config-file mypy.ini src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py tests/unit/dpm/api/test_waves_api.py
 python scripts/openapi_quality_gate.py
 python scripts/api_vocabulary_inventory.py --validate-only
 ```

@@ -205,6 +205,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "DPM_WORKFLOW_DECISION_TOTAL",
         _Counter("workflow"),
     )
+    monkeypatch.setattr(
+        observability_module,
+        "WAVE_SUPPORTABILITY_TOTAL",
+        _Counter("wave"),
+    )
 
     observability_module.record_async_operation(
         event="submit/PB_SG_GLOBAL_BAL_001",
@@ -222,6 +227,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         action="actor:reviewer_001",
         outcome="portfolio_conflict",
     )
+    observability_module.record_wave_supportability(
+        surface="rebalance/waves/supportability/PB_SG_GLOBAL_BAL_001",
+        supportability_state="portfolio_blocked",
+        reason="client:private-bank-client",
+    )
 
     assert captured["async"] == {
         "event": "submit",
@@ -238,6 +248,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "surface": "run",
         "action": "unknown",
         "outcome": "error",
+    }
+    assert captured["wave"] == {
+        "surface": "rebalance/waves/supportability",
+        "supportability_state": "blocked",
+        "reason": "wave_supportability_error",
     }
     assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
     assert "sha256:secret" not in json.dumps(captured)
