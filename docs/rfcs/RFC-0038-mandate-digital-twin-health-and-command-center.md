@@ -714,6 +714,18 @@ Validation:
 3. empty book behavior is useful,
 4. partial readiness is explicit.
 
+Slice 5 implementation note:
+
+1. `GET /api/v1/dpm/command-center` is implemented as a bounded read model over persisted
+   monitoring runs and active exceptions.
+2. The response returns health distribution, source-readiness summary, active exception count,
+   attention buckets, recommended actions, latest monitoring-run lineage, and supportability state.
+3. When no monitoring run matches the query, the API returns an `EMPTY` supportability state rather
+   than fabricating a PM book view.
+4. When portfolio-manager or book discovery is not supplied by caller filters, the API explicitly
+   reports `PM_BOOK_DISCOVERY_NOT_YET_SOURCED` as a partial-readiness reason.
+5. Workbench and Gateway product-surface integration remain Slice 6 handoff scope.
+
 ### Slice 6 - Gateway and Workbench Integration RFC Handoff
 
 1. define gateway composition contract,
@@ -862,7 +874,7 @@ or AI features build on it.
 | Mandate digital twin | Proposed | Promote only after source fields, derived fields, local overlays, versions, lineage, and APIs are certified. |
 | Mandate health score | Proposed | Promote only after decomposed dimensions, weights, thresholds, reason codes, and tests are complete. |
 | Monitoring exceptions | Proposed | Promote only after repeatable monitoring runs create bounded, actor-reviewable exceptions. |
-| DPM command center | Proposed | Promote only after book-level summaries, attention queues, and partial-readiness behavior are live-proven. |
+| DPM command center | Foundation implemented | Bounded API summarizes persisted monitoring runs and active exceptions; product-surface integration and live canonical proof remain pending. |
 
 ### 14.2 Architecture and Domain Direction
 
@@ -949,5 +961,5 @@ Current promotion posture:
    refresh-response output,
 3. monitoring exception taxonomy is implemented as pure derived domain output plus persistence
    foundation,
-4. DPM command-center APIs, live proof, and full supported-feature promotion are still pending later
-   slices.
+4. DPM command-center API foundation is implemented; live proof, Gateway/Workbench handoff, and full
+   supported-feature promotion remain pending later slices.

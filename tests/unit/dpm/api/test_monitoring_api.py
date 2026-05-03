@@ -1,13 +1,21 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_mandate_repository
 from src.api.main import app
-from src.core.mandates import DpmMandateConstraintSet, DpmMandateDigitalTwin, DpmMandateReviewPolicy
+from src.core.mandates import (
+    DpmMandateConstraintSet,
+    DpmMandateDigitalTwin,
+    DpmMandateReviewPolicy,
+    DpmMonitoringException,
+    MandateHealthDimension,
+    MandateRecommendedAction,
+    MonitoringSeverity,
+)
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 
 
@@ -76,6 +84,92 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     assert run_detail.status_code == 200
     assert exceptions_response.status_code == 200
     assert exceptions_response.json()["items"]
+
+
+def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -> None:
+    repository = InMemoryDpmMandateRepository()
+    twin = _twin()
+    repository.save_mandate_snapshot(twin)
+
+    with _client(repository) as client:
+        run_response = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [MANDATE_ID],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_001",
+                "requested_by": "ops_sg_001",
+            },
+        )
+        repository.save_monitoring_exception(
+            DpmMonitoringException(
+                exception_id="me_info_source_data",
+                mandate_id=MANDATE_ID,
+                portfolio_id=PORTFOLIO_ID,
+                detected_at=datetime(2026, 5, 3, 8, 30, tzinfo=timezone.utc),
+                as_of_date=date(2026, 5, 3),
+                dimension=MandateHealthDimension.SOURCE_READINESS,
+                severity=MonitoringSeverity.INFO,
+                reason_code="SOURCE_READINESS_INFO",
+                recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
+            )
+        )
+        repository.save_monitoring_exception(
+            DpmMonitoringException(
+                exception_id="me_critical_source_data",
+                mandate_id=MANDATE_ID,
+                portfolio_id=PORTFOLIO_ID,
+                detected_at=datetime(2026, 5, 3, 8, 31, tzinfo=timezone.utc),
+                as_of_date=date(2026, 5, 3),
+                dimension=MandateHealthDimension.SOURCE_READINESS,
+                severity=MonitoringSeverity.CRITICAL,
+                reason_code="SOURCE_READINESS_BLOCKED",
+                recommended_action=MandateRecommendedAction.FIX_SOURCE_DATA,
+            )
+        )
+        command_center = client.get(
+            "/api/v1/dpm/command-center"
+            "?tenant_id=default"
+            "&portfolio_manager_id=PM_SG_001"
+            "&as_of_date=2026-05-03"
+            "&health_state=PENDING_REVIEW"
+        )
+        partial_book = client.get("/api/v1/dpm/command-center?tenant_id=default&limit=1")
+        empty_book = client.get(
+            "/api/v1/dpm/command-center"
+            "?tenant_id=default"
+            "&portfolio_manager_id=PM_SG_001"
+            "&as_of_date=2026-05-04"
+        )
+
+    payload = command_center.json()
+    assert run_response.status_code == 200
+    assert command_center.status_code == 200
+    assert payload["evaluated_mandates"] == 1
+    assert payload["health_distribution"] == {"PENDING_REVIEW": 1}
+    assert payload["active_exception_count"] >= 1
+    assert payload["attention_buckets"][0]["exception_count"] >= 1
+    assert payload["recommended_actions"][0]["recommended_action"] == "FIX_SOURCE_DATA"
+    assert payload["recommended_actions"][0]["highest_severity"] == "CRITICAL"
+    assert payload["supportability"]["data_completeness_state"] == "COMPLETE"
+    assert payload["supportability"]["source_run_id"] == run_response.json()["monitoring_run_id"]
+    assert partial_book.status_code == 200
+    assert partial_book.json()["supportability"]["data_completeness_state"] == "PARTIAL"
+    assert (
+        "PM_BOOK_DISCOVERY_NOT_YET_SOURCED"
+        in partial_book.json()["supportability"]["partial_readiness_reasons"]
+    )
+    assert (
+        "ATTENTION_QUEUE_LIMIT_REACHED"
+        in partial_book.json()["supportability"]["partial_readiness_reasons"]
+    )
+    assert empty_book.status_code == 200
+    assert empty_book.json()["supportability"]["data_completeness_state"] == "EMPTY"
+    assert (
+        "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
+        in empty_book.json()["supportability"]["partial_readiness_reasons"]
+    )
 
 
 def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:

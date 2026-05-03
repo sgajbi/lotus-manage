@@ -293,6 +293,136 @@ class DpmMonitoringRun(BaseModel):
     )
 
 
+class DpmCommandCenterAttentionBucket(BaseModel):
+    dimension: MandateHealthDimension = Field(
+        description="Mandate health dimension driving the attention bucket.",
+        examples=["SOURCE_READINESS"],
+    )
+    severity: MonitoringSeverity = Field(
+        description="Highest monitoring severity represented by this bucket.",
+        examples=["CRITICAL"],
+    )
+    recommended_action: MandateRecommendedAction = Field(
+        description="Primary action expected from PM, supervision, operations, or data ownership.",
+        examples=["FIX_SOURCE_DATA"],
+    )
+    exception_count: int = Field(
+        ge=0,
+        description="Number of active exceptions in this bucket.",
+        examples=[3],
+    )
+    top_reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Most frequent bounded reason codes represented by this bucket.",
+        examples=[["SOURCE_READINESS_BLOCKED"]],
+    )
+
+
+class DpmCommandCenterRecommendedAction(BaseModel):
+    recommended_action: MandateRecommendedAction = Field(
+        description="Action recommended for the PM book.",
+        examples=["SIMULATE_REBALANCE"],
+    )
+    exception_count: int = Field(
+        ge=0,
+        description="Number of active exceptions supporting this recommended action.",
+        examples=[2],
+    )
+    highest_severity: MonitoringSeverity = Field(
+        description="Highest severity among exceptions supporting this action.",
+        examples=["WARNING"],
+    )
+
+
+class DpmCommandCenterSupportability(BaseModel):
+    data_completeness_state: Literal["COMPLETE", "PARTIAL", "EMPTY"] = Field(
+        description="Whether command-center data is complete, partial, or empty for the query.",
+        examples=["PARTIAL"],
+    )
+    generated_at: datetime = Field(
+        description="UTC timestamp when the command-center response was generated.",
+        examples=["2026-05-03T08:30:00Z"],
+    )
+    source_run_id: Optional[str] = Field(
+        default=None,
+        description="Monitoring run id used as the primary source for book-level aggregation.",
+        examples=["dmr_20260503_083000"],
+    )
+    partial_readiness_reasons: list[str] = Field(
+        default_factory=list,
+        description="Explicit reasons explaining partial or empty command-center readiness.",
+        examples=[["PM_BOOK_DISCOVERY_NOT_YET_SOURCED"]],
+    )
+
+
+class DpmCommandCenterSummary(BaseModel):
+    tenant_id: Optional[str] = Field(
+        default=None,
+        description="Tenant filter used for the command-center summary.",
+        examples=["default"],
+    )
+    portfolio_manager_id: Optional[str] = Field(
+        default=None,
+        description="Portfolio-manager filter used for the command-center summary.",
+        examples=["PM_SG_DPM_001"],
+    )
+    book_id: Optional[str] = Field(
+        default=None,
+        description="PM book filter used for the command-center summary.",
+        examples=["BOOK_SG_BALANCED_DPM"],
+    )
+    as_of_date: Optional[date] = Field(
+        default=None,
+        description="Business date represented by the command-center summary.",
+        examples=["2026-05-03"],
+    )
+    selected_health_state: Optional[MandateHealthState] = Field(
+        default=None,
+        description="Optional health-state filter applied to the displayed distribution.",
+        examples=["PENDING_REVIEW"],
+    )
+    evaluated_mandates: int = Field(
+        ge=0,
+        description="Number of mandates represented by the selected monitoring run.",
+        examples=[42],
+    )
+    monitored_mandate_ids: list[str] = Field(
+        default_factory=list,
+        description="Mandate ids represented by the selected monitoring run.",
+        examples=[["MANDATE_PB_SG_GLOBAL_BAL_001"]],
+    )
+    health_distribution: dict[str, int] = Field(
+        default_factory=dict,
+        description="Mandate count by health state for the selected run.",
+        examples=[{"READY": 25, "PENDING_REVIEW": 14, "BLOCKED": 3}],
+    )
+    source_readiness_summary: dict[str, int] = Field(
+        default_factory=dict,
+        description="Mandate count by source-readiness state for the selected run.",
+        examples=[{"READY": 39, "PARTIAL": 3}],
+    )
+    active_exception_count: int = Field(
+        ge=0,
+        description="Number of active monitoring exceptions represented by the command center.",
+        examples=[5],
+    )
+    attention_buckets: list[DpmCommandCenterAttentionBucket] = Field(
+        default_factory=list,
+        description="Aggregated active exception buckets ordered by severity and exception count.",
+    )
+    recommended_actions: list[DpmCommandCenterRecommendedAction] = Field(
+        default_factory=list,
+        description="Aggregated action queue ordered by severity and exception count.",
+    )
+    latest_monitoring_run: Optional[DpmMonitoringRun] = Field(
+        default=None,
+        description="Latest monitoring run selected for this command-center summary.",
+    )
+    supportability: DpmCommandCenterSupportability = Field(
+        description="Supportability block explaining response completeness and evidence source.",
+    )
+
+
 def compile_mandate_digital_twin_from_core(
     *,
     mandate: DpmCoreMandateBindingResponse,

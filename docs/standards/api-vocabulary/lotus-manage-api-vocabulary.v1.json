@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-03T06:08:45.642912+00:00",
+  "generatedAt": "2026-05-03T06:21:49.997148+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -24,6 +24,20 @@
       "observedTypes": [
         "string",
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.active_exception_count",
+      "canonicalTerm": "active_exception_count",
+      "preferredName": "active_exception_count",
+      "description": "Number of active monitoring exceptions represented by the command center.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -319,10 +333,12 @@
       "example": "2026-03-02",
       "type": "string",
       "locations": [
-        "body"
+        "body",
+        "query"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -351,6 +367,22 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.attention_buckets",
+      "canonicalTerm": "attention_buckets",
+      "preferredName": "attention_buckets",
+      "description": "Aggregated active exception buckets ordered by severity and exception count.",
+      "example": [
+        "attention_buckets_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -531,6 +563,21 @@
       ],
       "observedTypes": [
         "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.book_id",
+      "canonicalTerm": "book_id",
+      "preferredName": "book_id",
+      "description": "Canonical book id used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "query",
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -1066,6 +1113,20 @@
       ]
     },
     {
+      "semanticId": "lotus.data_completeness_state",
+      "canonicalTerm": "data_completeness_state",
+      "preferredName": "data_completeness_state",
+      "description": "Whether command-center data is complete, partial, or empty for the query.",
+      "example": "COMPLETE",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.data_quality",
       "canonicalTerm": "data_quality",
       "preferredName": "data_quality",
@@ -1530,6 +1591,20 @@
       ]
     },
     {
+      "semanticId": "lotus.evaluated_mandates",
+      "canonicalTerm": "evaluated_mandates",
+      "preferredName": "evaluated_mandates",
+      "description": "Number of mandates represented by the selected monitoring run.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.evidence",
       "canonicalTerm": "evidence",
       "preferredName": "evidence",
@@ -1565,7 +1640,7 @@
       "semanticId": "lotus.exception_count",
       "canonicalTerm": "exception_count",
       "preferredName": "exception_count",
-      "description": "Number of monitoring exceptions generated or refreshed.",
+      "description": "Number of active exceptions in this bucket.",
       "example": 10,
       "type": "integer",
       "locations": [
@@ -2040,7 +2115,7 @@
       "semanticId": "lotus.health_distribution",
       "canonicalTerm": "health_distribution",
       "preferredName": "health_distribution",
-      "description": "Count of evaluated mandates by health state.",
+      "description": "Mandate count by health state for the selected run.",
       "example": {
         "sample_key": "sample_value"
       },
@@ -2104,10 +2179,26 @@
       "example": "READY",
       "type": "MandateHealthState",
       "locations": [
+        "body",
+        "query"
+      ],
+      "observedTypes": [
+        "MandateHealthState",
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.highest_severity",
+      "canonicalTerm": "highest_severity",
+      "preferredName": "highest_severity",
+      "description": "Canonical highest severity used by lotus-manage APIs.",
+      "example": "INFO",
+      "type": "MonitoringSeverity",
+      "locations": [
         "body"
       ],
       "observedTypes": [
-        "MandateHealthState"
+        "MonitoringSeverity"
       ]
     },
     {
@@ -2576,6 +2667,20 @@
       ]
     },
     {
+      "semanticId": "lotus.latest_monitoring_run",
+      "canonicalTerm": "latest_monitoring_run",
+      "preferredName": "latest_monitoring_run",
+      "description": "Latest monitoring run selected for this command-center summary.",
+      "example": "latest_monitoring_run_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.limit",
       "canonicalTerm": "limit",
       "preferredName": "limit",
@@ -2731,7 +2836,7 @@
       "semanticId": "lotus.mandate_ids",
       "canonicalTerm": "mandate_ids",
       "preferredName": "mandate_ids",
-      "description": "Mandate ids to evaluate in this bounded monitoring run.",
+      "description": "Mandate ids included in the monitoring run.",
       "example": [
         "2026-03-02"
       ],
@@ -3133,6 +3238,22 @@
       ]
     },
     {
+      "semanticId": "lotus.monitored_mandate_ids",
+      "canonicalTerm": "monitored_mandate_ids",
+      "preferredName": "monitored_mandate_ids",
+      "description": "Mandate ids represented by the selected monitoring run.",
+      "example": [
+        "2026-03-02"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.monitoring_exceptions",
       "canonicalTerm": "monitoring_exceptions",
       "preferredName": "monitoring_exceptions",
@@ -3447,6 +3568,22 @@
       ]
     },
     {
+      "semanticId": "lotus.partial_readiness_reasons",
+      "canonicalTerm": "partial_readiness_reasons",
+      "preferredName": "partial_readiness_reasons",
+      "description": "Explicit reasons explaining partial or empty command-center readiness.",
+      "example": [
+        "sample_partial_readiness_reasons_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.pending",
       "canonicalTerm": "pending",
       "preferredName": "pending",
@@ -3525,10 +3662,11 @@
       "semanticId": "lotus.portfolio_manager_id",
       "canonicalTerm": "portfolio_manager_id",
       "preferredName": "portfolio_manager_id",
-      "description": "Optional portfolio-manager filter captured for audit.",
-      "example": "PORTFOLIO_MANAGER_001",
+      "description": "Canonical portfolio manager id used by lotus-manage APIs.",
+      "example": null,
       "type": "object",
       "locations": [
+        "query",
         "body"
       ],
       "observedTypes": [
@@ -3874,6 +4012,22 @@
       ],
       "observedTypes": [
         "MandateRecommendedAction"
+      ]
+    },
+    {
+      "semanticId": "lotus.recommended_actions",
+      "canonicalTerm": "recommended_actions",
+      "preferredName": "recommended_actions",
+      "description": "Aggregated action queue ordered by severity and exception count.",
+      "example": [
+        "recommended_actions_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -4499,6 +4653,20 @@
       ]
     },
     {
+      "semanticId": "lotus.selected_health_state",
+      "canonicalTerm": "selected_health_state",
+      "preferredName": "selected_health_state",
+      "description": "Optional health-state filter applied to the displayed distribution.",
+      "example": "selected_health_state_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.selected_policy_pack_id",
       "canonicalTerm": "selected_policy_pack_id",
       "preferredName": "selected_policy_pack_id",
@@ -4804,7 +4972,7 @@
       "semanticId": "lotus.source_readiness_summary",
       "canonicalTerm": "source_readiness_summary",
       "preferredName": "source_readiness_summary",
-      "description": "Count of evaluated mandates by source-readiness state.",
+      "description": "Mandate count by source-readiness state for the selected run.",
       "example": {
         "sample_key": "sample_value"
       },
@@ -4822,6 +4990,20 @@
       "preferredName": "source_record_id",
       "description": "Unique source record identifier.",
       "example": "SOURCE_RECORD_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_run_id",
+      "canonicalTerm": "source_run_id",
+      "preferredName": "source_run_id",
+      "description": "Monitoring run id used as the primary source for book-level aggregation.",
+      "example": "SOURCE_RUN_001",
       "type": "object",
       "locations": [
         "body"
@@ -5063,7 +5245,8 @@
         "body"
       ],
       "observedTypes": [
-        "DpmActionRegisterSupportability"
+        "DpmActionRegisterSupportability",
+        "DpmCommandCenterSupportability"
       ]
     },
     {
@@ -5444,6 +5627,22 @@
       ],
       "observedTypes": [
         "Money-Output"
+      ]
+    },
+    {
+      "semanticId": "lotus.top_reason_codes",
+      "canonicalTerm": "top_reason_codes",
+      "preferredName": "top_reason_codes",
+      "description": "Most frequent bounded reason codes represented by this bucket.",
+      "example": [
+        "sample_top_reason_codes_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -7181,6 +7380,78 @@
       "allowedValues": [],
       "semanticId": "lotus.mandate_id",
       "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+    },
+    {
+      "name": "portfolio_manager_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional portfolio-manager id filter captured on monitoring runs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.portfolio_manager_id",
+      "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+    },
+    {
+      "name": "tenant_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional tenant filter captured on monitoring runs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.tenant_id",
+      "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional business date represented by the monitoring run.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+    },
+    {
+      "name": "book_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional PM book id captured on monitoring runs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.book_id",
+      "attributeRef": "#/attributeCatalog/lotus.book_id"
+    },
+    {
+      "name": "health_state",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional health-state focus for the displayed distribution.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.health_state",
+      "attributeRef": "#/attributeCatalog/lotus.health_state"
+    },
+    {
+      "name": "limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Maximum active exceptions to consider for attention buckets.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.limit",
+      "attributeRef": "#/attributeCatalog/lotus.limit"
     },
     {
       "name": "status_filter",
@@ -44986,6 +45257,373 @@
             "type": "array",
             "semanticId": "lotus.evidence_refs",
             "attributeRef": "#/attributeCatalog/lotus.evidence_refs"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_monitoring",
+      "method": "GET",
+      "path": "/api/v1/dpm/command-center",
+      "operationId": "read_command_center_api_v1_dpm_command_center_get",
+      "summary": "Get discretionary portfolio-management command-center summary",
+      "request": {
+        "fields": [
+          {
+            "name": "portfolio_manager_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "book_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.book_id",
+            "attributeRef": "#/attributeCatalog/lotus.book_id"
+          },
+          {
+            "name": "health_state",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.health_state",
+            "attributeRef": "#/attributeCatalog/lotus.health_state"
+          },
+          {
+            "name": "limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
+            "name": "portfolio_manager_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "book_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.book_id",
+            "attributeRef": "#/attributeCatalog/lotus.book_id"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "selected_health_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selected_health_state",
+            "attributeRef": "#/attributeCatalog/lotus.selected_health_state"
+          },
+          {
+            "name": "evaluated_mandates",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.evaluated_mandates",
+            "attributeRef": "#/attributeCatalog/lotus.evaluated_mandates"
+          },
+          {
+            "name": "monitored_mandate_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.monitored_mandate_ids",
+            "attributeRef": "#/attributeCatalog/lotus.monitored_mandate_ids"
+          },
+          {
+            "name": "health_distribution",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.health_distribution",
+            "attributeRef": "#/attributeCatalog/lotus.health_distribution"
+          },
+          {
+            "name": "source_readiness_summary",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_readiness_summary",
+            "attributeRef": "#/attributeCatalog/lotus.source_readiness_summary"
+          },
+          {
+            "name": "active_exception_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.active_exception_count",
+            "attributeRef": "#/attributeCatalog/lotus.active_exception_count"
+          },
+          {
+            "name": "attention_buckets",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.attention_buckets",
+            "attributeRef": "#/attributeCatalog/lotus.attention_buckets"
+          },
+          {
+            "name": "attention_buckets[].dimension",
+            "location": "body",
+            "required": true,
+            "type": "MandateHealthDimension",
+            "semanticId": "lotus.dimension",
+            "attributeRef": "#/attributeCatalog/lotus.dimension"
+          },
+          {
+            "name": "attention_buckets[].severity",
+            "location": "body",
+            "required": true,
+            "type": "MonitoringSeverity",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "attention_buckets[].recommended_action",
+            "location": "body",
+            "required": true,
+            "type": "MandateRecommendedAction",
+            "semanticId": "lotus.recommended_action",
+            "attributeRef": "#/attributeCatalog/lotus.recommended_action"
+          },
+          {
+            "name": "attention_buckets[].exception_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.exception_count",
+            "attributeRef": "#/attributeCatalog/lotus.exception_count"
+          },
+          {
+            "name": "attention_buckets[].top_reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.top_reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.top_reason_codes"
+          },
+          {
+            "name": "recommended_actions",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.recommended_actions",
+            "attributeRef": "#/attributeCatalog/lotus.recommended_actions"
+          },
+          {
+            "name": "recommended_actions[].recommended_action",
+            "location": "body",
+            "required": true,
+            "type": "MandateRecommendedAction",
+            "semanticId": "lotus.recommended_action",
+            "attributeRef": "#/attributeCatalog/lotus.recommended_action"
+          },
+          {
+            "name": "recommended_actions[].exception_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.exception_count",
+            "attributeRef": "#/attributeCatalog/lotus.exception_count"
+          },
+          {
+            "name": "recommended_actions[].highest_severity",
+            "location": "body",
+            "required": true,
+            "type": "MonitoringSeverity",
+            "semanticId": "lotus.highest_severity",
+            "attributeRef": "#/attributeCatalog/lotus.highest_severity"
+          },
+          {
+            "name": "latest_monitoring_run",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_monitoring_run",
+            "attributeRef": "#/attributeCatalog/lotus.latest_monitoring_run"
+          },
+          {
+            "name": "latest_monitoring_run.monitoring_run_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.monitoring_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+          },
+          {
+            "name": "latest_monitoring_run.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "latest_monitoring_run.requested_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_at",
+            "attributeRef": "#/attributeCatalog/lotus.requested_at"
+          },
+          {
+            "name": "latest_monitoring_run.completed_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.completed_at",
+            "attributeRef": "#/attributeCatalog/lotus.completed_at"
+          },
+          {
+            "name": "latest_monitoring_run.status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          },
+          {
+            "name": "latest_monitoring_run.mandate_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.mandate_ids",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_ids"
+          },
+          {
+            "name": "latest_monitoring_run.filters",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.filters",
+            "attributeRef": "#/attributeCatalog/lotus.filters"
+          },
+          {
+            "name": "latest_monitoring_run.total_mandates",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.total_mandates",
+            "attributeRef": "#/attributeCatalog/lotus.total_mandates"
+          },
+          {
+            "name": "latest_monitoring_run.health_distribution",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.health_distribution",
+            "attributeRef": "#/attributeCatalog/lotus.health_distribution"
+          },
+          {
+            "name": "latest_monitoring_run.exception_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.exception_count",
+            "attributeRef": "#/attributeCatalog/lotus.exception_count"
+          },
+          {
+            "name": "latest_monitoring_run.source_readiness_summary",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_readiness_summary",
+            "attributeRef": "#/attributeCatalog/lotus.source_readiness_summary"
+          },
+          {
+            "name": "latest_monitoring_run.failure_reason",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason"
+          },
+          {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmCommandCenterSupportability",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.data_completeness_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.data_completeness_state",
+            "attributeRef": "#/attributeCatalog/lotus.data_completeness_state"
+          },
+          {
+            "name": "supportability.generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          },
+          {
+            "name": "supportability.source_run_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_run_id"
+          },
+          {
+            "name": "supportability.partial_readiness_reasons",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.partial_readiness_reasons",
+            "attributeRef": "#/attributeCatalog/lotus.partial_readiness_reasons"
           }
         ]
       }

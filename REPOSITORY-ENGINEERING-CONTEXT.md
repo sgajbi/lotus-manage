@@ -58,12 +58,13 @@ Current repository posture:
 11. RFC-0037 through RFC-0043 define the proposed strategic revamp into a DPM operating system.
     These RFCs are target-state planning material until implementation-backed support, live proof,
     and supported-feature promotion are completed.
-12. RFC-0038 Slice 0-3 has started the target-state foundation with a source-mapped pure
+12. RFC-0038 Slice 0-5 has started the target-state foundation with a source-mapped pure
     `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine, derived
     monitoring-exception taxonomy, repository contract, in-memory repository, Postgres repository
     foundation, mandate migrations, certified mandate refresh/read/version/diff APIs, standalone
-    health APIs, and bounded monitoring/exception APIs. Command-center APIs remain unsupported
-    until later slices add routes, live proof, and supported-feature promotion.
+    health APIs, bounded monitoring/exception APIs, and a bounded command-center summary API.
+    Live proof, Gateway/Workbench handoff, and final supported-feature promotion remain later
+    slices.
 
 ## Architecture And Module Map
 
@@ -75,7 +76,7 @@ Primary areas:
    `src/core/mandates.py`; repository and persistence primitives live in
    `src/core/mandate_repository.py` and `src/infrastructure/mandates/`; mandate API orchestration
    lives in `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, and
-   `src/api/routers/monitoring.py`.
+   `src/api/routers/monitoring.py`, including the bounded command-center summary endpoint.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.
 3. `docs/`

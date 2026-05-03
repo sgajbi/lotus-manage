@@ -179,6 +179,7 @@ Routes:
 - `POST /api/v1/dpm/monitoring/run-once`
 - `GET /api/v1/dpm/monitoring/runs`
 - `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}`
+- `GET /api/v1/dpm/command-center`
 - `GET /api/v1/dpm/exceptions`
 - `POST /api/v1/dpm/exceptions/{exception_id}/resolve`
 
@@ -188,8 +189,9 @@ RFC-0038 mandate digital-twin foundation for discretionary portfolio management.
 let lotus-manage refresh mandate state from product-specific `lotus-core` source products, persist
 the compiled mandate digital twin, read the latest portfolio or mandate view, inspect version
 history, explain what changed between versions, recalculate health, run bounded mandate monitoring,
-search monitoring runs, search exception queues, and resolve reviewed exceptions. They are not
-advisory proposal endpoints and do not claim command-center completion.
+search monitoring runs, summarize a bounded command-center view, search exception queues, and
+resolve reviewed exceptions. They are not advisory proposal endpoints and do not claim Gateway or
+Workbench product-surface integration.
 
 Functional behavior:
 
@@ -207,6 +209,8 @@ Functional behavior:
 - Health recalculate persists a new snapshot and derived exceptions from explicit monitoring input.
 - Monitoring run-once evaluates caller-supplied mandate ids that have already been refreshed.
 - Monitoring run search and detail return persisted run records.
+- Command center aggregates persisted monitoring runs and active exceptions into health
+  distribution, attention buckets, recommended actions, and supportability state.
 - Exception search supports mandate, portfolio, state, cursor, and limit filters.
 - Exception resolve requires an auditable resolution reason and returns the resolved exception.
 - Core unavailable maps to `503 DPM_MANDATE_SOURCE_UNAVAILABLE`.
@@ -229,6 +233,7 @@ flowchart LR
     Versions --> Diff[Version diff]
     Repo --> HealthRead[Health read]
     Health --> Monitoring[Monitoring run-once]
+    Monitoring --> CommandCenter[DPM command center]
     Monitoring --> ExceptionQueue[Exception queue and resolution]
 ```
 

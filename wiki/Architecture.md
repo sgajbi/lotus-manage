@@ -111,7 +111,7 @@ before broader Gateway or Workbench product-surface integration is treated as pr
   RFC-0038 mandate refresh, read, version, diff, health, monitoring orchestration, and exception
   service foundation backed by product-specific `lotus-core` sourcing and the mandate repository
 - `src/api/routers/monitoring.py`
-  RFC-0038 bounded monitoring run and exception queue APIs
+  RFC-0038 bounded monitoring run, exception queue, and command-center summary APIs
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
 - `src/infrastructure/`

@@ -15,6 +15,7 @@ OPENAPI_PATHS_UNDER_CERTIFICATION = [
     "/api/v1/dpm/monitoring/run-once",
     "/api/v1/dpm/monitoring/runs",
     "/api/v1/dpm/monitoring/runs/{monitoring_run_id}",
+    "/api/v1/dpm/command-center",
     "/api/v1/dpm/exceptions",
     "/api/v1/dpm/exceptions/{exception_id}/resolve",
     "/api/v1/rebalance/simulate",
