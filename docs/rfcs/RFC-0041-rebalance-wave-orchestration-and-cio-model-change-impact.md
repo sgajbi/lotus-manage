@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 5 SOURCE CHECK COMPLETE |
+| **Status** | IN PROGRESS - SLICE 6 SIMULATION/SELECTION COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -17,6 +17,7 @@
 | **Slice 3 Domain Evidence** | `src/core/waves/`, `src/infrastructure/waves/`, migration `0007_rebalance_waves.sql`, `tests/unit/dpm/waves/test_wave_domain.py` |
 | **Slice 4 API Evidence** | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves`, `src/api/services/wave_service.py`, `tests/unit/dpm/api/test_waves_api.py` |
 | **Slice 5 Source Check Evidence** | `POST /api/v1/rebalance/waves/{wave_id}/source-check`, `src/core/waves/source_readiness.py`, authoritative mandate twin and health classification, `tests/unit/dpm/api/test_waves_api.py` |
+| **Slice 6 Simulation/Selection Evidence** | `POST /api/v1/rebalance/waves/{wave_id}/simulate`, `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`, RFC-0039 construction delegation, RFC-0040 proof-pack linkage, `tests/unit/dpm/api/test_waves_api.py` |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---

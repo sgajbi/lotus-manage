@@ -5,9 +5,20 @@ from typing import Annotated, Literal, cast
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
-from src.api.dependencies import get_mandate_repository, get_wave_repository
+from src.api.dependencies import (
+    get_construction_repository,
+    get_mandate_repository,
+    get_proof_pack_repository,
+    get_wave_repository,
+)
+from src.api.request_models import RebalanceRequest
+from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import wave_service
+from src.core.construction.repository import ConstructionRepository
+from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
+from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository, DpmWaveSourceRef
 
 
@@ -193,6 +204,69 @@ class DpmWaveSourceCheckRequest(BaseModel):
     actor_id: str = Field(
         description="Human or service actor requesting the source-check.",
         examples=["pm_001"],
+    )
+
+
+class DpmWaveSimulationItemInput(BaseModel):
+    wave_item_id: str | None = Field(
+        default=None,
+        description="Wave item id receiving this construction input.",
+        examples=["dwi_001"],
+    )
+    portfolio_id: str | None = Field(
+        default=None,
+        description="Portfolio id fallback when the caller does not know the wave item id.",
+        examples=["PB_SG_GLOBAL_BAL_001"],
+    )
+    stateless_input: RebalanceRequest = Field(
+        description=(
+            "Complete RFC-0039 stateless construction input for this ready item. "
+            "Wave simulation does not synthesize holdings, market data, or shelf data."
+        )
+    )
+
+
+class DpmWaveSimulationRequest(BaseModel):
+    actor_id: str = Field(
+        description="Human or service actor requesting wave simulation.",
+        examples=["pm_001"],
+    )
+    item_inputs: list[DpmWaveSimulationItemInput] = Field(
+        default_factory=list,
+        description="Per-item RFC-0039 construction inputs for source-ready items.",
+    )
+    methods: list[ConstructionMethod] | None = Field(
+        default=None,
+        description="Optional RFC-0039 construction methods. Omit for the first-wave default.",
+        examples=[["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE", "MIN_TURNOVER"]],
+    )
+
+
+class DpmWaveSelectionRequest(BaseModel):
+    alternative_id: str = Field(
+        description="Construction alternative id selected for the wave item.",
+        examples=["alt_min_turnover"],
+    )
+    actor_id: str = Field(
+        description="Human or service actor recording the selection.",
+        examples=["pm_001"],
+    )
+    reason_code: str = Field(
+        description="Bounded reason code explaining the selection.",
+        examples=["LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT"],
+    )
+    comment: str | None = Field(
+        default=None,
+        description="Optional business comment for audit.",
+        examples=["Chosen before month-end liquidity window."],
+    )
+    generate_proof_pack: bool = Field(
+        default=True,
+        description=(
+            "When true, generate an RFC-0040 proof pack from the selected alternative. "
+            "Failures degrade the item rather than fabricating proof-pack readiness."
+        ),
+        examples=[True],
     )
 
 
@@ -443,3 +517,136 @@ def source_check_wave(
             detail={"code": exc.code, "message": exc.message},
         ) from exc
     return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.post(
+    "/{wave_id}/simulate",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Generate construction alternatives for source-ready wave items",
+    description=(
+        "Calls the RFC-0039 construction alternative authority for source-ready wave items that "
+        "have caller-supplied construction inputs. Source-blocked, degraded, and review-required "
+        "items are preserved with their reasons. Ready items without construction input become "
+        "`SIMULATION_BLOCKED`; the endpoint does not synthesize portfolio holdings, market data, "
+        "model targets, or shelf data from mandate identifiers."
+    ),
+    responses={
+        200: {"description": "Durable simulated or partially simulated wave."},
+        404: {"description": "Wave not found."},
+        409: {"description": "Wave version conflict during optimistic update."},
+        422: {"description": "Wave is not source-checked or request is invalid."},
+    },
+)
+def simulate_wave(
+    wave_id: str,
+    request: DpmWaveSimulationRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-simulate-001"],
+        ),
+    ] = None,
+    construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    item_inputs: dict[str, RebalanceRequest] = {}
+    for item_input in request.item_inputs:
+        if item_input.wave_item_id:
+            item_inputs[item_input.wave_item_id] = item_input.stateless_input
+        if item_input.portfolio_id:
+            item_inputs[item_input.portfolio_id] = item_input.stateless_input
+    try:
+        wave, replayed = wave_service.simulate_wave(
+            wave_id=wave_id,
+            actor_id=request.actor_id,
+            correlation_id=x_correlation_id or f"corr_wave_simulate_{wave_id}",
+            item_inputs=item_inputs,
+            methods=request.methods,
+            construction_repository=construction_repository,
+            run_service=run_service,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
+    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.post(
+    "/{wave_id}/items/{wave_item_id}/select",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Select a construction alternative for a wave item",
+    description=(
+        "Records item-level RFC-0039 alternative selection with actor, reason, and optional "
+        "comment. When requested, it generates an RFC-0040 proof pack from the selected "
+        "alternative. Proof-pack failures are represented as degraded selection posture instead "
+        "of unsupported proof-pack readiness."
+    ),
+    responses={
+        200: {"description": "Wave item selection recorded and persisted."},
+        404: {"description": "Wave, item, alternative set, or alternative id was not found."},
+        409: {"description": "Wave version conflict during optimistic update."},
+        422: {"description": "Wave or item is not eligible for selection."},
+    },
+)
+def select_wave_item_alternative(
+    wave_id: str,
+    wave_item_id: str,
+    request: DpmWaveSelectionRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-select-001"],
+        ),
+    ] = None,
+    construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    try:
+        wave = wave_service.select_wave_item_alternative(
+            wave_id=wave_id,
+            wave_item_id=wave_item_id,
+            alternative_id=request.alternative_id,
+            actor_id=request.actor_id,
+            reason_code=request.reason_code,
+            comment=request.comment,
+            correlation_id=x_correlation_id or f"corr_wave_select_{wave_id}_{wave_item_id}",
+            generate_proof_pack=request.generate_proof_pack,
+            construction_repository=construction_repository,
+            proof_pack_repository=proof_pack_repository,
+            mandate_repository=mandate_repository,
+            run_service=run_service,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
+    return DpmWaveResponse(wave=wave, durable=True)
+
+
+def _wave_validation_http_exception(exc: wave_service.DpmWaveValidationError) -> HTTPException:
+    status_code = (
+        status.HTTP_409_CONFLICT
+        if exc.code == "DPM_WAVE_VERSION_CONFLICT"
+        else status.HTTP_422_UNPROCESSABLE_ENTITY
+    )
+    return HTTPException(
+        status_code=status_code,
+        detail={"code": exc.code, "message": exc.message},
+    )
