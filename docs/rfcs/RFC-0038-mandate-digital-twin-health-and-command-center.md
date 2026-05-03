@@ -6,6 +6,7 @@
 | **Created** | 2026-05-03 |
 | **Depends On** | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, lotus-core RFC-0087 |
 | **Doc Location** | `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md` |
+| **Implementation Branch** | `feat/rfc0038-mandate-digital-twin` |
 
 ---
 
@@ -609,6 +610,16 @@ Validation:
 3. no high-cardinality telemetry labels,
 4. property/edge tests for missing or stale dimensions.
 
+Slice 0-1 implementation note:
+
+1. Slice 0 field-source evidence is captured in
+   `docs/rfcs/RFC-0038-source-data-field-map.md`.
+2. Slice 1 pure domain implementation lives in `src/core/mandates.py`.
+3. Slice 1 behavior tests live in `tests/unit/dpm/core/test_mandate_health.py`.
+4. This slice intentionally does not expose APIs or persistence yet; supported-feature promotion
+   remains blocked until later slices certify routes, storage, OpenAPI, live evidence, and wiki
+   publication.
+
 ### Slice 2 - Persistence and Repository Layer
 
 1. add Postgres migrations,
@@ -883,3 +894,20 @@ Closure evidence must include:
 This RFC inherits RFC-0037 Section 19.4. Completion requires data-mesh posture, source-readiness
 lineage, structured logging, bounded metrics, supportability diagnostics, API certification, and
 GitHub lane evidence appropriate to every mandate, health, monitoring, and command-center endpoint.
+
+---
+
+## 15. Implementation Progress Log
+
+| Date | Slice | Status | Evidence | Notes |
+| --- | --- | --- | --- | --- |
+| 2026-05-03 | Slice 0 - Design Tightening and Source-Data Gap Review | In progress | `docs/rfcs/RFC-0038-source-data-field-map.md` | Minimum viable mandate twin fields are mapped to source-backed, derived, local policy, or explicit source-data gap. |
+| 2026-05-03 | Slice 1 - Domain Models and Pure Health Engine | In progress | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py` | Pure model/compiler/health engine implemented without API or persistence claims. |
+
+Current promotion posture:
+
+1. mandate digital twin is implemented as a pure domain model and compiler foundation only,
+2. mandate health score is implemented as a deterministic pure engine only,
+3. monitoring exception taxonomy is implemented as pure derived domain output only,
+4. DPM command-center, persistence, APIs, OpenAPI certification, live proof, and supported-feature
+   promotion are still pending later slices.

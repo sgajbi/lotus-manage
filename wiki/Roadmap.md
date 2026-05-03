@@ -16,6 +16,8 @@ Current implementation-backed posture:
 3. stateful `portfolio_id` execution is implemented behind explicit runtime gates and composes
    governed `lotus-core` RFC-087 source products when the canonical core/manage stack is configured,
 4. advisory proposal workflows remain outside this repository and belong to `lotus-advise`.
+5. RFC-0038 has started with a pure mandate digital-twin and health-engine foundation; no
+   mandate/health/command-center APIs are supported yet.
 
 Strategic posture:
 
@@ -76,3 +78,18 @@ flowchart TD
    audit, and supportability standards,
 5. documentation is part of the product and must serve business, engineering, sales, marketing,
    operations, and client-demo preparation.
+
+## RFC-0038 Current Implementation Progress
+
+```mermaid
+flowchart LR
+    FieldMap[Source-data field map] --> Twin[Pure mandate digital twin]
+    Twin --> Health[Pure mandate health engine]
+    Health --> Exceptions[Derived monitoring exceptions]
+    Exceptions -. pending .-> Persistence[Persistence and APIs]
+    Persistence -. pending .-> Command[DPM command center]
+```
+
+The first RFC-0038 slice establishes source-mapped domain primitives only. It is useful engineering
+foundation, but it is not yet a supported product feature because persistence, APIs, OpenAPI
+certification, live core/manage proof, and Workbench/Gateway handoff remain pending.

@@ -25,6 +25,8 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Core instrument eligibility sourcing | internal stateful source assembly | Dedicated client method for `InstrumentEligibilityProfile:v1` and transformer to DPM engine `ShelfEntry` records carrying shelf status, buy/sell flags, restriction codes, settlement days, liquidity tier, issuer, and taxonomy attributes; live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
 | Core portfolio tax-lot sourcing | internal stateful source assembly | Dedicated client method for `PortfolioTaxLotWindow:v1` and transformer to DPM engine `TaxLot` records carrying lot quantity, unit cost, purchase date, and core lineage-backed cost basis for tax-aware sell allocation; live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
 | Core market-data coverage sourcing | internal stateful source assembly | Dedicated client method for `MarketDataCoverageWindow:v1` and transformer to DPM engine `MarketDataSnapshot`; stale or missing price/FX coverage is rejected before stateful execution can run. Live canonical proof passed. | core-sourcing client tests, source-context transformation tests, RFC-087 live validator |
+| Mandate digital-twin domain foundation | internal RFC-0038 foundation | Pure source-mapped `DpmMandateDigitalTwin` model and compiler foundation implemented. Not yet exposed as a supported API. | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, `docs/rfcs/RFC-0038-source-data-field-map.md` |
+| Mandate health engine foundation | internal RFC-0038 foundation | Pure deterministic health scoring across ten dimensions with hard-gate overrides and derived monitoring exceptions. Not yet persisted or exposed as supported APIs. | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py` |
 
 ```mermaid
 flowchart LR
@@ -98,8 +100,8 @@ evidence.
 
 | Proposed capability | Owning RFC | Promotion requirement |
 | --- | --- | --- |
-| Mandate digital twin | RFC-0038 | Source lineage, versioning, persistence, APIs, and live core/manage proof. |
-| Mandate health score | RFC-0038 | Decomposed scoring, reason codes, thresholds, tests, and command-center evidence. |
+| Mandate digital twin | RFC-0038 | Pure domain foundation exists; promote only after source lineage, versioning, persistence, APIs, and live core/manage proof. |
+| Mandate health score | RFC-0038 | Pure scoring foundation exists; promote only after persisted snapshots, certified APIs, and command-center evidence. |
 | DPM command center | RFC-0038 | Bounded PM-book summary, attention queues, partial-readiness behavior, and certified APIs. |
 | Advanced construction alternatives | RFC-0039 | Persisted comparable alternatives with objective/constraint traces and solver posture. |
 | Tax, liquidity, risk, ESG, currency, and regime-aware construction | RFC-0039 | Source supportability, degraded behavior, field-level OpenAPI, and live proof for each dimension. |

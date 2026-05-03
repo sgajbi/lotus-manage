@@ -54,8 +54,10 @@ evidence, and supported-feature promotion.
   `lotus-manage` the management-side crown jewel of the Lotus ecosystem, with the 15 target
   capability themes explicitly accounted for as implementation slices or dependent RFCs
 - RFC-0038
-  proposed first implementation foundation for mandate digital twins, mandate health scoring,
-  monitoring exceptions, and the DPM command-center API
+  in progress for the first implementation foundation. Slice 0-1 has produced the source-data
+  field map, pure mandate digital twin, deterministic health engine, and derived monitoring
+  exception taxonomy. Persistence, APIs, OpenAPI certification, live proof, and DPM command-center
+  support remain pending later slices.
 - RFC-0039
   proposed advanced portfolio construction and rebalance alternatives roadmap, including tax,
   turnover, liquidity, ESG, risk, currency-overlay, and regime-stress-aware construction methods
