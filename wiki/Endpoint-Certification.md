@@ -295,8 +295,8 @@ Functional behavior:
   alternative set, while same-key different-request usage returns `409`.
 - First-wave generation returns do-nothing baseline, explainable heuristic, minimum-turnover, and
   tax-aware posture unless a caller explicitly narrows the method list.
-- Second-wave construction methods are rejected with `422 CONSTRUCTION_METHOD_NOT_SUPPORTED` until
-  each method has source authority, supportability behavior, tests, certification, and live proof.
+- Second-wave construction methods return explicit method plans and supportability states; they
+  must not report `READY` for dimensions whose source authority is absent.
 - Do-nothing baseline keeps trade count and turnover at zero so "take no action" is visible as a
   governed comparator.
 - Minimum-turnover applies a stricter turnover posture and surfaces pending-review behavior when

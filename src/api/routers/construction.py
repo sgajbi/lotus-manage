@@ -106,9 +106,9 @@ class ConstructionAlternativeSetGenerateRequest(BaseModel):
     methods: list[ConstructionMethod] | None = Field(
         default=None,
         description=(
-            "Optional RFC-0039 first-wave construction methods to generate. Omit for the default "
-            "first-wave set. Second-wave methods are governed placeholders and are rejected until "
-            "their source authority, supportability, tests, and live proof are complete."
+            "Optional RFC-0039 construction methods to generate. Omit for the default first-wave "
+            "set, or include second-wave methods when the caller needs solver, risk, ESG, "
+            "currency, liquidity, or regime-aware alternatives with explicit supportability."
         ),
         examples=[["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE", "MIN_TURNOVER", "TAX_AWARE"]],
     )
@@ -165,7 +165,6 @@ router = APIRouter(
             "content": {"application/json": {"example": CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE}},
         },
         409: {"description": "Idempotency key conflict for a different request hash."},
-        422: {"description": "Requested construction method is not yet supported."},
         424: {"description": "Stateful core source context was incomplete."},
         503: {"description": "Stateful core source resolver was unavailable."},
     },

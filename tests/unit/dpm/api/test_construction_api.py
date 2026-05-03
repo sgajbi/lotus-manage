@@ -177,10 +177,21 @@ def test_generate_construction_alternative_set_surfaces_blocked_method_status() 
     assert body["alternatives"][0]["diagnostics"]["data_quality"]["price_missing"] == ["EQ_1"]
 
 
-def test_generate_construction_alternative_set_rejects_second_wave_methods() -> None:
+def test_generate_construction_alternative_set_supports_second_wave_methods() -> None:
     repository = InMemoryConstructionRepository()
     payload = _payload()
-    payload["methods"] = ["DO_NOTHING_BASELINE", "RISK_AWARE"]
+    payload["stateless_input"]["shelf_entries"][0]["attributes"] = {
+        "sector": "GLOBAL_EQUITY",
+        "esg_profile": "ARTICLE_8",
+    }
+    payload["methods"] = [
+        "SOLVER_CONSTRAINED",
+        "LIQUIDITY_AWARE",
+        "RISK_AWARE",
+        "ESG_AWARE",
+        "CURRENCY_OVERLAY",
+        "REGIME_STRESS_AWARE",
+    ]
 
     with _client(repository) as client:
         response = client.post(
@@ -191,9 +202,24 @@ def test_generate_construction_alternative_set_rejects_second_wave_methods() -> 
 
     app.dependency_overrides = {}
 
-    assert response.status_code == 422
-    assert response.json()["detail"].startswith("CONSTRUCTION_METHOD_NOT_SUPPORTED")
-    assert "RISK_AWARE" in response.json()["detail"]
+    assert response.status_code == 200
+    alternatives = {alternative["method"]: alternative for alternative in response.json()["alternatives"]}
+    assert set(alternatives) == set(payload["methods"])
+    assert alternatives["SOLVER_CONSTRAINED"]["diagnostics"]["method_plan"]["requested_method"] == (
+        "SOLVER_CONSTRAINED"
+    )
+    assert "SETTLEMENT_AWARENESS_ENABLED" in (
+        alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+    assert "RISK_AUTHORITY_NOT_CONNECTED" in (
+        alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+    assert "ESG_PROFILE_SOURCE_PRESENT" in (
+        alternatives["ESG_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+    assert "REGIME_SCENARIO_PACK_UNAVAILABLE" in (
+        alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
 
 
 def test_generate_construction_alternative_set_preserves_degraded_stateful_source(
