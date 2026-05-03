@@ -171,7 +171,7 @@ def _alternative_set_from_row(row: Any) -> ConstructionAlternativeSet | None:
 
 def _payload(row: Any) -> str | dict[str, Any]:
     payload = row["payload_json"]
-    if isinstance(payload, (dict, list)):
+    if isinstance(payload, dict):
         return payload
     if not isinstance(payload, str):
         return json.dumps(payload, default=str)
