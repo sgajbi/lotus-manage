@@ -8,12 +8,18 @@ from src.core.construction import (
     build_alternative_set,
     build_rebalance_result_alternative,
 )
+from src.core.mandates import DpmMandateHealthInput, calculate_mandate_health
 from src.core.proof_packs.models import DpmProofPackStoredRef
 from src.core.proof_packs.repository import DpmProofPackConflictError
 from src.core.rebalance_runs.service import DpmRunNotFoundError
 from src.infrastructure.construction import InMemoryConstructionRepository
+from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
-from tests.unit.dpm.proof_packs.test_proof_pack_builder import _ready_rebalance_result, _run_record
+from tests.unit.dpm.proof_packs.test_proof_pack_builder import (
+    _mandate_twin,
+    _ready_rebalance_result,
+    _run_record,
+)
 from tests.unit.dpm.proof_packs.test_proof_pack_repository import _proof_pack
 
 
@@ -60,6 +66,26 @@ def _construction_repository() -> tuple[InMemoryConstructionRepository, str, str
     return repository, alternative_set.alternative_set_id, alternative.alternative_id
 
 
+def _mandate_repository() -> InMemoryDpmMandateRepository:
+    repository = InMemoryDpmMandateRepository()
+    twin = _mandate_twin().model_copy(
+        update={"mandate_id": "mandate_service", "portfolio_id": "pf_service_1"}
+    )
+    repository.save_mandate_snapshot(twin)
+    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    return repository
+
+
+def _mismatched_mandate_repository() -> InMemoryDpmMandateRepository:
+    repository = InMemoryDpmMandateRepository()
+    twin = _mandate_twin().model_copy(
+        update={"mandate_id": "mandate_service", "portfolio_id": "different_portfolio"}
+    )
+    repository.save_mandate_snapshot(twin)
+    repository.save_health_snapshot(calculate_mandate_health(DpmMandateHealthInput(twin=twin)))
+    return repository
+
+
 def test_selected_alternative_service_replays_idempotent_existing_pack() -> None:
     repository, alternative_set_id, selected_alternative_id = _construction_repository()
     proof_repository = InMemoryDpmProofPackRepository()
@@ -74,6 +100,7 @@ def test_selected_alternative_service_replays_idempotent_existing_pack() -> None
         idempotency_key="idem-service-proof",
         construction_repository=repository,
         run_service=_RunService(),
+        mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
     )
     replay = proof_pack_service.generate_proof_pack_from_selected_alternative(
@@ -86,6 +113,7 @@ def test_selected_alternative_service_replays_idempotent_existing_pack() -> None
         idempotency_key="idem-service-proof",
         construction_repository=repository,
         run_service=_RunService(missing=True),
+        mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
     )
 
@@ -107,6 +135,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
             idempotency_key=None,
             construction_repository=repository,
             run_service=_RunService(),
+            mandate_repository=None,
             proof_pack_repository=proof_repository,
         )
     with pytest.raises(
@@ -123,6 +152,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
             idempotency_key=None,
             construction_repository=repository,
             run_service=_RunService(),
+            mandate_repository=None,
             proof_pack_repository=proof_repository,
         )
 
@@ -136,11 +166,94 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
         idempotency_key=None,
         construction_repository=repository,
         run_service=_RunService(missing=True),
+        mandate_repository=None,
         proof_pack_repository=proof_repository,
     )
 
     assert proof_pack.rebalance_run_id is None
     assert proof_pack.alternative_set_id == alternative_set_id
+    mandate_section = next(
+        section for section in proof_pack.sections if section.section_type == "mandate_context"
+    )
+    assert mandate_section.state == "DEGRADED"
+    assert mandate_section.reason_codes == ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
+
+
+def test_selected_alternative_service_attaches_portfolio_matched_mandate_evidence() -> None:
+    repository, alternative_set_id, selected_alternative_id = _construction_repository()
+    proof_repository = InMemoryDpmProofPackRepository()
+
+    proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        actor_id="pm_service",
+        reason="Initial proof.",
+        correlation_id="corr-service-proof",
+        mandate_id="mandate_service",
+        idempotency_key=None,
+        construction_repository=repository,
+        run_service=_RunService(),
+        mandate_repository=_mandate_repository(),
+        proof_pack_repository=proof_repository,
+    )
+
+    mandate_section = next(
+        section for section in proof_pack.sections if section.section_type == "mandate_context"
+    )
+    assert mandate_section.state == "PENDING_REVIEW"
+    assert proof_pack.source_hashes["mandate_twin"].startswith("sha256:")
+    assert proof_pack.source_hashes["mandate_health"].startswith("sha256:")
+
+
+def test_selected_alternative_service_rejects_portfolio_mismatched_mandate_evidence() -> None:
+    repository, alternative_set_id, selected_alternative_id = _construction_repository()
+    proof_repository = InMemoryDpmProofPackRepository()
+
+    proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        actor_id="pm_service",
+        reason="Initial proof.",
+        correlation_id="corr-service-proof",
+        mandate_id="mandate_service",
+        idempotency_key=None,
+        construction_repository=repository,
+        run_service=_RunService(),
+        mandate_repository=_mismatched_mandate_repository(),
+        proof_pack_repository=proof_repository,
+    )
+
+    mandate_section = next(
+        section for section in proof_pack.sections if section.section_type == "mandate_context"
+    )
+    assert mandate_section.state == "DEGRADED"
+    assert mandate_section.reason_codes == ["DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH"]
+    assert "mandate_twin" not in proof_pack.source_hashes
+
+
+def test_selected_alternative_service_degrades_when_mandate_repository_has_no_snapshot() -> None:
+    repository, alternative_set_id, selected_alternative_id = _construction_repository()
+    proof_repository = InMemoryDpmProofPackRepository()
+
+    proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        actor_id="pm_service",
+        reason="Initial proof.",
+        correlation_id="corr-service-proof",
+        mandate_id="mandate_service",
+        idempotency_key=None,
+        construction_repository=repository,
+        run_service=_RunService(),
+        mandate_repository=InMemoryDpmMandateRepository(),
+        proof_pack_repository=proof_repository,
+    )
+
+    mandate_section = next(
+        section for section in proof_pack.sections if section.section_type == "mandate_context"
+    )
+    assert mandate_section.state == "DEGRADED"
+    assert mandate_section.reason_codes == ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
 
 
 def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> None:
@@ -187,6 +300,56 @@ def test_handoff_ref_lookup_uses_append_only_refs_and_reports_missing_refs() -> 
     )
     repository.append_ref(ref=report_ref)
     repository.append_ref(ref=ai_ref)
+
+    assert (
+        proof_pack_service.get_report_input_ref(
+            proof_pack_id=proof_pack.proof_pack_id,
+            proof_pack_repository=repository,
+        ).content_hash
+        == "sha256:report"
+    )
+    assert (
+        proof_pack_service.get_ai_evidence_ref(
+            proof_pack_id=proof_pack.proof_pack_id,
+            proof_pack_repository=repository,
+        ).content_hash
+        == "sha256:ai"
+    )
+
+
+def test_handoff_ref_lookup_reads_stored_refs_when_pack_is_not_hydrated() -> None:
+    proof_pack = _proof_pack()
+    report_ref = DpmProofPackStoredRef(
+        proof_pack_id=proof_pack.proof_pack_id,
+        ref_type=proof_pack_service.REPORT_INPUT_REF_TYPE,
+        ref_id="dpri_service_001",
+        source_system="lotus-manage",
+        content_hash="sha256:report",
+        created_at=CREATED_AT.isoformat(),
+    )
+    ai_ref = DpmProofPackStoredRef(
+        proof_pack_id=proof_pack.proof_pack_id,
+        ref_type=proof_pack_service.AI_EVIDENCE_REF_TYPE,
+        ref_id="dpai_service_001",
+        source_system="lotus-manage",
+        content_hash="sha256:ai",
+        created_at=CREATED_AT.isoformat(),
+    )
+
+    class _StoredRefOnlyRepository:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def get_proof_pack(self, *, proof_pack_id: str):
+            return proof_pack
+
+        def list_refs(self, *, proof_pack_id: str):
+            self.calls += 1
+            if self.calls in {1, 2, 4, 5}:
+                return []
+            return [report_ref, ai_ref]
+
+    repository = _StoredRefOnlyRepository()
 
     assert (
         proof_pack_service.get_report_input_ref(

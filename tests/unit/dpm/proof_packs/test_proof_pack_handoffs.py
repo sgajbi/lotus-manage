@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from src.core.models import EngineOptions, RebalanceResult
 from src.core.proof_packs import (
     assert_no_ai_forbidden_fields,
@@ -107,3 +109,8 @@ def test_ai_evidence_input_is_bounded_and_removes_forbidden_fields() -> None:
     assert "secret" not in str(payload)
     assert "place_orders" in ai_input.forbidden_actions
     assert_no_ai_forbidden_fields(payload)
+
+
+def test_ai_forbidden_field_guardrail_detects_nested_list_payloads() -> None:
+    with pytest.raises(ValueError, match="DPM_PROOF_PACK_AI_FORBIDDEN_FIELDS"):
+        assert_no_ai_forbidden_fields({"sections": [{"client_id": "forbidden"}]})

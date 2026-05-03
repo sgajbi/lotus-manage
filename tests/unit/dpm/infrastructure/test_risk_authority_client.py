@@ -227,3 +227,19 @@ def test_lotus_risk_authority_client_maps_non_ready_supportability_states(
     context = client.concentration_context(result=_result(), correlation_id=None)
 
     assert context.supportability_status == expected_status
+
+
+def test_lotus_risk_authority_client_closes_owned_client() -> None:
+    class _OwnedClient:
+        closed = False
+
+        def close(self) -> None:
+            self.closed = True
+
+    owned_client = _OwnedClient()
+    client = LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
+    client._client = owned_client
+
+    client.close()
+
+    assert owned_client.closed is True

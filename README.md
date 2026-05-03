@@ -75,7 +75,8 @@ exist. Postgres persistence, live proof, and downstream Gateway/Workbench realiz
 are documented, but full product-surface support still requires Gateway and Workbench implementation
 and proof. RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
 JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, hashes, lineage, retention
-metadata, immutable persistence, certified APIs, and canonical Postgres-backed live proof. Gateway
+metadata, immutable persistence, certified APIs, source-backed mandate-context attachment from
+RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway
 composition, Workbench review UX, report materialization, and AI memo generation remain downstream
 work in their owning apps; the post-merge gold-pass audit also records a canonical front-office
 risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no full proof-pack

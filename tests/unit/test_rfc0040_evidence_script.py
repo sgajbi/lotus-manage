@@ -55,7 +55,7 @@ def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> No
         "reporting_refs": "READY",
         "ai_refs": "READY",
         "selected_alternative": "READY",
-        "mandate_context": "READY",
+        "mandate_context": "DEGRADED",
         "risk_impact": "DEGRADED",
     }
     review = build_critical_review(
@@ -66,10 +66,12 @@ def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> No
                 "direct_rebalance_run": {
                     "proof_pack_id": "dpp_direct",
                     "section_states": ready_states,
+                    "source_hash_keys": ["rebalance_run"],
                 },
                 "selected_alternative": {
                     "proof_pack_id": "dpp_selected",
                     "section_states": ready_states,
+                    "source_hash_keys": ["alternative_set", "selected_alternative"],
                 },
                 "missing_mandate_blocked": {
                     "proof_pack_id": "dpp_blocked",
@@ -83,6 +85,7 @@ def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> No
     assert review["result"] == "passed_with_controlled_downstream_boundaries"
     assert review["checks"]["direct_run_handoffs_ready"] is True
     assert review["checks"]["selected_alternative_trace_ready"] is True
+    assert review["checks"]["mandate_context_source_honest"] is True
     assert review["checks"]["missing_mandate_blocks_promotion"] is True
     assert review["checks"]["full_front_office_claim_withheld"] is True
     assert {finding["status"] for finding in review["findings"]} == {

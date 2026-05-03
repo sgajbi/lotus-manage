@@ -226,6 +226,7 @@ def _generate_direct_run_evidence(
         "status": proof_pack["status"],
         "content_hash": proof_pack["content_hash"],
         "section_states": _section_states(proof_pack),
+        "source_hash_keys": sorted(proof_pack.get("source_hashes", {})),
     }
 
 
@@ -315,6 +316,7 @@ def _generate_selected_alternative_evidence(
         "status": proof_pack["status"],
         "content_hash": proof_pack["content_hash"],
         "section_states": _section_states(proof_pack),
+        "source_hash_keys": sorted(proof_pack.get("source_hashes", {})),
     }
 
 
@@ -386,6 +388,15 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
     selected_states = cast(dict[str, str], scenarios["selected_alternative"]["section_states"])
     direct_states = cast(dict[str, str], scenarios["direct_rebalance_run"]["section_states"])
     missing_states = cast(dict[str, str], scenarios["missing_mandate_blocked"]["section_states"])
+    direct_source_hashes = set(scenarios["direct_rebalance_run"].get("source_hash_keys", []))
+    selected_source_hashes = set(scenarios["selected_alternative"].get("source_hash_keys", []))
+    mandate_source_hash_keys = {"mandate_twin", "mandate_health"}
+    direct_mandate_source_honest = direct_states.get("mandate_context") != "READY" or (
+        mandate_source_hash_keys <= direct_source_hashes
+    )
+    selected_mandate_source_honest = selected_states.get("mandate_context") != "READY" or (
+        mandate_source_hash_keys <= selected_source_hashes
+    )
 
     findings: list[dict[str, Any]] = [
         {
@@ -413,7 +424,7 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
             "finding_id": "RFC0040-LIVE-004",
             "severity": "controlled_gap",
             "status": "accepted_boundary",
-            "summary": "Risk, performance, sustainability, currency-overlay, scenario, and tax evidence remain degraded unless source-authority evidence is attached.",
+            "summary": "Risk, performance, mandate context, sustainability, currency-overlay, scenario, and tax evidence remain degraded unless source-authority evidence is attached.",
             "evidence": {
                 "direct_run_degraded_sections": sorted(
                     section for section, state in direct_states.items() if state == "DEGRADED"
@@ -442,6 +453,8 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
             and direct_states.get("ai_refs") == "READY",
             "selected_alternative_trace_ready": selected_states.get("selected_alternative")
             == "READY",
+            "mandate_context_source_honest": direct_mandate_source_honest
+            and selected_mandate_source_honest,
             "missing_mandate_blocks_promotion": scenarios["missing_mandate_blocked"]["status"]
             == "BLOCKED"
             and missing_states.get("mandate_context") == "BLOCKED",

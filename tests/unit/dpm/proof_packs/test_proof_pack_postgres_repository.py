@@ -137,6 +137,23 @@ def test_postgres_proof_pack_repository_round_trips_pack_retention_and_refs(
     assert connection.commits == 2
 
 
+def test_postgres_proof_pack_repository_requires_dsn() -> None:
+    with pytest.raises(RuntimeError, match="DPM_PROOF_PACK_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmProofPackRepository(dsn="")
+
+
+def test_postgres_proof_pack_repository_requires_driver(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
+
+    with pytest.raises(RuntimeError, match="DPM_PROOF_PACK_POSTGRES_DRIVER_MISSING"):
+        PostgresDpmProofPackRepository(dsn="postgresql://unit-test")
+
+
+def test_postgres_proof_pack_payload_normalizes_dict_and_non_string_rows() -> None:
+    assert postgres_module._payload({"payload_json": {"a": 1}}) == {"a": 1}
+    assert postgres_module._payload({"payload_json": 3}) == "3"
+
+
 def test_postgres_proof_pack_repository_conflict_paths(
     fake_repository: tuple[PostgresDpmProofPackRepository, _FakeConnection],
 ) -> None:

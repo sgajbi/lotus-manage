@@ -23,6 +23,7 @@
 | **Slice 9 Evidence** | `docs/rfcs/RFC-0040-implementation-proof-slice9.md` |
 | **Slice 10 Evidence** | `docs/rfcs/RFC-0040-hardening-review-slice10.md` |
 | **Slice 11 Evidence** | RFC gold-pass assessment in Section 19; README/context/wiki/supported-feature updates; post-merge audit evidence under `output/rfc0040-proof/20260503-142438` |
+| **Slice 12 Evidence** | `docs/rfcs/RFC-0040-mandate-context-hardening-slice12.md`; canonical live proof rerun under `output/rfc0040-proof/20260503-145818` |
 
 ---
 
@@ -1039,8 +1040,9 @@ Slice 9 result:
 1. completed in `docs/rfcs/RFC-0040-implementation-proof-slice9.md`,
 2. added `scripts/generate_rfc0040_proof_pack_evidence.py` as a repeatable live HTTP evidence
    generator,
-3. captured canonical Postgres-backed live evidence under `output/rfc0040-proof/20260503-135112`
-   and reran the post-merge audit under `output/rfc0040-proof/20260503-142438`,
+3. captured canonical Postgres-backed live evidence under `output/rfc0040-proof/20260503-135112`,
+   reran the post-merge audit under `output/rfc0040-proof/20260503-142438`, and reran the
+   mandate-context hardening proof under `output/rfc0040-proof/20260503-145818`,
 4. proved direct-run JSON/detail/Markdown/report-input/AI-evidence flows, selected-alternative
    proof-pack generation, and missing-mandate blocked-state behavior,
 5. found and fixed a selected-alternative proof gap where construction-generated rebalance runs
@@ -1141,6 +1143,42 @@ Evidence:
 5. wiki publication check,
 6. cross-app closure matrix,
 7. branch hygiene proof.
+
+### Slice 12 - Post-Gold Mandate-Context Source Hardening
+
+Scope:
+
+1. review whether all slices genuinely satisfy the RFC-0040 source-authority standard,
+2. tighten any manage-owned section that was too weak after gold-pass closure,
+3. avoid adding broad new product-surface scope when the right fix is a targeted source-truth
+   correction.
+
+Finding:
+
+1. `mandate_context` was source-honest about mandate identity but too permissive for a gold-standard
+   proof pack because it marked the section `READY` when only `mandate_id` was supplied,
+2. RFC-0040 Section 6 says `mandate_context` uses RFC-0038 mandate twin and core source refs,
+3. the correct behavior is to attach persisted mandate digital-twin and mandate-health evidence
+   when available, or degrade visibly when it is absent.
+
+Acceptance:
+
+1. no `mandate_context` section is `READY` solely because a caller supplied `mandate_id`,
+2. persisted RFC-0038 mandate twin and latest health evidence are attached through source refs and
+   source hashes,
+3. mandate-health state controls the section state when source-backed mandate evidence exists,
+4. portfolio mismatch between the proof-pack source and mandate evidence does not attach the wrong
+   mandate evidence,
+5. direct-run and selected-alternative proof-pack APIs continue to pass focused tests.
+
+Evidence:
+
+1. completed in `docs/rfcs/RFC-0040-mandate-context-hardening-slice12.md`,
+2. updated `src/core/proof_packs/builder.py` to accept mandate twin and health evidence,
+3. updated `src/api/services/proof_pack_service.py` and `src/api/routers/proof_packs.py` to inject
+   the governed mandate repository into proof-pack generation,
+4. updated proof-pack builder and API tests to prove degraded id-only posture and source-backed
+   mandate hashes.
 
 ---
 
@@ -1293,20 +1331,20 @@ Final post-merge audit result:
 
 | Assessment Area | Final Result |
 | --- | --- |
-| What was truly completed | `lotus-manage` now owns RFC-0040 backend proof-pack authority: generation from direct rebalance runs and selected construction alternatives, immutable persistence, section states, hashes, lineage, retention metadata, Markdown, report-input, AI-evidence input, and certified APIs. |
-| Quality improvements made | Added modular proof-pack domain, Markdown, handoff, repository, API, evidence-generator, and coverage-backed service/repository/API tests. Post-merge audit tightened append-only handoff-ref lookup to prefer the latest ref, stamped handoff refs at append time, made evidence paths platform-neutral, made AI forbidden-field detection case-insensitive, and added machine-readable critical review evidence. |
+| What was truly completed | `lotus-manage` now owns RFC-0040 backend proof-pack authority: generation from direct rebalance runs and selected construction alternatives, immutable persistence, section states, hashes, lineage, retention metadata, Markdown, report-input, AI-evidence input, certified APIs, and source-backed RFC-0038 mandate-context attachment when mandate evidence exists. |
+| Quality improvements made | Added modular proof-pack domain, Markdown, handoff, repository, API, evidence-generator, and coverage-backed service/repository/API tests. Post-merge audit tightened append-only handoff-ref lookup to prefer the latest ref, stamped handoff refs at append time, made evidence paths platform-neutral, made AI forbidden-field detection case-insensitive, added machine-readable critical review evidence, and added Slice 12 mandate-context source hardening. |
 | Debt removed | Removed stale proof-pack ownership ambiguity by aligning Gateway and Workbench RFC-0098 language; removed stale Slice 7 wording from API/OpenAPI/vocabulary docs; avoided local clones of report, AI, Gateway, or Workbench behavior. |
 | Platform/scaffold improvements | Added platform RFC evidence-manifest scaffold in `lotus-platform` PR #295 merge commit `30a8d97`; no further platform automation change was required for manage proof-pack closure. |
 | Cross-app changes and evidence | `lotus-gateway` PR #181 merge commit `b2c3734` and `lotus-workbench` PR #142 merge commit `b63981b` align downstream realization RFCs to manage-owned proof-pack truth. These are realization RFC/docs changes, not runtime Gateway or Workbench proof-pack implementation. |
 | APIs certified | `POST /api/v1/rebalance/proof-packs`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`, `GET /summary.md`, `GET /report-input`, and `GET /ai-evidence-input` are documented in endpoint certification and passed OpenAPI/vocabulary/no-alias gates. |
-| Proof-pack sections proven | Direct-run, selected-alternative, and missing-mandate live scenarios were captured in `output/rfc0040-proof/20260503-135112` and rerun in `output/rfc0040-proof/20260503-142438`; section states remain source-honest with `READY`, `DEGRADED`, and `BLOCKED` evidence. |
+| Proof-pack sections proven | Direct-run, selected-alternative, and missing-mandate live scenarios were captured in `output/rfc0040-proof/20260503-135112`, rerun in `output/rfc0040-proof/20260503-142438`, and rerun after Slice 12 in `output/rfc0040-proof/20260503-145818`; section states remain source-honest with `READY`, `DEGRADED`, `PENDING_REVIEW`, and `BLOCKED` evidence. Slice 12 ensures `mandate_context` is not `READY` unless persisted mandate twin and health evidence support it. |
 | Report/AI handoff proof | `DpmProofPackReportInput` and `DpmProofPackAiEvidenceInput` are generated deterministically, tie back to source proof-pack hashes, and include AI forbidden-action/field guardrails. |
-| Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. Post-merge audit reran proof under `output/rfc0040-proof/20260503-142438` and wrote `critical-review.json` with result `passed_with_controlled_downstream_boundaries`. |
+| Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. Post-merge audit reran proof under `output/rfc0040-proof/20260503-142438`. Slice 12 reran proof under `output/rfc0040-proof/20260503-145818` and wrote `critical-review.json` with result `passed_with_controlled_downstream_boundaries` plus `mandate_context_source_honest: true`. |
 | Canonical front-office live evidence | Governed canonical front-office QA with `PB_SG_GLOBAL_BAL_001` was run through `lotus-platform/automation/Invoke-Canonical-FrontOffice-QA.ps1 -BringUp`; report `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260503-222559.json` failed at Workbench browser validation because Gateway risk drawdown returned `partial`. This is recorded as a live ecosystem readiness boundary in `sgajbi/lotus-gateway#182`, not a manage proof-pack backend failure, and no full front-office proof-pack UX support claim is made. |
 | Documentation/wiki result | README, repository context, RFC index, supported-features source, API surface, endpoint certification, roadmap, and RFC evidence docs are updated. Wiki source was published after the original merge; this post-merge audit updates repo-local wiki source again and requires normal wiki publication after this audit PR merges. |
 | Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` PR #181 and `lotus-workbench` PR #142; implementation remains downstream future work. |
 | Skills/context/guidance decision | No Lotus skill or central context change is required; repo-local context was updated because repository-supported capability truth changed. |
-| Tests and evidence | Focused audit tests passed for the evidence generator, proof-pack service, proof-pack API, and documentation current-state guardrails. The live manage evidence generator passed against canonical Postgres-backed manage runtime. |
+| Tests and evidence | Focused audit tests passed for the evidence generator, proof-pack service, proof-pack API, mandate-context hardening, and documentation current-state guardrails. The live manage evidence generator passed against canonical Postgres-backed manage runtime. |
 | Gold-standard conclusion | Manage backend RFC-0040 is implemented, audited, and live-proven. The implementation reaches the expected standard for the manage-owned backend authority. Full front-office proof-pack product realization remains explicitly gated on downstream Gateway/Workbench/report/AI work and broader canonical front-office readiness, and is not claimed here. |
 
 ---
