@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-9 COMPLETE; CANONICAL LIVE PROOF CAPTURED |
+| **Status** | IN PROGRESS - SLICES 0-10 COMPLETE; SECOND-LAST HARDENING PASSED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -21,6 +21,7 @@
 | **Slice 7 Evidence** | `docs/rfcs/RFC-0040-handoffs-slice7.md` |
 | **Slice 8 Evidence** | `docs/rfcs/RFC-0040-gateway-workbench-realization-slice8.md` |
 | **Slice 9 Evidence** | `docs/rfcs/RFC-0040-implementation-proof-slice9.md` |
+| **Slice 10 Evidence** | `docs/rfcs/RFC-0040-hardening-review-slice10.md` |
 
 ---
 
@@ -1083,6 +1084,21 @@ Evidence:
 5. coverage and test summary,
 6. documentation/wiki review,
 7. cross-app PR/check/evidence review.
+
+Slice 10 result:
+
+1. completed in `docs/rfcs/RFC-0040-hardening-review-slice10.md`,
+2. ran `make check` successfully after Slice 10 hardening,
+3. ran full functional coverage suite with 897 passing tests and confirmed `coverage report
+   --fail-under=99` exits cleanly,
+4. added meaningful Postgres proof-pack repository tests, proof-pack service tests, proof-pack API
+   missing-resource tests, and construction supportability helper tests,
+5. verified OpenAPI, vocabulary, no-alias, domain-data-product, trust-telemetry, observability,
+   mypy, ruff, format, and monetary-float gates,
+6. confirmed repo-authored wiki source is updated and published-wiki drift remains expected until
+   post-merge wiki publication,
+7. made no Gateway API implementation, Workbench UI implementation, report materialization,
+   AI memo, or full front-office product-realization supported-feature claim.
 
 ### Slice 11 - Final Closure
 

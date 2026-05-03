@@ -220,6 +220,19 @@ def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None
     assert missing_source.json()["detail"] == "DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED"
 
 
+def test_proof_pack_read_routes_return_404_for_missing_pack(client: TestClient) -> None:
+    for path in [
+        "/api/v1/rebalance/proof-packs/missing",
+        "/api/v1/rebalance/proof-packs/missing/summary.md",
+        "/api/v1/rebalance/proof-packs/missing/report-input",
+        "/api/v1/rebalance/proof-packs/missing/ai-evidence-input",
+    ]:
+        response = client.get(path)
+
+        assert response.status_code == 404
+        assert response.json()["detail"] == "DPM_PROOF_PACK_NOT_FOUND"
+
+
 def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     openapi = client.get("/openapi.json").json()
 
