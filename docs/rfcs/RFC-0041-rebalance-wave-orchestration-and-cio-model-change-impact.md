@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 3 DOMAIN FOUNDATION COMPLETE |
+| **Status** | IN PROGRESS - SLICE 4 PREVIEW/CREATE COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -15,6 +15,7 @@
 | **Slice 1 Platform Evidence** | `lotus-platform` PR #296, merge `47d3c7f` |
 | **Slice 2 Cleanup Evidence** | `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md#slice-2-cleanup-result` |
 | **Slice 3 Domain Evidence** | `src/core/waves/`, `src/infrastructure/waves/`, migration `0007_rebalance_waves.sql`, `tests/unit/dpm/waves/test_wave_domain.py` |
+| **Slice 4 API Evidence** | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves`, `src/api/services/wave_service.py`, `tests/unit/dpm/api/test_waves_api.py` |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---

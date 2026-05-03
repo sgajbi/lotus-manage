@@ -4,15 +4,18 @@ from typing import AsyncIterator
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.waves.repository import DpmWaveRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
+from src.infrastructure.waves import InMemoryDpmWaveRepository
 
 
 _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
 _CONSTRUCTION_REPOSITORY = InMemoryConstructionRepository()
 _PROOF_PACK_REPOSITORY = InMemoryDpmProofPackRepository()
+_WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 
 
 async def get_db_session() -> AsyncIterator[None]:
@@ -41,6 +44,12 @@ def get_proof_pack_repository() -> DpmProofPackRepository:
     """Return the RFC-0040 proof-pack repository for local and test runtimes."""
 
     return _PROOF_PACK_REPOSITORY
+
+
+def get_wave_repository() -> DpmWaveRepository:
+    """Return the RFC-0041 rebalance-wave repository for local and test runtimes."""
+
+    return _WAVE_REPOSITORY
 
 
 def get_risk_authority_client() -> LotusRiskAuthorityClient | None:
