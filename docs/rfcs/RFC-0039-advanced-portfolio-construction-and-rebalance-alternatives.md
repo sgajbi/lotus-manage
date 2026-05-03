@@ -782,6 +782,11 @@ Acceptance:
 
 ### Slice 5: Tax, Turnover, Liquidity, Cost, and FX Enrichment
 
+Slice 5 implementation lives in `src/core/construction/enrichment.py` and related construction
+models. It adds pure enrichment posture for tax, turnover, liquidity/cash, estimated transaction
+cost, and FX source state. Transaction cost remains explicitly local/estimated until an
+authoritative cost source product exists.
+
 Scope:
 
 1. connect tax lots,

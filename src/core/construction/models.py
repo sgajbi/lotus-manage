@@ -46,6 +46,10 @@ class ConstructionComparisonMetrics(BaseModel):
         default=None,
         description="Estimated local construction cost when available.",
     )
+    cash_weight_after: Decimal | None = Field(
+        default=None,
+        description="Cash weight after applying the alternative when available.",
+    )
 
 
 class ConstructionAlternative(BaseModel):
@@ -89,6 +93,18 @@ class ConstructionAlternativeSet(BaseModel):
     )
     alternatives: list[ConstructionAlternative] = Field(
         description="Comparable construction alternatives."
+    )
+
+
+class ConstructionEnrichmentSummary(BaseModel):
+    tax_status: ConstructionMethodStatus = Field(description="Tax enrichment posture.")
+    turnover_status: ConstructionMethodStatus = Field(description="Turnover enrichment posture.")
+    liquidity_status: ConstructionMethodStatus = Field(description="Liquidity enrichment posture.")
+    cost_status: ConstructionMethodStatus = Field(description="Transaction-cost posture.")
+    fx_status: ConstructionMethodStatus = Field(description="FX source posture.")
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Bounded reason codes explaining degraded or blocked enrichment.",
     )
 
 

@@ -1,6 +1,7 @@
 """Pure helpers for constructing RFC-0039 alternatives from rebalance outputs."""
 
 from decimal import Decimal
+from typing import cast
 
 from src.core.construction.models import (
     ConstructionAlternative,
@@ -116,6 +117,7 @@ def _comparison_metrics(
         turnover_weight=turnover_weight if use_after_state else Decimal("0.0000"),
         trade_count=_security_trade_count(result) if use_after_state else 0,
         estimated_transaction_cost=None,
+        cash_weight_after=_cash_weight(after_state),
     )
 
 
@@ -225,6 +227,14 @@ def _turnover_weight(result: RebalanceResult) -> Decimal:
 
 def _security_trade_count(result: RebalanceResult) -> int:
     return sum(1 for intent in result.intents if isinstance(intent, SecurityTradeIntent))
+
+
+def _cash_weight(state: object) -> Decimal | None:
+    allocation_by_asset_class = getattr(state, "allocation_by_asset_class", [])
+    for allocation in allocation_by_asset_class:
+        if allocation.key == "CASH":
+            return cast(Decimal, allocation.weight.quantize(_RATIO_QUANT))
+    return None
 
 
 def _method_status_from_run_status(status: str) -> ConstructionMethodStatus:
