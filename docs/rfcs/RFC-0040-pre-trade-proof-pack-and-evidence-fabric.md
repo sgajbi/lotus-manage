@@ -74,7 +74,7 @@ This RFC targets the following business outcomes:
 1. Add `DpmPreTradeProofPack` as a first-class durable product artifact.
 2. Generate proof packs from selected alternatives or direct rebalance runs.
 3. Include mandate, source, before, target, after, trades, risk, tax, turnover, cost, liquidity, FX,
-   rules, workflow, and lineage evidence.
+   currency overlay, scenario, rules, workflow, decision timeline, and lineage evidence.
 4. Produce JSON artifact and Markdown summary.
 5. Provide adapter outputs for `lotus-report` and `lotus-ai`.
 6. Certify APIs and OpenAPI examples.
@@ -109,16 +109,19 @@ Required sections:
 13. `turnover_and_cost`
 14. `liquidity_and_cash`
 15. `fx_funding_plan`
-16. `eligibility_and_restrictions`
-17. `sustainability_controls`
-18. `rule_results`
-19. `diagnostics`
-20. `approval_requirements`
-21. `operations_handoff`
-22. `lineage`
-23. `supportability`
-24. `reporting_refs`
-25. `ai_refs`
+16. `currency_overlay_evidence`
+17. `scenario_and_regime_evidence`
+18. `eligibility_and_restrictions`
+19. `sustainability_controls`
+20. `rule_results`
+21. `diagnostics`
+22. `approval_requirements`
+23. `operations_handoff`
+24. `decision_timeline`
+25. `lineage`
+26. `supportability`
+27. `reporting_refs`
+28. `ai_refs`
 
 Every section must include:
 
@@ -150,12 +153,31 @@ Required fields:
 11. `sections`
 12. `approval_requirements`
 13. `operations_handoff`
-14. `lineage`
-15. `markdown_summary`
-16. `report_input_ref`
-17. `ai_evidence_ref`
-18. `created_at`
-19. `created_by`
+14. `decision_timeline`
+15. `lineage`
+16. `markdown_summary`
+17. `report_input_ref`
+18. `ai_evidence_ref`
+19. `created_at`
+20. `created_by`
+
+### 4.1.1 Decision Timeline Requirements
+
+The proof pack must be able to anchor itself in portfolio memory.
+
+Required timeline evidence:
+
+1. most recent mandate version event,
+2. current monitoring exception events that triggered or influenced the action,
+3. model-change, tactical house-view, or PM-initiated event where applicable,
+4. generated alternative set event,
+5. selected alternative event,
+6. approval or deferral event,
+7. wave inclusion event when applicable,
+8. downstream execution handoff and post-trade outcome refs when available.
+
+Each timeline event must include `event_id`, `event_type`, `event_time`, `actor`, `source_system`,
+`reason_codes`, `status`, and `artifact_refs`.
 
 ### 4.2 DpmProofPackSection
 

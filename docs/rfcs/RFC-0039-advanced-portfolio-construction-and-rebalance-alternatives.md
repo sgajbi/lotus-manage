@@ -85,7 +85,8 @@ This RFC targets the following business outcomes:
 1. Add first-class rebalance alternative generation.
 2. Support multiple construction methods:
    `HEURISTIC_EXPLAINABLE`, `SOLVER_CONSTRAINED`, `MIN_TURNOVER`, `TAX_AWARE`,
-   `LIQUIDITY_AWARE`, `RISK_AWARE`, `ESG_AWARE`, and `DO_NOTHING_BASELINE`.
+   `LIQUIDITY_AWARE`, `RISK_AWARE`, `ESG_AWARE`, `CURRENCY_OVERLAY`,
+   `REGIME_STRESS_AWARE`, and `DO_NOTHING_BASELINE`.
 3. Produce comparable metrics for each alternative.
 4. Persist alternative sets and selected alternatives.
 5. Expose solver status, objective terms, constraints, relaxations, infeasibility reasons, and
@@ -252,6 +253,45 @@ Purpose:
 3. prefer eligible sustainable instruments where mandate requires it,
 4. expose ESG degradation when source profiles are incomplete.
 
+### 4.9 CURRENCY_OVERLAY
+
+Purpose:
+
+1. compare unhedged, partially hedged, and fully hedged mandate outcomes,
+2. separate strategic currency exposure from operational trade funding,
+3. respect currency exposure bands and hedge-ratio bands from the mandate digital twin,
+4. avoid creating hedge trades when hedge instruments, FX rates, forward points, settlement
+   calendars, or eligibility evidence are missing.
+
+Required evidence:
+
+1. current currency exposure by currency, sleeve, and asset class,
+2. target currency exposure after cash funding and proposed trades,
+3. proposed hedge adjustments where permitted,
+4. residual exposure after hedge,
+5. hedge cost estimate and settlement readiness,
+6. reason codes for hedge created, hedge changed, hedge suppressed, hedge blocked, and hedge
+   degraded.
+
+### 4.10 REGIME_STRESS_AWARE
+
+Purpose:
+
+1. compare alternatives under named market-regime and stress packs,
+2. reject or downgrade alternatives that improve drift while materially worsening unacceptable
+   downside or concentration risk,
+3. support CIO-required scenario checks for model-change waves,
+4. expose degraded state when `lotus-risk` scenario packs or exposure inputs are incomplete.
+
+Required evidence:
+
+1. scenario pack id and version,
+2. current, target, and after-trade scenario impacts,
+3. breached scenario limits,
+4. main contributors to scenario loss,
+5. mitigation reason codes,
+6. risk-authoritative source refs from `lotus-risk`.
+
 ---
 
 ## 5. Objective Function
@@ -269,6 +309,8 @@ minimize:
   + w_liquidity * liquidity_penalty
   + w_esg * esg_penalty
   + w_concentration * concentration_penalty
+  + w_currency_overlay * currency_overlay_penalty
+  + w_scenario_loss * scenario_loss_penalty
 ```
 
 Objective weights come from:
@@ -304,6 +346,11 @@ Initial constraint families:
 16. `CLIENT_RESTRICTION`
 17. `SUSTAINABILITY_EXCLUSION`
 18. `LIQUIDITY_MINIMUM`
+19. `CURRENCY_HEDGE_RATIO_BAND`
+20. `FX_FORWARD_ELIGIBILITY`
+21. `SCENARIO_LOSS_MAX`
+22. `REGIME_POLICY_BAND`
+23. `STRESS_CONTRIBUTION_MAX`
 
 Constraint severities:
 
