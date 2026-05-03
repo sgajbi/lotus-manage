@@ -2,171 +2,316 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED |
+| **Status** | PROPOSED - IMPLEMENTATION READY |
 | **Created** | 2026-05-03 |
-| **Depends On** | RFC-0008, RFC-0009, RFC-0010, RFC-0011, RFC-0012, RFC-0013, RFC-0022, RFC-0036, RFC-0037, RFC-0038 |
+| **Last Tightened** | 2026-05-03 |
+| **Owner** | `lotus-manage` |
+| **Business Sponsor Persona** | DPM head, portfolio manager, CIO desk, investment control, tax specialist, operations, sales/pre-sales |
+| **Depends On** | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, RFC-0038, `lotus-core` RFC-0087, Gateway RFC-0098, Workbench RFC-0098 |
 | **Doc Location** | `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md` |
+| **Implementation Branch** | TBD when implementation begins |
 
 ---
 
 ## 0. Executive Summary
 
-RFC-0039 turns `lotus-manage` from a single-result rebalance engine into a portfolio construction
-decision system. The target is to generate, compare, explain, and select multiple rebalance
-alternatives for a discretionary mandate, each with transparent trade-offs across drift, risk,
-turnover, tax, transaction cost, liquidity, FX, ESG, and mandate constraints.
+RFC-0038 made `lotus-manage` understand a discretionary mandate as a governed operating object:
+digital twin, health score, source readiness, monitoring exceptions, and command-center posture.
+RFC-0039 is the next analytical step. It turns `lotus-manage` from a single-result rebalance engine
+into a portfolio construction decision system that can generate, compare, explain, persist, and
+select multiple rebalance alternatives for a discretionary mandate.
 
-This is the core analytical differentiator for `lotus-manage`. Large private banks sell DPM as
-professional portfolio construction under mandate discipline. This RFC gives Lotus the backend
-foundation for that story.
+The business point is simple: a premium private bank does not tell a portfolio manager "here is one
+trade list." It shows disciplined alternatives:
 
-Primary outcome:
+1. do nothing and accept current drift,
+2. rebalance explainably toward model,
+3. minimize turnover,
+4. protect tax budget,
+5. preserve liquidity and cash needs,
+6. control risk and concentration,
+7. respect ESG/restrictions,
+8. manage currency exposure,
+9. test construction under regime or stress conditions.
 
-1. a PM asks for alternatives for one mandate,
-2. `lotus-manage` produces a bounded `DpmRebalanceAlternativeSet`,
-3. each alternative has objective, constraints, trades, expected outcomes, reason codes, solver
-   trace, feasibility state, and evidence,
-4. the selected alternative can flow into proof-pack and workflow APIs in later RFCs.
+Each alternative must expose objective terms, constraints, trades, expected outcomes, feasibility,
+source supportability, fallback decisions, and evidence. The selected alternative becomes the
+input to proof packs, review workflows, rebalance waves, and post-trade outcome learning in later
+RFCs.
+
+This RFC is a manage-side backend RFC. Gateway and Workbench must receive separate paired RFCs for
+composition and product realization of construction alternatives before the full business outcome is
+claimed.
 
 ---
 
-## 1. Current Baseline
+## 1. Gold-Standard Tightening Review
 
-Existing `lotus-manage` already has:
+This section records the critical review performed before implementation.
+
+| Area | First-draft strength | Gap found | Tightened requirement |
+| --- | --- | --- | --- |
+| Domain ambition | Strong construction vocabulary and method list. | Needed sharper MVP sequencing and proof gates. | Added MVP method set, later method gates, evidence requirements, and promotion rules. |
+| Business outcome | Clear value for PMs and sales. | Needed persona-level outcomes and downstream realization boundary. | Added PM, CIO, tax, operations, sales/pre-sales, and Gateway/Workbench realization slices. |
+| Architecture | Correctly kept risk/performance as external authorities. | Risk/performance enrichment could be read as manage-owned. | Added strict domain authority rules and degraded enrichment semantics. |
+| API design | Good basic alternative endpoints. | Needed certified API details, action semantics, idempotency, and comparison contract. | Added endpoint family, request/response expectations, no-alias rule, and OpenAPI requirements. |
+| Solver posture | Objective/constraint traces were identified. | Needed deterministic fallback and infeasibility taxonomy. | Added solver trace, fallback, relaxation, and infeasibility requirements. |
+| Slices | Had feature slices plus mandatory slices. | Needed full Lotus delivery standard and cross-repo realization slice. | Added platform/scaffolding, cleanup, proof, hardening, closure, and paired Gateway/Workbench RFC slice. |
+| Evidence | Live proof was mentioned. | Needed exact evidence package and critical review standard. | Added canonical evidence package with request/response, alternatives matrix, traces, degraded examples, and selected-event proof. |
+| Documentation | Supported-features ledger existed. | Needed business-facing wiki/demo outputs and implementation-backed wording. | Added documentation/wiki/demo expectations and supported-feature promotion discipline. |
+
+Implementation must not begin until this RFC has a confirmed first-wave method set, upstream field
+map, fallback policy, and paired Gateway/Workbench realization plan.
+
+---
+
+## 2. Business Outcomes
+
+RFC-0039 must deliver these business outcomes:
+
+1. **Better PM construction decisions**
+   PMs compare multiple valid construction paths instead of accepting one generated trade list.
+2. **Clear trade-off visibility**
+   Each alternative shows drift, tracking error, turnover, estimated cost, tax, liquidity, cash,
+   FX, ESG/restriction, source-readiness, and supportability trade-offs.
+3. **More personalized DPM**
+   Mandates can prioritize tax sensitivity, low turnover, liquidity, income needs, risk reduction,
+   sustainability, currency exposure, or CIO model adherence.
+4. **Higher investment discipline**
+   Construction becomes objective-driven, constraint-aware, repeatable, and evidence-backed.
+5. **Improved review and approval quality**
+   PMs, CIO desk, compliance, tax specialists, and operations can see why one alternative was
+   recommended, why another was rejected, and which constraints or fallbacks shaped the result.
+6. **Reduced unnecessary trading**
+   Turnover, transaction cost, tax realization, settlement, and liquidity impacts are compared
+   before action.
+7. **Stronger client-demo and sales narrative**
+   Lotus can demonstrate institutional-grade portfolio construction as a visible value proposition,
+   not a hidden optimizer.
+8. **Foundation for proof packs, waves, and outcome learning**
+   Selected alternatives become structured inputs to RFC-0040 proof packs, RFC-0041 waves, and
+   RFC-0042 expected-versus-realized review.
+
+---
+
+## 3. Current Baseline
+
+Existing `lotus-manage` has:
 
 1. deterministic rebalance simulation,
-2. explicit stateless/stateful execution envelopes,
-3. heuristic target generation,
-4. solver-capable target generation foundation,
-5. tax-lot support through core sourcing,
-6. turnover and transaction-cost controls,
-7. settlement awareness,
-8. what-if analysis,
-9. policy-pack configuration,
-10. supportability, lineage, idempotency, and artifacts.
+2. stateless and gated stateful execution envelopes,
+3. core source-data integration for DPM model targets, mandate binding, eligibility, tax lots,
+   market data coverage, and DPM source readiness,
+4. mandate digital twin and health foundation from RFC-0038,
+5. policy-pack controls,
+6. workflow gates and supportability,
+7. idempotency, lineage, artifacts, and certified API posture,
+8. heuristic and solver-capable target-generation foundation.
 
 Current gaps:
 
-1. one execution request generally produces one primary result,
-2. alternatives are not a first-class API/product concept,
-3. solver objective and constraint trade-offs are not presented as comparable PM choices,
-4. tax, turnover, risk, liquidity, and ESG trade-offs are not normalized into a decision matrix,
-5. infeasible or relaxed constraint evidence is not rich enough for PM/CIO/compliance review,
-6. `lotus-risk` and `lotus-performance` enrichment is not yet part of construction comparison.
-
-## 1.5 Business Outcomes
-
-This RFC targets the following business outcomes:
-
-1. **Better PM decisions**
-   let portfolio managers compare multiple valid paths instead of accepting one generated trade
-   plan without understanding trade-offs.
-2. **More personalized DPM**
-   support different client/mandate priorities such as tax sensitivity, low turnover, liquidity,
-   ESG constraints, income needs, and risk reduction.
-3. **Higher investment quality**
-   bring solver-backed construction, objective functions, and constraint governance into the core
-   DPM decision process.
-4. **Improved review and approval quality**
-   expose why an alternative is selected, why another is rejected, and what constraints or
-   relaxations shaped the result.
-5. **Stronger client and sales narrative**
-   show sophisticated portfolio construction as a visible value proposition, not a hidden engine
-   detail.
-6. **Reduced unnecessary trading**
-   explicitly optimize and compare turnover, costs, tax, and liquidity impact before action.
+1. one execution generally produces one primary result,
+2. construction alternatives are not first-class resources,
+3. do-nothing baseline is not consistently surfaced as a comparable alternative,
+4. solver objective and constraint trade-offs are not presented as PM choices,
+5. infeasibility and soft-constraint relaxation evidence is not rich enough,
+6. tax, turnover, cost, liquidity, FX, ESG, risk, and performance trade-offs are not normalized
+   into a decision matrix,
+7. alternative selection is not actor-attributed as a durable decision event,
+8. Gateway and Workbench do not yet expose alternatives as a product workflow.
 
 ---
 
-## 2. Goals and Non-Goals
+## 4. Goals and Non-Goals
 
-### 2.1 Goals
+### 4.1 Goals
 
-1. Add first-class rebalance alternative generation.
-2. Support multiple construction methods:
-   `HEURISTIC_EXPLAINABLE`, `SOLVER_CONSTRAINED`, `MIN_TURNOVER`, `TAX_AWARE`,
-   `LIQUIDITY_AWARE`, `RISK_AWARE`, `ESG_AWARE`, `CURRENCY_OVERLAY`,
-   `REGIME_STRESS_AWARE`, and `DO_NOTHING_BASELINE`.
-3. Produce comparable metrics for each alternative.
-4. Persist alternative sets and selected alternatives.
-5. Expose solver status, objective terms, constraints, relaxations, infeasibility reasons, and
-   fallback decisions.
-6. Preserve existing status vocabulary: `READY`, `PENDING_REVIEW`, `BLOCKED`.
-7. Prepare selected alternatives for RFC-0040 proof packs and RFC-0041 wave orchestration.
+1. Add first-class `DpmRebalanceAlternativeSet` and `DpmRebalanceAlternative` resources.
+2. Generate a bounded set of alternatives for one discretionary mandate.
+3. Include `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, and at least two additional first-wave
+   construction methods before initial support promotion.
+4. Expose objective terms, constraint traces, infeasibility, fallback, and relaxation evidence.
+5. Normalize comparison metrics across alternatives.
+6. Persist alternative sets, alternatives, and selection events.
+7. Support stateful and stateless inputs, with stateful source-data support through core products.
+8. Preserve domain authority for risk, performance, source data, report, archive, and AI.
+9. Prepare selected alternatives for proof-pack and workflow RFCs.
+10. Produce certified OpenAPI and live canonical evidence.
 
-### 2.2 Non-Goals
+### 4.2 Non-Goals
 
 1. Execute trades.
-2. Replace `lotus-risk` as the risk analytics authority.
+2. Replace `lotus-risk` as risk analytics authority.
 3. Replace `lotus-performance` as performance authority.
-4. Create client proposal or consent workflows.
-5. Allow AI to choose alternatives.
-6. Guarantee globally optimal portfolio outcomes under all constraints; infeasible and bounded
-   fallback behavior must be explicit.
+4. Replace `lotus-core` as portfolio, tax-lot, price, FX, or eligibility authority.
+5. Create advisor-led proposal or client-consent workflows. Those belong to `lotus-advise`.
+6. Let AI choose alternatives. AI may summarize evidence only in later RFCs.
+7. Guarantee global optimality under all market and mandate constraints.
+8. Build the Gateway composition contract or Workbench UI in this RFC. Those require paired RFCs.
 
 ---
 
-## 3. Ownership and Boundaries
+## 5. Architecture Direction
 
-`lotus-manage` owns:
+### 5.1 Manage-Side Construction Flow
 
-1. alternative set orchestration,
-2. construction objective registry,
-3. constraint registry and mapping to mandate/policy packs,
-4. solver invocation and fallback governance,
-5. alternative comparison metrics,
-6. selection workflow and evidence.
+```mermaid
+flowchart LR
+    Request[Alternative generation request] --> Source[Source context resolver]
+    Source --> Twin[Mandate digital twin]
+    Twin --> Methods[Construction method registry]
+    Methods --> Baseline[Do-nothing baseline]
+    Methods --> Heuristic[Explainable heuristic]
+    Methods --> Solver[Solver-constrained method]
+    Methods --> Enriched[Tax / liquidity / risk / ESG / FX methods]
+    Baseline --> Compare[Comparison matrix]
+    Heuristic --> Compare
+    Solver --> Compare
+    Enriched --> Compare
+    Compare --> Persist[Alternative set persistence]
+    Persist --> Select[Selection event]
+    Select --> Proof[Future proof pack / wave / outcome RFCs]
+```
 
-External authorities:
+### 5.2 Domain Authority Rules
 
-| Authority | Responsibility |
-| --- | --- |
-| `lotus-core` | portfolio state, tax lots, model targets, eligibility, prices, FX, market coverage, liquidity/reference data when available |
-| `lotus-risk` | risk impact, tracking error, concentration, stress, drawdown, factor risk when available |
-| `lotus-performance` | benchmark context, realized performance, attribution context |
-| `lotus-report` | downstream reporting package generation |
-| `lotus-ai` | narrative summaries only, not construction decisions |
+| Domain | Authority | Manage usage |
+| --- | --- | --- |
+| Source portfolio, holdings, model, eligibility, tax lots, price, FX | `lotus-core` | consume source products and preserve source readiness |
+| Mandate digital twin, health, construction alternatives, selection | `lotus-manage` | own |
+| Risk impact, stress, drawdown, concentration, tracking error where authoritative | `lotus-risk` | consume enrichment; degrade truthfully when unavailable |
+| Performance/benchmark context, attribution, realized return context | `lotus-performance` | consume enrichment/context; do not recompute performance truth |
+| Proof pack/report generation | `lotus-report` | downstream consumer of selected alternative |
+| Archive | `lotus-archive` | downstream evidence owner |
+| AI narrative | `lotus-ai` | future summarization only |
+| Composition API | `lotus-gateway` | future consumer and product boundary |
+| User experience | `lotus-workbench` | future consumer through Gateway |
+
+`lotus-manage` may calculate local construction diagnostics such as drift distance, turnover,
+estimated transaction cost, and local concentration approximations only when the methodology is
+documented, deterministic, and clearly labelled as manage-side construction diagnostics rather than
+authoritative risk/performance analytics.
 
 ---
 
-## 4. Construction Methods
+## 6. Construction Method Roadmap
 
-### 4.1 DO_NOTHING_BASELINE
+### 6.1 First-Wave Required Methods
+
+The first implementation wave must include:
+
+| Method | Purpose | Required before support promotion |
+| --- | --- | --- |
+| `DO_NOTHING_BASELINE` | Compare against no action. | current drift, breaches, source readiness, no trades |
+| `HEURISTIC_EXPLAINABLE` | Preserve deterministic target-difference baseline. | reason codes for capping, suppression, funding, blocking |
+| `MIN_TURNOVER` | Reduce drift with fewer trades. | turnover weight, trade count, drift reduction, cost estimate |
+| `TAX_AWARE` or `LIQUIDITY_AWARE` | Prove source-aware personalized construction. | tax-lot or cash/liquidity supportability and degraded behavior |
+
+First-wave implementation may include solver-constrained construction only if solver trace,
+fallback, infeasibility, and deterministic timeout behavior are production-grade.
+
+### 6.2 Later Methods
+
+Later methods remain proposed until individually proven:
+
+1. `SOLVER_CONSTRAINED`
+2. `RISK_AWARE`
+3. `ESG_AWARE`
+4. `CURRENCY_OVERLAY`
+5. `REGIME_STRESS_AWARE`
+6. advanced multi-objective blend methods
+
+### 6.3 Method Definitions
+
+#### DO_NOTHING_BASELINE
 
 Purpose:
 
-1. compare every action against no action,
-2. quantify current drift, risk, cash, tax, and restriction posture,
-3. avoid pretending action is always better.
+1. make "no action" a governed comparator,
+2. quantify current drift, source readiness, rule breaches, cash, tax, restriction, and risk
+   posture,
+3. avoid implying that trading is always superior.
 
-Output expectations:
+Required output:
 
 1. no trade intents,
 2. current state as after state,
-3. health and rule results preserved,
-4. expected drift reduction equals zero.
+3. health/rule results preserved,
+4. drift reduction equal to zero,
+5. reason code `baseline_no_action`.
 
-### 4.2 HEURISTIC_EXPLAINABLE
+#### HEURISTIC_EXPLAINABLE
 
 Purpose:
 
-1. preserve current deterministic baseline,
-2. give explainable target-difference logic,
-3. act as fallback when solver is unavailable.
+1. preserve current deterministic rebalance logic,
+2. provide reason-coded target-difference construction,
+3. act as fallback when solver or enrichment is unavailable.
 
 Rules:
 
-1. no hidden relaxations,
-2. no stochastic behavior,
-3. same input produces same output,
-4. reason codes must explain capping, suppression, funding, and blocking.
+1. same input produces same output,
+2. no hidden relaxations,
+3. all capping, suppression, funding, lot selection, and blocking has reason codes,
+4. unsupported data produces degraded state rather than fabricated metrics.
 
-### 4.3 SOLVER_CONSTRAINED
+#### MIN_TURNOVER
 
 Purpose:
 
-1. optimize against objective function,
-2. respect constraints,
+1. reduce material drift while avoiding unnecessary trading,
+2. support low-activity or cost-sensitive mandates,
+3. reduce operational burden.
+
+Required metrics:
+
+1. turnover weight,
+2. trade count,
+3. drift before/after/reduction,
+4. estimated transaction cost,
+5. minimum-trade-notional suppressions.
+
+#### TAX_AWARE
+
+Purpose:
+
+1. reduce realized gains within mandate or policy tax budget,
+2. use tax-lot windows from `lotus-core`,
+3. flag missing tax lots explicitly.
+
+Lot-selection posture:
+
+1. `HIFO`
+2. `LIFO`
+3. `FIFO`
+4. `MIN_GAIN`
+5. `TAX_LOTS_UNAVAILABLE`
+
+No tax-aware alternative may be `READY` when required tax lots are unavailable and the mandate
+requires tax-aware execution.
+
+#### LIQUIDITY_AWARE
+
+Purpose:
+
+1. protect cash buffers,
+2. respect known cashflow needs when available,
+3. avoid illiquid trades where liquidity profile is weak,
+4. preserve settlement readiness.
+
+Inputs:
+
+1. current cash,
+2. settlement ladder,
+3. known cashflow forecast if available,
+4. instrument liquidity profile if available.
+
+#### SOLVER_CONSTRAINED
+
+Purpose:
+
+1. optimize against an explicit objective function,
+2. respect hard and soft constraints,
 3. quantify trade-offs.
 
 Required solver trace:
@@ -182,121 +327,53 @@ Required solver trace:
 9. infeasible constraints,
 10. fallback method when used.
 
-### 4.4 MIN_TURNOVER
-
-Purpose:
-
-1. reduce drift while minimizing unnecessary trading,
-2. support fee-sensitive or low-activity mandates,
-3. reduce operational burden.
-
-Primary metrics:
-
-1. turnover weight,
-2. number of trades,
-3. drift reduction,
-4. expected tracking error after trade.
-
-### 4.5 TAX_AWARE
-
-Purpose:
-
-1. reduce realized gains within tax budget,
-2. use available tax-lot windows,
-3. flag missing tax lots explicitly.
-
-Lot-selection posture:
-
-1. `HIFO`
-2. `LIFO`
-3. `FIFO`
-4. `MIN_GAIN`
-5. `TAX_LOTS_UNAVAILABLE`
-
-No tax-aware alternative may be marked `READY` if required tax lots are missing and the mandate
-requires tax-aware execution.
-
-### 4.6 LIQUIDITY_AWARE
-
-Purpose:
-
-1. protect cash buffers,
-2. respect known cashflow needs,
-3. avoid illiquid trades where liquidity profile is weak,
-4. preserve settlement readiness.
-
-Inputs:
-
-1. current cash,
-2. settlement ladder,
-3. known cashflow forecast when available,
-4. instrument liquidity profile when available.
-
-### 4.7 RISK_AWARE
+#### RISK_AWARE
 
 Purpose:
 
 1. reduce or control tracking error,
 2. mitigate concentration,
-3. avoid increasing drawdown or stress posture beyond mandate limits,
+3. avoid worsening drawdown or stress posture beyond mandate limits,
 4. use `lotus-risk` enrichment where available.
 
-Risk-aware alternatives may be generated in degraded mode with local concentration metrics, but
-must clearly mark missing `lotus-risk` enrichment.
+Risk-aware alternatives may be generated in degraded mode with clearly labelled local diagnostics,
+but must mark missing `lotus-risk` enrichment.
 
-### 4.8 ESG_AWARE
+#### ESG_AWARE
 
 Purpose:
 
 1. apply sustainability exclusions,
-2. avoid restricted sectors and issuers,
-3. prefer eligible sustainable instruments where mandate requires it,
+2. avoid restricted sectors, issuers, and instruments,
+3. prefer eligible sustainable instruments where the mandate requires it,
 4. expose ESG degradation when source profiles are incomplete.
 
-### 4.9 CURRENCY_OVERLAY
+#### CURRENCY_OVERLAY
 
 Purpose:
 
-1. compare unhedged, partially hedged, and fully hedged mandate outcomes,
-2. separate strategic currency exposure from operational trade funding,
-3. respect currency exposure bands and hedge-ratio bands from the mandate digital twin,
-4. avoid creating hedge trades when hedge instruments, FX rates, forward points, settlement
-   calendars, or eligibility evidence are missing.
+1. compare unhedged, partially hedged, and fully hedged outcomes,
+2. separate strategic currency exposure from trade funding,
+3. respect currency exposure and hedge-ratio bands,
+4. avoid hedge trades when required FX, eligibility, forward points, or settlement evidence is
+   missing.
 
-Required evidence:
-
-1. current currency exposure by currency, sleeve, and asset class,
-2. target currency exposure after cash funding and proposed trades,
-3. proposed hedge adjustments where permitted,
-4. residual exposure after hedge,
-5. hedge cost estimate and settlement readiness,
-6. reason codes for hedge created, hedge changed, hedge suppressed, hedge blocked, and hedge
-   degraded.
-
-### 4.10 REGIME_STRESS_AWARE
+#### REGIME_STRESS_AWARE
 
 Purpose:
 
 1. compare alternatives under named market-regime and stress packs,
-2. reject or downgrade alternatives that improve drift while materially worsening unacceptable
-   downside or concentration risk,
-3. support CIO-required scenario checks for model-change waves,
-4. expose degraded state when `lotus-risk` scenario packs or exposure inputs are incomplete.
-
-Required evidence:
-
-1. scenario pack id and version,
-2. current, target, and after-trade scenario impacts,
-3. breached scenario limits,
-4. main contributors to scenario loss,
-5. mitigation reason codes,
-6. risk-authoritative source refs from `lotus-risk`.
+2. reject or downgrade alternatives that improve drift while worsening unacceptable downside,
+3. support CIO-required scenario checks,
+4. expose degraded state when risk-authoritative scenario packs are unavailable.
 
 ---
 
-## 5. Objective Function
+## 7. Objective Function and Constraint Registry
 
-The target solver objective is a weighted sum:
+### 7.1 Objective Function
+
+Target objective model:
 
 ```text
 minimize:
@@ -313,20 +390,18 @@ minimize:
   + w_scenario_loss * scenario_loss_penalty
 ```
 
-Objective weights come from:
+Objective weights may come from:
 
 1. mandate digital twin,
 2. policy pack,
 3. construction method default,
-4. explicit request override where allowed.
+4. explicit request override where policy allows.
 
-Every objective term must be exposed in the alternative trace.
+Every objective term must be exposed in the alternative trace, even when the term is inactive.
 
----
+### 7.2 Constraint Families
 
-## 6. Constraint Registry
-
-Initial constraint families:
+Initial constraint registry:
 
 1. `ASSET_CLASS_BAND`
 2. `INSTRUMENT_WEIGHT_MAX`
@@ -361,33 +436,35 @@ Constraint severities:
 Relaxation rules:
 
 1. hard constraints cannot be silently relaxed,
-2. every soft relaxation must include reason, magnitude, actor or policy authority, and evidence,
-3. default target-state implementation should avoid relaxations unless explicitly configured.
+2. every soft relaxation must include reason, magnitude, policy authority, and evidence,
+3. default implementation should avoid relaxations unless explicitly configured.
 
 ---
 
-## 7. Domain Models
+## 8. Domain Models
 
-### 7.1 DpmRebalanceAlternativeSet
+### 8.1 DpmRebalanceAlternativeSet
 
 Required fields:
 
-1. `alternative_set_id`
-2. `portfolio_id`
-3. `mandate_id`
-4. `as_of_date`
-5. `input_mode`
-6. `requested_methods`
-7. `generated_methods`
-8. `source_readiness`
-9. `alternatives`
-10. `comparison_summary`
-11. `recommended_alternative_id`
-12. `recommendation_basis`
-13. `lineage`
-14. `created_at`
+| Field | Type | Description | Example |
+| --- | --- | --- | --- |
+| `alternative_set_id` | string | Stable identifier for generated set. | `altset_PB_SG_GLOBAL_BAL_001_20260410_001` |
+| `portfolio_id` | string | Portfolio id. | `PB_SG_GLOBAL_BAL_001` |
+| `mandate_id` | string | Mandate id. | `MANDATE_PB_SG_GLOBAL_BAL_001` |
+| `as_of_date` | date | Business date. | `2026-04-10` |
+| `input_mode` | enum | `stateful` or `stateless`. | `stateful` |
+| `requested_methods` | array | Methods requested by caller. | `["DO_NOTHING_BASELINE","MIN_TURNOVER"]` |
+| `generated_methods` | array | Methods generated successfully or degraded. | `["DO_NOTHING_BASELINE","HEURISTIC_EXPLAINABLE","MIN_TURNOVER"]` |
+| `source_readiness` | object | Source readiness summary. | `{ "state": "READY" }` |
+| `alternatives` | array | Generated alternatives. | `[]` |
+| `comparison_summary` | object | Ranked comparison and recommendation. | `{ "recommended_alternative_id": "alt_002" }` |
+| `selected_alternative_id` | string/null | Selected alternative if actor selected one. | `alt_002` |
+| `recommendation_basis` | string | Why recommendation was ranked first. | `best_drift_reduction_with_low_turnover` |
+| `lineage` | object | Source and calculation lineage. | `{ "source_system": "lotus-manage" }` |
+| `created_at` | datetime | Creation timestamp. | `2026-05-03T08:00:00Z` |
 
-### 7.2 DpmRebalanceAlternative
+### 8.2 DpmRebalanceAlternative
 
 Required fields:
 
@@ -410,10 +487,11 @@ Required fields:
 17. `cost_impact`
 18. `liquidity_impact`
 19. `fx_impact`
-20. `explanation`
-21. `lineage`
+20. `source_supportability`
+21. `explanation`
+22. `lineage`
 
-### 7.3 DpmAlternativeDecisionMetrics
+### 8.3 DpmAlternativeDecisionMetrics
 
 Required metrics:
 
@@ -431,26 +509,28 @@ Required metrics:
 12. `tracking_error_after`
 13. `restriction_breach_count`
 14. `source_readiness_state`
+15. `method_rank`
+16. `recommendation_score`
 
 ---
 
-## 8. API Surface
+## 9. API Surface
 
-### 8.1 Generate Alternatives
+### 9.1 Generate Alternatives
 
 `POST /api/v1/rebalance/alternatives`
 
 Purpose:
 
-1. generate a bounded alternative set for one mandate/portfolio,
-2. support stateless or stateful source input,
-3. persist the alternative set and lineage.
+1. generate a bounded alternative set for one mandate or portfolio,
+2. support stateless and stateful source input,
+3. persist alternative set, lineage, and supportability.
 
-Request fields:
+Required request fields:
 
 1. `input_mode`
-2. `portfolio_id` or stateless input bundle,
-3. `as_of`
+2. `portfolio_id` or stateless input bundle
+3. `as_of_date`
 4. `mandate_id`
 5. `requested_methods`
 6. `policy_pack_id`
@@ -459,42 +539,60 @@ Request fields:
 9. `include_performance_context`
 10. `include_tax_impact`
 11. `solver_time_budget_ms`
+12. `idempotency_key`
 
 Response:
 
 1. full `DpmRebalanceAlternativeSet`,
-2. status per alternative,
-3. source readiness and degradation details.
+2. per-alternative status,
+3. source readiness and degradation details,
+4. support reference,
+5. persistence refs.
 
-### 8.2 Retrieve Alternatives
+### 9.2 Retrieve Alternative Set
 
 `GET /api/v1/rebalance/alternatives/{alternative_set_id}`
 
 Purpose:
 
 1. retrieve persisted alternative set,
-2. support Workbench comparison and proof-pack generation.
+2. support Gateway/Workbench comparison,
+3. support proof-pack generation.
 
-### 8.3 Select Alternative
+### 9.3 Select Alternative
 
 `POST /api/v1/rebalance/alternatives/{alternative_set_id}/select`
 
 Purpose:
 
 1. mark selected alternative,
-2. persist actor, rationale, and timestamp,
-3. prepare for proof pack or workflow review.
+2. persist actor, rationale, timestamp, and selection version,
+3. prepare selected alternative for proof pack and workflow review.
 
 Rules:
 
-1. only one selected alternative per selection version,
-2. selecting `BLOCKED` alternative requires explicit override and remains `PENDING_REVIEW` or
-   `BLOCKED` according to policy,
-3. selection does not execute trades.
+1. selection does not execute trades,
+2. only one selected alternative is active per selection version,
+3. selecting a `BLOCKED` alternative requires explicit override and remains `BLOCKED` or
+   `PENDING_REVIEW` according to policy,
+4. actor attribution is mandatory,
+5. selection must emit audit and lineage evidence.
+
+### 9.4 Compare Alternatives
+
+`GET /api/v1/rebalance/alternatives/{alternative_set_id}/comparison`
+
+Purpose:
+
+1. return a compact comparison matrix for Gateway/Workbench and proof packs,
+2. avoid forcing consumers to parse full trade-level details when only comparison is needed.
+
+This endpoint may be implemented as a view over the stored set, but if added, it must be certified
+and not duplicate business truth.
 
 ---
 
-## 9. Persistence
+## 10. Persistence and Retention
 
 Tables:
 
@@ -509,227 +607,414 @@ Required indexes:
 3. `(alternative_set_id)`
 4. `(selected_alternative_id)`
 5. `(status, created_at desc)`
+6. `(idempotency_key)`
 
 Retention:
 
 1. selected alternatives: 7 years,
 2. unselected alternatives: configurable, default 2 years,
-3. blocked alternatives linked to audit or compliance review: 7 years.
+3. blocked alternatives linked to audit or compliance review: 7 years,
+4. diagnostic traces may be shortened or summarized where required by storage and sensitivity
+   policy, but selected-alternative evidence must remain audit-grade.
 
 ---
 
-## 10. Implementation Slices
+## 11. OpenAPI and API Certification
 
-### Slice 0 - Design Tightening and RFC Review
+Every endpoint in RFC-0039 must be certified before promotion.
 
-1. validate current solver capabilities,
-2. map all constraints to existing engine/policy-pack fields,
-3. identify source-data gaps for risk, tax, liquidity, ESG, and costs,
-4. define minimum viable alternative methods.
+Swagger requirements:
 
-Exit evidence:
+1. group under `DPM Construction Alternatives`,
+2. explain what each endpoint is for,
+3. explain when to use each construction method,
+4. explain how solver, fallback, infeasibility, and degraded-source states should be interpreted,
+5. include full request and response examples,
+6. include ready, pending-review, blocked, infeasible, solver-unavailable, source-degraded, and
+   tax-lots-missing examples,
+7. every attribute has description, type, and example,
+8. no `Any` or untyped dictionary contracts,
+9. no duplicate aliases,
+10. no advisory/proposal vocabulary leakage,
+11. OpenAPI examples are validated by tests.
 
-1. field-by-field source map,
-2. gap list for `lotus-core`, `lotus-risk`, `lotus-performance`,
-3. agreed method list for first implementation.
+---
 
-### Slice 1 - Domain Models and Pure Alternative Engine
+## 12. Security, Audit, Observability, and Data Mesh
+
+Required controls:
+
+1. actor attribution for selection,
+2. support references for generation and selection,
+3. bounded objective/constraint traces,
+4. no raw client names or personal data in logs/metrics,
+5. no raw holdings/tax-lot dumps in logs/metrics,
+6. no request/response body logging,
+7. low-cardinality metrics for method, status, source state, solver status, and failure reason,
+8. structured audit for alternative generation, selection, blocked selection, and override attempts,
+9. domain-product consumer declarations updated if new upstream data products are consumed,
+10. trust telemetry updated if alternatives become a managed data product.
+
+Potential metrics:
+
+1. `lotus_manage_alternative_sets_total{status,input_mode}`
+2. `lotus_manage_rebalance_alternatives_total{method,status}`
+3. `lotus_manage_alternative_solver_duration_ms{method,status}`
+4. `lotus_manage_alternative_generation_duration_ms{input_mode,status}`
+5. `lotus_manage_alternative_source_degraded_total{source,reason}`
+6. `lotus_manage_alternative_selection_total{status}`
+
+---
+
+## 13. Implementation Slices
+
+### Slice 0: RFC Tightening, Method Scope, and Source Map
+
+Scope:
+
+1. finalize this RFC,
+2. confirm first-wave methods,
+3. validate current engine and solver capabilities,
+4. map constraints to mandate digital twin, policy pack, and source products,
+5. identify source-data gaps for risk, tax, liquidity, ESG, FX, cost, and scenario data.
+
+Acceptance:
+
+1. field-by-field source map exists,
+2. first-wave method list is explicit,
+3. missing upstream fields are listed by owner and not patched locally,
+4. no implementation begins with ambiguous method semantics.
+
+### Slice 1: Gateway and Workbench Realization RFC Slice
+
+Scope:
+
+1. create or tighten a paired Gateway RFC for DPM construction alternative composition,
+2. create or tighten a paired Workbench RFC for DPM construction lab / alternatives comparison UI,
+3. define how Gateway consumes manage alternatives without recomputing construction truth,
+4. define how Workbench renders alternatives, comparison matrix, selected alternative, evidence, and
+   action gating,
+5. define canonical demo proof across manage, gateway, and workbench.
+
+Acceptance:
+
+1. Gateway RFC identifies the strategic endpoint family it will expose to Workbench.
+2. Workbench RFC defines product journeys, screen anatomy, visual proof, accessibility, and
+   Gateway-only consumption.
+3. Manage RFC-0039 remains backend authority for alternatives; Gateway/Workbench do not own
+   construction logic.
+4. Full business outcome is explicitly not claimed until paired RFCs are implemented and live
+   proven.
+
+### Slice 2: Platform Automation and Scaffolding Improvement Slice
+
+Scope:
+
+1. identify platform scaffolding gaps for optimization-style APIs,
+2. review OpenAPI example scaffolding for objective/constraint traces,
+3. review observability and no-sensitive-trace governance,
+4. improve platform automation if the gap is cross-cutting,
+5. improve manage-local reusable scaffolding if the gap is repo-specific.
+
+Acceptance:
+
+1. cross-cutting gaps are fixed in `lotus-platform` when applicable,
+2. no-change decisions are explicit,
+3. future construction APIs start with better scaffolding.
+
+### Slice 3: Cleanup and Structure Slice
+
+Scope:
+
+1. separate pure construction logic from API orchestration, persistence, and enrichment,
+2. remove duplicated heuristic rules encountered,
+3. remove stale advisory/proposal language,
+4. replace generic "option" language with "construction alternative" or "selected alternative",
+5. keep docs/wiki truth aligned.
+
+Acceptance:
+
+1. construction domain modules are clear and testable,
+2. no advisory ownership leakage remains,
+3. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` passes before merge when wiki changed.
+
+### Slice 4: Domain Models and Pure Alternative Engine
+
+Scope:
 
 1. add alternative set models,
-2. add objective and constraint traces,
-3. wrap existing heuristic output as one alternative,
-4. add do-nothing baseline,
-5. add pure comparison metrics.
+2. add alternative models,
+3. add objective and constraint traces,
+4. wrap existing heuristic as one alternative,
+5. add do-nothing baseline,
+6. add pure comparison metrics.
 
-Exit evidence:
+Acceptance:
 
-1. unit tests for model validation,
-2. deterministic comparison tests,
-3. no persistence required yet.
+1. deterministic model tests pass,
+2. objective trace completeness is tested,
+3. constraint trace completeness is tested,
+4. comparison metrics reconcile.
 
-### Slice 2 - Solver and Method Registry
+### Slice 5: Method Registry and Solver/Fallback Governance
 
-1. define method registry,
-2. expose solver availability posture,
-3. add solver trace,
+Scope:
+
+1. add construction method registry,
+2. add solver availability posture,
+3. add solver trace where solver is used,
 4. add fallback handling,
 5. add infeasibility classification.
 
-Exit evidence:
+Acceptance:
 
-1. solver success test,
-2. solver unavailable test,
-3. infeasible constraints test,
-4. fallback trace test.
+1. solver success, unavailable, timeout, infeasible, and fallback cases are tested,
+2. fallback is explicit and never hidden,
+3. hard constraint infeasibility returns `BLOCKED`.
 
-### Slice 3 - Tax, Turnover, Liquidity, and Cost Enrichment
+### Slice 6: Tax, Turnover, Liquidity, Cost, and FX Enrichment
+
+Scope:
 
 1. connect tax lots,
 2. calculate turnover and estimated cost,
 3. calculate liquidity/cash posture,
-4. classify missing inputs.
+4. calculate FX exposure and hedge-readiness posture where first-wave scope allows,
+5. classify missing inputs.
 
-Exit evidence:
+Acceptance:
 
-1. tax-lot present/missing tests,
-2. turnover budget tests,
-3. liquidity/cash buffer tests.
+1. tax-lot present and missing cases are tested,
+2. turnover budget tests pass,
+3. liquidity/cash tests pass,
+4. FX degraded cases are explicit where FX method is included.
 
-### Slice 4 - Risk and Performance Context
+### Slice 7: Risk and Performance Context
 
-1. call or prepare seam for `lotus-risk`,
-2. call or prepare seam for `lotus-performance`,
+Scope:
+
+1. add seams for risk enrichment,
+2. add seams for performance/benchmark context,
 3. support degraded mode,
-4. include enrichment supportability.
+4. preserve upstream supportability and calculation authority.
 
-Exit evidence:
+Acceptance:
 
-1. mocked upstream tests,
-2. unavailable upstream tests,
-3. response examples with and without enrichment.
+1. mocked upstream risk/performance tests pass,
+2. unavailable upstream tests pass,
+3. response examples with and without enrichment are certified,
+4. manage does not recompute authoritative risk/performance figures.
 
-### Slice 5 - Persistence and APIs
+### Slice 8: Persistence and APIs
+
+Scope:
 
 1. add migrations and repositories,
-2. add generate/retrieve/select APIs,
-3. add OpenAPI docs and examples,
-4. add supportability.
+2. add generate, retrieve, select, and optional comparison APIs,
+3. add idempotency and replay posture,
+4. add supportability,
+5. certify OpenAPI.
 
-Exit evidence:
+Acceptance:
 
-1. repository parity tests,
-2. API tests,
-3. OpenAPI certification.
+1. repository parity tests pass for in-memory and PostgreSQL paths where applicable,
+2. API tests cover ready, pending review, blocked, infeasible, source-degraded, and idempotent
+   replay cases,
+3. OpenAPI certification passes.
 
-### Slice 6 - Live Proof and Closure
+### Slice 9: Implementation Proof Slice
+
+Scope:
 
 1. prove canonical portfolio alternatives,
-2. capture full request/response evidence,
-3. update README/wiki/supported-features,
-4. create follow-up RFCs or issues for gaps.
+2. capture request/response evidence,
+3. capture comparison matrix,
+4. capture objective/constraint trace samples,
+5. capture infeasible/fallback/degraded examples,
+6. critically review evidence and fix gaps.
 
-Exit evidence:
+Acceptance:
 
-1. live evidence reviewed,
-2. CI green,
-3. docs and wiki current.
+1. live manage proof passes for `PB_SG_GLOBAL_BAL_001`,
+2. evidence includes at least do-nothing, heuristic, min-turnover, and one source-aware alternative,
+3. no supported-feature promotion occurs until every promoted method has evidence.
+
+### Slice 10: Second-Last Hardening and Review Slice
+
+Scope:
+
+1. perform full code review,
+2. verify numerical determinism,
+3. verify solver fallback,
+4. verify objective/constraint traceability,
+5. verify error handling,
+6. verify OpenAPI quality,
+7. verify latency and performance,
+8. verify test pyramid adequacy,
+9. remove dead code and duplicates.
+
+Acceptance:
+
+1. every Swagger field has description, type, and example,
+2. every error path is tested,
+3. generation latency is bounded and documented,
+4. no duplicate or deprecated construction endpoints remain.
+
+### Slice 11: Final Closure Slice
+
+Scope:
+
+1. update README, repository context, RFC index, wiki, and supported-features material,
+2. update agent context or skills if reusable construction guidance emerges,
+3. record final gold-pass assessment,
+4. publish wiki after merge,
+5. complete branch hygiene.
+
+Acceptance:
+
+1. documentation is useful to business, engineering, sales/pre-sales, marketing, operations, and
+   client-demo audiences,
+2. supported features are implementation-backed,
+3. CI is green,
+4. wiki check-only and post-merge publish are complete.
 
 ---
 
-## 11. Testing Strategy
+## 14. Test Pyramid
 
-Required tests:
+| Layer | Required proof |
+| --- | --- |
+| Unit | model validation, objective trace, constraint trace, comparison metrics, method registry |
+| Pure engine | do-nothing, heuristic, min-turnover, source-aware method behavior |
+| Solver | success, infeasible, timeout, unavailable, fallback |
+| Enrichment | tax lots, turnover, liquidity, cost, FX, risk/performance degraded behavior |
+| Repository | in-memory and PostgreSQL persistence, selection events, idempotent replay |
+| API/contract | generate, retrieve, select, comparison, error paths, OpenAPI examples |
+| Live | canonical portfolio alternatives with evidence package |
+| Observability | metrics, logs, audit, support references, forbidden-field tests |
+| Performance | bounded generation latency and fan-out timeout behavior |
 
-1. deterministic alternative generation,
-2. objective trace completeness,
-3. constraint trace completeness,
-4. solver success/failure/fallback,
-5. tax-aware lot selection,
-6. turnover budget enforcement,
-7. liquidity-aware cash preservation,
-8. risk/performance enrichment degraded behavior,
-9. selection event persistence,
-10. OpenAPI examples and field documentation,
-11. canonical live evidence.
-
----
-
-## 12. Acceptance Criteria
-
-RFC-0039 is complete when:
-
-1. at least four alternative methods are implemented and certified,
-2. alternative sets are persisted and retrievable,
-3. every alternative includes comparable decision metrics,
-4. solver status and infeasibility are explainable,
-5. selected alternative is actor-attributed,
-6. OpenAPI is complete,
-7. live proof shows a realistic discretionary mandate comparison,
-8. no AI or UI layer chooses the alternative on behalf of the PM.
+Tests must validate real metrics, reason codes, and reconciliation. Status-code-only tests are not
+enough.
 
 ---
 
-## 13. Gold-Standard Execution Contract
+## 15. Canonical Evidence Package
 
-RFC-0039 must make portfolio construction explainable enough for a PM, CIO office, risk reviewer,
-tax specialist, and operations team to understand why one rebalance path is better than another.
+Implementation proof must produce a non-git-tracked evidence folder, for example:
 
-### 13.1 Supported-Features Ledger
+`output/live-demo/<timestamp>/rfc0039-construction-alternatives/`
+
+Required artifacts:
+
+1. generate alternatives request/response,
+2. retrieve alternative set request/response,
+3. select alternative request/response,
+4. optional comparison endpoint request/response,
+5. alternative comparison matrix,
+6. objective trace sample,
+7. constraint trace sample,
+8. infeasible example,
+9. solver fallback example,
+10. source-unavailable degraded example,
+11. selected-alternative audit event sample,
+12. OpenAPI/API certification summary,
+13. latency summary,
+14. critical review notes and fixes.
+
+---
+
+## 16. Supported-Features Ledger
 
 | Feature | Support state before implementation | Promotion rule |
 | --- | --- | --- |
 | Alternative set generation | Proposed | Promote only after alternatives are persisted, comparable, and reproducible. |
-| Solver-constrained construction | Proposed | Promote only after solver status, objective terms, constraints, relaxations, and fallback are exposed. |
-| Minimum-turnover construction | Proposed | Promote only after turnover, trade count, drift reduction, and cost trade-offs are tested. |
+| Do-nothing baseline | Proposed | Promote only after current-state comparison and no-trade evidence are proven. |
+| Explainable heuristic alternative | Proposed | Promote only after reason-coded deterministic output is proven. |
+| Minimum-turnover alternative | Proposed | Promote only after turnover, trade count, drift reduction, and cost trade-offs are tested. |
 | Tax-aware construction | Proposed | Promote only after lot availability, lot selection, tax budget, and degraded-source behavior are proven. |
 | Liquidity-aware construction | Proposed | Promote only after cash, settlement, liquidity, and cashflow-readiness evidence is complete. |
+| Solver-constrained construction | Proposed | Promote only after solver status, objective terms, constraints, relaxations, infeasibility, and fallback are exposed. |
 | Risk/performance-aware construction | Proposed | Promote only after enrichment seams or live integrations degrade truthfully when unavailable. |
 | ESG/restriction-aware construction | Proposed | Promote only after restriction, sustainability, and eligibility evidence is complete. |
-| Currency-overlay construction | Proposed | Promote only after FX exposure, hedge-ratio, funding, settlement, and hedge-blocking evidence exists. |
+| Currency-overlay construction | Proposed | Promote only after FX exposure, hedge-ratio, FX funding, settlement, and hedge-blocking evidence exists. |
 | Regime/stress-aware construction | Proposed | Promote only after scenario packs and stress contribution evidence are risk-authoritative. |
+| Alternative selection | Proposed | Promote only after actor-attributed selection events are persisted and audited. |
 
-### 13.2 Architecture and Domain Direction
+---
 
-Implementation must use a portfolio-construction vocabulary:
+## 17. Risks and Controls
 
-1. strategic asset allocation, policy bands, and model targets are the baseline,
-2. tactical tilts and house views are controlled deviations, not free-form target edits,
-3. objective terms and constraints must be explicit, versioned, and explainable,
-4. infeasible portfolios must return `BLOCKED` or `PENDING_REVIEW` with reason codes instead of
-   hidden relaxations,
-5. every alternative must expose expected drift, active risk/tracking error, turnover, cost, tax,
-   liquidity, cash, FX, ESG, and source-readiness posture where available.
+| Risk | Control |
+| --- | --- |
+| Hidden optimizer behavior | Expose objective terms, constraints, relaxations, infeasibility, and fallback. |
+| PM over-trusts a mathematically optimal but operationally poor result | Compare tax, turnover, liquidity, cost, source readiness, and blocked actions. |
+| Manage duplicates risk/performance authority | Preserve enrichment boundaries and degrade when upstream authority is unavailable. |
+| Missing tax/lot/liquidity data produces false readiness | Tax/liquidity methods cannot be `READY` when required source data is missing. |
+| API sprawl | One strategic alternatives endpoint family; no aliases. |
+| Solver non-determinism | Bounded time budgets, deterministic fallback, traceable solver version and tolerance. |
+| Sensitive optimization traces leak | Bounded traces and forbidden-field tests. |
+| Full business outcome not visible | Paired Gateway and Workbench RFC slice required before product outcome claim. |
 
-### 13.3 Mandatory Delivery Slices
+---
 
-These slices are mandatory in addition to the feature-specific slices in Section 10.
+## 18. Definition of Done
 
-#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+RFC-0039 is complete only when:
 
-Review whether platform scaffolding should provide reusable objective/constraint OpenAPI examples,
-solver-availability supportability fields, no-sensitive optimization traces, and standard
-calculation evidence fixtures. Improve platform automation for repeatable gaps; otherwise record a
-no-change decision.
+1. at least four first-wave methods are implemented and certified,
+2. alternative sets are persisted and retrievable,
+3. every alternative includes comparable decision metrics,
+4. objective and constraint traces are complete,
+5. solver/fallback/infeasibility behavior is explicit,
+6. selected alternative is actor-attributed and audited,
+7. OpenAPI is complete and certified,
+8. live proof shows realistic discretionary mandate comparison for `PB_SG_GLOBAL_BAL_001`,
+9. degraded-source behavior is tested,
+10. no AI, Gateway, or UI layer chooses the alternative on behalf of the PM,
+11. paired Gateway/Workbench RFCs exist for integration and full realization,
+12. README/wiki/supported-features are updated truthfully,
+13. CI is green,
+14. wiki is published after merge,
+15. branch and remote hygiene are clean.
 
-#### Mandatory Slice B - Cleanup and Structure
+---
 
-Separate pure construction logic from API orchestration, persistence, and upstream enrichment. Remove
-duplicated heuristic rules, stale advisory proposal terms, and any generic "option" language that
-should be "construction alternative" or "selected alternative."
+## 19. Gold-Pass Assessment Template
 
-#### Mandatory Slice C - Implementation Proof
+To be completed during final closure:
 
-Capture full request/response evidence for at least one realistic mandate with do-nothing,
-heuristic, solver, tax-aware, liquidity-aware, currency-overlay, and degraded-source alternatives.
-Review every metric and reason code critically before promotion.
+| Assessment Area | Final Result |
+| --- | --- |
+| What was truly completed | TBD |
+| Quality improvements made | TBD |
+| Debt removed | TBD |
+| Construction methods proven | TBD |
+| Objective/constraint trace proof | TBD |
+| Solver/fallback proof | TBD |
+| Source-data and degraded proof | TBD |
+| API certification result | TBD |
+| Data mesh and observability result | TBD |
+| Gateway/Workbench realization RFC result | TBD |
+| Documentation/wiki result | TBD |
+| Remaining governed follow-up | TBD |
+| Gold-standard conclusion | TBD |
 
-#### Mandatory Slice D - Second-Last Hardening and Review
+---
 
-Review numerical determinism, solver fallback, objective/constraint traceability, error handling,
-OpenAPI quality, performance, latency, and test-pyramid adequacy. Ensure Swagger explains when to
-use each method and every field has description, type, and example.
+## 20. Relationship to Gateway and Workbench Realization
 
-#### Mandatory Slice E - Final Closure
+This RFC delivers manage-side construction alternatives. It does not by itself deliver the full
+business outcome to users.
 
-Update RFC evidence, README or wiki navigation if needed, supported-features promotion state,
-context/guidance decisions, and branch hygiene. Do not market a method as supported until canonical
-live evidence proves it.
+Full realization requires:
 
-### 13.4 Evidence Expectations
+1. a Gateway RFC that composes manage alternative sets into a Workbench-facing construction
+   comparison contract,
+2. a Workbench RFC that renders a DPM construction lab / alternatives comparison experience,
+3. canonical proof across manage, gateway, and workbench,
+4. documentation and wiki material useful for business, engineering, operations, sales/pre-sales,
+   marketing, and client demos.
 
-Closure evidence must include:
-
-1. alternative comparison matrix,
-2. objective and constraint trace sample,
-3. infeasible and fallback examples,
-4. source-unavailable degraded example,
-5. selected-alternative audit event,
-6. OpenAPI/API certification summary,
-7. local and GitHub check summary.
-
-### 13.5 Enterprise Baseline
-
-This RFC inherits RFC-0037 Section 19.4. Completion requires source-authority declarations,
-calculation lineage, solver/supportability telemetry, bounded objective/constraint traces,
-structured logs, API certification, and GitHub lane evidence for every construction and selection
-endpoint.
+Until those paired RFCs are implemented and live-proven, `lotus-manage` may claim backend
+construction-alternatives support only, not the complete front-office DPM construction experience.

@@ -59,8 +59,9 @@ evidence, and supported-feature promotion.
   monitoring APIs, bounded command-center summary, local manage proof, local canonical manage plus
   live core proof, wiki publication, and downstream Gateway/Workbench/platform handoff issues.
 - RFC-0039
-  proposed advanced portfolio construction and rebalance alternatives roadmap, including tax,
-  turnover, liquidity, ESG, risk, currency-overlay, and regime-stress-aware construction methods
+  proposed implementation-ready advanced portfolio construction and rebalance alternatives RFC,
+  including first-wave alternatives, objective/constraint traces, source-aware degraded behavior,
+  and required paired Gateway/Workbench realization RFCs before the full business outcome is claimed
 - RFC-0040
   proposed pre-trade proof-pack, decision-timeline, and DPM evidence-fabric roadmap
 - RFC-0041
