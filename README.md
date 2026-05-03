@@ -77,8 +77,10 @@ and proof. RFC-0040 is now implementation-backed for manage-owned pre-trade proo
 JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, hashes, lineage, retention
 metadata, immutable persistence, certified APIs, and canonical Postgres-backed live proof. Gateway
 composition, Workbench review UX, report materialization, and AI memo generation remain downstream
-work in their owning apps. The remaining target-state RFCs cover decision timelines, CIO/model-change
-rebalance waves, post-trade outcome feedback, and governed AI PM support. Target-state features are
+work in their owning apps; the post-merge gold-pass audit also records a canonical front-office
+risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no full proof-pack
+product UX support is claimed here. The remaining target-state RFCs cover decision timelines,
+CIO/model-change rebalance waves, post-trade outcome feedback, and governed AI PM support. Target-state features are
 not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
 

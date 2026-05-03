@@ -62,12 +62,12 @@ class DpmProofPackGenerateRequest(BaseModel):
     )
     include_report_input: bool = Field(
         default=False,
-        description="Reserved for Slice 7 report-input generation.",
+        description="Whether to append a deterministic report-input evidence reference.",
         examples=[False],
     )
     include_ai_evidence_input: bool = Field(
         default=False,
-        description="Reserved for Slice 7 AI-evidence input generation.",
+        description="Whether to append a deterministic AI-evidence input reference.",
         examples=[False],
     )
     actor_id: str = Field(
@@ -95,12 +95,12 @@ class DpmProofPackGenerateResponse(BaseModel):
     )
     report_input_url: str | None = Field(
         default=None,
-        description="Relative URL for report input retrieval when generated in later slices.",
+        description="Relative URL for report input retrieval when requested.",
         examples=["/api/v1/rebalance/proof-packs/dpp_rr_001/report-input"],
     )
     ai_evidence_input_url: str | None = Field(
         default=None,
-        description="Relative URL for AI evidence retrieval when generated in later slices.",
+        description="Relative URL for AI evidence input retrieval when requested.",
         examples=["/api/v1/rebalance/proof-packs/dpp_rr_001/ai-evidence-input"],
     )
 

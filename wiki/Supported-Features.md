@@ -32,7 +32,53 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Mandate persistence foundation | internal RFC-0038 foundation | Repository contract, in-memory store, Postgres repository foundation, migration, idempotent snapshot persistence, exception resolution, and retention hooks implemented and used by mandate APIs. | `src/core/mandate_repository.py`, `src/infrastructure/mandates/`, `src/infrastructure/postgres_migrations/dpm/0003_mandate_health_foundation.sql`, `tests/unit/dpm/supportability/test_dpm_mandate_repository.py` |
 | Construction alternative generation | `/api/v1/construction/alternative-sets/generate` | Supported as RFC-0039 manage backend foundation for first-wave and authority-backed methods: do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained, risk-aware through `lotus-risk` concentration authority, liquidity-aware, currency-overlay, and regime-stress-aware. ESG/restriction-aware construction is explicitly deferred until source-backed restriction and sustainability profiles exist. Full product realization through Gateway/Workbench is not yet implemented. | `src/api/routers/construction.py`, `src/api/services/construction_service.py`, `src/core/construction/`, `src/infrastructure/risk_authority/`, `tests/unit/dpm/api/test_construction_api.py`, `tests/unit/dpm/infrastructure/test_risk_authority_client.py`, OpenAPI certification matrix, `scripts/validate_live_api.py` first-wave and authority-backed construction probes |
 | Construction alternative read and selection | `GET /api/v1/construction/alternative-sets/{alternative_set_id}`, `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections` | Supported as persisted backend read and actor-attributed selection foundation. Selection records the preferred alternative but does not execute orders. Postgres-backed live proof passed generate/read/select and supportability summary checks. | `src/core/construction/repository.py`, `src/infrastructure/construction/`, `src/infrastructure/postgres_migrations/dpm/0005_construction_alternatives.sql`, `tests/unit/dpm/construction/test_repository.py`, `tests/unit/dpm/api/test_construction_api.py`, `output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json` |
-| Pre-trade proof packs | `POST /api/v1/rebalance/proof-packs`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input` | Supported as RFC-0040 manage backend authority for durable proof-pack JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, immutable persistence, append-only refs, retention metadata, hashes, lineage, and truthful degraded/blocked section states. Gateway composition, Workbench review UX, report materialization, and AI memo generation are not supported by `lotus-manage`. | `src/core/proof_packs/`, `src/api/routers/proof_packs.py`, `src/infrastructure/proof_packs/`, `tests/unit/dpm/proof_packs/`, `tests/unit/dpm/api/test_proof_pack_api.py`, `scripts/generate_rfc0040_proof_pack_evidence.py`, `output/rfc0040-proof/20260503-135112/manifest.json` |
+| Pre-trade proof packs | `POST /api/v1/rebalance/proof-packs`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input` | Supported as RFC-0040 manage backend authority for durable proof-pack JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, immutable persistence, append-only refs, retention metadata, hashes, lineage, and truthful degraded/blocked section states. Gateway composition, Workbench review UX, report materialization, and AI memo generation are not supported by `lotus-manage`. | `src/core/proof_packs/`, `src/api/routers/proof_packs.py`, `src/infrastructure/proof_packs/`, `tests/unit/dpm/proof_packs/`, `tests/unit/dpm/api/test_proof_pack_api.py`, `scripts/generate_rfc0040_proof_pack_evidence.py`, `output/rfc0040-proof/20260503-142438/manifest.json`, `output/rfc0040-proof/20260503-142438/critical-review.json` |
+
+## Pre-Trade Proof Pack Flow
+
+RFC-0040 makes `lotus-manage` the backend authority for pre-trade proof-pack evidence. The proof
+pack is the audit object that ties a proposed discretionary portfolio action to mandate context,
+source readiness, selected alternative evidence, trade intent, supportability, hashes, lineage, and
+downstream handoff packages.
+
+```mermaid
+flowchart LR
+    Run[Persisted rebalance run] --> Manage[lotus-manage<br/>proof-pack authority]
+    Alternative[Selected RFC-0039 alternative] --> Manage
+    Manage --> JSON[Immutable proof-pack JSON]
+    Manage --> Markdown[Deterministic Markdown]
+    Manage --> ReportInput[Report input handoff]
+    Manage --> AiEvidence[AI evidence handoff]
+    JSON --> Audit[Audit, compliance, support]
+    Markdown --> PM[PM, CIO, operations, client-demo review]
+    ReportInput -. downstream-owned .-> Report[lotus-report materialization]
+    AiEvidence -. downstream-owned .-> AI[lotus-ai PM memo]
+    Manage -. downstream RFC-0098 .-> Gateway[lotus-gateway composition]
+    Gateway -. downstream RFC-0098 .-> Workbench[lotus-workbench review UX]
+```
+
+Current supported behavior:
+
+1. generate proof packs from selected construction alternatives and direct rebalance runs,
+2. preserve source-honest section states: `READY`, `DEGRADED`, `BLOCKED`, `PENDING_REVIEW`, and
+   `NOT_APPLICABLE`,
+3. keep the persisted body immutable and add report/AI handoff refs through append-only records,
+4. expose content hashes, section hashes, source hashes, lineage, retention metadata, and reason
+   codes for operations and audit review,
+5. produce bounded report input and AI evidence input without generating reports, prompts, memos,
+   approvals, or execution instructions inside `lotus-manage`.
+
+Audience notes:
+
+1. PM and CIO users can treat the Markdown as a readable decision-evidence summary, not as a trade
+   execution instruction.
+2. Compliance and audit users can use hashes, lineage, retention, and section states to inspect why
+   a decision was supportable or blocked at generation time.
+3. Operations users can diagnose missing or degraded upstream evidence from reason codes and
+   supportability counts.
+4. Sales, pre-sales, and client-demo material can show the evidence-fabric flow, but must not claim
+   a full Workbench review product until Gateway and Workbench RFC-0098 implementations are live
+   and canonical front-office QA passes.
 
 ```mermaid
 flowchart LR

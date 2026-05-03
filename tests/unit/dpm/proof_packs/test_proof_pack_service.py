@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -229,6 +229,44 @@ def test_ensure_handoff_refs_is_idempotent_for_existing_matching_refs() -> None:
     assert second.report_input_ref == first.report_input_ref
     assert second.ai_evidence_ref == first.ai_evidence_ref
     assert len(repository.list_refs(proof_pack_id=proof_pack.proof_pack_id)) == 2
+
+
+def test_handoff_ref_lookup_prefers_latest_append_only_ref() -> None:
+    repository = InMemoryDpmProofPackRepository()
+    proof_pack = _proof_pack()
+    repository.save_proof_pack(
+        proof_pack=proof_pack,
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+    repository.append_ref(
+        ref=DpmProofPackStoredRef(
+            proof_pack_id=proof_pack.proof_pack_id,
+            ref_type=proof_pack_service.REPORT_INPUT_REF_TYPE,
+            ref_id="dpri_old",
+            source_system="lotus-manage",
+            content_hash="sha256:old",
+            created_at=CREATED_AT.isoformat(),
+        )
+    )
+    repository.append_ref(
+        ref=DpmProofPackStoredRef(
+            proof_pack_id=proof_pack.proof_pack_id,
+            ref_type=proof_pack_service.REPORT_INPUT_REF_TYPE,
+            ref_id="dpri_new",
+            source_system="lotus-manage",
+            content_hash="sha256:new",
+            created_at=(CREATED_AT + timedelta(minutes=1)).isoformat(),
+        )
+    )
+
+    report_ref = proof_pack_service.get_report_input_ref(
+        proof_pack_id=proof_pack.proof_pack_id,
+        proof_pack_repository=repository,
+    )
+
+    assert report_ref.ref_id == "dpri_new"
+    assert report_ref.content_hash == "sha256:new"
 
 
 def test_proof_pack_service_exception_mapping() -> None:

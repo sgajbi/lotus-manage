@@ -84,10 +84,14 @@ Current repository posture:
     handoff, AI-evidence handoff with forbidden-action/field guardrails, immutable in-memory and
     PostgreSQL persistence, append-only refs, retention metadata, section/content hashes, source
     lineage, certified `/api/v1/rebalance/proof-packs/*` APIs, and canonical Postgres-backed live
-    proof under `output/rfc0040-proof/20260503-135112`. `lotus-gateway` and `lotus-workbench`
-    RFC-0098 documents have been aligned to consume manage truth without reconstruction. Gateway
+    proof under `output/rfc0040-proof/20260503-135112` plus post-merge audit rerun
+    `output/rfc0040-proof/20260503-142438`. `lotus-gateway` and `lotus-workbench` RFC-0098
+    documents have been aligned to consume manage truth without reconstruction. Gateway
     composition, Workbench proof-pack review UX, report materialization, AI memo generation, and
-    full front-office product-outcome support remain downstream work in the owning repositories.
+    full front-office product-outcome support remain downstream work in the owning repositories;
+    the post-merge canonical front-office QA run exposed a downstream risk-drawdown `partial`
+    boundary tracked as `sgajbi/lotus-gateway#182`, and therefore no full product UX support claim
+    is made here.
 
 ## Architecture And Module Map
 

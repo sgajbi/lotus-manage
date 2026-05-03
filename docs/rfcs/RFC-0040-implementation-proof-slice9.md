@@ -10,6 +10,10 @@ Machine-readable evidence was generated under:
 
 `output/rfc0040-proof/20260503-135112`
 
+Post-merge gold-pass audit rerun:
+
+`output/rfc0040-proof/20260503-142438`
+
 The evidence directory is intentionally under ignored `output/` because it is reproducible runtime
 evidence rather than source. The committed source of truth is the generator script plus this
 evidence summary.
@@ -45,6 +49,7 @@ The startup path applied DPM Postgres migrations before the service became ready
 | `08-selected-alternative-selection.json` | selected-alternative audit decision |
 | `09-selected-alternative-proof-pack-generation.json` | selected-alternative proof-pack response |
 | `10-missing-mandate-proof-pack-generation.json` | blocked missing-mandate proof-pack response |
+| `critical-review.json` | machine-readable critical review checks and accepted boundaries from the post-merge audit rerun |
 | `manifest.json` | scenario roll-up, content hashes, and validation results |
 
 ## Scenario Results
@@ -54,6 +59,14 @@ The startup path applied DPM Postgres migrations before the service became ready
 | Direct rebalance run | `dpp_d1210dac` | `DEGRADED` | JSON/detail/Markdown/report-input/AI-evidence passed; report and AI sections `READY`; missing domain-authority sections are truthfully `DEGRADED`. |
 | Selected alternative | `dpp_cas_3258b446f51b_alt_heuristic_explainable` | `DEGRADED` | Selected alternative, before/after state, trade intents, lineage, source readiness, report, and AI sections are `READY`; risk/performance/scenario/tax/sustainability authority sections remain truthfully `DEGRADED`. |
 | Missing mandate | `dpp_7142c8e3` | `BLOCKED` | `mandate_context` is `BLOCKED` and reason code `DPM_PROOF_PACK_MANDATE_ID_MISSING` is present while other available evidence remains visible. |
+
+Post-merge audit rerun results:
+
+| Scenario | Proof pack | Status | Key evidence |
+| --- | --- | --- | --- |
+| Direct rebalance run | `dpp_d1c047b6` | `DEGRADED` | JSON/detail/Markdown/report-input/AI-evidence passed; report and AI sections `READY`; degraded source-authority sections remain visible. |
+| Selected alternative | `dpp_cas_811d12861603_alt_heuristic_explainable` | `DEGRADED` | Selected alternative, drift impact, before/after state, trade intents, lineage, source readiness, report, and AI sections are `READY`. |
+| Missing mandate | `dpp_7651f0d7` | `BLOCKED` | `mandate_context` is `BLOCKED` and `DPM_PROOF_PACK_MANDATE_ID_MISSING` is present while available run evidence remains visible. |
 
 ## Critical Review Finding
 
@@ -73,6 +86,40 @@ Fix-forward:
 4. The canonical proof was rerun and selected-alternative proof packs now hydrate run-backed
    sections from persisted manage truth.
 
+Post-merge audit follow-up:
+
+1. `scripts/generate_rfc0040_proof_pack_evidence.py` now writes POSIX-style evidence paths so
+   manifest refs are stable across Windows and Linux reviewers.
+2. The evidence generator writes `critical-review.json` with explicit checks for direct-run
+   handoffs, selected-alternative trace readiness, missing-mandate blocking, AI guardrails, and
+   withheld full-front-office support claims.
+3. AI forbidden-field detection is case-insensitive so fields such as `Client_Name` cannot evade
+   the guardrail.
+4. Proof-pack handoff refs now use append time for `created_at`, and ref lookup prefers the latest
+   append-only ref.
+
+## Canonical Front-Office Boundary Evidence
+
+The post-merge audit also ran the governed canonical front-office QA path with bring-up:
+
+```bash
+powershell -ExecutionPolicy Bypass -File ../lotus-platform/automation/Invoke-Canonical-FrontOffice-QA.ps1 -BringUp -ScreenshotDirectory output/rfc0040-proof/front-office-audit-20260503-142438
+```
+
+The run wrote:
+
+1. `../lotus-platform/output/front-office-qa/canonical-front-office-qa-20260503-222559.json`,
+2. `../lotus-platform/output/front-office-qa/canonical-front-office-qa-20260503-222559.md`.
+
+Result: failed at Workbench browser validation because Gateway risk drawdown returned `partial`.
+The validator completed teardown and left only pre-existing manage Postgres containers running.
+The downstream readiness defect is tracked as `sgajbi/lotus-gateway#182`.
+
+Audit interpretation: this is useful live ecosystem evidence, but it is not a manage proof-pack
+backend defect. RFC-0040 continues to claim only manage-owned backend authority. Full front-office
+proof-pack UX, Gateway composition, report materialization, and AI memo generation remain
+downstream-owned and unsupported until their owning implementations pass canonical evidence.
+
 ## Guardrails Proved
 
 1. Proof-pack content hashes are present and stable in captured responses.
@@ -80,7 +127,7 @@ Fix-forward:
 3. Report input ties back to the source proof-pack content hash.
 4. AI evidence ties back to the source proof-pack content hash.
 5. AI evidence contains forbidden actions and the generator verifies forbidden field names are
-   absent from the emitted evidence payload.
+   absent from the emitted evidence payload, case-insensitively.
 6. Missing mandate identity blocks promotion without hiding available run evidence.
 
 ## Validation Commands
@@ -92,17 +139,28 @@ python -m ruff check src\api\services\construction_service.py src\api\routers\co
 python -m ruff format --check src\api\services\construction_service.py src\api\routers\construction.py tests\unit\dpm\api\test_proof_pack_api.py scripts\generate_rfc0040_proof_pack_evidence.py tests\unit\test_rfc0040_evidence_script.py
 ```
 
+Post-merge audit focused validation:
+
+```bash
+python -m pytest tests\unit\test_documentation_current_state.py tests\unit\test_rfc0040_evidence_script.py tests\unit\dpm\proof_packs\test_proof_pack_service.py tests\unit\dpm\api\test_proof_pack_api.py -q
+python -m ruff check scripts\generate_rfc0040_proof_pack_evidence.py src\api\routers\proof_packs.py src\api\services\proof_pack_service.py tests\unit\test_rfc0040_evidence_script.py tests\unit\dpm\proof_packs\test_proof_pack_service.py tests\unit\dpm\api\test_proof_pack_api.py tests\unit\test_documentation_current_state.py
+python -m ruff format --check scripts\generate_rfc0040_proof_pack_evidence.py src\api\routers\proof_packs.py src\api\services\proof_pack_service.py tests\unit\test_rfc0040_evidence_script.py tests\unit\dpm\proof_packs\test_proof_pack_service.py tests\unit\dpm\api\test_proof_pack_api.py tests\unit\test_documentation_current_state.py
+```
+
 Results:
 
 1. focused proof-pack and evidence-generator tests passed,
 2. mypy passed,
 3. ruff passed,
 4. format check passed,
-5. canonical live evidence generator passed after fix-forward rerun.
+5. canonical live evidence generator passed after fix-forward rerun,
+6. post-merge audit manage evidence rerun passed and wrote machine-readable critical review,
+7. governed front-office QA exposed a downstream risk-drawdown `partial` boundary and therefore
+   no full product UX support claim is made.
 
 ## No Supported-Feature Promotion
 
-Slice 9 proves manage-owned backend proof-pack behavior. RFC-0040 remains in progress until final
-hardening, full gate review, PR/CI completion, merge, and wiki publication are complete. Gateway
-composition, Workbench product UX, report materialization, and AI memo generation are not claimed
-as supported by this slice.
+Slice 9 proves manage-owned backend proof-pack behavior. RFC-0040 has passed manage backend
+implementation, merge, wiki publication, and post-merge audit. Gateway composition, Workbench
+product UX, report materialization, and AI memo generation are not claimed as supported by this
+slice.

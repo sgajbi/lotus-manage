@@ -248,3 +248,4 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     operation = openapi["paths"]["/api/v1/rebalance/proof-packs"]["post"]
     assert operation["summary"] == "Generate a pre-trade proof pack"
     assert "Idempotency-Key" in str(operation["parameters"])
+    assert "Reserved for Slice 7" not in str(operation)
