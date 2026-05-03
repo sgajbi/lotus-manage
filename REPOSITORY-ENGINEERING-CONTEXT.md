@@ -75,7 +75,8 @@ Current repository posture:
     generating, retrieving, and selecting persisted alternative sets. Postgres-backed canonical
     manage proof passed through `scripts/validate_live_api.py`, including first-wave
     generate/read/select behavior and supportability summary checks. Gateway and Workbench are not
-    yet integrated with this surface; paired realization RFCs are created after manage hardening.
+    yet integrated with this surface; paired realization RFCs have been created and must be
+    implemented/proven downstream before a full front-office product outcome is claimed.
 
 ## Architecture And Module Map
 
