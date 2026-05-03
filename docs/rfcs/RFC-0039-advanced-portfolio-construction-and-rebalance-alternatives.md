@@ -39,9 +39,11 @@ source supportability, fallback decisions, and evidence. The selected alternativ
 input to proof packs, review workflows, rebalance waves, and post-trade outcome learning in later
 RFCs.
 
-This RFC is a manage-side backend RFC. Gateway and Workbench must receive separate paired RFCs for
-composition and product realization of construction alternatives before the full business outcome is
-claimed.
+This RFC is a manage-side backend RFC. As of this RFC tightening, `lotus-manage` construction
+alternatives are not integrated with `lotus-gateway` or `lotus-workbench`. Gateway and Workbench
+must receive separate paired RFCs near the end of the manage implementation, after the manage
+contract and evidence are concrete enough to articulate correctly. The full business outcome must
+not be claimed from manage-only implementation.
 
 ---
 
@@ -52,16 +54,18 @@ This section records the critical review performed before implementation.
 | Area | First-draft strength | Gap found | Tightened requirement |
 | --- | --- | --- | --- |
 | Domain ambition | Strong construction vocabulary and method list. | Needed sharper MVP sequencing and proof gates. | Added MVP method set, later method gates, evidence requirements, and promotion rules. |
-| Business outcome | Clear value for PMs and sales. | Needed persona-level outcomes and downstream realization boundary. | Added PM, CIO, tax, operations, sales/pre-sales, and Gateway/Workbench realization slices. |
+| Business outcome | Clear value for PMs and sales. | Needed persona-level outcomes and downstream realization boundary. | Added PM, CIO, tax, operations, sales/pre-sales, and an end-of-implementation Gateway/Workbench realization RFC slice. |
 | Architecture | Correctly kept risk/performance as external authorities. | Risk/performance enrichment could be read as manage-owned. | Added strict domain authority rules and degraded enrichment semantics. |
 | API design | Good basic alternative endpoints. | Needed certified API details, action semantics, idempotency, and comparison contract. | Added endpoint family, request/response expectations, no-alias rule, and OpenAPI requirements. |
 | Solver posture | Objective/constraint traces were identified. | Needed deterministic fallback and infeasibility taxonomy. | Added solver trace, fallback, relaxation, and infeasibility requirements. |
-| Slices | Had feature slices plus mandatory slices. | Needed full Lotus delivery standard and cross-repo realization slice. | Added platform/scaffolding, cleanup, proof, hardening, closure, and paired Gateway/Workbench RFC slice. |
+| Slices | Had feature slices plus mandatory slices. | Needed full Lotus delivery standard and cross-repo realization slice. | Added platform/scaffolding, cleanup, proof, hardening, closure, and an end-of-implementation paired Gateway/Workbench RFC slice. |
 | Evidence | Live proof was mentioned. | Needed exact evidence package and critical review standard. | Added canonical evidence package with request/response, alternatives matrix, traces, degraded examples, and selected-event proof. |
 | Documentation | Supported-features ledger existed. | Needed business-facing wiki/demo outputs and implementation-backed wording. | Added documentation/wiki/demo expectations and supported-feature promotion discipline. |
 
 Implementation must not begin until this RFC has a confirmed first-wave method set, upstream field
-map, fallback policy, and paired Gateway/Workbench realization plan.
+map, and fallback policy. Gateway/Workbench realization RFCs should be created near the end of the
+manage implementation, once the implemented manage API contracts and evidence are stable enough to
+write those RFCs accurately.
 
 ---
 
@@ -685,28 +689,7 @@ Acceptance:
 3. missing upstream fields are listed by owner and not patched locally,
 4. no implementation begins with ambiguous method semantics.
 
-### Slice 1: Gateway and Workbench Realization RFC Slice
-
-Scope:
-
-1. create or tighten a paired Gateway RFC for DPM construction alternative composition,
-2. create or tighten a paired Workbench RFC for DPM construction lab / alternatives comparison UI,
-3. define how Gateway consumes manage alternatives without recomputing construction truth,
-4. define how Workbench renders alternatives, comparison matrix, selected alternative, evidence, and
-   action gating,
-5. define canonical demo proof across manage, gateway, and workbench.
-
-Acceptance:
-
-1. Gateway RFC identifies the strategic endpoint family it will expose to Workbench.
-2. Workbench RFC defines product journeys, screen anatomy, visual proof, accessibility, and
-   Gateway-only consumption.
-3. Manage RFC-0039 remains backend authority for alternatives; Gateway/Workbench do not own
-   construction logic.
-4. Full business outcome is explicitly not claimed until paired RFCs are implemented and live
-   proven.
-
-### Slice 2: Platform Automation and Scaffolding Improvement Slice
+### Slice 1: Platform Automation and Scaffolding Improvement Slice
 
 Scope:
 
@@ -722,7 +705,7 @@ Acceptance:
 2. no-change decisions are explicit,
 3. future construction APIs start with better scaffolding.
 
-### Slice 3: Cleanup and Structure Slice
+### Slice 2: Cleanup and Structure Slice
 
 Scope:
 
@@ -738,7 +721,7 @@ Acceptance:
 2. no advisory ownership leakage remains,
 3. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` passes before merge when wiki changed.
 
-### Slice 4: Domain Models and Pure Alternative Engine
+### Slice 3: Domain Models and Pure Alternative Engine
 
 Scope:
 
@@ -756,7 +739,7 @@ Acceptance:
 3. constraint trace completeness is tested,
 4. comparison metrics reconcile.
 
-### Slice 5: Method Registry and Solver/Fallback Governance
+### Slice 4: Method Registry and Solver/Fallback Governance
 
 Scope:
 
@@ -772,7 +755,7 @@ Acceptance:
 2. fallback is explicit and never hidden,
 3. hard constraint infeasibility returns `BLOCKED`.
 
-### Slice 6: Tax, Turnover, Liquidity, Cost, and FX Enrichment
+### Slice 5: Tax, Turnover, Liquidity, Cost, and FX Enrichment
 
 Scope:
 
@@ -789,7 +772,7 @@ Acceptance:
 3. liquidity/cash tests pass,
 4. FX degraded cases are explicit where FX method is included.
 
-### Slice 7: Risk and Performance Context
+### Slice 6: Risk and Performance Context
 
 Scope:
 
@@ -805,7 +788,7 @@ Acceptance:
 3. response examples with and without enrichment are certified,
 4. manage does not recompute authoritative risk/performance figures.
 
-### Slice 8: Persistence and APIs
+### Slice 7: Persistence and APIs
 
 Scope:
 
@@ -822,7 +805,7 @@ Acceptance:
    replay cases,
 3. OpenAPI certification passes.
 
-### Slice 9: Implementation Proof Slice
+### Slice 8: Implementation Proof Slice
 
 Scope:
 
@@ -839,7 +822,7 @@ Acceptance:
 2. evidence includes at least do-nothing, heuristic, min-turnover, and one source-aware alternative,
 3. no supported-feature promotion occurs until every promoted method has evidence.
 
-### Slice 10: Second-Last Hardening and Review Slice
+### Slice 9: Second-Last Hardening and Review Slice
 
 Scope:
 
@@ -859,6 +842,33 @@ Acceptance:
 2. every error path is tested,
 3. generation latency is bounded and documented,
 4. no duplicate or deprecated construction endpoints remain.
+
+### Slice 10: Gateway and Workbench Realization RFC Slice
+
+Scope:
+
+1. create or tighten a paired Gateway RFC for DPM construction alternative composition after the
+   manage APIs, evidence, supportability states, and selected-alternative contracts are stable,
+2. create or tighten a paired Workbench RFC for the DPM construction lab / alternatives comparison
+   UI after the Gateway composition needs are clear,
+3. define how Gateway consumes manage alternatives without recomputing construction truth,
+4. define how Workbench renders alternatives, comparison matrix, selected alternative, evidence,
+   degraded states, and action gating,
+5. define canonical demo proof across manage, gateway, and workbench,
+6. explicitly record that current `lotus-manage` is not yet integrated with Gateway/Workbench for
+   construction alternatives.
+
+Acceptance:
+
+1. Gateway RFC identifies the strategic endpoint family it will expose to Workbench.
+2. Workbench RFC defines product journeys, screen anatomy, visual proof, accessibility, and
+   Gateway-only consumption.
+3. The RFCs are grounded in the implemented manage contracts and live evidence from Slices 8 and 9,
+   not speculative payloads.
+4. Manage RFC-0039 remains backend authority for alternatives; Gateway/Workbench do not own
+   construction logic.
+5. Full business outcome is explicitly not claimed until paired RFCs are implemented and live
+   proven.
 
 ### Slice 11: Final Closure Slice
 
@@ -954,7 +964,7 @@ Required artifacts:
 | API sprawl | One strategic alternatives endpoint family; no aliases. |
 | Solver non-determinism | Bounded time budgets, deterministic fallback, traceable solver version and tolerance. |
 | Sensitive optimization traces leak | Bounded traces and forbidden-field tests. |
-| Full business outcome not visible | Paired Gateway and Workbench RFC slice required before product outcome claim. |
+| Full business outcome not visible | Paired Gateway and Workbench RFCs are created after manage implementation proof and hardening, then implemented separately before any full product-outcome claim. |
 
 ---
 
@@ -972,7 +982,7 @@ RFC-0039 is complete only when:
 8. live proof shows realistic discretionary mandate comparison for `PB_SG_GLOBAL_BAL_001`,
 9. degraded-source behavior is tested,
 10. no AI, Gateway, or UI layer chooses the alternative on behalf of the PM,
-11. paired Gateway/Workbench RFCs exist for integration and full realization,
+11. paired Gateway/Workbench RFCs have been created from stable manage contracts and live evidence for integration and full realization,
 12. README/wiki/supported-features are updated truthfully,
 13. CI is green,
 14. wiki is published after merge,
@@ -1009,11 +1019,14 @@ business outcome to users.
 
 Full realization requires:
 
-1. a Gateway RFC that composes manage alternative sets into a Workbench-facing construction
+1. Gateway and Workbench realization RFCs created near the end of manage implementation, after
+   manage API contracts, supportability behavior, and live evidence are stable enough to avoid
+   speculative payloads,
+2. a Gateway RFC that composes manage alternative sets into a Workbench-facing construction
    comparison contract,
-2. a Workbench RFC that renders a DPM construction lab / alternatives comparison experience,
-3. canonical proof across manage, gateway, and workbench,
-4. documentation and wiki material useful for business, engineering, operations, sales/pre-sales,
+3. a Workbench RFC that renders a DPM construction lab / alternatives comparison experience,
+4. canonical proof across manage, gateway, and workbench,
+5. documentation and wiki material useful for business, engineering, operations, sales/pre-sales,
    marketing, and client demos.
 
 Until those paired RFCs are implemented and live-proven, `lotus-manage` may claim backend
