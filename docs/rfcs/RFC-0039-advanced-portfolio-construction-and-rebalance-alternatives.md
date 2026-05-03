@@ -2,14 +2,14 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED - IMPLEMENTATION READY |
+| **Status** | IMPLEMENTED - MANAGE BACKEND FOUNDATION COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | DPM head, portfolio manager, CIO desk, investment control, tax specialist, operations, sales/pre-sales |
 | **Depends On** | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, RFC-0038, `lotus-core` RFC-0087, Gateway RFC-0098, Workbench RFC-0098 |
 | **Doc Location** | `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md` |
-| **Implementation Branch** | TBD when implementation begins |
+| **Implementation Branch** | `feat/rfc0039-gold-standard-tightening` |
 
 ---
 
