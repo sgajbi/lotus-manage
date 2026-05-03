@@ -1,11 +1,47 @@
-# RFC-0024: Unified PostgreSQL Persistence for lotus-manage and Advisory
+# RFC-0024: PostgreSQL Persistence for lotus-manage Supportability
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | COMPLETED (SLICE 19) |
+| **Status** | COMPLETED FOR LOTUS-MANAGE; ADVISORY PORTION SUPERSEDED BY LOTUS-ADVISE SPLIT |
 | **Created** | 2026-02-20 |
-| **Depends On** | RFC-0014G, RFC-0017, RFC-0018, RFC-0019, RFC-0020, RFC-0023 |
+| **Depends On** | RFC-0017, RFC-0018, RFC-0019, RFC-0020, RFC-0023 |
 | **Doc Location** | `docs/rfcs/RFC-0024-unified-postgresql-persistence-for-dpm-and-advisory.md` |
+
+## 0. Current Status Review (2026-05-03)
+
+This RFC originally bundled lotus-manage DPM supportability persistence with advisory proposal
+persistence. That bundling is no longer the active architecture. Current lotus-manage is a
+discretionary mandate portfolio-management service; advisor-led proposal simulation, artifacts,
+consent, and lifecycle persistence belong in `lotus-advise`.
+
+The lotus-manage portion is complete and remains active:
+
+| Requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Durable DPM run repository | `src/infrastructure/rebalance_runs/postgres.py`, `tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py` | Implemented |
+| Idempotency, async operations, workflow decisions, lineage, artifacts | `src/api/routers/rebalance_runs.py`, `src/core/supportability/`, supportability tests | Implemented |
+| Forward-only Postgres migrations | `src/infrastructure/postgres_migrations.py`, `src/infrastructure/postgres_migrations/dpm/0001_baseline.sql`, migration tests | Implemented |
+| Postgres backend configuration and guardrails | `src/api/persistence_profile.py`, `src/api/production_cutover_contract.py`, `tests/unit/api/test_persistence_profile.py` | Implemented |
+| Repository parity and deterministic replay support | `tests/unit/dpm/supportability/`, integration and live API validation tests | Implemented |
+
+Historical advisory implementation notes in this file are retained only to explain why the RFC
+became broad during an earlier service-boundary phase. They are not current lotus-manage work
+items, and they must not be used as a reason to recreate proposal persistence, proposal environment
+variables, or advisory routes in this repository.
+
+## 0.1 Current lotus-manage Acceptance Criteria
+
+1. Production DPM supportability uses PostgreSQL with explicit DSN and driver guardrails.
+2. Migration tooling is forward-only, repeatable, and protected by advisory locks.
+3. Run, idempotency, async operation, workflow, lineage, artifact, and retention repositories have
+   deterministic tests and API coverage.
+4. Local development profiles remain available only where explicitly documented.
+5. No advisory proposal runtime surface is reintroduced in lotus-manage.
+
+## 0.2 Historical Scope Record
+
+Sections 1 onward preserve the original combined-scope RFC record. They are retained for audit and
+migration traceability; the active scope is the manage-only acceptance criteria above.
 
 ## 1. Executive Summary
 

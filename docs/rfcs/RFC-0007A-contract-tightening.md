@@ -28,6 +28,22 @@ Implemented:
 Pending:
 1. None.
 
+### 0.2 Current Status Review (2026-05-03)
+
+RFC-0007A remains **implemented and aligned**. It is the contract-tightening baseline for the
+current lotus-manage API surface, including RFC-0036's consolidated stateful/stateless input model.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Keep one canonical simulation route | `src/api/routers/rebalance.py`; OpenAPI and live API validation tests assert current route inventory | Implemented |
+| Use discriminated execution intents | `src/core/models.py`; engine/golden tests assert `SECURITY_TRADE` and `FX_SPOT` intent shape | Implemented |
+| Make valuation policy explicit | `src/core/models.py`, `src/core/valuation.py`, `tests/unit/dpm/engine/test_engine_valuation_service.py` | Implemented |
+| Lock non-zero holdings and enforce shelf restrictions | `src/core/rebalance/universe.py`; golden scenarios for restricted, sell-only, suspended, and banned instruments | Implemented |
+| Avoid compatibility aliases for simulation | `tests/unit/test_validate_live_api.py` and OpenAPI certification checks ensure retired advisory/duplicate surfaces stay absent | Implemented |
+
+Design reasoning remains valid: lotus-manage now exposes one certified rebalance execution surface
+with explicit input mode selection, rather than multiple overlapping advisory-era routes.
+
 ---
 
 ## 1. Problem Statement

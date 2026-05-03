@@ -149,3 +149,36 @@ def test_endpoint_certification_wiki_covers_openapi_paths() -> None:
     missing = [path for path in sorted(app.openapi()["paths"]) if path not in certification]
 
     assert missing == []
+
+
+def test_foundation_rfcs_are_rebaselined_to_current_dpm_scope() -> None:
+    reviewed_rfcs = [
+        "RFC-0002-rebalance-simulation-mvp-hardening-enterprise-completeness.md",
+        "RFC-0007A-contract-tightening.md",
+        "RFC-0021-dpm-openapi-contract-hardening.md",
+        "RFC-0024-unified-postgresql-persistence-for-dpm-and-advisory.md",
+        "RFC-0025-postgres-only-production-mode-cutover.md",
+        "RFC-0028-dpm-integration-capabilities-contract.md",
+    ]
+    missing_review = [
+        rfc
+        for rfc in reviewed_rfcs
+        if "Current Status Review (2026-05-03)"
+        not in (ROOT / "docs" / "rfcs" / rfc).read_text(encoding="utf-8")
+    ]
+
+    assert missing_review == []
+
+    rfc_0028 = (
+        ROOT / "docs" / "rfcs" / "RFC-0028-dpm-integration-capabilities-contract.md"
+    ).read_text(encoding="utf-8")
+    assert "`GET /api/v1/integration/capabilities`" in rfc_0028
+    assert "`GET /integration/capabilities`" not in rfc_0028
+
+    for rfc in [
+        "RFC-0024-unified-postgresql-persistence-for-dpm-and-advisory.md",
+        "RFC-0025-postgres-only-production-mode-cutover.md",
+    ]:
+        text = (ROOT / "docs" / "rfcs" / rfc).read_text(encoding="utf-8")
+        assert "ADVISORY PORTION SUPERSEDED BY LOTUS-ADVISE SPLIT" in text
+        assert "not current lotus-manage" in text
