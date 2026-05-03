@@ -19,6 +19,7 @@ from src.api.openapi_enrichment import enrich_openapi_schema
 from src.api.persistence_profile import validate_persistence_profile_guardrails
 from src.api.persistence_profile import app_persistence_profile_name
 from src.api.production_cutover_contract import validate_cutover_migrations_applied
+from src.api.routers.construction import router as construction_router
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
@@ -130,6 +131,13 @@ app = FastAPI(
             "name": "lotus-manage Monitoring",
             "description": "Mandate health monitoring runs and exception queue endpoints.",
         },
+        {
+            "name": "lotus-manage Construction Alternatives",
+            "description": (
+                "RFC-0039 portfolio construction alternative generation, retrieval, and "
+                "selection endpoints."
+            ),
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -163,6 +171,7 @@ app.include_router(rebalance_simulation_router, prefix="/api/v1")
 app.include_router(integration_capabilities_router, prefix="/api/v1")
 app.include_router(mandates_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
+app.include_router(construction_router, prefix="/api/v1")
 
 
 @app.get(

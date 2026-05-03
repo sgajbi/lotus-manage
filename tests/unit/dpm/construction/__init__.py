@@ -1,0 +1,1 @@
+"""Construction alternative unit tests."""

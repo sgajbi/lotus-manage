@@ -59,8 +59,16 @@ evidence, and supported-feature promotion.
   monitoring APIs, bounded command-center summary, local manage proof, local canonical manage plus
   live core proof, wiki publication, and downstream Gateway/Workbench/platform handoff issues.
 - RFC-0039
-  proposed advanced portfolio construction and rebalance alternatives roadmap, including tax,
-  turnover, liquidity, ESG, risk, currency-overlay, and regime-stress-aware construction methods
+  implementation-backed manage foundation: advanced portfolio construction and rebalance
+  alternatives now have a governed source-data and method map, manage-local construction API
+  governance, a dedicated `src/core/construction/` package, pure alternative models, do-nothing
+  baseline, heuristic wrapping, normalized drift/turnover metrics, conservative alternative-set
+  status roll-up, a bounded method registry with explicit solver/fallback posture, pure
+  tax/turnover/liquidity/cost/FX enrichment posture, risk/performance supportability seams that
+  preserve upstream authority, certified manage backend APIs for generating, retrieving, and
+  selecting persisted construction alternative sets, Postgres-backed canonical manage proof, and
+  construction-specific Gateway/Workbench realization requirements. Full product-surface support is
+  not claimed until Gateway and Workbench implement and live-prove the downstream journey.
 - RFC-0040
   proposed pre-trade proof-pack, decision-timeline, and DPM evidence-fabric roadmap
 - RFC-0041

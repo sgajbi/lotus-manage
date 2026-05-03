@@ -2,7 +2,7 @@ import argparse
 import json
 import uuid
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -15,7 +15,7 @@ class DemoRunError(RuntimeError):
 
 
 def _load_json(filename: str) -> dict[str, Any]:
-    return json.loads((DEMO_DIR / filename).read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads((DEMO_DIR / filename).read_text(encoding="utf-8")))
 
 
 def _assert(condition: bool, message: str) -> None:
@@ -57,7 +57,7 @@ def _run_scenario(
         f"{name}: expected HTTP {expected_http}, got {response.status_code}, body={response.text}",
     )
     if response.content:
-        return response.json()
+        return cast(dict[str, Any], response.json())
     return {}
 
 
