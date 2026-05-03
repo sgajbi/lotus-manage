@@ -6,10 +6,15 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Path, status
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-from src.api.dependencies import get_construction_repository, get_proof_pack_repository
+from src.api.dependencies import (
+    get_construction_repository,
+    get_mandate_repository,
+    get_proof_pack_repository,
+)
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import proof_pack_service
 from src.core.construction.repository import ConstructionRepository
+from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs import render_proof_pack_markdown
 from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
 from src.core.proof_packs.models import DpmPreTradeProofPack
@@ -156,6 +161,7 @@ def generate_proof_pack(
     ] = None,
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
 ) -> DpmProofPackGenerateResponse:
     try:
@@ -173,6 +179,7 @@ def generate_proof_pack(
                 mandate_id=request.mandate_id,
                 idempotency_key=idempotency_key,
                 run_service=run_service,
+                mandate_repository=mandate_repository,
                 proof_pack_repository=proof_pack_repository,
             )
         else:
@@ -191,6 +198,7 @@ def generate_proof_pack(
                 idempotency_key=idempotency_key,
                 construction_repository=construction_repository,
                 run_service=run_service,
+                mandate_repository=mandate_repository,
                 proof_pack_repository=proof_pack_repository,
             )
         proof_pack = proof_pack_service.ensure_handoff_refs(

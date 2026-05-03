@@ -259,6 +259,9 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     rfc = (
         ROOT / "docs" / "rfcs" / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
     ).read_text(encoding="utf-8")
+    slice12 = (ROOT / "docs" / "rfcs" / "RFC-0040-mandate-context-hardening-slice12.md").read_text(
+        encoding="utf-8"
+    )
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
 
@@ -274,6 +277,7 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
         "RFC-0040-gateway-workbench-realization-slice8.md",
         "RFC-0040-implementation-proof-slice9.md",
         "RFC-0040-hardening-review-slice10.md",
+        "RFC-0040-mandate-context-hardening-slice12.md",
     ]
     missing_evidence = [name for name in required_evidence if name not in rfc]
 
@@ -284,7 +288,11 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "PR/CI/WIKI PUBLICATION PENDING" not in rfc
     assert "output/rfc0040-proof/20260503-135112" in rfc
     assert "output/rfc0040-proof/20260503-142438" in rfc
+    assert "output/rfc0040-proof/20260503-145818" in rfc
     assert "critical-review.json" in rfc
+    assert "Slice 12 - Post-Gold Mandate-Context Source Hardening" in rfc
+    assert "DPM_MANDATE_TWIN_EVIDENCE_MISSING" in slice12
+    assert "DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH" in slice12
     assert "Gold-Pass Assessment Template" not in rfc
     assert "Full front-office proof-pack product realization remains explicitly gated" in rfc
     assert "b2c3734" in rfc
@@ -292,7 +300,9 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "risk drawdown returned `partial`" in rfc
     assert "| Pre-trade proof packs |" in supported_features
     assert "Supported as RFC-0040 manage backend authority" in supported_features
+    assert "source-backed mandate-context attachment" in supported_features
     assert "Gateway composition, Workbench review UX" in supported_features
     assert "Pre-Trade Proof Pack Flow" in supported_features
+    assert "output/rfc0040-proof/20260503-145818" in supported_features
     assert "critical-review.json" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features

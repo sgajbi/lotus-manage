@@ -8,6 +8,11 @@ from src.core.construction import (
     build_rebalance_result_alternative,
 )
 from src.core.models import EngineOptions, RebalanceResult
+from src.core.mandates import (
+    DpmMandateDigitalTwin,
+    DpmMandateHealthInput,
+    calculate_mandate_health,
+)
 from src.core.proof_packs import (
     ProofPackSourceValidationError,
     build_proof_pack_from_run,
@@ -77,6 +82,30 @@ def _run_record(*, result: RebalanceResult | None = None) -> DpmRunRecord:
     )
 
 
+def _mandate_twin() -> DpmMandateDigitalTwin:
+    return DpmMandateDigitalTwin.model_validate(
+        {
+            "mandate_id": "mandate_001",
+            "portfolio_id": "pf_proof_pack_1",
+            "mandate_version": "3",
+            "as_of_date": "2026-05-03",
+            "base_currency": "USD",
+            "reference_currency": "USD",
+            "risk_profile": "BALANCED",
+            "investment_objective": "LONG_TERM_TOTAL_RETURN",
+            "time_horizon": "LONG_TERM",
+            "model_portfolio_id": "MODEL_DPM_BALANCED",
+            "model_portfolio_version": "2026.04",
+            "constraints": {
+                "cash_band_min_weight": "0.00",
+                "cash_band_max_weight": "0.10",
+                "turnover_budget": "0.15",
+            },
+            "review_policy": {"review_frequency": "QUARTERLY"},
+        }
+    )
+
+
 def _section(pack, section_type: str):
     return next(section for section in pack.sections if section.section_type == section_type)
 
@@ -99,6 +128,8 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
         reason="Rebalance back to model after drift review.",
         created_at=CREATED_AT,
         mandate_id="mandate_001",
+        mandate_twin=_mandate_twin(),
+        mandate_health=calculate_mandate_health(DpmMandateHealthInput(twin=_mandate_twin())),
         workflow_decisions=[decision],
     )
 
@@ -107,6 +138,9 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
     assert pack.content_hash.startswith("sha256:")
     assert pack.source_hashes["rebalance_run"].startswith("sha256:")
     assert _section(pack, "before_state").state == "READY"
+    assert _section(pack, "mandate_context").state == "PENDING_REVIEW"
+    assert pack.source_hashes["mandate_twin"].startswith("sha256:")
+    assert pack.source_hashes["mandate_health"].startswith("sha256:")
     assert _section(pack, "trade_intents").metrics["trade_count"] == 2
     assert _section(pack, "approval_requirements").metrics["workflow_decision_count"] == 1
     assert any(event.event_type == "WORKFLOW_DECISION" for event in pack.decision_timeline.events)
@@ -116,7 +150,7 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
     assert _section(pack, "reporting_refs").facts["adapter_contract"] == "DpmProofPackReportInput"
     assert _section(pack, "ai_refs").state == "READY"
     assert _section(pack, "ai_refs").facts["adapter_contract"] == "DpmProofPackAiEvidenceInput"
-    assert pack.status == "DEGRADED"
+    assert pack.status == "PENDING_REVIEW"
 
 
 def test_missing_mandate_identity_blocks_promotion_without_hiding_other_evidence() -> None:
@@ -134,13 +168,31 @@ def test_missing_mandate_identity_blocks_promotion_without_hiding_other_evidence
     assert _section(pack, "before_state").state == "READY"
 
 
+def test_mandate_context_degrades_when_only_identifier_is_available() -> None:
+    pack = build_proof_pack_from_run(
+        run=_run_record(),
+        created_by="pm_001",
+        reason="Rebalance back to model after drift review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    mandate = _section(pack, "mandate_context")
+    assert mandate.state == "DEGRADED"
+    assert mandate.reason_codes == ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
+    assert "mandate_twin" not in pack.source_hashes
+
+
 def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
+    mandate_twin = _mandate_twin()
     kwargs = {
         "run": _run_record(),
         "created_by": "pm_001",
         "reason": "Rebalance back to model after drift review.",
         "created_at": CREATED_AT,
         "mandate_id": "mandate_001",
+        "mandate_twin": mandate_twin,
+        "mandate_health": calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin)),
     }
 
     first = build_proof_pack_from_run(**kwargs)

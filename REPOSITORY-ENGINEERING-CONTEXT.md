@@ -83,9 +83,11 @@ Current repository posture:
     foundation: durable `DpmPreTradeProofPack` JSON, deterministic Markdown summary, report-input
     handoff, AI-evidence handoff with forbidden-action/field guardrails, immutable in-memory and
     PostgreSQL persistence, append-only refs, retention metadata, section/content hashes, source
-    lineage, certified `/api/v1/rebalance/proof-packs/*` APIs, and canonical Postgres-backed live
-    proof under `output/rfc0040-proof/20260503-135112` plus post-merge audit rerun
-    `output/rfc0040-proof/20260503-142438`. `lotus-gateway` and `lotus-workbench` RFC-0098
+    lineage, source-backed mandate-context attachment from persisted RFC-0038 mandate twin and
+    health evidence when available, certified `/api/v1/rebalance/proof-packs/*` APIs, and
+    canonical Postgres-backed live proof under `output/rfc0040-proof/20260503-135112`,
+    post-merge audit rerun `output/rfc0040-proof/20260503-142438`, and mandate-context hardening
+    rerun `output/rfc0040-proof/20260503-145818`. `lotus-gateway` and `lotus-workbench` RFC-0098
     documents have been aligned to consume manage truth without reconstruction. Gateway
     composition, Workbench proof-pack review UX, report materialization, AI memo generation, and
     full front-office product-outcome support remain downstream work in the owning repositories;

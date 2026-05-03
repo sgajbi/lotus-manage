@@ -1556,11 +1556,20 @@ Functional coverage:
 - idempotent replay with stable content hash,
 - selected-alternative source validation,
 - persisted proof-pack lookup after generation,
-- optional Markdown/report/AI link generation in the response.
+- optional Markdown/report/AI link generation in the response,
+- source-backed mandate-context attachment from the persisted RFC-0038 mandate digital twin and
+  latest mandate-health snapshot when available,
+- truthful mandate-context degradation when a caller supplies only a mandate id without persisted
+  mandate evidence,
+- portfolio-mismatched mandate evidence is rejected and exposed as
+  `DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH` rather than attached to the proof pack.
 
 Non-functional posture:
 
 - Proof-pack content is hashed and persisted immutably.
+- `mandate_context` cannot be promoted to `READY` solely from caller-supplied identity; proof-pack
+  source hashes must carry mandate twin and mandate-health evidence for ready mandate-context
+  posture.
 - The route does not reconstruct source facts from downstream report, AI, Gateway, or Workbench
   layers.
 - Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
@@ -1571,6 +1580,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_proof_pack_api.py -q
+python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py::test_mandate_context_degrades_when_only_identifier_is_available -q
 python -m pytest tests/unit/test_rfc0040_evidence_script.py tests/unit/dpm/proof_packs/test_proof_pack_service.py -q
 python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0.1:8024
 python scripts/openapi_quality_gate.py

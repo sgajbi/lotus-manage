@@ -23,6 +23,7 @@ from src.core.proof_packs.models import (
     ProofPackSourceType,
     ProofPackStatus,
 )
+from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
 from src.core.models import RebalanceResult
@@ -74,6 +75,9 @@ def build_proof_pack_from_run(
     created_at: datetime | None = None,
     correlation_id: str | None = None,
     mandate_id: str | None = None,
+    mandate_twin: DpmMandateDigitalTwin | None = None,
+    mandate_health: DpmMandateHealthSnapshot | None = None,
+    mandate_evidence_gap_codes: list[str] | None = None,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
 ) -> DpmPreTradeProofPack:
     return _build_proof_pack(
@@ -87,6 +91,9 @@ def build_proof_pack_from_run(
         created_at=created_at,
         correlation_id=correlation_id,
         mandate_id=mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes or [],
         workflow_decisions=workflow_decisions or [],
     )
 
@@ -102,6 +109,9 @@ def build_proof_pack_from_selected_alternative(
     created_at: datetime | None = None,
     correlation_id: str | None = None,
     mandate_id: str | None = None,
+    mandate_twin: DpmMandateDigitalTwin | None = None,
+    mandate_health: DpmMandateHealthSnapshot | None = None,
+    mandate_evidence_gap_codes: list[str] | None = None,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
 ) -> DpmPreTradeProofPack:
     selected = next(
@@ -130,6 +140,9 @@ def build_proof_pack_from_selected_alternative(
         created_at=created_at,
         correlation_id=correlation_id,
         mandate_id=mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes or [],
         workflow_decisions=workflow_decisions or [],
     )
 
@@ -146,6 +159,9 @@ def _build_proof_pack(
     created_at: datetime | None,
     correlation_id: str | None,
     mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> DpmPreTradeProofPack:
     resolved_created_at = created_at or datetime.now(timezone.utc)
@@ -155,6 +171,8 @@ def _build_proof_pack(
         run=run,
         alternative_set=alternative_set,
         selected_alternative=selected_alternative,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
     )
     portfolio_id = _resolve_portfolio_id(run=run, alternative_set=alternative_set)
     resolved_correlation_id = (
@@ -177,6 +195,8 @@ def _build_proof_pack(
         alternative_set=alternative_set,
         selected_alternative=selected_alternative,
         source_hashes=source_hashes,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
     )
 
     sections = [
@@ -195,6 +215,9 @@ def _build_proof_pack(
             source_ref_count=len(source_refs),
             reason=reason,
             mandate_id=mandate_id,
+            mandate_twin=mandate_twin,
+            mandate_health=mandate_health,
+            mandate_evidence_gap_codes=mandate_evidence_gap_codes,
             created_by=created_by,
             workflow_decisions=workflow_decisions,
         )
@@ -267,6 +290,9 @@ def _build_section(
     source_ref_count: int,
     reason: str | None,
     mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
     created_by: str,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> DpmProofPackSection:
@@ -280,6 +306,9 @@ def _build_section(
         selection=selection,
         reason=reason,
         mandate_id=mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
         created_by=created_by,
         source_ref_count=source_ref_count,
         workflow_decisions=workflow_decisions,
@@ -326,6 +355,9 @@ def _section_payload(
     selection: ConstructionAlternativeSelection | None,
     reason: str | None,
     mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
     created_by: str,
     source_ref_count: int,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
@@ -355,19 +387,64 @@ def _section_payload(
                 {},
                 ["DPM_PROOF_PACK_MANDATE_ID_MISSING"],
             )
+        if mandate_twin is None:
+            reason_codes = mandate_evidence_gap_codes or ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
+            return (
+                "DEGRADED",
+                "Mandate identity is present, but no persisted mandate digital-twin evidence is attached.",
+                {"mandate_id": mandate_id},
+                {},
+                reason_codes,
+            )
+        if mandate_health is None:
+            return (
+                "DEGRADED",
+                "Mandate digital-twin evidence is attached, but latest mandate-health evidence is missing.",
+                {
+                    "mandate_id": mandate_twin.mandate_id,
+                    "mandate_version": mandate_twin.mandate_version,
+                    "portfolio_id": mandate_twin.portfolio_id,
+                    "as_of_date": mandate_twin.as_of_date.isoformat(),
+                    "risk_profile": mandate_twin.risk_profile,
+                    "model_portfolio_id": mandate_twin.model_portfolio_id,
+                    "field_gap_codes": mandate_twin.field_gap_codes,
+                },
+                {},
+                ["DPM_MANDATE_HEALTH_EVIDENCE_MISSING", *mandate_twin.field_gap_codes],
+            )
+        mandate_state = _mandate_health_state(mandate_health)
+        reason_codes = [reason.reason_code for reason in mandate_health.top_reasons]
         return (
-            "READY",
-            "Mandate identity is present; deeper mandate twin evidence is resolved in later slices.",
-            {"mandate_id": mandate_id},
-            {},
-            [],
+            mandate_state,
+            "Mandate digital-twin and health evidence are attached from persisted RFC-0038 truth.",
+            {
+                "mandate_id": mandate_twin.mandate_id,
+                "mandate_version": mandate_twin.mandate_version,
+                "portfolio_id": mandate_twin.portfolio_id,
+                "as_of_date": mandate_twin.as_of_date.isoformat(),
+                "risk_profile": mandate_twin.risk_profile,
+                "investment_objective": mandate_twin.investment_objective,
+                "model_portfolio_id": mandate_twin.model_portfolio_id,
+                "model_portfolio_version": mandate_twin.model_portfolio_version,
+                "health_snapshot_id": mandate_health.health_snapshot_id,
+                "health_state": mandate_health.health_state.value,
+                "source_readiness_state": mandate_health.source_readiness_state,
+                "field_gap_codes": mandate_twin.field_gap_codes,
+            },
+            {
+                "health_score": mandate_health.health_score,
+                "dimension_count": len(mandate_health.dimension_scores),
+                "top_reason_count": len(mandate_health.top_reasons),
+                "source_lineage_count": len(mandate_twin.source_lineage),
+            },
+            [*reason_codes, *mandate_twin.field_gap_codes],
         )
     if section_type == "source_readiness":
-        state = result.lineage.source_supportability_state if result is not None else None
+        source_state = result.lineage.source_supportability_state if result is not None else None
         if result is None:
             return ("BLOCKED", "No source run is available.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
         reason_codes = (
-            [] if state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
+            [] if source_state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
         )
         return (
             "READY" if not reason_codes else "DEGRADED",
@@ -375,7 +452,7 @@ def _section_payload(
             {
                 "input_mode": result.lineage.input_mode,
                 "source_system": result.lineage.source_system,
-                "source_supportability_state": state,
+                "source_supportability_state": source_state,
             },
             {},
             reason_codes,
@@ -829,6 +906,8 @@ def _source_hashes(
     run: DpmRunRecord | None,
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
 ) -> dict[str, str]:
     hashes: dict[str, str] = {}
     if run is not None:
@@ -839,6 +918,10 @@ def _source_hashes(
         hashes["selected_alternative"] = hash_canonical_payload(
             selected_alternative.model_dump(mode="json")
         )
+    if mandate_twin is not None:
+        hashes["mandate_twin"] = hash_canonical_payload(mandate_twin.model_dump(mode="json"))
+    if mandate_health is not None:
+        hashes["mandate_health"] = hash_canonical_payload(mandate_health.model_dump(mode="json"))
     return hashes
 
 
@@ -848,6 +931,8 @@ def _source_refs(
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
     source_hashes: dict[str, str],
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
 ) -> list[DpmProofPackSourceRef]:
     refs = []
     if run is not None:
@@ -881,7 +966,37 @@ def _source_refs(
                 content_hash=source_hashes.get("selected_alternative"),
             )
         )
+    if mandate_twin is not None:
+        refs.append(
+            DpmProofPackSourceRef(
+                source_system="lotus-manage",
+                source_type="DPM_MANDATE_DIGITAL_TWIN",
+                source_id=mandate_twin.mandate_id,
+                supportability_state="READY" if not mandate_twin.field_gap_codes else "DEGRADED",
+                content_hash=source_hashes.get("mandate_twin"),
+            )
+        )
+    if mandate_health is not None:
+        refs.append(
+            DpmProofPackSourceRef(
+                source_system="lotus-manage",
+                source_type="DPM_MANDATE_HEALTH_SNAPSHOT",
+                source_id=mandate_health.health_snapshot_id,
+                supportability_state=mandate_health.health_state.value,
+                content_hash=source_hashes.get("mandate_health"),
+            )
+        )
     return refs
+
+
+def _mandate_health_state(snapshot: DpmMandateHealthSnapshot) -> ProofPackSectionState:
+    if snapshot.health_state.value == "BLOCKED":
+        return "BLOCKED"
+    if snapshot.health_state.value == "PENDING_REVIEW":
+        return "PENDING_REVIEW"
+    if snapshot.source_readiness_state not in {"READY", "ready"}:
+        return "DEGRADED"
+    return "READY"
 
 
 def _source_supportability(
