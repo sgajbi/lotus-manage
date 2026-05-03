@@ -333,6 +333,50 @@ Evidence:
 4. `tests/unit/dpm/api/test_waves_api.py`
 5. `docs/standards/api-vocabulary/lotus-manage-api-vocabulary.v1.json`
 
+## Slice 8 Supportability, Observability, and Operator Diagnostics Result
+
+Slice 8 adds a product-safe supportability surface for operators and bounded telemetry for wave
+supportability posture.
+
+Implemented truth:
+
+1. `GET /api/v1/rebalance/waves/{wave_id}/supportability` returns wave-level readiness posture,
+   issue counts, bounded item-state issues, source owners, reason codes, remediation routes, and
+   support refs.
+2. The response deliberately excludes portfolio identifiers, client identifiers, raw request
+   bodies, raw response bodies, source-ref payloads, secrets, and trace details.
+3. Blocked source or simulation states produce `blocked` supportability with critical issues.
+4. Degraded/review/selected-but-not-proof-ready states produce `degraded` supportability with
+   warning issues.
+5. Ready workflow states return `ready` supportability and a bounded continue-workflow operator
+   action.
+6. The endpoint emits safe structured logs with only wave state, supportability state, bounded
+   reason, and issue count.
+7. `lotus_manage_wave_supportability_total` records bounded metric labels:
+   `surface`, `supportability_state`, and `reason`.
+8. The observability monitoring contract and validator now include the wave supportability metric.
+9. Tests prove product-safe responses, missing-wave behavior, bounded metric labels, contract
+   alignment, and no portfolio/client identifier leakage in the wave supportability endpoint or
+   metric labels.
+
+Production boundary:
+
+1. The endpoint is operator diagnostics, not a business workflow command.
+2. It does not expose raw upstream evidence; users should follow the remediation route and source
+   owner to repair the owning source product.
+3. Gateway and Workbench may later compose this endpoint, but they must keep the same no-sensitive
+   telemetry and no-reconstruction posture.
+
+Evidence:
+
+1. `src/api/services/wave_service.py`
+2. `src/api/routers/waves.py`
+3. `src/api/observability.py`
+4. `contracts/observability/lotus-manage-monitoring.v1.json`
+5. `tests/unit/dpm/api/test_waves_api.py`
+6. `tests/unit/dpm/api/test_observability_api.py`
+7. `tests/unit/test_observability_contracts.py`
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

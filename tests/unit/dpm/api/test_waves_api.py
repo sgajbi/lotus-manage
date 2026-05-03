@@ -1096,6 +1096,65 @@ def test_wave_workflow_commands_reject_invalid_states_and_empty_eligibility() ->
     assert handoff_invalid.json()["detail"]["code"] == "DPM_WAVE_HANDOFF_INVALID_STATE"
 
 
+def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={
+                **_request(),
+                "portfolios": [
+                    {"portfolio_id": PORTFOLIO_ID},
+                    {"portfolio_id": "PB_SG_CALLER_REF_ONLY_003"},
+                ],
+            },
+            headers={"Idempotency-Key": "idem-wave-supportability"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        supportability = client.get(f"/api/v1/rebalance/waves/{wave_id}/supportability")
+        missing = client.get("/api/v1/rebalance/waves/dwv_missing/supportability")
+        metrics = client.get("/metrics")
+
+    assert supportability.status_code == 200
+    payload = supportability.json()
+    assert payload["supportability_state"] == "blocked"
+    assert payload["reason"] == "wave_blocked_items"
+    assert payload["issue_counts"]["critical"] == 1
+    assert payload["issue_counts"]["info"] == 1
+    assert payload["issues"][0]["support_ref"].startswith(f"wave:{wave_id}:item:")
+    assert {issue["source_owner"] for issue in payload["issues"]} >= {"lotus-manage"}
+    assert "REFRESH_MANDATE_DIGITAL_TWIN" in payload["operator_actions"]
+    payload_text = supportability.text
+    assert PORTFOLIO_ID not in payload_text
+    assert "PB_SG_CALLER_REF_ONLY_003" not in payload_text
+    assert "source_refs" not in payload
+
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+    assert metrics.status_code == 200
+    assert "lotus_manage_wave_supportability_total" in metrics.text
+    assert 'surface="rebalance/waves/supportability"' in metrics.text
+    assert 'supportability_state="blocked"' in metrics.text
+    assert 'reason="wave_blocked_items"' in metrics.text
+    assert PORTFOLIO_ID not in metrics.text
+    assert "PB_SG_CALLER_REF_ONLY_003" not in metrics.text
+
+
 def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post(
@@ -1117,12 +1176,14 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]
+    supportability = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/supportability"]["get"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
     assert source_check["tags"] == ["lotus-manage Rebalance Waves"]
     assert approve["tags"] == ["lotus-manage Rebalance Waves"]
     assert stage["tags"] == ["lotus-manage Rebalance Waves"]
     assert handoff["tags"] == ["lotus-manage Rebalance Waves"]
+    assert supportability["tags"] == ["lotus-manage Rebalance Waves"]
     assert preview["responses"]["200"]["content"]["application/json"]["example"]["durable"] is False
     assert create["responses"]["201"]["content"]["application/json"]["example"]["durable"] is True
     assert (
@@ -1136,3 +1197,4 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "422" in source_check["responses"]
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
+    assert "excludes portfolio identifiers" in supportability["description"]

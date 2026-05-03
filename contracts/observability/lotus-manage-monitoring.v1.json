@@ -137,6 +137,23 @@
         "outcome": ["success", "not_found", "disabled", "conflict", "error"]
       },
       "source": "src.api.observability.record_workflow_decision"
+    },
+    {
+      "name": "lotus_manage_wave_supportability_total",
+      "type": "counter",
+      "description": "Counts product-safe rebalance wave supportability endpoint outcomes.",
+      "labels": {
+        "surface": ["rebalance/waves/supportability"],
+        "supportability_state": ["ready", "degraded", "blocked", "not_found"],
+        "reason": [
+          "wave_supportability_ready",
+          "wave_degraded_items",
+          "wave_blocked_items",
+          "wave_not_found",
+          "wave_supportability_error"
+        ]
+      },
+      "source": "src.api.observability.record_wave_supportability"
     }
   ],
   "dashboards": [

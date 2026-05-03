@@ -589,6 +589,45 @@ def handoff_wave(
     return handoff_ready, False
 
 
+def wave_supportability(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> dict[str, object]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    issues = [
+        issue
+        for index, item in enumerate(wave.items, start=1)
+        if (issue := _supportability_issue(wave_id=wave.wave_id, item=item, item_index=index))
+        is not None
+    ]
+    blocked_count = sum(1 for issue in issues if issue["severity"] == "CRITICAL")
+    degraded_count = sum(1 for issue in issues if issue["severity"] == "WARNING")
+    if blocked_count:
+        state = "blocked"
+        reason = "wave_blocked_items"
+    elif degraded_count:
+        state = "degraded"
+        reason = "wave_degraded_items"
+    else:
+        state = "ready"
+        reason = "wave_supportability_ready"
+    return {
+        "wave_id": wave.wave_id,
+        "wave_state": wave.state,
+        "supportability_state": state,
+        "reason": reason,
+        "item_count": len(wave.items),
+        "issue_counts": {
+            "critical": blocked_count,
+            "warning": degraded_count,
+            "info": sum(1 for issue in issues if issue["severity"] == "INFO"),
+        },
+        "issues": issues,
+        "operator_actions": _operator_actions(state=state, issues=issues),
+    }
+
+
 def _get_wave_or_raise(
     *,
     wave_id: str,
@@ -864,6 +903,95 @@ def _handoff_ref(
 def _handoff_content_hash(payload: dict[str, object]) -> str:
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
+
+
+def _supportability_issue(
+    *,
+    wave_id: str,
+    item: DpmRebalanceWaveItem,
+    item_index: int,
+) -> dict[str, object] | None:
+    if item.state in {"APPROVED", "STAGED", "HANDOFF_READY", "PROOF_PACK_READY", "SIMULATED"}:
+        if (
+            item.state != "PROOF_PACK_READY"
+            or item.diagnostics.get("proof_pack_state") != "DEGRADED"
+        ):
+            return None
+    severity = _supportability_severity(item)
+    if severity is None:
+        return None
+    reason_codes = item.reason_codes or [_supportability_reason(item)]
+    return {
+        "support_ref": f"wave:{wave_id}:item:{item_index}",
+        "item_state": item.state,
+        "severity": severity,
+        "source_owner": _supportability_source_owner(item),
+        "reason_codes": reason_codes,
+        "remediation_route": _supportability_remediation(item),
+    }
+
+
+def _supportability_severity(item: DpmRebalanceWaveItem) -> str | None:
+    if item.state in {"SOURCE_BLOCKED", "SIMULATION_BLOCKED"}:
+        return "CRITICAL"
+    if item.state in {"SOURCE_DEGRADED", "REVIEW_REQUIRED", "SELECTED"}:
+        return "WARNING"
+    if item.state in {"CANDIDATE", "SOURCE_READY"}:
+        return "INFO"
+    return None
+
+
+def _supportability_reason(item: DpmRebalanceWaveItem) -> str:
+    reason_by_state = {
+        "CANDIDATE": "SOURCE_CHECK_PENDING",
+        "SOURCE_READY": "SIMULATION_PENDING",
+        "SOURCE_DEGRADED": "SOURCE_DEGRADED",
+        "REVIEW_REQUIRED": "REVIEW_REQUIRED",
+        "SOURCE_BLOCKED": "SOURCE_BLOCKED",
+        "SIMULATION_BLOCKED": "SIMULATION_BLOCKED",
+        "SELECTED": "PROOF_PACK_PENDING_OR_DEGRADED",
+    }
+    return reason_by_state.get(item.state, "WAVE_ITEM_SUPPORTABILITY_REVIEW")
+
+
+def _supportability_source_owner(item: DpmRebalanceWaveItem) -> str:
+    owner = item.diagnostics.get("source_owner")
+    if isinstance(owner, str) and owner:
+        return owner
+    if item.state in {"SOURCE_BLOCKED", "SOURCE_DEGRADED", "REVIEW_REQUIRED"}:
+        return "lotus-manage"
+    if item.state == "SIMULATION_BLOCKED":
+        return "lotus-manage-construction"
+    if item.state == "SELECTED":
+        return "lotus-manage-proof-pack"
+    return "lotus-manage"
+
+
+def _supportability_remediation(item: DpmRebalanceWaveItem) -> str:
+    explicit = item.diagnostics.get("required_action")
+    if isinstance(explicit, str) and explicit:
+        return explicit
+    remediation_by_state = {
+        "CANDIDATE": "RUN_SOURCE_CHECK",
+        "SOURCE_READY": "RUN_WAVE_SIMULATION",
+        "SOURCE_DEGRADED": "REFRESH_SOURCE_EVIDENCE",
+        "REVIEW_REQUIRED": "PERFORM_HUMAN_REVIEW",
+        "SOURCE_BLOCKED": "REPAIR_SOURCE_DATA",
+        "SIMULATION_BLOCKED": "SUPPLY_VALID_RFC0039_CONSTRUCTION_INPUT",
+        "SELECTED": "GENERATE_OR_REVIEW_PROOF_PACK",
+    }
+    return remediation_by_state.get(item.state, "REVIEW_WAVE_ITEM_SUPPORTABILITY")
+
+
+def _operator_actions(*, state: str, issues: list[dict[str, object]]) -> list[str]:
+    if state == "ready":
+        return ["CONTINUE_GOVERNED_WAVE_WORKFLOW"]
+    routes = {
+        str(issue["remediation_route"])
+        for issue in issues
+        if isinstance(issue.get("remediation_route"), str)
+    }
+    return sorted(routes)
 
 
 def _simulation_result_state(items: list[DpmRebalanceWaveItem]) -> WaveState:

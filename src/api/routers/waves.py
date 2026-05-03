@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import logging
 from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
+from src.api.observability import record_wave_supportability
 from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
@@ -286,7 +288,60 @@ class DpmWaveWorkflowCommandRequest(BaseModel):
     )
 
 
+class DpmWaveSupportabilityIssue(BaseModel):
+    support_ref: str = Field(
+        description="Opaque support reference that avoids portfolio or client identifiers.",
+        examples=["wave:dwv_001:item:1"],
+    )
+    item_state: str = Field(description="Wave item workflow state.", examples=["SOURCE_BLOCKED"])
+    severity: Literal["INFO", "WARNING", "CRITICAL"] = Field(
+        description="Operator severity for this issue.",
+        examples=["CRITICAL"],
+    )
+    source_owner: str = Field(
+        description="Owning product or route responsible for remediation.",
+        examples=["lotus-manage"],
+    )
+    reason_codes: list[str] = Field(
+        description="Bounded reason codes explaining supportability posture.",
+        examples=[["MANDATE_DIGITAL_TWIN_MISSING"]],
+    )
+    remediation_route: str = Field(
+        description="Product-safe remediation route or action.",
+        examples=["REPAIR_SOURCE_DATA"],
+    )
+
+
+class DpmWaveSupportabilityResponse(BaseModel):
+    wave_id: str = Field(description="Wave identifier.", examples=["dwv_001"])
+    wave_state: str = Field(description="Current wave state.", examples=["SOURCE_CHECKED"])
+    supportability_state: Literal["ready", "degraded", "blocked"] = Field(
+        description="Bounded supportability state for the wave.",
+        examples=["blocked"],
+    )
+    reason: str = Field(
+        description="Bounded supportability reason.",
+        examples=["wave_blocked_items"],
+    )
+    item_count: int = Field(description="Number of wave items inspected.", examples=[2])
+    issue_counts: dict[str, int] = Field(
+        description="Issue count by severity.",
+        examples=[{"critical": 1, "warning": 0, "info": 1}],
+    )
+    issues: list[DpmWaveSupportabilityIssue] = Field(
+        description=(
+            "Product-safe issues without portfolio ids, client ids, raw requests, raw responses, "
+            "secrets, or trace values."
+        )
+    )
+    operator_actions: list[str] = Field(
+        description="Deduplicated product-safe remediation actions.",
+        examples=[["REPAIR_SOURCE_DATA", "RUN_WAVE_SIMULATION"]],
+    )
+
+
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -800,6 +855,62 @@ def handoff_wave(
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
     return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.get(
+    "/{wave_id}/supportability",
+    response_model=DpmWaveSupportabilityResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get product-safe wave supportability diagnostics",
+    description=(
+        "Returns operator-safe RFC-0041 wave supportability diagnostics. The response excludes "
+        "portfolio identifiers, client identifiers, raw request bodies, raw response bodies, "
+        "secrets, and trace details. Use this endpoint to understand blocked/degraded item states, "
+        "source owners, bounded reason codes, remediation routes, and support references."
+    ),
+    responses={
+        200: {"description": "Product-safe wave supportability diagnostics."},
+        404: {"description": "Wave not found."},
+    },
+)
+def get_wave_supportability(
+    wave_id: str,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveSupportabilityResponse:
+    try:
+        payload = wave_service.wave_supportability(
+            wave_id=wave_id,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        record_wave_supportability(
+            surface="rebalance/waves/supportability",
+            supportability_state="not_found",
+            reason="wave_not_found",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    supportability_state = str(payload["supportability_state"])
+    reason = str(payload["reason"])
+    record_wave_supportability(
+        surface="rebalance/waves/supportability",
+        supportability_state=supportability_state,
+        reason=reason,
+    )
+    logger.info(
+        "wave.supportability.inspected",
+        extra={
+            "extra_fields": {
+                "wave_state": payload["wave_state"],
+                "supportability_state": supportability_state,
+                "reason": reason,
+                "issue_count": len(cast(list[object], payload["issues"])),
+            }
+        },
+    )
+    return DpmWaveSupportabilityResponse.model_validate(payload)
 
 
 def _wave_validation_http_exception(exc: wave_service.DpmWaveValidationError) -> HTTPException:
