@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS |
+| **Status** | IMPLEMENTED PENDING PR MERGE AND WIKI PUBLICATION |
 | **Created** | 2026-05-03 |
 | **Depends On** | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, lotus-core RFC-0087 |
 | **Doc Location** | `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md` |
@@ -955,6 +955,8 @@ GitHub lane evidence appropriate to every mandate, health, monitoring, and comma
 | 2026-05-03 | Slice 5 - Command Center API | Complete | `src/api/routers/monitoring.py`, `src/api/services/mandate_service.py`, `tests/unit/dpm/api/test_monitoring_api.py`, `tests/integration/test_openapi_certification_matrix.py` | Bounded command-center summary implemented over persisted monitoring runs and active exceptions with explicit empty/partial supportability states. Hardening now scopes exception reads to the selected monitoring run at repository-query boundary before pagination. |
 | 2026-05-03 | Slice 6 - Gateway and Workbench Integration RFC Handoff | Complete | `docs/architecture/dpm-command-center-gateway-workbench-handoff.md`, `README.md`, `wiki/Architecture.md`, `wiki/Integrations.md`, `wiki/Supported-Features.md`, `sgajbi/lotus-gateway#180`, `sgajbi/lotus-workbench#140`, `sgajbi/lotus-platform#294` | Gateway composition contract, Workbench cockpit panel contract, no-direct-Workbench-bypass rule, and canonical PM-book demo seed requirements are documented as downstream handoff. No downstream implementation is claimed in this RFC. |
 | 2026-05-03 | Slice 7 - Local Manage API Proof | Complete for manage-local proof | `output/rfc0038-live-proof/20260503T063617Z/summary.json` (non-git evidence), `make check`, `make test-all` | Local live HTTP proof covered 16 mandate, health, monitoring, exception, and command-center calls with no failed responses. Proof identified and fixed stale exception aggregation by adding `monitoring_run_id` to monitoring exceptions and filtering command-center attention to the selected run. Canonical core/manage proof remains a later environment-dependent closure step. |
+| 2026-05-03 | Slice 8 - Hardening and Certification | Complete | `make check`, `make test-all`, `make live-api-validate-core`, PR #58 GitHub checks | Endpoint certification, OpenAPI, API vocabulary, no-alias, domain product, trust telemetry, observability, Docker build, and coverage gates passed. Live core/manage proof passed from local canonical manage on `127.0.0.1:8012` backed by Postgres and live `core-control.dev.lotus`/`core-query.dev.lotus`. |
+| 2026-05-03 | Slice 9 - Documentation, Wiki, and Closure | Complete pending post-merge publication | `README.md`, `wiki/Architecture.md`, `wiki/Integrations.md`, `wiki/Supported-Features.md`, PR #58 | README, wiki source, supported features, RFC progress, and downstream issues are updated. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` reports expected pre-merge publication drift until the repo-local wiki source is published after merge. |
 
 Current promotion posture:
 
@@ -998,3 +1000,105 @@ Slice 6 handoff summary:
    `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, `BOOK_SG_BALANCED_DPM`, tenant `default`, and
    the RFC-087 source products required to prove populated, partial, and empty command-center
    states.
+
+Core/manage live proof summary:
+
+1. Deployed `core-control.dev.lotus` and `core-query.dev.lotus` readiness returned `200`.
+2. Deployed `manage.dev.lotus/health/ready` returned `500`; this deployment state was not used as
+   success evidence for this RFC.
+3. Local canonical `lotus-manage` was started on `127.0.0.1:8012` with Postgres supportability,
+   `DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED=true`, `DPM_STATEFUL_CORE_SOURCING_ENABLED=true`, and
+   `DPM_CORE_BASE_URL=http://core-control.dev.lotus`.
+4. `make live-api-validate-core` passed with `LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8012` and
+   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available`.
+5. Proof covered readiness, capability truth, OpenAPI certification, removed proposal route,
+   stateful core sourcing, async duplicate-correlation conflict, Postgres supportability summary,
+   bounded metrics, and retired monolithic core-route absence on both core control and query.
+6. Stateful proof returned `source_system=lotus-core`, `source_supportability_state=READY`,
+   `model_portfolio_id=MODEL_PB_SG_GLOBAL_BAL_DPM`, `model_portfolio_version=2026.04`,
+   `source_lineage_bundle_id=rfc-087:PB_SG_GLOBAL_BAL_001:2026-04-10`, and a populated
+   `stateful_context_hash`.
+7. Additional degraded-source proof for as-of `2026-05-03` returned
+   `424 DPM_CORE_CONTEXT_INCOMPLETE` for stale market data instead of leaking an internal `500`.
+
+## 16. Gold-Pass Assessment
+
+### 16.1 Completed Scope
+
+RFC-0038 delivered the first implementation foundation for a discretionary mandate operating
+system:
+
+1. source-data field map for the minimum viable mandate digital twin,
+2. deterministic mandate digital-twin and mandate-health domain models,
+3. decomposed health scoring with dimension evidence, reason codes, thresholds, and recommended
+   actions,
+4. monitoring exception taxonomy with bounded severity and action vocabulary,
+5. in-memory and PostgreSQL mandate/health/monitoring persistence,
+6. certified mandate refresh, read, by-portfolio, version, diff, health read, and health
+   recalculation APIs,
+7. certified monitoring run, monitoring run detail/list, exception list, exception resolution, and
+   command-center summary APIs,
+8. downstream Gateway, Workbench, and platform automation handoff issues and contract
+   documentation,
+9. README/wiki/supported-features updates that distinguish implementation-backed features from
+   downstream product-surface work.
+
+### 16.2 Quality Improvements
+
+The implementation improved production posture in these areas:
+
+1. command-center exception aggregation is now scoped to the selected `monitoring_run_id` at the
+   repository boundary before pagination,
+2. stale market-data source posture now degrades as `424 DPM_CORE_CONTEXT_INCOMPLETE` instead of
+   escaping as an internal server error,
+3. tests now prove selected-run exception filtering against newer unrelated exceptions,
+4. Postgres and in-memory repositories share the same monitoring-run filtering contract,
+5. downstream integration rules explicitly prevent direct Workbench-to-manage calls and UI-side
+   health reconstruction,
+6. documentation now includes business-facing command-center outcomes, cockpit panels, canonical
+   demo data requirements, and integration diagrams.
+
+### 16.3 Debt Removed Or Avoided
+
+This RFC avoided adding another optimization-only surface without mandate control. It also avoided:
+
+1. duplicating source-data authority already owned by `lotus-core`,
+2. creating a monolithic DPM context endpoint,
+3. fabricating source readiness or PM-book discovery when data is partial,
+4. preserving advisory-era product behavior inside the DPM command-center surface,
+5. coupling Workbench directly to `lotus-manage` before Gateway composition is designed.
+
+### 16.4 Proven Evidence
+
+Local and remote evidence:
+
+1. `make check` passed with 632 unit tests and all local governance gates.
+2. `make test-all` passed with 813 tests and 99.01% total coverage.
+3. Targeted monitoring/repository tests passed: 15 tests.
+4. Documentation contract tests passed: 16 tests.
+5. Local manage live proof passed: 16/16 HTTP calls.
+6. Local canonical manage plus live core proof passed: 11/11 checks through
+   `make live-api-validate-core`.
+7. PR #58 remote Feature Lane and PR Merge Gate checks passed on commit `48cb72c`, including
+   workflow lint, lint/type/security, unit/integration/e2e tests, coverage, and Docker build.
+
+### 16.5 Remaining Governed Follow-Up
+
+The implementation has reached the expected backend foundation standard for RFC-0038. Remaining
+work is explicitly downstream or post-merge:
+
+1. publish repo-local wiki source after PR merge,
+2. complete Gateway composition in
+   [sgajbi/lotus-gateway#180](https://github.com/sgajbi/lotus-gateway/issues/180),
+3. complete Workbench cockpit integration in
+   [sgajbi/lotus-workbench#140](https://github.com/sgajbi/lotus-workbench/issues/140),
+4. extend platform canonical seed automation in
+   [sgajbi/lotus-platform#294](https://github.com/sgajbi/lotus-platform/issues/294),
+5. repair or refresh the deployed `manage.dev.lotus` runtime separately; the RFC proof used local
+   canonical manage because deployed manage readiness returned `500`.
+
+Skills and context decision: no new local Codex skill is required for this RFC. The existing
+`lotus-backend-delivery-governance`, `lotus-endpoint-certification-loop`, and
+`lotus-readme-wiki-governance` skills were sufficient. The repo context remains accurate for the
+current backend foundation; downstream product-surface context should be updated in the owning
+Gateway, Workbench, and platform issues when those implementations land.

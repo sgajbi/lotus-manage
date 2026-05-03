@@ -264,7 +264,7 @@ def _resolve_stateful_source_context(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
             detail="DPM_CORE_CONTEXT_INCOMPLETE",
         ) from exc
-    except DpmCoreResolverError as exc:
+    except (DpmCoreContextIncompleteError, DpmCoreResolverError) as exc:
         record_core_resolver_call(
             operation=DPM_CORE_RESOLVER_OPERATION,
             outcome="incomplete",
