@@ -944,6 +944,12 @@ Critical review:
 
 ### Slice 9: Second-Last Hardening and Review Slice
 
+Slice 9 found and fixed two production-readiness gaps: construction PostgreSQL repository behavior
+was live-proven but under-covered in fast unit tests, and the governed API vocabulary inventory had
+not yet been refreshed for the construction endpoint family. The slice added repository contract
+tests for the PostgreSQL path, tightened the PostgreSQL payload helper typing, refreshed the API
+vocabulary inventory, applied repo formatting, and reran the governance gate.
+
 Scope:
 
 1. perform full code review,
@@ -962,6 +968,43 @@ Acceptance:
 2. every error path is tested,
 3. generation latency is bounded and documented,
 4. no duplicate or deprecated construction endpoints remain.
+
+Evidence:
+
+1. `make check` passed: Ruff check/format, monetary-float guard, no-alias guard, mypy, OpenAPI
+   quality gate, API vocabulary inventory, domain data product validation, trust telemetry
+   validation, observability contract validation, and 664 unit tests.
+2. `python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py tests/unit/test_validate_live_api.py tests/unit/test_documentation_current_state.py -q`
+   passed with 47 tests.
+3. `python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`
+   passed with 91 tests.
+4. `python scripts/api_vocabulary_inventory.py --validate-only` passed after refreshing
+   `docs/standards/api-vocabulary/lotus-manage-api-vocabulary.v1.json`.
+5. `python scripts/no_alias_contract_guard.py` passed.
+6. `python -m mypy src/core/construction src/infrastructure/construction/postgres.py src/api/routers/construction.py src/api/services/construction_service.py scripts/validate_live_api.py`
+   passed.
+7. `python -m ruff check src/core/construction src/infrastructure/construction src/api/routers/construction.py src/api/services/construction_service.py tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py`
+   passed.
+8. `python scripts/openapi_quality_gate.py` passed.
+9. `powershell` scriptblock parse validation passed for `scripts/Start-CanonicalManage.ps1`.
+
+Critical review:
+
+1. No duplicate or deprecated construction endpoint family was found; the only construction API
+   family is `/api/v1/construction/alternative-sets`.
+2. Swagger/OpenAPI quality is certified through the OpenAPI quality gate and contract matrix.
+3. Error handling is covered across idempotency conflict, unknown alternative set, unknown
+   alternative id, stateful-source degraded posture, blocked methods, and pending-review turnover
+   suppression.
+4. Test-pyramid gap closed: PostgreSQL construction repository now has fast contract tests for DSN
+   and driver guardrails, migration initialization, alternative-set persistence/idempotency lookup,
+   and selection persistence.
+5. Governance debt removed: API vocabulary inventory now explicitly includes construction
+   alternative attributes, methods, statuses, objective/constraint trace fields, and route
+   vocabulary.
+6. Remaining hardening scope is product realization rather than manage backend correctness:
+   Gateway and Workbench RFCs still need to be authored from the now-stable manage contract before
+   client-facing command-center outcomes can be claimed.
 
 ### Slice 10: Gateway and Workbench Realization RFC Slice
 
