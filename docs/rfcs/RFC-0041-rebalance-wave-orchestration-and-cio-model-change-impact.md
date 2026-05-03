@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED - GOLD-STANDARD EXECUTION GUIDE READY |
+| **Status** | IN PROGRESS - SLICE 0 SOURCE MAP COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -10,7 +10,8 @@
 | **Depends On** | RFC-0018, RFC-0020, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, RFC-0040, `lotus-core` RFC-0087 |
 | **Downstream Realization Depends On** | Gateway wave-composition RFC, Workbench wave-command-center RFC, canonical front-office proof contracts |
 | **RFC Tightening Branch** | `feat/rfc0041-gold-standard-tightening` |
-| **Implementation Branch** | TBD when implementation begins |
+| **Implementation Branch** | `feat/rfc0041-implementation` |
+| **Slice 0 Evidence** | `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md` |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---

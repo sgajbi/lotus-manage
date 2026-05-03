@@ -319,8 +319,12 @@ def test_rfc0041_gold_standard_execution_guide_stays_complete_before_implementat
         / "rfcs"
         / "RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md"
     ).read_text(encoding="utf-8")
+    source_map = (ROOT / "docs" / "rfcs" / "RFC-0041-source-map-and-gap-analysis.md").read_text(
+        encoding="utf-8"
+    )
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
+    wiki_index_normalized = " ".join(wiki_index.split())
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
 
@@ -339,14 +343,26 @@ def test_rfc0041_gold_standard_execution_guide_stays_complete_before_implementat
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "PROPOSED - GOLD-STANDARD EXECUTION GUIDE READY" in rfc
-    assert "PROPOSED - GOLD-STANDARD EXECUTION GUIDE READY" in index
+    assert "IN PROGRESS - SLICE 0 SOURCE MAP COMPLETE" in rfc
+    assert "IN PROGRESS - SLICE 0 SOURCE MAP COMPLETE" in index
     assert "feat/rfc0041-gold-standard-tightening" in rfc
+    assert "feat/rfc0041-implementation" in rfc
+    assert "RFC-0041-source-map-and-gap-analysis.md" in rfc
     assert "No source-data gap may be hidden in manage-local placeholders" in rfc
     assert "create or tighten paired RFCs in" in rfc
     assert "`lotus-gateway` and `lotus-workbench`" in rfc
     assert "Do not mark RFC-0041 `DONE`" in rfc
-    assert "gold-standard execution guide" in wiki_index
-    assert "Support remains proposed" in roadmap
+    assert "Slice 0 source-map and gap analysis complete" in wiki_index_normalized
+    assert "Implementation has started with Slice 0 source-map" in roadmap
     assert "Proposed only" in supported_features
-    assert "no supported feature claim may be promoted" in supported_features
+    assert "explicit portfolio-list waves" in supported_features
+    assert "No supported feature claim may be promoted" in supported_features
+
+    assert "## Slice 0 Result" in source_map
+    assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
+    assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
+    assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map
+    assert "output/rfc0041-wave-proof/<timestamp>/" in source_map
+    assert (
+        "Do not start product implementation before this Slice 0 artifact is reviewed" in source_map
+    )
