@@ -33,6 +33,7 @@ class _FakeConnection:
         if (
             sql.startswith("CREATE TABLE")
             or sql.startswith("CREATE INDEX")
+            or sql.startswith("CREATE UNIQUE INDEX")
             or sql.startswith("ALTER TABLE")
         ):
             return _FakeCursor()
