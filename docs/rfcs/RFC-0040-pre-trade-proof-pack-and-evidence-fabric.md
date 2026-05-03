@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-4 COMPLETE; MARKDOWN SUMMARY IMPLEMENTED |
+| **Status** | IN PROGRESS - SLICES 0-5 COMPLETE; PERSISTENCE IMPLEMENTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -16,6 +16,7 @@
 | **Slice 2 Evidence** | `docs/rfcs/RFC-0040-cleanup-and-structure-slice2.md` |
 | **Slice 3 Evidence** | `docs/rfcs/RFC-0040-domain-builder-slice3.md` |
 | **Slice 4 Evidence** | `docs/rfcs/RFC-0040-markdown-summary-slice4.md` |
+| **Slice 5 Evidence** | `docs/rfcs/RFC-0040-persistence-slice5.md` |
 
 ---
 
@@ -820,6 +821,16 @@ Evidence:
 2. repository contract tests,
 3. PostgreSQL behavior tests,
 4. idempotency/replay tests.
+
+Slice 5 result:
+
+1. completed in `docs/rfcs/RFC-0040-persistence-slice5.md`,
+2. added proof-pack repository contract, in-memory repository, PostgreSQL repository, and migration,
+3. persisted proof-pack body, sections, hashes, retention metadata, idempotency lookup, and
+   append-only refs,
+4. tested round-trip, immutability, idempotency conflict, append-only refs, and migration table
+   declaration,
+5. made no API or supported-feature claim.
 
 ### Slice 6 - Certified Proof-Pack APIs
 

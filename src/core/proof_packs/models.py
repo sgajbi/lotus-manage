@@ -158,6 +158,24 @@ class DpmProofPackSupportability(BaseModel):
     section_hashes: dict[str, str] = Field(description="Content hash by section id.")
 
 
+class DpmProofPackRetentionMetadata(BaseModel):
+    proof_pack_id: str = Field(description="Proof-pack identifier.")
+    retention_policy: str = Field(description="Retention policy applied to the proof pack.")
+    retention_expires_at: str | None = Field(
+        default=None,
+        description="UTC retention expiry timestamp when configured.",
+    )
+
+
+class DpmProofPackStoredRef(BaseModel):
+    proof_pack_id: str = Field(description="Proof-pack identifier.")
+    ref_type: str = Field(description="Reference type.")
+    ref_id: str = Field(description="Reference identifier.")
+    source_system: str = Field(description="Source system that owns the reference.")
+    content_hash: str | None = Field(default=None, description="Reference content hash.")
+    created_at: str = Field(description="UTC timestamp when the reference was appended.")
+
+
 class DpmPreTradeProofPack(BaseModel):
     proof_pack_id: str = Field(description="Stable pre-trade proof-pack identifier.")
     proof_pack_version: str = Field(description="Proof-pack contract version.")
