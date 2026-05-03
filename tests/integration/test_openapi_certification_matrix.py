@@ -5,6 +5,11 @@ from src.api.main import app
 
 OPENAPI_PATHS_UNDER_CERTIFICATION = [
     "/api/v1/integration/capabilities",
+    "/api/v1/mandates/by-portfolio/{portfolio_id}",
+    "/api/v1/mandates/{mandate_id}",
+    "/api/v1/mandates/{mandate_id}/versions",
+    "/api/v1/mandates/{mandate_id}/diff",
+    "/api/v1/mandates/{mandate_id}/refresh-from-core",
     "/api/v1/rebalance/simulate",
     "/api/v1/rebalance/analyze",
     "/api/v1/rebalance/analyze/async",

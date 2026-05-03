@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED |
+| **Status** | IN PROGRESS |
 | **Created** | 2026-05-03 |
 | **Depends On** | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, lotus-core RFC-0087 |
 | **Doc Location** | `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md` |
@@ -661,6 +661,20 @@ Validation:
 3. source-readiness degradation tests,
 4. full OpenAPI docs checks.
 
+Slice 3 implementation note:
+
+1. Mandate API service orchestration lives in `src/api/services/mandate_service.py`.
+2. Certified mandate API routes live in `src/api/routers/mandates.py` and are mounted under
+   `/api/v1/mandates`.
+3. The refresh route composes existing lotus-core product-specific endpoints:
+   `DiscretionaryMandateBinding:v1`, `DpmModelPortfolioTarget:v1`, and optional
+   `MarketDataCoverageWindow:v1`.
+4. The implementation deliberately preserves explicit source-data gap codes for objective,
+   restriction, sustainability, and cash-flow products that are not yet available from core.
+5. API tests live in `tests/unit/dpm/api/test_mandates_api.py` and cover source refresh,
+   persisted reads, version ordering, diff materiality, core failure mapping, validation, OpenAPI
+   posture, and no legacy alias.
+
 ### Slice 4 - Health and Monitoring APIs
 
 1. health retrieval,
@@ -915,12 +929,15 @@ GitHub lane evidence appropriate to every mandate, health, monitoring, and comma
 | 2026-05-03 | Slice 0 - Design Tightening and Source-Data Gap Review | In progress | `docs/rfcs/RFC-0038-source-data-field-map.md` | Minimum viable mandate twin fields are mapped to source-backed, derived, local policy, or explicit source-data gap. |
 | 2026-05-03 | Slice 1 - Domain Models and Pure Health Engine | In progress | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py` | Pure model/compiler/health engine implemented without API or persistence claims. |
 | 2026-05-03 | Slice 2 - Persistence and Repository Layer | In progress | `src/core/mandate_repository.py`, `src/infrastructure/mandates/`, `src/infrastructure/postgres_migrations/dpm/0003_mandate_health_foundation.sql`, `tests/unit/dpm/supportability/test_dpm_mandate_repository.py` | Repository and migration foundation implemented for mandate snapshots, health snapshots, monitoring exceptions, and retention hooks. |
+| 2026-05-03 | Slice 3 - Core Resolver and Mandate APIs | In progress | `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, `tests/unit/dpm/api/test_mandates_api.py`, `tests/integration/test_openapi_certification_matrix.py` | Mandate refresh/read/version/diff API foundation implemented with product-specific core sourcing and explicit gap-code preservation. |
 
 Current promotion posture:
 
-1. mandate digital twin is implemented as a pure domain model and compiler foundation only,
-2. mandate health score is implemented as a deterministic pure engine plus persistence foundation,
+1. mandate digital twin is implemented as a source-mapped domain model with certified refresh,
+   read, version, and diff API foundation,
+2. mandate health score is implemented as a deterministic pure engine, persisted foundation, and
+   refresh-response output,
 3. monitoring exception taxonomy is implemented as pure derived domain output plus persistence
    foundation,
-4. DPM command-center, API routes, OpenAPI certification, live proof, and supported-feature
-   promotion are still pending later slices.
+4. standalone health APIs, monitoring run APIs, DPM command-center APIs, live proof, and full
+   supported-feature promotion are still pending later slices.
