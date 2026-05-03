@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 0 SOURCE MAP COMPLETE |
+| **Status** | IN PROGRESS - SLICE 2 CLEANUP COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -12,6 +12,8 @@
 | **RFC Tightening Branch** | `feat/rfc0041-gold-standard-tightening` |
 | **Implementation Branch** | `feat/rfc0041-implementation` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md` |
+| **Slice 1 Platform Evidence** | `lotus-platform` PR #296, merge `47d3c7f` |
+| **Slice 2 Cleanup Evidence** | `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md#slice-2-cleanup-result` |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---

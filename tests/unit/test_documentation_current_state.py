@@ -312,7 +312,7 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "| Pre-trade proof pack | Supported |" not in supported_features
 
 
-def test_rfc0041_gold_standard_execution_guide_stays_complete_before_implementation() -> None:
+def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     rfc = (
         ROOT
         / "docs"
@@ -343,22 +343,27 @@ def test_rfc0041_gold_standard_execution_guide_stays_complete_before_implementat
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN PROGRESS - SLICE 0 SOURCE MAP COMPLETE" in rfc
-    assert "IN PROGRESS - SLICE 0 SOURCE MAP COMPLETE" in index
+    assert "IN PROGRESS - SLICE 2 CLEANUP COMPLETE" in rfc
+    assert "IN PROGRESS - SLICE 2 CLEANUP COMPLETE" in index
     assert "feat/rfc0041-gold-standard-tightening" in rfc
     assert "feat/rfc0041-implementation" in rfc
     assert "RFC-0041-source-map-and-gap-analysis.md" in rfc
+    assert "`lotus-platform` PR #296, merge `47d3c7f`" in rfc
     assert "No source-data gap may be hidden in manage-local placeholders" in rfc
     assert "create or tighten paired RFCs in" in rfc
     assert "`lotus-gateway` and `lotus-workbench`" in rfc
     assert "Do not mark RFC-0041 `DONE`" in rfc
-    assert "Slice 0 source-map and gap analysis complete" in wiki_index_normalized
-    assert "Implementation has started with Slice 0 source-map" in roadmap
+    assert "implementation is in progress through Slice 2" in wiki_index_normalized
+    assert "Implementation is complete through Slice 2" in roadmap
     assert "Proposed only" in supported_features
     assert "explicit portfolio-list waves" in supported_features
     assert "No supported feature claim may be promoted" in supported_features
 
     assert "## Slice 0 Result" in source_map
+    assert "## Slice 1 Platform Result" in source_map
+    assert "## Slice 2 Cleanup Result" in source_map
+    assert "No manage-local evidence convention is introduced for RFC-0041." in source_map
+    assert "misleading RFC-0041 documentation guardrail name" in source_map
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
     assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
     assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map
