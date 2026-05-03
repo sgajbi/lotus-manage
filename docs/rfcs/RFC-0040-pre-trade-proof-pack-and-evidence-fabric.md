@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-2 COMPLETE; PROOF-PACK IMPLEMENTATION NOT STARTED |
+| **Status** | IN PROGRESS - SLICES 0-3 COMPLETE; PURE DOMAIN BUILDER IMPLEMENTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -14,6 +14,7 @@
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
 | **Slice 1 Evidence** | `docs/rfcs/RFC-0040-platform-automation-slice1.md` |
 | **Slice 2 Evidence** | `docs/rfcs/RFC-0040-cleanup-and-structure-slice2.md` |
+| **Slice 3 Evidence** | `docs/rfcs/RFC-0040-domain-builder-slice3.md` |
 
 ---
 
@@ -750,6 +751,16 @@ Evidence:
 3. missing-section degraded tests,
 4. selected-alternative and direct-run builder tests,
 5. cross-app adapter/source-contract tests where manage consumes another app.
+
+Slice 3 result:
+
+1. completed in `docs/rfcs/RFC-0040-domain-builder-slice3.md`,
+2. added `src/core/proof_packs` domain models and pure builders,
+3. generated every RFC-0040 section with deterministic section hashes and aggregate content hash,
+4. proved direct-run and selected-alternative proof generation through unit tests,
+5. captured optional workflow decisions in approval and timeline evidence,
+6. left Markdown, persistence, report input, AI evidence input, and APIs to later slices without
+   supported-feature promotion.
 
 ### Slice 4 - Markdown Summary and Human Readability
 
