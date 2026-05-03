@@ -205,3 +205,142 @@ def test_postgres_wave_repository_initializes_migrations(monkeypatch: pytest.Mon
     PostgresDpmWaveRepository(dsn="postgresql://example")
 
     assert calls == ["connect", "migrate:dpm", "close"]
+
+
+class _FakeCursor:
+    def __init__(self, row: dict[str, object] | None = None, rowcount: int = 0) -> None:
+        self._row = row
+        self.rowcount = rowcount
+
+    def fetchone(self) -> dict[str, object] | None:
+        return self._row
+
+
+class _FakeWaveConnection:
+    def __init__(self) -> None:
+        self.waves: dict[str, dict[str, object]] = {}
+        self.idempotency: dict[str, dict[str, object]] = {}
+        self.events: dict[str, dict[str, object]] = {}
+        self.commits = 0
+        self.closed = 0
+
+    def execute(self, query: str, args: tuple[object, ...]) -> _FakeCursor:
+        sql = " ".join(str(query).split())
+        if "SELECT wave_id, request_hash FROM dpm_rebalance_wave_idempotency" in sql:
+            return _FakeCursor(self.idempotency.get(str(args[0])))
+        if "INSERT INTO dpm_rebalance_waves" in sql:
+            wave_id = str(args[0])
+            if wave_id in self.waves:
+                return _FakeCursor(rowcount=0)
+            self.waves[wave_id] = {
+                "wave_id": wave_id,
+                "state": args[1],
+                "version": args[7],
+                "wave_json": args[8],
+                "retention_policy": args[9],
+            }
+            return _FakeCursor(rowcount=1)
+        if "INSERT INTO dpm_rebalance_wave_idempotency" in sql:
+            self.idempotency[str(args[0])] = {
+                "idempotency_key": args[0],
+                "wave_id": args[1],
+                "request_hash": args[2],
+            }
+            return _FakeCursor(rowcount=1)
+        if "INSERT INTO dpm_rebalance_wave_events" in sql:
+            self.events[str(args[0])] = {
+                "event_id": args[0],
+                "wave_id": args[1],
+                "event_json": args[9],
+            }
+            return _FakeCursor(rowcount=1)
+        if "SELECT wave_json FROM dpm_rebalance_waves WHERE wave_id = %s" in sql:
+            return _FakeCursor(self.waves.get(str(args[0])))
+        if "SELECT w.wave_json FROM dpm_rebalance_wave_idempotency" in sql:
+            indexed = self.idempotency.get(str(args[0]))
+            if indexed is None:
+                return _FakeCursor()
+            return _FakeCursor(self.waves.get(str(indexed["wave_id"])))
+        if "UPDATE dpm_rebalance_waves" in sql:
+            wave_id = str(args[4])
+            row = self.waves.get(wave_id)
+            if row is None or row["version"] != args[5]:
+                return _FakeCursor(rowcount=0)
+            row.update(
+                {
+                    "state": args[0],
+                    "version": args[1],
+                    "wave_json": args[2],
+                    "retention_policy": args[3],
+                }
+            )
+            return _FakeCursor(rowcount=1)
+        raise AssertionError(f"Unexpected SQL: {sql}")
+
+    def commit(self) -> None:
+        self.commits += 1
+
+    def close(self) -> None:
+        self.closed += 1
+
+
+def _postgres_repository(fake: _FakeWaveConnection) -> PostgresDpmWaveRepository:
+    repository = object.__new__(PostgresDpmWaveRepository)
+    repository._dsn = "postgresql://example"  # noqa: SLF001
+    repository._connect = lambda: fake  # type: ignore[method-assign]  # noqa: SLF001
+    return repository
+
+
+def test_postgres_wave_repository_roundtrip_idempotency_and_update() -> None:
+    fake = _FakeWaveConnection()
+    repository = _postgres_repository(fake)
+    wave = apply_wave_transition(
+        wave=_wave(),
+        to_state="PREVIEWED",
+        event=_event("DRAFT", "PREVIEWED"),
+    )
+
+    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+    loaded = repository.get_wave(wave_id=wave.wave_id)
+    replay = repository.get_wave_by_idempotency(idempotency_key="idem-1")
+    updated = apply_wave_transition(
+        wave=wave,
+        to_state="CREATED",
+        event=_event("PREVIEWED", "CREATED"),
+    )
+    repository.update_wave(wave=updated, expected_version=2)
+
+    assert loaded == wave
+    assert replay == wave
+    assert repository.get_wave(wave_id=wave.wave_id) == updated
+    assert sorted(fake.events) == ["evt-draft-previewed", "evt-previewed-created"]
+    assert fake.commits == 2
+    assert fake.closed == 5
+
+
+def test_postgres_wave_repository_conflicts() -> None:
+    fake = _FakeWaveConnection()
+    repository = _postgres_repository(fake)
+    wave = _wave()
+    repository.save_wave(wave=wave, idempotency_key="idem-1", request_hash="hash-1")
+
+    with pytest.raises(DpmWaveAlreadyExistsError):
+        repository.save_wave(wave=wave, idempotency_key="idem-2", request_hash="hash-2")
+    with pytest.raises(DpmWaveIdempotencyConflictError):
+        repository.save_wave(
+            wave=wave.model_copy(update={"wave_id": "dwv_002"}, deep=True),
+            idempotency_key="idem-1",
+            request_hash="hash-2",
+        )
+    with pytest.raises(DpmWaveVersionConflictError):
+        repository.update_wave(wave=wave, expected_version=99)
+
+
+def test_postgres_wave_payload_accepts_non_string_json() -> None:
+    fake = _FakeWaveConnection()
+    repository = _postgres_repository(fake)
+    wave = _wave()
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    fake.waves[wave.wave_id]["wave_json"] = wave.model_dump(mode="json")
+
+    assert repository.get_wave(wave_id=wave.wave_id) == wave

@@ -201,6 +201,29 @@ Validation:
 No route, capability, or supported-feature claim is added in Slice 3. Slice 4 must build preview and
 create behavior on top of these domain contracts.
 
+## Slice 4 Preview/Create Result
+
+Slice 4 adds the first certified manage API surface for explicit affected-portfolio waves:
+
+1. `POST /api/v1/rebalance/waves/preview` builds a non-durable wave preview,
+2. `POST /api/v1/rebalance/waves` creates a durable wave with `Idempotency-Key`,
+3. only `EXPLICIT_PORTFOLIO_LIST` is supported; unsupported triggers return
+   `NOT_SUPPORTED_TRIGGER`,
+4. source-backed candidates are built from caller-supplied affected-portfolio source refs or
+   existing RFC-0038 mandate digital twins,
+5. missing affected-portfolio evidence is returned as `SOURCE_BLOCKED` rather than promoted to
+   readiness,
+6. OpenAPI quality and endpoint-certification source are updated.
+
+Validation:
+
+1. `python -m pytest tests\unit\dpm\api\test_waves_api.py tests\unit\dpm\waves\test_wave_domain.py -q`,
+2. `python scripts\openapi_quality_gate.py`,
+3. `python -m pytest tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py tests\integration\test_openapi_certification_matrix.py tests\unit\test_documentation_current_state.py -q`.
+
+No Gateway, Workbench, simulation, approval, staging, operations handoff, PM-book discovery, or
+automatic CIO model-change cohort discovery claim is added in Slice 4.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

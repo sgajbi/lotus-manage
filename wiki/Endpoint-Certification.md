@@ -1586,6 +1586,61 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
+## Certified endpoint family: rebalance wave preview and creation
+
+Routes:
+
+- `POST /api/v1/rebalance/waves/preview`
+- `POST /api/v1/rebalance/waves`
+
+Purpose:
+
+RFC-0041 Slice 4 manage-owned wave entrypoint for the first supported trigger:
+`EXPLICIT_PORTFOLIO_LIST`. The preview endpoint builds a non-durable affected-portfolio wave so
+portfolio managers and downstream orchestration can see the candidate set, source refs, blocked
+items, aggregate counts, and event posture before persistence. The create endpoint persists the same
+governed wave contract with an idempotency key.
+
+Functional coverage:
+
+- explicit affected-portfolio input only,
+- source-backed candidate selection from caller-supplied source refs,
+- source-backed candidate enrichment from an existing RFC-0038 mandate digital twin,
+- truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
+- unsupported trigger rejection with `NOT_SUPPORTED_TRIGGER`,
+- durable create with idempotent replay,
+- no PM-book discovery, CIO model-change cohort discovery, simulation, approval, staging, handoff,
+  Gateway composition, or Workbench product claim in this slice.
+
+Non-functional posture:
+
+- Preview is side-effect free and does not persist wave state.
+- Create requires `Idempotency-Key` and stores a durable wave using optimistic-concurrency-ready
+  repository contracts introduced in Slice 3.
+- Aggregate metrics are reconciled from item state, not caller-provided totals.
+- Missing source authority is exposed as blocked evidence instead of defaulting to readiness.
+- The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
+  `lotus-ai`, Gateway, or Workbench directly in Slice 4.
+
+Upstream integration posture:
+
+The supported Slice 4 source inputs are existing manage-owned mandate digital twins and explicit
+caller-supplied affected-portfolio source refs. Automatic PM-book or CIO model-change cohort
+discovery remains deferred until the owning app exposes a certified source product.
+
+Downstream consumers:
+
+- `lotus-gateway` and `lotus-workbench` must wait for the later RFC-0041 realization RFC slice
+  before advertising this as a full front-office product flow.
+- Operators and API consumers may use these endpoints as manage backend preview/create contracts.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_wave_domain.py -q
+python scripts/openapi_quality_gate.py
+```
+
 ## Certified endpoint: proof-pack detail
 
 Route:

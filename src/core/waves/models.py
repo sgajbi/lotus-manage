@@ -54,27 +54,45 @@ WaveItemState = Literal[
 
 
 class DpmWaveSourceRef(BaseModel):
-    source_system: str = Field(description="System that owns this source evidence.")
-    source_type: str = Field(description="Source product, artifact, or event type.")
-    source_id: str = Field(description="Source identifier.")
+    source_system: str = Field(
+        description="System that owns this source evidence.",
+        examples=["lotus-manage"],
+    )
+    source_type: str = Field(
+        description="Source product, artifact, or event type.",
+        examples=["AFFECTED_PORTFOLIO_MANIFEST"],
+    )
+    source_id: str = Field(description="Source identifier.", examples=["manifest_20260503_001"])
     source_version: str | None = Field(
         default=None,
         description="Source contract or product version when available.",
+        examples=["1.0.0"],
     )
     supportability_state: str | None = Field(
         default=None,
         description="Source supportability posture when available.",
+        examples=["READY"],
     )
     content_hash: str | None = Field(
         default=None,
         description="Canonical content hash when available.",
+        examples=["sha256:manifest-example"],
     )
 
 
 class DpmWaveTrigger(BaseModel):
-    trigger_type: WaveTriggerType = Field(description="Bounded wave trigger type.")
-    trigger_id: str = Field(description="Business trigger identifier.")
-    rationale: str = Field(description="Business rationale for the wave.")
+    trigger_type: WaveTriggerType = Field(
+        description="Bounded wave trigger type.",
+        examples=["EXPLICIT_PORTFOLIO_LIST"],
+    )
+    trigger_id: str = Field(
+        description="Business trigger identifier.",
+        examples=["manual-wave-20260503-001"],
+    )
+    rationale: str = Field(
+        description="Business rationale for the wave.",
+        examples=["Review explicitly selected portfolios after model drift triage."],
+    )
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
         description="Source refs supporting this trigger.",
@@ -82,17 +100,29 @@ class DpmWaveTrigger(BaseModel):
 
 
 class DpmRebalanceWaveItem(BaseModel):
-    wave_item_id: str = Field(description="Stable wave item identifier.")
-    portfolio_id: str = Field(description="Affected portfolio identifier.")
-    mandate_id: str | None = Field(default=None, description="Mandate id when known.")
+    wave_item_id: str = Field(description="Stable wave item identifier.", examples=["dwi_001"])
+    portfolio_id: str = Field(
+        description="Affected portfolio identifier.",
+        examples=["PB_SG_GLOBAL_BAL_001"],
+    )
+    mandate_id: str | None = Field(
+        default=None,
+        description="Mandate id when known.",
+        examples=["MANDATE_PB_SG_GLOBAL_BAL_001"],
+    )
     model_portfolio_id: str | None = Field(
         default=None,
         description="Model portfolio id when sourced.",
+        examples=["MODEL_SG_BALANCED"],
     )
-    state: WaveItemState = Field(description="Current item readiness/workflow state.")
+    state: WaveItemState = Field(
+        description="Current item readiness/workflow state.",
+        examples=["CANDIDATE"],
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Bounded reason codes explaining item state.",
+        examples=[["AFFECTED_PORTFOLIO_SOURCE_READY"]],
     )
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
@@ -101,65 +131,110 @@ class DpmRebalanceWaveItem(BaseModel):
     alternative_set_id: str | None = Field(
         default=None,
         description="RFC-0039 construction alternative set id when generated.",
+        examples=["cas_001"],
     )
     selected_alternative_id: str | None = Field(
         default=None,
         description="Selected RFC-0039 alternative id when available.",
+        examples=["alt_min_turnover"],
     )
     proof_pack_id: str | None = Field(
         default=None,
         description="RFC-0040 proof-pack id when linked.",
+        examples=["dpp_wave_001"],
     )
     diagnostics: dict[str, Any] = Field(
         default_factory=dict,
         description="Bounded diagnostics; never raw upstream payloads.",
+        examples=[{"source_posture": "candidate_only"}],
     )
 
 
 class DpmWaveAggregateMetrics(BaseModel):
-    item_count: int = Field(description="Total item count in the wave.")
-    state_counts: dict[str, int] = Field(description="Item count by state.")
-    ready_item_count: int = Field(description="Items ready for simulation or later stages.")
-    blocked_item_count: int = Field(description="Items blocked by source or workflow state.")
-    review_required_item_count: int = Field(description="Items requiring human review.")
-    source_degraded_item_count: int = Field(description="Items with degraded source posture.")
+    item_count: int = Field(description="Total item count in the wave.", examples=[2])
+    state_counts: dict[str, int] = Field(
+        description="Item count by state.",
+        examples=[{"CANDIDATE": 1, "SOURCE_BLOCKED": 1}],
+    )
+    ready_item_count: int = Field(
+        description="Items ready for simulation or later stages.",
+        examples=[0],
+    )
+    blocked_item_count: int = Field(
+        description="Items blocked by source or workflow state.",
+        examples=[1],
+    )
+    review_required_item_count: int = Field(
+        description="Items requiring human review.",
+        examples=[0],
+    )
+    source_degraded_item_count: int = Field(
+        description="Items with degraded source posture.",
+        examples=[0],
+    )
 
 
 class DpmRebalanceWaveEvent(BaseModel):
-    event_id: str = Field(description="Stable event identifier.")
-    wave_id: str = Field(description="Wave aggregate identifier.")
+    event_id: str = Field(description="Stable event identifier.", examples=["dwe_001"])
+    wave_id: str = Field(description="Wave aggregate identifier.", examples=["dwv_001"])
     from_state: WaveState | None = Field(
         default=None,
         description="Previous wave state, or null for creation events.",
+        examples=["DRAFT"],
     )
-    to_state: WaveState = Field(description="Resulting wave state.")
-    event_type: str = Field(description="Bounded event type.")
-    actor_id: str = Field(description="Human or service actor that caused the event.")
-    reason_code: str = Field(description="Bounded reason code for the event.")
-    correlation_id: str = Field(description="Correlation id for audit and supportability.")
+    to_state: WaveState = Field(description="Resulting wave state.", examples=["PREVIEWED"])
+    event_type: str = Field(description="Bounded event type.", examples=["STATE_TRANSITION"])
+    actor_id: str = Field(
+        description="Human or service actor that caused the event.",
+        examples=["pm_001"],
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the event.", examples=["PREVIEWED"]
+    )
+    correlation_id: str = Field(
+        description="Correlation id for audit and supportability.",
+        examples=["corr-wave-001"],
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="UTC timestamp when the event was recorded.",
+        examples=["2026-05-03T09:30:00Z"],
     )
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Bounded event metadata; never raw upstream payloads.",
+        examples=[{"item_count": 2}],
     )
 
 
 class DpmRebalanceWave(BaseModel):
-    wave_id: str = Field(description="Stable rebalance wave identifier.")
-    wave_version: str = Field(default="1.0.0", description="Wave contract version.")
-    state: WaveState = Field(description="Current wave state.")
+    wave_id: str = Field(description="Stable rebalance wave identifier.", examples=["dwv_001"])
+    wave_version: str = Field(
+        default="1.0.0",
+        description="Wave contract version.",
+        examples=["1.0.0"],
+    )
+    state: WaveState = Field(description="Current wave state.", examples=["PREVIEWED"])
     trigger: DpmWaveTrigger = Field(description="Wave trigger context.")
-    as_of_date: str = Field(description="Business as-of date for source checks.")
+    as_of_date: str = Field(
+        description="Business as-of date for source checks.",
+        examples=["2026-05-03"],
+    )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="UTC timestamp when the wave was created.",
+        examples=["2026-05-03T09:30:00Z"],
     )
-    created_by: str = Field(description="Human or service actor that created the wave.")
-    correlation_id: str = Field(description="Creation correlation id.")
-    version: int = Field(default=1, description="Optimistic concurrency version.")
+    created_by: str = Field(
+        description="Human or service actor that created the wave.",
+        examples=["pm_001"],
+    )
+    correlation_id: str = Field(description="Creation correlation id.", examples=["corr-wave-001"])
+    version: int = Field(
+        default=1,
+        description="Optimistic concurrency version.",
+        examples=[1],
+    )
     items: list[DpmRebalanceWaveItem] = Field(description="Wave item set.")
     aggregate_metrics: DpmWaveAggregateMetrics = Field(
         description="Aggregate metrics reconciled from item evidence."
@@ -171,4 +246,5 @@ class DpmRebalanceWave(BaseModel):
     retention_policy: str = Field(
         default="DPM_WAVE_STANDARD",
         description="Retention policy applied to the wave.",
+        examples=["DPM_WAVE_STANDARD"],
     )
