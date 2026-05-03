@@ -102,9 +102,59 @@ class ConstructionEnrichmentSummary(BaseModel):
     liquidity_status: ConstructionMethodStatus = Field(description="Liquidity enrichment posture.")
     cost_status: ConstructionMethodStatus = Field(description="Transaction-cost posture.")
     fx_status: ConstructionMethodStatus = Field(description="FX source posture.")
+    risk_status: ConstructionMethodStatus = Field(
+        default=ConstructionMethodStatus.DEGRADED,
+        description="Risk-authoritative enrichment posture.",
+    )
+    performance_status: ConstructionMethodStatus = Field(
+        default=ConstructionMethodStatus.DEGRADED,
+        description="Performance-authoritative enrichment posture.",
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Bounded reason codes explaining degraded or blocked enrichment.",
+    )
+
+
+class AuthoritativeRiskContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Risk-service supportability status for the enrichment."
+    )
+    source_system: str = Field(description="Risk authority that produced the enrichment.")
+    tracking_error: Decimal | None = Field(
+        default=None,
+        description="Risk-authoritative tracking error when provided.",
+    )
+    concentration_breaches: int | None = Field(
+        default=None,
+        description="Risk-authoritative concentration-breach count when provided.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Risk-authoritative bounded reason codes.",
+    )
+
+
+class AuthoritativePerformanceContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Performance-service supportability status for the enrichment."
+    )
+    source_system: str = Field(description="Performance authority that produced the enrichment.")
+    benchmark_id: str | None = Field(
+        default=None,
+        description="Performance-authoritative benchmark identifier when provided.",
+    )
+    active_return: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative active return when provided.",
+    )
+    underperformance_flag: bool | None = Field(
+        default=None,
+        description="Performance-authoritative attention flag when provided.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Performance-authoritative bounded reason codes.",
     )
 
 

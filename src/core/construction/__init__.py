@@ -10,6 +10,8 @@ from src.core.construction.enrichment import (
     summarize_enrichment_posture,
 )
 from src.core.construction.models import (
+    AuthoritativePerformanceContext,
+    AuthoritativeRiskContext,
     ConstructionAlternative,
     ConstructionAlternativeSet,
     ConstructionComparisonMetrics,
@@ -39,6 +41,8 @@ from src.core.construction.vocabulary import (
 __all__ = [
     "ConstructionAlternative",
     "ConstructionAlternativeSet",
+    "AuthoritativePerformanceContext",
+    "AuthoritativeRiskContext",
     "ConstructionComparisonMetrics",
     "ConstructionConstraintTrace",
     "ConstructionEnrichmentSummary",

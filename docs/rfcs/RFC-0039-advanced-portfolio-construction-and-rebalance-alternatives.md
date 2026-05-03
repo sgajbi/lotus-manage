@@ -804,6 +804,12 @@ Acceptance:
 
 ### Slice 6: Risk and Performance Context
 
+Slice 6 implementation extends `src/core/construction/enrichment.py` and construction models with
+`AuthoritativeRiskContext` and `AuthoritativePerformanceContext`. These are seams for preserving
+upstream supportability and reason codes from `lotus-risk` and `lotus-performance`; they do not
+calculate authoritative risk or performance inside `lotus-manage`. Missing risk/performance context
+degrades explicitly with bounded reason codes.
+
 Scope:
 
 1. add seams for risk enrichment,
