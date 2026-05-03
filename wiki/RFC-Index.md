@@ -50,6 +50,17 @@
 - RFC-0038
   proposed first implementation foundation for mandate digital twins, mandate health scoring,
   monitoring exceptions, and the DPM command-center API
+- RFC-0039
+  proposed advanced portfolio construction and rebalance alternatives roadmap
+- RFC-0040
+  proposed pre-trade proof-pack and DPM evidence-fabric roadmap
+- RFC-0041
+  proposed rebalance-wave orchestration and CIO model-change impact roadmap
+- RFC-0042
+  proposed post-trade outcome feedback-loop roadmap
+- RFC-0043
+  proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
+  ownership to AI
 
 ## Removed local RFC sprawl
 

@@ -48,6 +48,28 @@ Today, these answers are distributed across simulate/analyze responses, core rea
 supportability APIs, and future Workbench composition. RFC-0038 creates a first-class backend
 foundation for those answers.
 
+## 1.5 Business Outcomes
+
+This RFC targets the following business outcomes:
+
+1. **Daily PM book control**
+   give portfolio managers a single source of truth for which mandates are healthy, drifting,
+   blocked, stale, or ready for action.
+2. **Faster exception triage**
+   reduce time spent diagnosing whether an issue is caused by allocation drift, data readiness,
+   cash, tax, risk, restrictions, or workflow state.
+3. **Better mandate adherence**
+   make the mandate itself a machine-readable control object, so every downstream rebalance and
+   monitoring decision can be traced to client objectives and constraints.
+4. **Improved operating discipline**
+   allow operations and support teams to inspect source readiness and monitoring exceptions without
+   reconstructing state from individual simulation payloads.
+5. **A stronger Workbench product surface**
+   provide the backend truth needed for a sellable DPM command center in `lotus-workbench`.
+6. **Foundation for future automation**
+   create the mandate, health, and exception primitives needed by alternatives, proof packs, waves,
+   post-trade feedback, and AI summaries.
+
 ---
 
 ## 2. Goals and Non-Goals
