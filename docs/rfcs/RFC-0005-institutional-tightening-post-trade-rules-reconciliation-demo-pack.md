@@ -25,6 +25,25 @@ RFC-0005 upgrades the rebalance engine from a functional calculator to an **inst
 2. Core orchestration remains in `src/core/rebalance/engine.py`; `src/core/compliance.py` and `src/core/valuation.py` are modularized, while `simulation.py` is not a separate module.
 3. `MIN_TRADE_SIZE` is emitted as `severity=SOFT` with `status=PASS` and reason `INTENTS_SUPPRESSED` when applicable.
 
+### 0.2 Current Status Review (2026-05-03)
+
+RFC-0005 is **implemented** and remains a current quality baseline for institutional DPM behavior:
+complete state, post-trade rules, reconciliation, and holdings safety. It is no longer an active
+pre-persistence milestone because later supportability RFCs delivered durable run and audit
+persistence.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Complete before/after state model | `src/core/valuation.py`, `src/core/models.py` | Implemented |
+| Post-trade rule engine for hard/soft/info outcomes | `src/core/compliance.py`, `src/core/common/workflow_gates.py`, engine tests | Implemented |
+| Value reconciliation and mismatch blocking | `src/core/valuation.py`, `src/core/rebalance/engine.py`, valuation/reconciliation tests | Implemented |
+| No-shorting and holdings safety | `src/core/rebalance/execution.py`, `src/core/compliance.py`, golden safety scenarios | Implemented |
+| Demo pack for explainable scenarios | `docs/demo/README.md`, executable demo JSON and live validation assets | Implemented and evolved |
+
+No open RFC-0005 implementation gap remains. Future improvements should focus on richer portfolio
+construction, solver quality, and core-sourced mandate data rather than reopening this foundation
+slice.
+
 ---
 
 ## 1. Problem Statement

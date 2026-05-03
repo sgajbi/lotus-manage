@@ -26,6 +26,23 @@ This RFC intentionally does **NOT** expand the scenario matrix or ruleset breadt
 3. Reconciliation output is implemented and enforced (`MISMATCH` blocks run).
 4. Safety outcomes are surfaced via rule results (`NO_SHORTING`, `INSUFFICIENT_CASH`) and `status=BLOCKED`.
 
+### 0.2 Current Status Review (2026-05-03)
+
+RFC-0006A is **implemented** as the safety and after-state consistency hardening layer. The dated
+statement that durable idempotency persistence is deferred is now historical; durable replay and run
+supportability are delivered by later RFCs.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Canonical rebalance endpoint and required idempotency header | `src/api/routers/rebalance.py`, API tests | Implemented |
+| No-short and no-oversell hard blocking | `src/core/rebalance/execution.py`, `src/core/compliance.py`, safety tests | Implemented |
+| Complete after-state mirroring before-state richness | `src/core/valuation.py`, golden tests | Implemented |
+| Reconciliation block with mismatch outcome | `src/core/models.py`, `src/core/valuation.py`, engine tests | Implemented |
+| Durable idempotency persistence | RFC-0016/RFC-0017 supportability implementation | Implemented by later RFCs |
+
+This RFC remains useful as the safety proof for DPM simulation. It should not be interpreted as a
+current limitation on persistence, observability, or supportability.
+
 ---
 
 ## 1. Problem Statement

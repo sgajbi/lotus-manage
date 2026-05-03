@@ -40,8 +40,9 @@ Governance boundary:
 | RFC-0036 | lotus-manage Stateful Core Sourcing And Endpoint Consolidation | IMPLEMENTED | RFC-0013, RFC-0016, RFC-0017, RFC-0018, RFC-0021, RFC-0022, RFC-0023, RFC-0028 | `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` |
 
 Review note:
-- RFC-0002, RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were rebaselined on
-  2026-05-03 against current lotus-manage DPM implementation evidence. RFC-0024 and RFC-0025
+- RFC-0001 through RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were rebaselined on
+  2026-05-03 against current lotus-manage DPM implementation evidence. Early MVP/pre-persistence
+  RFCs are historical foundation layers, not the current product ceiling. RFC-0024 and RFC-0025
   retain historical advisory migration notes only; active advisory proposal ownership is
   `lotus-advise`, not `lotus-manage`.
 

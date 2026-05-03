@@ -11,7 +11,10 @@
 
 ## 1. Executive Summary
 
-This RFC completes the transition of the `lotus-advise` from a functional prototype to a **comprehensive audit engine**. It mandates a "No-Throw" policy for domain logic, ensuring that all runs—successful or blocked—return a structured HTTP 200 result containing the full decision context.
+This RFC completes the transition of lotus-manage from a functional prototype to a
+**comprehensive audit engine**. It mandates a "No-Throw" policy for domain logic, ensuring that all
+runs--successful or blocked--return a structured HTTP 200 result containing the full decision
+context.
 
 **Critical Upgrades:**
 
@@ -25,6 +28,23 @@ This RFC completes the transition of the `lotus-advise` from a functional protot
 1. No-throw domain behavior is implemented for valid payloads: run outcomes are surfaced via `status` in `RebalanceResult`.
 2. Rule engine currently emits `CASH_BAND`, `SINGLE_POSITION_MAX`, `DATA_QUALITY`, `MIN_TRADE_SIZE`, `NO_SHORTING`, and `INSUFFICIENT_CASH`.
 3. Endpoint remains `POST /rebalance/simulate`.
+
+### 1.2 Current Status Review (2026-05-03)
+
+RFC-0003 is **implemented and aligned** as the audit-bundle completion layer for the DPM engine.
+The original accidental `lotus-advise` wording has been corrected: this RFC belongs to
+lotus-manage and describes discretionary mandate rebalance simulation behavior.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Valid domain outcomes return structured `RebalanceResult` instead of uncaught exceptions | `src/core/rebalance/engine.py`, `src/api/services/rebalance_simulation_service.py` | Implemented |
+| Target trace explains model-to-final weights and reason codes | `src/core/rebalance/targets.py`, `src/core/target_generation.py`, golden scenario tests | Implemented |
+| Diagnostics for data quality and suppressed intents | `src/core/models.py`, `src/core/rebalance/`, `tests/unit/dpm/golden/` | Implemented |
+| Post-trade rule engine on simulated after-state | `src/core/compliance.py`, `tests/unit/dpm/engine/` | Implemented |
+| Lineage and correlation identifiers in responses | `src/core/models.py`, supportability and API tests | Implemented and extended by later supportability RFCs |
+
+No active implementation gap remains in this RFC. Future audit-bundle changes should be raised
+against endpoint certification, supportability, or stateful-core-sourcing RFCs depending on scope.
 
 ---
 
