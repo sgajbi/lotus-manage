@@ -38,6 +38,8 @@ Governance boundary:
 | RFC-0025 | PostgreSQL-Only Production Mode Cutover | COMPLETED, ADVISORY PORTION SUPERSEDED BY SPLIT | RFC-0023, RFC-0024 | `docs/rfcs/RFC-0025-postgres-only-production-mode-cutover.md` |
 | RFC-0028 | lotus-manage Integration Capabilities Contract | IMPLEMENTED | RFC-0021, RFC-0022 | `docs/rfcs/RFC-0028-dpm-integration-capabilities-contract.md` |
 | RFC-0036 | lotus-manage Stateful Core Sourcing And Endpoint Consolidation | IMPLEMENTED | RFC-0013, RFC-0016, RFC-0017, RFC-0018, RFC-0021, RFC-0022, RFC-0023, RFC-0028 | `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` |
+| RFC-0037 | lotus-manage DPM Operating System and Mandate Intelligence | PROPOSED | RFC-0001 through RFC-0013, RFC-0016 through RFC-0025, RFC-0028, RFC-0036, lotus-core RFC-0087 | `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md` |
+| RFC-0038 | Mandate Digital Twin, Health Score, and DPM Command Center Foundation | PROPOSED | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, lotus-core RFC-0087 | `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md` |
 
 Review note:
 - RFC-0002, RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were rebaselined on

@@ -42,6 +42,15 @@
 - RFC-0036
   implemented target-state stateful `lotus-core` sourcing and duplicate endpoint consolidation
 
+## Strategic Target-State RFCs
+
+- RFC-0037
+  proposed DPM operating-system and mandate-intelligence roadmap intended to make
+  `lotus-manage` the management-side crown jewel of the Lotus ecosystem
+- RFC-0038
+  proposed first implementation foundation for mandate digital twins, mandate health scoring,
+  monitoring exceptions, and the DPM command-center API
+
 ## Removed local RFC sprawl
 
 - RFC-0030 through RFC-0035 were deleted from the active repository documentation set. They were
