@@ -406,3 +406,83 @@ RFC-0041 is complete when:
 6. aggregate metrics are reproducible,
 7. APIs are certified,
 8. canonical live evidence shows a multi-portfolio wave.
+
+---
+
+## 12. Gold-Standard Execution Contract
+
+RFC-0041 turns single-portfolio decisions into managed investment-office execution waves. It must
+make book-level CIO and PM action safe, observable, partially executable, and audit-ready.
+
+### 12.1 Supported-Features Ledger
+
+| Feature | Support state before implementation | Promotion rule |
+| --- | --- | --- |
+| Wave creation | Proposed | Promote only after trigger, portfolio selection, state machine, and persistence are certified. |
+| CIO model-change impact | Proposed | Promote only after model-change source evidence and affected-mandate preview are complete. |
+| Wave source check | Proposed | Promote only after item-level readiness, blocked reasons, and partial execution posture are proven. |
+| Wave simulation | Proposed | Promote only after RFC-0039 alternatives can run per ready item and persist results. |
+| Wave approval and staging | Proposed | Promote only after actor attribution, state guards, and operations handoff are tested. |
+| Wave aggregate metrics | Proposed | Promote only after metrics are derived from item evidence and reproducible. |
+
+### 12.2 Architecture and Domain Direction
+
+Implementation must preserve book-level investment governance:
+
+1. CIO model changes are investment-office events with impact analysis and approval posture,
+2. PM waves can contain ready, pending-review, and blocked mandates without failing the whole wave,
+3. operations handoff prepares evidence and state; it does not execute external trades,
+4. aggregate metrics must reconcile to item-level evidence,
+5. wave APIs must expose partial readiness and supportability rather than hiding incomplete source
+   data.
+
+### 12.3 Mandatory Delivery Slices
+
+These slices are mandatory in addition to the feature-specific slices in Section 9.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Review whether platform scaffolding should provide reusable async/workflow state-machine examples,
+aggregate OpenAPI examples, operator-run supportability, and bounded metrics for multi-item
+workflows. Improve platform automation for repeatable gaps; otherwise record a no-change decision.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Keep wave orchestration separate from alternative construction. Remove duplicated state-transition
+logic and stale async-operation terminology that obscures the investment-office wave lifecycle.
+
+#### Mandatory Slice C - Implementation Proof
+
+Capture evidence for a CIO/model-change wave with at least one ready item, one pending-review item,
+and one blocked item. Review source readiness, aggregate metrics, item transitions, approval,
+staging, proof-pack refs, and operations handoff.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Review state-machine correctness, idempotency, concurrency, partial readiness, OpenAPI quality,
+bounded metrics/logs, migration posture, error handling, and test-pyramid coverage.
+
+#### Mandatory Slice E - Final Closure
+
+Update wiki with wave diagrams and business-readable CIO/PM/operations flow. Update
+supported-features only after live evidence proves the wave lifecycle. Record context/skills
+decisions and leave branch/PR/CI clean.
+
+### 12.4 Evidence Expectations
+
+Closure evidence must include:
+
+1. wave creation request/response,
+2. affected-portfolio preview,
+3. source-check response with mixed readiness,
+4. wave simulation response,
+5. approval/stage/handoff transitions,
+6. aggregate metric reconciliation notes,
+7. OpenAPI/API certification summary,
+8. local and GitHub check summary.
+
+### 12.5 Enterprise Baseline
+
+This RFC inherits RFC-0037 Section 19.4. Completion requires wave lineage, item-level
+source-readiness metadata, actor-attributed audit events, bounded aggregate metrics, structured
+logs, operator diagnostics, API certification, and GitHub lane evidence for every wave endpoint.

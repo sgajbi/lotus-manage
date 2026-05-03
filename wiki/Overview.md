@@ -33,9 +33,9 @@ This repo does not own:
 - canonical host runtime on port `8001` so both services can coexist locally
 - explicit no-alias, OpenAPI, vocabulary, migration, and security governance in CI
 - proposal simulation, artifacts, consent, and lifecycle routes are owned by `lotus-advise`
-- stateless execution is the implemented and advertised runtime mode
-- stateful `portfolio_id` execution is modeled behind guardrails, but not promoted until
-  `lotus-core` exposes the RFC-087 certified composed DPM source-data products
+- stateless execution is the default implemented and advertised runtime mode
+- stateful `portfolio_id` execution is implemented behind explicit runtime gates and promoted only
+  when the canonical core/manage configuration proves RFC-087 source-product readiness
 
 ```mermaid
 flowchart LR
@@ -46,6 +46,25 @@ flowchart LR
     Core[lotus-core] -->|RFC-087 DPM source products| Manage
     Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
 ```
+
+## Target Strategic Role
+
+RFC-0037 through RFC-0043 define the proposed revamp from a certified rebalance/supportability
+service into a discretionary mandate portfolio-management operating system.
+
+The target operating model adds:
+
+1. mandate digital twins and health scoring,
+2. portfolio-manager command center,
+3. advanced construction alternatives,
+4. pre-trade proof packs and decision timeline,
+5. CIO model-change and rebalance waves,
+6. post-trade outcome feedback,
+7. governed AI PM copilot.
+
+These are proposed target-state features until implementation and live evidence prove them. They
+may replace older manage APIs rather than preserving backward compatibility because there is no
+assumed production downstream dependency for the target revamp surface.
 
 ## Current Proof Posture
 

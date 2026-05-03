@@ -432,3 +432,86 @@ RFC-0040 is complete when:
 6. canonical live evidence exists,
 7. Workbench can consume proof-pack truth through Gateway in a later UI slice without reconstructing
    evidence client-side.
+
+---
+
+## 11. Gold-Standard Execution Contract
+
+RFC-0040 is the DPM trust layer. It must produce evidence that is machine-readable, human-readable,
+audit-ready, and safe for downstream reporting and AI summarization.
+
+### 11.1 Supported-Features Ledger
+
+| Feature | Support state before implementation | Promotion rule |
+| --- | --- | --- |
+| Pre-trade proof pack JSON | Proposed | Promote only after all required sections, lineage, hashes, and retrieval APIs are certified. |
+| Human-readable Markdown summary | Proposed | Promote only after deterministic rendering and business-language review pass. |
+| Report input handoff | Proposed | Promote only after `lotus-report` payload contract tests and examples exist. |
+| AI evidence handoff | Proposed | Promote only after forbidden-field and structured-evidence guard tests pass. |
+| Decision timeline anchoring | Proposed | Promote only after mandate, exception, alternative, approval, wave, handoff, and outcome events link. |
+| Proof-pack audit and supportability | Proposed | Promote only after immutable hashes, source refs, supportability, and retention posture are complete. |
+
+### 11.2 Architecture and Domain Direction
+
+Implementation must treat the proof pack as a governed investment-decision artifact:
+
+1. it records the business rationale, mandate context, selected alternative, trade intent,
+   risk/tax/liquidity/currency/scenario evidence, source readiness, approvals, and operations state,
+2. it is not a replacement for `lotus-report`; it supplies report input,
+3. it is not an AI prompt; it supplies structured evidence to `lotus-ai`,
+4. it is not a log archive; it is a curated DPM evidence product,
+5. it must support PM, compliance, operations, CIO, audit, and demo use cases without exposing
+   sensitive raw telemetry or payload internals.
+
+### 11.3 Mandatory Delivery Slices
+
+These slices are mandatory in addition to the feature-specific slices in Section 8.
+
+#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+
+Review whether platform scaffolding should provide reusable evidence-artifact patterns, Markdown
+snapshot tests, report/AI handoff examples, OpenAPI artifact examples, and retention/governance
+checklists. Improve platform automation for repeatable gaps; otherwise record a no-change decision.
+
+#### Mandatory Slice B - Cleanup and Structure
+
+Consolidate overlapping artifact, support-bundle, lineage, and workflow evidence builders where it
+reduces duplication. Remove stale proof terminology that implies advisor consent or client proposal
+ownership.
+
+#### Mandatory Slice C - Implementation Proof
+
+Generate proof packs from both a direct rebalance run and a selected alternative. Save full JSON,
+Markdown, report-input, and AI-evidence request/response captures under `output/`. Review every
+section for unsupported claims, missing source refs, and degraded-state clarity.
+
+#### Mandatory Slice D - Second-Last Hardening and Review
+
+Review immutability, hashing, lineage, retention, OpenAPI field quality, error handling, no-sensitive
+AI/report handoff fields, Markdown readability, and test-pyramid depth. Every proof section must
+have positive and degraded tests.
+
+#### Mandatory Slice E - Final Closure
+
+Update README/wiki/supported-features only for proven evidence surfaces. Publish wiki after merge
+when proof-pack behavior or demo material changes. Record skills/context decisions and leave branch
+and PR posture clean.
+
+### 11.4 Evidence Expectations
+
+Closure evidence must include:
+
+1. proof-pack JSON example,
+2. Markdown summary example,
+3. report-input example,
+4. AI-evidence input example,
+5. missing-evidence degraded example,
+6. decision-timeline linkage example,
+7. OpenAPI/API certification summary,
+8. local and GitHub check summary.
+
+### 11.5 Enterprise Baseline
+
+This RFC inherits RFC-0037 Section 19.4. Completion requires proof-pack lineage, retention posture,
+audit events, no-sensitive report/AI handoff contracts, structured logging, bounded metrics,
+operator diagnostics, API certification, and GitHub lane evidence for every proof-pack endpoint.

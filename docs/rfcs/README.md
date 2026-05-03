@@ -46,6 +46,11 @@ Governance boundary:
 | RFC-0042 | Post-Trade Outcome Feedback Loop | PROPOSED | RFC-0017, RFC-0019, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, RFC-0040, RFC-0041 | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | RFC-0043 | Governed AI PM Copilot for DPM | PROPOSED | RFC-0037, RFC-0038, RFC-0039, RFC-0040, RFC-0041, RFC-0042 | `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md` |
 
+Strategic RFC-0037 through RFC-0043 are pre-implementation target-state RFCs. They intentionally
+allow clean API redesign and endpoint removal where that produces a stronger enterprise DPM
+contract. Do not treat their features as supported until implementation, API certification, live
+evidence, wiki updates, and supported-feature promotion are complete.
+
 Review note:
 - RFC-0002, RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were rebaselined on
   2026-05-03 against current lotus-manage DPM implementation evidence. RFC-0024 and RFC-0025

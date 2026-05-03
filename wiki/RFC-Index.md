@@ -44,6 +44,11 @@
 
 ## Strategic Target-State RFCs
 
+These RFCs are proposed roadmap and execution-guide material. They permit clean strategic API
+redesign and endpoint retirement because no production downstream dependency is assumed for the
+revamp surface. They become supported product claims only after implementation, certification, live
+evidence, and supported-feature promotion.
+
 - RFC-0037
   proposed DPM operating-system and mandate-intelligence roadmap intended to make
   `lotus-manage` the management-side crown jewel of the Lotus ecosystem, with the 15 target

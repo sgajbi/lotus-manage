@@ -89,3 +89,26 @@ Final proof is not complete if the validator reports stale OpenAPI certification
 missing request, response, or error examples, even when business execution probes pass. Stateful
 execution is not complete unless the RFC-087 `lotus-core` product-specific source APIs pass
 canonical live proof and manage live proof shows READY stateful source lineage.
+
+## Target-State Roadmap Features
+
+The following are proposed strategic features. They are not supported-feature claims until the
+owning RFC is implemented, certified, live-proven, and this page is updated with implementation
+evidence.
+
+| Proposed capability | Owning RFC | Promotion requirement |
+| --- | --- | --- |
+| Mandate digital twin | RFC-0038 | Source lineage, versioning, persistence, APIs, and live core/manage proof. |
+| Mandate health score | RFC-0038 | Decomposed scoring, reason codes, thresholds, tests, and command-center evidence. |
+| DPM command center | RFC-0038 | Bounded PM-book summary, attention queues, partial-readiness behavior, and certified APIs. |
+| Advanced construction alternatives | RFC-0039 | Persisted comparable alternatives with objective/constraint traces and solver posture. |
+| Tax, liquidity, risk, ESG, currency, and regime-aware construction | RFC-0039 | Source supportability, degraded behavior, field-level OpenAPI, and live proof for each dimension. |
+| Pre-trade proof pack | RFC-0040 | Durable JSON, Markdown, report-input, AI-evidence input, lineage, and hash evidence. |
+| Decision timeline and portfolio memory | RFC-0040 | Linked mandate, exception, alternative, approval, wave, handoff, and outcome events. |
+| CIO model-change and rebalance waves | RFC-0041 | Multi-portfolio wave proof with ready, pending-review, and blocked items. |
+| Post-trade outcome feedback | RFC-0042 | Expected-versus-realized review sourced from core, risk, and performance evidence. |
+| Governed AI PM copilot | RFC-0043 | `lotus-ai` workflow-pack integration, guardrail tests, provenance, and AI-unavailable fallback. |
+
+Target-state features may replace or remove older manage APIs where the new strategic contract is
+cleaner. No backward compatibility adapter should be added unless a later downstream migration RFC
+proves a real production dependency.
