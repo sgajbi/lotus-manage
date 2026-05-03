@@ -209,7 +209,7 @@ class PostgresDpmMandateRepository:
                 query,
                 (
                     exception.exception_id,
-                    None,
+                    exception.monitoring_run_id,
                     exception.mandate_id,
                     exception.portfolio_id,
                     exception.as_of_date.isoformat(),

@@ -947,11 +947,13 @@ GitHub lane evidence appropriate to every mandate, health, monitoring, and comma
 
 | Date | Slice | Status | Evidence | Notes |
 | --- | --- | --- | --- | --- |
-| 2026-05-03 | Slice 0 - Design Tightening and Source-Data Gap Review | In progress | `docs/rfcs/RFC-0038-source-data-field-map.md` | Minimum viable mandate twin fields are mapped to source-backed, derived, local policy, or explicit source-data gap. |
-| 2026-05-03 | Slice 1 - Domain Models and Pure Health Engine | In progress | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py` | Pure model/compiler/health engine implemented without API or persistence claims. |
-| 2026-05-03 | Slice 2 - Persistence and Repository Layer | In progress | `src/core/mandate_repository.py`, `src/infrastructure/mandates/`, `src/infrastructure/postgres_migrations/dpm/0003_mandate_health_foundation.sql`, `tests/unit/dpm/supportability/test_dpm_mandate_repository.py` | Repository and migration foundation implemented for mandate snapshots, health snapshots, monitoring exceptions, and retention hooks. |
-| 2026-05-03 | Slice 3 - Core Resolver and Mandate APIs | In progress | `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, `tests/unit/dpm/api/test_mandates_api.py`, `tests/integration/test_openapi_certification_matrix.py` | Mandate refresh/read/version/diff API foundation implemented with product-specific core sourcing and explicit gap-code preservation. |
-| 2026-05-03 | Slice 4 - Health and Monitoring APIs | In progress | `src/api/routers/mandates.py`, `src/api/routers/monitoring.py`, `tests/unit/dpm/api/test_monitoring_api.py` | Standalone health read/recalculate plus bounded monitoring run and exception queue APIs implemented. |
+| 2026-05-03 | Slice 0 - Design Tightening and Source-Data Gap Review | Complete | `docs/rfcs/RFC-0038-source-data-field-map.md` | Minimum viable mandate twin fields are mapped to source-backed, derived, local policy, or explicit source-data gap. |
+| 2026-05-03 | Slice 1 - Domain Models and Pure Health Engine | Complete | `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py` | Pure model/compiler/health engine implemented without API or persistence claims. |
+| 2026-05-03 | Slice 2 - Persistence and Repository Layer | Complete | `src/core/mandate_repository.py`, `src/infrastructure/mandates/`, `src/infrastructure/postgres_migrations/dpm/0003_mandate_health_foundation.sql`, `tests/unit/dpm/supportability/test_dpm_mandate_repository.py` | Repository and migration foundation implemented for mandate snapshots, health snapshots, monitoring exceptions, monitoring runs, and retention hooks. |
+| 2026-05-03 | Slice 3 - Core Resolver and Mandate APIs | Complete | `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, `tests/unit/dpm/api/test_mandates_api.py`, `tests/integration/test_openapi_certification_matrix.py` | Mandate refresh/read/version/diff API foundation implemented with product-specific core sourcing and explicit gap-code preservation. |
+| 2026-05-03 | Slice 4 - Health and Monitoring APIs | Complete | `src/api/routers/mandates.py`, `src/api/routers/monitoring.py`, `tests/unit/dpm/api/test_monitoring_api.py` | Standalone health read/recalculate plus bounded monitoring run and exception queue APIs implemented. |
+| 2026-05-03 | Slice 5 - Command Center API | Complete | `src/api/routers/monitoring.py`, `src/api/services/mandate_service.py`, `tests/unit/dpm/api/test_monitoring_api.py`, `tests/integration/test_openapi_certification_matrix.py` | Bounded command-center summary implemented over persisted monitoring runs and active exceptions with explicit empty/partial supportability states. |
+| 2026-05-03 | Slice 7 - Local Manage API Proof | Complete for manage-local proof | `output/rfc0038-live-proof/20260503T063617Z/summary.json` (non-git evidence), `make check`, `make test-all` | Local live HTTP proof covered 16 mandate, health, monitoring, exception, and command-center calls with no failed responses. Proof identified and fixed stale exception aggregation by adding `monitoring_run_id` to monitoring exceptions and filtering command-center attention to the selected run. Canonical core/manage proof remains a later environment-dependent closure step. |
 
 Current promotion posture:
 
@@ -961,5 +963,19 @@ Current promotion posture:
    refresh-response output,
 3. monitoring exception taxonomy is implemented as pure derived domain output plus persistence
    foundation,
-4. DPM command-center API foundation is implemented; live proof, Gateway/Workbench handoff, and full
-   supported-feature promotion remain pending later slices.
+4. DPM command-center API foundation is implemented and locally live-proven against manage; canonical
+   core/manage proof, Gateway/Workbench handoff, and full supported-feature promotion remain pending
+   later slices.
+
+Local proof summary:
+
+1. Evidence path: `output/rfc0038-live-proof/20260503T063617Z/`.
+2. Covered endpoints: readiness, health recalculation, mandate read, portfolio read, version list,
+   latest diff, health read, monitoring run-once, monitoring run list/detail, exception list,
+   command-center populated, command-center empty, exception resolve, resolved-exception list.
+3. Result: 16/16 HTTP calls returned successful responses.
+4. Critical review finding: command-center attention initially included older active exceptions from
+   prior non-run recalculations. The implementation now persists `monitoring_run_id` on generated
+   exceptions and the command-center summary includes only exceptions generated by the selected
+   monitoring run. The corrected proof shows `command_center_active_exception_count = 2` and
+   `latest_run_exception_count = 2`.

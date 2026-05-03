@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-03T06:21:49.997148+00:00",
+  "generatedAt": "2026-05-03T06:37:08.961247+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -3273,14 +3273,15 @@
       "semanticId": "lotus.monitoring_run_id",
       "canonicalTerm": "monitoring_run_id",
       "preferredName": "monitoring_run_id",
-      "description": "Stable monitoring run identifier.",
+      "description": "Monitoring run that generated the exception, when available.",
       "example": "MONITORING_RUN_001",
-      "type": "string",
+      "type": "object",
       "locations": [
         "body",
         "path"
       ],
       "observedTypes": [
+        "object",
         "string"
       ]
     },
@@ -44117,6 +44118,14 @@
             "attributeRef": "#/attributeCatalog/lotus.exception_id"
           },
           {
+            "name": "monitoring_exceptions[].monitoring_run_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.monitoring_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+          },
+          {
             "name": "monitoring_exceptions[].mandate_id",
             "location": "body",
             "required": true,
@@ -46118,6 +46127,14 @@
             "attributeRef": "#/attributeCatalog/lotus.exception_id"
           },
           {
+            "name": "items[].monitoring_run_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.monitoring_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
+          },
+          {
             "name": "items[].mandate_id",
             "location": "body",
             "required": true,
@@ -46331,6 +46348,14 @@
             "type": "string",
             "semanticId": "lotus.exception_id",
             "attributeRef": "#/attributeCatalog/lotus.exception_id"
+          },
+          {
+            "name": "monitoring_run_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.monitoring_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.monitoring_run_id"
           },
           {
             "name": "mandate_id",

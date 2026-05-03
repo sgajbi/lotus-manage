@@ -84,6 +84,7 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     assert run_detail.status_code == 200
     assert exceptions_response.status_code == 200
     assert exceptions_response.json()["items"]
+    assert exceptions_response.json()["items"][0]["monitoring_run_id"] == run_id
 
 
 def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -> None:
@@ -102,9 +103,11 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
                 "requested_by": "ops_sg_001",
             },
         )
+        run_id = run_response.json()["monitoring_run_id"]
         repository.save_monitoring_exception(
             DpmMonitoringException(
                 exception_id="me_info_source_data",
+                monitoring_run_id=run_id,
                 mandate_id=MANDATE_ID,
                 portfolio_id=PORTFOLIO_ID,
                 detected_at=datetime(2026, 5, 3, 8, 30, tzinfo=timezone.utc),
@@ -118,6 +121,7 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
         repository.save_monitoring_exception(
             DpmMonitoringException(
                 exception_id="me_critical_source_data",
+                monitoring_run_id=run_id,
                 mandate_id=MANDATE_ID,
                 portfolio_id=PORTFOLIO_ID,
                 detected_at=datetime(2026, 5, 3, 8, 31, tzinfo=timezone.utc),
@@ -148,7 +152,7 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
     assert command_center.status_code == 200
     assert payload["evaluated_mandates"] == 1
     assert payload["health_distribution"] == {"PENDING_REVIEW": 1}
-    assert payload["active_exception_count"] >= 1
+    assert payload["active_exception_count"] >= run_response.json()["exception_count"]
     assert payload["attention_buckets"][0]["exception_count"] >= 1
     assert payload["recommended_actions"][0]["recommended_action"] == "FIX_SOURCE_DATA"
     assert payload["recommended_actions"][0]["highest_severity"] == "CRITICAL"

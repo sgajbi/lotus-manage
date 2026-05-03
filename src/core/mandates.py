@@ -218,6 +218,11 @@ class DpmMandateHealthSnapshot(BaseModel):
 
 class DpmMonitoringException(BaseModel):
     exception_id: str
+    monitoring_run_id: Optional[str] = Field(
+        default=None,
+        description="Monitoring run that generated the exception, when available.",
+        examples=["dmr_20260503_083000"],
+    )
     mandate_id: str
     portfolio_id: str
     detected_at: datetime

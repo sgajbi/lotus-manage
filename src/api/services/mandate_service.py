@@ -252,6 +252,7 @@ def run_mandate_monitoring_once(
     filters: dict[str, str],
 ) -> DpmMonitoringRun:
     requested_at = datetime.now(timezone.utc)
+    monitoring_run_id = f"dmr_{requested_at.strftime('%Y%m%d_%H%M%S_%f')}"
     health_distribution: dict[str, int] = {}
     source_readiness_summary: dict[str, int] = {}
     exception_count = 0
@@ -275,10 +276,12 @@ def run_mandate_monitoring_once(
         )
         exception_count += len(exceptions)
         for exception in exceptions:
-            repository.save_monitoring_exception(exception)
+            repository.save_monitoring_exception(
+                exception.model_copy(update={"monitoring_run_id": monitoring_run_id})
+            )
 
     run = DpmMonitoringRun(
-        monitoring_run_id=f"dmr_{requested_at.strftime('%Y%m%d_%H%M%S_%f')}",
+        monitoring_run_id=monitoring_run_id,
         as_of_date=as_of_date,
         requested_at=requested_at,
         completed_at=datetime.now(timezone.utc),
@@ -380,9 +383,10 @@ def get_command_center_summary(
         cursor=None,
     )
     if latest_run is not None:
-        run_mandate_ids = set(latest_run.mandate_ids)
         active_exceptions = [
-            exception for exception in active_exceptions if exception.mandate_id in run_mandate_ids
+            exception
+            for exception in active_exceptions
+            if exception.monitoring_run_id == latest_run.monitoring_run_id
         ]
 
     health_distribution = dict(latest_run.health_distribution) if latest_run else {}
