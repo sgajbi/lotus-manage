@@ -207,6 +207,46 @@ class DpmRebalanceWaveEvent(BaseModel):
     )
 
 
+class DpmWaveHandoffRef(BaseModel):
+    handoff_ref_id: str = Field(
+        description="Stable internal operations handoff evidence identifier.",
+        examples=["dwh_001"],
+    )
+    wave_id: str = Field(description="Wave aggregate identifier.", examples=["dwv_001"])
+    item_ids: list[str] = Field(
+        description="Wave item ids included in this handoff package.",
+        examples=[["dwi_001"]],
+    )
+    actor_id: str = Field(description="Actor that prepared the handoff.", examples=["pm_001"])
+    reason_code: str = Field(
+        description="Bounded reason code for the handoff.",
+        examples=["READY_FOR_OPERATIONS_REVIEW"],
+    )
+    correlation_id: str = Field(
+        description="Correlation id for audit and supportability.",
+        examples=["corr-wave-handoff-001"],
+    )
+    external_execution_claimed: bool = Field(
+        default=False,
+        description="Always false: manage handoff evidence is not external execution.",
+        examples=[False],
+    )
+    content_hash: str = Field(
+        description="Canonical hash of the handoff evidence payload.",
+        examples=["sha256:handoff-example"],
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when the handoff evidence was recorded.",
+        examples=["2026-05-03T09:30:00Z"],
+    )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Bounded handoff metadata; never raw upstream payloads.",
+        examples=[{"staged_item_count": 1}],
+    )
+
+
 class DpmRebalanceWave(BaseModel):
     wave_id: str = Field(description="Stable rebalance wave identifier.", examples=["dwv_001"])
     wave_version: str = Field(
@@ -242,6 +282,10 @@ class DpmRebalanceWave(BaseModel):
     events: list[DpmRebalanceWaveEvent] = Field(
         default_factory=list,
         description="Append-only wave event timeline.",
+    )
+    handoff_refs: list[DpmWaveHandoffRef] = Field(
+        default_factory=list,
+        description="Append-only internal operations handoff evidence refs.",
     )
     retention_policy: str = Field(
         default="DPM_WAVE_STANDARD",

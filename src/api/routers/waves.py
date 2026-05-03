@@ -270,6 +270,22 @@ class DpmWaveSelectionRequest(BaseModel):
     )
 
 
+class DpmWaveWorkflowCommandRequest(BaseModel):
+    actor_id: str = Field(
+        description="Human or service actor applying the workflow command.",
+        examples=["pm_001"],
+    )
+    reason_code: str = Field(
+        description="Bounded business reason code for the workflow command.",
+        examples=["READY_FOR_OPERATIONS_REVIEW"],
+    )
+    comment: str | None = Field(
+        default=None,
+        description="Optional business comment for audit.",
+        examples=["Approved after proof-pack review."],
+    )
+
+
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
 
 
@@ -638,6 +654,152 @@ def select_wave_item_alternative(
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
     return DpmWaveResponse(wave=wave, durable=True)
+
+
+@router.post(
+    "/{wave_id}/approve",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Approve selected rebalance wave items",
+    description=(
+        "Approves selected or proof-pack-ready wave items with actor attribution. Source-blocked, "
+        "simulation-blocked, degraded, failed, or otherwise unselected items are never approved; "
+        "mixed waves become `APPROVED_WITH_EXCEPTIONS`. Repeating the command after approval "
+        "returns the persisted wave without appending duplicate approval evidence."
+    ),
+    responses={
+        200: {"description": "Wave approval recorded or replayed."},
+        404: {"description": "Wave not found."},
+        409: {"description": "Wave version conflict during optimistic update."},
+        422: {"description": "Wave has no eligible items or is not approval-ready."},
+    },
+)
+def approve_wave(
+    wave_id: str,
+    request: DpmWaveWorkflowCommandRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-approve-001"],
+        ),
+    ] = None,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    try:
+        wave, replayed = wave_service.approve_wave(
+            wave_id=wave_id,
+            actor_id=request.actor_id,
+            reason_code=request.reason_code,
+            comment=request.comment,
+            correlation_id=x_correlation_id or f"corr_wave_approve_{wave_id}",
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
+    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.post(
+    "/{wave_id}/stage",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Stage approved rebalance wave items",
+    description=(
+        "Stages approved wave items for internal operations handoff. The endpoint does not stage "
+        "blocked or unapproved items and does not claim external order execution. Repeating the "
+        "command after staging or handoff readiness returns the persisted wave without duplicate "
+        "events."
+    ),
+    responses={
+        200: {"description": "Wave staging recorded or replayed."},
+        404: {"description": "Wave not found."},
+        409: {"description": "Wave version conflict during optimistic update."},
+        422: {"description": "Wave has no approved items or is not stage-ready."},
+    },
+)
+def stage_wave(
+    wave_id: str,
+    request: DpmWaveWorkflowCommandRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-stage-001"],
+        ),
+    ] = None,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    try:
+        wave, replayed = wave_service.stage_wave(
+            wave_id=wave_id,
+            actor_id=request.actor_id,
+            reason_code=request.reason_code,
+            comment=request.comment,
+            correlation_id=x_correlation_id or f"corr_wave_stage_{wave_id}",
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
+    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.post(
+    "/{wave_id}/handoff",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Create internal operations handoff evidence",
+    description=(
+        "Creates append-only internal operations handoff evidence for staged wave items. This is "
+        "a manage-owned readiness package only: it records `external_execution_claimed=false` and "
+        "does not send orders, client communications, or external execution instructions."
+    ),
+    responses={
+        200: {"description": "Wave handoff evidence recorded or replayed."},
+        404: {"description": "Wave not found."},
+        409: {"description": "Wave version conflict during optimistic update."},
+        422: {"description": "Wave has no staged items or is not handoff-ready."},
+    },
+)
+def handoff_wave(
+    wave_id: str,
+    request: DpmWaveWorkflowCommandRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-handoff-001"],
+        ),
+    ] = None,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    try:
+        wave, replayed = wave_service.handoff_wave(
+            wave_id=wave_id,
+            actor_id=request.actor_id,
+            reason_code=request.reason_code,
+            comment=request.comment,
+            correlation_id=x_correlation_id or f"corr_wave_handoff_{wave_id}",
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
+    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 def _wave_validation_http_exception(exc: wave_service.DpmWaveValidationError) -> HTTPException:

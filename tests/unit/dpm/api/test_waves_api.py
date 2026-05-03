@@ -843,6 +843,259 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
     assert item["diagnostics"]["proof_pack_error"] == "RuntimeError"
 
 
+def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-approval-handoff"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+        approved = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/approve",
+            json={
+                "actor_id": "pm_001",
+                "reason_code": "PROOF_PACK_REVIEWED",
+                "comment": "Approved after proof-pack review.",
+            },
+        )
+        approved_replay = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/approve",
+            json={"actor_id": "pm_001", "reason_code": "PROOF_PACK_REVIEWED"},
+        )
+        staged = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/stage",
+            json={
+                "actor_id": "ops_001",
+                "reason_code": "READY_FOR_OPERATIONS_REVIEW",
+            },
+        )
+        staged_replay = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/stage",
+            json={
+                "actor_id": "ops_001",
+                "reason_code": "READY_FOR_OPERATIONS_REVIEW",
+            },
+        )
+        handoff = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/handoff",
+            json={
+                "actor_id": "ops_001",
+                "reason_code": "OPERATIONS_PACKAGE_PREPARED",
+            },
+        )
+        handoff_replay = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/handoff",
+            json={
+                "actor_id": "ops_001",
+                "reason_code": "OPERATIONS_PACKAGE_PREPARED",
+            },
+        )
+
+    assert approved.status_code == 200
+    approved_payload = approved.json()
+    assert approved_payload["wave"]["state"] == "APPROVED"
+    assert approved_payload["wave"]["items"][0]["state"] == "APPROVED"
+    assert approved_payload["wave"]["items"][0]["diagnostics"]["approval_actor_id"] == "pm_001"
+    assert approved_replay.json()["idempotent_replay"] is True
+    assert approved_replay.json()["wave"]["version"] == approved_payload["wave"]["version"]
+
+    assert staged.status_code == 200
+    staged_payload = staged.json()
+    assert staged_payload["wave"]["state"] == "STAGED"
+    assert staged_payload["wave"]["items"][0]["state"] == "STAGED"
+    assert staged_payload["wave"]["items"][0]["diagnostics"]["external_execution_claimed"] is False
+    assert staged_replay.json()["idempotent_replay"] is True
+
+    assert handoff.status_code == 200
+    handoff_payload = handoff.json()
+    assert handoff_payload["wave"]["state"] == "HANDOFF_READY"
+    assert handoff_payload["wave"]["items"][0]["state"] == "HANDOFF_READY"
+    assert len(handoff_payload["wave"]["handoff_refs"]) == 1
+    handoff_ref = handoff_payload["wave"]["handoff_refs"][0]
+    assert handoff_ref["item_ids"] == [wave_item_id]
+    assert handoff_ref["external_execution_claimed"] is False
+    assert handoff_ref["content_hash"].startswith("sha256:")
+    assert handoff_replay.json()["idempotent_replay"] is True
+    assert handoff_replay.json()["wave"]["handoff_refs"] == handoff_payload["wave"]["handoff_refs"]
+
+    persisted = wave_repository.get_wave(wave_id=wave_id)
+    assert persisted is not None
+    assert persisted.state == "HANDOFF_READY"
+    assert len(persisted.handoff_refs) == 1
+    assert [event.event_type for event in persisted.events][-3:] == [
+        "STATE_TRANSITION",
+        "STATE_TRANSITION",
+        "STATE_TRANSITION",
+    ]
+
+
+def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    blocked_twin = _twin(
+        mandate_id="MANDATE_PB_SG_READY_BUT_MISSING_INPUT",
+        portfolio_id="PB_SG_READY_BUT_MISSING_INPUT",
+    )
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    mandate_repository.save_mandate_snapshot(blocked_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    _save_ready_health(mandate_repository, blocked_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={
+                **_request(),
+                "portfolios": [
+                    {"portfolio_id": PORTFOLIO_ID},
+                    {"portfolio_id": "PB_SG_READY_BUT_MISSING_INPUT"},
+                ],
+            },
+            headers={"Idempotency-Key": "idem-wave-approval-exceptions"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        items_by_portfolio = {
+            item["portfolio_id"]: item for item in checked.json()["wave"]["items"]
+        }
+        ready_item_id = items_by_portfolio[PORTFOLIO_ID]["wave_item_id"]
+        blocked_item_id = items_by_portfolio["PB_SG_READY_BUT_MISSING_INPUT"]["wave_item_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": ready_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/{ready_item_id}/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+        approved = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/approve",
+            json={"actor_id": "pm_001", "reason_code": "APPROVE_READY_ITEMS_ONLY"},
+        )
+        staged = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/stage",
+            json={"actor_id": "ops_001", "reason_code": "STAGE_APPROVED_ITEMS_ONLY"},
+        )
+        handoff = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/handoff",
+            json={"actor_id": "ops_001", "reason_code": "HANDOFF_APPROVED_ITEMS_ONLY"},
+        )
+
+    assert approved.status_code == 200
+    assert approved.json()["wave"]["state"] == "APPROVED_WITH_EXCEPTIONS"
+    approved_items = {item["wave_item_id"]: item for item in approved.json()["wave"]["items"]}
+    assert approved_items[ready_item_id]["state"] == "APPROVED"
+    assert approved_items[blocked_item_id]["state"] == "SIMULATION_BLOCKED"
+
+    assert staged.status_code == 200
+    staged_items = {item["wave_item_id"]: item for item in staged.json()["wave"]["items"]}
+    assert staged_items[ready_item_id]["state"] == "STAGED"
+    assert staged_items[blocked_item_id]["state"] == "SIMULATION_BLOCKED"
+
+    assert handoff.status_code == 200
+    handoff_ref = handoff.json()["wave"]["handoff_refs"][0]
+    assert handoff_ref["item_ids"] == [ready_item_id]
+    assert blocked_item_id not in handoff_ref["item_ids"]
+
+
+def test_wave_workflow_commands_reject_invalid_states_and_empty_eligibility() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-workflow-errors"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        approve_invalid = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/approve",
+            json={"actor_id": "pm_001", "reason_code": "TOO_EARLY"},
+        )
+        stage_invalid = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/stage",
+            json={"actor_id": "ops_001", "reason_code": "TOO_EARLY"},
+        )
+        handoff_invalid = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/handoff",
+            json={"actor_id": "ops_001", "reason_code": "TOO_EARLY"},
+        )
+
+    assert approve_invalid.status_code == 422
+    assert approve_invalid.json()["detail"]["code"] == "DPM_WAVE_APPROVAL_INVALID_STATE"
+    assert stage_invalid.status_code == 422
+    assert stage_invalid.json()["detail"]["code"] == "DPM_WAVE_STAGE_INVALID_STATE"
+    assert handoff_invalid.status_code == 422
+    assert handoff_invalid.json()["detail"]["code"] == "DPM_WAVE_HANDOFF_INVALID_STATE"
+
+
 def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post(
@@ -861,9 +1114,15 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     preview = openapi["paths"]["/api/v1/rebalance/waves/preview"]["post"]
     create = openapi["paths"]["/api/v1/rebalance/waves"]["post"]
     source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check"]["post"]
+    approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
+    stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
+    handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
     assert source_check["tags"] == ["lotus-manage Rebalance Waves"]
+    assert approve["tags"] == ["lotus-manage Rebalance Waves"]
+    assert stage["tags"] == ["lotus-manage Rebalance Waves"]
+    assert handoff["tags"] == ["lotus-manage Rebalance Waves"]
     assert preview["responses"]["200"]["content"]["application/json"]["example"]["durable"] is False
     assert create["responses"]["201"]["content"]["application/json"]["example"]["durable"] is True
     assert (
@@ -875,3 +1134,5 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "404" in source_check["responses"]
     assert "409" in source_check["responses"]
     assert "422" in source_check["responses"]
+    assert "does not claim external order execution" in stage["description"]
+    assert "external_execution_claimed=false" in handoff["description"]

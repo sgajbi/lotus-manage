@@ -3,6 +3,7 @@
 from src.core.waves.models import (
     DpmRebalanceWave,
     DpmWaveAggregateMetrics,
+    DpmWaveHandoffRef,
     DpmRebalanceWaveEvent,
     DpmRebalanceWaveItem,
     DpmWaveTrigger,
@@ -30,6 +31,7 @@ __all__ = [
     "DpmRebalanceWaveEvent",
     "DpmRebalanceWaveItem",
     "DpmWaveAggregateMetrics",
+    "DpmWaveHandoffRef",
     "DpmWaveTrigger",
     "DpmWaveAlreadyExistsError",
     "DpmWaveIdempotencyConflictError",
