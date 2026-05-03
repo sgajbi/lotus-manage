@@ -1,9 +1,11 @@
+import os
 from typing import AsyncIterator
 
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
+from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
 
 
 _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
@@ -30,3 +32,12 @@ def get_construction_repository() -> ConstructionRepository:
     """Return the RFC-0039 construction repository for local and test runtimes."""
 
     return _CONSTRUCTION_REPOSITORY
+
+
+def get_risk_authority_client() -> LotusRiskAuthorityClient | None:
+    """Return a lotus-risk authority client when risk integration is configured."""
+
+    base_url = os.getenv("DPM_RISK_BASE_URL", "").strip()
+    if not base_url:
+        return None
+    return LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url=base_url))

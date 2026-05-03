@@ -88,6 +88,22 @@ def test_enrichment_summary_marks_turnover_pending_review_when_budget_drops_inte
     assert "TURNOVER_BUDGET_DROPPED_INTENTS" in summary.reason_codes
 
 
+def test_enrichment_summary_does_not_bleed_optional_authority_reason_codes() -> None:
+    result = _trade_result()
+
+    summary = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        performance_required=False,
+    )
+
+    assert summary.risk_status == ConstructionMethodStatus.READY
+    assert summary.performance_status == ConstructionMethodStatus.READY
+    assert "RISK_ENRICHMENT_UNAVAILABLE" not in summary.reason_codes
+    assert "PERFORMANCE_CONTEXT_UNAVAILABLE" not in summary.reason_codes
+
+
 def test_enrichment_summary_preserves_authoritative_risk_and_performance_status() -> None:
     result = _trade_result()
 

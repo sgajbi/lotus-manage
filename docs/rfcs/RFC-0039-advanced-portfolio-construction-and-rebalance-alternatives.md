@@ -2,14 +2,14 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IMPLEMENTED - MANAGE CONSTRUCTION ALTERNATIVES COMPLETE |
+| **Status** | IMPLEMENTED - AUTHORITY-BACKED MANAGE CONSTRUCTION COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | DPM head, portfolio manager, CIO desk, investment control, tax specialist, operations, sales/pre-sales |
 | **Depends On** | RFC-0021, RFC-0022, RFC-0023, RFC-0024, RFC-0025, RFC-0028, RFC-0036, RFC-0037, RFC-0038, `lotus-core` RFC-0087, Gateway RFC-0098, Workbench RFC-0098 |
 | **Doc Location** | `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md` |
-| **Implementation Branch** | `feat/rfc0039-gold-standard-tightening` |
+| **Implementation Branch** | `feat/rfc0039-authority-backed-methods` |
 
 ---
 
@@ -220,29 +220,32 @@ RFC-0039 is the owning RFC for both first-wave and second-wave construction alte
 RFCs such as RFC-0040, RFC-0041, RFC-0042, and RFC-0043 consume selected alternatives for proof
 packs, waves, outcome learning, and AI summarization; they must not create duplicate construction
 method RFCs unless a genuinely separate business capability appears. The following second-wave
-methods remain proposed inside RFC-0039 until each method is individually implemented, tested,
-certified, and promoted:
+methods are governed inside RFC-0039 and must not be split into duplicate method RFCs. This
+gold-pass promotes five authority-backed methods and keeps ESG/restriction-aware construction
+explicitly deferred:
 
 1. `SOLVER_CONSTRAINED`
 2. `RISK_AWARE`
-3. `ESG_AWARE`
+3. `LIQUIDITY_AWARE`
 4. `CURRENCY_OVERLAY`
 5. `REGIME_STRESS_AWARE`
-6. advanced multi-objective blend methods
+6. `ESG_AWARE` / restriction-aware construction - deferred until source products are available
+7. advanced multi-objective blend methods
 
 Second-wave implementation must stay slice-driven within this RFC:
 
 1. `SOLVER_CONSTRAINED` only after deterministic solver timeouts, infeasibility taxonomy, fallback,
    and objective/constraint traces are production-grade.
-2. `RISK_AWARE` only through `lotus-risk` authority or explicit degraded local diagnostics; manage
-   must not become risk methodology authority.
-3. `ESG_AWARE` only after restriction, sustainability, eligibility, and missing-profile behavior
-   are source-backed or explicitly degraded.
+2. `RISK_AWARE` only through `lotus-risk` authority; manage must not become risk methodology
+   authority.
+3. `LIQUIDITY_AWARE` only with settlement, cash, funding, and policy evidence.
 4. `CURRENCY_OVERLAY` only after FX exposure, hedge-ratio bands, hedge eligibility, and settlement
    readiness are documented and tested.
 5. `REGIME_STRESS_AWARE` only after scenario packs and stress contribution evidence are
-   risk-authoritative or explicitly unavailable.
-6. Advanced blends only after the component methods and objective weighting governance are already
+   risk/CIO-authoritative or explicitly unavailable.
+6. `ESG_AWARE` only after restriction, sustainability, eligibility, and missing-profile behavior
+   are source-backed; until then it must degrade with an explicit deferral reason.
+7. Advanced blends only after the component methods and objective weighting governance are already
    proven.
 
 ### 6.3 Method Definitions
@@ -360,8 +363,10 @@ Purpose:
 3. avoid worsening drawdown or stress posture beyond mandate limits,
 4. use `lotus-risk` enrichment where available.
 
-Risk-aware alternatives may be generated in degraded mode with clearly labelled local diagnostics,
-but must mark missing `lotus-risk` enrichment.
+Risk-aware alternatives consume `lotus-risk` concentration supportability through the bounded
+risk-authority client when `DPM_RISK_BASE_URL` is configured, or require caller-supplied
+source-backed authority context. Manage must degrade or block missing authority; it must not
+recalculate risk methodology locally.
 
 #### ESG_AWARE
 
@@ -371,6 +376,12 @@ Purpose:
 2. avoid restricted sectors, issuers, and instruments,
 3. prefer eligible sustainable instruments where the mandate requires it,
 4. expose ESG degradation when source profiles are incomplete.
+
+Current support posture:
+
+`ESG_AWARE` is intentionally deferred in this RFC implementation. It returns degraded
+supportability with `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED` until restriction and
+sustainability source products are available.
 
 #### CURRENCY_OVERLAY
 
@@ -989,15 +1000,16 @@ Evidence:
 9. `powershell` scriptblock parse validation passed for `scripts/Start-CanonicalManage.ps1`.
 10. Follow-up audit hardening initially rejected unsupported second-wave method requests at the API
     boundary, then the RFC was reopened to promote those methods under this same RFC. The first
-    reopened slice replaces rejection with explicit second-wave supportability and passed:
+    reopened slice replaced rejection with explicit second-wave supportability and passed:
     `python -m pytest tests/unit/dpm/api/test_construction_api.py -q`,
     `python -m pytest tests/unit/dpm/api/test_construction_api.py tests/unit/dpm/construction -q`,
     `python scripts/openapi_quality_gate.py`,
     `python -m mypy src/api/services/construction_service.py src/api/routers/construction.py`, and
     `python -m ruff check src/api/services/construction_service.py src/api/routers/construction.py tests/unit/dpm/api/test_construction_api.py`.
-11. Final second-wave proof added `construction_alternatives_second_wave` to
-    `scripts/validate_live_api.py` and passed against canonical Postgres-backed manage evidence in
-    `output/rfc0039-proof/20260503-182819-second-wave-canonical-postgres/summary.json`.
+11. Authority-backed completion then promoted `SOLVER_CONSTRAINED`, `RISK_AWARE`,
+    `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` to fully implemented manage
+    backend methods with source-authority diagnostics and explicit ESG deferral. The live validator
+    now records this as `construction_alternatives_authority_backed`.
 
 Critical review:
 
@@ -1021,13 +1033,168 @@ Critical review:
    RFC-0039 slice promoted those methods with explicit method plans, supportability, degraded
    states, tests, live proof, and documentation.
 8. Live proof critically reviewed the first second-wave evidence pass and rejected it because
-   artificial safety/overdraft blockers made too many methods `BLOCKED`. The proof payload was
-   corrected to include cash, FX, and bounded overdraft context, producing useful second-wave
-   evidence: `SOLVER_CONSTRAINED`, `ESG_AWARE`, and `CURRENCY_OVERLAY` are `READY`;
-   `LIQUIDITY_AWARE` is `PENDING_REVIEW`; `RISK_AWARE` and `REGIME_STRESS_AWARE` are `DEGRADED`
-   because risk/scenario authorities are absent.
+   artificial safety/overdraft blockers made too many methods `BLOCKED`. The authority-backed proof
+   path now supplies explicit risk, liquidity, currency, and regime-stress authority context and
+   requires all mandatory advanced methods to return `READY`. ESG/restriction-aware construction is
+   not included in the ready-method proof because it is explicitly deferred until source-backed
+   restriction and sustainability profiles exist.
 
-### Slice 10: Gateway and Workbench Realization RFC Slice
+### Slice 10: Solver-Constrained Full Implementation Slice
+
+Scope:
+
+1. promote `SOLVER_CONSTRAINED` from supportability posture to production construction method,
+2. keep deterministic solver availability, fallback, infeasibility, non-optimal, and warning
+   taxonomy in the method registry,
+3. require objective and constraint traces to expose solver use without leaking raw optimizer
+   internals,
+4. fail closed or fall back to `HEURISTIC_EXPLAINABLE` when solver dependencies are unavailable,
+5. prove solver behavior through unit and API tests.
+
+Acceptance:
+
+1. `SOLVER_CONSTRAINED` uses `TargetMethod.SOLVER` and `compare_target_methods=true`.
+2. Missing solver dependencies produce `PENDING_REVIEW` with
+   `SOLVER_UNAVAILABLE_FALLBACK_HEURISTIC`.
+3. Solver infeasibility and unbounded states map to `BLOCKED`; non-optimal solver states map to
+   `PENDING_REVIEW`.
+4. Solver alternatives include method plan, solver posture, objective trace, constraint trace, and
+   target-method comparison diagnostics.
+
+Evidence:
+
+1. `src/core/construction/method_registry.py`
+2. `src/api/services/construction_service.py`
+3. `tests/unit/dpm/construction/test_method_registry.py`
+4. `tests/unit/dpm/api/test_construction_api.py`
+5. `scripts/validate_live_api.py` probe `construction_alternatives_authority_backed`
+
+### Slice 11: Risk-Aware lotus-risk Authority Integration Slice
+
+Scope:
+
+1. make `RISK_AWARE` consume `lotus-risk` authority instead of calculating risk methodology in
+   manage,
+2. add a bounded `lotus-risk` concentration authority client,
+3. map risk supportability, HHI delta, proposed top-position weight, issuer coverage, and bounded
+   reason codes into construction diagnostics,
+4. fail closed to degraded supportability when `lotus-risk` is not configured or unavailable,
+5. keep methodology ownership in `lotus-risk`.
+
+Acceptance:
+
+1. `DPM_RISK_BASE_URL` enables `lotus-risk` concentration authority calls.
+2. `RISK_AWARE` becomes `READY` only when risk supportability is ready and risk concentration
+   evidence is available.
+3. `RISK_AWARE` carries `LOTUS_RISK_CONCENTRATION_*` reason codes and risk authority context in
+   diagnostics.
+4. Manage does not duplicate concentration, VaR, attribution, drawdown, or scenario methodology.
+5. Unavailable risk authority produces explicit degraded behavior, never false readiness.
+
+Evidence:
+
+1. `src/infrastructure/risk_authority/client.py`
+2. `src/api/dependencies.py`
+3. `src/api/services/construction_service.py`
+4. `tests/unit/dpm/infrastructure/test_risk_authority_client.py`
+5. `tests/unit/dpm/api/test_construction_api.py`
+6. `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json`
+
+### Slice 12: Liquidity-Aware and Settlement-Aware Full Implementation Slice
+
+Scope:
+
+1. promote `LIQUIDITY_AWARE` to a policy-backed operational construction method,
+2. use manage-owned settlement engine diagnostics, cash ladder, funding deficits, overdraft
+   posture, and minimum-cash-buffer policy,
+3. require liquidity context and reason codes in construction diagnostics,
+4. block alternatives with settlement ladder breaches or funding deficits,
+5. mark alternatives `PENDING_REVIEW` when minimum cash buffer policy is breached.
+
+Acceptance:
+
+1. `LIQUIDITY_AWARE` enables settlement awareness and minimum cash buffer.
+2. Alternatives expose `SETTLEMENT_AWARENESS_ENABLED`, cash-ladder, policy, and breach reason
+   codes.
+3. Funding deficits or settlement breaches block liquidity-aware alternatives.
+4. Liquidity alternatives become `READY` only when settlement, cash, and policy evidence are
+   satisfactory.
+
+Evidence:
+
+1. `src/api/services/construction_service.py`
+2. `src/core/construction/models.py`
+3. `tests/unit/dpm/api/test_construction_api.py`
+4. `scripts/validate_live_api.py` probe `construction_alternatives_authority_backed`
+
+### Slice 13: Currency-Overlay Full Implementation Slice
+
+Scope:
+
+1. promote `CURRENCY_OVERLAY` to policy-backed FX construction,
+2. require FX pair readiness, currency exposure, eligible-currency policy, settlement awareness,
+   and hedge-ratio policy context,
+3. block missing FX sources,
+4. mark unsupported currencies `PENDING_REVIEW`,
+5. include currency policy context in diagnostics.
+
+Acceptance:
+
+1. Missing required FX pairs produce `BLOCKED` and `CURRENCY_OVERLAY_FX_SOURCE_MISSING`.
+2. Ready FX, eligible currency exposure, settlement awareness, and currency policy context produce
+   `READY`.
+3. No non-base exposure degrades truthfully rather than claiming overlay value.
+4. Currency-overlay diagnostics include policy id, hedge ratio band, eligible currencies, and
+   bounded reason codes.
+
+Evidence:
+
+1. `src/api/services/construction_service.py`
+2. `src/core/construction/models.py`
+3. `tests/unit/dpm/api/test_construction_api.py`
+4. `scripts/validate_live_api.py` probe `construction_alternatives_authority_backed`
+
+### Slice 14: Regime-Stress-Aware Full Implementation Slice
+
+Scope:
+
+1. promote `REGIME_STRESS_AWARE` to scenario-pack-aware construction,
+2. require risk/CIO scenario-pack authority context,
+3. compare worst-case scenario loss with maximum allowed mandate loss policy,
+4. produce `PENDING_REVIEW` when stress loss exceeds policy,
+5. degrade when scenario authority is absent.
+
+Acceptance:
+
+1. `REGIME_STRESS_AWARE` becomes `READY` only with source-backed scenario pack context and loss
+   inside policy.
+2. Missing scenario pack produces `REGIME_SCENARIO_PACK_UNAVAILABLE`.
+3. Scenario loss above policy produces `PENDING_REVIEW`.
+4. Diagnostics include scenario pack id, source system, loss threshold, observed loss, and bounded
+   reason codes.
+
+Evidence:
+
+1. `src/core/construction/models.py`
+2. `src/api/services/construction_service.py`
+3. `tests/unit/dpm/api/test_construction_api.py`
+4. `scripts/validate_live_api.py` probe `construction_alternatives_authority_backed`
+
+### Slice 15: ESG/Restriction-Aware Deferral Slice
+
+Decision:
+
+`ESG_AWARE` and broader restriction-aware construction are explicitly deferred. The method remains
+in vocabulary for roadmap continuity, but it must not be promoted as full enterprise support until
+restriction, sustainability, product eligibility, and client-preference authorities are clear.
+
+Current behavior:
+
+1. `ESG_AWARE` returns degraded supportability,
+2. diagnostics include `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`,
+3. no client or sales material may claim full ESG/restriction-aware construction yet.
+
+### Slice 16: Gateway and Workbench Realization RFC Slice
 
 Slice 10 created the construction-specific downstream handoff after manage evidence and hardening
 were stable. The handoff intentionally keeps current `lotus-manage` ownership of construction
@@ -1083,7 +1250,7 @@ Critical review:
 4. No downstream support claim is made. Gateway and Workbench remain not integrated with
    construction alternatives until their owning implementations are complete and live-proven.
 
-### Slice 11: Final Closure Slice
+### Slice 17: Final Closure Slice
 
 Scope:
 
@@ -1100,6 +1267,15 @@ Acceptance:
 2. supported features are implementation-backed,
 3. CI is green,
 4. wiki check-only and post-merge publish are complete.
+
+Current closure state:
+
+1. manage implementation, local quality gates, canonical live API proof, README/context/RFC/wiki
+   source updates, and the final gold-pass assessment are complete,
+2. no additional manage implementation slice is required for RFC-0039 before PR closure,
+3. PR creation, GitHub CI evidence, merge, post-merge wiki publication, and final branch hygiene
+   remain Slice 17 governance tasks and must be completed before the RFC is marked operationally
+   closed.
 
 ---
 
@@ -1186,7 +1362,7 @@ Required artifacts:
 
 RFC-0039 is complete only when:
 
-1. first-wave and second-wave construction methods are implemented and certified,
+1. first-wave methods and mandatory authority-backed advanced methods are implemented and certified,
 2. alternative sets are persisted and retrievable,
 3. every alternative includes comparable decision metrics,
 4. objective and constraint traces are complete,
@@ -1208,28 +1384,30 @@ RFC-0039 is complete only when:
 
 | Assessment Area | Final Result |
 | --- | --- |
-| What was truly completed | Manage-side RFC-0039 construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, first-wave and second-wave live validator probes, downstream realization handoff, and wiki/README/context updates. |
+| What was truly completed | Manage-side RFC-0039 construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, first-wave and authority-backed live validator probes, downstream realization handoff, and wiki/README/context updates. |
 | Quality improvements made | Construction logic is isolated in `src/core/construction/`, API orchestration is separated in `src/api/services/construction_service.py`, persistence is behind `ConstructionRepository`, Postgres path has fast contract tests, OpenAPI and API vocabulary are refreshed, and the canonical startup helper now falls back correctly when the repo venv lacks the Postgres driver. |
 | Debt removed | Stale proof using an already-aligned portfolio was rejected and replaced with drifted-portfolio proof; construction API vocabulary drift was eliminated; missing Postgres repository unit coverage was closed; `Start-CanonicalManage.ps1` no longer aborts before its intended global-Python fallback. |
-| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `LIQUIDITY_AWARE`, `RISK_AWARE`, `ESG_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` are implemented and proven at the manage backend layer. Live proof shows do-nothing preserving drift with zero turnover, heuristic removing drift with two trades, minimum-turnover landing in `PENDING_REVIEW`, tax-aware carrying explicit degraded enrichment reason codes, solver/currency/ESG alternatives becoming `READY` under supported sources, liquidity landing in `PENDING_REVIEW`, and risk/regime alternatives degrading truthfully when authorities are absent. |
-| Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, and bounded reason codes for first-wave and second-wave alternatives. |
-| Solver/fallback proof | RFC-0039 includes method-registry solver posture and fallback modeling plus live second-wave proof for `SOLVER_CONSTRAINED`. Unit tests prove explicit fallback to heuristic when solver dependencies are unavailable. |
-| Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; local proof includes degraded enrichment reason codes; Postgres-backed validator proof passed the construction probe and supportability summary. |
-| API certification result | OpenAPI quality gate, OpenAPI certification matrix, contract docs tests, no-alias guard, API vocabulary inventory, and live API validator passed after construction endpoints were added. |
+| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `RISK_AWARE`, `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` are implemented and proven at the manage backend layer. Canonical live proof `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json` shows all five mandatory authority-backed methods at `READY`. `ESG_AWARE` is deliberately deferred and degrades with `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`; it is not claimed as a ready construction method. |
+| Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, authority context, and bounded reason codes for first-wave and authority-backed alternatives. |
+| Solver/fallback proof | RFC-0039 includes method-registry solver posture and fallback modeling plus authority-backed proof for `SOLVER_CONSTRAINED`. Unit tests prove explicit fallback to heuristic when solver dependencies are unavailable. |
+| Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; risk-aware construction consumes `lotus-risk` concentration authority; liquidity, currency, and regime-stress diagnostics carry source-backed authority context; ESG remains explicitly degraded until source products exist. |
+| API certification result | `make check` passed with Ruff, format, monetary-float guard, no-alias guard, mypy, OpenAPI quality, API vocabulary, domain-data product, trust telemetry, observability contract, and 683 unit tests. Canonical live validation passed 11/11 on `http://127.0.0.1:8021` with Postgres-backed evidence in `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json`. |
 | Data mesh and observability result | Existing mesh product, trust telemetry, and observability contract gates passed through `make check`; construction proof preserves source supportability without moving core, risk, or performance authority into manage. |
-| Gateway/Workbench realization RFC result | Manage handoff document created; Gateway RFC-0098 and Workbench RFC-0098 were tightened with construction-specific composition and construction-lab requirements. No downstream implementation or support claim is made yet. |
+| Gateway/Workbench realization RFC result | Manage handoff document created; Gateway and Workbench RFC material captures construction-specific composition and construction-lab requirements. No downstream implementation or support claim is made yet. |
 | Documentation/wiki result | README, repository context, RFC, wiki API surface, architecture, integrations, endpoint certification, supported features, RFC index, and roadmap were updated with implementation-backed wording and explicit downstream boundaries. |
 | Remaining governed follow-up | Gateway/Workbench construction lab implementation and canonical browser proof remain downstream product-realization work. Manage does not claim full front-office construction-lab outcome until those repositories implement and prove their paired RFCs. |
-| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave and second-wave construction alternatives. The full front-office business outcome is intentionally not claimed until Gateway and Workbench realization is implemented and live-proven. |
+| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave and mandatory authority-backed construction alternatives, with ESG/restriction-aware construction deferred truthfully. The full front-office business outcome is intentionally not claimed until Gateway and Workbench realization is implemented and live-proven. |
 
 Additional slice assessment:
 
 1. No new RFC should be created for second-wave construction alternatives. RFC-0039 remains the
    owning RFC for those methods.
-2. Second-wave construction alternatives are complete at the manage backend layer and have
-   method-specific tests plus canonical Postgres-backed live proof.
+2. Mandatory authority-backed construction alternatives are complete at the manage backend layer and
+   have method-specific tests plus canonical live proof.
 3. Future work should extend authoritative upstream integration depth, not create duplicate
    construction-method RFCs.
+4. The only remaining RFC-0039 work is Slice 17 governance closure: PR, GitHub CI, merge,
+   post-merge wiki publication, and branch hygiene.
 
 Wiki publication note:
 

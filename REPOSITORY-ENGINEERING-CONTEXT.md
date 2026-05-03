@@ -72,12 +72,13 @@ Current repository posture:
     bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
     risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,
     migration `0005_construction_alternatives.sql`, and certified APIs for generating, retrieving,
-    and selecting persisted alternative sets. First-wave and second-wave methods are supported as
-    manage backend postures, with unavailable risk, ESG, currency, and regime/scenario authority
-    carried as explicit degraded reason codes rather than fabricated local truth. Gateway and
-    Workbench are not yet integrated with this surface; paired realization RFCs have been created
-    and must be implemented/proven downstream before a full front-office product outcome is
-    claimed.
+    and selecting persisted alternative sets. First-wave and mandatory authority-backed methods are
+    supported as manage backend capabilities: solver-constrained, risk-aware through `lotus-risk`
+    concentration authority, liquidity-aware, currency-overlay, and regime-stress-aware through
+    source-backed authority context. ESG/restriction-aware construction is explicitly deferred until
+    restriction and sustainability source products exist. Gateway and Workbench are not yet
+    integrated with this surface; paired realization RFCs have been created and must be
+    implemented/proven downstream before a full front-office product outcome is claimed.
 
 ## Architecture And Module Map
 

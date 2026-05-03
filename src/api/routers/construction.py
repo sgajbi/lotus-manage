@@ -5,18 +5,24 @@ from typing import Annotated, Literal, Optional
 from fastapi import APIRouter, Depends, Header, HTTPException, Path, status
 from pydantic import BaseModel, Field
 
-from src.api.dependencies import get_construction_repository, get_db_session
+from src.api.dependencies import (
+    get_construction_repository,
+    get_db_session,
+    get_risk_authority_client,
+)
 from src.api.request_models import RebalanceExecutionRequestEnvelope
 from src.api.services import construction_service
 from src.api.services.rebalance_simulation_service import resolve_rebalance_request_envelope
 from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
+    ConstructionAuthorityContext,
 )
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import DpmStatefulInput
 from src.api.request_models import RebalanceRequest
+from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE = {
@@ -112,6 +118,16 @@ class ConstructionAlternativeSetGenerateRequest(BaseModel):
         ),
         examples=[["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE", "MIN_TURNOVER", "TAX_AWARE"]],
     )
+    authority_context: ConstructionAuthorityContext | None = Field(
+        default=None,
+        description=(
+            "Optional source-backed authority context for advanced RFC-0039 methods. "
+            "`RISK_AWARE` may also resolve lotus-risk concentration authority when "
+            "`DPM_RISK_BASE_URL` is configured. `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, "
+            "and `REGIME_STRESS_AWARE` require source-backed policy/scenario context to be "
+            "certified READY; otherwise they degrade or block with explicit reason codes."
+        ),
+    )
 
     def to_execution_envelope(self) -> RebalanceExecutionRequestEnvelope:
         return RebalanceExecutionRequestEnvelope(
@@ -186,6 +202,7 @@ def generate_alternative_set(
         ),
     ] = None,
     repository: ConstructionRepository = Depends(get_construction_repository),
+    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:
     rebalance_request, source_context = resolve_rebalance_request_envelope(
@@ -200,6 +217,8 @@ def generate_alternative_set(
             repository=repository,
             methods=request.methods,
             source_context=source_context,
+            authority_context=request.authority_context,
+            risk_authority_client=risk_authority_client,
         )
     except Exception as exc:
         raise construction_service.to_api_http_exception(exc) from exc

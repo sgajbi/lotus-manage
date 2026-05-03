@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-03T10:24:54.456728+00:00",
+  "generatedAt": "2026-05-03T11:36:00.684822+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -194,6 +194,22 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.allowed_liquidity_tiers",
+      "canonicalTerm": "allowed_liquidity_tiers",
+      "preferredName": "allowed_liquidity_tiers",
+      "description": "Instrument liquidity tiers eligible for buy-side construction.",
+      "example": [
+        "sample_allowed_liquidity_tiers_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -438,6 +454,20 @@
       "example": {
         "sample_key": "sample_value"
       },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.authority_context",
+      "canonicalTerm": "authority_context",
+      "preferredName": "authority_context",
+      "description": "Optional source-backed authority context for advanced RFC-0039 methods. `RISK_AWARE` may also resolve lotus-risk concentration authority when `DPM_RISK_BASE_URL` is configured. `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` require source-backed policy/scenario context to be certified READY; otherwise they degrade or block with explicit reason codes.",
+      "example": "authority_context_example",
       "type": "object",
       "locations": [
         "body"
@@ -933,6 +963,34 @@
       ]
     },
     {
+      "semanticId": "lotus.concentration_breaches",
+      "canonicalTerm": "concentration_breaches",
+      "preferredName": "concentration_breaches",
+      "description": "Risk-authoritative concentration-breach count when provided.",
+      "example": "concentration_breaches_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.concentration_hhi_delta",
+      "canonicalTerm": "concentration_hhi_delta",
+      "preferredName": "concentration_hhi_delta",
+      "description": "Risk-authoritative proposed-minus-current HHI concentration delta.",
+      "example": "concentration_hhi_delta_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.constraint",
       "canonicalTerm": "constraint",
       "preferredName": "constraint",
@@ -1149,6 +1207,20 @@
       "canonicalTerm": "currency_max_weight",
       "preferredName": "currency_max_weight",
       "description": "ISO currency code for currency max weight.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.currency_overlay_context",
+      "canonicalTerm": "currency_overlay_context",
+      "preferredName": "currency_overlay_context",
+      "description": "Optional currency-overlay and hedge-policy authority context.",
       "example": "USD",
       "type": "object",
       "locations": [
@@ -1592,6 +1664,22 @@
       "description": "Lineage edges where entity is source or target.",
       "example": [
         "edges_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.eligible_currencies",
+      "canonicalTerm": "eligible_currencies",
+      "preferredName": "eligible_currencies",
+      "description": "Currencies eligible for overlay treatment.",
+      "example": [
+        "sample_eligible_currencies_item"
       ],
       "type": "array",
       "locations": [
@@ -2348,6 +2436,34 @@
       ]
     },
     {
+      "semanticId": "lotus.hedge_ratio_max",
+      "canonicalTerm": "hedge_ratio_max",
+      "preferredName": "hedge_ratio_max",
+      "description": "Maximum target hedge ratio.",
+      "example": "hedge_ratio_max_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.hedge_ratio_min",
+      "canonicalTerm": "hedge_ratio_min",
+      "preferredName": "hedge_ratio_min",
+      "description": "Minimum target hedge ratio.",
+      "example": "hedge_ratio_min_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.highest_severity",
       "canonicalTerm": "highest_severity",
       "preferredName": "highest_severity",
@@ -2727,6 +2843,20 @@
       ]
     },
     {
+      "semanticId": "lotus.issuer_coverage_status",
+      "canonicalTerm": "issuer_coverage_status",
+      "preferredName": "issuer_coverage_status",
+      "description": "Risk-authoritative issuer enrichment coverage status.",
+      "example": "READY",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.issuer_id",
       "canonicalTerm": "issuer_id",
       "preferredName": "issuer_id",
@@ -2908,6 +3038,20 @@
       "preferredName": "link_buy_to_same_currency_sell_dependency",
       "description": "Attach BUY intent dependency to a same-currency SELL intent. When null, lotus-manage links same-currency BUY intents to generated SELL funding.",
       "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.liquidity_context",
+      "canonicalTerm": "liquidity_context",
+      "preferredName": "liquidity_context",
+      "description": "Optional liquidity and settlement authority context.",
+      "example": "liquidity_context_example",
       "type": "object",
       "locations": [
         "body"
@@ -3195,6 +3339,20 @@
       ]
     },
     {
+      "semanticId": "lotus.maximum_allowed_loss_pct",
+      "canonicalTerm": "maximum_allowed_loss_pct",
+      "preferredName": "maximum_allowed_loss_pct",
+      "description": "Maximum permitted scenario loss ratio for the mandate.",
+      "example": "maximum_allowed_loss_pct_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.measured",
       "canonicalTerm": "measured",
       "preferredName": "measured",
@@ -3328,6 +3486,20 @@
       "preferredName": "min_trade_notional",
       "description": "Request-level minimum trade notional threshold.",
       "example": "min_trade_notional_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.minimum_cash_weight",
+      "canonicalTerm": "minimum_cash_weight",
+      "preferredName": "minimum_cash_weight",
+      "description": "Minimum post-trade cash weight required by policy.",
+      "example": "minimum_cash_weight_example",
       "type": "object",
       "locations": [
         "body"
@@ -3847,6 +4019,20 @@
       ]
     },
     {
+      "semanticId": "lotus.policy_id",
+      "canonicalTerm": "policy_id",
+      "preferredName": "policy_id",
+      "description": "Liquidity policy identifier applied to this construction.",
+      "example": "POLICY_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.policy_pack_id",
       "canonicalTerm": "policy_pack_id",
       "preferredName": "policy_pack_id",
@@ -4190,7 +4376,7 @@
       "semanticId": "lotus.reason_codes",
       "canonicalTerm": "reason_codes",
       "preferredName": "reason_codes",
-      "description": "Bounded reason codes explaining constraint handling.",
+      "description": "Risk-authoritative bounded reason codes.",
       "example": [
         "sample_reason_codes_item"
       ],
@@ -4336,6 +4522,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.regime_stress_context",
+      "canonicalTerm": "regime_stress_context",
+      "preferredName": "regime_stress_context",
+      "description": "Optional risk/CIO scenario-pack context.",
+      "example": "regime_stress_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -4695,6 +4895,20 @@
       ]
     },
     {
+      "semanticId": "lotus.risk_context",
+      "canonicalTerm": "risk_context",
+      "preferredName": "risk_context",
+      "description": "Optional lotus-risk authoritative concentration/risk context.",
+      "example": "risk_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.risk_profile",
       "canonicalTerm": "risk_profile",
       "preferredName": "risk_profile",
@@ -4856,6 +5070,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.scenario_pack_id",
+      "canonicalTerm": "scenario_pack_id",
+      "preferredName": "scenario_pack_id",
+      "description": "Scenario pack identifier used for construction.",
+      "example": "SCENARIO_PACK_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -5545,6 +5773,20 @@
       ]
     },
     {
+      "semanticId": "lotus.supportability_status",
+      "canonicalTerm": "supportability_status",
+      "preferredName": "supportability_status",
+      "description": "Bounded method-level supportability posture.",
+      "example": "READY",
+      "type": "ConstructionMethodStatus",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "ConstructionMethodStatus"
+      ]
+    },
+    {
       "semanticId": "lotus.supported_input_modes",
       "canonicalTerm": "supported_input_modes",
       "preferredName": "supported_input_modes",
@@ -5936,6 +6178,20 @@
       ],
       "observedTypes": [
         "Money-Output"
+      ]
+    },
+    {
+      "semanticId": "lotus.top_position_weight_proposed",
+      "canonicalTerm": "top_position_weight_proposed",
+      "preferredName": "top_position_weight_proposed",
+      "description": "Risk-authoritative proposed top-position weight.",
+      "example": "top_position_weight_proposed_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -6467,6 +6723,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.worst_case_loss_pct",
+      "canonicalTerm": "worst_case_loss_pct",
+      "preferredName": "worst_case_loss_pct",
+      "description": "Worst expected loss across scenario pack as a portfolio ratio.",
+      "example": "worst_case_loss_pct_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -47714,6 +47984,262 @@
             "type": "object",
             "semanticId": "lotus.methods",
             "attributeRef": "#/attributeCatalog/lotus.methods"
+          },
+          {
+            "name": "authority_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.authority_context",
+            "attributeRef": "#/attributeCatalog/lotus.authority_context"
+          },
+          {
+            "name": "authority_context.risk_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.risk_context",
+            "attributeRef": "#/attributeCatalog/lotus.risk_context"
+          },
+          {
+            "name": "authority_context.risk_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.risk_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.risk_context.tracking_error",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tracking_error",
+            "attributeRef": "#/attributeCatalog/lotus.tracking_error"
+          },
+          {
+            "name": "authority_context.risk_context.concentration_breaches",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.concentration_breaches",
+            "attributeRef": "#/attributeCatalog/lotus.concentration_breaches"
+          },
+          {
+            "name": "authority_context.risk_context.concentration_hhi_delta",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.concentration_hhi_delta",
+            "attributeRef": "#/attributeCatalog/lotus.concentration_hhi_delta"
+          },
+          {
+            "name": "authority_context.risk_context.top_position_weight_proposed",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.top_position_weight_proposed",
+            "attributeRef": "#/attributeCatalog/lotus.top_position_weight_proposed"
+          },
+          {
+            "name": "authority_context.risk_context.issuer_coverage_status",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.issuer_coverage_status",
+            "attributeRef": "#/attributeCatalog/lotus.issuer_coverage_status"
+          },
+          {
+            "name": "authority_context.risk_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "authority_context.liquidity_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.liquidity_context",
+            "attributeRef": "#/attributeCatalog/lotus.liquidity_context"
+          },
+          {
+            "name": "authority_context.liquidity_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.liquidity_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.liquidity_context.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "authority_context.liquidity_context.minimum_cash_weight",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.minimum_cash_weight",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_cash_weight"
+          },
+          {
+            "name": "authority_context.liquidity_context.allowed_liquidity_tiers",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.allowed_liquidity_tiers",
+            "attributeRef": "#/attributeCatalog/lotus.allowed_liquidity_tiers"
+          },
+          {
+            "name": "authority_context.liquidity_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "authority_context.currency_overlay_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency_overlay_context",
+            "attributeRef": "#/attributeCatalog/lotus.currency_overlay_context"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.hedge_ratio_min",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.hedge_ratio_min",
+            "attributeRef": "#/attributeCatalog/lotus.hedge_ratio_min"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.hedge_ratio_max",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.hedge_ratio_max",
+            "attributeRef": "#/attributeCatalog/lotus.hedge_ratio_max"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.eligible_currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.eligible_currencies",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_currencies"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "authority_context.regime_stress_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.regime_stress_context",
+            "attributeRef": "#/attributeCatalog/lotus.regime_stress_context"
+          },
+          {
+            "name": "authority_context.regime_stress_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.regime_stress_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.regime_stress_context.scenario_pack_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.scenario_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.scenario_pack_id"
+          },
+          {
+            "name": "authority_context.regime_stress_context.worst_case_loss_pct",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.worst_case_loss_pct",
+            "attributeRef": "#/attributeCatalog/lotus.worst_case_loss_pct"
+          },
+          {
+            "name": "authority_context.regime_stress_context.maximum_allowed_loss_pct",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.maximum_allowed_loss_pct",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_allowed_loss_pct"
+          },
+          {
+            "name": "authority_context.regime_stress_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
           }
         ]
       },
