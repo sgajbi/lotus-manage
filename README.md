@@ -62,14 +62,15 @@ Current posture under RFC-0082:
 
 ## Strategic DPM Roadmap
 
-RFC-0037 through RFC-0043 define the proposed revamp from a certified rebalance/supportability
-service into a discretionary mandate portfolio-management operating system.
+RFC-0037 through RFC-0043 define the revamp from a certified rebalance/supportability service into
+a discretionary mandate portfolio-management operating system.
 
-Those target-state RFCs cover mandate digital twins, health scoring, command-center workflows,
-advanced construction alternatives, pre-trade proof packs, decision timelines, CIO/model-change
-rebalance waves, post-trade outcome feedback, and governed AI PM support. They are not
-implementation-backed support claims until the owning RFC is implemented, certified, live-proven,
-and reflected in [wiki/Supported-Features.md](wiki/Supported-Features.md).
+RFC-0038 is now implementation-backed for the mandate digital-twin, health-score, monitoring, and
+command-center backend foundation. The remaining target-state RFCs cover advanced construction
+alternatives, pre-trade proof packs, decision timelines, CIO/model-change rebalance waves,
+post-trade outcome feedback, and governed AI PM support. Target-state features are not support
+claims until the owning RFC is implemented, certified, live-proven, and reflected in
+[wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
 or redesigned rather than preserved for backward compatibility. Future gateway and Workbench
