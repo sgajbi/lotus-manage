@@ -177,6 +177,25 @@ def test_generate_construction_alternative_set_surfaces_blocked_method_status() 
     assert body["alternatives"][0]["diagnostics"]["data_quality"]["price_missing"] == ["EQ_1"]
 
 
+def test_generate_construction_alternative_set_rejects_second_wave_methods() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["DO_NOTHING_BASELINE", "RISK_AWARE"]
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-second-wave"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith("CONSTRUCTION_METHOD_NOT_SUPPORTED")
+    assert "RISK_AWARE" in response.json()["detail"]
+
+
 def test_generate_construction_alternative_set_preserves_degraded_stateful_source(
     monkeypatch,
 ) -> None:

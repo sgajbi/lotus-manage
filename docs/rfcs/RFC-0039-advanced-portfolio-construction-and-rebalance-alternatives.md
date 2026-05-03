@@ -973,7 +973,7 @@ Evidence:
 
 1. `make check` passed: Ruff check/format, monetary-float guard, no-alias guard, mypy, OpenAPI
    quality gate, API vocabulary inventory, domain data product validation, trust telemetry
-   validation, observability contract validation, and 664 unit tests.
+   validation, observability contract validation, and 665 unit tests.
 2. `python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py tests/unit/test_validate_live_api.py tests/unit/test_documentation_current_state.py -q`
    passed with 47 tests.
 3. `python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`
@@ -987,6 +987,13 @@ Evidence:
    passed.
 8. `python scripts/openapi_quality_gate.py` passed.
 9. `powershell` scriptblock parse validation passed for `scripts/Start-CanonicalManage.ps1`.
+10. Follow-up audit hardening rejected unsupported second-wave method requests at the API boundary
+    and passed:
+    `python -m pytest tests/unit/dpm/api/test_construction_api.py -q`,
+    `python -m pytest tests/unit/dpm/api/test_construction_api.py tests/unit/dpm/construction -q`,
+    `python scripts/openapi_quality_gate.py`,
+    `python -m mypy src/api/services/construction_service.py src/api/routers/construction.py`, and
+    `python -m ruff check src/api/services/construction_service.py src/api/routers/construction.py tests/unit/dpm/api/test_construction_api.py`.
 
 Critical review:
 
@@ -1005,6 +1012,10 @@ Critical review:
 6. Remaining hardening scope is product realization rather than manage backend correctness:
    Gateway and Workbench RFCs still need to be authored from the now-stable manage contract before
    client-facing command-center outcomes can be claimed.
+7. Follow-up audit found and fixed one boundary gap: the request schema exposed the full
+   `ConstructionMethod` vocabulary, so second-wave placeholders could be requested before support
+   promotion. The service now returns a governed `422` with `CONSTRUCTION_METHOD_NOT_SUPPORTED`
+   when a caller requests methods outside the RFC-0039 first-wave support set.
 
 ### Slice 10: Gateway and Workbench Realization RFC Slice
 
@@ -1154,6 +1165,7 @@ Required artifacts:
 | Manage duplicates risk/performance authority | Preserve enrichment boundaries and degrade when upstream authority is unavailable. |
 | Missing tax/lot/liquidity data produces false readiness | Tax/liquidity methods cannot be `READY` when required source data is missing. |
 | API sprawl | One strategic alternatives endpoint family; no aliases. |
+| Premature second-wave support claim | API rejects second-wave construction methods until each method has source authority, tests, certification, and live proof. |
 | Solver non-determinism | Bounded time budgets, deterministic fallback, traceable solver version and tolerance. |
 | Sensitive optimization traces leak | Bounded traces and forbidden-field tests. |
 | Full business outcome not visible | Paired Gateway and Workbench RFCs are created after manage implementation proof and hardening, then implemented separately before any full product-outcome claim. |
@@ -1187,8 +1199,8 @@ RFC-0039 is complete only when:
 | Assessment Area | Final Result |
 | --- | --- |
 | What was truly completed | Manage-side RFC-0039 foundation for first-wave construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, live validator probe, downstream realization handoff, and wiki/README/context updates. |
-| Quality improvements made | Construction logic is isolated in `src/core/construction/`, API orchestration is separated in `src/api/services/construction_service.py`, persistence is behind `ConstructionRepository`, Postgres path has fast contract tests, OpenAPI and API vocabulary are refreshed, and the canonical startup helper now falls back correctly when the repo venv lacks the Postgres driver. |
-| Debt removed | Stale proof using an already-aligned portfolio was rejected and replaced with drifted-portfolio proof; construction API vocabulary drift was eliminated; missing Postgres repository unit coverage was closed; `Start-CanonicalManage.ps1` no longer aborts before its intended global-Python fallback. |
+| Quality improvements made | Construction logic is isolated in `src/core/construction/`, API orchestration is separated in `src/api/services/construction_service.py`, persistence is behind `ConstructionRepository`, Postgres path has fast contract tests, OpenAPI and API vocabulary are refreshed, unsupported second-wave method requests are blocked at the API boundary, and the canonical startup helper now falls back correctly when the repo venv lacks the Postgres driver. |
+| Debt removed | Stale proof using an already-aligned portfolio was rejected and replaced with drifted-portfolio proof; construction API vocabulary drift was eliminated; missing Postgres repository unit coverage was closed; premature second-wave method exposure was removed; `Start-CanonicalManage.ps1` no longer aborts before its intended global-Python fallback. |
 | Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, and `TAX_AWARE` are implemented and proven. The live proof shows do-nothing preserving drift with zero turnover, heuristic removing drift with two trades, minimum-turnover landing in `PENDING_REVIEW`, and tax-aware carrying explicit degraded enrichment reason codes where authoritative enrichment is absent. |
 | Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, and bounded reason codes for first-wave alternatives. |
 | Solver/fallback proof | RFC-0039 foundation includes method-registry solver posture and fallback modeling. Full solver-constrained construction methods beyond first-wave support remain governed follow-up under this RFC, not separate duplicate RFCs. |
@@ -1199,6 +1211,16 @@ RFC-0039 is complete only when:
 | Documentation/wiki result | README, repository context, RFC, wiki API surface, architecture, integrations, endpoint certification, supported features, RFC index, and roadmap were updated with implementation-backed wording and explicit downstream boundaries. |
 | Remaining governed follow-up | Gateway/Workbench construction lab implementation and canonical browser proof; second-wave construction methods such as liquidity-aware, ESG/restriction-aware, currency-overlay, regime/stress-aware, and fully solver-constrained methods remain governed RFC-0039 follow-up until implemented and proven. |
 | Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave construction alternatives. The full front-office business outcome has not yet reached gold standard because Gateway and Workbench realization is intentionally not implemented in this manage RFC. |
+
+Additional slice assessment:
+
+1. No new RFC should be created for second-wave construction alternatives. RFC-0039 remains the
+   owning RFC for those methods.
+2. Additional RFC-0039 implementation slices are needed only when promoting a second-wave method
+   from proposed to supported. Each such slice must add source-authority proof, method-specific
+   OpenAPI examples, degraded behavior, unit/contract/live evidence, supported-feature promotion,
+   and canonical proof.
+3. No additional first-wave manage backend slice is needed after the audit hardening above.
 
 Wiki publication note:
 

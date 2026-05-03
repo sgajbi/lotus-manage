@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-03T09:43:00.069640+00:00",
+  "generatedAt": "2026-05-03T10:07:03.003226+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -3284,7 +3284,7 @@
       "semanticId": "lotus.methods",
       "canonicalTerm": "methods",
       "preferredName": "methods",
-      "description": "Optional construction methods to generate. Omit for RFC-0039 first-wave methods.",
+      "description": "Optional RFC-0039 first-wave construction methods to generate. Omit for the default first-wave set. Second-wave methods are governed placeholders and are rejected until their source authority, supportability, tests, and live proof are complete.",
       "example": "methods_example",
       "type": "object",
       "locations": [

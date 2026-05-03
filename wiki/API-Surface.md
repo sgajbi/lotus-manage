@@ -37,7 +37,8 @@ storage-layer constraint.
 
 - `POST /api/v1/construction/alternative-sets/generate`
   generates and persists a comparable RFC-0039 construction alternative set with do-nothing,
-  explainable heuristic, minimum-turnover, and tax-aware alternatives.
+  explainable heuristic, minimum-turnover, and tax-aware alternatives. Second-wave construction
+  methods are rejected until individually implemented, certified, and live-proven under RFC-0039.
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
   retrieves a previously generated alternative set without recomputation.
 - `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`

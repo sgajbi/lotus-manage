@@ -37,6 +37,11 @@ from src.core.rebalance.engine import run_simulation
 from src.api.request_models import RebalanceRequest
 
 _MIN_TURNOVER_DEFAULT = Decimal("0.10")
+_FIRST_WAVE_METHOD_SET = frozenset(FIRST_WAVE_CONSTRUCTION_METHODS)
+
+
+class UnsupportedConstructionMethodError(ValueError):
+    """Raised when a caller requests a construction method that is not yet supported."""
 
 
 def generate_construction_alternative_set(
@@ -48,9 +53,10 @@ def generate_construction_alternative_set(
     methods: list[ConstructionMethod] | None = None,
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> ConstructionAlternativeSet:
+    method_set = _validated_method_set(methods)
     request_payload = {
         "request": request.model_dump(mode="json"),
-        "methods": [method.value for method in (methods or FIRST_WAVE_CONSTRUCTION_METHODS)],
+        "methods": [method.value for method in method_set],
         "source_context_hash": (
             source_context.stateful_context_hash if source_context is not None else None
         ),
@@ -62,7 +68,6 @@ def generate_construction_alternative_set(
             raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
         return existing
 
-    method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
     base_result = _run_method(
         request=request,
         method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
@@ -138,6 +143,8 @@ def select_construction_alternative(
 
 
 def to_api_http_exception(exc: Exception) -> HTTPException:
+    if isinstance(exc, UnsupportedConstructionMethodError):
+        return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc))
     if isinstance(exc, ConstructionIdempotencyConflictError):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
     if isinstance(
@@ -147,6 +154,21 @@ def to_api_http_exception(exc: Exception) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=type(exc).__name__
     )
+
+
+def _validated_method_set(
+    methods: list[ConstructionMethod] | None,
+) -> list[ConstructionMethod]:
+    method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
+    unsupported = [method.value for method in method_set if method not in _FIRST_WAVE_METHOD_SET]
+    if unsupported:
+        unsupported_csv = ", ".join(sorted(unsupported))
+        supported_csv = ", ".join(method.value for method in FIRST_WAVE_CONSTRUCTION_METHODS)
+        raise UnsupportedConstructionMethodError(
+            "CONSTRUCTION_METHOD_NOT_SUPPORTED:"
+            f" unsupported={unsupported_csv}; supported={supported_csv}"
+        )
+    return method_set
 
 
 def _build_alternatives(
