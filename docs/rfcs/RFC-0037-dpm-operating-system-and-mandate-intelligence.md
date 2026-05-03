@@ -108,6 +108,33 @@ support the full lifecycle:
 Without this broader operating-system layer, `lotus-manage` risks being perceived as a technical
 engine instead of a premium private-banking DPM product.
 
+## 2.5 Business Outcomes
+
+This RFC targets the following business outcomes:
+
+1. **Increase DPM scalability**
+   enable one portfolio manager to oversee a larger book through exception-based monitoring,
+   mandate health scoring, and wave orchestration instead of manual portfolio-by-portfolio review.
+2. **Improve investment discipline**
+   make every rebalance traceable to mandate objectives, CIO/model guidance, risk limits, tax and
+   liquidity constraints, and product eligibility.
+3. **Strengthen client and regulator trust**
+   produce evidence that explains why a discretionary action was proposed, approved, blocked, or
+   deferred.
+4. **Create a premium sales story**
+   demonstrate a full private-banking DPM lifecycle with real APIs, real evidence, and realistic
+   mandate scenarios.
+5. **Increase ecosystem pull-through**
+   make `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`, `lotus-ai`,
+   `lotus-gateway`, and `lotus-workbench` more valuable by orchestrating them into a coherent DPM
+   product.
+6. **Reduce operational risk**
+   replace spreadsheet-style exception tracking with governed workflows, supportability, lineage,
+   data-readiness states, and audit artifacts.
+7. **Improve decision quality over time**
+   use post-trade outcome feedback to compare expected versus realized results and improve future
+   construction and governance.
+
 ---
 
 ## 3. Product Vision
