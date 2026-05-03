@@ -123,6 +123,8 @@ def _example_from_schema(
     seen_refs: set[str] | None = None,
 ) -> Any:
     seen_refs = seen_refs or set()
+    if not isinstance(prop_schema, dict):
+        return _infer_example(prop_name, {})
 
     if "example" in prop_schema:
         return prop_schema["example"]
@@ -368,6 +370,8 @@ def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -
 def _ensure_schema_documentation(schema: dict[str, Any]) -> None:
     components = schema.get("components", {})
     schemas = components.get("schemas", {})
+    if not isinstance(schemas, dict):
+        return
     for model_name, model_schema in schemas.items():
         if not isinstance(model_schema, dict):
             continue

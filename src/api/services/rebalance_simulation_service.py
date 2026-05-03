@@ -226,7 +226,7 @@ def _resolve_stateful_source_context(
 ) -> DpmResolvedSourceContext:
     if envelope.stateful_input is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="DPM_STATEFUL_INPUT_REQUIRED",
         )
     if not stateful_core_sourcing_enabled():
@@ -321,7 +321,7 @@ def resolve_rebalance_request_envelope(
     if envelope.input_mode == "stateless":
         if envelope.stateless_input is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="DPM_STATELESS_INPUT_REQUIRED",
             )
         return envelope.stateless_input, None
@@ -351,7 +351,7 @@ def resolve_batch_request_envelope(
     if envelope.input_mode == "stateless":
         if envelope.stateless_input is None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="DPM_STATELESS_INPUT_REQUIRED",
             )
         return envelope.stateless_input, None

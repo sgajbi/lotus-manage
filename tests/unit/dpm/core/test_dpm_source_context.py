@@ -15,7 +15,10 @@ from src.core.dpm_source_context import (
     build_portfolio_snapshot_with_core_tax_lots,
     build_policy_context_from_core_mandate,
     build_rebalance_request_from_core_context,
+    build_core_resolver_payload,
     build_shelf_entries_from_core_eligibility,
+    _shelf_attribute_value,
+    DpmStatefulInput,
 )
 from src.core.models import PortfolioSnapshot, SimulationScenario
 
@@ -180,6 +183,34 @@ def test_core_model_targets_reject_incomplete_supportability():
     )
 
     with pytest.raises(DpmCoreContextIncompleteError, match="MODEL_TARGETS_EMPTY"):
+        build_model_portfolio_from_core_targets(response)
+
+
+def test_core_model_targets_reject_ready_payload_without_active_targets():
+    response = DpmCoreModelPortfolioTargetResponse.model_validate(
+        {
+            "product_name": "DpmModelPortfolioTarget",
+            "product_version": "v1",
+            "model_portfolio_id": "MODEL_EMPTY",
+            "model_portfolio_version": "2026.04",
+            "as_of_date": "2026-04-10",
+            "display_name": "Empty Model",
+            "base_currency": "SGD",
+            "risk_profile": "balanced",
+            "mandate_type": "discretionary",
+            "approval_status": "approved",
+            "effective_from": "2026-04-10",
+            "targets": [],
+            "supportability": {
+                "state": "READY",
+                "reason": "MODEL_TARGETS_READY",
+                "target_count": 0,
+                "total_target_weight": "0",
+            },
+        }
+    )
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_MODEL_TARGETS_EMPTY"):
         build_model_portfolio_from_core_targets(response)
 
 
@@ -660,9 +691,76 @@ def test_core_market_data_coverage_rejects_stale_or_missing_source_data():
     ):
         build_market_data_snapshot_from_core_coverage(missing_price_response)
 
+    missing_fx_response = DpmCoreMarketDataCoverageWindowResponse.model_validate(
+        _core_market_data_coverage_payload(
+            fx_coverage=[
+                {
+                    "from_currency": "USD",
+                    "to_currency": "SGD",
+                    "found": False,
+                    "rate_date": None,
+                    "rate": None,
+                    "age_days": None,
+                    "quality_status": "MISSING",
+                }
+            ]
+        )
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MARKET_DATA_FX_INCOMPLETE",
+    ):
+        build_market_data_snapshot_from_core_coverage(missing_fx_response)
+
 
 def test_incomplete_core_context_is_not_transformed():
     context = _core_context(supportability_state="INCOMPLETE")
 
     with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_CONTEXT_READY"):
         build_rebalance_request_from_core_context(context=context, options_override={})
+
+
+def test_missing_source_families_block_stateful_request_and_batch_transforms():
+    context = _core_context()
+    context.supportability.missing_source_families.append("market_data")
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_CONTEXT_INCOMPLETE"):
+        build_rebalance_request_from_core_context(context=context, options_override={})
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_CONTEXT_INCOMPLETE"):
+        build_batch_rebalance_request_from_core_context(
+            context=context,
+            scenarios={"baseline": SimulationScenario(options={})},
+        )
+
+
+def test_core_resolver_payload_and_shelf_attribute_normalization_edges():
+    payload = build_core_resolver_payload(
+        DpmStatefulInput(
+            portfolio_id="PF",
+            as_of="2026-04-10",
+            mandate_id="MANDATE",
+            model_portfolio_id="MODEL",
+            tenant_id="TENANT",
+            booking_center_code="SG",
+            include_tax_lots=False,
+            include_settlement_profile=False,
+            include_shelf=True,
+            include_model_portfolio=True,
+        )
+    )
+
+    assert payload == {
+        "as_of": "2026-04-10",
+        "mandate_id": "MANDATE",
+        "model_portfolio_id": "MODEL",
+        "tenant_id": "TENANT",
+        "booking_center_code": "SG",
+        "include_tax_lots": False,
+        "include_settlement_profile": False,
+        "include_shelf": True,
+        "include_model_portfolio": True,
+    }
+    assert _shelf_attribute_value(False) == "false"
+    assert _shelf_attribute_value(None) == ""
