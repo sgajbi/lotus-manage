@@ -4,6 +4,7 @@ from src.core.proof_packs.builder import (
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
 )
+from src.core.proof_packs.markdown import render_proof_pack_markdown
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackDecisionSummary,
@@ -36,4 +37,5 @@ __all__ = [
     "ProofPackStatus",
     "build_proof_pack_from_run",
     "build_proof_pack_from_selected_alternative",
+    "render_proof_pack_markdown",
 ]

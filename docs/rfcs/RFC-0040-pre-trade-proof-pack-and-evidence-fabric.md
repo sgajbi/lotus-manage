@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-3 COMPLETE; PURE DOMAIN BUILDER IMPLEMENTED |
+| **Status** | IN PROGRESS - SLICES 0-4 COMPLETE; MARKDOWN SUMMARY IMPLEMENTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -15,6 +15,7 @@
 | **Slice 1 Evidence** | `docs/rfcs/RFC-0040-platform-automation-slice1.md` |
 | **Slice 2 Evidence** | `docs/rfcs/RFC-0040-cleanup-and-structure-slice2.md` |
 | **Slice 3 Evidence** | `docs/rfcs/RFC-0040-domain-builder-slice3.md` |
+| **Slice 4 Evidence** | `docs/rfcs/RFC-0040-markdown-summary-slice4.md` |
 
 ---
 
@@ -785,6 +786,15 @@ Evidence:
 1. Markdown examples,
 2. snapshot/golden tests,
 3. degraded Markdown example.
+
+Slice 4 result:
+
+1. completed in `docs/rfcs/RFC-0040-markdown-summary-slice4.md`,
+2. added deterministic `render_proof_pack_markdown`,
+3. included decision summary, supportability counts, section matrix, timeline, evidence gaps, and
+   integrity hashes,
+4. tested deterministic rendering, section order, and degraded evidence visibility,
+5. made no API, persistence, report, AI, Gateway, Workbench, or supported-feature claim.
 
 ### Slice 5 - Persistence and Repository Layer
 
