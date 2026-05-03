@@ -174,6 +174,33 @@ Material cleanup completed in this slice:
 Slice 3 may now add wave domain modules without needing to preserve stale or speculative
 compatibility aliases.
 
+## Slice 3 Domain Foundation Result
+
+Slice 3 adds the manage-owned wave foundation without adding API behavior yet:
+
+1. `src/core/waves/models.py` defines the durable `DpmRebalanceWave`,
+   `DpmRebalanceWaveItem`, trigger, source-ref, aggregate-metric, and event contracts,
+2. `src/core/waves/state_machine.py` implements the RFC transition matrix as pure validation and
+   transition functions,
+3. `src/core/waves/repository.py` defines the wave repository protocol, version-conflict error, and
+   idempotency-conflict error,
+4. `src/infrastructure/waves/in_memory.py` provides a defensive-copy in-memory repository with
+   idempotency and optimistic-concurrency guards,
+5. `src/infrastructure/waves/postgres.py` provides the PostgreSQL repository adapter and migration
+   initialization path,
+6. `src/infrastructure/postgres_migrations/dpm/0007_rebalance_waves.sql` adds wave, idempotency,
+   and append-only event tables.
+
+Validation:
+
+1. `python -m pytest tests\unit\dpm\waves\test_wave_domain.py -q`,
+2. `python -m ruff check src\core\waves src\infrastructure\waves tests\unit\dpm\waves\test_wave_domain.py`,
+3. `python -m mypy --config-file mypy.ini src\core\waves src\infrastructure\waves tests\unit\dpm\waves\test_wave_domain.py`,
+4. `python -m pytest tests\unit\shared\dependencies\test_production_cutover_contract.py::test_expected_migration_versions_for_namespaces tests\unit\shared\dependencies\test_postgres_migrations.py::test_apply_postgres_migrations_is_forward_only_and_idempotent -q`.
+
+No route, capability, or supported-feature claim is added in Slice 3. Slice 4 must build preview and
+create behavior on top of these domain contracts.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

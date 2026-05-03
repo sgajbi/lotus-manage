@@ -78,10 +78,11 @@ evidence, and supported-feature promotion.
   complete
 - RFC-0041
   rebalance-wave orchestration and CIO model-change impact implementation is in progress through
-  Slice 2. Source-map, platform-scaffold evidence improvement, and cleanup review are complete in
-  `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md`, with explicit portfolio-list waves as the
-  first supported implementation target and PM-book/CIO automatic cohort discovery deferred until
-  source-owning products are proven. No supported feature claim has been promoted.
+  Slice 3. Source-map, platform-scaffold evidence improvement, cleanup review, wave domain
+  contracts, state machine, repository protocol, in-memory persistence, PostgreSQL adapter, and
+  migration foundation are complete. Explicit portfolio-list waves remain the first implementation
+  target; PM-book/CIO automatic cohort discovery is deferred until source-owning products are
+  proven. No supported feature claim has been promoted.
 - RFC-0042
   proposed post-trade outcome feedback-loop roadmap
 - RFC-0043
