@@ -77,8 +77,8 @@ evidence, and supported-feature promotion.
   `output/rfc0040-proof`, and no full product-surface claim until downstream implementation is
   complete
 - RFC-0041
-  rebalance-wave orchestration and CIO model-change impact implementation is in progress. Slice 0
-  source-map and gap analysis complete in
+  rebalance-wave orchestration and CIO model-change impact implementation is in progress through
+  Slice 2. Source-map, platform-scaffold evidence improvement, and cleanup review are complete in
   `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md`, with explicit portfolio-list waves as the
   first supported implementation target and PM-book/CIO automatic cohort discovery deferred until
   source-owning products are proven. No supported feature claim has been promoted.

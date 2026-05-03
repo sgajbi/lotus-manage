@@ -126,6 +126,54 @@ correlation id, idempotency key where applicable, expected version, and generate
 | Workbench wave command center | `lotus-workbench` | Tighten or add downstream RFC in Slice 9 after manage/Gateway contracts stabilize. | Workbench RFC, BFF-only consumption, browser/accessibility/visual proof, canonical runtime evidence. |
 | Platform scaffold for state-machine/evidence-heavy services | `lotus-platform` | Evaluate and improve in Slice 1 only where reusable gaps are proven. | Platform automation change, tests, docs, and evidence that future apps benefit. |
 
+## Slice 1 Platform Result
+
+Slice 1 found that the platform scaffold already covered the baseline API certification pattern,
+Swagger/OpenAPI gate, health/readiness endpoints, structured logging, product-safe problem-details
+errors, test scaffolding, CI defaults, supported-features placeholder, wiki source posture, and
+basic RFC evidence manifest. The reusable gap was narrower: state-machine and API-heavy RFC slices
+needed a stronger machine-readable evidence template so future services do not invent local closure
+formats.
+
+`lotus-platform` PR #296 fixed that at the platform layer and was merged as
+`47d3c7fcd9142e383592bc9bd2e770c647966efb`. The scaffold now emits RFC evidence manifest
+sections for:
+
+1. slice closure,
+2. API certification,
+3. state-machine review,
+4. supported-feature review,
+5. wiki-publication posture,
+6. downstream realization.
+
+Validation:
+
+1. `python -m pytest tests\unit\test_repository_hygiene_scaffold_contract.py -q`,
+2. `python -m ruff check tests\unit\test_repository_hygiene_scaffold_contract.py`,
+3. `python -m ruff format --check tests\unit\test_repository_hygiene_scaffold_contract.py`,
+4. `git diff --check`,
+5. GitHub Feature Lane and PR Merge Gate passed on `sgajbi/lotus-platform#296`.
+
+No manage-local evidence convention is introduced for RFC-0041.
+
+## Slice 2 Cleanup Result
+
+Slice 2 reviewed wave-adjacent structure before product implementation. The current RFC-0038,
+RFC-0039, and RFC-0040 modules are already split into domain, repository, infrastructure, service,
+router, and tests. No dead proof-pack, construction, mandate, or supportability module was removed
+because the reviewed candidates are still referenced by tests or runtime paths.
+
+Material cleanup completed in this slice:
+
+1. the misleading RFC-0041 documentation guardrail name was changed from "before implementation"
+   to a Slice 0 source-map guardrail,
+2. the RFC status and index now reflect that platform scaffolding and cleanup are complete,
+3. long-lived cleanup evidence stays in this source-map document instead of adding another
+   redundant RFC-sidecar document.
+
+Slice 3 may now add wave domain modules without needing to preserve stale or speculative
+compatibility aliases.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:
