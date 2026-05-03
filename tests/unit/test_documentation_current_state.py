@@ -280,12 +280,19 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert missing_evidence == []
     assert "MANAGE BACKEND COMPLETE" in rfc
     assert "MANAGE BACKEND COMPLETE" in index
-    assert "PR/CI/WIKI PUBLICATION PENDING" in rfc
+    assert "POST-MERGE GOLD-PASS AUDIT COMPLETE" in rfc
+    assert "PR/CI/WIKI PUBLICATION PENDING" not in rfc
     assert "output/rfc0040-proof/20260503-135112" in rfc
+    assert "output/rfc0040-proof/20260503-142438" in rfc
+    assert "critical-review.json" in rfc
+    assert "Gold-Pass Assessment Template" not in rfc
     assert "Full front-office proof-pack product realization remains explicitly gated" in rfc
-    assert "6099ffe" in rfc
-    assert "4b150d6" in rfc
+    assert "b2c3734" in rfc
+    assert "b63981b" in rfc
+    assert "risk drawdown returned `partial`" in rfc
     assert "| Pre-trade proof packs |" in supported_features
     assert "Supported as RFC-0040 manage backend authority" in supported_features
     assert "Gateway composition, Workbench review UX" in supported_features
+    assert "Pre-Trade Proof Pack Flow" in supported_features
+    assert "critical-review.json" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features

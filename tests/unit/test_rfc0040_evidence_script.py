@@ -9,6 +9,7 @@ from scripts.generate_rfc0040_proof_pack_evidence import (
     _content_hash,
     _section_states,
     _stable_json,
+    build_critical_review,
 )
 
 
@@ -24,6 +25,7 @@ def test_rfc0040_evidence_script_hashes_stable_json() -> None:
 
 def test_rfc0040_evidence_script_detects_forbidden_ai_field_names_recursively() -> None:
     assert _contains_forbidden_ai_field({"sections": [{"bounded_facts": {"client_id": "x"}}]})
+    assert _contains_forbidden_ai_field({"sections": [{"bounded_facts": {"Client_Name": "x"}}]})
     assert not _contains_forbidden_ai_field(
         {"sections": [{"bounded_facts": {"portfolio_id": "PB_SG_GLOBAL_BAL_001"}}]}
     )
@@ -46,3 +48,44 @@ def test_rfc0040_evidence_script_requires_handoff_refs_and_ready_sections() -> N
     proof_pack["sections"][0]["state"] = "DEGRADED"
     with pytest.raises(EvidenceError, match="reporting_refs section not READY"):
         _assert_ready_handoff_pack(proof_pack)
+
+
+def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> None:
+    ready_states = {
+        "reporting_refs": "READY",
+        "ai_refs": "READY",
+        "selected_alternative": "READY",
+        "mandate_context": "READY",
+        "risk_impact": "DEGRADED",
+    }
+    review = build_critical_review(
+        {
+            "output_dir": "output/rfc0040-proof/test",
+            "validation": {"ai_forbidden_field_guardrail": "passed"},
+            "scenarios": {
+                "direct_rebalance_run": {
+                    "proof_pack_id": "dpp_direct",
+                    "section_states": ready_states,
+                },
+                "selected_alternative": {
+                    "proof_pack_id": "dpp_selected",
+                    "section_states": ready_states,
+                },
+                "missing_mandate_blocked": {
+                    "proof_pack_id": "dpp_blocked",
+                    "status": "BLOCKED",
+                    "section_states": {**ready_states, "mandate_context": "BLOCKED"},
+                },
+            },
+        }
+    )
+
+    assert review["result"] == "passed_with_controlled_downstream_boundaries"
+    assert review["checks"]["direct_run_handoffs_ready"] is True
+    assert review["checks"]["selected_alternative_trace_ready"] is True
+    assert review["checks"]["missing_mandate_blocks_promotion"] is True
+    assert review["checks"]["full_front_office_claim_withheld"] is True
+    assert {finding["status"] for finding in review["findings"]} == {
+        "passed",
+        "accepted_boundary",
+    }

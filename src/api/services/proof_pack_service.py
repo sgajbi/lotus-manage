@@ -304,7 +304,7 @@ def _append_handoff_ref(
             ref_id=ref.ref_id,
             source_system=ref.source_system,
             content_hash=ref.content_hash,
-            created_at=proof_pack.created_at.isoformat(),
+            created_at=datetime.now(timezone.utc).isoformat(),
         )
     )
 
@@ -349,7 +349,7 @@ def _find_stored_ref(
     return next(
         (
             ref
-            for ref in proof_pack_repository.list_refs(proof_pack_id=proof_pack_id)
+            for ref in reversed(proof_pack_repository.list_refs(proof_pack_id=proof_pack_id))
             if ref.ref_type == ref_type
         ),
         None,

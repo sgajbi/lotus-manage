@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-03T13:31:33.434809+00:00",
+  "generatedAt": "2026-05-03T14:34:04.898265+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -122,7 +122,7 @@
       "semanticId": "lotus.ai_evidence_input_url",
       "canonicalTerm": "ai_evidence_input_url",
       "preferredName": "ai_evidence_input_url",
-      "description": "Relative URL for AI evidence retrieval when generated in later slices.",
+      "description": "Relative URL for AI evidence input retrieval when requested.",
       "example": "ai_evidence_input_url_example",
       "type": "object",
       "locations": [
@@ -2919,7 +2919,7 @@
       "semanticId": "lotus.include_ai_evidence_input",
       "canonicalTerm": "include_ai_evidence_input",
       "preferredName": "include_ai_evidence_input",
-      "description": "Reserved for Slice 7 AI-evidence input generation.",
+      "description": "Whether to append a deterministic AI-evidence input reference.",
       "example": true,
       "type": "boolean",
       "locations": [
@@ -3017,7 +3017,7 @@
       "semanticId": "lotus.include_report_input",
       "canonicalTerm": "include_report_input",
       "preferredName": "include_report_input",
-      "description": "Reserved for Slice 7 report-input generation.",
+      "description": "Whether to append a deterministic report-input evidence reference.",
       "example": true,
       "type": "boolean",
       "locations": [
@@ -5295,7 +5295,7 @@
       "semanticId": "lotus.report_input_url",
       "canonicalTerm": "report_input_url",
       "preferredName": "report_input_url",
-      "description": "Relative URL for report input retrieval when generated in later slices.",
+      "description": "Relative URL for report input retrieval when requested.",
       "example": "report_input_url_example",
       "type": "object",
       "locations": [

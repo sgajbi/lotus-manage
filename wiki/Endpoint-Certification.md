@@ -1563,13 +1563,16 @@ Non-functional posture:
 - Proof-pack content is hashed and persisted immutably.
 - The route does not reconstruct source facts from downstream report, AI, Gateway, or Workbench
   layers.
-- Missing report-input or AI-evidence refs are represented as governed unavailable states until
-  Slice 7 adapters generate them.
+- Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
+  `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
+  not inferred from these refs.
 
 Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_proof_pack_api.py -q
+python -m pytest tests/unit/test_rfc0040_evidence_script.py tests/unit/dpm/proof_packs/test_proof_pack_service.py -q
+python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0.1:8024
 python scripts/openapi_quality_gate.py
 ```
 

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IMPLEMENTED - MANAGE BACKEND COMPLETE; PR/CI/WIKI PUBLICATION PENDING |
+| **Status** | IMPLEMENTED - MANAGE BACKEND COMPLETE; POST-MERGE GOLD-PASS AUDIT COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -22,7 +22,7 @@
 | **Slice 8 Evidence** | `docs/rfcs/RFC-0040-gateway-workbench-realization-slice8.md` |
 | **Slice 9 Evidence** | `docs/rfcs/RFC-0040-implementation-proof-slice9.md` |
 | **Slice 10 Evidence** | `docs/rfcs/RFC-0040-hardening-review-slice10.md` |
-| **Slice 11 Evidence** | RFC gold-pass assessment in Section 19; README/context/wiki/supported-feature updates in this PR |
+| **Slice 11 Evidence** | RFC gold-pass assessment in Section 19; README/context/wiki/supported-feature updates; post-merge audit evidence under `output/rfc0040-proof/20260503-142438` |
 
 ---
 
@@ -871,7 +871,8 @@ Slice 6 result:
 2. added certified manage-owned proof-pack generate, retrieve, Markdown, report-input-ref, and
    AI-evidence-ref endpoints under `/api/v1/rebalance/proof-packs`,
 3. enforced idempotent generation, source validation, immutable persistence lookup, Markdown
-   rendering, and governed `424` report/AI unavailable states before Slice 7 adapters exist,
+   rendering, and governed unavailable states until Slice 7 added deterministic report/AI handoff
+   adapters,
 4. documented proof-pack endpoints in OpenAPI and repo-local wiki endpoint certification,
 5. made no Gateway, Workbench, report materialization, AI memo, or full front-office supported
    feature claim.
@@ -1038,7 +1039,8 @@ Slice 9 result:
 1. completed in `docs/rfcs/RFC-0040-implementation-proof-slice9.md`,
 2. added `scripts/generate_rfc0040_proof_pack_evidence.py` as a repeatable live HTTP evidence
    generator,
-3. captured canonical Postgres-backed live evidence under `output/rfc0040-proof/20260503-135112`,
+3. captured canonical Postgres-backed live evidence under `output/rfc0040-proof/20260503-135112`
+   and reran the post-merge audit under `output/rfc0040-proof/20260503-142438`,
 4. proved direct-run JSON/detail/Markdown/report-input/AI-evidence flows, selected-alternative
    proof-pack generation, and missing-mandate blocked-state behavior,
 5. found and fixed a selected-alternative proof gap where construction-generated rebalance runs
@@ -1285,25 +1287,27 @@ RFC-0040 is complete only when:
 
 ---
 
-## 19. Gold-Pass Assessment Template
+## 19. Gold-Pass Assessment
 
-The final RFC closure update must include:
+Final post-merge audit result:
 
 | Assessment Area | Final Result |
 | --- | --- |
 | What was truly completed | `lotus-manage` now owns RFC-0040 backend proof-pack authority: generation from direct rebalance runs and selected construction alternatives, immutable persistence, section states, hashes, lineage, retention metadata, Markdown, report-input, AI-evidence input, and certified APIs. |
-| Quality improvements made | Added modular proof-pack domain, Markdown, handoff, repository, API, evidence-generator, and coverage-backed service/repository/API tests. Fixed selected-alternative run hydration after live proof exposed the gap. |
-| Debt removed | Removed stale proof-pack ownership ambiguity by aligning Gateway and Workbench RFC-0098 language; avoided local clones of report, AI, Gateway, or Workbench behavior. |
-| Platform/scaffold improvements | Added platform RFC evidence-manifest scaffold in `lotus-platform` commit `4679b07`; no further platform automation change was required for manage proof-pack closure. |
-| Cross-app changes and evidence | `lotus-gateway` commit `6099ffe` and `lotus-workbench` commit `4b150d6` align downstream realization RFCs to manage-owned proof-pack truth. |
+| Quality improvements made | Added modular proof-pack domain, Markdown, handoff, repository, API, evidence-generator, and coverage-backed service/repository/API tests. Post-merge audit tightened append-only handoff-ref lookup to prefer the latest ref, stamped handoff refs at append time, made evidence paths platform-neutral, made AI forbidden-field detection case-insensitive, and added machine-readable critical review evidence. |
+| Debt removed | Removed stale proof-pack ownership ambiguity by aligning Gateway and Workbench RFC-0098 language; removed stale Slice 7 wording from API/OpenAPI/vocabulary docs; avoided local clones of report, AI, Gateway, or Workbench behavior. |
+| Platform/scaffold improvements | Added platform RFC evidence-manifest scaffold in `lotus-platform` PR #295 merge commit `30a8d97`; no further platform automation change was required for manage proof-pack closure. |
+| Cross-app changes and evidence | `lotus-gateway` PR #181 merge commit `b2c3734` and `lotus-workbench` PR #142 merge commit `b63981b` align downstream realization RFCs to manage-owned proof-pack truth. These are realization RFC/docs changes, not runtime Gateway or Workbench proof-pack implementation. |
 | APIs certified | `POST /api/v1/rebalance/proof-packs`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`, `GET /summary.md`, `GET /report-input`, and `GET /ai-evidence-input` are documented in endpoint certification and passed OpenAPI/vocabulary/no-alias gates. |
-| Proof-pack sections proven | Direct-run, selected-alternative, and missing-mandate live scenarios were captured in `output/rfc0040-proof/20260503-135112`; section states remain source-honest with `READY`, `DEGRADED`, and `BLOCKED` evidence. |
+| Proof-pack sections proven | Direct-run, selected-alternative, and missing-mandate live scenarios were captured in `output/rfc0040-proof/20260503-135112` and rerun in `output/rfc0040-proof/20260503-142438`; section states remain source-honest with `READY`, `DEGRADED`, and `BLOCKED` evidence. |
 | Report/AI handoff proof | `DpmProofPackReportInput` and `DpmProofPackAiEvidenceInput` are generated deterministically, tie back to source proof-pack hashes, and include AI forbidden-action/field guardrails. |
-| Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. |
-| Documentation/wiki result | README, repository context, RFC index, supported-features source, API surface, endpoint certification, roadmap, and RFC evidence docs are updated. Published-wiki sync remains a post-merge step. |
-| Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` commit `6099ffe` and `lotus-workbench` commit `4b150d6`; implementation remains downstream future work. |
+| Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. Post-merge audit reran proof under `output/rfc0040-proof/20260503-142438` and wrote `critical-review.json` with result `passed_with_controlled_downstream_boundaries`. |
+| Canonical front-office live evidence | Governed canonical front-office QA with `PB_SG_GLOBAL_BAL_001` was run through `lotus-platform/automation/Invoke-Canonical-FrontOffice-QA.ps1 -BringUp`; report `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260503-222559.json` failed at Workbench browser validation because Gateway risk drawdown returned `partial`. This is recorded as a live ecosystem readiness boundary in `sgajbi/lotus-gateway#182`, not a manage proof-pack backend failure, and no full front-office proof-pack UX support claim is made. |
+| Documentation/wiki result | README, repository context, RFC index, supported-features source, API surface, endpoint certification, roadmap, and RFC evidence docs are updated. Wiki source was published after the original merge; this post-merge audit updates repo-local wiki source again and requires normal wiki publication after this audit PR merges. |
+| Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` PR #181 and `lotus-workbench` PR #142; implementation remains downstream future work. |
 | Skills/context/guidance decision | No Lotus skill or central context change is required; repo-local context was updated because repository-supported capability truth changed. |
-| Gold-standard conclusion | Manage backend RFC-0040 is implemented and live-proven. Full front-office proof-pack product realization remains explicitly gated on downstream Gateway/Workbench/report/AI work and is not claimed here. |
+| Tests and evidence | Focused audit tests passed for the evidence generator, proof-pack service, proof-pack API, and documentation current-state guardrails. The live manage evidence generator passed against canonical Postgres-backed manage runtime. |
+| Gold-standard conclusion | Manage backend RFC-0040 is implemented, audited, and live-proven. The implementation reaches the expected standard for the manage-owned backend authority. Full front-office proof-pack product realization remains explicitly gated on downstream Gateway/Workbench/report/AI work and broader canonical front-office readiness, and is not claimed here. |
 
 ---
 

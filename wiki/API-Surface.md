@@ -73,6 +73,20 @@ These are manage-owned backend authority endpoints. Gateway and Workbench must c
 contracts later without reconstructing proof-pack evidence. Report materialization and AI memo
 generation remain downstream responsibilities and are not claimed by this manage implementation.
 
+```mermaid
+flowchart LR
+    Source[Run or selected alternative] --> Generate[POST /proof-packs]
+    Generate --> Store[(Immutable proof-pack store)]
+    Store --> Detail[GET proof-pack JSON]
+    Store --> Summary[GET summary.md]
+    Store --> Report[GET report-input]
+    Store --> AI[GET ai-evidence-input]
+    Report -. downstream-owned .-> LotusReport[lotus-report]
+    AI -. downstream-owned .-> LotusAI[lotus-ai]
+    Detail -. downstream RFC-0098 .-> Gateway[lotus-gateway]
+    Gateway -. downstream RFC-0098 .-> Workbench[lotus-workbench]
+```
+
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.
