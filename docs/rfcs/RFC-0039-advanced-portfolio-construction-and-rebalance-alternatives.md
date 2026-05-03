@@ -1008,6 +1008,11 @@ Critical review:
 
 ### Slice 10: Gateway and Workbench Realization RFC Slice
 
+Slice 10 created the construction-specific downstream handoff after manage evidence and hardening
+were stable. The handoff intentionally keeps current `lotus-manage` ownership of construction
+truth while requiring Gateway and Workbench to realize the business outcome later without direct
+Workbench-to-manage calls or duplicated construction logic.
+
 Scope:
 
 1. create or tighten a paired Gateway RFC for DPM construction alternative composition after the
@@ -1032,6 +1037,30 @@ Acceptance:
    construction logic.
 5. Full business outcome is explicitly not claimed until paired RFCs are implemented and live
    proven.
+
+Evidence:
+
+1. Manage handoff contract added:
+   `docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`.
+2. Gateway RFC-0098 construction addendum added in
+   `../lotus-gateway/docs/rfcs/RFC-0098-dpm-command-center-composition-contract.md`.
+3. Workbench RFC-0098 construction lab addendum added in
+   `../lotus-workbench/docs/rfcs/RFC-0098-dpm-mandate-command-center-experience.md`.
+4. The downstream requirements reference implemented manage evidence:
+   `output/rfc0039-proof/20260503-172059/04-comparison-matrix.json`,
+   `output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json`, and
+   validator probe `construction_alternatives_first_wave`.
+
+Critical review:
+
+1. No new construction-method RFC was created. RFC-0039 remains the single owner for first-wave and
+   second-wave construction alternatives.
+2. Gateway/Workbench RFC wording explicitly prevents direct Workbench-to-manage integration,
+   browser-side optimizer logic, and Gateway recomputation of manage construction truth.
+3. The downstream RFCs define the product panels, states, supportability handling, and canonical
+   proof expectations needed to realize the business outcome later.
+4. No downstream support claim is made. Gateway and Workbench remain not integrated with
+   construction alternatives until their owning implementations are complete and live-proven.
 
 ### Slice 11: Final Closure Slice
 
