@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | COMPLETED |
+| **Status** | COMPLETED FOR LOTUS-MANAGE; ADVISORY PORTION SUPERSEDED BY LOTUS-ADVISE SPLIT |
 | **Created** | 2026-02-20 |
 | **Depends On** | RFC-0023, RFC-0024 |
 | **Doc Location** | `docs/rfcs/RFC-0025-postgres-only-production-mode-cutover.md` |
@@ -11,6 +11,39 @@
 
 Define a staged production cutover plan where lotus-manage/advisory persistence uses PostgreSQL-only
 backends in non-dev environments, while preserving in-memory/SQLite paths for local workflows.
+
+### 1.1 Current Status Review (2026-05-03)
+
+This RFC is complete for current lotus-manage DPM scope. The original text included advisory
+proposal persistence because the repository briefly carried advisory lifecycle responsibilities.
+That scope has been superseded by the `lotus-advise` service split. Current lotus-manage production
+cutover policy is:
+
+1. DPM supportability persistence must use PostgreSQL in production profiles.
+2. Policy-pack catalog persistence must use PostgreSQL in production profiles when catalog/admin
+   APIs are enabled.
+3. Local development may keep lightweight backends where explicitly allowed.
+4. Advisory proposal persistence is not an active lotus-manage production requirement.
+
+| Requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Production profile guardrails | `src/api/persistence_profile.py`, `tests/unit/api/test_persistence_profile.py` | Implemented |
+| Explicit cutover contract validation | `src/api/production_cutover_contract.py`, `scripts/production_cutover_check.py`, production cutover tests | Implemented |
+| Migration readiness checks | `src/infrastructure/postgres_migrations.py`, migration tests | Implemented |
+| Container/runtime Postgres profile | `docker-compose.yml`, `docker-compose.production.yml`, operations docs | Implemented |
+| Advisory proposal cutover controls | Historical only; current owner is `lotus-advise` | Superseded |
+
+The remaining sections preserve the original cutover record. Where they mention advisory controls,
+read them as historical implementation notes, not current lotus-manage acceptance criteria.
+
+### 1.2 Current lotus-manage Acceptance Criteria
+
+1. `APP_PERSISTENCE_PROFILE=PRODUCTION` fails fast unless DPM supportability is backed by Postgres.
+2. Production policy-pack catalog mode fails fast unless a Postgres backend and DSN are configured
+   when policy-pack catalog APIs are enabled.
+3. Cutover checks validate profile, environment, and migration readiness before production use.
+4. Local and test profiles remain explicit and cannot be confused with production posture.
+5. No advisory proposal runtime guardrail is required or advertised by lotus-manage.
 
 ## 2. Problem Statement
 

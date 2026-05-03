@@ -29,6 +29,31 @@ The focus of this phase is **Safety, Auditability, and Completeness**:
 4. PostgreSQL persistence and idempotency key store are not implemented.
 5. `Reconciliation` is implemented with `status: OK|MISMATCH` and mismatch blocks the run.
 
+### 0.2 Current Status Review (2026-05-03)
+
+RFC-0002 is a historical foundation RFC and remains **implemented** for current lotus-manage scope.
+Its core requirements are now delivered across the simulation engine, the canonical API, and later
+supportability RFCs. The dated implementation-alignment note above is preserved for traceability, but
+two statements have since evolved:
+
+1. Durable persistence and idempotency replay are no longer deferred; they are implemented through
+   RFC-0016, RFC-0017, RFC-0023, and RFC-0024.
+2. The test objective is governed by the current repository quality gate, which requires at least
+   99% coverage with meaningful unit, contract, integration, and live-validation tests rather than
+   a nominal 100% line-coverage target.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Canonical `POST /rebalance/simulate` audit bundle | `src/api/routers/rebalance.py`, `src/api/services/rebalance_simulation_service.py`, `src/core/models.py` | Implemented |
+| Before/after portfolio state, rule results, diagnostics, lineage | `src/core/rebalance/`, `src/core/models.py`, golden engine tests under `tests/unit/dpm/engine/` | Implemented |
+| Required idempotency key and replay protection | RFC-0016/RFC-0017 supportability services and tests under `tests/unit/dpm/supportability/` | Implemented by later RFCs |
+| Base-currency valuation and reconciliation | `src/core/valuation.py`, `tests/unit/dpm/engine/test_engine_valuation_service.py` | Implemented |
+| Shelf semantics and post-trade controls | `src/core/rebalance/universe.py`, `src/core/rebalance/rules.py`, golden data scenarios | Implemented |
+| RFC 7807-style HTTP validation for malformed requests | FastAPI/Pydantic request validation and API contract tests | Implemented for request validation; valid domain outcomes remain explicit result statuses |
+
+No new implementation slice is open under RFC-0002. Further capability changes should be raised
+against the focused RFC that owns the area, not reopened here.
+
 ---
 
 ## 1. Problem Statement

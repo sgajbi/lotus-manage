@@ -11,6 +11,23 @@
 
 Harden lotus-manage OpenAPI contracts so request and response objects are explicitly separated, with complete field-level descriptions/examples and contract tests to prevent accidental schema drift.
 
+## 1.1 Current Status Review (2026-05-03)
+
+RFC-0021 is **implemented and extended** by the current API certification baseline. The RFC remains
+the OpenAPI quality foundation for lotus-manage, while later work added ecosystem-wide vocabulary,
+alias retirement, and endpoint-certification checks.
+
+| Requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Separate public request and response models | `src/api/schemas.py`, `src/core/models.py`, `tests/integration/test_openapi_certification_matrix.py` | Implemented |
+| Field-level descriptions and examples | `src/api/openapi_enrichment.py`, `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py` | Implemented |
+| Contract tests over `/openapi.json` | `tests/integration/test_openapi_certification_matrix.py`, `tests/unit/test_validate_live_api.py` | Implemented |
+| Retired route and alias protection | `scripts/openapi_quality_gate.py`, `tests/unit/test_validate_live_api.py` | Implemented |
+| Endpoint certification evidence | `wiki/Endpoint-Certification.md`, live validation output under non-git-tracked `output/` when generated | Implemented |
+
+No additional route changes are owned by this RFC. New API certification work should update the
+endpoint-specific RFC or certification inventory and keep this RFC as the historical foundation.
+
 ## 2. Problem Statement
 
 Schema ambiguity and mixed request/response models reduce integrator confidence and make production support harder. Advisory APIs already use stricter schema discipline.

@@ -13,6 +13,11 @@
 
 - RFC-0001 to RFC-0013
   core rebalance simulation, controls, optimization, and what-if analysis foundation
+- RFC-0002
+  implemented enterprise hardening baseline; durable idempotency and persistence are now delivered
+  by later supportability RFCs rather than deferred work
+- RFC-0007A
+  implemented contract-tightening baseline for the canonical rebalance execution surface
 - RFC-0016
   idempotency replay contract
 - RFC-0017
@@ -24,13 +29,13 @@
 - RFC-0020
   workflow gate API and persistence
 - RFC-0021
-  OpenAPI hardening and request/response model separation
+  OpenAPI hardening, request/response model separation, and current certification evidence
 - RFC-0022
   policy-pack configuration model
 - RFC-0023
   persistent supportability store and lineage APIs
 - RFC-0028
-  integration capabilities contract
+  implemented `GET /api/v1/integration/capabilities` backend-governed capabilities contract
 
 ## Active And Recently Completed RFCs
 
@@ -47,6 +52,14 @@
 
 - Advisor-led proposal simulation, artifacts, consent, and lifecycle RFCs are no longer active
   `lotus-manage` scope. They belong in `lotus-advise`.
+
+## Rebaselined foundation RFCs
+
+- RFC-0002, RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were reviewed against current
+  implementation evidence on 2026-05-03.
+- RFC-0024 and RFC-0025 are complete for current lotus-manage DPM supportability and production
+  cutover scope. Historical advisory migration notes remain in the RFC files for audit traceability
+  only.
 
 ## Full local RFC inventory
 
