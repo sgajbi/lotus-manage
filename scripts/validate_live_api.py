@@ -4,7 +4,7 @@ import sys
 import uuid
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal, cast
 
 import httpx
 
@@ -35,7 +35,7 @@ def _result(name: str, ok: bool, details: dict[str, Any]) -> ProbeResult:
 
 
 def _load_demo_payload(filename: str) -> dict[str, Any]:
-    return json.loads((DEMO_DIR / filename).read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads((DEMO_DIR / filename).read_text(encoding="utf-8")))
 
 
 def _probe_ready(client: httpx.Client) -> ProbeResult:
@@ -223,6 +223,131 @@ def _probe_stateful_core_sourcing_available(
     )
 
 
+def _construction_alternatives_payload(*, portfolio_id: str) -> dict[str, Any]:
+    return {
+        "input_mode": "stateless",
+        "stateless_input": {
+            "portfolio_snapshot": {
+                "portfolio_id": portfolio_id,
+                "base_currency": "SGD",
+                "positions": [{"instrument_id": "EQ_1", "quantity": "100"}],
+                "cash_balances": [{"currency": "SGD", "amount": "0.00"}],
+            },
+            "market_data_snapshot": {
+                "prices": [
+                    {"instrument_id": "EQ_1", "price": "100.00", "currency": "SGD"},
+                    {"instrument_id": "EQ_2", "price": "100.00", "currency": "SGD"},
+                ],
+                "fx_rates": [],
+            },
+            "model_portfolio": {
+                "targets": [
+                    {"instrument_id": "EQ_1", "weight": "0.50"},
+                    {"instrument_id": "EQ_2", "weight": "0.50"},
+                ]
+            },
+            "shelf_entries": [
+                {"instrument_id": "EQ_1", "status": "APPROVED"},
+                {"instrument_id": "EQ_2", "status": "APPROVED"},
+            ],
+            "options": {},
+        },
+    }
+
+
+def _probe_construction_alternatives(
+    client: httpx.Client,
+    *,
+    portfolio_id: str,
+) -> ProbeResult:
+    response = client.post(
+        "/api/v1/construction/alternative-sets/generate",
+        json=_construction_alternatives_payload(portfolio_id=portfolio_id),
+        headers={
+            "Idempotency-Key": f"live-construction-{uuid.uuid4().hex[:10]}",
+            "X-Correlation-Id": f"corr-live-construction-{uuid.uuid4().hex[:10]}",
+        },
+    )
+    body = response.json() if response.content else {}
+    alternatives = body.get("alternatives") if isinstance(body, dict) else []
+    alternatives = alternatives if isinstance(alternatives, list) else []
+    by_method = {
+        alternative.get("method"): alternative
+        for alternative in alternatives
+        if isinstance(alternative, dict)
+    }
+    alternative_set_id = body.get("alternative_set_id") if isinstance(body, dict) else None
+    read_status = None
+    selection_status = None
+    if isinstance(alternative_set_id, str) and alternative_set_id:
+        read_status = client.get(
+            f"/api/v1/construction/alternative-sets/{alternative_set_id}"
+        ).status_code
+        selection_status = client.post(
+            f"/api/v1/construction/alternative-sets/{alternative_set_id}/selections",
+            json={
+                "alternative_id": "alt_heuristic_explainable",
+                "actor_id": "live_validator",
+                "reason_code": "MAX_DRIFT_REDUCTION_ACCEPTABLE_TURNOVER",
+                "comment": "Live validator selected the heuristic alternative for proof.",
+            },
+            headers={"X-Correlation-Id": f"corr-live-selection-{uuid.uuid4().hex[:10]}"},
+        ).status_code
+    baseline = by_method.get("DO_NOTHING_BASELINE", {})
+    heuristic = by_method.get("HEURISTIC_EXPLAINABLE", {})
+    min_turnover = by_method.get("MIN_TURNOVER", {})
+    baseline_metrics = baseline.get("comparison_metrics", {})
+    heuristic_metrics = heuristic.get("comparison_metrics", {})
+    min_turnover_metrics = min_turnover.get("comparison_metrics", {})
+    expected_methods = {
+        "DO_NOTHING_BASELINE",
+        "HEURISTIC_EXPLAINABLE",
+        "MIN_TURNOVER",
+        "TAX_AWARE",
+    }
+    ok = (
+        response.status_code == 200
+        and set(by_method) == expected_methods
+        and read_status == 200
+        and selection_status == 200
+        and baseline_metrics.get("trade_count") == 0
+        and str(baseline_metrics.get("drift_after")) == "1.0000"
+        and int(heuristic_metrics.get("trade_count", -1)) > 0
+        and str(heuristic_metrics.get("drift_after")) == "0.0000"
+        and min_turnover.get("method_status") == "PENDING_REVIEW"
+        and str(min_turnover_metrics.get("turnover_weight")) == "0.0000"
+    )
+    return _result(
+        "construction_alternatives_first_wave",
+        ok,
+        {
+            "status_code": response.status_code,
+            "alternative_set_id": alternative_set_id,
+            "read_status": read_status,
+            "selection_status": selection_status,
+            "methods": sorted(by_method),
+            "baseline": {
+                "status": baseline.get("method_status"),
+                "drift_after": baseline_metrics.get("drift_after"),
+                "turnover_weight": baseline_metrics.get("turnover_weight"),
+                "trade_count": baseline_metrics.get("trade_count"),
+            },
+            "heuristic": {
+                "status": heuristic.get("method_status"),
+                "drift_after": heuristic_metrics.get("drift_after"),
+                "turnover_weight": heuristic_metrics.get("turnover_weight"),
+                "trade_count": heuristic_metrics.get("trade_count"),
+            },
+            "min_turnover": {
+                "status": min_turnover.get("method_status"),
+                "drift_after": min_turnover_metrics.get("drift_after"),
+                "turnover_weight": min_turnover_metrics.get("turnover_weight"),
+                "trade_count": min_turnover_metrics.get("trade_count"),
+            },
+        },
+    )
+
+
 def _stateful_selector_payload(
     *,
     portfolio_id: str = "PB_SG_GLOBAL_BAL_001",
@@ -362,7 +487,7 @@ def run_live_api_validation(
             results.append(_result("demo_pack", False, {"error": str(exc)}))
 
     with httpx.Client(base_url=base_url, timeout=timeout, transport=transport) as client:
-        probe_calls = [
+        probe_calls: list[tuple[str, Callable[[], ProbeResult]]] = [
             ("ready", lambda: _probe_ready(client)),
             (
                 f"capabilities_truthful_{expect_stateful_core_sourcing}",
@@ -396,6 +521,15 @@ def run_live_api_validation(
                     lambda: _probe_stateful_core_sourcing_guard(client),
                 )
             )
+        probe_calls.append(
+            (
+                "construction_alternatives_first_wave",
+                lambda: _probe_construction_alternatives(
+                    client,
+                    portfolio_id=portfolio_id,
+                ),
+            )
+        )
         probe_calls.extend(
             [
                 (
@@ -409,7 +543,7 @@ def run_live_api_validation(
         for probe_name, probe in probe_calls:
             try:
                 results.append(probe())
-            except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            except (httpx.HTTPError, ValueError, KeyError, TypeError, AssertionError) as exc:
                 results.append(_result(probe_name, False, {"error": str(exc)}))
 
     for core_base_url in core_base_urls or []:
@@ -424,7 +558,7 @@ def run_live_api_validation(
                         expectation=expect_core_dpm_route,
                     )
                 )
-            except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+            except (httpx.HTTPError, ValueError, KeyError, TypeError, AssertionError) as exc:
                 results.append(
                     _result(
                         "core_dpm_execution_context_route",

@@ -916,6 +916,7 @@ Current evidence:
 5. `output/rfc0039-proof/20260503-172059/03-selection-response.json`
 6. `output/rfc0039-proof/20260503-172059/04-comparison-matrix.json`
 7. `output/rfc0039-proof/20260503-172059/metadata.json`
+8. `output/rfc0039-proof/live-validator/summary.json`
 
 Critical review:
 
@@ -923,7 +924,11 @@ Critical review:
    trade-off.
 2. Regenerated proof demonstrates real trade-offs across drift reduction, turnover, method status,
    selection, and degraded enrichment reason codes.
-3. Remaining gap: canonical front-office stack proof against the governed seeded runtime is still
+3. The repeatable live validator now includes `construction_alternatives_first_wave`, proving
+   generate/read/select plus first-wave trade-off checks. In local short-lived runtime, that probe
+   passed while two existing Postgres-supportability probes failed because no Postgres DSN was
+   configured for the local app profile.
+4. Remaining gap: canonical front-office stack proof against the governed seeded runtime is still
    required before Slice 8 can be marked complete.
 
 ### Slice 9: Second-Last Hardening and Review Slice

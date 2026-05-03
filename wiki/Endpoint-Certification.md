@@ -354,6 +354,7 @@ Evidence commands:
 python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py -q
 python scripts/openapi_quality_gate.py
 python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+python scripts/validate_live_api.py --base-url http://127.0.0.1:8019 --skip-demo-pack --json-output output/rfc0039-proof/live-validator/summary.json
 ```
 
 ## Certified endpoint family: policy-pack read supportability
