@@ -53,10 +53,12 @@ Current posture under RFC-0082:
 
 1. `lotus-manage` is the management-side service after the split from `lotus-advise`.
 2. Canonical local host runtime uses port `8001` so it can coexist with `lotus-advise` on `8000`.
-3. CI already enforces no-alias, OpenAPI, API vocabulary, migration-smoke, and security-audit
-   validation.
+3. CI enforces no-alias, OpenAPI, API vocabulary, migration-smoke, security-audit validation, and
+   a 99% coverage gate across the unit, integration, and e2e pyramid.
 4. Host/runtime coexistence and gateway-facing capability discovery are part of the operational
    contract.
+5. Solver-capable development and CI installs include the `solver` extra (`cvxpy` and `numpy`) so
+   solver-mode target generation is validated instead of silently skipped.
 
 ## Architecture At A Glance
 
@@ -78,11 +80,11 @@ Key code areas:
 
 - `src/api/`
   FastAPI entrypoints, routers, readiness, observability, and OpenAPI enrichment
-- `src/core/dpm/`
+- `src/core/rebalance/`
   discretionary portfolio-management simulation engine and supporting rebalance modules
 - `src/core/dpm_source_context.py`
   stateful source-context models and transformation helpers for governed core sourcing
-- `src/core/dpm_runs/`
+- `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/infrastructure/core_sourcing/`
   bounded `lotus-core` resolver client that composes RFC-087 source products for stateful execution

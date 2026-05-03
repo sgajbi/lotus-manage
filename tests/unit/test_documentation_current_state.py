@@ -77,8 +77,11 @@ def test_removed_dpm_python_compatibility_shims_stay_retired() -> None:
         ROOT / "src" / "core" / "advisory",
         ROOT / "src" / "core" / "proposals",
         ROOT / "src" / "api" / "services" / "dpm_simulation_service.py",
+        ROOT / "src" / "core" / "dpm",
+        ROOT / "src" / "core" / "dpm_runs",
         ROOT / "src" / "core" / "dpm_engine.py",
         ROOT / "src" / "core" / "engine.py",
+        ROOT / "src" / "infrastructure" / "dpm_runs",
         ROOT / "src" / "infrastructure" / "proposals",
         ROOT / "src" / "infrastructure" / "postgres_migrations" / "proposals",
     ]

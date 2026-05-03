@@ -124,6 +124,43 @@ class DpmCoreResolverClient:
         if self._owns_client and self._client is not None:
             self._client.close()
 
+    def _post_source_product(
+        self,
+        *,
+        url: str,
+        payload: dict[str, Any],
+        correlation_id: Optional[str],
+        unavailable_code: str,
+        incomplete_code: str,
+    ) -> dict[str, Any]:
+        attempts = max(self._config.max_attempts, 1)
+        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        try:
+            last_error: Exception | None = None
+            for attempt in range(attempts):
+                try:
+                    response = client.post(url, json=payload, headers=headers)
+                except (httpx.TimeoutException, httpx.TransportError) as exc:
+                    last_error = exc
+                    if attempt + 1 >= attempts:
+                        raise DpmCoreResolverUnavailableError(unavailable_code) from exc
+                    continue
+                if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
+                    continue
+                if response.status_code >= 500:
+                    raise DpmCoreResolverUnavailableError(unavailable_code)
+                if response.status_code >= 400:
+                    raise DpmCoreResolverError(incomplete_code)
+                response_payload = response.json()
+                if not isinstance(response_payload, dict):
+                    raise DpmCoreResolverError(incomplete_code)
+                return response_payload
+            raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
+        finally:
+            if self._owns_client:
+                client.close()
+
     def resolve_execution_context(
         self,
         *,
@@ -239,40 +276,20 @@ class DpmCoreResolverClient:
         consumer_system: str,
         correlation_id: Optional[str],
     ) -> PortfolioSnapshot:
-        attempts = max(self._config.max_attempts, 1)
         url = self._config.resolve_portfolio_snapshot_url(portfolio_id)
         payload = {
             "as_of_date": as_of_date.isoformat(),
             "consumer_system": consumer_system,
             "sections": ["positions_baseline", "portfolio_totals"],
         }
-        headers = {}
-        if correlation_id:
-            headers["X-Correlation-Id"] = correlation_id
-
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                        continue
-                    if response.status_code >= 500:
-                        raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
-                    if response.status_code >= 400:
-                        raise DpmCoreResolverError("DPM_CORE_CONTEXT_INCOMPLETE")
-                    return _portfolio_snapshot_from_core_snapshot(response.json())
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_RESOLVER_UNAVAILABLE"
-                        ) from exc
-            raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE") from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_RESOLVER_UNAVAILABLE",
+            incomplete_code="DPM_CORE_CONTEXT_INCOMPLETE",
+        )
+        return _portfolio_snapshot_from_core_snapshot(response)
 
     def resolve_model_portfolio_targets(
         self,
@@ -283,44 +300,20 @@ class DpmCoreResolverClient:
         tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> DpmCoreModelPortfolioTargetResponse:
-        attempts = max(self._config.max_attempts, 1)
         url = self._config.resolve_model_portfolio_targets_url(model_portfolio_id)
         payload = {
             "as_of_date": as_of_date.isoformat(),
             "include_inactive_targets": include_inactive_targets,
             "tenant_id": tenant_id,
         }
-        headers = {}
-        if correlation_id:
-            headers["X-Correlation-Id"] = correlation_id
-
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                        continue
-                    if response.status_code >= 500:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE"
-                        )
-                    if response.status_code >= 400:
-                        raise DpmCoreResolverError("DPM_CORE_MODEL_TARGETS_INCOMPLETE")
-                    return DpmCoreModelPortfolioTargetResponse.model_validate(response.json())
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE"
-                        ) from exc
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE"
-            ) from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE",
+            incomplete_code="DPM_CORE_MODEL_TARGETS_INCOMPLETE",
+        )
+        return DpmCoreModelPortfolioTargetResponse.model_validate(response)
 
     def resolve_mandate_binding(
         self,
@@ -333,7 +326,6 @@ class DpmCoreResolverClient:
         include_policy_pack: bool = True,
         correlation_id: Optional[str],
     ) -> DpmCoreMandateBindingResponse:
-        attempts = max(self._config.max_attempts, 1)
         url = self._config.resolve_mandate_binding_url(portfolio_id)
         payload = {
             "as_of_date": as_of_date.isoformat(),
@@ -342,37 +334,14 @@ class DpmCoreResolverClient:
             "booking_center_code": booking_center_code,
             "include_policy_pack": include_policy_pack,
         }
-        headers = {}
-        if correlation_id:
-            headers["X-Correlation-Id"] = correlation_id
-
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                        continue
-                    if response.status_code >= 500:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_MANDATE_BINDING_UNAVAILABLE"
-                        )
-                    if response.status_code >= 400:
-                        raise DpmCoreResolverError("DPM_CORE_MANDATE_BINDING_INCOMPLETE")
-                    return DpmCoreMandateBindingResponse.model_validate(response.json())
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_MANDATE_BINDING_UNAVAILABLE"
-                        ) from exc
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_MANDATE_BINDING_UNAVAILABLE"
-            ) from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_MANDATE_BINDING_UNAVAILABLE",
+            incomplete_code="DPM_CORE_MANDATE_BINDING_INCOMPLETE",
+        )
+        return DpmCoreMandateBindingResponse.model_validate(response)
 
     def resolve_instrument_eligibility(
         self,
@@ -383,7 +352,6 @@ class DpmCoreResolverClient:
         include_restricted_rationale: bool = False,
         correlation_id: Optional[str],
     ) -> DpmCoreInstrumentEligibilityBulkResponse:
-        attempts = max(self._config.max_attempts, 1)
         url = self._config.resolve_instrument_eligibility_url()
         payload = {
             "as_of_date": as_of_date.isoformat(),
@@ -391,37 +359,14 @@ class DpmCoreResolverClient:
             "tenant_id": tenant_id,
             "include_restricted_rationale": include_restricted_rationale,
         }
-        headers = {}
-        if correlation_id:
-            headers["X-Correlation-Id"] = correlation_id
-
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                        continue
-                    if response.status_code >= 500:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE"
-                        )
-                    if response.status_code >= 400:
-                        raise DpmCoreResolverError("DPM_CORE_INSTRUMENT_ELIGIBILITY_INCOMPLETE")
-                    return DpmCoreInstrumentEligibilityBulkResponse.model_validate(response.json())
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE"
-                        ) from exc
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE"
-            ) from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE",
+            incomplete_code="DPM_CORE_INSTRUMENT_ELIGIBILITY_INCOMPLETE",
+        )
+        return DpmCoreInstrumentEligibilityBulkResponse.model_validate(response)
 
     def resolve_portfolio_tax_lots(
         self,
@@ -436,7 +381,6 @@ class DpmCoreResolverClient:
         tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> DpmCorePortfolioTaxLotWindowResponse:
-        attempts = max(self._config.max_attempts, 1)
         url = self._config.resolve_portfolio_tax_lots_url(portfolio_id)
         payload = {
             "as_of_date": as_of_date.isoformat(),
@@ -446,37 +390,14 @@ class DpmCoreResolverClient:
             "page": {"page_size": page_size, "page_token": page_token},
             "tenant_id": tenant_id,
         }
-        headers = {}
-        if correlation_id:
-            headers["X-Correlation-Id"] = correlation_id
-
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                        continue
-                    if response.status_code >= 500:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE"
-                        )
-                    if response.status_code >= 400:
-                        raise DpmCoreResolverError("DPM_CORE_PORTFOLIO_TAX_LOTS_INCOMPLETE")
-                    return DpmCorePortfolioTaxLotWindowResponse.model_validate(response.json())
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE"
-                        ) from exc
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE"
-            ) from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE",
+            incomplete_code="DPM_CORE_PORTFOLIO_TAX_LOTS_INCOMPLETE",
+        )
+        return DpmCorePortfolioTaxLotWindowResponse.model_validate(response)
 
     def resolve_market_data_coverage(
         self,
@@ -489,7 +410,6 @@ class DpmCoreResolverClient:
         tenant_id: Optional[str] = None,
         correlation_id: Optional[str],
     ) -> DpmCoreMarketDataCoverageWindowResponse:
-        attempts = max(self._config.max_attempts, 1)
         url = self._config.resolve_market_data_coverage_url()
         payload = {
             "as_of_date": as_of_date.isoformat(),
@@ -502,37 +422,14 @@ class DpmCoreResolverClient:
             "max_staleness_days": max_staleness_days,
             "tenant_id": tenant_id,
         }
-        headers = {}
-        if correlation_id:
-            headers["X-Correlation-Id"] = correlation_id
-
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                    if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                        continue
-                    if response.status_code >= 500:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE"
-                        )
-                    if response.status_code >= 400:
-                        raise DpmCoreResolverError("DPM_CORE_MARKET_DATA_COVERAGE_INCOMPLETE")
-                    return DpmCoreMarketDataCoverageWindowResponse.model_validate(response.json())
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(
-                            "DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE"
-                        ) from exc
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE"
-            ) from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_MARKET_DATA_COVERAGE_INCOMPLETE",
+        )
+        return DpmCoreMarketDataCoverageWindowResponse.model_validate(response)
 
 
 def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:

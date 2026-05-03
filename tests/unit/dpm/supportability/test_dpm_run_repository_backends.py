@@ -13,7 +13,11 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
 )
 from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
-from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository, SqliteDpmRunRepository
+from src.infrastructure.rebalance_runs import (
+    InMemoryDpmRunRepository,
+    PostgresDpmRunRepository,
+    SqliteDpmRunRepository,
+)
 
 
 @pytest.fixture(params=["IN_MEMORY", "SQLITE"])
@@ -854,3 +858,77 @@ def test_sqlite_repository_purge_expired_runs_noop_when_empty():
             now=datetime(2026, 2, 22, 12, 0, tzinfo=timezone.utc),
         )
         assert purged == 0
+
+
+def test_sqlite_repository_operation_and_workflow_filter_boundaries() -> None:
+    with TemporaryDirectory() as tmp_dir:
+        repository = SqliteDpmRunRepository(database_path=str(Path(tmp_dir) / "dpm.sqlite"))
+        now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+        operation = DpmAsyncOperationRecord(
+            operation_id="dop_sqlite_filter",
+            operation_type="ANALYZE_SCENARIOS",
+            status="PENDING",
+            correlation_id="corr_sqlite_filter",
+            created_at=now,
+            request_json={"scenarios": {}},
+        )
+        repository.create_operation(operation)
+        operation.status = "RUNNING"
+        repository.update_operation(operation)
+
+        rows, _ = repository.list_operations(
+            created_from=None,
+            created_to=None,
+            operation_type="ANALYZE_SCENARIOS",
+            status="RUNNING",
+            correlation_id="corr_sqlite_filter",
+            limit=10,
+            cursor=None,
+        )
+        assert [row.operation_id for row in rows] == ["dop_sqlite_filter"]
+
+        decision = DpmRunWorkflowDecisionRecord(
+            decision_id="dec_sqlite_filter",
+            run_id="rr_sqlite_filter",
+            correlation_id="corr_sqlite_filter",
+            action="APPROVE",
+            reason_code="REVIEW_APPROVED",
+            actor_id="reviewer_1",
+            decided_at=now,
+        )
+        repository.append_workflow_decision(decision)
+        decisions, _ = repository.list_workflow_decisions_filtered(
+            rebalance_run_id="rr_sqlite_filter",
+            action="APPROVE",
+            actor_id="reviewer_1",
+            reason_code="REVIEW_APPROVED",
+            decided_from=now,
+            decided_to=now,
+            limit=10,
+            cursor=None,
+        )
+        assert [row.decision_id for row in decisions] == ["dec_sqlite_filter"]
+
+
+def test_postgres_repository_maps_unique_operation_conflicts(monkeypatch) -> None:
+    class UniqueViolation(Exception):
+        pass
+
+    operation = DpmAsyncOperationRecord(
+        operation_id="dop_pg_conflict",
+        operation_type="ANALYZE_SCENARIOS",
+        status="PENDING",
+        correlation_id="corr_pg_conflict",
+        created_at=datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc),
+    )
+    repository = object.__new__(PostgresDpmRunRepository)
+    monkeypatch.setattr(
+        repository,
+        "_upsert_operation",
+        lambda _operation: (_ for _ in ()).throw(UniqueViolation("duplicate")),
+    )
+
+    with pytest.raises(DpmRunRepositoryConflictError):
+        repository.create_operation(operation)
+    with pytest.raises(DpmRunRepositoryConflictError):
+        repository.update_operation(operation)
