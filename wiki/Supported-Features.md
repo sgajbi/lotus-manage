@@ -161,7 +161,7 @@ evidence.
 | Tax, liquidity, risk, currency, and regime-aware construction | RFC-0039 | Supported as manage backend construction capabilities with explicit source-authority context. ESG/restriction-aware construction remains deferred until source-backed restriction and sustainability profiles exist. Promote to full product outcome only after Gateway/Workbench implementation and canonical browser proof. |
 | Full front-office proof-pack review | RFC-0040, Gateway RFC-0098, Workbench RFC-0098 | Manage backend proof-pack authority is supported. Promote full product outcome only after Gateway composition, Workbench review UX, report materialization posture, AI memo posture, browser validation, and canonical front-office proof are implemented in the owning apps. |
 | Decision timeline and portfolio memory | RFC-0040 | Linked mandate, exception, alternative, approval, wave, handoff, and outcome events. |
-| CIO model-change and rebalance waves | RFC-0041 | Multi-portfolio wave proof with ready, pending-review, and blocked items. |
+| CIO model-change and rebalance waves | RFC-0041 | Proposed only. RFC-0041 is tightened as the execution guide; no supported feature claim may be promoted until manage backend wave authority, live mixed-readiness proof, Gateway composition RFC, Workbench realization RFC, wiki publication, and supported-feature evidence are complete. |
 | Post-trade outcome feedback | RFC-0042 | Expected-versus-realized review sourced from core, risk, and performance evidence. |
 | Governed AI PM copilot | RFC-0043 | `lotus-ai` workflow-pack integration, guardrail tests, provenance, and AI-unavailable fallback. |
 
