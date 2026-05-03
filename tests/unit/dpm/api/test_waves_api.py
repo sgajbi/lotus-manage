@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
@@ -13,6 +14,7 @@ from src.api.dependencies import (
 )
 from src.api.main import app
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
+from src.api.services import construction_service, proof_pack_service
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -455,6 +457,133 @@ def test_wave_simulation_preserves_blocked_items_and_degrades_missing_inputs() -
     ]
 
 
+def test_wave_simulation_reports_invalid_state_and_partial_result() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    second_twin = _twin(
+        mandate_id="MANDATE_PB_SG_READY_002",
+        portfolio_id="PB_SG_READY_002",
+    )
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    mandate_repository.save_mandate_snapshot(second_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    _save_ready_health(mandate_repository, second_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        draft = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-invalid-sim-state"},
+        )
+        invalid = client.post(
+            f"/api/v1/rebalance/waves/{draft.json()['wave']['wave_id']}/simulate",
+            json={"actor_id": "pm_001", "item_inputs": []},
+        )
+
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={
+                **_request(),
+                "portfolios": [
+                    {"portfolio_id": PORTFOLIO_ID},
+                    {"portfolio_id": "PB_SG_READY_002"},
+                ],
+            },
+            headers={"Idempotency-Key": "idem-wave-partial-sim"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        items_by_portfolio = {
+            item["portfolio_id"]: item for item in checked.json()["wave"]["items"]
+        }
+        partial = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": items_by_portfolio[PORTFOLIO_ID]["wave_item_id"],
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "DPM_WAVE_SIMULATION_INVALID_STATE"
+    assert partial.status_code == 200
+    assert partial.json()["wave"]["state"] == "PARTIALLY_SIMULATED"
+    assert partial.json()["wave"]["aggregate_metrics"]["state_counts"] == {
+        "SIMULATED": 1,
+        "SIMULATION_BLOCKED": 1,
+    }
+
+
+def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    def fail_generation(**_: object) -> None:
+        raise RuntimeError("construction unavailable")
+
+    monkeypatch.setattr(
+        construction_service,
+        "generate_construction_alternative_set",
+        fail_generation,
+    )
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-sim-generation-fails"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
+        simulated = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+
+    assert simulated.status_code == 200
+    item = simulated.json()["wave"]["items"][0]
+    assert simulated.json()["wave"]["state"] == "SIMULATION_FAILED"
+    assert item["state"] == "SIMULATION_BLOCKED"
+    assert item["reason_codes"] == ["CONSTRUCTION_ALTERNATIVE_GENERATION_FAILED"]
+    assert item["diagnostics"]["construction_error"] == "RuntimeError"
+
+
 def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
@@ -511,6 +640,207 @@ def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -
         selected_item["diagnostics"]["proof_pack_reason_code"]
         == "PROOF_PACK_GENERATION_NOT_REQUESTED"
     )
+
+
+def test_wave_selection_reports_invalid_item_and_alternative_errors() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-select-errors"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        invalid_state = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        missing_item = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/dwi_missing/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+        bad_alternative = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            json={
+                "alternative_id": "alt_unknown",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+
+    assert invalid_state.status_code == 422
+    assert invalid_state.json()["detail"]["code"] == "DPM_WAVE_SELECTION_INVALID_STATE"
+    assert missing_item.status_code == 404
+    assert missing_item.json()["detail"]["code"] == "DPM_WAVE_ITEM_NOT_FOUND"
+    assert bad_alternative.status_code == 404
+    assert bad_alternative.json()["detail"]["code"] == "DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
+
+
+def test_wave_selection_rejects_items_without_generated_alternatives() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    second_twin = _twin(
+        mandate_id="MANDATE_PB_SG_READY_003",
+        portfolio_id="PB_SG_READY_003",
+    )
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    mandate_repository.save_mandate_snapshot(second_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    _save_ready_health(mandate_repository, second_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={
+                **_request(),
+                "portfolios": [
+                    {"portfolio_id": PORTFOLIO_ID},
+                    {"portfolio_id": "PB_SG_READY_003"},
+                ],
+            },
+            headers={"Idempotency-Key": "idem-wave-select-no-alts"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        items_by_portfolio = {
+            item["portfolio_id"]: item for item in checked.json()["wave"]["items"]
+        }
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": items_by_portfolio[PORTFOLIO_ID]["wave_item_id"],
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        blocked_item_id = items_by_portfolio["PB_SG_READY_003"]["wave_item_id"]
+        selected = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/{blocked_item_id}/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+
+    assert selected.status_code == 422
+    assert selected.json()["detail"]["code"] == "DPM_WAVE_ITEM_ALTERNATIVES_MISSING"
+
+
+def test_wave_selection_degrades_when_proof_pack_generation_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    def fail_proof_pack(**_: object) -> None:
+        raise RuntimeError("proof pack unavailable")
+
+    monkeypatch.setattr(
+        proof_pack_service,
+        "generate_proof_pack_from_selected_alternative",
+        fail_proof_pack,
+    )
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-proof-pack-fails"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        selected = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+
+    assert selected.status_code == 200
+    item = selected.json()["wave"]["items"][0]
+    assert item["state"] == "SELECTED"
+    assert item["proof_pack_id"] is None
+    assert item["diagnostics"]["proof_pack_state"] == "DEGRADED"
+    assert item["diagnostics"]["proof_pack_reason_code"] == "PROOF_PACK_GENERATION_FAILED"
+    assert item["diagnostics"]["proof_pack_error"] == "RuntimeError"
 
 
 def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
