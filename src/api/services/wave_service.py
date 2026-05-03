@@ -936,6 +936,8 @@ def _supportability_severity(item: DpmRebalanceWaveItem) -> str | None:
         return "CRITICAL"
     if item.state in {"SOURCE_DEGRADED", "REVIEW_REQUIRED", "SELECTED"}:
         return "WARNING"
+    if item.state == "PROOF_PACK_READY" and item.diagnostics.get("proof_pack_state") == "DEGRADED":
+        return "WARNING"
     if item.state in {"CANDIDATE", "SOURCE_READY"}:
         return "INFO"
     return None
@@ -950,6 +952,7 @@ def _supportability_reason(item: DpmRebalanceWaveItem) -> str:
         "SOURCE_BLOCKED": "SOURCE_BLOCKED",
         "SIMULATION_BLOCKED": "SIMULATION_BLOCKED",
         "SELECTED": "PROOF_PACK_PENDING_OR_DEGRADED",
+        "PROOF_PACK_READY": "PROOF_PACK_DEGRADED",
     }
     return reason_by_state.get(item.state, "WAVE_ITEM_SUPPORTABILITY_REVIEW")
 
@@ -962,7 +965,7 @@ def _supportability_source_owner(item: DpmRebalanceWaveItem) -> str:
         return "lotus-manage"
     if item.state == "SIMULATION_BLOCKED":
         return "lotus-manage-construction"
-    if item.state == "SELECTED":
+    if item.state in {"SELECTED", "PROOF_PACK_READY"}:
         return "lotus-manage-proof-pack"
     return "lotus-manage"
 
@@ -979,6 +982,7 @@ def _supportability_remediation(item: DpmRebalanceWaveItem) -> str:
         "SOURCE_BLOCKED": "REPAIR_SOURCE_DATA",
         "SIMULATION_BLOCKED": "SUPPLY_VALID_RFC0039_CONSTRUCTION_INPUT",
         "SELECTED": "GENERATE_OR_REVIEW_PROOF_PACK",
+        "PROOF_PACK_READY": "REVIEW_DEGRADED_PROOF_PACK",
     }
     return remediation_by_state.get(item.state, "REVIEW_WAVE_ITEM_SUPPORTABILITY")
 
