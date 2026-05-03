@@ -37,11 +37,5 @@ Governance boundary:
 | RFC-0024 | PostgreSQL Persistence for lotus-manage Supportability | COMPLETED, ADVISORY PORTION SUPERSEDED BY SPLIT | RFC-0017, RFC-0018, RFC-0019, RFC-0020, RFC-0023 | `docs/rfcs/RFC-0024-unified-postgresql-persistence-for-dpm-and-advisory.md` |
 | RFC-0025 | PostgreSQL-Only Production Mode Cutover | COMPLETED, ADVISORY PORTION SUPERSEDED BY SPLIT | RFC-0023, RFC-0024 | `docs/rfcs/RFC-0025-postgres-only-production-mode-cutover.md` |
 | RFC-0028 | lotus-manage Integration Capabilities Contract | IMPLEMENTED | RFC-0021, RFC-0022 | `docs/rfcs/RFC-0028-dpm-integration-capabilities-contract.md` |
-| RFC-0030 | lotus-manage Integration Pyramid Rebalance Wave 1 | IMPLEMENTED | RFC-0023, RFC-0024, RFC-0028 | `docs/rfcs/RFC-0030-dpm-integration-pyramid-rebalance-wave-1.md` |
-| RFC-0031 | lotus-manage Integration Pyramid Wave 2 (Supportability and Guardrails) | IMPLEMENTED | RFC-0030 | `docs/rfcs/RFC-0031-dpm-integration-pyramid-wave-2-supportability-and-guardrails.md` |
-| RFC-0032 | lotus-manage Pyramid Wave 3 (Integration and E2E Workflow Expansion) | IMPLEMENTED | RFC-0031 | `docs/rfcs/RFC-0032-dpm-pyramid-wave-3-integration-and-e2e-workflow-expansion.md` |
-| RFC-0033 | lotus-manage Pyramid Wave 4 (Integration and E2E Expansion) | IMPLEMENTED | RFC-0032 | `docs/rfcs/RFC-0033-dpm-pyramid-wave-4-integration-e2e-expansion.md` |
-| RFC-0034 | lotus-manage Pyramid Wave 5 (Integration Boundary Expansion) | IMPLEMENTED | RFC-0033 | `docs/rfcs/RFC-0034-dpm-pyramid-wave-5-integration-boundary-expansion.md` |
-| RFC-0035 | lotus-manage Pyramid Wave 6 (Repository Integration Depth Expansion) | PROPOSED | RFC-0034 | `docs/rfcs/RFC-0035-dpm-pyramid-wave-6-repository-integration-depth-expansion.md` |
 | RFC-0036 | lotus-manage Stateful Core Sourcing And Endpoint Consolidation | IMPLEMENTED | RFC-0013, RFC-0016, RFC-0017, RFC-0018, RFC-0021, RFC-0022, RFC-0023, RFC-0028 | `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` |
 

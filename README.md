@@ -78,11 +78,11 @@ Key code areas:
 
 - `src/api/`
   FastAPI entrypoints, routers, readiness, observability, and OpenAPI enrichment
-- `src/core/dpm/`
+- `src/core/rebalance/`
   discretionary portfolio-management simulation engine and supporting rebalance modules
 - `src/core/dpm_source_context.py`
   stateful source-context models and transformation helpers for governed core sourcing
-- `src/core/dpm_runs/`
+- `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
 - `src/infrastructure/core_sourcing/`
   bounded `lotus-core` resolver client that composes RFC-087 source products for stateful execution

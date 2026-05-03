@@ -34,10 +34,14 @@
 
 ## Active And Recently Completed RFCs
 
-- RFC-0035
-  integration pyramid wave 6 depth expansion
 - RFC-0036
   implemented target-state stateful `lotus-core` sourcing and duplicate endpoint consolidation
+
+## Removed local RFC sprawl
+
+- RFC-0030 through RFC-0035 were deleted from the active repository documentation set. They were
+  incremental test-pyramid expansion waves whose implemented test coverage is now represented by
+  the current test suite and RFC-0036 evidence rather than six separate active RFC records.
 
 ## Superseded advisory scope
 

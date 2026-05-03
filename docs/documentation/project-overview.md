@@ -120,9 +120,9 @@ Key module areas:
 
 - `src/api/`
   FastAPI contracts, readiness, observability, and endpoint orchestration
-- `src/core/dpm/`
+- `src/core/rebalance/`
   rebalance engine and management-side simulation logic
-- `src/core/dpm_runs/`
+- `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services
 - `src/infrastructure/`
   PostgreSQL migrations, repository backends, and policy-pack persistence

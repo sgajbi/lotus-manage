@@ -3,7 +3,7 @@
 ## Runtime model
 
 - FastAPI service
-- management-side domain logic in `src/core/dpm/` and `src/core/dpm_runs/`
+- management-side domain logic in `src/core/rebalance/` and `src/core/rebalance_runs/`
 - PostgreSQL-backed persistence and migrations under `src/infrastructure/`
 - consumed primarily through `lotus-gateway`
 - stateless execution is active and advertised
@@ -71,9 +71,9 @@ before broader Gateway or Workbench product-surface integration is treated as pr
 
 - `src/api/`
   routers, request handling, readiness, observability, and OpenAPI enrichment
-- `src/core/dpm/`
+- `src/core/rebalance/`
   rebalance engine, policy-pack resolution, turnover, settlement, tax, and constraint logic
-- `src/core/dpm_runs/`
+- `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
