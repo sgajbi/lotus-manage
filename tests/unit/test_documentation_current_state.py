@@ -255,7 +255,7 @@ def test_rfc0039_scaffolding_standard_preserves_trace_and_status_governance() ->
     assert "construction-alternatives-api-governance.md" in rfc
 
 
-def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> None:
+def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> None:
     rfc = (
         ROOT / "docs" / "rfcs" / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
     ).read_text(encoding="utf-8")
@@ -278,11 +278,14 @@ def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> N
     missing_evidence = [name for name in required_evidence if name not in rfc]
 
     assert missing_evidence == []
-    assert "SLICES 0-10 COMPLETE" in rfc
-    assert "SLICES 0-10 COMPLETE" in index
-    assert "SECOND-LAST HARDENING PASSED" in rfc
+    assert "MANAGE BACKEND COMPLETE" in rfc
+    assert "MANAGE BACKEND COMPLETE" in index
+    assert "PR/CI/WIKI PUBLICATION PENDING" in rfc
     assert "output/rfc0040-proof/20260503-135112" in rfc
+    assert "Full front-office proof-pack product realization remains explicitly gated" in rfc
     assert "6099ffe" in rfc
     assert "4b150d6" in rfc
-    assert "Pre-trade proof pack | RFC-0040" in supported_features
+    assert "| Pre-trade proof packs |" in supported_features
+    assert "Supported as RFC-0040 manage backend authority" in supported_features
+    assert "Gateway composition, Workbench review UX" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features

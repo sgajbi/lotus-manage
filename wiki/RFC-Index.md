@@ -71,10 +71,11 @@ evidence, and supported-feature promotion.
   construction-specific Gateway/Workbench realization requirements. Full product-surface support is
   not claimed until Gateway and Workbench implement and live-prove the downstream journey.
 - RFC-0040
-  in-progress pre-trade proof-pack and DPM evidence-fabric program with manage-owned durable JSON,
-  Markdown summary, report-input, AI-evidence input, lineage, retention posture, Gateway/Workbench
-  realization RFC alignment, canonical Postgres-backed live proof under `output/rfc0040-proof`,
-  and no full product-surface claim until downstream implementation and final closure complete
+  implemented manage-backend pre-trade proof-pack and DPM evidence-fabric authority with durable
+  JSON, Markdown summary, report-input, AI-evidence input, lineage, retention posture,
+  Gateway/Workbench realization RFC alignment, canonical Postgres-backed live proof under
+  `output/rfc0040-proof`, and no full product-surface claim until downstream implementation is
+  complete
 - RFC-0041
   proposed rebalance-wave orchestration and CIO model-change impact roadmap
 - RFC-0042

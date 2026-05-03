@@ -73,10 +73,13 @@ risk-aware, liquidity-aware, currency-overlay, and regime-stress-aware methods. 
 construction is explicitly deferred until source-backed restriction and sustainability profiles
 exist. Postgres persistence, live proof, and downstream Gateway/Workbench realization requirements
 are documented, but full product-surface support still requires Gateway and Workbench implementation
-and proof. The remaining target-state RFCs cover pre-trade
-proof packs, decision timelines, CIO/model-change rebalance waves, post-trade outcome feedback, and
-governed AI PM support. Target-state features are not support claims until the owning RFC is
-implemented, certified, live-proven, and reflected in
+and proof. RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
+JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, hashes, lineage, retention
+metadata, immutable persistence, certified APIs, and canonical Postgres-backed live proof. Gateway
+composition, Workbench review UX, report materialization, and AI memo generation remain downstream
+work in their owning apps. The remaining target-state RFCs cover decision timelines, CIO/model-change
+rebalance waves, post-trade outcome feedback, and governed AI PM support. Target-state features are
+not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-10 COMPLETE; SECOND-LAST HARDENING PASSED |
+| **Status** | IMPLEMENTED - MANAGE BACKEND COMPLETE; PR/CI/WIKI PUBLICATION PENDING |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -22,6 +22,7 @@
 | **Slice 8 Evidence** | `docs/rfcs/RFC-0040-gateway-workbench-realization-slice8.md` |
 | **Slice 9 Evidence** | `docs/rfcs/RFC-0040-implementation-proof-slice9.md` |
 | **Slice 10 Evidence** | `docs/rfcs/RFC-0040-hardening-review-slice10.md` |
+| **Slice 11 Evidence** | RFC gold-pass assessment in Section 19; README/context/wiki/supported-feature updates in this PR |
 
 ---
 
@@ -1290,19 +1291,19 @@ The final RFC closure update must include:
 
 | Assessment Area | Final Result |
 | --- | --- |
-| What was truly completed | TBD after implementation. |
-| Quality improvements made | TBD after implementation. |
-| Debt removed | TBD after implementation. |
-| Platform/scaffold improvements | TBD after implementation or explicit no-change decision. |
-| Cross-app changes and evidence | TBD after implementation. |
-| APIs certified | TBD after implementation. |
-| Proof-pack sections proven | TBD after implementation. |
-| Report/AI handoff proof | TBD after implementation. |
+| What was truly completed | `lotus-manage` now owns RFC-0040 backend proof-pack authority: generation from direct rebalance runs and selected construction alternatives, immutable persistence, section states, hashes, lineage, retention metadata, Markdown, report-input, AI-evidence input, and certified APIs. |
+| Quality improvements made | Added modular proof-pack domain, Markdown, handoff, repository, API, evidence-generator, and coverage-backed service/repository/API tests. Fixed selected-alternative run hydration after live proof exposed the gap. |
+| Debt removed | Removed stale proof-pack ownership ambiguity by aligning Gateway and Workbench RFC-0098 language; avoided local clones of report, AI, Gateway, or Workbench behavior. |
+| Platform/scaffold improvements | Added platform RFC evidence-manifest scaffold in `lotus-platform` commit `4679b07`; no further platform automation change was required for manage proof-pack closure. |
+| Cross-app changes and evidence | `lotus-gateway` commit `6099ffe` and `lotus-workbench` commit `4b150d6` align downstream realization RFCs to manage-owned proof-pack truth. |
+| APIs certified | `POST /api/v1/rebalance/proof-packs`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`, `GET /summary.md`, `GET /report-input`, and `GET /ai-evidence-input` are documented in endpoint certification and passed OpenAPI/vocabulary/no-alias gates. |
+| Proof-pack sections proven | Direct-run, selected-alternative, and missing-mandate live scenarios were captured in `output/rfc0040-proof/20260503-135112`; section states remain source-honest with `READY`, `DEGRADED`, and `BLOCKED` evidence. |
+| Report/AI handoff proof | `DpmProofPackReportInput` and `DpmProofPackAiEvidenceInput` are generated deterministically, tie back to source proof-pack hashes, and include AI forbidden-action/field guardrails. |
 | Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. |
-| Documentation/wiki result | TBD after implementation. |
+| Documentation/wiki result | README, repository context, RFC index, supported-features source, API surface, endpoint certification, roadmap, and RFC evidence docs are updated. Published-wiki sync remains a post-merge step. |
 | Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` commit `6099ffe` and `lotus-workbench` commit `4b150d6`; implementation remains downstream future work. |
-| Skills/context/guidance decision | TBD after final closure review. |
-| Gold-standard conclusion | TBD after implementation and proof. |
+| Skills/context/guidance decision | No Lotus skill or central context change is required; repo-local context was updated because repository-supported capability truth changed. |
+| Gold-standard conclusion | Manage backend RFC-0040 is implemented and live-proven. Full front-office proof-pack product realization remains explicitly gated on downstream Gateway/Workbench/report/AI work and is not claimed here. |
 
 ---
 
