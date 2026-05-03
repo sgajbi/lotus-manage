@@ -59,11 +59,12 @@ evidence, and supported-feature promotion.
   monitoring APIs, bounded command-center summary, local manage proof, local canonical manage plus
   live core proof, wiki publication, and downstream Gateway/Workbench/platform handoff issues.
 - RFC-0039
-  in progress with Slices 0-2 complete: advanced portfolio construction and rebalance alternatives
-  now have a governed source-data and method map, manage-local construction API governance, and a
-  dedicated `src/core/construction/` package for bounded method/status/source vocabulary. Gateway
-  and Workbench realization RFCs are created after manage proof/hardening before the full business
-  outcome is claimed.
+  in progress with Slices 0-3 complete: advanced portfolio construction and rebalance alternatives
+  now have a governed source-data and method map, manage-local construction API governance, a
+  dedicated `src/core/construction/` package, pure alternative models, do-nothing baseline,
+  heuristic wrapping, normalized drift/turnover metrics, and conservative alternative-set status
+  roll-up. Gateway and Workbench realization RFCs are created after manage proof/hardening before
+  the full business outcome is claimed.
 - RFC-0040
   proposed pre-trade proof-pack, decision-timeline, and DPM evidence-fabric roadmap
 - RFC-0041

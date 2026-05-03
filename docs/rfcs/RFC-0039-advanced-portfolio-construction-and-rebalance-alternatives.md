@@ -737,6 +737,12 @@ Acceptance:
 
 ### Slice 3: Domain Models and Pure Alternative Engine
 
+Slice 3 domain primitives live in `src/core/construction/`. The first implementation pass adds
+bounded construction method/status/source vocabulary, Pydantic alternative models, objective and
+constraint trace models, do-nothing baseline construction, rebalance-result wrapping for the
+explainable heuristic alternative, normalized drift/turnover comparison metrics, and conservative
+alternative-set status roll-up. API, persistence, and method registry work remain later slices.
+
 Scope:
 
 1. add alternative set models,
