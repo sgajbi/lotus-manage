@@ -826,6 +826,15 @@ Acceptance:
 
 ### Slice 7: Persistence and APIs
 
+Slice 7 implementation adds the first certified backend API surface for construction alternatives:
+`POST /api/v1/construction/alternative-sets/generate`,
+`GET /api/v1/construction/alternative-sets/{alternative_set_id}`, and
+`POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`. It also adds the
+`ConstructionRepository` contract, in-memory repository, Postgres repository foundation, migration
+`0005_construction_alternatives.sql`, idempotency replay/conflict behavior, and actor-attributed
+selection decisions. The API generates RFC-0039 first-wave alternatives: do-nothing baseline,
+explainable heuristic, minimum-turnover, and tax-aware posture.
+
 Scope:
 
 1. add migrations and repositories,
@@ -840,6 +849,18 @@ Acceptance:
 2. API tests cover ready, pending review, blocked, infeasible, source-degraded, and idempotent
    replay cases,
 3. OpenAPI certification passes.
+
+Evidence:
+
+1. `python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py -q`
+   passed with 22 tests.
+2. `python scripts/openapi_quality_gate.py` passed.
+3. `python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`
+   passed with 91 tests.
+4. `python -m ruff check src/core/construction src/infrastructure/construction src/api/routers/construction.py src/api/services/construction_service.py tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py`
+   passed.
+5. `python -m mypy src/core/construction src/api/routers/construction.py src/api/services/construction_service.py`
+   passed.
 
 ### Slice 8: Implementation Proof Slice
 

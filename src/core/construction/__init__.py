@@ -13,6 +13,7 @@ from src.core.construction.models import (
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
     ConstructionAlternative,
+    ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
     ConstructionComparisonMetrics,
     ConstructionEnrichmentSummary,
@@ -40,6 +41,7 @@ from src.core.construction.vocabulary import (
 
 __all__ = [
     "ConstructionAlternative",
+    "ConstructionAlternativeSelection",
     "ConstructionAlternativeSet",
     "AuthoritativePerformanceContext",
     "AuthoritativeRiskContext",

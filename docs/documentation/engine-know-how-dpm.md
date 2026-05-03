@@ -23,6 +23,10 @@ Implementation scope:
     selected-alternative posture
   - rebalance modules remain the execution mechanics boundary and should not become a monolithic
     construction-alternatives service
+  - API orchestration for Slice 7 lives in `src/api/routers/construction.py` and
+    `src/api/services/construction_service.py`
+  - persistence lives behind `ConstructionRepository` with in-memory and PostgreSQL implementations
+    under `src/infrastructure/construction/`
 - Shared simulation primitives: `src/core/common/simulation_shared.py`
 - Shared intent dependency linker: `src/core/common/intent_dependencies.py`
 - Shared workflow gate evaluator: `src/core/common/workflow_gates.py`

@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -93,6 +93,18 @@ class ConstructionAlternativeSet(BaseModel):
     )
     alternatives: list[ConstructionAlternative] = Field(
         description="Comparable construction alternatives."
+    )
+    request_hash: str | None = Field(
+        default=None,
+        description="Canonical request hash used for idempotent replay and audit lookup.",
+    )
+    input_mode: Literal["stateless", "stateful"] = Field(
+        default="stateless",
+        description="Input mode used to generate the alternative set.",
+    )
+    source_supportability_state: str | None = Field(
+        default=None,
+        description="Upstream source-data supportability state when generated from lotus-core.",
     )
 
 
@@ -202,4 +214,24 @@ class ConstructionMethodPlan(BaseModel):
     )
     solver_posture: ConstructionSolverPosture = Field(
         description="Solver supportability posture for the method plan."
+    )
+
+
+class ConstructionAlternativeSelection(BaseModel):
+    selection_id: str = Field(description="Stable selection decision identifier.")
+    alternative_set_id: str = Field(description="Alternative set that contains the selection.")
+    alternative_id: str = Field(description="Selected alternative identifier.")
+    selected_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when the selection was recorded.",
+    )
+    actor_id: str = Field(description="Human or service actor that made the selection.")
+    reason_code: str = Field(description="Bounded reason code explaining the selection.")
+    comment: str | None = Field(
+        default=None,
+        description="Optional business comment captured with the selection.",
+    )
+    correlation_id: str | None = Field(
+        default=None,
+        description="Optional request correlation identifier associated with the selection.",
     )

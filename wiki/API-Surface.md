@@ -33,6 +33,19 @@ storage-layer constraint.
 - `/api/v1/integration/capabilities`
   backend-owned feature and workflow discovery for gateway and platform consumers
 
+## Construction alternative surfaces
+
+- `POST /api/v1/construction/alternative-sets/generate`
+  generates and persists a comparable RFC-0039 construction alternative set with do-nothing,
+  explainable heuristic, minimum-turnover, and tax-aware alternatives.
+- `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
+  retrieves a previously generated alternative set without recomputation.
+- `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+  records the actor-attributed selected alternative for audit and later workflow handoff.
+
+These routes are manage-owned backend contracts. Gateway and Workbench are not yet integrated with
+this surface; paired realization RFCs are created after manage proof and hardening.
+
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.

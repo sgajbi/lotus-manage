@@ -270,6 +270,92 @@ python -m pytest tests/unit/dpm/api/test_mandates_api.py tests/unit/dpm/core/tes
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: construction alternatives foundation
+
+Routes:
+
+- `POST /api/v1/construction/alternative-sets/generate`
+- `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
+- `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+
+Purpose:
+
+RFC-0039 manage-side backend foundation for discretionary portfolio construction alternatives.
+These endpoints generate, persist, retrieve, and select a comparable set of construction choices
+for one mandate execution context. They support portfolio-manager decisioning before proof packs,
+workflow approval, rebalance waves, or downstream product-surface integration. They are not order
+execution endpoints and are not advisor-led proposal endpoints.
+
+Functional behavior:
+
+- Generate accepts the same explicit execution envelope posture as rebalance simulation: stateless
+  inline snapshots or stateful lotus-core source resolution when the stateful core resolver is
+  enabled.
+- Generate requires `Idempotency-Key`; a same-key same-request replay returns the original
+  alternative set, while same-key different-request usage returns `409`.
+- First-wave generation returns do-nothing baseline, explainable heuristic, minimum-turnover, and
+  tax-aware posture unless a caller explicitly narrows the method list.
+- Do-nothing baseline keeps trade count and turnover at zero so "take no action" is visible as a
+  governed comparator.
+- Minimum-turnover applies a stricter turnover posture and surfaces pending-review behavior when
+  turnover budget drops intents.
+- Tax-aware posture uses tax-aware engine behavior where tax lots are available and exposes
+  degraded supportability reason codes where authoritative transaction cost, risk, or performance
+  enrichment is absent.
+- Read returns a persisted alternative set by id without recomputation.
+- Select records an actor-attributed selection decision with reason code, optional comment, and
+  optional correlation id. It does not execute trades.
+- Unknown alternative sets and unknown alternative ids return governed `404` errors.
+
+```mermaid
+flowchart LR
+    Caller[Gateway, operator, or certification probe] --> Generate[POST generate]
+    Generate --> Envelope[Stateless bundle or gated stateful core context]
+    Envelope --> Methods[First-wave construction methods]
+    Methods --> Baseline[Do-nothing baseline]
+    Methods --> Heuristic[Explainable heuristic]
+    Methods --> Turnover[Minimum-turnover posture]
+    Methods --> Tax[Tax-aware posture]
+    Baseline --> Set[Persisted alternative set]
+    Heuristic --> Set
+    Turnover --> Set
+    Tax --> Set
+    Set --> Read[GET alternative set]
+    Set --> Select[POST selection decision]
+```
+
+Non-functional posture:
+
+- The route family is grouped under `lotus-manage Construction Alternatives`.
+- OpenAPI includes route-level request/response examples and bounded error descriptions.
+- Persistence is behind `ConstructionRepository`, with in-memory local/test support and a Postgres
+  repository plus migration for production profile wiring.
+- Selection is an audit decision, not an execution command.
+- Gateway and Workbench are not yet integrated; paired realization RFCs are written after manage
+  proof and hardening when the backend contract and evidence are stable.
+- Metrics and live proof remain later RFC-0039 slices before full support promotion.
+
+Upstream integration posture:
+
+Stateless calls rely on caller-provided source-governed snapshots. Stateful calls use the existing
+gated lotus-core source resolver from RFC-0036/RFC-0087 and preserve source supportability state on
+the alternative set. `lotus-manage` does not become authority for portfolio ledger state, risk,
+performance, tax lots, market data, eligibility, or UI composition.
+
+Downstream consumers:
+
+No current production Gateway or Workbench consumer is assumed. Gateway and Workbench must consume
+this surface only after paired realization RFCs define the composition contract and user
+experience from the implemented manage evidence.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py -q
+python scripts/openapi_quality_gate.py
+python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+```
+
 ## Certified endpoint family: policy-pack read supportability
 
 Routes:

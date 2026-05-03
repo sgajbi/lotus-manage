@@ -68,6 +68,13 @@ Current repository posture:
     promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
     platform canonical seed automation remain governed downstream follow-up in the owning
     repositories.
+13. RFC-0039 Slices 0-7 have delivered the first implementation-backed construction-alternative
+    backend foundation: bounded construction vocabulary, pure alternative models, method registry,
+    enrichment posture, risk/performance seams, repository contract, in-memory and PostgreSQL
+    persistence foundation, migration `0005_construction_alternatives.sql`, and certified APIs for
+    generating, retrieving, and selecting persisted alternative sets. Gateway and Workbench are not
+    yet integrated with this surface; paired realization RFCs are created after manage proof and
+    hardening.
 
 ## Architecture And Module Map
 
@@ -80,6 +87,10 @@ Primary areas:
    `src/core/mandate_repository.py` and `src/infrastructure/mandates/`; mandate API orchestration
    lives in `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, and
    `src/api/routers/monitoring.py`, including the bounded command-center summary endpoint.
+   RFC-0039 construction-alternative domain primitives live in `src/core/construction/`;
+   construction persistence lives in `src/core/construction/repository.py` and
+   `src/infrastructure/construction/`; construction API orchestration lives in
+   `src/api/services/construction_service.py` and `src/api/routers/construction.py`.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.
 3. `docs/`

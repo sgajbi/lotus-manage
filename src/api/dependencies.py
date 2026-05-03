@@ -1,10 +1,13 @@
 from typing import AsyncIterator
 
+from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
+from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 
 
 _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
+_CONSTRUCTION_REPOSITORY = InMemoryConstructionRepository()
 
 
 async def get_db_session() -> AsyncIterator[None]:
@@ -21,3 +24,9 @@ def get_mandate_repository() -> DpmMandateRepository:
     """
 
     return _MANDATE_REPOSITORY
+
+
+def get_construction_repository() -> ConstructionRepository:
+    """Return the RFC-0039 construction repository for local and test runtimes."""
+
+    return _CONSTRUCTION_REPOSITORY
