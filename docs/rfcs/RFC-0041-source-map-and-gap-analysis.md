@@ -257,6 +257,38 @@ Validation:
 No simulation, selection, approval, staging, handoff, Gateway, Workbench, PM-book discovery, or
 automatic CIO model-change cohort discovery claim is added in Slice 5.
 
+## Slice 6 Simulation, Selection, and Proof-Pack Linkage Result
+
+Slice 6 adds construction and proof-pack orchestration without duplicating RFC-0039 or RFC-0040
+authority:
+
+1. `POST /api/v1/rebalance/waves/{wave_id}/simulate` calls
+   `construction_service.generate_construction_alternative_set` for `SOURCE_READY` items only,
+2. callers must provide a real RFC-0039 `RebalanceRequest` per ready item; wave simulation does
+   not synthesize holdings, market data, model targets, or shelf data from mandate identifiers,
+3. ready items without construction input become `SIMULATION_BLOCKED` with
+   `CONSTRUCTION_INPUT_MISSING`, while source-blocked/degraded/review-required items preserve their
+   existing source-check reasons,
+4. wave simulation records `SIMULATING` and terminal `SIMULATED`, `PARTIALLY_SIMULATED`, or
+   `SIMULATION_FAILED` events and recomputes aggregate metrics from item evidence,
+5. `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select` delegates selection to
+   `construction_service.select_construction_alternative`,
+6. selected alternatives persist on the wave item after repository reload,
+7. when requested, item selection generates RFC-0040 proof packs through
+   `proof_pack_service.generate_proof_pack_from_selected_alternative`,
+8. proof-pack generation failures or explicitly skipped generation degrade the item as `SELECTED`
+   with proof-pack diagnostics instead of fabricating proof-pack readiness,
+9. no approval, staging, handoff, Gateway, Workbench, PM-book discovery, or automatic CIO
+   model-change cohort discovery claim is added in Slice 6.
+
+Validation:
+
+1. `python -m pytest tests\unit\dpm\api\test_waves_api.py -q`,
+2. `python -m ruff check src\api\services\wave_service.py src\api\routers\waves.py tests\unit\dpm\api\test_waves_api.py`,
+3. `python -m mypy --config-file mypy.ini src\api\services\wave_service.py src\api\routers\waves.py tests\unit\dpm\api\test_waves_api.py`,
+4. `python scripts\openapi_quality_gate.py`,
+5. `python scripts\api_vocabulary_inventory.py --output docs\standards\api-vocabulary\lotus-manage-api-vocabulary.v1.json`.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

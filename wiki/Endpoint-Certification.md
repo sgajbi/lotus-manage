@@ -1586,13 +1586,15 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint family: rebalance wave preview, creation, and source-check
+## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, and selection
 
 Routes:
 
 - `POST /api/v1/rebalance/waves/preview`
 - `POST /api/v1/rebalance/waves`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
+- `POST /api/v1/rebalance/waves/{wave_id}/simulate`
+- `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
 
 Purpose:
 
@@ -1602,7 +1604,8 @@ portfolio managers and downstream orchestration can see the candidate set, sourc
 items, aggregate counts, and event posture before persistence. The create endpoint persists the same
 governed wave contract with an idempotency key. Slice 5 adds durable source-check classification
 for persisted waves, using manage-owned mandate twins, mandate health snapshots, source-readiness
-state, and available upstream `lotus-core` lineage refs.
+state, and available upstream `lotus-core` lineage refs. Slice 6 adds ready-item construction
+simulation through RFC-0039 and item-level alternative selection with RFC-0040 proof-pack linkage.
 
 Functional coverage:
 
@@ -1618,8 +1621,14 @@ Functional coverage:
 - mandate digital-twin, mandate-health, source-readiness, and available `lotus-core` lineage refs
   attached to each item where present,
 - source-check idempotent replay for already source-checked waves without duplicate events,
-- no PM-book discovery, CIO model-change cohort discovery, simulation, approval, staging, handoff,
-  Gateway composition, or Workbench product claim in these slices.
+- simulation calls RFC-0039 construction alternatives only for `SOURCE_READY` items,
+- ready items without real RFC-0039 construction input become `SIMULATION_BLOCKED`,
+- source-blocked, degraded, and review-required item reasons are preserved through simulation,
+- item selection delegates to RFC-0039 selection and persists selected alternative ids,
+- proof-pack linkage delegates to RFC-0040 and degrades source-honestly when generation is not
+  requested or fails,
+- no PM-book discovery, CIO model-change cohort discovery, approval, staging, handoff, Gateway
+  composition, or Workbench product claim in these slices.
 
 Non-functional posture:
 
@@ -1631,15 +1640,20 @@ Non-functional posture:
 - Source-check does not promote any item to ready from a caller-supplied portfolio id or caller
   source ref alone; ready requires authoritative mandate twin and ready health/source-readiness
   evidence.
+- Simulation does not synthesize holdings, market data, model targets, or shelf entries from
+  mandate identifiers. It requires caller-supplied RFC-0039 construction input for each ready item.
+- Selection appends a durable item-selection event without advancing approval or handoff state.
 - The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
-  `lotus-ai`, Gateway, or Workbench directly in Slices 4 and 5.
+  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 6.
 
 Upstream integration posture:
 
-The supported Slice 4/5 source inputs are existing manage-owned mandate digital twins, mandate
-health snapshots, their source-readiness state, their persisted source lineage, and explicit
-caller-supplied affected-portfolio source refs. Automatic PM-book or CIO model-change cohort
-discovery remains deferred until the owning app exposes a certified source product.
+The supported Slice 4-6 source inputs are existing manage-owned mandate digital twins, mandate
+health snapshots, their source-readiness state, their persisted source lineage, explicit
+caller-supplied affected-portfolio source refs, caller-supplied RFC-0039 construction inputs for
+ready items, and RFC-0040 proof-pack outputs generated from selected alternatives. Automatic
+PM-book or CIO model-change cohort discovery remains deferred until the owning app exposes a
+certified source product.
 
 Downstream consumers:
 

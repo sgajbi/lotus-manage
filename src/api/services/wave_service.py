@@ -6,8 +6,14 @@ import uuid
 from collections import Counter
 from datetime import datetime, timezone
 
+from src.api.request_models import RebalanceRequest
+from src.api.services import construction_service, proof_pack_service
+from src.core.construction.repository import ConstructionRepository
+from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandates import DpmMandateDigitalTwin
 from src.core.mandate_repository import DpmMandateRepository
+from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveEvent,
@@ -173,9 +179,7 @@ def source_check_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = wave_repository.get_wave(wave_id=wave_id)
-    if wave is None:
-        raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
     if wave.state == "SOURCE_CHECKED":
         return wave, True
     if wave.state != "CREATED":
@@ -227,6 +231,351 @@ def source_check_wave(
     except DpmWaveVersionConflictError as exc:
         raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
     return checked, False
+
+
+def simulate_wave(
+    *,
+    wave_id: str,
+    actor_id: str,
+    correlation_id: str,
+    item_inputs: dict[str, RebalanceRequest],
+    methods: list[ConstructionMethod] | None,
+    construction_repository: ConstructionRepository,
+    run_service: DpmRunSupportService,
+    wave_repository: DpmWaveRepository,
+) -> tuple[DpmRebalanceWave, bool]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    if wave.state in {"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"}:
+        return wave, True
+    if wave.state != "SOURCE_CHECKED":
+        raise DpmWaveValidationError(
+            "DPM_WAVE_SIMULATION_INVALID_STATE",
+            f"Wave {wave_id} cannot be simulated from state {wave.state}.",
+        )
+
+    simulating = apply_wave_transition(
+        wave=wave,
+        to_state="SIMULATING",
+        event=_event(
+            wave_id=wave.wave_id,
+            from_state="SOURCE_CHECKED",
+            to_state="SIMULATING",
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            reason_code="WAVE_SIMULATION_STARTED",
+            metadata={"ready_item_count": wave.aggregate_metrics.ready_item_count},
+        ),
+    )
+    simulated_items = [
+        _simulate_item(
+            item=item,
+            correlation_id=correlation_id,
+            item_inputs=item_inputs,
+            methods=methods,
+            construction_repository=construction_repository,
+            run_service=run_service,
+        )
+        for item in simulating.items
+    ]
+    candidate = simulating.model_copy(
+        update={
+            "items": simulated_items,
+            "aggregate_metrics": _aggregate(simulated_items),
+        },
+        deep=True,
+    )
+    to_state = _simulation_result_state(simulated_items)
+    completed = apply_wave_transition(
+        wave=candidate,
+        to_state=to_state,
+        event=_event(
+            wave_id=wave.wave_id,
+            from_state="SIMULATING",
+            to_state=to_state,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            reason_code="WAVE_SIMULATION_COMPLETED",
+            metadata={
+                "state_counts": candidate.aggregate_metrics.state_counts,
+                "ready_item_count": candidate.aggregate_metrics.ready_item_count,
+                "blocked_item_count": candidate.aggregate_metrics.blocked_item_count,
+            },
+        ),
+    )
+    try:
+        wave_repository.update_wave(wave=completed, expected_version=wave.version)
+    except DpmWaveVersionConflictError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    return completed, False
+
+
+def select_wave_item_alternative(
+    *,
+    wave_id: str,
+    wave_item_id: str,
+    alternative_id: str,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+    correlation_id: str,
+    generate_proof_pack: bool,
+    construction_repository: ConstructionRepository,
+    proof_pack_repository: DpmProofPackRepository,
+    mandate_repository: DpmMandateRepository,
+    run_service: DpmRunSupportService,
+    wave_repository: DpmWaveRepository,
+) -> DpmRebalanceWave:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    if wave.state not in {"SIMULATED", "PARTIALLY_SIMULATED"}:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_SELECTION_INVALID_STATE",
+            f"Wave {wave_id} cannot record alternative selection from state {wave.state}.",
+        )
+    selected_item = next((item for item in wave.items if item.wave_item_id == wave_item_id), None)
+    if selected_item is None:
+        raise DpmWaveLookupError("DPM_WAVE_ITEM_NOT_FOUND", f"Wave item {wave_item_id} not found.")
+    if selected_item.alternative_set_id is None:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_ITEM_ALTERNATIVES_MISSING",
+            f"Wave item {wave_item_id} has no generated alternatives.",
+        )
+    try:
+        construction_service.select_construction_alternative(
+            repository=construction_repository,
+            alternative_set_id=selected_item.alternative_set_id,
+            alternative_id=alternative_id,
+            actor_id=actor_id,
+            reason_code=reason_code,
+            comment=comment,
+            correlation_id=correlation_id,
+        )
+    except Exception as exc:
+        raise DpmWaveLookupError("DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND", str(exc)) from exc
+
+    updated_item = _with_selection_and_proof_pack(
+        item=selected_item,
+        alternative_id=alternative_id,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
+        generate_proof_pack=generate_proof_pack,
+        construction_repository=construction_repository,
+        proof_pack_repository=proof_pack_repository,
+        mandate_repository=mandate_repository,
+        run_service=run_service,
+    )
+    updated_items = [
+        updated_item if item.wave_item_id == wave_item_id else item for item in wave.items
+    ]
+    updated = _append_event(
+        wave=wave.model_copy(
+            update={
+                "items": updated_items,
+                "aggregate_metrics": _aggregate(updated_items),
+            },
+            deep=True,
+        ),
+        event=_event(
+            wave_id=wave.wave_id,
+            from_state=wave.state,
+            to_state=wave.state,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            reason_code="WAVE_ITEM_ALTERNATIVE_SELECTED",
+            event_type="ITEM_SELECTION",
+            metadata={
+                "wave_item_id": wave_item_id,
+                "alternative_set_id": selected_item.alternative_set_id,
+                "selected_alternative_id": alternative_id,
+                "proof_pack_id": updated_item.proof_pack_id,
+                "proof_pack_state": updated_item.diagnostics.get("proof_pack_state"),
+            },
+        ),
+    )
+    try:
+        wave_repository.update_wave(wave=updated, expected_version=wave.version)
+    except DpmWaveVersionConflictError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    return updated
+
+
+def _get_wave_or_raise(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> DpmRebalanceWave:
+    wave = wave_repository.get_wave(wave_id=wave_id)
+    if wave is None:
+        raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
+    return wave
+
+
+def _simulate_item(
+    *,
+    item: DpmRebalanceWaveItem,
+    correlation_id: str,
+    item_inputs: dict[str, RebalanceRequest],
+    methods: list[ConstructionMethod] | None,
+    construction_repository: ConstructionRepository,
+    run_service: DpmRunSupportService,
+) -> DpmRebalanceWaveItem:
+    if item.state != "SOURCE_READY":
+        return item
+    rebalance_request = item_inputs.get(item.wave_item_id) or item_inputs.get(item.portfolio_id)
+    if rebalance_request is None:
+        return item.model_copy(
+            update={
+                "state": "SIMULATION_BLOCKED",
+                "reason_codes": ["CONSTRUCTION_INPUT_MISSING"],
+                "diagnostics": {
+                    **item.diagnostics,
+                    "source_owner": "wave-simulation-request",
+                    "required_action": "SUPPLY_RFC0039_REBALANCE_REQUEST",
+                },
+            },
+            deep=True,
+        )
+    try:
+        alternative_set = construction_service.generate_construction_alternative_set(
+            request=rebalance_request,
+            idempotency_key=f"wave:{item.wave_item_id}:simulate",
+            correlation_id=correlation_id,
+            repository=construction_repository,
+            methods=methods,
+            run_service=run_service,
+        )
+    except Exception as exc:
+        return item.model_copy(
+            update={
+                "state": "SIMULATION_BLOCKED",
+                "reason_codes": ["CONSTRUCTION_ALTERNATIVE_GENERATION_FAILED"],
+                "diagnostics": {
+                    **item.diagnostics,
+                    "source_owner": "lotus-manage-construction",
+                    "required_action": "REVIEW_CONSTRUCTION_INPUTS",
+                    "construction_error": type(exc).__name__,
+                },
+            },
+            deep=True,
+        )
+    return item.model_copy(
+        update={
+            "state": "SIMULATED",
+            "alternative_set_id": alternative_set.alternative_set_id,
+            "reason_codes": ["CONSTRUCTION_ALTERNATIVES_GENERATED"],
+            "diagnostics": {
+                **item.diagnostics,
+                "construction_state": alternative_set.status.value,
+                "alternative_count": len(alternative_set.alternatives),
+            },
+        },
+        deep=True,
+    )
+
+
+def _with_selection_and_proof_pack(
+    *,
+    item: DpmRebalanceWaveItem,
+    alternative_id: str,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+    correlation_id: str,
+    generate_proof_pack: bool,
+    construction_repository: ConstructionRepository,
+    proof_pack_repository: DpmProofPackRepository,
+    mandate_repository: DpmMandateRepository,
+    run_service: DpmRunSupportService,
+) -> DpmRebalanceWaveItem:
+    diagnostics = {
+        **item.diagnostics,
+        "selection_actor_id": actor_id,
+        "selection_reason_code": reason_code,
+    }
+    if comment:
+        diagnostics["selection_comment"] = comment
+    if not generate_proof_pack:
+        return item.model_copy(
+            update={
+                "state": "SELECTED",
+                "selected_alternative_id": alternative_id,
+                "reason_codes": ["CONSTRUCTION_ALTERNATIVE_SELECTED"],
+                "diagnostics": {
+                    **diagnostics,
+                    "proof_pack_state": "DEGRADED",
+                    "proof_pack_reason_code": "PROOF_PACK_GENERATION_NOT_REQUESTED",
+                },
+            },
+            deep=True,
+        )
+    try:
+        proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
+            alternative_set_id=str(item.alternative_set_id),
+            selected_alternative_id=alternative_id,
+            actor_id=actor_id,
+            reason=reason_code,
+            correlation_id=correlation_id,
+            mandate_id=item.mandate_id,
+            idempotency_key=f"wave:{item.wave_item_id}:proof-pack:{alternative_id}",
+            construction_repository=construction_repository,
+            run_service=run_service,
+            mandate_repository=mandate_repository,
+            proof_pack_repository=proof_pack_repository,
+        )
+    except Exception as exc:
+        return item.model_copy(
+            update={
+                "state": "SELECTED",
+                "selected_alternative_id": alternative_id,
+                "reason_codes": ["CONSTRUCTION_ALTERNATIVE_SELECTED"],
+                "diagnostics": {
+                    **diagnostics,
+                    "proof_pack_state": "DEGRADED",
+                    "proof_pack_reason_code": "PROOF_PACK_GENERATION_FAILED",
+                    "proof_pack_error": type(exc).__name__,
+                },
+            },
+            deep=True,
+        )
+    return item.model_copy(
+        update={
+            "state": "PROOF_PACK_READY",
+            "selected_alternative_id": alternative_id,
+            "proof_pack_id": proof_pack.proof_pack_id,
+            "reason_codes": ["CONSTRUCTION_ALTERNATIVE_SELECTED", "PROOF_PACK_READY"],
+            "diagnostics": {
+                **diagnostics,
+                "proof_pack_state": proof_pack.status,
+            },
+        },
+        deep=True,
+    )
+
+
+def _simulation_result_state(items: list[DpmRebalanceWaveItem]) -> WaveState:
+    simulated = sum(1 for item in items if item.state == "SIMULATED")
+    blocked = sum(1 for item in items if item.state == "SIMULATION_BLOCKED")
+    if simulated and blocked:
+        return "PARTIALLY_SIMULATED"
+    if simulated:
+        return "SIMULATED"
+    return "SIMULATION_FAILED"
+
+
+def _append_event(
+    *,
+    wave: DpmRebalanceWave,
+    event: DpmRebalanceWaveEvent,
+) -> DpmRebalanceWave:
+    if event.wave_id != wave.wave_id:
+        raise DpmWaveValidationError("DPM_WAVE_EVENT_WAVE_MISMATCH", "Wave event mismatch.")
+    if event.from_state != wave.state or event.to_state != wave.state:
+        raise DpmWaveValidationError("DPM_WAVE_EVENT_STATE_MISMATCH", "Wave event state mismatch.")
+    return wave.model_copy(
+        update={"version": wave.version + 1, "events": [*wave.events, event]},
+        deep=True,
+    )
 
 
 def _build_item(
@@ -353,13 +702,14 @@ def _event(
     correlation_id: str,
     reason_code: str,
     metadata: dict[str, object],
+    event_type: str = "STATE_TRANSITION",
 ) -> DpmRebalanceWaveEvent:
     return DpmRebalanceWaveEvent(
         event_id=f"dwe_{uuid.uuid4().hex[:12]}",
         wave_id=wave_id,
         from_state=from_state,
         to_state=to_state,
-        event_type="STATE_TRANSITION",
+        event_type=event_type,
         actor_id=actor_id,
         reason_code=reason_code,
         correlation_id=correlation_id,
