@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-8 COMPLETE; GATEWAY AND WORKBENCH REALIZATION RFCs ALIGNED |
+| **Status** | IN PROGRESS - SLICES 0-9 COMPLETE; CANONICAL LIVE PROOF CAPTURED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -20,6 +20,7 @@
 | **Slice 6 Evidence** | `docs/rfcs/RFC-0040-api-slice6.md` |
 | **Slice 7 Evidence** | `docs/rfcs/RFC-0040-handoffs-slice7.md` |
 | **Slice 8 Evidence** | `docs/rfcs/RFC-0040-gateway-workbench-realization-slice8.md` |
+| **Slice 9 Evidence** | `docs/rfcs/RFC-0040-implementation-proof-slice9.md` |
 
 ---
 
@@ -1030,6 +1031,19 @@ Evidence:
 8. critical review notes and fixes,
 9. cross-app evidence refs for every non-manage change required by RFC-0040.
 
+Slice 9 result:
+
+1. completed in `docs/rfcs/RFC-0040-implementation-proof-slice9.md`,
+2. added `scripts/generate_rfc0040_proof_pack_evidence.py` as a repeatable live HTTP evidence
+   generator,
+3. captured canonical Postgres-backed live evidence under `output/rfc0040-proof/20260503-135112`,
+4. proved direct-run JSON/detail/Markdown/report-input/AI-evidence flows, selected-alternative
+   proof-pack generation, and missing-mandate blocked-state behavior,
+5. found and fixed a selected-alternative proof gap where construction-generated rebalance runs
+   were not recorded for later proof-pack hydration,
+6. made no Gateway API implementation, Workbench UI implementation, report materialization,
+   AI memo, or full front-office product-realization supported-feature claim.
+
 ### Slice 10 - Second-Last Hardening and Review
 
 Scope:
@@ -1268,7 +1282,7 @@ The final RFC closure update must include:
 | APIs certified | TBD after implementation. |
 | Proof-pack sections proven | TBD after implementation. |
 | Report/AI handoff proof | TBD after implementation. |
-| Live evidence reviewed | TBD after implementation. |
+| Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. |
 | Documentation/wiki result | TBD after implementation. |
 | Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` commit `6099ffe` and `lotus-workbench` commit `4b150d6`; implementation remains downstream future work. |
 | Skills/context/guidance decision | TBD after final closure review. |

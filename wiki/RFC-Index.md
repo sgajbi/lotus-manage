@@ -73,8 +73,8 @@ evidence, and supported-feature promotion.
 - RFC-0040
   in-progress pre-trade proof-pack and DPM evidence-fabric program with manage-owned durable JSON,
   Markdown summary, report-input, AI-evidence input, lineage, retention posture, Gateway/Workbench
-  realization RFC alignment, and no full product-surface claim until downstream implementation and
-  live proof complete
+  realization RFC alignment, canonical Postgres-backed live proof under `output/rfc0040-proof`,
+  and no full product-surface claim until downstream implementation and final closure complete
 - RFC-0041
   proposed rebalance-wave orchestration and CIO model-change impact roadmap
 - RFC-0042

@@ -41,6 +41,7 @@ from src.core.construction.vocabulary import (
 from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
 from src.core.rebalance.engine import run_simulation
+from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
@@ -60,6 +61,7 @@ def generate_construction_alternative_set(
     source_context: Optional[DpmResolvedSourceContext] = None,
     authority_context: ConstructionAuthorityContext | None = None,
     risk_authority_client: LotusRiskAuthorityClient | None = None,
+    run_service: DpmRunSupportService | None = None,
 ) -> ConstructionAlternativeSet:
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
     request_payload = {
@@ -80,14 +82,18 @@ def generate_construction_alternative_set(
         request=request,
         method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
         correlation_id=correlation_id,
+        request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
+        run_service=run_service,
     )
     alternatives = _build_alternatives(
         request=request,
         method_set=method_set,
         base_result=base_result,
         correlation_id=correlation_id,
+        request_hash=request_hash,
         authority_context=authority_context or ConstructionAuthorityContext(),
         risk_authority_client=risk_authority_client,
+        run_service=run_service,
     )
     alternative_set = build_alternative_set(
         alternative_set_id=f"cas_{uuid.uuid4().hex[:12]}",
@@ -170,8 +176,10 @@ def _build_alternatives(
     method_set: list[ConstructionMethod],
     base_result: RebalanceResult,
     correlation_id: Optional[str],
+    request_hash: str,
     authority_context: ConstructionAuthorityContext,
     risk_authority_client: LotusRiskAuthorityClient | None,
+    run_service: DpmRunSupportService | None,
 ) -> list[ConstructionAlternative]:
     alternatives: list[ConstructionAlternative] = []
     solver_available = has_solver_dependencies()
@@ -186,6 +194,8 @@ def _build_alternatives(
                 request=request,
                 method=plan.effective_method,
                 correlation_id=correlation_id,
+                request_hash=f"{request_hash}:{plan.effective_method.value}",
+                run_service=run_service,
             )
         alternative = build_rebalance_result_alternative(
             result=result,
@@ -216,17 +226,27 @@ def _run_method(
     request: RebalanceRequest,
     method: ConstructionMethod,
     correlation_id: Optional[str],
+    request_hash: str,
+    run_service: DpmRunSupportService | None,
 ) -> RebalanceResult:
     options = _options_for_method(options=request.options, method=method)
-    return run_simulation(
+    result = run_simulation(
         portfolio=request.portfolio_snapshot,
         market_data=request.market_data_snapshot,
         model=request.model_portfolio,
         shelf=request.shelf_entries,
         options=options,
-        request_hash=f"construction:{method.value}:{uuid.uuid4().hex[:8]}",
+        request_hash=request_hash,
         correlation_id=correlation_id or f"corr_construction_{uuid.uuid4().hex[:10]}",
     )
+    if run_service is not None:
+        run_service.record_run(
+            result=result,
+            request_hash=request_hash,
+            portfolio_id=request.portfolio_snapshot.portfolio_id,
+            idempotency_key=None,
+        )
+    return result
 
 
 def _options_for_method(

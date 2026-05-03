@@ -183,9 +183,15 @@ def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
     assert proof_pack["source_type"] == "SELECTED_ALTERNATIVE"
     assert proof_pack["alternative_set_id"] == alternative_set_id
     assert proof_pack["selected_alternative_id"] == selected_alternative_id
+    assert proof_pack["rebalance_run_id"].startswith("rr_")
+    assert proof_pack["source_hashes"]["rebalance_run"].startswith("sha256:")
     assert proof_pack["content_hash"].startswith("sha256:")
     assert any(
         section["section_type"] == "selected_alternative" and section["state"] == "READY"
+        for section in proof_pack["sections"]
+    )
+    assert any(
+        section["section_type"] == "before_state" and section["state"] == "READY"
         for section in proof_pack["sections"]
     )
 
