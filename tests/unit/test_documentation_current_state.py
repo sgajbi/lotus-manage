@@ -282,10 +282,14 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     missing_evidence = [name for name in required_evidence if name not in rfc]
 
     assert missing_evidence == []
+    assert "DONE - MANAGE BACKEND COMPLETE" in rfc
+    assert "DONE (MANAGE BACKEND COMPLETE" in index
     assert "MANAGE BACKEND COMPLETE" in rfc
     assert "MANAGE BACKEND COMPLETE" in index
-    assert "POST-MERGE GOLD-PASS AUDIT COMPLETE" in rfc
+    assert "POST-MERGE GOLD-PASS AUDIT AND SLICE 12 MANDATE-CONTEXT HARDENING COMPLETE" in rfc
+    assert "POST-MERGE GOLD-PASS AUDIT AND MANDATE-CONTEXT HARDENING COMPLETE" in index
     assert "PR/CI/WIKI PUBLICATION PENDING" not in rfc
+    assert "requires normal wiki publication after this audit PR merges" not in rfc
     assert "output/rfc0040-proof/20260503-135112" in rfc
     assert "output/rfc0040-proof/20260503-142438" in rfc
     assert "output/rfc0040-proof/20260503-145818" in rfc

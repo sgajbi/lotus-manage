@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IMPLEMENTED - MANAGE BACKEND COMPLETE; POST-MERGE GOLD-PASS AUDIT COMPLETE |
+| **Status** | DONE - MANAGE BACKEND COMPLETE; POST-MERGE GOLD-PASS AUDIT AND SLICE 12 MANDATE-CONTEXT HARDENING COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -1341,7 +1341,7 @@ Final post-merge audit result:
 | Report/AI handoff proof | `DpmProofPackReportInput` and `DpmProofPackAiEvidenceInput` are generated deterministically, tie back to source proof-pack hashes, and include AI forbidden-action/field guardrails. |
 | Live evidence reviewed | Slice 9 captured canonical Postgres-backed live evidence in `output/rfc0040-proof/20260503-135112`; critical review found and fixed selected-alternative run hydration before rerun. Post-merge audit reran proof under `output/rfc0040-proof/20260503-142438`. Slice 12 reran proof under `output/rfc0040-proof/20260503-145818` and wrote `critical-review.json` with result `passed_with_controlled_downstream_boundaries` plus `mandate_context_source_honest: true`. |
 | Canonical front-office live evidence | Governed canonical front-office QA with `PB_SG_GLOBAL_BAL_001` was run through `lotus-platform/automation/Invoke-Canonical-FrontOffice-QA.ps1 -BringUp`; report `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260503-222559.json` failed at Workbench browser validation because Gateway risk drawdown returned `partial`. This is recorded as a live ecosystem readiness boundary in `sgajbi/lotus-gateway#182`, not a manage proof-pack backend failure, and no full front-office proof-pack UX support claim is made. |
-| Documentation/wiki result | README, repository context, RFC index, supported-features source, API surface, endpoint certification, roadmap, and RFC evidence docs are updated. Wiki source was published after the original merge; this post-merge audit updates repo-local wiki source again and requires normal wiki publication after this audit PR merges. |
+| Documentation/wiki result | README, repository context, RFC index, supported-features source, API surface, endpoint certification, roadmap, and RFC evidence docs are updated. Wiki source was published after the original merge and again after Slice 12; `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` reports zero drift. |
 | Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs and wiki source in `lotus-gateway` PR #181 and `lotus-workbench` PR #142; implementation remains downstream future work. |
 | Skills/context/guidance decision | No Lotus skill or central context change is required; repo-local context was updated because repository-supported capability truth changed. |
 | Tests and evidence | Focused audit tests passed for the evidence generator, proof-pack service, proof-pack API, mandate-context hardening, and documentation current-state guardrails. The live manage evidence generator passed against canonical Postgres-backed manage runtime. |
