@@ -695,6 +695,11 @@ Acceptance:
 
 ### Slice 1: Platform Automation and Scaffolding Improvement Slice
 
+Slice 1 scaffolding governance is recorded in
+`docs/standards/construction-alternatives-api-governance.md`. That document records the
+platform no-change decision, manage-local optimization-style API rules, bounded trace policy,
+method-status semantics, OpenAPI/test scaffolding, and observability scaffold.
+
 Scope:
 
 1. identify platform scaffolding gaps for optimization-style APIs,
