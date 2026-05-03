@@ -1586,12 +1586,13 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint family: rebalance wave preview and creation
+## Certified endpoint family: rebalance wave preview, creation, and source-check
 
 Routes:
 
 - `POST /api/v1/rebalance/waves/preview`
 - `POST /api/v1/rebalance/waves`
+- `POST /api/v1/rebalance/waves/{wave_id}/source-check`
 
 Purpose:
 
@@ -1599,7 +1600,9 @@ RFC-0041 Slice 4 manage-owned wave entrypoint for the first supported trigger:
 `EXPLICIT_PORTFOLIO_LIST`. The preview endpoint builds a non-durable affected-portfolio wave so
 portfolio managers and downstream orchestration can see the candidate set, source refs, blocked
 items, aggregate counts, and event posture before persistence. The create endpoint persists the same
-governed wave contract with an idempotency key.
+governed wave contract with an idempotency key. Slice 5 adds durable source-check classification
+for persisted waves, using manage-owned mandate twins, mandate health snapshots, source-readiness
+state, and available upstream `lotus-core` lineage refs.
 
 Functional coverage:
 
@@ -1609,8 +1612,14 @@ Functional coverage:
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - unsupported trigger rejection with `NOT_SUPPORTED_TRIGGER`,
 - durable create with idempotent replay,
+- durable source-check from `CREATED` to `SOURCE_CHECKED`,
+- item classification as `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, or
+  `SOURCE_BLOCKED`,
+- mandate digital-twin, mandate-health, source-readiness, and available `lotus-core` lineage refs
+  attached to each item where present,
+- source-check idempotent replay for already source-checked waves without duplicate events,
 - no PM-book discovery, CIO model-change cohort discovery, simulation, approval, staging, handoff,
-  Gateway composition, or Workbench product claim in this slice.
+  Gateway composition, or Workbench product claim in these slices.
 
 Non-functional posture:
 
@@ -1619,12 +1628,16 @@ Non-functional posture:
   repository contracts introduced in Slice 3.
 - Aggregate metrics are reconciled from item state, not caller-provided totals.
 - Missing source authority is exposed as blocked evidence instead of defaulting to readiness.
+- Source-check does not promote any item to ready from a caller-supplied portfolio id or caller
+  source ref alone; ready requires authoritative mandate twin and ready health/source-readiness
+  evidence.
 - The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
-  `lotus-ai`, Gateway, or Workbench directly in Slice 4.
+  `lotus-ai`, Gateway, or Workbench directly in Slices 4 and 5.
 
 Upstream integration posture:
 
-The supported Slice 4 source inputs are existing manage-owned mandate digital twins and explicit
+The supported Slice 4/5 source inputs are existing manage-owned mandate digital twins, mandate
+health snapshots, their source-readiness state, their persisted source lineage, and explicit
 caller-supplied affected-portfolio source refs. Automatic PM-book or CIO model-change cohort
 discovery remains deferred until the owning app exposes a certified source product.
 
@@ -1638,7 +1651,10 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_wave_domain.py -q
+python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py tests/unit/dpm/api/test_waves_api.py
+python -m mypy --config-file mypy.ini src/api/services/wave_service.py src/api/routers/waves.py tests/unit/dpm/api/test_waves_api.py
 python scripts/openapi_quality_gate.py
+python scripts/api_vocabulary_inventory.py --validate-only
 ```
 
 ## Certified endpoint: proof-pack detail

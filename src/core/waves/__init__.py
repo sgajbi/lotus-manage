@@ -23,6 +23,7 @@ from src.core.waves.state_machine import (
     apply_wave_transition,
     validate_wave_transition,
 )
+from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
 __all__ = [
     "DpmRebalanceWave",
@@ -41,5 +42,6 @@ __all__ = [
     "WaveState",
     "WaveTriggerType",
     "apply_wave_transition",
+    "classify_wave_item_source_readiness",
     "validate_wave_transition",
 ]
