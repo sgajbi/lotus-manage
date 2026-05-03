@@ -1,6 +1,10 @@
 from fastapi.testclient import TestClient
 
-from src.api.dependencies import get_construction_repository, get_db_session
+from src.api.dependencies import (
+    get_construction_repository,
+    get_db_session,
+    get_risk_authority_client,
+)
 from src.api.main import app
 import src.api.services.construction_service as construction_service
 import src.api.services.rebalance_simulation_service as rebalance_service
@@ -25,6 +29,52 @@ def _payload() -> dict:
     payload["portfolio_snapshot"]["cash_balances"] = [{"currency": "SGD", "amount": "5000.00"}]
     payload["model_portfolio"]["targets"] = [{"instrument_id": "EQ_1", "weight": "0.50"}]
     return {"input_mode": "stateless", "stateless_input": payload}
+
+
+class _ReadyRiskAuthorityClient:
+    def concentration_context(self, *, result, correlation_id):
+        from src.core.construction.models import AuthoritativeRiskContext
+        from src.core.construction.vocabulary import ConstructionMethodStatus
+
+        return AuthoritativeRiskContext(
+            supportability_status=ConstructionMethodStatus.READY,
+            source_system="lotus-risk",
+            concentration_breaches=0,
+            concentration_hhi_delta="125.50",
+            top_position_weight_proposed="0.2450",
+            issuer_coverage_status="complete",
+            reason_codes=["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"],
+        )
+
+
+def _authority_context_payload() -> dict:
+    return {
+        "liquidity_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-manage-settlement-engine",
+            "policy_id": "liquidity-policy.v1",
+            "minimum_cash_weight": "0.03",
+            "allowed_liquidity_tiers": ["L1", "L2", "L3"],
+            "reason_codes": ["LIQUIDITY_POLICY_READY"],
+        },
+        "currency_overlay_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-manage-fx-policy",
+            "policy_id": "currency-overlay-policy.v1",
+            "hedge_ratio_min": "0.00",
+            "hedge_ratio_max": "1.00",
+            "eligible_currencies": ["USD"],
+            "reason_codes": ["CURRENCY_OVERLAY_POLICY_READY"],
+        },
+        "regime_stress_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-risk-scenario-pack",
+            "scenario_pack_id": "CIO_REGIME_2026_Q2",
+            "worst_case_loss_pct": "0.08",
+            "maximum_allowed_loss_pct": "0.12",
+            "reason_codes": ["REGIME_SCENARIO_PACK_READY"],
+        },
+    }
 
 
 def _stateful_input_payload() -> dict[str, object]:
@@ -178,7 +228,7 @@ def test_generate_construction_alternative_set_surfaces_blocked_method_status() 
     assert body["alternatives"][0]["diagnostics"]["data_quality"]["price_missing"] == ["EQ_1"]
 
 
-def test_generate_construction_alternative_set_supports_second_wave_methods() -> None:
+def test_advanced_methods_degrade_truthfully_when_authority_is_absent() -> None:
     repository = InMemoryConstructionRepository()
     payload = _payload()
     payload["stateless_input"]["shelf_entries"][0]["attributes"] = {
@@ -198,7 +248,7 @@ def test_generate_construction_alternative_set_supports_second_wave_methods() ->
         response = client.post(
             "/api/v1/construction/alternative-sets/generate",
             json=payload,
-            headers={"Idempotency-Key": "idem-construction-second-wave"},
+            headers={"Idempotency-Key": "idem-construction-authority-absent"},
         )
 
     app.dependency_overrides = {}
@@ -220,7 +270,7 @@ def test_generate_construction_alternative_set_supports_second_wave_methods() ->
         in (alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
     assert (
-        "ESG_PROFILE_SOURCE_PRESENT"
+        "ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED"
         in (alternatives["ESG_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
     assert (
@@ -229,6 +279,101 @@ def test_generate_construction_alternative_set_supports_second_wave_methods() ->
             alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
         )
     )
+
+
+def test_authority_backed_methods_are_ready_with_required_evidence(monkeypatch) -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["stateless_input"]["portfolio_snapshot"]["base_currency"] = "SGD"
+    payload["stateless_input"]["portfolio_snapshot"]["positions"] = [
+        {"instrument_id": "EQ_1", "quantity": "100"},
+        {"instrument_id": "EQ_US", "quantity": "100"},
+    ]
+    payload["stateless_input"]["portfolio_snapshot"]["cash_balances"] = [
+        {"currency": "SGD", "amount": "20000"},
+        {"currency": "USD", "amount": "10000"},
+    ]
+    payload["stateless_input"]["market_data_snapshot"]["prices"] = [
+        {"instrument_id": "EQ_1", "price": "100", "currency": "SGD"},
+        {"instrument_id": "EQ_US", "price": "50", "currency": "USD"},
+    ]
+    payload["stateless_input"]["market_data_snapshot"]["fx_rates"] = [
+        {"pair": "USD/SGD", "rate": "1.35"},
+        {"pair": "SGD/USD", "rate": "0.7407407407"},
+    ]
+    payload["stateless_input"]["model_portfolio"]["targets"] = [
+        {"instrument_id": "EQ_1", "weight": "0.25"},
+        {"instrument_id": "EQ_US", "weight": "0.25"},
+    ]
+    payload["stateless_input"]["shelf_entries"] = [
+        {"instrument_id": "EQ_1", "status": "APPROVED", "liquidity_tier": "L1"},
+        {"instrument_id": "EQ_US", "status": "APPROVED", "liquidity_tier": "L1"},
+    ]
+    payload["methods"] = [
+        "SOLVER_CONSTRAINED",
+        "RISK_AWARE",
+        "LIQUIDITY_AWARE",
+        "CURRENCY_OVERLAY",
+        "REGIME_STRESS_AWARE",
+    ]
+    payload["authority_context"] = _authority_context_payload()
+    monkeypatch.setattr(construction_service, "has_solver_dependencies", lambda: True)
+    app.dependency_overrides[get_risk_authority_client] = lambda: _ReadyRiskAuthorityClient()
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-authority-backed"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternatives = {
+        alternative["method"]: alternative for alternative in response.json()["alternatives"]
+    }
+    assert set(alternatives) == set(payload["methods"])
+    assert alternatives["RISK_AWARE"]["method_status"] == "READY"
+    assert alternatives["LIQUIDITY_AWARE"]["method_status"] == "READY"
+    assert alternatives["CURRENCY_OVERLAY"]["method_status"] == "READY"
+    assert alternatives["REGIME_STRESS_AWARE"]["method_status"] == "READY"
+    assert (
+        "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"
+        in alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+    assert (
+        "REGIME_SCENARIO_PACK_READY"
+        in alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+    assert (
+        "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"
+        not in alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+
+
+def test_regime_stress_aware_pending_review_when_scenario_loss_exceeds_policy() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["REGIME_STRESS_AWARE"]
+    authority_context = _authority_context_payload()
+    authority_context["regime_stress_context"]["worst_case_loss_pct"] = "0.18"
+    authority_context["regime_stress_context"]["maximum_allowed_loss_pct"] = "0.12"
+    payload["authority_context"] = authority_context
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-regime-breach"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    assert alternative["method"] == "REGIME_STRESS_AWARE"
+    assert alternative["method_status"] == "PENDING_REVIEW"
 
 
 def test_solver_constrained_falls_back_when_solver_unavailable(monkeypatch) -> None:
@@ -303,7 +448,7 @@ def test_esg_aware_degrades_when_profile_source_is_missing() -> None:
     assert alternative["method"] == "ESG_AWARE"
     assert alternative["method_status"] == "DEGRADED"
     assert (
-        "ESG_PROFILE_UNAVAILABLE"
+        "ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED"
         in (alternative["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
 

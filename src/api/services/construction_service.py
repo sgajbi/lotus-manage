@@ -17,9 +17,13 @@ from src.core.construction.alternative_engine import (
 from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction.method_registry import classify_solver_failure, resolve_method_plan
 from src.core.construction.models import (
+    AuthoritativeCurrencyOverlayContext,
+    AuthoritativeLiquidityContext,
+    AuthoritativeRegimeStressContext,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
+    ConstructionAuthorityContext,
     ConstructionEnrichmentSummary,
     ConstructionMethodPlan,
 )
@@ -38,6 +42,10 @@ from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
 from src.core.rebalance.engine import run_simulation
 from src.api.request_models import RebalanceRequest
+from src.infrastructure.risk_authority import (
+    LotusRiskAuthorityClient,
+    LotusRiskAuthorityUnavailableError,
+)
 
 _MIN_TURNOVER_DEFAULT = Decimal("0.10")
 
@@ -50,6 +58,8 @@ def generate_construction_alternative_set(
     repository: ConstructionRepository,
     methods: list[ConstructionMethod] | None = None,
     source_context: Optional[DpmResolvedSourceContext] = None,
+    authority_context: ConstructionAuthorityContext | None = None,
+    risk_authority_client: LotusRiskAuthorityClient | None = None,
 ) -> ConstructionAlternativeSet:
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
     request_payload = {
@@ -76,6 +86,8 @@ def generate_construction_alternative_set(
         method_set=method_set,
         base_result=base_result,
         correlation_id=correlation_id,
+        authority_context=authority_context or ConstructionAuthorityContext(),
+        risk_authority_client=risk_authority_client,
     )
     alternative_set = build_alternative_set(
         alternative_set_id=f"cas_{uuid.uuid4().hex[:12]}",
@@ -158,6 +170,8 @@ def _build_alternatives(
     method_set: list[ConstructionMethod],
     base_result: RebalanceResult,
     correlation_id: Optional[str],
+    authority_context: ConstructionAuthorityContext,
+    risk_authority_client: LotusRiskAuthorityClient | None,
 ) -> list[ConstructionAlternative]:
     alternatives: list[ConstructionAlternative] = []
     solver_available = has_solver_dependencies()
@@ -185,6 +199,13 @@ def _build_alternatives(
                 alternative=alternative,
                 result=result,
                 plan=plan,
+                authority_context=_authority_context_for_method(
+                    method=method,
+                    result=result,
+                    authority_context=authority_context,
+                    risk_authority_client=risk_authority_client,
+                    correlation_id=correlation_id,
+                ),
             )
         )
     return alternatives
@@ -254,16 +275,23 @@ def _apply_supportability(
     alternative: ConstructionAlternative,
     result: RebalanceResult,
     plan: ConstructionMethodPlan,
+    authority_context: ConstructionAuthorityContext,
 ) -> ConstructionAlternative:
     enrichment = summarize_enrichment_posture(
         result=result,
         tax_required=method == ConstructionMethod.TAX_AWARE,
+        risk_required=method == ConstructionMethod.RISK_AWARE,
+        risk_context=(
+            authority_context.risk_context if method == ConstructionMethod.RISK_AWARE else None
+        ),
+        performance_required=False,
     )
     method_reason_codes = _method_specific_reason_codes(
         request=request,
         method=method,
         result=result,
         enrichment=enrichment,
+        authority_context=authority_context,
     )
     status = _lowest_status(
         [
@@ -274,6 +302,7 @@ def _apply_supportability(
                 method=method,
                 result=result,
                 enrichment=enrichment,
+                authority_context=authority_context,
             ),
         ]
     )
@@ -289,6 +318,16 @@ def _apply_supportability(
         status = _lowest_status([status, enrichment.fx_status])
     if method == ConstructionMethod.RISK_AWARE:
         status = _lowest_status([status, enrichment.risk_status])
+    if method == ConstructionMethod.LIQUIDITY_AWARE and authority_context.liquidity_context:
+        status = _lowest_status([status, authority_context.liquidity_context.supportability_status])
+    if method == ConstructionMethod.CURRENCY_OVERLAY and authority_context.currency_overlay_context:
+        status = _lowest_status(
+            [status, authority_context.currency_overlay_context.supportability_status]
+        )
+    if method == ConstructionMethod.REGIME_STRESS_AWARE and authority_context.regime_stress_context:
+        status = _lowest_status(
+            [status, authority_context.regime_stress_context.supportability_status]
+        )
     return alternative.model_copy(
         update={
             "method_status": status,
@@ -299,6 +338,7 @@ def _apply_supportability(
                     enrichment=enrichment,
                     reason_codes=method_reason_codes,
                 ).model_dump(mode="json"),
+                "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
             },
         }
     )
@@ -310,15 +350,24 @@ def _method_specific_status(
     method: ConstructionMethod,
     result: RebalanceResult,
     enrichment: ConstructionEnrichmentSummary,
+    authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus:
     if method == ConstructionMethod.ESG_AWARE:
-        return _esg_status(request=request)
-    if method == ConstructionMethod.REGIME_STRESS_AWARE:
         return ConstructionMethodStatus.DEGRADED
+    if method == ConstructionMethod.REGIME_STRESS_AWARE:
+        return _regime_stress_status(authority_context.regime_stress_context)
     if method == ConstructionMethod.CURRENCY_OVERLAY and not result.diagnostics.missing_fx_pairs:
-        return _currency_overlay_status(request=request)
+        return _currency_overlay_status(
+            request=request,
+            context=authority_context.currency_overlay_context,
+        )
     if method == ConstructionMethod.RISK_AWARE:
         return enrichment.risk_status
+    if method == ConstructionMethod.LIQUIDITY_AWARE:
+        return _liquidity_status(
+            result=result,
+            context=authority_context.liquidity_context,
+        )
     return ConstructionMethodStatus.READY
 
 
@@ -328,6 +377,7 @@ def _method_specific_reason_codes(
     method: ConstructionMethod,
     result: RebalanceResult,
     enrichment: ConstructionEnrichmentSummary,
+    authority_context: ConstructionAuthorityContext,
 ) -> list[str]:
     reason_codes: list[str] = []
     if method == ConstructionMethod.SOLVER_CONSTRAINED:
@@ -340,27 +390,71 @@ def _method_specific_reason_codes(
             reason_codes.append("TARGET_METHOD_COMPARISON_AVAILABLE")
     if method == ConstructionMethod.LIQUIDITY_AWARE:
         reason_codes.append("SETTLEMENT_AWARENESS_ENABLED")
-        if enrichment.liquidity_status != ConstructionMethodStatus.READY:
-            reason_codes.append("LIQUIDITY_POSTURE_DEGRADED")
-    if method == ConstructionMethod.RISK_AWARE:
-        reason_codes.append("RISK_AUTHORITY_NOT_CONNECTED")
-    if method == ConstructionMethod.ESG_AWARE:
-        reason_codes.append(
-            "ESG_PROFILE_SOURCE_PRESENT"
-            if _esg_status(request=request) == ConstructionMethodStatus.READY
-            else "ESG_PROFILE_UNAVAILABLE"
+        reason_codes.extend(
+            _liquidity_reason_codes(result=result, context=authority_context.liquidity_context)
         )
+    if method == ConstructionMethod.RISK_AWARE:
+        if authority_context.risk_context is None:
+            reason_codes.append("RISK_AUTHORITY_NOT_CONNECTED")
+        else:
+            reason_codes.extend(authority_context.risk_context.reason_codes)
+    if method == ConstructionMethod.ESG_AWARE:
+        reason_codes.append("ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED")
     if method == ConstructionMethod.CURRENCY_OVERLAY:
         missing_pairs = _missing_currency_overlay_pairs(request=request)
         if result.diagnostics.missing_fx_pairs or missing_pairs:
             reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_MISSING")
-        elif _currency_overlay_status(request=request) == ConstructionMethodStatus.DEGRADED:
+        elif (
+            _currency_overlay_status(
+                request=request,
+                context=authority_context.currency_overlay_context,
+            )
+            == ConstructionMethodStatus.DEGRADED
+        ):
             reason_codes.append("CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE")
         else:
             reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_READY")
+        if authority_context.currency_overlay_context is None:
+            reason_codes.append("CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING")
+        else:
+            reason_codes.extend(authority_context.currency_overlay_context.reason_codes)
     if method == ConstructionMethod.REGIME_STRESS_AWARE:
-        reason_codes.append("REGIME_SCENARIO_PACK_UNAVAILABLE")
+        if authority_context.regime_stress_context is None:
+            reason_codes.append("REGIME_SCENARIO_PACK_UNAVAILABLE")
+        else:
+            reason_codes.extend(authority_context.regime_stress_context.reason_codes)
     return sorted(set(reason_codes))
+
+
+def _authority_context_for_method(
+    *,
+    method: ConstructionMethod,
+    result: RebalanceResult,
+    authority_context: ConstructionAuthorityContext,
+    risk_authority_client: LotusRiskAuthorityClient | None,
+    correlation_id: str | None,
+) -> ConstructionAuthorityContext:
+    risk_context = authority_context.risk_context
+    if method == ConstructionMethod.RISK_AWARE and risk_context is None and risk_authority_client:
+        try:
+            risk_context = risk_authority_client.concentration_context(
+                result=result,
+                correlation_id=correlation_id,
+            )
+        except LotusRiskAuthorityUnavailableError:
+            risk_context = None
+    liquidity_context = authority_context.liquidity_context
+    if method == ConstructionMethod.LIQUIDITY_AWARE and liquidity_context is None:
+        liquidity_context = _derive_liquidity_context(result=result)
+    currency_context = authority_context.currency_overlay_context
+    if method == ConstructionMethod.CURRENCY_OVERLAY and currency_context is None:
+        currency_context = _derive_currency_overlay_context(result=result)
+    return ConstructionAuthorityContext(
+        risk_context=risk_context,
+        liquidity_context=liquidity_context,
+        currency_overlay_context=currency_context,
+        regime_stress_context=authority_context.regime_stress_context,
+    )
 
 
 def _with_method_reason_codes(
@@ -384,27 +478,118 @@ def _solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatu
     return _lowest_status([classify_solver_failure(warning) for warning in solver_warnings])
 
 
-def _esg_status(*, request: RebalanceRequest) -> ConstructionMethodStatus:
-    for entry in request.shelf_entries:
-        if "esg_profile" in entry.attributes or "sustainability_profile" in entry.attributes:
-            return ConstructionMethodStatus.READY
-    return ConstructionMethodStatus.DEGRADED
+def _liquidity_status(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeLiquidityContext | None,
+) -> ConstructionMethodStatus:
+    if context is None:
+        return ConstructionMethodStatus.DEGRADED
+    if result.diagnostics.cash_ladder_breaches or result.diagnostics.insufficient_cash:
+        return ConstructionMethodStatus.BLOCKED
+    cash_weight = next(
+        (
+            allocation.weight
+            for allocation in result.after_simulated.allocation_by_asset_class
+            if allocation.key == "CASH"
+        ),
+        None,
+    )
+    if cash_weight is not None and cash_weight < context.minimum_cash_weight:
+        return ConstructionMethodStatus.PENDING_REVIEW
+    return context.supportability_status
 
 
-def _currency_overlay_status(*, request: RebalanceRequest) -> ConstructionMethodStatus:
+def _liquidity_reason_codes(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeLiquidityContext | None,
+) -> list[str]:
+    reason_codes: list[str] = []
+    if context is None:
+        reason_codes.append("LIQUIDITY_POLICY_CONTEXT_DERIVED")
+    else:
+        reason_codes.extend(context.reason_codes)
+    if result.diagnostics.cash_ladder:
+        reason_codes.append("SETTLEMENT_CASH_LADDER_PRESENT")
+    if result.diagnostics.cash_ladder_breaches:
+        reason_codes.append("SETTLEMENT_CASH_LADDER_BREACH")
+    if result.diagnostics.insufficient_cash:
+        reason_codes.append("LIQUIDITY_FUNDING_DEFICIT")
+    return reason_codes
+
+
+def _derive_liquidity_context(*, result: RebalanceResult) -> AuthoritativeLiquidityContext:
+    return AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="manage-liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.03"),
+        allowed_liquidity_tiers=["L1", "L2", "L3"],
+        reason_codes=["LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"],
+    )
+
+
+def _derive_currency_overlay_context(
+    *,
+    result: RebalanceResult,
+) -> AuthoritativeCurrencyOverlayContext:
+    non_base_currencies = sorted(
+        {
+            position.instrument_currency
+            for position in result.after_simulated.positions
+            if position.instrument_currency != result.after_simulated.total_value.currency
+        }
+    )
+    return AuthoritativeCurrencyOverlayContext(
+        supportability_status=(
+            ConstructionMethodStatus.READY
+            if non_base_currencies
+            else ConstructionMethodStatus.DEGRADED
+        ),
+        source_system="lotus-manage-fx-policy",
+        policy_id="manage-currency-overlay-policy.v1",
+        hedge_ratio_min=Decimal("0.00"),
+        hedge_ratio_max=Decimal("1.00"),
+        eligible_currencies=non_base_currencies,
+        reason_codes=["CURRENCY_OVERLAY_POLICY_DERIVED_FROM_MANAGE_FX_RULES"],
+    )
+
+
+def _currency_overlay_status(
+    *,
+    request: RebalanceRequest,
+    context: AuthoritativeCurrencyOverlayContext | None,
+) -> ConstructionMethodStatus:
     if _missing_currency_overlay_pairs(request=request):
         return ConstructionMethodStatus.BLOCKED
+    if context is None:
+        return ConstructionMethodStatus.DEGRADED
+    if context.supportability_status != ConstructionMethodStatus.READY:
+        return context.supportability_status
     base_currency = request.portfolio_snapshot.base_currency
     instrument_currencies = {
         price.currency
         for price in request.market_data_snapshot.prices
         if price.currency != base_currency
     }
+    if instrument_currencies - set(context.eligible_currencies):
+        return ConstructionMethodStatus.PENDING_REVIEW
     return (
         ConstructionMethodStatus.READY
         if instrument_currencies
         else ConstructionMethodStatus.DEGRADED
     )
+
+
+def _regime_stress_status(
+    context: AuthoritativeRegimeStressContext | None,
+) -> ConstructionMethodStatus:
+    if context is None:
+        return ConstructionMethodStatus.DEGRADED
+    if context.worst_case_loss_pct > context.maximum_allowed_loss_pct:
+        return ConstructionMethodStatus.PENDING_REVIEW
+    return context.supportability_status
 
 
 def _missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:

@@ -4,6 +4,8 @@
 
 - `lotus-core`
   source-data authority when management flows use core-referenced portfolio or market inputs
+- `lotus-risk`
+  risk-methodology authority for concentration outputs consumed by RFC-0039 risk-aware construction
 - `lotus-gateway`
   primary consumer of management execution, supportability, and capability-discovery contracts
 - `lotus-advise`
@@ -18,6 +20,8 @@
 4. capability consumers should use canonical snake_case query parameters `consumer_system` and
    `tenant_id`
 5. advisory proposal workflows should be integrated through `lotus-advise`
+6. risk-aware construction must consume `lotus-risk` authority or source-backed authority context;
+   `lotus-manage` must not recalculate risk methodology locally
 
 ## Core Sourcing Target
 
@@ -105,6 +109,31 @@ Strategic downstream consumption should use:
 11. `GET /api/v1/dpm/command-center` bounded command-center summary
 12. `/api/v1/construction/alternative-sets/*` construction alternative generate/read/selection
     routes
+
+## Construction Alternatives Upstream Authority
+
+RFC-0039 authority-backed construction adds one direct upstream analytical dependency:
+
+```mermaid
+sequenceDiagram
+    participant Manage as lotus-manage
+    participant Risk as lotus-risk
+
+    Manage->>Manage: Generate construction alternatives
+    alt RISK_AWARE with DPM_RISK_BASE_URL configured
+        Manage->>Risk: POST /analytics/risk/concentration
+        Risk-->>Manage: concentration supportability, HHI, top-position, issuer coverage
+        Manage->>Manage: Attach authoritative risk context and bounded reason codes
+    else risk authority absent
+        Manage->>Manage: Degrade or require caller-supplied authority context
+    end
+```
+
+Liquidity-aware and currency-overlay construction use manage execution diagnostics, cash/settlement
+posture, FX readiness, and bounded policy context. Regime-stress-aware construction requires
+source-backed scenario-pack authority context until a first-class `lotus-risk` or CIO scenario-pack
+endpoint exists. ESG/restriction-aware construction is intentionally deferred until restriction and
+sustainability source products are available.
 
 Removed or stale consumers should not call unversioned `/rebalance/*` routes, removed
 `/api/v1/platform/capabilities`, or proposal/advisory-era DPM endpoints.

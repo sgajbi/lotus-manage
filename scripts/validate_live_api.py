@@ -364,9 +364,8 @@ def _probe_construction_second_wave(
         portfolio_id=portfolio_id,
         methods=[
             "SOLVER_CONSTRAINED",
-            "LIQUIDITY_AWARE",
             "RISK_AWARE",
-            "ESG_AWARE",
+            "LIQUIDITY_AWARE",
             "CURRENCY_OVERLAY",
             "REGIME_STRESS_AWARE",
         ],
@@ -388,8 +387,8 @@ def _probe_construction_second_wave(
         {"pair": "SGD/USD", "rate": "0.7407407407"},
     ]
     stateless_input["model_portfolio"]["targets"] = [
-        {"instrument_id": "EQ_1", "weight": "0.50"},
-        {"instrument_id": "EQ_US", "weight": "0.50"},
+        {"instrument_id": "EQ_1", "weight": "0.25"},
+        {"instrument_id": "EQ_US", "weight": "0.25"},
     ]
     stateless_input["shelf_entries"] = [
         {
@@ -404,13 +403,49 @@ def _probe_construction_second_wave(
         },
     ]
     stateless_input["options"] = {"max_overdraft_by_ccy": {"SGD": "10000", "USD": "10000"}}
+    payload["authority_context"] = {
+        "risk_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-risk",
+            "concentration_breaches": 0,
+            "concentration_hhi_delta": "125.50",
+            "top_position_weight_proposed": "0.2450",
+            "issuer_coverage_status": "complete",
+            "reason_codes": ["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"],
+        },
+        "liquidity_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-manage-settlement-engine",
+            "policy_id": "liquidity-policy.v1",
+            "minimum_cash_weight": "0.03",
+            "allowed_liquidity_tiers": ["L1", "L2", "L3"],
+            "reason_codes": ["LIQUIDITY_POLICY_READY"],
+        },
+        "currency_overlay_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-manage-fx-policy",
+            "policy_id": "currency-overlay-policy.v1",
+            "hedge_ratio_min": "0.00",
+            "hedge_ratio_max": "1.00",
+            "eligible_currencies": ["USD"],
+            "reason_codes": ["CURRENCY_OVERLAY_POLICY_READY"],
+        },
+        "regime_stress_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-risk-scenario-pack",
+            "scenario_pack_id": "CIO_REGIME_2026_Q2",
+            "worst_case_loss_pct": "0.08",
+            "maximum_allowed_loss_pct": "0.12",
+            "reason_codes": ["REGIME_SCENARIO_PACK_READY"],
+        },
+    }
 
     response = client.post(
         "/api/v1/construction/alternative-sets/generate",
         json=payload,
         headers={
-            "Idempotency-Key": f"live-construction-second-wave-{uuid.uuid4().hex[:10]}",
-            "X-Correlation-Id": f"corr-live-construction-second-wave-{uuid.uuid4().hex[:10]}",
+            "Idempotency-Key": f"live-construction-authority-{uuid.uuid4().hex[:10]}",
+            "X-Correlation-Id": f"corr-live-construction-authority-{uuid.uuid4().hex[:10]}",
         },
     )
     body = response.json() if response.content else {}
@@ -423,9 +458,8 @@ def _probe_construction_second_wave(
     }
     expected_methods = {
         "SOLVER_CONSTRAINED",
-        "LIQUIDITY_AWARE",
         "RISK_AWARE",
-        "ESG_AWARE",
+        "LIQUIDITY_AWARE",
         "CURRENCY_OVERLAY",
         "REGIME_STRESS_AWARE",
     }
@@ -441,8 +475,8 @@ def _probe_construction_second_wave(
         .get("enrichment_summary", {})
         .get("reason_codes", [])
     )
-    esg_reason_codes = (
-        by_method.get("ESG_AWARE", {})
+    liquidity_reason_codes = (
+        by_method.get("LIQUIDITY_AWARE", {})
         .get("diagnostics", {})
         .get("enrichment_summary", {})
         .get("reason_codes", [])
@@ -456,13 +490,17 @@ def _probe_construction_second_wave(
     ok = (
         response.status_code == 200
         and set(by_method) == expected_methods
-        and "RISK_AUTHORITY_NOT_CONNECTED" in risk_reason_codes
-        and "REGIME_SCENARIO_PACK_UNAVAILABLE" in regime_reason_codes
-        and "ESG_PROFILE_SOURCE_PRESENT" in esg_reason_codes
+        and all(
+            by_method.get(method, {}).get("method_status") == "READY" for method in expected_methods
+        )
+        and "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE" in risk_reason_codes
+        and "LIQUIDITY_POLICY_READY" in liquidity_reason_codes
+        and "REGIME_SCENARIO_PACK_READY" in regime_reason_codes
         and "CURRENCY_OVERLAY_FX_SOURCE_READY" in currency_reason_codes
+        and "CURRENCY_OVERLAY_POLICY_READY" in currency_reason_codes
     )
     return _result(
-        "construction_alternatives_second_wave",
+        "construction_alternatives_authority_backed",
         ok,
         {
             "status_code": response.status_code,
@@ -475,8 +513,8 @@ def _probe_construction_second_wave(
                 for method, alternative in sorted(by_method.items())
             },
             "risk_reason_codes": risk_reason_codes,
+            "liquidity_reason_codes": liquidity_reason_codes,
             "regime_reason_codes": regime_reason_codes,
-            "esg_reason_codes": esg_reason_codes,
             "currency_reason_codes": currency_reason_codes,
         },
     )
@@ -666,7 +704,7 @@ def run_live_api_validation(
         )
         probe_calls.append(
             (
-                "construction_alternatives_second_wave",
+                "construction_alternatives_authority_backed",
                 lambda: _probe_construction_second_wave(
                     client,
                     portfolio_id=portfolio_id,

@@ -64,9 +64,10 @@ evidence, and supported-feature promotion.
   governance, a dedicated `src/core/construction/` package, pure alternative models, do-nothing
   baseline, heuristic wrapping, normalized drift/turnover metrics, conservative alternative-set
   status roll-up, a bounded method registry with explicit solver/fallback posture, pure
-  tax/turnover/liquidity/cost/FX enrichment posture, risk/performance supportability seams that
-  preserve upstream authority, certified manage backend APIs for generating, retrieving, and
-  selecting persisted construction alternative sets, Postgres-backed canonical manage proof, and
+  tax/turnover/liquidity/cost/FX enrichment posture, `lotus-risk` concentration authority
+  integration for risk-aware construction, regime-stress authority context, certified manage backend
+  APIs for generating, retrieving, and selecting persisted construction alternative sets,
+  Postgres-backed canonical manage proof, explicit ESG/restriction deferral, and
   construction-specific Gateway/Workbench realization requirements. Full product-surface support is
   not claimed until Gateway and Workbench implement and live-prove the downstream journey.
 - RFC-0040

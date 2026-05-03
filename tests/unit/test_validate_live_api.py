@@ -60,19 +60,20 @@ def _construction_alternative_set() -> dict:
 def _construction_second_wave_alternative_set() -> dict:
     methods = [
         "SOLVER_CONSTRAINED",
-        "LIQUIDITY_AWARE",
         "RISK_AWARE",
-        "ESG_AWARE",
+        "LIQUIDITY_AWARE",
         "CURRENCY_OVERLAY",
         "REGIME_STRESS_AWARE",
     ]
     reason_codes = {
         "SOLVER_CONSTRAINED": ["TARGET_METHOD_COMPARISON_AVAILABLE"],
-        "LIQUIDITY_AWARE": ["SETTLEMENT_AWARENESS_ENABLED"],
-        "RISK_AWARE": ["RISK_AUTHORITY_NOT_CONNECTED"],
-        "ESG_AWARE": ["ESG_PROFILE_SOURCE_PRESENT"],
-        "CURRENCY_OVERLAY": ["CURRENCY_OVERLAY_FX_SOURCE_READY"],
-        "REGIME_STRESS_AWARE": ["REGIME_SCENARIO_PACK_UNAVAILABLE"],
+        "RISK_AWARE": ["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"],
+        "LIQUIDITY_AWARE": ["SETTLEMENT_AWARENESS_ENABLED", "LIQUIDITY_POLICY_READY"],
+        "CURRENCY_OVERLAY": [
+            "CURRENCY_OVERLAY_FX_SOURCE_READY",
+            "CURRENCY_OVERLAY_POLICY_READY",
+        ],
+        "REGIME_STRESS_AWARE": ["REGIME_SCENARIO_PACK_READY"],
     }
     return {
         "alternative_set_id": "cas_live_test_second_wave",
@@ -80,7 +81,7 @@ def _construction_second_wave_alternative_set() -> dict:
             {
                 "alternative_id": f"alt_{method.lower()}",
                 "method": method,
-                "method_status": "READY" if method != "REGIME_STRESS_AWARE" else "DEGRADED",
+                "method_status": "READY",
                 "comparison_metrics": {
                     "drift_after": "0.0000",
                     "turnover_weight": "1.0000",
@@ -226,7 +227,7 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
         "removed_proposal_route_404",
         "stateful_core_sourcing_guard",
         "construction_alternatives_first_wave",
-        "construction_alternatives_second_wave",
+        "construction_alternatives_authority_backed",
         "async_duplicate_correlation_conflict",
         "supportability_postgres_summary",
         "metrics_exposed_bounded_supportability",

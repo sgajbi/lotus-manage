@@ -41,7 +41,9 @@ def summarize_enrichment_posture(
     result: RebalanceResult,
     tax_required: bool,
     authoritative_cost_available: bool = False,
+    risk_required: bool = True,
     risk_context: AuthoritativeRiskContext | None = None,
+    performance_required: bool = True,
     performance_context: AuthoritativePerformanceContext | None = None,
 ) -> ConstructionEnrichmentSummary:
     """Summarize source-aware enrichment readiness without hiding degraded inputs."""
@@ -75,18 +77,24 @@ def summarize_enrichment_posture(
         turnover_status = ConstructionMethodStatus.PENDING_REVIEW
         reason_codes.append("TURNOVER_BUDGET_DROPPED_INTENTS")
 
-    risk_status = _authoritative_context_status(
-        context_status=risk_context.supportability_status if risk_context else None,
-        missing_reason="RISK_ENRICHMENT_UNAVAILABLE",
-        context_reason_codes=risk_context.reason_codes if risk_context else [],
-        reason_codes=reason_codes,
-    )
-    performance_status = _authoritative_context_status(
-        context_status=(performance_context.supportability_status if performance_context else None),
-        missing_reason="PERFORMANCE_CONTEXT_UNAVAILABLE",
-        context_reason_codes=performance_context.reason_codes if performance_context else [],
-        reason_codes=reason_codes,
-    )
+    risk_status = ConstructionMethodStatus.READY
+    if risk_required or risk_context is not None:
+        risk_status = _authoritative_context_status(
+            context_status=risk_context.supportability_status if risk_context else None,
+            missing_reason="RISK_ENRICHMENT_UNAVAILABLE",
+            context_reason_codes=risk_context.reason_codes if risk_context else [],
+            reason_codes=reason_codes,
+        )
+    performance_status = ConstructionMethodStatus.READY
+    if performance_required or performance_context is not None:
+        performance_status = _authoritative_context_status(
+            context_status=(
+                performance_context.supportability_status if performance_context else None
+            ),
+            missing_reason="PERFORMANCE_CONTEXT_UNAVAILABLE",
+            context_reason_codes=performance_context.reason_codes if performance_context else [],
+            reason_codes=reason_codes,
+        )
 
     return ConstructionEnrichmentSummary(
         tax_status=tax_status,

@@ -295,8 +295,13 @@ Functional behavior:
   alternative set, while same-key different-request usage returns `409`.
 - First-wave generation returns do-nothing baseline, explainable heuristic, minimum-turnover, and
   tax-aware posture unless a caller explicitly narrows the method list.
-- Second-wave construction methods return explicit method plans and supportability states; they
-  must not report `READY` for dimensions whose source authority is absent.
+- Authority-backed construction methods return explicit method plans, supportability states, and
+  method-specific source-authority context. `SOLVER_CONSTRAINED`, `RISK_AWARE`,
+  `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` must not report `READY` when
+  required authority evidence is absent.
+- `ESG_AWARE` is explicitly deferred and degrades with
+  `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED` until restriction and sustainability source
+  products exist.
 - Do-nothing baseline keeps trade count and turnover at zero so "take no action" is visible as a
   governed comparator.
 - Minimum-turnover applies a stricter turnover posture and surfaces pending-review behavior when
@@ -313,15 +318,23 @@ Functional behavior:
 flowchart LR
     Caller[Gateway, operator, or certification probe] --> Generate[POST generate]
     Generate --> Envelope[Stateless bundle or gated stateful core context]
-    Envelope --> Methods[First-wave construction methods]
+    Envelope --> Methods[First-wave and authority-backed methods]
     Methods --> Baseline[Do-nothing baseline]
     Methods --> Heuristic[Explainable heuristic]
     Methods --> Turnover[Minimum-turnover posture]
     Methods --> Tax[Tax-aware posture]
+    Methods --> Risk[Risk-aware via lotus-risk concentration]
+    Methods --> Liquidity[Liquidity and settlement aware]
+    Methods --> Currency[Currency-overlay policy]
+    Methods --> Regime[Regime-stress scenario pack]
     Baseline --> Set[Persisted alternative set]
     Heuristic --> Set
     Turnover --> Set
     Tax --> Set
+    Risk --> Set
+    Liquidity --> Set
+    Currency --> Set
+    Regime --> Set
     Set --> Read[GET alternative set]
     Set --> Select[POST selection decision]
 ```
@@ -335,15 +348,18 @@ Non-functional posture:
 - Selection is an audit decision, not an execution command.
 - Gateway and Workbench are not yet integrated; paired realization RFCs are written after manage
   proof and hardening when the backend contract and evidence are stable.
-- The first-wave generate/read/select contract is live-proven through the repeatable validator
-  against a Postgres-backed canonical manage runtime.
+- The first-wave and authority-backed generate/read/select contracts are live-proven through the
+  repeatable validator against a canonical manage runtime.
 
 Upstream integration posture:
 
 Stateless calls rely on caller-provided source-governed snapshots. Stateful calls use the existing
 gated lotus-core source resolver from RFC-0036/RFC-0087 and preserve source supportability state on
-the alternative set. `lotus-manage` does not become authority for portfolio ledger state, risk,
-performance, tax lots, market data, eligibility, or UI composition.
+the alternative set. `RISK_AWARE` can consume `lotus-risk` concentration authority through the
+bounded risk-authority client when configured. `REGIME_STRESS_AWARE` requires source-backed
+scenario-pack authority context until a first-class risk/CIO scenario endpoint exists.
+`lotus-manage` does not become authority for portfolio ledger state, risk methodology, performance,
+tax lots, market data, eligibility, ESG/restriction profiles, or UI composition.
 
 Downstream consumers:
 
@@ -355,10 +371,11 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py -q
+python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q
 python scripts/openapi_quality_gate.py
 python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8020
-python scripts/validate_live_api.py --base-url http://127.0.0.1:8020 --skip-demo-pack --json-output output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json
+python scripts/validate_live_api.py --base-url http://127.0.0.1:8020 --skip-demo-pack --json-output output/rfc0039-proof/<timestamp>-authority-backed-canonical/summary.json
 ```
 
 ## Certified endpoint family: policy-pack read supportability

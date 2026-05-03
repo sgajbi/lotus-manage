@@ -141,9 +141,95 @@ class AuthoritativeRiskContext(BaseModel):
         default=None,
         description="Risk-authoritative concentration-breach count when provided.",
     )
+    concentration_hhi_delta: Decimal | None = Field(
+        default=None,
+        description="Risk-authoritative proposed-minus-current HHI concentration delta.",
+    )
+    top_position_weight_proposed: Decimal | None = Field(
+        default=None,
+        description="Risk-authoritative proposed top-position weight.",
+    )
+    issuer_coverage_status: str | None = Field(
+        default=None,
+        description="Risk-authoritative issuer enrichment coverage status.",
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Risk-authoritative bounded reason codes.",
+    )
+
+
+class AuthoritativeLiquidityContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Liquidity and settlement supportability status for the alternative."
+    )
+    source_system: str = Field(description="Authority or policy source for liquidity evidence.")
+    policy_id: str = Field(description="Liquidity policy identifier applied to this construction.")
+    minimum_cash_weight: Decimal = Field(
+        description="Minimum post-trade cash weight required by policy."
+    )
+    allowed_liquidity_tiers: list[str] = Field(
+        default_factory=list,
+        description="Instrument liquidity tiers eligible for buy-side construction.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Liquidity-authoritative bounded reason codes.",
+    )
+
+
+class AuthoritativeCurrencyOverlayContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Currency-overlay policy supportability status."
+    )
+    source_system: str = Field(description="Authority or policy source for currency evidence.")
+    policy_id: str = Field(description="Currency-overlay or hedge-policy identifier.")
+    hedge_ratio_min: Decimal = Field(description="Minimum target hedge ratio.")
+    hedge_ratio_max: Decimal = Field(description="Maximum target hedge ratio.")
+    eligible_currencies: list[str] = Field(
+        default_factory=list,
+        description="Currencies eligible for overlay treatment.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Currency-overlay bounded reason codes.",
+    )
+
+
+class AuthoritativeRegimeStressContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Scenario-pack supportability status for regime stress construction."
+    )
+    source_system: str = Field(description="Risk or CIO scenario-pack authority.")
+    scenario_pack_id: str = Field(description="Scenario pack identifier used for construction.")
+    worst_case_loss_pct: Decimal = Field(
+        description="Worst expected loss across scenario pack as a portfolio ratio."
+    )
+    maximum_allowed_loss_pct: Decimal = Field(
+        description="Maximum permitted scenario loss ratio for the mandate."
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Regime/stress bounded reason codes.",
+    )
+
+
+class ConstructionAuthorityContext(BaseModel):
+    risk_context: AuthoritativeRiskContext | None = Field(
+        default=None,
+        description="Optional lotus-risk authoritative concentration/risk context.",
+    )
+    liquidity_context: AuthoritativeLiquidityContext | None = Field(
+        default=None,
+        description="Optional liquidity and settlement authority context.",
+    )
+    currency_overlay_context: AuthoritativeCurrencyOverlayContext | None = Field(
+        default=None,
+        description="Optional currency-overlay and hedge-policy authority context.",
+    )
+    regime_stress_context: AuthoritativeRegimeStressContext | None = Field(
+        default=None,
+        description="Optional risk/CIO scenario-pack context.",
     )
 
 

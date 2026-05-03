@@ -49,12 +49,21 @@ RFC-0039 currently exposes this certified manage endpoint family:
 | Read alternatives | `GET /api/v1/construction/alternative-sets/{alternative_set_id}` | Return persisted alternatives without recomputation. Preserve selected alternative state when available. |
 | Select alternative | `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections` | Enforce actor entitlement, pass bounded selection reason/comment, and return manage selection truth. Do not execute trades. |
 
-Supported manage first-wave methods:
+Supported manage methods:
 
 1. `DO_NOTHING_BASELINE`
 2. `HEURISTIC_EXPLAINABLE`
 3. `MIN_TURNOVER`
 4. `TAX_AWARE`
+5. `SOLVER_CONSTRAINED`
+6. `RISK_AWARE`
+7. `LIQUIDITY_AWARE`
+8. `CURRENCY_OVERLAY`
+9. `REGIME_STRESS_AWARE`
+
+`ESG_AWARE` and broader restriction-aware construction are explicitly deferred until source-backed
+restriction and sustainability profiles exist. Gateway and Workbench must render this as a governed
+degraded/unsupported capability, not as a missing backend feature or a UI-only label.
 
 The implemented manage proof for `PB_SG_GLOBAL_BAL_001` showed:
 
@@ -62,14 +71,17 @@ The implemented manage proof for `PB_SG_GLOBAL_BAL_001` showed:
 2. heuristic removes drift with two trade intents,
 3. minimum-turnover can correctly land in `PENDING_REVIEW` when turnover budget suppresses intents,
 4. tax-aware removes drift while carrying explicit degraded reason codes where authoritative
-   transaction-cost, risk, or performance enrichment is absent,
-5. persisted read and actor-attributed selection work under Postgres-backed canonical manage proof.
+   transaction-cost or performance enrichment is absent,
+5. solver-constrained, risk-aware, liquidity-aware, currency-overlay, and regime-stress-aware
+   alternatives carry authority context and bounded reason codes,
+6. persisted read and actor-attributed selection work under Postgres-backed canonical manage proof.
 
 Evidence:
 
 1. `output/rfc0039-proof/20260503-172059/04-comparison-matrix.json`
 2. `output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json`
-3. `scripts/validate_live_api.py` probe `construction_alternatives_first_wave`
+3. `scripts/validate_live_api.py` probes `construction_alternatives_first_wave` and
+   `construction_alternatives_authority_backed`
 
 ## Strategic Gateway Contract Requirement
 
@@ -133,8 +145,9 @@ state that demonstrates real construction trade-offs:
 4. market data and FX must be fresh enough to avoid fabricated values,
 5. eligibility should include at least one restriction or supportability reason suitable for the
    evidence drawer,
-6. at least one method should be `READY`, one should be `PENDING_REVIEW`, and one should show
-   degraded source supportability until the authoritative domain integration is complete.
+6. mandatory authority-backed methods should be demonstrably `READY` when source context is present,
+   while ESG/restriction-aware construction should show explicit deferral until its source products
+   are implemented.
 
 ## Integration Flow
 
@@ -151,13 +164,15 @@ sequenceDiagram
     Gateway->>Manage: POST /api/v1/construction/alternative-sets/generate
     Manage->>Core: Resolve stateful source products when enabled
     Core-->>Manage: Portfolio, target, eligibility, tax, market, readiness
+    Manage->>Risk: Risk-aware concentration authority when configured
+    Risk-->>Manage: Concentration supportability and risk context
     Manage-->>Gateway: Alternative set with method traces and supportability
     Gateway-->>Workbench: Workbench-safe construction lab contract
     Workbench->>Gateway: Select preferred alternative with reason
     Gateway->>Manage: POST /api/v1/construction/alternative-sets/{id}/selections
     Manage-->>Gateway: Actor-attributed selection event
     Gateway-->>Workbench: Selection saved and downstream action posture
-    Gateway-->>Risk: Future enrichment read, if supported and requested
+    Gateway-->>Risk: Future broader enrichment read, if supported and requested
     Gateway-->>Perf: Future enrichment read, if supported and requested
 ```
 

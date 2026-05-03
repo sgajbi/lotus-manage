@@ -37,8 +37,10 @@ storage-layer constraint.
 
 - `POST /api/v1/construction/alternative-sets/generate`
   generates and persists a comparable RFC-0039 construction alternative set with do-nothing,
-  explainable heuristic, minimum-turnover, tax-aware, and governed second-wave alternatives with
-  explicit supportability and degraded-source posture.
+  explainable heuristic, minimum-turnover, tax-aware, solver-constrained, risk-aware,
+  liquidity-aware, currency-overlay, and regime-stress-aware alternatives with explicit
+  supportability and source-authority posture. ESG/restriction-aware construction is intentionally
+  deferred until source-backed restriction and sustainability profiles exist.
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
   retrieves a previously generated alternative set without recomputation.
 - `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
