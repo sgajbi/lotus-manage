@@ -1644,7 +1644,7 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: proof-pack report-input ref
+## Certified endpoint: proof-pack report input
 
 Route:
 
@@ -1652,27 +1652,27 @@ Route:
 
 Purpose:
 
-Returns the generated report-input evidence reference for a persisted proof pack once the Slice 7
-adapter has generated that ref. Until then, the endpoint truthfully returns
-`424 DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED`.
+Returns deterministic `DpmProofPackReportInput` for a persisted proof pack. `lotus-report` can use
+this payload for report materialization without reconstructing proof-pack sections, source hashes,
+or supportability posture.
 
 Request surface:
 
 - Path parameter: `proof_pack_id`.
-- Success response: `DpmProofPackEvidenceRef`.
+- Success response: `DpmProofPackReportInput`.
 - Missing proof pack returns `404`.
-- Missing generated report-input ref returns `424`.
 
 Functional coverage:
 
-- governed unavailable response before report-input generation,
-- OpenAPI success contract for generated refs,
+- deterministic report-input generation,
+- OpenAPI success contract for report payloads,
+- append-only evidence ref generation when requested by the proof-pack generation call,
 - report-input boundary kept separate from report materialization.
 
 Non-functional posture:
 
-- `lotus-manage` exposes the evidence ref only; `lotus-report` owns report materialization.
-- Callers must not treat `424` as a successful supported report-output state.
+- `lotus-manage` exposes report input only; `lotus-report` owns report materialization.
+- The payload includes Markdown and section evidence derived from immutable proof-pack truth.
 
 Evidence commands:
 
@@ -1681,7 +1681,7 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: proof-pack AI-evidence input ref
+## Certified endpoint: proof-pack AI-evidence input
 
 Route:
 
@@ -1689,27 +1689,28 @@ Route:
 
 Purpose:
 
-Returns the generated AI-evidence input reference for a persisted proof pack once the Slice 7
-adapter has generated that ref. Until then, the endpoint truthfully returns
-`424 DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED`.
+Returns deterministic `DpmProofPackAiEvidenceInput` for a persisted proof pack. The payload is
+bounded for downstream AI workflows and carries forbidden-action guardrails.
 
 Request surface:
 
 - Path parameter: `proof_pack_id`.
-- Success response: `DpmProofPackEvidenceRef`.
+- Success response: `DpmProofPackAiEvidenceInput`.
 - Missing proof pack returns `404`.
-- Missing generated AI-evidence ref returns `424`.
 
 Functional coverage:
 
-- governed unavailable response before AI-evidence generation,
-- OpenAPI success contract for generated refs,
+- deterministic AI-evidence input generation,
+- OpenAPI success contract for bounded AI-evidence payloads,
+- forbidden-field removal,
+- forbidden-action guardrails,
+- append-only evidence ref generation when requested by the proof-pack generation call,
 - AI-evidence boundary kept separate from AI PM memo generation.
 
 Non-functional posture:
 
-- `lotus-manage` exposes bounded evidence refs only; RFC-0043 and `lotus-ai` own memo generation.
-- Callers must not treat `424` as a successful AI-output state.
+- `lotus-manage` exposes bounded evidence only; RFC-0043 and `lotus-ai` own memo generation.
+- The payload must not be treated as approval, execution instruction, or client communication.
 
 Evidence commands:
 

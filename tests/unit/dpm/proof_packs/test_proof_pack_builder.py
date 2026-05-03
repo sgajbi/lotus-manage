@@ -112,8 +112,10 @@ def test_direct_run_proof_pack_generates_every_section_with_truthful_states() ->
     assert any(event.event_type == "WORKFLOW_DECISION" for event in pack.decision_timeline.events)
     assert _section(pack, "selected_alternative").state == "DEGRADED"
     assert "DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE" in pack.supportability.reason_codes
-    assert _section(pack, "reporting_refs").state == "DEGRADED"
-    assert _section(pack, "ai_refs").state == "DEGRADED"
+    assert _section(pack, "reporting_refs").state == "READY"
+    assert _section(pack, "reporting_refs").facts["adapter_contract"] == "DpmProofPackReportInput"
+    assert _section(pack, "ai_refs").state == "READY"
+    assert _section(pack, "ai_refs").facts["adapter_contract"] == "DpmProofPackAiEvidenceInput"
     assert pack.status == "DEGRADED"
 
 

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-6 COMPLETE; CERTIFIED PROOF-PACK APIS IMPLEMENTED |
+| **Status** | IN PROGRESS - SLICES 0-7 COMPLETE; REPORT AND AI HANDOFF ADAPTERS IMPLEMENTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -18,6 +18,7 @@
 | **Slice 4 Evidence** | `docs/rfcs/RFC-0040-markdown-summary-slice4.md` |
 | **Slice 5 Evidence** | `docs/rfcs/RFC-0040-persistence-slice5.md` |
 | **Slice 6 Evidence** | `docs/rfcs/RFC-0040-api-slice6.md` |
+| **Slice 7 Evidence** | `docs/rfcs/RFC-0040-handoffs-slice7.md` |
 
 ---
 
@@ -300,8 +301,8 @@ Current gaps:
 | `decision_timeline` | manage/core/workflow events | Captures ordered decision history. | `DEGRADED` when optional events missing; `BLOCKED` if selected source event missing. |
 | `lineage` | all source systems | Captures source refs, hashes, run ids, correlation ids. | `BLOCKED` for missing required source/run identity. |
 | `supportability` | `lotus-manage` | Summarizes section states, owners, reason codes. | Never omitted. |
-| `reporting_refs` | manage/report handoff | Captures report-input readiness. | `DEGRADED` until report input generated. |
-| `ai_refs` | manage/AI handoff | Captures AI-evidence readiness and guardrails. | `DEGRADED` until AI evidence input generated. |
+| `reporting_refs` | manage/report handoff | Captures report-input adapter readiness and generated refs. | `READY` after Slice 7 adapter; generated refs are append-only outside the immutable body. |
+| `ai_refs` | manage/AI handoff | Captures AI-evidence adapter readiness and guardrails. | `READY` after Slice 7 adapter; generated refs are append-only outside the immutable body. |
 
 Cross-app source rule:
 
@@ -899,6 +900,18 @@ Evidence:
 3. forbidden-field tests,
 4. adapter contract tests,
 5. downstream app PR/evidence refs when report or AI changes are required.
+
+Slice 7 result:
+
+1. completed in `docs/rfcs/RFC-0040-handoffs-slice7.md`,
+2. added deterministic `DpmProofPackReportInput` and `DpmProofPackAiEvidenceInput` domain
+   adapters,
+3. added AI forbidden-action and forbidden-field guardrails,
+4. changed report/AI proof-pack sections from future-slice degraded placeholders to adapter-ready
+   manage contracts,
+5. hydrated append-only report/AI evidence refs into API reads when generation requested them,
+6. made no report materialization, AI memo generation, Gateway, Workbench, or full front-office
+   supported-feature claim.
 
 ### Slice 8 - Gateway and Workbench Realization RFC Slice
 

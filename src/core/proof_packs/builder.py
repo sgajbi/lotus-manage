@@ -444,19 +444,19 @@ def _section_payload(
         )
     if section_type == "reporting_refs":
         return (
-            "DEGRADED",
-            "Report input is generated in a later RFC-0040 slice.",
+            "READY",
+            "Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
+            {"adapter_contract": "DpmProofPackReportInput"},
             {},
-            {},
-            ["DPM_REPORT_INPUT_NOT_GENERATED"],
+            [],
         )
     if section_type == "ai_refs":
         return (
-            "DEGRADED",
-            "AI evidence input is generated in a later RFC-0040 slice.",
+            "READY",
+            "AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
+            {"adapter_contract": "DpmProofPackAiEvidenceInput"},
             {},
-            {},
-            ["DPM_AI_EVIDENCE_INPUT_NOT_GENERATED"],
+            [],
         )
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])

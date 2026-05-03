@@ -257,10 +257,7 @@ def test_rfc0039_scaffolding_standard_preserves_trace_and_status_governance() ->
 
 def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> None:
     rfc = (
-        ROOT
-        / "docs"
-        / "rfcs"
-        / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
+        ROOT / "docs" / "rfcs" / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
     ).read_text(encoding="utf-8")
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
@@ -273,12 +270,13 @@ def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> N
         "RFC-0040-markdown-summary-slice4.md",
         "RFC-0040-persistence-slice5.md",
         "RFC-0040-api-slice6.md",
+        "RFC-0040-handoffs-slice7.md",
     ]
     missing_evidence = [name for name in required_evidence if name not in rfc]
 
     assert missing_evidence == []
-    assert "SLICES 0-6 COMPLETE" in rfc
-    assert "SLICES 0-6 COMPLETE" in index
-    assert "CERTIFIED PROOF-PACK APIS IMPLEMENTED" in rfc
+    assert "SLICES 0-7 COMPLETE" in rfc
+    assert "SLICES 0-7 COMPLETE" in index
+    assert "REPORT AND AI HANDOFF ADAPTERS IMPLEMENTED" in rfc
     assert "Pre-trade proof pack | RFC-0040" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features

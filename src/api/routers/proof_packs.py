@@ -11,7 +11,8 @@ from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import proof_pack_service
 from src.core.construction.repository import ConstructionRepository
 from src.core.proof_packs import render_proof_pack_markdown
-from src.core.proof_packs.models import DpmPreTradeProofPack, DpmProofPackEvidenceRef
+from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
+from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 
@@ -192,6 +193,12 @@ def generate_proof_pack(
                 run_service=run_service,
                 proof_pack_repository=proof_pack_repository,
             )
+        proof_pack = proof_pack_service.ensure_handoff_refs(
+            proof_pack=proof_pack,
+            proof_pack_repository=proof_pack_repository,
+            include_report_input=request.include_report_input,
+            include_ai_evidence_input=request.include_ai_evidence_input,
+        )
         return _to_generate_response(
             proof_pack=proof_pack,
             include_markdown=request.include_markdown,
@@ -266,17 +273,12 @@ def get_proof_pack_markdown(
 
 @router.get(
     "/{proof_pack_id}/report-input",
-    response_model=DpmProofPackEvidenceRef,
+    response_model=DpmProofPackReportInput,
     status_code=status.HTTP_200_OK,
     summary="Get proof-pack report input",
-    description=(
-        "Returns the generated `DpmProofPackReportInput` evidence reference for a persisted proof "
-        "pack. Until the Slice 7 adapter generates that reference, the endpoint returns a "
-        "governed failed-dependency response."
-    ),
+    description="Returns deterministic `DpmProofPackReportInput` for a persisted proof pack.",
     responses={
-        200: {"description": "Generated report-input evidence reference."},
-        424: {"description": "Report input has not been generated for this proof pack."},
+        200: {"description": "Generated report-input payload."},
         404: {"description": "Proof pack was not found."},
     },
 )
@@ -286,9 +288,9 @@ def get_proof_pack_report_input(
         Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
-) -> DpmProofPackEvidenceRef:
+) -> DpmProofPackReportInput:
     try:
-        return proof_pack_service.get_report_input_ref(
+        return proof_pack_service.get_report_input(
             proof_pack_id=proof_pack_id,
             proof_pack_repository=proof_pack_repository,
         )
@@ -299,17 +301,12 @@ def get_proof_pack_report_input(
 
 @router.get(
     "/{proof_pack_id}/ai-evidence-input",
-    response_model=DpmProofPackEvidenceRef,
+    response_model=DpmProofPackAiEvidenceInput,
     status_code=status.HTTP_200_OK,
     summary="Get proof-pack AI evidence input",
-    description=(
-        "Returns the generated `DpmProofPackAiEvidenceInput` evidence reference for a persisted "
-        "proof pack. Until the Slice 7 adapter generates that reference, the endpoint returns a "
-        "governed failed-dependency response."
-    ),
+    description="Returns deterministic `DpmProofPackAiEvidenceInput` for a persisted proof pack.",
     responses={
-        200: {"description": "Generated AI-evidence input reference."},
-        424: {"description": "AI evidence input has not been generated for this proof pack."},
+        200: {"description": "Generated AI-evidence input payload."},
         404: {"description": "Proof pack was not found."},
     },
 )
@@ -319,9 +316,9 @@ def get_proof_pack_ai_evidence_input(
         Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
-) -> DpmProofPackEvidenceRef:
+) -> DpmProofPackAiEvidenceInput:
     try:
-        return proof_pack_service.get_ai_evidence_ref(
+        return proof_pack_service.get_ai_evidence_input(
             proof_pack_id=proof_pack_id,
             proof_pack_repository=proof_pack_repository,
         )

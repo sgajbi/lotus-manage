@@ -4,6 +4,17 @@ from src.core.proof_packs.builder import (
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
 )
+from src.core.proof_packs.handoffs import (
+    AI_EVIDENCE_REF_TYPE,
+    REPORT_INPUT_REF_TYPE,
+    DpmProofPackAiEvidenceInput,
+    DpmProofPackAiEvidenceSection,
+    DpmProofPackReportInput,
+    DpmProofPackReportSection,
+    assert_no_ai_forbidden_fields,
+    build_ai_evidence_input,
+    build_report_input,
+)
 from src.core.proof_packs.markdown import render_proof_pack_markdown
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
@@ -22,10 +33,15 @@ from src.core.proof_packs.models import (
 
 __all__ = [
     "DpmPreTradeProofPack",
+    "AI_EVIDENCE_REF_TYPE",
     "DpmProofPackDecisionSummary",
     "DpmProofPackDecisionTimeline",
     "DpmProofPackDecisionTimelineEvent",
+    "DpmProofPackAiEvidenceInput",
+    "DpmProofPackAiEvidenceSection",
     "DpmProofPackEvidenceRef",
+    "DpmProofPackReportInput",
+    "DpmProofPackReportSection",
     "DpmProofPackSection",
     "DpmProofPackSourceRef",
     "DpmProofPackSupportability",
@@ -35,7 +51,11 @@ __all__ = [
     "ProofPackSourceType",
     "ProofPackSourceValidationError",
     "ProofPackStatus",
+    "REPORT_INPUT_REF_TYPE",
+    "assert_no_ai_forbidden_fields",
+    "build_ai_evidence_input",
     "build_proof_pack_from_run",
     "build_proof_pack_from_selected_alternative",
+    "build_report_input",
     "render_proof_pack_markdown",
 ]

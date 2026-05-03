@@ -128,22 +128,35 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
 
     fetched = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}")
     assert fetched.status_code == 200
-    assert fetched.json()["proof_pack"]["proof_pack_id"] == proof_pack["proof_pack_id"]
+    fetched_proof_pack = fetched.json()["proof_pack"]
+    assert fetched_proof_pack["proof_pack_id"] == proof_pack["proof_pack_id"]
+    assert fetched_proof_pack["report_input_ref"]["ref_type"] == "DPM_PROOF_PACK_REPORT_INPUT"
+    assert fetched_proof_pack["ai_evidence_ref"]["ref_type"] == "DPM_PROOF_PACK_AI_EVIDENCE_INPUT"
 
     markdown = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/summary.md")
     assert markdown.status_code == 200
     assert "# Pre-Trade Proof Pack" in markdown.text
-    assert "DPM_REPORT_INPUT_NOT_GENERATED" in markdown.text
+    assert "| `reporting_refs` | `READY` |" in markdown.text
+    assert "| `ai_refs` | `READY` |" in markdown.text
 
     report = client.get(f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/report-input")
-    assert report.status_code == 424
-    assert report.json()["detail"] == "DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED"
+    assert report.status_code == 200
+    report_input = report.json()
+    assert report_input["proof_pack_id"] == proof_pack["proof_pack_id"]
+    assert report_input["proof_pack_content_hash"] == proof_pack["content_hash"]
+    assert report_input["content_hash"].startswith("sha256:")
+    assert report_input["evidence_ref"]["ref_type"] == "DPM_PROOF_PACK_REPORT_INPUT"
 
     ai = client.get(
         f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/ai-evidence-input"
     )
-    assert ai.status_code == 424
-    assert ai.json()["detail"] == "DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED"
+    assert ai.status_code == 200
+    ai_input = ai.json()
+    assert ai_input["proof_pack_id"] == proof_pack["proof_pack_id"]
+    assert ai_input["proof_pack_content_hash"] == proof_pack["content_hash"]
+    assert ai_input["content_hash"].startswith("sha256:")
+    assert ai_input["evidence_ref"]["ref_type"] == "DPM_PROOF_PACK_AI_EVIDENCE_INPUT"
+    assert "place_orders" in ai_input["forbidden_actions"]
 
 
 def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:

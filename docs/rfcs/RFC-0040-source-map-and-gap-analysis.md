@@ -64,8 +64,8 @@ source ref, hash, or supportability state is backed by the owning app or by dete
 | `decision_timeline` | Manage workflow/run/selection/monitoring events | Run created, selection event, workflow decisions, monitoring exceptions | Build ordered proof-pack-local timeline from existing event sources. | `BLOCKED` if selected source event is missing; optional events are `DEGRADED`. |
 | `lineage` | All source systems; manage aggregation | Source product lineage, run lineage, alternative ids, correlation ids | Capture source refs and hashes without raw payloads. | `BLOCKED` when source run identity is missing. |
 | `supportability` | `lotus-manage` | Section states, run supportability, source supportability | Always generated and never omitted. | Overall state follows worst material section state. |
-| `reporting_refs` | Manage report-input adapter; `lotus-report` consumer later | No proof-pack report-input contract yet | Generate typed manage-owned report input ref after Slice 7. | `DEGRADED` until generated; no report-service consumption claim until report app supports it. |
-| `ai_refs` | Manage AI-evidence adapter; `lotus-ai` consumer later | No proof-pack AI evidence contract yet | Generate bounded evidence input after Slice 7. | `DEGRADED` until generated; no AI memo claim until RFC-0043. |
+| `reporting_refs` | Manage report-input adapter; `lotus-report` consumer later | Slice 7 now provides typed proof-pack report input. | Generate typed manage-owned report input and append evidence refs when requested. | `READY` for manage adapter; no report-service materialization claim until report app supports it. |
+| `ai_refs` | Manage AI-evidence adapter; `lotus-ai` consumer later | Slice 7 now provides bounded AI evidence input. | Generate bounded evidence input with forbidden-field and forbidden-action guardrails. | `READY` for manage adapter; no AI memo claim until RFC-0043. |
 
 ## Minimum Viable First Implementation
 

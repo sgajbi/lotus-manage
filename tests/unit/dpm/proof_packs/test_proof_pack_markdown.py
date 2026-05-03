@@ -78,8 +78,8 @@ def test_markdown_summary_is_deterministic_and_exposes_evidence_gaps() -> None:
     assert first.startswith("# Pre-Trade Proof Pack ")
     assert "| `selected_alternative` | `DEGRADED` |" in first
     assert "`DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE`" in first
-    assert "`DPM_REPORT_INPUT_NOT_GENERATED`" in first
-    assert "`DPM_AI_EVIDENCE_INPUT_NOT_GENERATED`" in first
+    assert "| `reporting_refs` | `READY` |" in first
+    assert "| `ai_refs` | `READY` |" in first
     assert "## Integrity" in first
     assert "Content hash: `sha256:" in first
 

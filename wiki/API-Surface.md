@@ -63,15 +63,15 @@ Workbench RFC-0098, and
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`
   renders deterministic human-readable Markdown from the persisted proof pack.
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`
-  returns the generated report-input evidence reference when present. Before Slice 7 adapters
-  generate the ref, the endpoint truthfully returns `424`.
+  returns deterministic `DpmProofPackReportInput` for downstream report materialization without
+  requiring `lotus-report` to reconstruct proof-pack truth.
 - `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input`
-  returns the generated AI-evidence input reference when present. Before Slice 7 adapters generate
-  the ref, the endpoint truthfully returns `424`.
+  returns bounded `DpmProofPackAiEvidenceInput` with forbidden-action guardrails and forbidden-field
+  filtering for downstream AI workflows.
 
 These are manage-owned backend authority endpoints. Gateway and Workbench must consume these
 contracts later without reconstructing proof-pack evidence. Report materialization and AI memo
-generation remain downstream responsibilities and are not claimed by this API slice.
+generation remain downstream responsibilities and are not claimed by this manage implementation.
 
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
