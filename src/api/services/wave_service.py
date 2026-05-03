@@ -372,7 +372,7 @@ def _validate_trigger(trigger_type: str) -> None:
         raise DpmWaveValidationError(
             "NOT_SUPPORTED_TRIGGER",
             f"Trigger type {trigger_type} is not supported for RFC-0041 Slice 4.",
-    )
+        )
 
 
 def _request_hash(payload: dict[str, object]) -> str:

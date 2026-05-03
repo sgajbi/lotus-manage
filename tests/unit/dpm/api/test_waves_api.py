@@ -225,14 +225,10 @@ def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_ref
         "SOURCE_BLOCKED": 1,
     }
     assert payload["wave"]["aggregate_metrics"]["ready_item_count"] == 1
-    items_by_portfolio = {
-        item["portfolio_id"]: item for item in payload["wave"]["items"]
-    }
+    items_by_portfolio = {item["portfolio_id"]: item for item in payload["wave"]["items"]}
     ready_item = items_by_portfolio[PORTFOLIO_ID]
     assert ready_item["state"] == "SOURCE_READY"
-    assert {
-        ref["source_type"] for ref in ready_item["source_refs"]
-    } >= {
+    assert {ref["source_type"] for ref in ready_item["source_refs"]} >= {
         "MANDATE_DIGITAL_TWIN",
         "DPM_MANDATE_HEALTH_SNAPSHOT",
         "DPM_SOURCE_READINESS",
@@ -310,9 +306,10 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert source_check["tags"] == ["lotus-manage Rebalance Waves"]
     assert preview["responses"]["200"]["content"]["application/json"]["example"]["durable"] is False
     assert create["responses"]["201"]["content"]["application/json"]["example"]["durable"] is True
-    assert source_check["responses"]["200"]["content"]["application/json"]["example"][
-        "wave"
-    ]["state"] == "SOURCE_CHECKED"
+    assert (
+        source_check["responses"]["200"]["content"]["application/json"]["example"]["wave"]["state"]
+        == "SOURCE_CHECKED"
+    )
     assert "422" in preview["responses"]
     assert "409" in create["responses"]
     assert "404" in source_check["responses"]
