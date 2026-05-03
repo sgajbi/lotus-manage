@@ -224,6 +224,39 @@ Validation:
 No Gateway, Workbench, simulation, approval, staging, operations handoff, PM-book discovery, or
 automatic CIO model-change cohort discovery claim is added in Slice 4.
 
+## Slice 5 Source Check Result
+
+Slice 5 adds the durable source-check operation for existing waves:
+
+1. `POST /api/v1/rebalance/waves/{wave_id}/source-check` loads a persisted wave and evaluates
+   each item against authoritative manage-owned mandate digital twins and mandate health snapshots,
+2. ready promotion requires both mandate twin evidence and a ready mandate health/source-readiness
+   snapshot; caller portfolio ids or caller source refs alone are never sufficient,
+3. `src/core/waves/source_readiness.py` keeps pure item-classification logic out of the API
+   orchestration service,
+4. item classification now supports `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, and
+   `SOURCE_BLOCKED` with bounded reason codes such as `MANDATE_HEALTH_MISSING` and
+   source-owner diagnostics,
+5. source refs are attached for `MANDATE_DIGITAL_TWIN`, `DPM_MANDATE_HEALTH_SNAPSHOT`,
+   `DPM_SOURCE_READINESS`, and available `lotus-core` lineage products from the mandate twin,
+6. aggregate metrics are recomputed from item state after classification,
+7. the wave transitions from `CREATED` to `SOURCE_CHECKED` with an event carrying state counts, and
+   repeat calls against an already source-checked wave return the persisted wave as idempotent
+   replay without appending duplicate events,
+8. missing waves return `DPM_WAVE_NOT_FOUND`; invalid state and version conflicts are explicit
+   error contracts.
+
+Validation:
+
+1. `python -m pytest tests\unit\dpm\api\test_waves_api.py tests\unit\dpm\waves\test_wave_domain.py -q`,
+2. `python -m ruff check src\api\services\wave_service.py src\api\routers\waves.py tests\unit\dpm\api\test_waves_api.py`,
+3. `python -m mypy --config-file mypy.ini src\api\services\wave_service.py src\api\routers\waves.py tests\unit\dpm\api\test_waves_api.py`,
+4. `python scripts\openapi_quality_gate.py`,
+5. `python scripts\api_vocabulary_inventory.py --output docs\standards\api-vocabulary\lotus-manage-api-vocabulary.v1.json`.
+
+No simulation, selection, approval, staging, handoff, Gateway, Workbench, PM-book discovery, or
+automatic CIO model-change cohort discovery claim is added in Slice 5.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, Field
@@ -59,6 +59,62 @@ WAVE_EXAMPLE = {
         "retention_policy": "DPM_WAVE_STANDARD",
     },
     "durable": False,
+    "idempotent_replay": False,
+}
+
+SOURCE_CHECK_WAVE_EXAMPLE = {
+    "wave": {
+        **cast(dict[str, object], WAVE_EXAMPLE["wave"]),
+        "state": "SOURCE_CHECKED",
+        "version": 4,
+        "items": [
+            {
+                "wave_item_id": "dwi_001",
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+                "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+                "state": "SOURCE_READY",
+                "reason_codes": ["SOURCE_READINESS_READY"],
+                "source_refs": [
+                    {
+                        "source_system": "lotus-manage",
+                        "source_type": "MANDATE_DIGITAL_TWIN",
+                        "source_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+                        "source_version": "3",
+                        "supportability_state": "READY",
+                    },
+                    {
+                        "source_system": "lotus-manage",
+                        "source_type": "DPM_MANDATE_HEALTH_SNAPSHOT",
+                        "source_id": "mh_20260503_pb_sg_global_bal_001",
+                        "source_version": "2026-05-03",
+                        "supportability_state": "READY",
+                    },
+                    {
+                        "source_system": "lotus-manage",
+                        "source_type": "DPM_SOURCE_READINESS",
+                        "source_id": "mh_20260503_pb_sg_global_bal_001",
+                        "source_version": "2026-05-03",
+                        "supportability_state": "READY",
+                    },
+                ],
+                "diagnostics": {
+                    "source_owner": "lotus-manage",
+                    "health_state": "READY",
+                    "source_readiness_state": "READY",
+                },
+            }
+        ],
+        "aggregate_metrics": {
+            "item_count": 1,
+            "state_counts": {"SOURCE_READY": 1},
+            "ready_item_count": 1,
+            "blocked_item_count": 0,
+            "review_required_item_count": 0,
+            "source_degraded_item_count": 0,
+        },
+    },
+    "durable": True,
     "idempotent_replay": False,
 }
 
@@ -130,6 +186,13 @@ class DpmWaveResponse(BaseModel):
         default=False,
         description="True when create returned an already persisted wave for the idempotency key.",
         examples=[False],
+    )
+
+
+class DpmWaveSourceCheckRequest(BaseModel):
+    actor_id: str = Field(
+        description="Human or service actor requesting the source-check.",
+        examples=["pm_001"],
     )
 
 
@@ -275,6 +338,104 @@ def create_wave(
         status_code = (
             status.HTTP_409_CONFLICT
             if exc.code == "WAVE_CREATE_CONFLICT"
+            else status.HTTP_422_UNPROCESSABLE_ENTITY
+        )
+        raise HTTPException(
+            status_code=status_code,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.post(
+    "/{wave_id}/source-check",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Source-check a durable rebalance wave",
+    description=(
+        "Evaluates RFC-0041 source readiness for each durable wave item using persisted mandate "
+        "digital twins, mandate health snapshots, and their source lineage. Items are classified "
+        "as `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, or `SOURCE_BLOCKED`; caller "
+        "portfolio ids or supplied refs alone never promote an item to ready. Repeating the call "
+        "after the wave is already `SOURCE_CHECKED` returns the persisted wave as an idempotent "
+        "replay without appending a duplicate event."
+    ),
+    responses={
+        200: {
+            "description": "Durable source-checked wave with item classifications.",
+            "content": {"application/json": {"example": SOURCE_CHECK_WAVE_EXAMPLE}},
+        },
+        404: {
+            "description": "Wave not found.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "code": "DPM_WAVE_NOT_FOUND",
+                            "message": "Wave dwv_missing was not found.",
+                        }
+                    }
+                }
+            },
+        },
+        409: {
+            "description": "Wave version conflict during optimistic update.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "code": "DPM_WAVE_VERSION_CONFLICT",
+                            "message": "DPM_WAVE_VERSION_CONFLICT",
+                        }
+                    }
+                }
+            },
+        },
+        422: {
+            "description": "Wave is not in a state that can be source-checked.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": {
+                            "code": "DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
+                            "message": "Wave dwv_001 cannot be source-checked from state DRAFT.",
+                        }
+                    }
+                }
+            },
+        },
+    },
+)
+def source_check_wave(
+    wave_id: str,
+    request: DpmWaveSourceCheckRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-source-check-001"],
+        ),
+    ] = None,
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    try:
+        wave, replayed = wave_service.source_check_wave(
+            wave_id=wave_id,
+            actor_id=request.actor_id,
+            correlation_id=x_correlation_id or f"corr_wave_source_check_{wave_id}",
+            mandate_repository=mandate_repository,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        status_code = (
+            status.HTTP_409_CONFLICT
+            if exc.code == "DPM_WAVE_VERSION_CONFLICT"
             else status.HTTP_422_UNPROCESSABLE_ENTITY
         )
         raise HTTPException(
