@@ -310,3 +310,43 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "output/rfc0040-proof/20260503-145818" in supported_features
     assert "critical-review.json" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features
+
+
+def test_rfc0041_gold_standard_execution_guide_stays_complete_before_implementation() -> None:
+    rfc = (
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md"
+    ).read_text(encoding="utf-8")
+    index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
+    wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
+    roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_sections = [
+        "## 1. Critical Review of the Prior Draft",
+        "## 5. Source Map and Gap Policy",
+        "### Slice 1 - Platform Automation and Scaffolding Improvement",
+        "### Slice 2 - Cleanup and Structure",
+        "### Slice 9 - Gateway and Workbench Realization RFC Slice",
+        "### Slice 10 - Implementation Proof",
+        "### Slice 11 - Second-Last Hardening and Review",
+        "### Slice 12 - Final Closure",
+        "## 15. Supported-Features Ledger",
+        "## 19. Final Gold-Pass Assessment Template",
+    ]
+    missing_sections = [section for section in required_sections if section not in rfc]
+
+    assert missing_sections == []
+    assert "PROPOSED - GOLD-STANDARD EXECUTION GUIDE READY" in rfc
+    assert "PROPOSED - GOLD-STANDARD EXECUTION GUIDE READY" in index
+    assert "feat/rfc0041-gold-standard-tightening" in rfc
+    assert "No source-data gap may be hidden in manage-local placeholders" in rfc
+    assert "create or tighten paired RFCs in" in rfc
+    assert "`lotus-gateway` and `lotus-workbench`" in rfc
+    assert "Do not mark RFC-0041 `DONE`" in rfc
+    assert "gold-standard execution guide" in wiki_index
+    assert "Support remains proposed" in roadmap
+    assert "Proposed only" in supported_features
+    assert "no supported feature claim may be promoted" in supported_features
