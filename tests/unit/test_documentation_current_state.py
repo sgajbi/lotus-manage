@@ -253,3 +253,28 @@ def test_rfc0039_scaffolding_standard_preserves_trace_and_status_governance() ->
     assert "hidden fallback from solver to heuristic" in standard
     assert "No method may be `READY` when its mandatory source family is missing" in standard
     assert "construction-alternatives-api-governance.md" in rfc
+
+
+def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> None:
+    rfc = (
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
+    ).read_text(encoding="utf-8")
+    index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_evidence = [
+        "RFC-0040-source-map-and-gap-analysis.md",
+        "RFC-0040-platform-automation-slice1.md",
+        "RFC-0040-cleanup-and-structure-slice2.md",
+    ]
+    missing_evidence = [name for name in required_evidence if name not in rfc]
+
+    assert missing_evidence == []
+    assert "SLICES 0-2 COMPLETE" in rfc
+    assert "SLICES 0-2 COMPLETE" in index
+    assert "PROOF-PACK IMPLEMENTATION NOT STARTED" in rfc
+    assert "Pre-trade proof pack | RFC-0040" in supported_features
+    assert "| Pre-trade proof pack | Supported |" not in supported_features

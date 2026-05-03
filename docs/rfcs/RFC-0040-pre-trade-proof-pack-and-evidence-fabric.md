@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 0 COMPLETE; IMPLEMENTATION NOT STARTED |
+| **Status** | IN PROGRESS - SLICES 0-2 COMPLETE; PROOF-PACK IMPLEMENTATION NOT STARTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -13,6 +13,7 @@
 | **Doc Location** | `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
 | **Slice 1 Evidence** | `docs/rfcs/RFC-0040-platform-automation-slice1.md` |
+| **Slice 2 Evidence** | `docs/rfcs/RFC-0040-cleanup-and-structure-slice2.md` |
 
 ---
 
@@ -709,6 +710,17 @@ Evidence:
 2. documentation layering review,
 3. wiki source diff or explicit no-wiki-change decision,
 4. targeted cleanup tests.
+
+Slice 2 result:
+
+1. completed in `docs/rfcs/RFC-0040-cleanup-and-structure-slice2.md`,
+2. extracted lineage and idempotency-history response mapping from the run-supportability service
+   module into reusable serializers,
+3. confirmed no tracked compiled Python artifacts were present,
+4. recorded the proof-pack boundary decision for domain, persistence, API, report-input, and
+   AI-evidence modules before Slice 3 starts,
+5. recorded an explicit no-wiki-change decision because no implementation-backed proof-pack
+   capability exists yet.
 
 ### Slice 3 - Domain Models and Pure Proof Builder
 

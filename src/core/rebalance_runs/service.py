@@ -13,10 +13,8 @@ from src.core.rebalance_runs.models import (
     DpmFreshnessBucket,
     DpmLineageEdgeRecord,
     DpmLineageEdgeType,
-    DpmLineageEdgeResponse,
     DpmLineageResponse,
     DpmRunArtifactResponse,
-    DpmRunIdempotencyHistoryItem,
     DpmRunIdempotencyHistoryRecord,
     DpmRunIdempotencyHistoryResponse,
     DpmRunIdempotencyLookupResponse,
@@ -39,8 +37,11 @@ from src.core.rebalance_runs.models import (
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 from src.core.rebalance_runs.serializers import (
+    lineage_cursor,
     to_async_accepted,
     to_async_status,
+    to_idempotency_history_response,
+    to_lineage_response,
     to_lookup_response,
     to_workflow_decision_response,
 )
@@ -222,7 +223,7 @@ class DpmRunSupportService:
         history = self._repository.list_idempotency_history(idempotency_key=idempotency_key)
         if not history:
             raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
-        return _to_idempotency_history_response(
+        return to_idempotency_history_response(
             idempotency_key=idempotency_key,
             history=history,
         )
@@ -334,7 +335,7 @@ class DpmRunSupportService:
                 edge.target_entity_id,
             ),
         )
-        return _to_lineage_response(entity_id=entity_id, edges=edges, next_cursor=None)
+        return to_lineage_response(entity_id=entity_id, edges=edges, next_cursor=None)
 
     def get_lineage_filtered(
         self,
@@ -366,7 +367,7 @@ class DpmRunSupportService:
 
         if cursor is not None:
             cursor_index = next(
-                (index for index, row in enumerate(edges) if _lineage_cursor(row) == cursor),
+                (index for index, row in enumerate(edges) if lineage_cursor(row) == cursor),
                 None,
             )
             if cursor_index is None:
@@ -375,8 +376,8 @@ class DpmRunSupportService:
                 edges = edges[cursor_index + 1 :]
 
         page = edges[:limit]
-        next_cursor = _lineage_cursor(page[-1]) if len(edges) > limit else None
-        return _to_lineage_response(entity_id=entity_id, edges=page, next_cursor=next_cursor)
+        next_cursor = lineage_cursor(page[-1]) if len(edges) > limit else None
+        return to_lineage_response(entity_id=entity_id, edges=page, next_cursor=next_cursor)
 
     def get_supportability_summary(
         self, *, store_backend: str, retention_days: int
@@ -445,7 +446,7 @@ class DpmRunSupportService:
         idempotency_history = None
         if include_idempotency_history and run.idempotency_key is not None:
             history = self._repository.list_idempotency_history(idempotency_key=run.idempotency_key)
-            idempotency_history = _to_idempotency_history_response(
+            idempotency_history = to_idempotency_history_response(
                 idempotency_key=run.idempotency_key,
                 history=history,
             )
@@ -467,7 +468,7 @@ class DpmRunSupportService:
                 edge.target_entity_id,
             ),
         )
-        lineage = _to_lineage_response(entity_id=rebalance_run_id, edges=edges, next_cursor=None)
+        lineage = to_lineage_response(entity_id=rebalance_run_id, edges=edges, next_cursor=None)
 
         return DpmRunSupportBundleResponse(
             run=to_lookup_response(run),
@@ -922,60 +923,3 @@ def _resolve_freshness_bucket(*, summary: DpmSupportabilitySummaryData) -> DpmFr
     if age_days <= 1:
         return "same_day"
     return "stale"
-
-
-def _lineage_cursor(edge: DpmLineageEdgeRecord) -> str:
-    return (
-        f"{edge.created_at.isoformat()}|{edge.source_entity_id}|"
-        f"{edge.edge_type}|{edge.target_entity_id}"
-    )
-
-
-def _to_lineage_response(
-    *,
-    entity_id: str,
-    edges: list[DpmLineageEdgeRecord],
-    next_cursor: Optional[str],
-) -> DpmLineageResponse:
-    return DpmLineageResponse(
-        entity_id=entity_id,
-        edges=[
-            DpmLineageEdgeResponse(
-                source_entity_id=edge.source_entity_id,
-                edge_type=edge.edge_type,
-                target_entity_id=edge.target_entity_id,
-                created_at=edge.created_at.isoformat(),
-                metadata=edge.metadata_json,
-            )
-            for edge in edges
-        ],
-        next_cursor=next_cursor,
-    )
-
-
-def _to_idempotency_history_response(
-    *,
-    idempotency_key: str,
-    history: list[DpmRunIdempotencyHistoryRecord],
-) -> DpmRunIdempotencyHistoryResponse:
-    ordered_history = sorted(
-        history,
-        key=lambda item: (
-            item.created_at,
-            item.rebalance_run_id,
-            item.correlation_id,
-            item.request_hash,
-        ),
-    )
-    return DpmRunIdempotencyHistoryResponse(
-        idempotency_key=idempotency_key,
-        history=[
-            DpmRunIdempotencyHistoryItem(
-                rebalance_run_id=item.rebalance_run_id,
-                correlation_id=item.correlation_id,
-                request_hash=item.request_hash,
-                created_at=item.created_at.isoformat(),
-            )
-            for item in ordered_history
-        ],
-    )

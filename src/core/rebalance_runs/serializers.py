@@ -3,6 +3,12 @@ from src.core.rebalance_runs.models import (
     DpmAsyncError,
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
+    DpmLineageEdgeRecord,
+    DpmLineageEdgeResponse,
+    DpmLineageResponse,
+    DpmRunIdempotencyHistoryItem,
+    DpmRunIdempotencyHistoryRecord,
+    DpmRunIdempotencyHistoryResponse,
     DpmRunLookupResponse,
     DpmRunRecord,
     DpmRunWorkflowDecisionRecord,
@@ -66,4 +72,61 @@ def to_workflow_decision_response(
         actor_id=decision.actor_id,
         decided_at=decision.decided_at.isoformat(),
         correlation_id=decision.correlation_id,
+    )
+
+
+def lineage_cursor(edge: DpmLineageEdgeRecord) -> str:
+    return (
+        f"{edge.created_at.isoformat()}|{edge.source_entity_id}|"
+        f"{edge.edge_type}|{edge.target_entity_id}"
+    )
+
+
+def to_lineage_response(
+    *,
+    entity_id: str,
+    edges: list[DpmLineageEdgeRecord],
+    next_cursor: str | None,
+) -> DpmLineageResponse:
+    return DpmLineageResponse(
+        entity_id=entity_id,
+        edges=[
+            DpmLineageEdgeResponse(
+                source_entity_id=edge.source_entity_id,
+                edge_type=edge.edge_type,
+                target_entity_id=edge.target_entity_id,
+                created_at=edge.created_at.isoformat(),
+                metadata=edge.metadata_json,
+            )
+            for edge in edges
+        ],
+        next_cursor=next_cursor,
+    )
+
+
+def to_idempotency_history_response(
+    *,
+    idempotency_key: str,
+    history: list[DpmRunIdempotencyHistoryRecord],
+) -> DpmRunIdempotencyHistoryResponse:
+    ordered_history = sorted(
+        history,
+        key=lambda item: (
+            item.created_at,
+            item.rebalance_run_id,
+            item.correlation_id,
+            item.request_hash,
+        ),
+    )
+    return DpmRunIdempotencyHistoryResponse(
+        idempotency_key=idempotency_key,
+        history=[
+            DpmRunIdempotencyHistoryItem(
+                rebalance_run_id=item.rebalance_run_id,
+                correlation_id=item.correlation_id,
+                request_hash=item.request_hash,
+                created_at=item.created_at.isoformat(),
+            )
+            for item in ordered_history
+        ],
     )
