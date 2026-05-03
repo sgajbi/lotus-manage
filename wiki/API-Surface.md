@@ -51,6 +51,28 @@ this surface; construction-specific realization requirements now live in Gateway
 Workbench RFC-0098, and
 [`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
+## Proof-pack surfaces
+
+- `POST /api/v1/rebalance/proof-packs`
+  generates and persists an immutable RFC-0040 pre-trade proof pack from a persisted rebalance run
+  or selected RFC-0039 construction alternative. Calls require `Idempotency-Key` and preserve
+  source-backed degraded or blocked section states instead of inventing missing evidence.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`
+  retrieves the persisted proof-pack JSON contract with section states, hashes, lineage, retention
+  posture, source references, and supportability summary.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`
+  renders deterministic human-readable Markdown from the persisted proof pack.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`
+  returns the generated report-input evidence reference when present. Before Slice 7 adapters
+  generate the ref, the endpoint truthfully returns `424`.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input`
+  returns the generated AI-evidence input reference when present. Before Slice 7 adapters generate
+  the ref, the endpoint truthfully returns `424`.
+
+These are manage-owned backend authority endpoints. Gateway and Workbench must consume these
+contracts later without reconstructing proof-pack evidence. Report materialization and AI memo
+generation remain downstream responsibilities and are not claimed by this API slice.
+
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.

@@ -272,12 +272,13 @@ def test_rfc0040_slice_evidence_stays_linked_and_not_promoted_prematurely() -> N
         "RFC-0040-domain-builder-slice3.md",
         "RFC-0040-markdown-summary-slice4.md",
         "RFC-0040-persistence-slice5.md",
+        "RFC-0040-api-slice6.md",
     ]
     missing_evidence = [name for name in required_evidence if name not in rfc]
 
     assert missing_evidence == []
-    assert "SLICES 0-5 COMPLETE" in rfc
-    assert "SLICES 0-5 COMPLETE" in index
-    assert "PERSISTENCE IMPLEMENTED" in rfc
+    assert "SLICES 0-6 COMPLETE" in rfc
+    assert "SLICES 0-6 COMPLETE" in index
+    assert "CERTIFIED PROOF-PACK APIS IMPLEMENTED" in rfc
     assert "Pre-trade proof pack | RFC-0040" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features

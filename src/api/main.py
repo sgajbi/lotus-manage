@@ -42,6 +42,7 @@ from src.api.routers.integration_capabilities import (
 )
 from src.api.routers.mandates import router as mandates_router
 from src.api.routers.monitoring import router as monitoring_router
+from src.api.routers.proof_packs import router as proof_pack_router
 from src.api.services.rebalance_simulation_service import (
     DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
     DPM_IDEMPOTENCY_CACHE,
@@ -138,6 +139,10 @@ app = FastAPI(
                 "selection endpoints."
             ),
         },
+        {
+            "name": "lotus-manage Proof Packs",
+            "description": "RFC-0040 pre-trade proof-pack generation and evidence endpoints.",
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -172,6 +177,7 @@ app.include_router(integration_capabilities_router, prefix="/api/v1")
 app.include_router(mandates_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
 app.include_router(construction_router, prefix="/api/v1")
+app.include_router(proof_pack_router, prefix="/api/v1")
 
 
 @app.get(

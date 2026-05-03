@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICES 0-5 COMPLETE; PERSISTENCE IMPLEMENTED |
+| **Status** | IN PROGRESS - SLICES 0-6 COMPLETE; CERTIFIED PROOF-PACK APIS IMPLEMENTED |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -17,6 +17,7 @@
 | **Slice 3 Evidence** | `docs/rfcs/RFC-0040-domain-builder-slice3.md` |
 | **Slice 4 Evidence** | `docs/rfcs/RFC-0040-markdown-summary-slice4.md` |
 | **Slice 5 Evidence** | `docs/rfcs/RFC-0040-persistence-slice5.md` |
+| **Slice 6 Evidence** | `docs/rfcs/RFC-0040-api-slice6.md` |
 
 ---
 
@@ -858,6 +859,17 @@ Evidence:
 3. vocabulary validation,
 4. no-alias gate,
 5. error-path tests.
+
+Slice 6 result:
+
+1. completed in `docs/rfcs/RFC-0040-api-slice6.md`,
+2. added certified manage-owned proof-pack generate, retrieve, Markdown, report-input-ref, and
+   AI-evidence-ref endpoints under `/api/v1/rebalance/proof-packs`,
+3. enforced idempotent generation, source validation, immutable persistence lookup, Markdown
+   rendering, and governed `424` report/AI unavailable states before Slice 7 adapters exist,
+4. documented proof-pack endpoints in OpenAPI and repo-local wiki endpoint certification,
+5. made no Gateway, Workbench, report materialization, AI memo, or full front-office supported
+   feature claim.
 
 ### Slice 7 - Report and AI Handoff Adapters
 

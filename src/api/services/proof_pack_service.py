@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+from datetime import datetime, timedelta, timezone
+
+from fastapi import HTTPException, status
+
+from src.core.construction.repository import ConstructionRepository
+from src.core.proof_packs import (
+    ProofPackSourceValidationError,
+    build_proof_pack_from_run,
+    build_proof_pack_from_selected_alternative,
+)
+from src.core.proof_packs.models import DpmPreTradeProofPack, DpmProofPackEvidenceRef
+from src.core.proof_packs.repository import (
+    DpmProofPackConflictError,
+    DpmProofPackRepository,
+)
+from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
+
+PROOF_PACK_RETENTION_DAYS = 365 * 7
+
+
+class DpmProofPackReportInputNotGeneratedError(Exception):
+    pass
+
+
+class DpmProofPackAiEvidenceInputNotGeneratedError(Exception):
+    pass
+
+
+def generate_proof_pack_from_run(
+    *,
+    rebalance_run_id: str,
+    actor_id: str,
+    reason: str | None,
+    correlation_id: str | None,
+    mandate_id: str | None,
+    idempotency_key: str | None,
+    run_service: DpmRunSupportService,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmPreTradeProofPack:
+    if idempotency_key is not None:
+        existing = proof_pack_repository.get_proof_pack_by_idempotency(
+            idempotency_key=idempotency_key
+        )
+        if existing is not None:
+            return existing
+    run = run_service.get_run_record(rebalance_run_id=rebalance_run_id)
+    proof_pack = build_proof_pack_from_run(
+        run=run,
+        created_by=actor_id,
+        reason=reason,
+        correlation_id=correlation_id,
+        mandate_id=mandate_id,
+        workflow_decisions=run_service.list_workflow_decision_records(
+            rebalance_run_id=rebalance_run_id
+        ),
+    )
+    _persist(
+        proof_pack_repository=proof_pack_repository,
+        proof_pack=proof_pack,
+        idempotency_key=idempotency_key,
+    )
+    return proof_pack
+
+
+def generate_proof_pack_from_selected_alternative(
+    *,
+    alternative_set_id: str,
+    selected_alternative_id: str,
+    actor_id: str,
+    reason: str | None,
+    correlation_id: str | None,
+    mandate_id: str | None,
+    idempotency_key: str | None,
+    construction_repository: ConstructionRepository,
+    run_service: DpmRunSupportService,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmPreTradeProofPack:
+    if idempotency_key is not None:
+        existing = proof_pack_repository.get_proof_pack_by_idempotency(
+            idempotency_key=idempotency_key
+        )
+        if existing is not None:
+            return existing
+    alternative_set = construction_repository.get_alternative_set(
+        alternative_set_id=alternative_set_id
+    )
+    if alternative_set is None:
+        raise ProofPackSourceValidationError("DPM_ALTERNATIVE_SET_NOT_FOUND")
+    selection = construction_repository.get_selection(alternative_set_id=alternative_set_id)
+    selected = next(
+        (
+            alternative
+            for alternative in alternative_set.alternatives
+            if alternative.alternative_id == selected_alternative_id
+        ),
+        None,
+    )
+    if selected is None:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
+    run = None
+    workflow_decisions = []
+    if selected.rebalance_run_id is not None:
+        try:
+            run = run_service.get_run_record(rebalance_run_id=selected.rebalance_run_id)
+            workflow_decisions = run_service.list_workflow_decision_records(
+                rebalance_run_id=selected.rebalance_run_id
+            )
+        except DpmRunNotFoundError:
+            run = None
+            workflow_decisions = []
+    proof_pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=selected_alternative_id,
+        run=run,
+        selection=selection,
+        created_by=actor_id,
+        reason=reason,
+        correlation_id=correlation_id,
+        mandate_id=mandate_id,
+        workflow_decisions=workflow_decisions,
+    )
+    _persist(
+        proof_pack_repository=proof_pack_repository,
+        proof_pack=proof_pack,
+        idempotency_key=idempotency_key,
+    )
+    return proof_pack
+
+
+def get_proof_pack(
+    *,
+    proof_pack_id: str,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmPreTradeProofPack:
+    proof_pack = proof_pack_repository.get_proof_pack(proof_pack_id=proof_pack_id)
+    if proof_pack is None:
+        raise DpmRunNotFoundError("DPM_PROOF_PACK_NOT_FOUND")
+    return proof_pack
+
+
+def get_report_input_ref(
+    *,
+    proof_pack_id: str,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmProofPackEvidenceRef:
+    proof_pack = get_proof_pack(
+        proof_pack_id=proof_pack_id,
+        proof_pack_repository=proof_pack_repository,
+    )
+    if proof_pack.report_input_ref is None:
+        raise DpmProofPackReportInputNotGeneratedError("DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED")
+    return proof_pack.report_input_ref
+
+
+def get_ai_evidence_ref(
+    *,
+    proof_pack_id: str,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmProofPackEvidenceRef:
+    proof_pack = get_proof_pack(
+        proof_pack_id=proof_pack_id,
+        proof_pack_repository=proof_pack_repository,
+    )
+    if proof_pack.ai_evidence_ref is None:
+        raise DpmProofPackAiEvidenceInputNotGeneratedError(
+            "DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED"
+        )
+    return proof_pack.ai_evidence_ref
+
+
+def to_api_http_exception(exc: Exception) -> HTTPException:
+    if isinstance(exc, DpmProofPackConflictError):
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    if isinstance(exc, DpmRunNotFoundError):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    if isinstance(exc, ProofPackSourceValidationError):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    if isinstance(
+        exc,
+        (
+            DpmProofPackReportInputNotGeneratedError,
+            DpmProofPackAiEvidenceInputNotGeneratedError,
+        ),
+    ):
+        return HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY, detail=str(exc))
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=type(exc).__name__
+    )
+
+
+def _persist(
+    *,
+    proof_pack_repository: DpmProofPackRepository,
+    proof_pack: DpmPreTradeProofPack,
+    idempotency_key: str | None,
+) -> None:
+    proof_pack_repository.save_proof_pack(
+        proof_pack=proof_pack,
+        idempotency_key=idempotency_key,
+        retention_expires_at=datetime.now(timezone.utc) + timedelta(days=PROOF_PACK_RETENTION_DAYS),
+    )

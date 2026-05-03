@@ -155,6 +155,17 @@ class DpmRunSupportService:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
         return to_lookup_response(run)
 
+    def get_run_record(self, *, rebalance_run_id: str) -> DpmRunRecord:
+        self._cleanup_expired_supportability()
+        return self._get_required_run(rebalance_run_id=rebalance_run_id)
+
+    def list_workflow_decision_records(
+        self, *, rebalance_run_id: str
+    ) -> list[DpmRunWorkflowDecisionRecord]:
+        self._cleanup_expired_supportability()
+        self._get_required_run(rebalance_run_id=rebalance_run_id)
+        return self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
+
     def get_run_by_correlation(self, *, correlation_id: str) -> DpmRunLookupResponse:
         self._cleanup_expired_supportability()
         run = self._repository.get_run_by_correlation(correlation_id=correlation_id)

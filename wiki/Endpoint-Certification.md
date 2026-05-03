@@ -1526,3 +1526,194 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_correlation_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
+
+## Certified endpoint: proof-pack generation
+
+Route:
+
+- `POST /api/v1/rebalance/proof-packs`
+
+Purpose:
+
+Generates and persists an immutable RFC-0040 pre-trade proof pack from either a persisted rebalance
+run or a selected RFC-0039 construction alternative. The endpoint is the manage-owned proof-pack
+authority and records degraded or blocked section states when required source evidence is not yet
+available.
+
+Request surface:
+
+- Header: `Idempotency-Key` is required for replay-safe generation.
+- Optional header: `X-Correlation-Id`.
+- Body: `DpmProofPackGenerateRequest`.
+- Response: `DpmProofPackGenerateResponse`.
+- Missing source fields return `422`.
+- Missing source records return `404`.
+- identity or idempotency conflicts return `409`.
+
+Functional coverage:
+
+- direct rebalance-run proof-pack generation,
+- idempotent replay with stable content hash,
+- selected-alternative source validation,
+- persisted proof-pack lookup after generation,
+- optional Markdown/report/AI link generation in the response.
+
+Non-functional posture:
+
+- Proof-pack content is hashed and persisted immutably.
+- The route does not reconstruct source facts from downstream report, AI, Gateway, or Workbench
+  layers.
+- Missing report-input or AI-evidence refs are represented as governed unavailable states until
+  Slice 7 adapters generate them.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack detail
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`
+
+Purpose:
+
+Returns the persisted proof-pack JSON contract, including section states, source refs, evidence
+refs, decision timeline, lineage, supportability counts, source hashes, and content hash.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Response: `DpmProofPackLookupResponse`.
+- Missing proof pack returns `404`.
+
+Functional coverage:
+
+- persisted proof-pack retrieval,
+- hash and lineage round-trip,
+- section-state visibility for ready, degraded, blocked, and pending-review posture.
+
+Non-functional posture:
+
+- The endpoint reads the stored proof-pack artifact and does not regenerate calculations.
+- The response is bounded to the proof-pack contract and avoids raw upstream payload exposure.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack Markdown summary
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`
+
+Purpose:
+
+Returns deterministic human-readable Markdown rendered from the persisted proof pack for PM,
+compliance, operations, audit, sales/pre-sales, and client-demo review material.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Response: `text/plain` Markdown.
+- Missing proof pack returns `404`.
+
+Functional coverage:
+
+- deterministic Markdown rendering,
+- supportability matrix and evidence-gap visibility,
+- timeline and integrity hash presentation.
+
+Non-functional posture:
+
+- Markdown is derived from persisted proof-pack truth and does not become a separate evidence
+  authority.
+- Degraded source evidence remains visible in the rendered summary.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack tests/unit/dpm/proof_packs/test_proof_pack_markdown.py -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack report-input ref
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`
+
+Purpose:
+
+Returns the generated report-input evidence reference for a persisted proof pack once the Slice 7
+adapter has generated that ref. Until then, the endpoint truthfully returns
+`424 DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED`.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Success response: `DpmProofPackEvidenceRef`.
+- Missing proof pack returns `404`.
+- Missing generated report-input ref returns `424`.
+
+Functional coverage:
+
+- governed unavailable response before report-input generation,
+- OpenAPI success contract for generated refs,
+- report-input boundary kept separate from report materialization.
+
+Non-functional posture:
+
+- `lotus-manage` exposes the evidence ref only; `lotus-report` owns report materialization.
+- Callers must not treat `424` as a successful supported report-output state.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack AI-evidence input ref
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input`
+
+Purpose:
+
+Returns the generated AI-evidence input reference for a persisted proof pack once the Slice 7
+adapter has generated that ref. Until then, the endpoint truthfully returns
+`424 DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED`.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Success response: `DpmProofPackEvidenceRef`.
+- Missing proof pack returns `404`.
+- Missing generated AI-evidence ref returns `424`.
+
+Functional coverage:
+
+- governed unavailable response before AI-evidence generation,
+- OpenAPI success contract for generated refs,
+- AI-evidence boundary kept separate from AI PM memo generation.
+
+Non-functional posture:
+
+- `lotus-manage` exposes bounded evidence refs only; RFC-0043 and `lotus-ai` own memo generation.
+- Callers must not treat `424` as a successful AI-output state.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack -q
+python scripts/openapi_quality_gate.py
+```
