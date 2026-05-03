@@ -885,12 +885,14 @@ Evidence:
 ### Slice 8: Implementation Proof Slice
 
 Slice 8 has local application-contract evidence in
-`output/rfc0039-proof/20260503-172059/` (ignored by Git). The first evidence pass used an already
-aligned portfolio and was rejected as not business-useful. The proof was regenerated with drifted
-holdings for `PB_SG_GLOBAL_BAL_001`, producing a comparison matrix where do-nothing preserves
-drift with zero turnover, heuristic and tax-aware alternatives remove drift with turnover, and the
-minimum-turnover alternative correctly lands in `PENDING_REVIEW` after turnover-budget suppression.
-This is not yet canonical front-office live-stack proof.
+`output/rfc0039-proof/20260503-172059/` and Postgres-backed canonical manage evidence in
+`output/rfc0039-proof/20260503-173624-canonical-postgres/` (both ignored by Git). The first
+evidence pass used an already aligned portfolio and was rejected as not business-useful. The proof
+was regenerated with drifted holdings for `PB_SG_GLOBAL_BAL_001`, producing a comparison matrix
+where do-nothing preserves drift with zero turnover, heuristic and tax-aware alternatives remove
+drift with turnover, and the minimum-turnover alternative correctly lands in `PENDING_REVIEW` after
+turnover-budget suppression. The repeatable live validator then passed against a Postgres-backed
+canonical manage runtime on `127.0.0.1:8020`.
 
 Scope:
 
@@ -917,6 +919,7 @@ Current evidence:
 6. `output/rfc0039-proof/20260503-172059/04-comparison-matrix.json`
 7. `output/rfc0039-proof/20260503-172059/metadata.json`
 8. `output/rfc0039-proof/live-validator/summary.json`
+9. `output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json`
 
 Critical review:
 
@@ -925,11 +928,19 @@ Critical review:
 2. Regenerated proof demonstrates real trade-offs across drift reduction, turnover, method status,
    selection, and degraded enrichment reason codes.
 3. The repeatable live validator now includes `construction_alternatives_first_wave`, proving
-   generate/read/select plus first-wave trade-off checks. In local short-lived runtime, that probe
-   passed while two existing Postgres-supportability probes failed because no Postgres DSN was
-   configured for the local app profile.
-4. Remaining gap: canonical front-office stack proof against the governed seeded runtime is still
-   required before Slice 8 can be marked complete.
+   generate/read/select plus first-wave trade-off checks.
+4. The short-lived local runtime proof exposed an environment-profile gap: without Postgres DSNs,
+   construction passed but supportability probes failed. The canonical proof reran with
+   `DPM_SUPPORTABILITY_STORE_BACKEND=POSTGRES`,
+   `DPM_POLICY_PACK_CATALOG_BACKEND=POSTGRES`, and migrations applied through
+   `scripts/postgres_migrate.py --target dpm`; the validator passed 10/10 checks including
+   `supportability_postgres_summary` with `store_backend=POSTGRES`.
+5. Debt removed during proof: `scripts/Start-CanonicalManage.ps1` now treats missing Python
+   modules as a false probe result instead of aborting before the intended global-Python fallback,
+   making the canonical startup helper reliable in a repo venv that is missing the Postgres driver.
+6. Slice 8 is complete for manage backend proof. Gateway and Workbench product-surface proof is
+   intentionally deferred to the final realization RFC slice after manage hardening stabilizes the
+   contract.
 
 ### Slice 9: Second-Last Hardening and Review Slice
 

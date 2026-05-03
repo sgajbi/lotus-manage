@@ -68,13 +68,14 @@ Current repository posture:
     promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
     platform canonical seed automation remain governed downstream follow-up in the owning
     repositories.
-13. RFC-0039 Slices 0-7 have delivered the first implementation-backed construction-alternative
+13. RFC-0039 Slices 0-8 have delivered the first implementation-backed construction-alternative
     backend foundation: bounded construction vocabulary, pure alternative models, method registry,
     enrichment posture, risk/performance seams, repository contract, in-memory and PostgreSQL
     persistence foundation, migration `0005_construction_alternatives.sql`, and certified APIs for
-    generating, retrieving, and selecting persisted alternative sets. Gateway and Workbench are not
-    yet integrated with this surface; paired realization RFCs are created after manage proof and
-    hardening.
+    generating, retrieving, and selecting persisted alternative sets. Postgres-backed canonical
+    manage proof passed through `scripts/validate_live_api.py`, including first-wave
+    generate/read/select behavior and supportability summary checks. Gateway and Workbench are not
+    yet integrated with this surface; paired realization RFCs are created after manage hardening.
 
 ## Architecture And Module Map
 

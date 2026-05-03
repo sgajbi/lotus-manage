@@ -333,7 +333,8 @@ Non-functional posture:
 - Selection is an audit decision, not an execution command.
 - Gateway and Workbench are not yet integrated; paired realization RFCs are written after manage
   proof and hardening when the backend contract and evidence are stable.
-- Metrics and live proof remain later RFC-0039 slices before full support promotion.
+- The first-wave generate/read/select contract is live-proven through the repeatable validator
+  against a Postgres-backed canonical manage runtime.
 
 Upstream integration posture:
 
@@ -354,7 +355,8 @@ Evidence commands:
 python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py -q
 python scripts/openapi_quality_gate.py
 python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
-python scripts/validate_live_api.py --base-url http://127.0.0.1:8019 --skip-demo-pack --json-output output/rfc0039-proof/live-validator/summary.json
+powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8020
+python scripts/validate_live_api.py --base-url http://127.0.0.1:8020 --skip-demo-pack --json-output output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json
 ```
 
 ## Certified endpoint family: policy-pack read supportability

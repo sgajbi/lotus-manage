@@ -20,8 +20,16 @@ function Test-PythonModule {
     [string]$ModuleName
   )
 
-  & $PythonPath -c "import $ModuleName" 2>$null
-  return $LASTEXITCODE -eq 0
+  try {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & $PythonPath -c "import $ModuleName" *> $null
+    return $LASTEXITCODE -eq 0
+  } catch {
+    return $false
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
 }
 
 function Ensure-CanonicalPostgres {
