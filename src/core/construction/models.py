@@ -90,3 +90,50 @@ class ConstructionAlternativeSet(BaseModel):
     alternatives: list[ConstructionAlternative] = Field(
         description="Comparable construction alternatives."
     )
+
+
+class ConstructionSolverPosture(BaseModel):
+    solver_required: bool = Field(description="Whether the requested method requires a solver.")
+    solver_available: bool = Field(description="Whether solver dependencies are available.")
+    solver_engine: str | None = Field(
+        default=None,
+        description="Solver engine family when available.",
+    )
+    reason_code: str = Field(description="Bounded solver supportability reason code.")
+
+
+class ConstructionMethodDefinition(BaseModel):
+    method: ConstructionMethod = Field(description="Construction method identifier.")
+    display_name: str = Field(description="Business display name for the method.")
+    first_wave: bool = Field(description="Whether the method is in the RFC-0039 first wave.")
+    requires_solver: bool = Field(description="Whether the method requires solver dependencies.")
+    required_source_families: list[ConstructionSourceFamily] = Field(
+        description="Mandatory source families for method readiness."
+    )
+    fallback_method: ConstructionMethod | None = Field(
+        default=None,
+        description="Fallback method when the requested method cannot run.",
+    )
+    support_promotion_gate: str = Field(
+        description="Evidence gate required before supported-feature promotion.",
+    )
+
+
+class ConstructionMethodPlan(BaseModel):
+    requested_method: ConstructionMethod = Field(description="Method requested by caller or engine.")
+    effective_method: ConstructionMethod = Field(description="Method that should actually run.")
+    method_status: ConstructionMethodStatus = Field(description="Planning-time method status.")
+    fallback_method: ConstructionMethod | None = Field(
+        default=None,
+        description="Fallback method selected by the registry.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Bounded planning and fallback reason codes.",
+    )
+    required_source_families: list[ConstructionSourceFamily] = Field(
+        description="Mandatory source families for the effective method."
+    )
+    solver_posture: ConstructionSolverPosture = Field(
+        description="Solver supportability posture for the method plan."
+    )

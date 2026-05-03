@@ -761,6 +761,11 @@ Acceptance:
 
 ### Slice 4: Method Registry and Solver/Fallback Governance
 
+Slice 4 implementation lives in `src/core/construction/method_registry.py`. It adds one bounded
+registry entry for every declared construction method, first-wave source-family requirements,
+support-promotion gates, solver-required posture, explicit solver-unavailable fallback to
+`HEURISTIC_EXPLAINABLE`, and bounded solver failure classification.
+
 Scope:
 
 1. add construction method registry,
