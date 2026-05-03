@@ -20,6 +20,7 @@ from src.core.waves import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
     DpmWaveAlreadyExistsError,
+    DpmWaveHandoffRef,
     DpmWaveIdempotencyConflictError,
     DpmWaveRepository,
     DpmWaveSourceRef,
@@ -400,6 +401,194 @@ def select_wave_item_alternative(
     return updated
 
 
+def approve_wave(
+    *,
+    wave_id: str,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+    correlation_id: str,
+    wave_repository: DpmWaveRepository,
+) -> tuple[DpmRebalanceWave, bool]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    if wave.state in {"APPROVED", "APPROVED_WITH_EXCEPTIONS"}:
+        return wave, True
+    if wave.state not in {"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"}:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_APPROVAL_INVALID_STATE",
+            f"Wave {wave_id} cannot be approved from state {wave.state}.",
+        )
+
+    approved_items = [_approve_item(item, actor_id, reason_code, comment) for item in wave.items]
+    approved_count = sum(1 for item in approved_items if item.state == "APPROVED")
+    if approved_count == 0:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_APPROVAL_NO_ELIGIBLE_ITEMS",
+            f"Wave {wave_id} has no selected or proof-pack-ready items to approve.",
+        )
+
+    to_state: WaveState = (
+        "APPROVED" if approved_count == len(approved_items) else "APPROVED_WITH_EXCEPTIONS"
+    )
+    candidate = wave.model_copy(
+        update={
+            "items": approved_items,
+            "aggregate_metrics": _aggregate(approved_items),
+        },
+        deep=True,
+    )
+    approved = apply_wave_transition(
+        wave=candidate,
+        to_state=to_state,
+        event=_event(
+            wave_id=wave.wave_id,
+            from_state=wave.state,
+            to_state=to_state,
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            reason_code="WAVE_APPROVED",
+            metadata={
+                "approved_item_count": approved_count,
+                "exception_item_count": len(approved_items) - approved_count,
+                "approval_reason_code": reason_code,
+                **({"comment": comment} if comment else {}),
+            },
+        ),
+    )
+    try:
+        wave_repository.update_wave(wave=approved, expected_version=wave.version)
+    except DpmWaveVersionConflictError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    return approved, False
+
+
+def stage_wave(
+    *,
+    wave_id: str,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+    correlation_id: str,
+    wave_repository: DpmWaveRepository,
+) -> tuple[DpmRebalanceWave, bool]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    if wave.state in {"STAGED", "HANDOFF_READY"}:
+        return wave, True
+    if wave.state not in {"APPROVED", "APPROVED_WITH_EXCEPTIONS"}:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_STAGE_INVALID_STATE",
+            f"Wave {wave_id} cannot be staged from state {wave.state}.",
+        )
+
+    staged_items = [_stage_item(item, actor_id, reason_code, comment) for item in wave.items]
+    staged_count = sum(1 for item in staged_items if item.state == "STAGED")
+    if staged_count == 0:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_STAGE_NO_ELIGIBLE_ITEMS",
+            f"Wave {wave_id} has no approved items to stage.",
+        )
+
+    candidate = wave.model_copy(
+        update={
+            "items": staged_items,
+            "aggregate_metrics": _aggregate(staged_items),
+        },
+        deep=True,
+    )
+    staged = apply_wave_transition(
+        wave=candidate,
+        to_state="STAGED",
+        event=_event(
+            wave_id=wave.wave_id,
+            from_state=wave.state,
+            to_state="STAGED",
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            reason_code="WAVE_STAGED",
+            metadata={
+                "staged_item_count": staged_count,
+                "stage_reason_code": reason_code,
+                **({"comment": comment} if comment else {}),
+            },
+        ),
+    )
+    try:
+        wave_repository.update_wave(wave=staged, expected_version=wave.version)
+    except DpmWaveVersionConflictError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    return staged, False
+
+
+def handoff_wave(
+    *,
+    wave_id: str,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+    correlation_id: str,
+    wave_repository: DpmWaveRepository,
+) -> tuple[DpmRebalanceWave, bool]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    if wave.state == "HANDOFF_READY":
+        return wave, True
+    if wave.state != "STAGED":
+        raise DpmWaveValidationError(
+            "DPM_WAVE_HANDOFF_INVALID_STATE",
+            f"Wave {wave_id} cannot create handoff evidence from state {wave.state}.",
+        )
+
+    handoff_items = [_handoff_item(item, actor_id, reason_code, comment) for item in wave.items]
+    handoff_item_ids = [
+        item.wave_item_id for item in handoff_items if item.state == "HANDOFF_READY"
+    ]
+    if not handoff_item_ids:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_HANDOFF_NO_ELIGIBLE_ITEMS",
+            f"Wave {wave_id} has no staged items for operations handoff.",
+        )
+
+    handoff_ref = _handoff_ref(
+        wave_id=wave.wave_id,
+        item_ids=handoff_item_ids,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        correlation_id=correlation_id,
+        comment=comment,
+    )
+    candidate = wave.model_copy(
+        update={
+            "items": handoff_items,
+            "aggregate_metrics": _aggregate(handoff_items),
+            "handoff_refs": [*wave.handoff_refs, handoff_ref],
+        },
+        deep=True,
+    )
+    handoff_ready = apply_wave_transition(
+        wave=candidate,
+        to_state="HANDOFF_READY",
+        event=_event(
+            wave_id=wave.wave_id,
+            from_state="STAGED",
+            to_state="HANDOFF_READY",
+            actor_id=actor_id,
+            correlation_id=correlation_id,
+            reason_code="WAVE_HANDOFF_READY",
+            metadata={
+                "handoff_ref_id": handoff_ref.handoff_ref_id,
+                "handoff_item_count": len(handoff_item_ids),
+                "external_execution_claimed": False,
+                "handoff_reason_code": reason_code,
+                **({"comment": comment} if comment else {}),
+            },
+        ),
+    )
+    try:
+        wave_repository.update_wave(wave=handoff_ready, expected_version=wave.version)
+    except DpmWaveVersionConflictError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    return handoff_ready, False
+
+
 def _get_wave_or_raise(
     *,
     wave_id: str,
@@ -551,6 +740,130 @@ def _with_selection_and_proof_pack(
         },
         deep=True,
     )
+
+
+def _approve_item(
+    item: DpmRebalanceWaveItem,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+) -> DpmRebalanceWaveItem:
+    if item.state not in {"SELECTED", "PROOF_PACK_READY"}:
+        return item
+    diagnostics = {
+        **item.diagnostics,
+        "approval_actor_id": actor_id,
+        "approval_reason_code": reason_code,
+    }
+    if comment:
+        diagnostics["approval_comment"] = comment
+    return item.model_copy(
+        update={
+            "state": "APPROVED",
+            "reason_codes": [*item.reason_codes, "WAVE_ITEM_APPROVED"],
+            "diagnostics": diagnostics,
+        },
+        deep=True,
+    )
+
+
+def _stage_item(
+    item: DpmRebalanceWaveItem,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+) -> DpmRebalanceWaveItem:
+    if item.state != "APPROVED":
+        return item
+    diagnostics = {
+        **item.diagnostics,
+        "stage_actor_id": actor_id,
+        "stage_reason_code": reason_code,
+        "external_execution_claimed": False,
+    }
+    if comment:
+        diagnostics["stage_comment"] = comment
+    return item.model_copy(
+        update={
+            "state": "STAGED",
+            "reason_codes": [*item.reason_codes, "WAVE_ITEM_STAGED"],
+            "diagnostics": diagnostics,
+        },
+        deep=True,
+    )
+
+
+def _handoff_item(
+    item: DpmRebalanceWaveItem,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+) -> DpmRebalanceWaveItem:
+    if item.state != "STAGED":
+        return item
+    diagnostics = {
+        **item.diagnostics,
+        "handoff_actor_id": actor_id,
+        "handoff_reason_code": reason_code,
+        "external_execution_claimed": False,
+    }
+    if comment:
+        diagnostics["handoff_comment"] = comment
+    return item.model_copy(
+        update={
+            "state": "HANDOFF_READY",
+            "reason_codes": [*item.reason_codes, "WAVE_ITEM_HANDOFF_READY"],
+            "diagnostics": diagnostics,
+        },
+        deep=True,
+    )
+
+
+def _handoff_ref(
+    *,
+    wave_id: str,
+    item_ids: list[str],
+    actor_id: str,
+    reason_code: str,
+    correlation_id: str,
+    comment: str | None,
+) -> DpmWaveHandoffRef:
+    handoff_ref_id = f"dwh_{uuid.uuid4().hex[:12]}"
+    metadata: dict[str, object] = {
+        "handoff_contract": "RFC-0041_INTERNAL_OPERATIONS_HANDOFF_V1",
+        "handoff_boundary": "NO_EXTERNAL_EXECUTION",
+        "item_count": len(item_ids),
+    }
+    if comment:
+        metadata["comment"] = comment
+    content_hash = _handoff_content_hash(
+        {
+            "handoff_ref_id": handoff_ref_id,
+            "wave_id": wave_id,
+            "item_ids": item_ids,
+            "actor_id": actor_id,
+            "reason_code": reason_code,
+            "correlation_id": correlation_id,
+            "external_execution_claimed": False,
+            "metadata": metadata,
+        }
+    )
+    return DpmWaveHandoffRef(
+        handoff_ref_id=handoff_ref_id,
+        wave_id=wave_id,
+        item_ids=item_ids,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        correlation_id=correlation_id,
+        external_execution_claimed=False,
+        content_hash=content_hash,
+        metadata=metadata,
+    )
+
+
+def _handoff_content_hash(payload: dict[str, object]) -> str:
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
 
 
 def _simulation_result_state(items: list[DpmRebalanceWaveItem]) -> WaveState:

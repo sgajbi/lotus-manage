@@ -289,6 +289,50 @@ Validation:
 4. `python scripts\openapi_quality_gate.py`,
 5. `python scripts\api_vocabulary_inventory.py --output docs\standards\api-vocabulary\lotus-manage-api-vocabulary.v1.json`.
 
+## Slice 7 Approval, Staging, and Operations Handoff Result
+
+Slice 7 adds manage-owned workflow commands after construction selection and proof-pack linkage.
+The implementation stays inside `lotus-manage`; it does not send orders, client communications, or
+external execution instructions.
+
+Implemented truth:
+
+1. `POST /api/v1/rebalance/waves/{wave_id}/approve` approves only `SELECTED` or
+   `PROOF_PACK_READY` items.
+2. Blocked, simulation-blocked, degraded, review-required, unselected, failed, and cancelled items
+   are never promoted to approved by the approval command.
+3. Mixed waves with at least one approved item and at least one exception item move to
+   `APPROVED_WITH_EXCEPTIONS`; fully eligible waves move to `APPROVED`.
+4. `POST /api/v1/rebalance/waves/{wave_id}/stage` stages only approved items and records
+   `external_execution_claimed=false` in item diagnostics.
+5. `POST /api/v1/rebalance/waves/{wave_id}/handoff` creates append-only internal operations
+   handoff refs on the wave JSON contract, including stable handoff id, item ids, actor, reason,
+   correlation id, content hash, and `external_execution_claimed=false`.
+6. Repeated approve, stage, and handoff commands are idempotent and do not append duplicate
+   evidence after the terminal command state has already been reached.
+7. API errors are precise: invalid state, no eligible approval items, no eligible staging items,
+   no staged handoff items, missing wave, and optimistic version conflicts all use bounded error
+   codes.
+8. Tests prove end-to-end approval/stage/handoff persistence, blocked-item exclusion, handoff ref
+   append-only persistence, idempotent replay, and invalid-state behavior.
+
+Production boundary:
+
+1. Manage handoff evidence is an internal operations readiness package only.
+2. It is not an order execution API, OMS handoff, client communication, or trading instruction.
+3. Gateway and Workbench must consume this manage truth later; they must not reconstruct approval,
+   staging, handoff readiness, or aggregate state.
+4. No supported feature claim is promoted yet because supportability, live proof, downstream
+   realization RFCs, and final closure are still pending.
+
+Evidence:
+
+1. `src/api/services/wave_service.py`
+2. `src/api/routers/waves.py`
+3. `src/core/waves/models.py`
+4. `tests/unit/dpm/api/test_waves_api.py`
+5. `docs/standards/api-vocabulary/lotus-manage-api-vocabulary.v1.json`
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

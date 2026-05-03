@@ -1586,7 +1586,7 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, and selection
+## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, and handoff
 
 Routes:
 
@@ -1595,6 +1595,9 @@ Routes:
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
 - `POST /api/v1/rebalance/waves/{wave_id}/simulate`
 - `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
+- `POST /api/v1/rebalance/waves/{wave_id}/approve`
+- `POST /api/v1/rebalance/waves/{wave_id}/stage`
+- `POST /api/v1/rebalance/waves/{wave_id}/handoff`
 
 Purpose:
 
@@ -1606,6 +1609,8 @@ governed wave contract with an idempotency key. Slice 5 adds durable source-chec
 for persisted waves, using manage-owned mandate twins, mandate health snapshots, source-readiness
 state, and available upstream `lotus-core` lineage refs. Slice 6 adds ready-item construction
 simulation through RFC-0039 and item-level alternative selection with RFC-0040 proof-pack linkage.
+Slice 7 adds manage-owned approval, staging, and internal operations handoff evidence without
+external execution claims.
 
 Functional coverage:
 
@@ -1627,8 +1632,13 @@ Functional coverage:
 - item selection delegates to RFC-0039 selection and persists selected alternative ids,
 - proof-pack linkage delegates to RFC-0040 and degrades source-honestly when generation is not
   requested or fails,
-- no PM-book discovery, CIO model-change cohort discovery, approval, staging, handoff, Gateway
-  composition, or Workbench product claim in these slices.
+- approval promotes only selected or proof-pack-ready items and never promotes blocked items,
+- mixed approval produces `APPROVED_WITH_EXCEPTIONS`,
+- staging promotes only approved items and records no-external-execution posture,
+- handoff creates append-only internal operations handoff refs with actor, reason, item ids,
+  content hash, and `external_execution_claimed=false`,
+- no PM-book discovery, CIO model-change cohort discovery, Gateway composition, or Workbench
+  product claim in these slices.
 
 Non-functional posture:
 
@@ -1643,15 +1653,20 @@ Non-functional posture:
 - Simulation does not synthesize holdings, market data, model targets, or shelf entries from
   mandate identifiers. It requires caller-supplied RFC-0039 construction input for each ready item.
 - Selection appends a durable item-selection event without advancing approval or handoff state.
+- Approval, staging, and handoff commands are idempotent after their terminal command states and do
+  not append duplicate events or duplicate handoff refs.
+- Handoff evidence is an internal operations readiness package only; it is not an OMS handoff,
+  order execution instruction, or client communication.
 - The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
-  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 6.
+  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 7.
 
 Upstream integration posture:
 
 The supported Slice 4-6 source inputs are existing manage-owned mandate digital twins, mandate
 health snapshots, their source-readiness state, their persisted source lineage, explicit
 caller-supplied affected-portfolio source refs, caller-supplied RFC-0039 construction inputs for
-ready items, and RFC-0040 proof-pack outputs generated from selected alternatives. Automatic
+ready items, RFC-0040 proof-pack outputs generated from selected alternatives, and manage-owned
+workflow decisions captured through actor-attributed approval/staging/handoff commands. Automatic
 PM-book or CIO model-change cohort discovery remains deferred until the owning app exposes a
 certified source product.
 
