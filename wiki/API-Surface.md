@@ -44,7 +44,9 @@ storage-layer constraint.
   records the actor-attributed selected alternative for audit and later workflow handoff.
 
 These routes are manage-owned backend contracts. Gateway and Workbench are not yet integrated with
-this surface; paired realization RFCs are created after manage proof and hardening.
+this surface; construction-specific realization requirements now live in Gateway RFC-0098,
+Workbench RFC-0098, and
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,

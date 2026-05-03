@@ -115,6 +115,33 @@ The important boundary is that `lotus-manage` owns health and command-center tru
 and Workbench own composition and presentation. Workbench should not call `lotus-manage` directly or
 reconstruct health state client-side.
 
+## Construction Alternatives Flow
+
+RFC-0039 introduces a construction-alternative foundation for discretionary mandate decisioning.
+The backend-owned flow is:
+
+```mermaid
+flowchart TD
+    Core[lotus-core source products] --> Context[Stateful or stateless construction context]
+    Context --> Methods[Construction method registry]
+    Methods --> Baseline[Do-nothing baseline]
+    Methods --> Heuristic[Explainable heuristic]
+    Methods --> Turnover[Minimum-turnover posture]
+    Methods --> Tax[Tax-aware posture]
+    Baseline --> Set[Persisted alternative set]
+    Heuristic --> Set
+    Turnover --> Set
+    Tax --> Set
+    Set --> Select[Actor-attributed selection]
+    Select --> Gateway[Future gateway construction module]
+    Gateway --> Workbench[Future construction lab]
+```
+
+The important boundary is that `lotus-manage` owns construction alternatives and selection truth.
+Gateway and Workbench must consume that truth without recomputing construction methods or bypassing
+the experience API. The downstream handoff is maintained in
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
+
 ## Code map
 
 - `src/api/`
@@ -135,6 +162,11 @@ reconstruct health state client-side.
   RFC-0038 bounded monitoring run, exception queue, and command-center summary APIs
 - `docs/architecture/dpm-command-center-gateway-workbench-handoff.md`
   RFC-0038 downstream integration handoff for Gateway and Workbench command-center adoption
+- `src/core/construction/`, `src/api/routers/construction.py`,
+  `src/api/services/construction_service.py`, and `src/infrastructure/construction/`
+  RFC-0039 construction-alternative domain, API, service, and persistence foundation
+- `docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`
+  RFC-0039 downstream integration handoff for Gateway and Workbench construction-lab adoption
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
 - `src/infrastructure/`

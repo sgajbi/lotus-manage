@@ -20,6 +20,9 @@ Current implementation-backed posture:
    mandate digital-twin, health-engine, repository, migration, mandate refresh/read/version/diff
    APIs, standalone health APIs, bounded monitoring/exception APIs, and a bounded command-center
    summary API with local manage and live core/manage proof.
+6. RFC-0039 has delivered the manage-side construction-alternative foundation with first-wave
+   generate/read/select APIs, Postgres-backed proof, and Gateway/Workbench realization requirements
+   for the later product-surface journey.
 
 Strategic posture:
 
@@ -54,7 +57,7 @@ flowchart TD
 | RFC | Business outcome | Enterprise posture raised by |
 | --- | --- | --- |
 | RFC-0038 | PMs see mandate state, health, exceptions, and book attention queues. | Source-lineage-backed mandate twin, deterministic scoring, certified command-center APIs. |
-| RFC-0039 | PMs compare construction alternatives with visible risk, tax, liquidity, FX, ESG, and cost trade-offs. | Implementation-ready manage RFC now requires first-wave methods, objective/constraint traces, solver/fallback supportability, degraded-source handling, certified alternative APIs, and paired Gateway/Workbench realization RFCs created after manage proof/hardening before full product-outcome claims. |
+| RFC-0039 | PMs compare construction alternatives with visible risk, tax, liquidity, FX, ESG, and cost trade-offs. | Manage backend foundation is implementation-backed for first-wave methods, objective/constraint traces, solver/fallback supportability posture, degraded-source handling, certified alternative APIs, Postgres proof, and downstream Gateway/Workbench realization requirements. Full product-outcome claims wait for downstream implementation and live proof. |
 | RFC-0040 | PMs, compliance, operations, CIO, and audit can inspect one pre-trade evidence artifact. | Durable proof packs, decision timeline, report/AI handoff contracts, lineage and retention posture. |
 | RFC-0041 | CIO and PM teams can orchestrate book-level model-change and rebalance waves. | Item-level readiness, state-machine governance, actor-attributed approvals, bounded aggregate metrics. |
 | RFC-0042 | PMs learn from expected-versus-realized outcomes after execution. | Source-authoritative realized evidence, variance decomposition, searchable outcome memory. |

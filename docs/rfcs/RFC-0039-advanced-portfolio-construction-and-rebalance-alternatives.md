@@ -1182,25 +1182,33 @@ RFC-0039 is complete only when:
 
 ---
 
-## 19. Gold-Pass Assessment Template
-
-To be completed during final closure:
+## 19. Gold-Pass Assessment
 
 | Assessment Area | Final Result |
 | --- | --- |
-| What was truly completed | TBD |
-| Quality improvements made | TBD |
-| Debt removed | TBD |
-| Construction methods proven | TBD |
-| Objective/constraint trace proof | TBD |
-| Solver/fallback proof | TBD |
-| Source-data and degraded proof | TBD |
-| API certification result | TBD |
-| Data mesh and observability result | TBD |
-| Gateway/Workbench realization RFC result | TBD |
-| Documentation/wiki result | TBD |
-| Remaining governed follow-up | TBD |
-| Gold-standard conclusion | TBD |
+| What was truly completed | Manage-side RFC-0039 foundation for first-wave construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, live validator probe, downstream realization handoff, and wiki/README/context updates. |
+| Quality improvements made | Construction logic is isolated in `src/core/construction/`, API orchestration is separated in `src/api/services/construction_service.py`, persistence is behind `ConstructionRepository`, Postgres path has fast contract tests, OpenAPI and API vocabulary are refreshed, and the canonical startup helper now falls back correctly when the repo venv lacks the Postgres driver. |
+| Debt removed | Stale proof using an already-aligned portfolio was rejected and replaced with drifted-portfolio proof; construction API vocabulary drift was eliminated; missing Postgres repository unit coverage was closed; `Start-CanonicalManage.ps1` no longer aborts before its intended global-Python fallback. |
+| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, and `TAX_AWARE` are implemented and proven. The live proof shows do-nothing preserving drift with zero turnover, heuristic removing drift with two trades, minimum-turnover landing in `PENDING_REVIEW`, and tax-aware carrying explicit degraded enrichment reason codes where authoritative enrichment is absent. |
+| Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, and bounded reason codes for first-wave alternatives. |
+| Solver/fallback proof | RFC-0039 foundation includes method-registry solver posture and fallback modeling. Full solver-constrained construction methods beyond first-wave support remain governed follow-up under this RFC, not separate duplicate RFCs. |
+| Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; local proof includes degraded enrichment reason codes; Postgres-backed validator proof passed the construction probe and supportability summary. |
+| API certification result | OpenAPI quality gate, OpenAPI certification matrix, contract docs tests, no-alias guard, API vocabulary inventory, and live API validator passed after construction endpoints were added. |
+| Data mesh and observability result | Existing mesh product, trust telemetry, and observability contract gates passed through `make check`; construction proof preserves source supportability without moving core, risk, or performance authority into manage. |
+| Gateway/Workbench realization RFC result | Manage handoff document created; Gateway RFC-0098 and Workbench RFC-0098 were tightened with construction-specific composition and construction-lab requirements. No downstream implementation or support claim is made yet. |
+| Documentation/wiki result | README, repository context, RFC, wiki API surface, architecture, integrations, endpoint certification, supported features, RFC index, and roadmap were updated with implementation-backed wording and explicit downstream boundaries. |
+| Remaining governed follow-up | Gateway/Workbench construction lab implementation and canonical browser proof; second-wave construction methods such as liquidity-aware, ESG/restriction-aware, currency-overlay, regime/stress-aware, and fully solver-constrained methods remain governed RFC-0039 follow-up until implemented and proven. |
+| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave construction alternatives. The full front-office business outcome has not yet reached gold standard because Gateway and Workbench realization is intentionally not implemented in this manage RFC. |
+
+Wiki publication note:
+
+1. Repo-local wiki source was updated as the authored source of truth.
+2. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` currently fails because the published
+   GitHub wiki is behind repo-authored source for `API-Surface.md`, `Architecture.md`,
+   `Endpoint-Certification.md`, `Integrations.md`, `RFC-Index.md`, `Roadmap.md`, and
+   `Supported-Features.md`.
+3. This is a publication drift, not a repo-local documentation gap. Publish after merge with
+   `Sync-RepoWikis.ps1 -Publish -Repository lotus-manage`.
 
 ---
 

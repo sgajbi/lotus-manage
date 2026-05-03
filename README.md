@@ -66,10 +66,14 @@ RFC-0037 through RFC-0043 define the revamp from a certified rebalance/supportab
 a discretionary mandate portfolio-management operating system.
 
 RFC-0038 is now implementation-backed for the mandate digital-twin, health-score, monitoring, and
-command-center backend foundation. The remaining target-state RFCs cover advanced construction
-alternatives, pre-trade proof packs, decision timelines, CIO/model-change rebalance waves,
-post-trade outcome feedback, and governed AI PM support. Target-state features are not support
-claims until the owning RFC is implemented, certified, live-proven, and reflected in
+command-center backend foundation. RFC-0039 is implementation-backed for the manage-side
+construction-alternative foundation: first-wave generate/read/select APIs, do-nothing baseline,
+explainable heuristic, minimum-turnover, tax-aware posture, Postgres persistence, live proof, and
+downstream Gateway/Workbench realization requirements. Full product-surface support still requires
+Gateway and Workbench implementation and proof. The remaining target-state RFCs cover pre-trade
+proof packs, decision timelines, CIO/model-change rebalance waves, post-trade outcome feedback, and
+governed AI PM support. Target-state features are not support claims until the owning RFC is
+implemented, certified, live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
@@ -91,6 +95,10 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/mandates/*`
 - DPM monitoring, exceptions, and command center
   `/api/v1/dpm/monitoring/*`, `/api/v1/dpm/exceptions*`, `/api/v1/dpm/command-center`
+- construction alternatives
+  `/api/v1/construction/alternative-sets/generate`,
+  `/api/v1/construction/alternative-sets/{alternative_set_id}`,
+  `/api/v1/construction/alternative-sets/{alternative_set_id}/selections`
 - integration capabilities
   `/api/v1/integration/capabilities`
 - platform surfaces

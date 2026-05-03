@@ -103,6 +103,8 @@ Strategic downstream consumption should use:
 9. `/api/v1/dpm/monitoring/*` monitoring-run routes
 10. `/api/v1/dpm/exceptions*` exception queue and resolution routes
 11. `GET /api/v1/dpm/command-center` bounded command-center summary
+12. `/api/v1/construction/alternative-sets/*` construction alternative generate/read/selection
+    routes
 
 Removed or stale consumers should not call unversioned `/rebalance/*` routes, removed
 `/api/v1/platform/capabilities`, or proposal/advisory-era DPM endpoints.
@@ -147,6 +149,41 @@ Downstream tracking:
 2. `lotus-workbench`:
    [sgajbi/lotus-workbench#140](https://github.com/sgajbi/lotus-workbench/issues/140)
 3. `lotus-platform`: [sgajbi/lotus-platform#294](https://github.com/sgajbi/lotus-platform/issues/294)
+
+## DPM Construction Alternatives Downstream Handoff
+
+RFC-0039 adds the backend foundation for generating, reading, and selecting construction
+alternative sets. Downstream integration should follow this boundary:
+
+1. `lotus-workbench` must consume construction alternatives through `lotus-gateway`.
+2. `lotus-gateway` may compose `lotus-manage` alternatives but must not recompute methods,
+   comparison metrics, supportability states, or reason codes.
+3. Workbench should render do-nothing, explainable heuristic, minimum-turnover, and tax-aware
+   alternatives with clear ready, pending-review, degraded, blocked, and infeasible states.
+4. Canonical demo data for `PB_SG_GLOBAL_BAL_001` should exercise meaningful drift, turnover, tax,
+   source-readiness, and selection evidence.
+
+```mermaid
+sequenceDiagram
+    participant Workbench as lotus-workbench
+    participant Gateway as lotus-gateway
+    participant Manage as lotus-manage
+    participant Core as lotus-core
+
+    Workbench->>Gateway: Request construction alternatives
+    Gateway->>Manage: POST /api/v1/construction/alternative-sets/generate
+    Manage->>Core: Resolve source products when stateful sourcing is enabled
+    Core-->>Manage: Portfolio, target, eligibility, tax, market, readiness
+    Manage-->>Gateway: Alternative set with traces, metrics, and supportability
+    Gateway-->>Workbench: Construction lab comparison contract
+    Workbench->>Gateway: Select preferred alternative
+    Gateway->>Manage: POST /api/v1/construction/alternative-sets/{id}/selections
+    Manage-->>Gateway: Actor-attributed selection event
+    Gateway-->>Workbench: Selection saved and downstream action posture
+```
+
+The implementation handoff contract is maintained in
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
 ## Reference
 
