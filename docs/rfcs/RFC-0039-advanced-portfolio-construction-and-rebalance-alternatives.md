@@ -864,6 +864,14 @@ Evidence:
 
 ### Slice 8: Implementation Proof Slice
 
+Slice 8 has local application-contract evidence in
+`output/rfc0039-proof/20260503-172059/` (ignored by Git). The first evidence pass used an already
+aligned portfolio and was rejected as not business-useful. The proof was regenerated with drifted
+holdings for `PB_SG_GLOBAL_BAL_001`, producing a comparison matrix where do-nothing preserves
+drift with zero turnover, heuristic and tax-aware alternatives remove drift with turnover, and the
+minimum-turnover alternative correctly lands in `PENDING_REVIEW` after turnover-budget suppression.
+This is not yet canonical front-office live-stack proof.
+
 Scope:
 
 1. prove canonical portfolio alternatives,
@@ -878,6 +886,25 @@ Acceptance:
 1. live manage proof passes for `PB_SG_GLOBAL_BAL_001`,
 2. evidence includes at least do-nothing, heuristic, min-turnover, and one source-aware alternative,
 3. no supported-feature promotion occurs until every promoted method has evidence.
+
+Current evidence:
+
+1. `output/rfc0039-proof/20260503-172059/01-generate-request.json`
+2. `output/rfc0039-proof/20260503-172059/01-generate-response.json`
+3. `output/rfc0039-proof/20260503-172059/02-read-response.json`
+4. `output/rfc0039-proof/20260503-172059/03-selection-request.json`
+5. `output/rfc0039-proof/20260503-172059/03-selection-response.json`
+6. `output/rfc0039-proof/20260503-172059/04-comparison-matrix.json`
+7. `output/rfc0039-proof/20260503-172059/metadata.json`
+
+Critical review:
+
+1. First proof pass was not accepted because zero drift created no meaningful construction
+   trade-off.
+2. Regenerated proof demonstrates real trade-offs across drift reduction, turnover, method status,
+   selection, and degraded enrichment reason codes.
+3. Remaining gap: canonical front-office stack proof against the governed seeded runtime is still
+   required before Slice 8 can be marked complete.
 
 ### Slice 9: Second-Last Hardening and Review Slice
 
