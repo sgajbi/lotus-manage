@@ -80,10 +80,15 @@ RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway
 composition, Workbench review UX, report materialization, and AI memo generation remain downstream
 work in their owning apps; the post-merge gold-pass audit also records a canonical front-office
 risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no full proof-pack
-product UX support is claimed here. The remaining target-state RFCs cover decision timelines,
-CIO/model-change rebalance waves, post-trade outcome feedback, and governed AI PM support. Target-state features are
-not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
-[wiki/Supported-Features.md](wiki/Supported-Features.md).
+product UX support is claimed here. RFC-0041 is implementation-backed through Slice 10 live proof
+for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
+RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
+internal handoff evidence, retrieve/search/item/proof-pack/supportability read models, and
+Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway and Workbench
+implementation, automatic PM-book/CIO cohort discovery, and full front-office support remain
+unpromoted. The remaining target-state RFCs cover post-trade outcome feedback and governed AI PM
+support. Target-state features are not support claims until the owning RFC is implemented,
+certified, live-proven, and reflected in [wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
 or redesigned rather than preserved for backward compatibility. Future gateway and Workbench
@@ -108,6 +113,16 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/construction/alternative-sets/generate`,
   `/api/v1/construction/alternative-sets/{alternative_set_id}`,
   `/api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+- rebalance waves
+  `/api/v1/rebalance/waves`, `/api/v1/rebalance/waves/preview`,
+  `/api/v1/rebalance/waves/{wave_id}`, `/api/v1/rebalance/waves/{wave_id}/items`,
+  `/api/v1/rebalance/waves/{wave_id}/source-check`,
+  `/api/v1/rebalance/waves/{wave_id}/simulate`,
+  `/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`,
+  `/api/v1/rebalance/waves/{wave_id}/approve`, `/api/v1/rebalance/waves/{wave_id}/stage`,
+  `/api/v1/rebalance/waves/{wave_id}/handoff`, `/api/v1/rebalance/waves/{wave_id}/cancel`,
+  `/api/v1/rebalance/waves/{wave_id}/proof-pack`,
+  `/api/v1/rebalance/waves/{wave_id}/supportability`
 - integration capabilities
   `/api/v1/integration/capabilities`
 - platform surfaces

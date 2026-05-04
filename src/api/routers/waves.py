@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 from typing import Annotated, Literal, cast
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from src.api.observability import record_wave_supportability
@@ -22,6 +23,11 @@ from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository, DpmWaveSourceRef
+from src.core.waves.models import (
+    DpmRebalanceWaveItem,
+    DpmWaveAggregateMetrics,
+    DpmWaveHandoffRef,
+)
 
 
 WAVE_EXAMPLE = {
@@ -202,6 +208,53 @@ class DpmWaveResponse(BaseModel):
     )
 
 
+class DpmWaveSearchItem(BaseModel):
+    wave_id: str = Field(description="Wave identifier.", examples=["dwv_001"])
+    wave_state: str = Field(description="Current wave state.", examples=["HANDOFF_READY"])
+    trigger_type: str = Field(
+        description="Bounded trigger type used to create the wave.",
+        examples=["EXPLICIT_PORTFOLIO_LIST"],
+    )
+    trigger_id: str = Field(description="Business trigger identifier.", examples=["manual-001"])
+    as_of_date: str = Field(description="Business as-of date.", examples=["2026-05-03"])
+    created_at: datetime = Field(
+        description="UTC timestamp when the wave was created.",
+        examples=["2026-05-03T09:30:00Z"],
+    )
+    created_by: str = Field(description="Actor that created the wave.", examples=["pm_001"])
+    item_count: int = Field(description="Number of wave items.", examples=[2])
+    aggregate_metrics: DpmWaveAggregateMetrics = Field(
+        description="Aggregate item counts reconciled from persisted wave state."
+    )
+    supportability_state: Literal["ready", "degraded", "blocked"] = Field(
+        description="Product-safe supportability posture for search and triage.",
+        examples=["ready"],
+    )
+    supportability_reason: str = Field(
+        description="Bounded reason for the supportability state.",
+        examples=["wave_supportability_ready"],
+    )
+    latest_event_type: str | None = Field(
+        default=None,
+        description="Latest persisted event type for operator context.",
+        examples=["STATE_TRANSITION"],
+    )
+    latest_event_reason_code: str | None = Field(
+        default=None,
+        description="Latest persisted event reason code for operator context.",
+        examples=["WAVE_HANDOFF_READY"],
+    )
+
+
+class DpmWaveSearchResponse(BaseModel):
+    items: list[DpmWaveSearchItem] = Field(
+        description="Bounded page of persisted waves matching the search filters."
+    )
+    limit: int = Field(description="Requested page size.", examples=[50])
+    offset: int = Field(description="Requested page offset.", examples=[0])
+    returned_count: int = Field(description="Number of waves returned.", examples=[1])
+
+
 class DpmWaveSourceCheckRequest(BaseModel):
     actor_id: str = Field(
         description="Human or service actor requesting the source-check.",
@@ -340,6 +393,70 @@ class DpmWaveSupportabilityResponse(BaseModel):
     )
 
 
+class DpmWaveDetailResponse(BaseModel):
+    wave: DpmRebalanceWave = Field(description="Persisted wave detail.")
+    supportability: DpmWaveSupportabilityResponse = Field(
+        description="Latest product-safe supportability derived from persisted item states."
+    )
+    proof_pack_posture: "DpmWaveProofPackPostureResponse" = Field(
+        description="Wave proof-pack and internal operations handoff posture."
+    )
+
+
+class DpmWaveItemsResponse(BaseModel):
+    wave_id: str = Field(description="Wave identifier.", examples=["dwv_001"])
+    wave_state: str = Field(description="Current wave state.", examples=["HANDOFF_READY"])
+    items: list[DpmRebalanceWaveItem] = Field(
+        description="Persisted item list with source readiness, selection, proof-pack, and handoff posture."
+    )
+    aggregate_metrics: DpmWaveAggregateMetrics = Field(
+        description="Aggregate item counts reconciled from persisted wave state."
+    )
+
+
+class DpmWaveProofPackRef(BaseModel):
+    wave_item_id: str = Field(description="Wave item identifier.", examples=["dwi_001"])
+    proof_pack_id: str | None = Field(
+        default=None,
+        description="Linked RFC-0040 proof-pack id when generated.",
+        examples=["dpp_001"],
+    )
+    item_state: str = Field(description="Current item state.", examples=["PROOF_PACK_READY"])
+    proof_pack_state: str | None = Field(
+        default=None,
+        description="Proof-pack posture captured in item diagnostics.",
+        examples=["READY"],
+    )
+    selected_alternative_id: str | None = Field(
+        default=None,
+        description="Selected RFC-0039 construction alternative id.",
+        examples=["alt_min_turnover"],
+    )
+
+
+class DpmWaveProofPackPostureResponse(BaseModel):
+    wave_id: str = Field(description="Wave identifier.", examples=["dwv_001"])
+    wave_state: str = Field(description="Current wave state.", examples=["HANDOFF_READY"])
+    item_count: int = Field(description="Total item count.", examples=[2])
+    linked_item_count: int = Field(description="Items with linked proof packs.", examples=[1])
+    ready_proof_pack_count: int = Field(
+        description="Linked proof packs that are not degraded.", examples=[1]
+    )
+    degraded_proof_pack_count: int = Field(
+        description="Items with degraded proof-pack posture.", examples=[0]
+    )
+    proof_pack_refs: list[DpmWaveProofPackRef] = Field(
+        description="Item-level proof-pack references and posture."
+    )
+    handoff_refs: list[DpmWaveHandoffRef] = Field(
+        description="Append-only internal operations handoff evidence refs."
+    )
+    external_execution_claimed: bool = Field(
+        description="True only if any handoff ref claims external execution; expected false.",
+        examples=[False],
+    )
+
+
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
 logger = logging.getLogger(__name__)
 
@@ -399,7 +516,7 @@ def preview_wave(
         )
     except wave_service.DpmWaveValidationError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
     return DpmWaveResponse(wave=wave, durable=False)
@@ -483,13 +600,179 @@ def create_wave(
         status_code = (
             status.HTTP_409_CONFLICT
             if exc.code == "WAVE_CREATE_CONFLICT"
-            else status.HTTP_422_UNPROCESSABLE_ENTITY
+            else status.HTTP_422_UNPROCESSABLE_CONTENT
         )
         raise HTTPException(
             status_code=status_code,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
     return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.get(
+    "",
+    response_model=DpmWaveSearchResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Search durable rebalance waves",
+    description=(
+        "Returns a bounded search page over durable RFC-0041 waves. Search reads persisted manage "
+        "wave truth and derives supportability from item states; it does not recalculate source "
+        "readiness, construction alternatives, proof-pack state, or handoff posture."
+    ),
+    responses={
+        200: {
+            "description": "Bounded search page of durable waves.",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "items": [
+                            {
+                                "wave_id": "dwv_001",
+                                "wave_state": "HANDOFF_READY",
+                                "trigger_type": "EXPLICIT_PORTFOLIO_LIST",
+                                "trigger_id": "manual-wave-001",
+                                "as_of_date": "2026-05-03",
+                                "created_at": "2026-05-03T09:30:00Z",
+                                "created_by": "pm_001",
+                                "item_count": 1,
+                                "aggregate_metrics": {
+                                    "item_count": 1,
+                                    "state_counts": {"HANDOFF_READY": 1},
+                                    "ready_item_count": 1,
+                                    "blocked_item_count": 0,
+                                    "review_required_item_count": 0,
+                                    "source_degraded_item_count": 0,
+                                },
+                                "supportability_state": "ready",
+                                "supportability_reason": "wave_supportability_ready",
+                                "latest_event_type": "STATE_TRANSITION",
+                                "latest_event_reason_code": "WAVE_HANDOFF_READY",
+                            }
+                        ],
+                        "limit": 50,
+                        "offset": 0,
+                        "returned_count": 1,
+                    }
+                }
+            },
+        }
+    },
+)
+def search_waves(
+    state: Annotated[
+        str | None,
+        Query(
+            description="Optional wave state filter, for example HANDOFF_READY.",
+            examples=["HANDOFF_READY"],
+        ),
+    ] = None,
+    trigger_type: Annotated[
+        str | None,
+        Query(
+            description="Optional trigger type filter.",
+            examples=["EXPLICIT_PORTFOLIO_LIST"],
+        ),
+    ] = None,
+    as_of_date: Annotated[
+        str | None,
+        Query(description="Optional business as-of date filter.", examples=["2026-05-03"]),
+    ] = None,
+    supportability_state: Annotated[
+        Literal["ready", "degraded", "blocked"] | None,
+        Query(
+            description="Optional derived supportability filter.",
+            examples=["ready"],
+        ),
+    ] = None,
+    limit: Annotated[
+        int,
+        Query(ge=1, le=100, description="Maximum number of waves to return.", examples=[50]),
+    ] = 50,
+    offset: Annotated[
+        int,
+        Query(ge=0, description="Zero-based page offset.", examples=[0]),
+    ] = 0,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveSearchResponse:
+    items = wave_service.search_waves(
+        wave_repository=wave_repository,
+        state=state,
+        trigger_type=trigger_type,
+        as_of_date=as_of_date,
+        supportability_state=supportability_state,
+        limit=limit,
+        offset=offset,
+    )
+    return DpmWaveSearchResponse(
+        items=[DpmWaveSearchItem.model_validate(item) for item in items],
+        limit=limit,
+        offset=offset,
+        returned_count=len(items),
+    )
+
+
+@router.get(
+    "/{wave_id}",
+    response_model=DpmWaveDetailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Retrieve durable rebalance wave detail",
+    description=(
+        "Returns one persisted RFC-0041 wave with items, aggregate metrics, events, source refs, "
+        "latest supportability, and proof-pack/handoff posture. The endpoint reads durable manage "
+        "state and does not regenerate downstream construction or proof-pack artifacts."
+    ),
+    responses={
+        200: {"description": "Persisted wave detail."},
+        404: {"description": "Wave not found."},
+    },
+)
+def get_wave_detail(
+    wave_id: str,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveDetailResponse:
+    try:
+        payload = wave_service.retrieve_wave_detail(
+            wave_id=wave_id,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    return DpmWaveDetailResponse.model_validate(payload)
+
+
+@router.get(
+    "/{wave_id}/items",
+    response_model=DpmWaveItemsResponse,
+    status_code=status.HTTP_200_OK,
+    summary="List rebalance wave items",
+    description=(
+        "Returns persisted item-level wave posture for source readiness, construction selection, "
+        "proof-pack linkage, and internal operations handoff. The response is intended for Gateway "
+        "and Workbench command-center realization without UI-side recomputation."
+    ),
+    responses={
+        200: {"description": "Persisted wave item list."},
+        404: {"description": "Wave not found."},
+    },
+)
+def get_wave_items(
+    wave_id: str,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveItemsResponse:
+    try:
+        payload = wave_service.list_wave_items(
+            wave_id=wave_id,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    return DpmWaveItemsResponse.model_validate(payload)
 
 
 @router.post(
@@ -581,7 +864,7 @@ def source_check_wave(
         status_code = (
             status.HTTP_409_CONFLICT
             if exc.code == "DPM_WAVE_VERSION_CONFLICT"
-            else status.HTTP_422_UNPROCESSABLE_ENTITY
+            else status.HTTP_422_UNPROCESSABLE_CONTENT
         )
         raise HTTPException(
             status_code=status_code,
@@ -857,6 +1140,89 @@ def handoff_wave(
     return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
 
 
+@router.post(
+    "/{wave_id}/cancel",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Cancel a rebalance wave before external execution",
+    description=(
+        "Cancels an eligible RFC-0041 wave with actor attribution and preserves all item evidence. "
+        "Items that have not reached internal handoff are marked `EXCLUDED` with cancellation "
+        "diagnostics; manage still records `external_execution_claimed=false`. The endpoint does "
+        "not cancel external orders, because manage wave handoff is an internal readiness package "
+        "and not an execution instruction. Repeating the command after cancellation returns the "
+        "persisted wave without duplicate cancellation events."
+    ),
+    responses={
+        200: {"description": "Wave cancellation recorded or replayed."},
+        404: {"description": "Wave not found."},
+        409: {"description": "Wave version conflict during optimistic update."},
+        422: {"description": "Wave state cannot be cancelled."},
+    },
+)
+def cancel_wave(
+    wave_id: str,
+    request: DpmWaveWorkflowCommandRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(
+            description="Optional correlation id for supportability.",
+            examples=["corr-wave-cancel-001"],
+        ),
+    ] = None,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveResponse:
+    try:
+        wave, replayed = wave_service.cancel_wave(
+            wave_id=wave_id,
+            actor_id=request.actor_id,
+            reason_code=request.reason_code,
+            comment=request.comment,
+            correlation_id=x_correlation_id or f"corr_wave_cancel_{wave_id}",
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
+    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+
+
+@router.get(
+    "/{wave_id}/proof-pack",
+    response_model=DpmWaveProofPackPostureResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get wave proof-pack and handoff posture",
+    description=(
+        "Returns item-level RFC-0040 proof-pack refs, degraded proof-pack posture, append-only "
+        "handoff refs, and the no-external-execution boundary for a persisted wave. The endpoint "
+        "does not rebuild proof packs or claim external execution."
+    ),
+    responses={
+        200: {"description": "Wave proof-pack and handoff posture."},
+        404: {"description": "Wave not found."},
+    },
+)
+def get_wave_proof_pack_posture(
+    wave_id: str,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveProofPackPostureResponse:
+    try:
+        payload = wave_service.proof_pack_posture(
+            wave_id=wave_id,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    return DpmWaveProofPackPostureResponse.model_validate(payload)
+
+
 @router.get(
     "/{wave_id}/supportability",
     response_model=DpmWaveSupportabilityResponse,
@@ -917,7 +1283,7 @@ def _wave_validation_http_exception(exc: wave_service.DpmWaveValidationError) ->
     status_code = (
         status.HTTP_409_CONFLICT
         if exc.code == "DPM_WAVE_VERSION_CONFLICT"
-        else status.HTTP_422_UNPROCESSABLE_ENTITY
+        else status.HTTP_422_UNPROCESSABLE_CONTENT
     )
     return HTTPException(
         status_code=status_code,

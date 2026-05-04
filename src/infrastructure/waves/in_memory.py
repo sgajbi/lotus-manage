@@ -50,6 +50,26 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
             wave = self._waves.get(wave_id)
             return deepcopy(wave) if wave is not None else None
 
+    def list_waves(
+        self,
+        *,
+        state: str | None = None,
+        trigger_type: str | None = None,
+        as_of_date: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmRebalanceWave]:
+        with self._lock:
+            waves = [
+                wave
+                for wave in self._waves.values()
+                if (state is None or wave.state == state)
+                and (trigger_type is None or wave.trigger.trigger_type == trigger_type)
+                and (as_of_date is None or wave.as_of_date == as_of_date)
+            ]
+            waves.sort(key=lambda wave: (wave.created_at, wave.wave_id), reverse=True)
+            return deepcopy(waves[offset : offset + limit])
+
     def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
         with self._lock:
             current = self._waves.get(wave.wave_id)

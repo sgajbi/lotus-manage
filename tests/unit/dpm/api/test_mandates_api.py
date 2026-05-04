@@ -8,6 +8,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+import src.api.dependencies as api_dependencies
 from src.api.dependencies import get_mandate_repository
 from src.api.main import app
 import src.api.routers.mandates as mandates_router
@@ -436,7 +437,16 @@ def test_health_read_and_recalculate_error_mapping() -> None:
     assert mismatch.json()["detail"] == "DPM_MANDATE_HEALTH_INPUT_MISMATCH"
 
 
-def test_default_mandate_repository_dependency_is_available() -> None:
+def test_default_mandate_repository_dependency_is_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for env_name in (
+        "DPM_MANDATE_POSTGRES_DSN",
+        "DPM_MANAGE_POSTGRES_DSN",
+        "DPM_SUPPORTABILITY_POSTGRES_DSN",
+    ):
+        monkeypatch.delenv(env_name, raising=False)
+    monkeypatch.setattr(api_dependencies, "_POSTGRES_MANDATE_REPOSITORY", None)
     assert get_mandate_repository() is not None
 
 

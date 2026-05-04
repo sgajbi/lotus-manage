@@ -22,6 +22,7 @@ from src.core.waves import (
     DpmWaveAlreadyExistsError,
     DpmWaveHandoffRef,
     DpmWaveIdempotencyConflictError,
+    DpmWaveInvalidTransitionError,
     DpmWaveRepository,
     DpmWaveSourceRef,
     DpmWaveVersionConflictError,
@@ -589,12 +590,195 @@ def handoff_wave(
     return handoff_ready, False
 
 
+def cancel_wave(
+    *,
+    wave_id: str,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+    correlation_id: str,
+    wave_repository: DpmWaveRepository,
+) -> tuple[DpmRebalanceWave, bool]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    if wave.state == "CANCELLED":
+        return wave, True
+
+    cancelled_items = [_cancel_item(item, actor_id, reason_code, comment) for item in wave.items]
+    candidate = wave.model_copy(
+        update={
+            "items": cancelled_items,
+            "aggregate_metrics": _aggregate(cancelled_items),
+        },
+        deep=True,
+    )
+    try:
+        cancelled = apply_wave_transition(
+            wave=candidate,
+            to_state="CANCELLED",
+            event=_event(
+                wave_id=wave.wave_id,
+                from_state=wave.state,
+                to_state="CANCELLED",
+                actor_id=actor_id,
+                correlation_id=correlation_id,
+                reason_code="WAVE_CANCELLED",
+                metadata={
+                    "cancel_reason_code": reason_code,
+                    "cancelled_item_count": len(cancelled_items),
+                    "external_execution_claimed": False,
+                    **({"comment": comment} if comment else {}),
+                },
+            ),
+        )
+    except DpmWaveInvalidTransitionError as exc:
+        raise DpmWaveValidationError(
+            "DPM_WAVE_CANCEL_INVALID_STATE",
+            f"Wave {wave_id} cannot be cancelled from state {wave.state}.",
+        ) from exc
+    try:
+        wave_repository.update_wave(wave=cancelled, expected_version=wave.version)
+    except DpmWaveVersionConflictError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    return cancelled, False
+
+
 def wave_supportability(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    return _wave_supportability_payload(wave)
+
+
+def search_waves(
+    *,
+    wave_repository: DpmWaveRepository,
+    state: str | None = None,
+    trigger_type: str | None = None,
+    as_of_date: str | None = None,
+    supportability_state: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> list[dict[str, object]]:
+    waves = wave_repository.list_waves(
+        state=state,
+        trigger_type=trigger_type,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    items: list[dict[str, object]] = []
+    for wave in waves:
+        supportability = _wave_supportability_payload(wave)
+        if (
+            supportability_state is not None
+            and supportability["supportability_state"] != supportability_state
+        ):
+            continue
+        items.append(
+            {
+                "wave_id": wave.wave_id,
+                "wave_state": wave.state,
+                "trigger_type": wave.trigger.trigger_type,
+                "trigger_id": wave.trigger.trigger_id,
+                "as_of_date": wave.as_of_date,
+                "created_at": wave.created_at,
+                "created_by": wave.created_by,
+                "item_count": len(wave.items),
+                "aggregate_metrics": wave.aggregate_metrics,
+                "supportability_state": supportability["supportability_state"],
+                "supportability_reason": supportability["reason"],
+                "latest_event_type": wave.events[-1].event_type if wave.events else None,
+                "latest_event_reason_code": wave.events[-1].reason_code if wave.events else None,
+            }
+        )
+    return items
+
+
+def retrieve_wave_detail(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> dict[str, object]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    return {
+        "wave": wave,
+        "supportability": _wave_supportability_payload(wave),
+        "proof_pack_posture": proof_pack_posture_for_wave(wave=wave),
+    }
+
+
+def list_wave_items(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> dict[str, object]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    return {
+        "wave_id": wave.wave_id,
+        "wave_state": wave.state,
+        "items": wave.items,
+        "aggregate_metrics": wave.aggregate_metrics,
+    }
+
+
+def proof_pack_posture(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> dict[str, object]:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    return proof_pack_posture_for_wave(wave=wave)
+
+
+def proof_pack_posture_for_wave(*, wave: DpmRebalanceWave) -> dict[str, object]:
+    proof_pack_refs = [
+        {
+            "wave_item_id": item.wave_item_id,
+            "proof_pack_id": item.proof_pack_id,
+            "item_state": item.state,
+            "proof_pack_state": item.diagnostics.get("proof_pack_state"),
+            "selected_alternative_id": item.selected_alternative_id,
+        }
+        for item in wave.items
+        if item.proof_pack_id is not None or item.diagnostics.get("proof_pack_state") is not None
+    ]
+    ready_count = sum(
+        1
+        for item in wave.items
+        if item.proof_pack_id is not None and item.diagnostics.get("proof_pack_state") != "DEGRADED"
+    )
+    degraded_count = sum(
+        1 for item in wave.items if item.diagnostics.get("proof_pack_state") == "DEGRADED"
+    )
+    return {
+        "wave_id": wave.wave_id,
+        "wave_state": wave.state,
+        "item_count": len(wave.items),
+        "linked_item_count": sum(1 for item in wave.items if item.proof_pack_id is not None),
+        "ready_proof_pack_count": ready_count,
+        "degraded_proof_pack_count": degraded_count,
+        "proof_pack_refs": proof_pack_refs,
+        "handoff_refs": wave.handoff_refs,
+        "external_execution_claimed": any(
+            handoff.external_execution_claimed for handoff in wave.handoff_refs
+        ),
+    }
+
+
+def _get_wave_or_raise(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> DpmRebalanceWave:
+    wave = wave_repository.get_wave(wave_id=wave_id)
+    if wave is None:
+        raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
+    return wave
+
+
+def _wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
     issues = [
         issue
         for index, item in enumerate(wave.items, start=1)
@@ -626,17 +810,6 @@ def wave_supportability(
         "issues": issues,
         "operator_actions": _operator_actions(state=state, issues=issues),
     }
-
-
-def _get_wave_or_raise(
-    *,
-    wave_id: str,
-    wave_repository: DpmWaveRepository,
-) -> DpmRebalanceWave:
-    wave = wave_repository.get_wave(wave_id=wave_id)
-    if wave is None:
-        raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
-    return wave
 
 
 def _simulate_item(
@@ -858,6 +1031,32 @@ def _handoff_item(
     )
 
 
+def _cancel_item(
+    item: DpmRebalanceWaveItem,
+    actor_id: str,
+    reason_code: str,
+    comment: str | None,
+) -> DpmRebalanceWaveItem:
+    if item.state == "HANDOFF_READY":
+        return item
+    diagnostics = {
+        **item.diagnostics,
+        "cancel_actor_id": actor_id,
+        "cancel_reason_code": reason_code,
+        "external_execution_claimed": False,
+    }
+    if comment:
+        diagnostics["cancel_comment"] = comment
+    return item.model_copy(
+        update={
+            "state": "EXCLUDED",
+            "reason_codes": [*item.reason_codes, "WAVE_ITEM_CANCELLED"],
+            "diagnostics": diagnostics,
+        },
+        deep=True,
+    )
+
+
 def _handoff_ref(
     *,
     wave_id: str,
@@ -1000,8 +1199,7 @@ def _operator_actions(*, state: str, issues: list[dict[str, object]]) -> list[st
 
 def _simulation_result_state(items: list[DpmRebalanceWaveItem]) -> WaveState:
     simulated = sum(1 for item in items if item.state == "SIMULATED")
-    blocked = sum(1 for item in items if item.state == "SIMULATION_BLOCKED")
-    if simulated and blocked:
+    if simulated and simulated < len(items):
         return "PARTIALLY_SIMULATED"
     if simulated:
         return "SIMULATED"

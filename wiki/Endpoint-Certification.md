@@ -1586,18 +1586,23 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, and supportability
+## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, and supportability
 
 Routes:
 
 - `POST /api/v1/rebalance/waves/preview`
 - `POST /api/v1/rebalance/waves`
+- `GET /api/v1/rebalance/waves`
+- `GET /api/v1/rebalance/waves/{wave_id}`
+- `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
 - `POST /api/v1/rebalance/waves/{wave_id}/simulate`
 - `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
 - `POST /api/v1/rebalance/waves/{wave_id}/approve`
 - `POST /api/v1/rebalance/waves/{wave_id}/stage`
 - `POST /api/v1/rebalance/waves/{wave_id}/handoff`
+- `POST /api/v1/rebalance/waves/{wave_id}/cancel`
+- `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
 
 Purpose:
@@ -1610,9 +1615,11 @@ governed wave contract with an idempotency key. Slice 5 adds durable source-chec
 for persisted waves, using manage-owned mandate twins, mandate health snapshots, source-readiness
 state, and available upstream `lotus-core` lineage refs. Slice 6 adds ready-item construction
 simulation through RFC-0039 and item-level alternative selection with RFC-0040 proof-pack linkage.
-Slice 7 adds manage-owned approval, staging, and internal operations handoff evidence without
-external execution claims. Slice 8 adds product-safe operator supportability diagnostics and
-bounded wave supportability telemetry.
+Slice 7 adds manage-owned approval, staging, internal operations handoff, and cancellation evidence
+without external execution claims. Slice 8 adds product-safe operator supportability diagnostics and
+bounded wave supportability telemetry. Slice 10 closes the read-side proof surface with
+repository-backed wave search, detail, item-list, and proof-pack posture APIs, then proves the full
+flow live against Postgres-backed manage repositories.
 
 Functional coverage:
 
@@ -1639,6 +1646,16 @@ Functional coverage:
 - staging promotes only approved items and records no-external-execution posture,
 - handoff creates append-only internal operations handoff refs with actor, reason, item ids,
   content hash, and `external_execution_claimed=false`,
+- cancellation records actor-attributed cancellation, marks non-handoff items `EXCLUDED`, and does
+  not claim external order cancellation or execution,
+- search returns bounded durable wave pages filtered by state, trigger type, as-of date, and
+  derived supportability posture,
+- detail returns persisted wave truth plus supportability and proof-pack posture without
+  recomputing construction or proof-pack outputs,
+- item-list returns item-level source, selection, proof-pack, and handoff posture for Gateway and
+  operations without UI-side recomputation,
+- proof-pack posture returns linked proof-pack refs, degraded proof-pack counts, handoff refs, and
+  the external-execution boundary,
 - supportability returns wave posture, issue counts, source owners, bounded reason codes,
   remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
   trace details,
@@ -1664,8 +1681,10 @@ Non-functional posture:
   order execution instruction, or client communication.
 - Supportability emits bounded structured logs and `lotus_manage_wave_supportability_total` with
   allowlisted `surface`, `supportability_state`, and `reason` labels.
+- Read models are repository-backed and do not regenerate construction alternatives, proof packs,
+  supportability source evidence, or handoff refs.
 - The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
-  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 8.
+  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 10.
 
 Upstream integration posture:
 
@@ -1687,12 +1706,19 @@ Downstream consumers:
 Evidence commands:
 
 ```bash
-python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py tests/unit/dpm/waves/test_wave_domain.py -q
-python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py
-python -m mypy --config-file mypy.ini src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py tests/unit/dpm/api/test_waves_api.py
+python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py tests/unit/dpm/waves/test_wave_domain.py tests/unit/test_rfc0041_evidence_script.py -q
+python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py src/api/services/construction_service.py scripts/generate_rfc0041_wave_evidence.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_rfc0041_evidence_script.py
 python scripts/openapi_quality_gate.py
 python scripts/api_vocabulary_inventory.py --validate-only
+python scripts/generate_rfc0041_wave_evidence.py --base-url http://127.0.0.1:8001
 ```
+
+Live evidence:
+
+- `output/rfc0041-wave-proof/20260504-231914/manifest.json`
+- `output/rfc0041-wave-proof/20260504-231914/critical-review.json`
+- `output/rfc0041-wave-proof/20260504-231914/17-openapi-certification.json`
+- `output/rfc0041-wave-proof/20260504-231914/18-aggregate-reconciliation.json`
 
 ## Certified endpoint: proof-pack detail
 

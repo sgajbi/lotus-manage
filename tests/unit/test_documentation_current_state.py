@@ -343,8 +343,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN PROGRESS - SLICE 9 DOWNSTREAM REALIZATION RFCS COMPLETE" in rfc
-    assert "IN PROGRESS - SLICE 9 DOWNSTREAM REALIZATION RFCS COMPLETE" in index
+    assert "IN PROGRESS - SLICE 10 LIVE IMPLEMENTATION PROOF COMPLETE" in rfc
+    assert "IN PROGRESS - SLICE 10 LIVE IMPLEMENTATION PROOF COMPLETE" in index
     assert "feat/rfc0041-gold-standard-tightening" in rfc
     assert "feat/rfc0041-implementation" in rfc
     assert "RFC-0041-source-map-and-gap-analysis.md" in rfc
@@ -354,11 +354,18 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "create or tighten paired RFCs in" in rfc
     assert "`lotus-gateway` and `lotus-workbench`" in rfc
     assert "Do not mark RFC-0041 `DONE`" in rfc
-    assert "implementation is in progress through Slice 9" in wiki_index_normalized
-    assert "Implementation is complete through Slice 9" in roadmap
-    assert "Proposed only" in supported_features
-    assert "Explicit portfolio-list waves" in supported_features
-    assert "No supported feature claim may be promoted" in supported_features
+    assert "implementation is in progress through Slice 10 live proof" in wiki_index_normalized
+    assert "implementation is complete through Slice 10 live proof" in roadmap
+    assert "| Explicit portfolio-list rebalance waves |" in supported_features
+    assert (
+        "Supported as RFC-0041 manage backend authority after Slice 10 live proof"
+        in supported_features
+    )
+    assert "Automatic PM-book/CIO cohort discovery" in supported_features
+    assert (
+        "full front-office product support are not supported by `lotus-manage`"
+        in supported_features
+    )
 
     assert "## Slice 0 Result" in source_map
     assert "## Slice 1 Platform Result" in source_map
@@ -395,6 +402,13 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "/api/v1/dpm/command-center/waves*" in source_map
     assert "Workbench must consume Gateway wave routes only" in source_map
     assert "misleading RFC-0041 documentation guardrail name" in source_map
+    assert "## Slice 10 Live Implementation Proof Result" in source_map
+    assert "output/rfc0041-wave-proof/20260504-231914/" in source_map
+    assert "`DPM_MANAGE_POSTGRES_DSN`" in source_map
+    assert "method-specific run correlation ids" in source_map
+    assert "PARTIALLY_SIMULATED" in source_map
+    assert "GET /api/v1/rebalance/waves/{wave_id}/proof-pack" in source_map
+    assert "POST /api/v1/rebalance/waves/{wave_id}/cancel" in source_map
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
     assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
     assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map

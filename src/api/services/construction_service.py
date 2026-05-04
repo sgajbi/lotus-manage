@@ -230,6 +230,11 @@ def _run_method(
     run_service: DpmRunSupportService | None,
 ) -> RebalanceResult:
     options = _options_for_method(options=request.options, method=method)
+    run_correlation_id = (
+        f"{correlation_id}:{method.value.lower()}"
+        if correlation_id
+        else f"corr_construction_{method.value.lower()}_{uuid.uuid4().hex[:10]}"
+    )
     result = run_simulation(
         portfolio=request.portfolio_snapshot,
         market_data=request.market_data_snapshot,
@@ -237,7 +242,7 @@ def _run_method(
         shelf=request.shelf_entries,
         options=options,
         request_hash=request_hash,
-        correlation_id=correlation_id or f"corr_construction_{uuid.uuid4().hex[:10]}",
+        correlation_id=run_correlation_id,
     )
     if run_service is not None:
         run_service.record_run(
