@@ -78,15 +78,15 @@ evidence, and supported-feature promotion.
   complete
 - RFC-0041
   rebalance-wave orchestration and CIO model-change impact implementation is in progress through
-  Slice 10 live proof. Source-map, platform-scaffold evidence improvement, cleanup review, wave
+  Slice 11 hardening. Source-map, platform-scaffold evidence improvement, cleanup review, wave
   domain contracts, persistence foundation, explicit affected-portfolio preview, idempotent
   durable create, durable source-check classification, ready-item simulation, item-level
   alternative selection, proof-pack linkage, approval, staging, internal operations handoff
   evidence, pre-execution cancellation, product-safe supportability diagnostics, bounded wave
   supportability telemetry,
   repository-backed search/detail/item/proof-pack/supportability read models, OpenAPI
-  certification, aggregate reconciliation, and downstream Gateway/Workbench RFC-0098 wave
-  realization addenda are complete for explicit portfolio-list waves. PM-book/CIO automatic cohort
+  certification, aggregate reconciliation, hardening review, and downstream Gateway/Workbench
+  RFC-0098 wave realization addenda are complete for explicit portfolio-list waves. PM-book/CIO automatic cohort
   discovery is deferred until source-owning products are proven. Full Gateway/Workbench product
   support remains proposed until downstream implementation and canonical front-office proof are
   complete.

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 10 LIVE IMPLEMENTATION PROOF COMPLETE |
+| **Status** | IN PROGRESS - SLICE 11 HARDENING COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -22,6 +22,7 @@
 | **Slice 8 Supportability Evidence** | `GET /api/v1/rebalance/waves/{wave_id}/supportability`, product-safe diagnostics, bounded `lotus_manage_wave_supportability_total` metric, observability contract update, `tests/unit/dpm/api/test_waves_api.py`, `tests/unit/dpm/api/test_observability_api.py` |
 | **Slice 9 Downstream RFC Evidence** | `lotus-gateway` PR #183 merge `e0e4b1b`, `lotus-workbench` PR #143 merge `c4888d4`, Gateway wiki publish `3fc30e8`, Workbench wiki publish `25566cb` |
 | **Slice 10 Live Proof Evidence** | `output/rfc0041-wave-proof/20260504-231914/manifest.json`, `critical-review.json`, `critical-review.md`, live Postgres-backed manage runtime on `http://127.0.0.1:8001` |
+| **Slice 11 Hardening Evidence** | RFC/API contract drift removed, source-readiness and selection-conflict tests added, OpenAPI/vocabulary/docs gates passed |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---
@@ -208,7 +209,7 @@ Supported trigger types:
 5. `CASH_DRAG_CAMPAIGN`
 6. `TAX_YEAR_END_REVIEW`
 7. `ESG_RESTRICTION_UPDATE`
-8. `MANUAL_PORTFOLIO_LIST`
+8. `EXPLICIT_PORTFOLIO_LIST`
 
 Every trigger must record:
 
@@ -225,9 +226,10 @@ Every trigger must record:
 11. `source_refs`
 12. `correlation_id`
 
-First implementation may support only `MANUAL_PORTFOLIO_LIST`, `PM_BOOK_REVIEW`, and
-`CIO_MODEL_CHANGE` if source-backed model-change selection exists. Unsupported trigger types must
-be rejected or returned as `NOT_SUPPORTED`; they must not appear as supported features.
+First implementation supports only `EXPLICIT_PORTFOLIO_LIST`. `PM_BOOK_REVIEW`,
+`CIO_MODEL_CHANGE`, and other trigger types remain unsupported until an owning source product or
+approved manifest governance is implemented and proven. Unsupported trigger types must be rejected
+or returned as `NOT_SUPPORTED`; they must not appear as supported features.
 
 ---
 
@@ -380,7 +382,7 @@ All endpoints are under the DPM rebalance wave tag and require full OpenAPI cert
 | --- | --- |
 | `POST /api/v1/rebalance/waves/preview` | Estimate affected portfolios without durable wave creation. |
 | `POST /api/v1/rebalance/waves` | Create a durable draft wave from trigger and selection criteria. |
-| `GET /api/v1/rebalance/waves` | Search waves by state, trigger type, book, PM, as-of date, and supportability. |
+| `GET /api/v1/rebalance/waves` | Search waves by state, trigger type, as-of date, derived supportability, limit, and offset. Book and PM filters are deferred until an owning source product exists. |
 | `GET /api/v1/rebalance/waves/{wave_id}` | Retrieve wave detail, summary metrics, items, source refs, and latest supportability. |
 | `GET /api/v1/rebalance/waves/{wave_id}/items` | Retrieve item list with state, source readiness, selection, proof-pack, and handoff posture. |
 | `POST /api/v1/rebalance/waves/{wave_id}/source-check` | Evaluate source readiness and classify each item. |
@@ -750,6 +752,27 @@ Acceptance:
    are green,
 3. review findings are fixed or explicitly tracked with no unsupported feature claim.
 
+Slice 11 result:
+
+1. hardening review found and fixed RFC/API contract drift: `GET /api/v1/rebalance/waves` is now
+   documented as filtering only by implemented fields (`state`, `trigger_type`, `as_of_date`,
+   `supportability_state`, `limit`, `offset`), while PM-book and PM filters remain deferred,
+2. stale `MANUAL_PORTFOLIO_LIST` first-wave wording was corrected to the implemented
+   `EXPLICIT_PORTFOLIO_LIST` trigger contract,
+3. the supported-features ledger now distinguishes implementation-backed explicit-list wave
+   support from deferred CIO model-change/PM-book discovery and downstream Gateway/Workbench
+   product support,
+4. source-readiness tests now cover missing twins, missing/stale health, blocked, degraded,
+   review-required, ready, and missing-core-lineage-record behavior,
+5. selection conflict hardening now verifies optimistic-lock failures are surfaced as
+   `DPM_WAVE_VERSION_CONFLICT` during alternative selection,
+6. endpoint certification, OpenAPI quality, API vocabulary, documentation guardrails, and the
+   repo-native `make check` gate passed after the hardening changes.
+
+No unsupported feature claim was promoted during Slice 11. Remaining closure work is Slice 12:
+final gold-pass assessment, final docs/wiki/context posture, PR merge, wiki publication, and branch
+hygiene.
+
 ### Slice 12 - Final Closure
 
 Scope:
@@ -825,17 +848,17 @@ Every wave endpoint must satisfy:
 
 | Feature | Support state before implementation | Promotion rule |
 | --- | --- | --- |
-| Wave preview | Proposed | Promote only after source-backed candidate selection, empty/partial states, API certification, and live proof. |
-| Durable rebalance wave aggregate | Proposed | Promote only after persistence, state machine, events, retention, repository parity, and live retrieval proof. |
-| CIO model-change impact | Proposed | Promote only after model-change source evidence and affected-mandate analysis are implemented or explicitly scoped to supported triggers. |
-| Wave source check | Proposed | Promote only after item-level readiness, source refs, blocked reasons, and mixed-readiness proof. |
-| Wave simulation | Proposed | Promote only after RFC-0039 alternatives run per ready item and blocked items are preserved. |
-| Alternative selection | Proposed | Promote only after actor/rationale selection persists and reloads. |
-| Proof-pack linkage | Proposed | Promote only after RFC-0040 proof-pack refs are generated or attached source-honestly. |
-| Wave approval and staging | Proposed | Promote only after actor attribution, state guards, idempotency, and blocked-item rejection are tested. |
-| Operations handoff | Proposed | Promote only after durable append-only handoff evidence is produced without external execution claims. |
-| Wave aggregate metrics | Proposed | Promote only after metrics reconcile to item evidence and source gaps are visible. |
-| Wave supportability and diagnostics | Proposed | Promote only after safe diagnostics, bounded metrics/logs, and degraded-state tests pass. |
+| Wave preview | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented and live-proven with source-backed candidates and blocked caller-only portfolio evidence. |
+| Durable rebalance wave aggregate | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented with persistence, state machine, events, retention policy, repository parity, idempotency, and live retrieval proof. |
+| CIO model-change impact | Deferred with no support claim | Promote only after model-change source evidence and affected-mandate analysis are implemented in the owning source product and proven. |
+| Wave source check | Supported | Implemented with item-level readiness, source refs, blocked/degraded/review reasons, and mixed-readiness proof. |
+| Wave simulation | Supported for source-ready items | Implemented through RFC-0039 alternatives for ready items while blocked, degraded, and review-required items remain visible. |
+| Alternative selection | Supported | Implemented with actor/rationale selection, proof-pack generation option, durable reload, and optimistic-lock tests. |
+| Proof-pack linkage | Supported | Implemented through RFC-0040 proof-pack generation or degraded linkage; no local proof-pack clone exists in wave logic. |
+| Wave approval and staging | Supported | Implemented with actor attribution, state guards, idempotency, blocked-item rejection, and no-eligible tests. |
+| Operations handoff | Supported as internal pre-execution evidence | Implemented with durable append-only handoff evidence and explicit no-external-execution claims. |
+| Wave aggregate metrics | Supported | Implemented from item evidence with live aggregate reconciliation proof. |
+| Wave supportability and diagnostics | Supported | Implemented with product-safe diagnostics, bounded metrics/logs, and degraded-state tests. |
 | Gateway wave composition | Not supported in manage RFC | Promote only in Gateway RFC after it consumes manage wave APIs without reconstruction and passes Gateway proof. |
 | Workbench wave command center | Not supported in manage RFC | Promote only in Workbench RFC after Gateway-backed browser, accessibility, visual, and canonical evidence pass. |
 

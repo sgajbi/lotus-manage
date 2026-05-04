@@ -1688,7 +1688,7 @@ Non-functional posture:
 
 Upstream integration posture:
 
-The supported Slice 4-8 source inputs are existing manage-owned mandate digital twins, mandate
+The supported RFC-0041 manage source inputs are existing manage-owned mandate digital twins, mandate
 health snapshots, their source-readiness state, their persisted source lineage, explicit
 caller-supplied affected-portfolio source refs, caller-supplied RFC-0039 construction inputs for
 ready items, RFC-0040 proof-pack outputs generated from selected alternatives, and manage-owned
@@ -1699,8 +1699,9 @@ a certified source product.
 
 Downstream consumers:
 
-- `lotus-gateway` and `lotus-workbench` must wait for the later RFC-0041 realization RFC slice
-  before advertising this as a full front-office product flow.
+- `lotus-gateway` and `lotus-workbench` have RFC-0098 wave-realization addenda, but must wait for
+  implementation and canonical browser proof before advertising this as a full front-office product
+  flow.
 - Operators and API consumers may use these endpoints as manage backend preview/create contracts.
 
 Evidence commands:

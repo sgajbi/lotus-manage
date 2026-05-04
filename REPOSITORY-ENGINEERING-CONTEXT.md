@@ -96,7 +96,7 @@ Current repository posture:
     boundary tracked as `sgajbi/lotus-gateway#182`, and therefore no full product UX support claim
     is made here.
 15. RFC-0041 has delivered implementation-backed manage backend authority for explicit
-    portfolio-list rebalance waves through Slice 10 live proof: durable preview/create,
+    portfolio-list rebalance waves through Slice 11 hardening: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
     linkage, approval-with-exceptions, staging, internal operations handoff evidence with
     `external_execution_claimed=false`, actor-attributed pre-execution cancellation,

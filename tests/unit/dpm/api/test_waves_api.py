@@ -14,6 +14,7 @@ from src.api.dependencies import (
     get_wave_repository,
 )
 from src.api.main import app
+from src.api.request_models import RebalanceRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service, proof_pack_service, wave_service
 from src.core.mandates import (
@@ -259,11 +260,13 @@ def _save_wave_for_service(
     item_state: WaveItemState,
     diagnostics: dict[str, object] | None = None,
 ) -> DpmRebalanceWave:
-    item = _wave_item(
+    item = DpmRebalanceWaveItem(
         wave_item_id=f"dwi_{wave_id}",
         portfolio_id=PORTFOLIO_ID,
+        mandate_id=MANDATE_ID,
+        model_portfolio_id="MODEL_PB_SG_GLOBAL_BAL_DPM",
         state=item_state,
-        diagnostics=diagnostics,
+        diagnostics=diagnostics or {},
     )
     wave = DpmRebalanceWave(
         wave_id=wave_id,
@@ -1448,6 +1451,56 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
                 **extra_kwargs,
             )
         assert exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
+
+
+def test_wave_selection_translates_durable_write_conflict_to_governed_error() -> None:
+    construction_repository = InMemoryConstructionRepository()
+    normal_repository = InMemoryDpmWaveRepository()
+    source_checked = _save_wave_for_service(
+        normal_repository,
+        wave_id="dwv_conflict_select",
+        state="SOURCE_CHECKED",
+        item_state="SOURCE_READY",
+    )
+    wave_service.simulate_wave(
+        wave_id=source_checked.wave_id,
+        actor_id="pm_001",
+        correlation_id="corr-conflict-select-simulate",
+        item_inputs={
+            source_checked.items[0].wave_item_id: RebalanceRequest.model_validate(
+                _rebalance_request(PORTFOLIO_ID)
+            )
+        },
+        methods=None,
+        construction_repository=construction_repository,
+        run_service=_run_service(),
+        wave_repository=normal_repository,
+    )
+    simulated = normal_repository.get_wave(wave_id=source_checked.wave_id)
+    assert simulated is not None
+    assert simulated.items[0].alternative_set_id is not None
+
+    conflict_repository = _VersionConflictWaveRepository()
+    conflict_repository.save_wave(wave=simulated, idempotency_key=None, request_hash=None)
+
+    with pytest.raises(wave_service.DpmWaveValidationError) as exc:
+        wave_service.select_wave_item_alternative(
+            wave_id=simulated.wave_id,
+            wave_item_id=simulated.items[0].wave_item_id,
+            alternative_id="alt_min_turnover",
+            actor_id="pm_001",
+            reason_code="CONFLICT_TEST",
+            comment="Selection conflict.",
+            correlation_id="corr-conflict-select",
+            generate_proof_pack=False,
+            construction_repository=construction_repository,
+            proof_pack_repository=InMemoryDpmProofPackRepository(),
+            mandate_repository=InMemoryDpmMandateRepository(),
+            run_service=_run_service(),
+            wave_repository=conflict_repository,
+        )
+
+    assert exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
 
 
 def test_wave_services_reject_no_eligible_approval_stage_and_handoff() -> None:
