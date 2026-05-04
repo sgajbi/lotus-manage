@@ -31,11 +31,13 @@ from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 from src.core.waves import (
+    DpmWaveAlreadyExistsError,
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
     DpmWaveHandoffRef,
     DpmWaveTrigger,
+    DpmWaveVersionConflictError,
     WaveItemState,
     WaveState,
 )
@@ -231,6 +233,61 @@ def _save_supportability_wave(
         idempotency_key=None,
         request_hash=None,
     )
+
+
+class _SaveConflictWaveRepository(InMemoryDpmWaveRepository):
+    def save_wave(
+        self,
+        *,
+        wave: DpmRebalanceWave,
+        idempotency_key: str | None,
+        request_hash: str | None,
+    ) -> None:
+        raise DpmWaveAlreadyExistsError("duplicate durable wave id")
+
+
+class _VersionConflictWaveRepository(InMemoryDpmWaveRepository):
+    def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
+        raise DpmWaveVersionConflictError("stale durable wave version")
+
+
+def _save_wave_for_service(
+    repository: InMemoryDpmWaveRepository,
+    *,
+    wave_id: str,
+    state: WaveState,
+    item_state: WaveItemState,
+    diagnostics: dict[str, object] | None = None,
+) -> DpmRebalanceWave:
+    item = _wave_item(
+        wave_item_id=f"dwi_{wave_id}",
+        portfolio_id=PORTFOLIO_ID,
+        state=item_state,
+        diagnostics=diagnostics,
+    )
+    wave = DpmRebalanceWave(
+        wave_id=wave_id,
+        state=state,
+        trigger=DpmWaveTrigger(
+            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_id=f"manual-{wave_id}",
+            rationale="Exercise governed service edge behavior.",
+        ),
+        as_of_date="2026-05-03",
+        created_by="pm_001",
+        correlation_id=f"corr-{wave_id}",
+        items=[item],
+        aggregate_metrics=DpmWaveAggregateMetrics(
+            item_count=1,
+            state_counts={item.state: 1},
+            ready_item_count=1 if item.state in {"SOURCE_READY", "SIMULATED", "SELECTED"} else 0,
+            blocked_item_count=1 if item.state in {"SOURCE_BLOCKED", "SIMULATION_BLOCKED"} else 0,
+            review_required_item_count=1 if item.state == "REVIEW_REQUIRED" else 0,
+            source_degraded_item_count=1 if item.state == "SOURCE_DEGRADED" else 0,
+        ),
+    )
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+    return wave
 
 
 def teardown_function() -> None:
@@ -1273,6 +1330,336 @@ def test_wave_workflow_commands_reject_invalid_states_and_empty_eligibility() ->
     assert stage_invalid.json()["detail"]["code"] == "DPM_WAVE_STAGE_INVALID_STATE"
     assert handoff_invalid.status_code == 422
     assert handoff_invalid.json()["detail"]["code"] == "DPM_WAVE_HANDOFF_INVALID_STATE"
+
+
+def test_wave_services_translate_durable_write_conflicts_to_governed_errors() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+
+    create_conflict_repository = _SaveConflictWaveRepository()
+    with pytest.raises(wave_service.DpmWaveValidationError) as create_exc:
+        wave_service.create_wave(
+            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_id="manual-conflict-create",
+            rationale="Exercise durable create conflict handling.",
+            as_of_date="2026-05-03",
+            actor_id="pm_001",
+            correlation_id="corr-conflict-create",
+            portfolios=[{"portfolio_id": PORTFOLIO_ID}],
+            idempotency_key="idem-conflict-create",
+            mandate_repository=mandate_repository,
+            wave_repository=create_conflict_repository,
+        )
+    assert create_exc.value.code == "WAVE_CREATE_CONFLICT"
+
+    source_repository = _VersionConflictWaveRepository()
+    _save_wave_for_service(
+        source_repository,
+        wave_id="dwv_conflict_source",
+        state="CREATED",
+        item_state="CANDIDATE",
+    )
+    with pytest.raises(wave_service.DpmWaveValidationError) as source_exc:
+        wave_service.source_check_wave(
+            wave_id="dwv_conflict_source",
+            actor_id="pm_001",
+            correlation_id="corr-conflict-source",
+            mandate_repository=mandate_repository,
+            wave_repository=source_repository,
+        )
+    assert source_exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
+
+    simulate_repository = _VersionConflictWaveRepository()
+    simulate_wave = _save_wave_for_service(
+        simulate_repository,
+        wave_id="dwv_conflict_simulate",
+        state="SOURCE_CHECKED",
+        item_state="SOURCE_READY",
+    )
+    with pytest.raises(wave_service.DpmWaveValidationError) as simulate_exc:
+        wave_service.simulate_wave(
+            wave_id=simulate_wave.wave_id,
+            actor_id="pm_001",
+            correlation_id="corr-conflict-simulate",
+            item_inputs={simulate_wave.items[0].wave_item_id: _rebalance_request(PORTFOLIO_ID)},
+            methods=None,
+            construction_repository=InMemoryConstructionRepository(),
+            run_service=_run_service(),
+            wave_repository=simulate_repository,
+        )
+    assert simulate_exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
+
+    approval_repository = _VersionConflictWaveRepository()
+    _save_wave_for_service(
+        approval_repository,
+        wave_id="dwv_conflict_approve",
+        state="SIMULATED",
+        item_state="SELECTED",
+    )
+    stage_repository = _VersionConflictWaveRepository()
+    _save_wave_for_service(
+        stage_repository,
+        wave_id="dwv_conflict_stage",
+        state="APPROVED",
+        item_state="APPROVED",
+    )
+    handoff_repository = _VersionConflictWaveRepository()
+    _save_wave_for_service(
+        handoff_repository,
+        wave_id="dwv_conflict_handoff",
+        state="STAGED",
+        item_state="STAGED",
+    )
+    cancel_repository = _VersionConflictWaveRepository()
+    _save_wave_for_service(
+        cancel_repository,
+        wave_id="dwv_conflict_cancel",
+        state="CREATED",
+        item_state="CANDIDATE",
+    )
+
+    command_cases = [
+        (
+            wave_service.approve_wave,
+            {"wave_id": "dwv_conflict_approve", "wave_repository": approval_repository},
+        ),
+        (
+            wave_service.stage_wave,
+            {"wave_id": "dwv_conflict_stage", "wave_repository": stage_repository},
+        ),
+        (
+            wave_service.handoff_wave,
+            {"wave_id": "dwv_conflict_handoff", "wave_repository": handoff_repository},
+        ),
+        (
+            wave_service.cancel_wave,
+            {"wave_id": "dwv_conflict_cancel", "wave_repository": cancel_repository},
+        ),
+    ]
+    for command, extra_kwargs in command_cases:
+        with pytest.raises(wave_service.DpmWaveValidationError) as exc:
+            command(
+                actor_id="pm_001",
+                reason_code="CONFLICT_TEST",
+                comment="Conflict test comment.",
+                correlation_id="corr-conflict-command",
+                **extra_kwargs,
+            )
+        assert exc.value.code == "DPM_WAVE_VERSION_CONFLICT"
+
+
+def test_wave_services_reject_no_eligible_approval_stage_and_handoff() -> None:
+    cases = [
+        (
+            wave_service.approve_wave,
+            "dwv_no_approval",
+            "SIMULATED",
+            "SOURCE_BLOCKED",
+            "DPM_WAVE_APPROVAL_NO_ELIGIBLE_ITEMS",
+        ),
+        (
+            wave_service.stage_wave,
+            "dwv_no_stage",
+            "APPROVED",
+            "SOURCE_BLOCKED",
+            "DPM_WAVE_STAGE_NO_ELIGIBLE_ITEMS",
+        ),
+        (
+            wave_service.handoff_wave,
+            "dwv_no_handoff",
+            "STAGED",
+            "EXCLUDED",
+            "DPM_WAVE_HANDOFF_NO_ELIGIBLE_ITEMS",
+        ),
+    ]
+    for command, wave_id, wave_state, item_state, expected_code in cases:
+        repository = InMemoryDpmWaveRepository()
+        _save_wave_for_service(
+            repository,
+            wave_id=wave_id,
+            state=wave_state,
+            item_state=item_state,
+        )
+
+        with pytest.raises(wave_service.DpmWaveValidationError) as exc:
+            command(
+                wave_id=wave_id,
+                actor_id="pm_001",
+                reason_code="NO_ELIGIBLE_ITEM",
+                comment=None,
+                correlation_id=f"corr-{wave_id}",
+                wave_repository=repository,
+            )
+
+        assert exc.value.code == expected_code
+
+
+def test_wave_api_maps_missing_and_create_conflict_edges() -> None:
+    with _client(InMemoryDpmMandateRepository(), _SaveConflictWaveRepository()) as client:
+        create_conflict = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-router-create-conflict"},
+        )
+
+    assert create_conflict.status_code == 409
+    assert create_conflict.json()["detail"]["code"] == "WAVE_CREATE_CONFLICT"
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        missing_items = client.get("/api/v1/rebalance/waves/dwv_missing/items")
+        missing_simulate = client.post(
+            "/api/v1/rebalance/waves/dwv_missing/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        missing_approve = client.post(
+            "/api/v1/rebalance/waves/dwv_missing/approve",
+            json={"actor_id": "pm_001", "reason_code": "MISSING"},
+        )
+        missing_stage = client.post(
+            "/api/v1/rebalance/waves/dwv_missing/stage",
+            json={"actor_id": "ops_001", "reason_code": "MISSING"},
+        )
+        missing_handoff = client.post(
+            "/api/v1/rebalance/waves/dwv_missing/handoff",
+            json={"actor_id": "ops_001", "reason_code": "MISSING"},
+        )
+        missing_cancel = client.post(
+            "/api/v1/rebalance/waves/dwv_missing/cancel",
+            json={"actor_id": "pm_001", "reason_code": "MISSING"},
+        )
+        missing_proof_pack = client.get("/api/v1/rebalance/waves/dwv_missing/proof-pack")
+
+    responses = [
+        missing_items,
+        missing_simulate,
+        missing_approve,
+        missing_stage,
+        missing_handoff,
+        missing_cancel,
+        missing_proof_pack,
+    ]
+    assert [response.status_code for response in responses] == [404] * len(responses)
+    assert {response.json()["detail"]["code"] for response in responses} == {"DPM_WAVE_NOT_FOUND"}
+
+
+def test_wave_supportability_filters_and_private_helper_edges() -> None:
+    repository = InMemoryDpmWaveRepository()
+    _save_supportability_wave(
+        repository,
+        wave_id="dwv_filter_ready",
+        state="HANDOFF_READY",
+        items=[
+            _wave_item(
+                wave_item_id="dwi_filter_ready",
+                portfolio_id="PB_SG_FILTER_READY",
+                state="HANDOFF_READY",
+            )
+        ],
+    )
+    _save_supportability_wave(
+        repository,
+        wave_id="dwv_filter_blocked",
+        state="SOURCE_CHECKED",
+        items=[
+            _wave_item(
+                wave_item_id="dwi_filter_blocked",
+                portfolio_id="PB_SG_FILTER_BLOCKED",
+                state="SIMULATION_BLOCKED",
+            )
+        ],
+    )
+    blocked = wave_service.wave_supportability(
+        wave_id="dwv_filter_blocked",
+        wave_repository=repository,
+    )
+    excluded_issue = wave_service._supportability_issue(  # noqa: SLF001
+        wave_id="dwv_filter_excluded",
+        item=_wave_item(
+            wave_item_id="dwi_excluded",
+            portfolio_id="PB_SG_EXCLUDED",
+            state="EXCLUDED",
+        ),
+        item_index=0,
+    )
+
+    ready_search = wave_service.search_waves(
+        wave_repository=repository,
+        supportability_state="ready",
+    )
+    source_refs = wave_service._source_refs_from_portfolio(  # noqa: SLF001
+        {"portfolio_id": PORTFOLIO_ID, "source_refs": "not-a-list"}
+    )
+    optional_text = wave_service._optional_str(123)  # noqa: SLF001
+
+    assert [item["wave_id"] for item in ready_search] == ["dwv_filter_ready"]
+    assert blocked["issues"][0]["source_owner"] == "lotus-manage-construction"
+    assert excluded_issue is None
+    assert source_refs == []
+    assert optional_text == "123"
+
+
+def test_wave_append_event_rejects_identity_and_state_mismatches() -> None:
+    wave = DpmRebalanceWave(
+        wave_id="dwv_append_edge",
+        state="SIMULATED",
+        trigger=DpmWaveTrigger(
+            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_id="manual-append-edge",
+            rationale="Exercise item-level event append guards.",
+        ),
+        as_of_date="2026-05-03",
+        created_by="pm_001",
+        correlation_id="corr-append-edge",
+        items=[],
+        aggregate_metrics=DpmWaveAggregateMetrics(
+            item_count=0,
+            state_counts={},
+            ready_item_count=0,
+            blocked_item_count=0,
+            review_required_item_count=0,
+            source_degraded_item_count=0,
+        ),
+    )
+    event = wave_service._event(  # noqa: SLF001
+        wave_id=wave.wave_id,
+        from_state=wave.state,
+        to_state=wave.state,
+        actor_id="pm_001",
+        correlation_id="corr-append-edge",
+        reason_code="EDGE_EVENT",
+        event_type="ITEM_SELECTION",
+        metadata={},
+    )
+
+    with pytest.raises(wave_service.DpmWaveValidationError) as wave_exc:
+        wave_service._append_event(  # noqa: SLF001
+            wave=wave,
+            event=event.model_copy(update={"wave_id": "dwv_other"}),
+        )
+    assert wave_exc.value.code == "DPM_WAVE_EVENT_WAVE_MISMATCH"
+
+    with pytest.raises(wave_service.DpmWaveValidationError) as state_exc:
+        wave_service._append_event(  # noqa: SLF001
+            wave=wave,
+            event=event.model_copy(update={"to_state": "APPROVED"}),
+        )
+    assert state_exc.value.code == "DPM_WAVE_EVENT_STATE_MISMATCH"
 
 
 def test_wave_supportability_reports_product_safe_operator_diagnostics() -> None:

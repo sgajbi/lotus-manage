@@ -103,6 +103,26 @@ def test_wave_transition_requires_matching_event_state() -> None:
     assert str(exc.value) == "DPM_WAVE_EVENT_FROM_STATE_MISMATCH"
 
 
+def test_wave_transition_requires_matching_event_identity_and_target_state() -> None:
+    wrong_wave_event = _event("DRAFT", "PREVIEWED").model_copy(update={"wave_id": "dwv_other"})
+    with pytest.raises(DpmWaveInvalidTransitionError) as wave_exc:
+        apply_wave_transition(
+            wave=_wave(),
+            to_state="PREVIEWED",
+            event=wrong_wave_event,
+        )
+    assert str(wave_exc.value) == "DPM_WAVE_EVENT_WAVE_MISMATCH"
+
+    wrong_target_event = _event("DRAFT", "CREATED")
+    with pytest.raises(DpmWaveInvalidTransitionError) as target_exc:
+        apply_wave_transition(
+            wave=_wave(),
+            to_state="PREVIEWED",
+            event=wrong_target_event,
+        )
+    assert str(target_exc.value) == "DPM_WAVE_EVENT_TO_STATE_MISMATCH"
+
+
 def test_in_memory_wave_repository_is_defensive_and_version_guarded() -> None:
     repository = InMemoryDpmWaveRepository()
     wave = _wave()
@@ -207,6 +227,24 @@ def test_postgres_wave_repository_initializes_migrations(monkeypatch: pytest.Mon
     assert calls == ["connect", "migrate:dpm", "close"]
 
 
+def test_postgres_wave_repository_requires_dsn_and_driver(monkeypatch: pytest.MonkeyPatch) -> None:
+    with pytest.raises(RuntimeError, match="DPM_WAVE_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmWaveRepository(dsn="")
+
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
+    with pytest.raises(RuntimeError, match="DPM_WAVE_POSTGRES_DRIVER_MISSING"):
+        PostgresDpmWaveRepository(dsn="postgresql://example")
+
+
+def test_postgres_wave_repository_imports_driver_when_available() -> None:
+    pytest.importorskip("psycopg")
+
+    psycopg, dict_row = postgres_module._import_psycopg()  # noqa: SLF001
+
+    assert hasattr(psycopg, "connect")
+    assert dict_row is not None
+
+
 class _FakeCursor:
     def __init__(
         self,
@@ -230,11 +268,13 @@ class _FakeWaveConnection:
         self.waves: dict[str, dict[str, object]] = {}
         self.idempotency: dict[str, dict[str, object]] = {}
         self.events: dict[str, dict[str, object]] = {}
+        self.queries: list[tuple[str, tuple[object, ...]]] = []
         self.commits = 0
         self.closed = 0
 
     def execute(self, query: str, args: tuple[object, ...]) -> _FakeCursor:
         sql = " ".join(str(query).split())
+        self.queries.append((sql, args))
         if "SELECT wave_id, request_hash FROM dpm_rebalance_wave_idempotency" in sql:
             return _FakeCursor(self.idempotency.get(str(args[0])))
         if "INSERT INTO dpm_rebalance_waves" in sql:
@@ -359,3 +399,36 @@ def test_postgres_wave_payload_accepts_non_string_json() -> None:
     fake.waves[wave.wave_id]["wave_json"] = wave.model_dump(mode="json")
 
     assert repository.get_wave(wave_id=wave.wave_id) == wave
+
+
+def test_postgres_wave_repository_returns_none_for_missing_reads() -> None:
+    repository = _postgres_repository(_FakeWaveConnection())
+
+    assert repository.get_wave(wave_id="dwv_missing") is None
+    assert repository.get_wave_by_idempotency(idempotency_key="idem-missing") is None
+
+
+def test_postgres_wave_repository_list_applies_durable_filters() -> None:
+    fake = _FakeWaveConnection()
+    repository = _postgres_repository(fake)
+    wave = _wave()
+    repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+
+    listed = repository.list_waves(
+        state="DRAFT",
+        trigger_type="EXPLICIT_PORTFOLIO_LIST",
+        as_of_date="2026-05-03",
+        limit=25,
+        offset=5,
+    )
+
+    query, args = fake.queries[-1]
+    assert listed == []
+    assert "WHERE state = %s AND trigger_type = %s AND as_of_date = %s" in query
+    assert args == ("DRAFT", "EXPLICIT_PORTFOLIO_LIST", "2026-05-03", 25, 5)
+
+
+def test_postgres_wave_payload_serializes_driver_native_json_values() -> None:
+    payload = postgres_module._payload({"wave_json": ["driver", "json"]})  # noqa: SLF001
+
+    assert payload == '["driver", "json"]'
