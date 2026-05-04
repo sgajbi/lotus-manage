@@ -41,6 +41,17 @@ class DpmWaveRepository(Protocol):
     ) -> DpmRebalanceWave | None:
         """Return the wave associated with an idempotency key."""
 
+    def list_waves(
+        self,
+        *,
+        state: str | None = None,
+        trigger_type: str | None = None,
+        as_of_date: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmRebalanceWave]:
+        """Return a bounded page of waves matching optional search filters."""
+
     def update_wave(
         self,
         *,

@@ -193,6 +193,38 @@ def test_construction_service_currency_overlay_helper_edges() -> None:
     )
 
 
+def test_construction_service_uses_method_specific_run_correlation_ids() -> None:
+    class FakeRunService:
+        def __init__(self) -> None:
+            self.correlation_ids: list[str] = []
+
+        def record_run(self, *, result, request_hash, portfolio_id, idempotency_key) -> None:
+            self.correlation_ids.append(result.correlation_id)
+
+    payload = valid_api_payload()
+    request = RebalanceRequest.model_validate(payload)
+    run_service = FakeRunService()
+
+    construction_service.generate_construction_alternative_set(
+        request=request,
+        idempotency_key="construction-correlation-test",
+        correlation_id="corr-construct-test",
+        repository=InMemoryConstructionRepository(),
+        methods=[
+            ConstructionMethod.DO_NOTHING_BASELINE,
+            ConstructionMethod.HEURISTIC_EXPLAINABLE,
+            ConstructionMethod.MIN_TURNOVER,
+        ],
+        run_service=run_service,
+    )
+
+    assert run_service.correlation_ids == [
+        "corr-construct-test:heuristic_explainable",
+        "corr-construct-test:min_turnover",
+    ]
+    assert len(set(run_service.correlation_ids)) == len(run_service.correlation_ids)
+
+
 class _UnavailableRiskClient:
     def concentration_context(self, *, result, correlation_id):
         raise construction_service.LotusRiskAuthorityUnavailableError("risk down")

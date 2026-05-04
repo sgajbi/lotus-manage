@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 9 DOWNSTREAM REALIZATION RFCS COMPLETE |
+| **Status** | IN PROGRESS - SLICE 10 LIVE IMPLEMENTATION PROOF COMPLETE |
 | **Created** | 2026-05-03 |
 | **Last Tightened** | 2026-05-03 |
 | **Owner** | `lotus-manage` |
@@ -21,6 +21,7 @@
 | **Slice 7 Approval/Handoff Evidence** | `POST /api/v1/rebalance/waves/{wave_id}/approve`, `POST /api/v1/rebalance/waves/{wave_id}/stage`, `POST /api/v1/rebalance/waves/{wave_id}/handoff`, append-only internal handoff refs, no external execution claim, `tests/unit/dpm/api/test_waves_api.py` |
 | **Slice 8 Supportability Evidence** | `GET /api/v1/rebalance/waves/{wave_id}/supportability`, product-safe diagnostics, bounded `lotus_manage_wave_supportability_total` metric, observability contract update, `tests/unit/dpm/api/test_waves_api.py`, `tests/unit/dpm/api/test_observability_api.py` |
 | **Slice 9 Downstream RFC Evidence** | `lotus-gateway` PR #183 merge `e0e4b1b`, `lotus-workbench` PR #143 merge `c4888d4`, Gateway wiki publish `3fc30e8`, Workbench wiki publish `25566cb` |
+| **Slice 10 Live Proof Evidence** | `output/rfc0041-wave-proof/20260504-231914/manifest.json`, `critical-review.json`, `critical-review.md`, live Postgres-backed manage runtime on `http://127.0.0.1:8001` |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---
@@ -689,6 +690,32 @@ Required evidence:
 11. aggregate metric reconciliation,
 12. OpenAPI/API certification summary,
 13. critical-review JSON/Markdown with fixes made.
+
+Slice 10 result:
+
+1. live proof completed under `output/rfc0041-wave-proof/20260504-231914/`,
+2. canonical manage runtime was started through `scripts/Start-CanonicalManage.ps1` with
+   Postgres-backed manage repositories,
+3. proof seeded ready, degraded, pending-review, and blocked mandate postures through the mandate
+   health API,
+4. proof drove preview, create, source-check, simulate, select/proof-pack, approve, stage, handoff,
+   cancel, retrieve, item-list, proof-pack-posture, supportability, and search routes over live
+   HTTP,
+5. aggregate reconciliation passed with one `HANDOFF_READY`, one `SOURCE_DEGRADED`, one
+   `REVIEW_REQUIRED`, and one `SOURCE_BLOCKED` item,
+6. OpenAPI certification for 13 RFC-0041 wave operations passed with no missing or weak routes,
+7. critical review passed and explicitly preserved the downstream Gateway/Workbench boundary,
+8. live validation found and fixed two production-readiness issues:
+   - RFC-0039 construction delegation now records method-specific run correlation ids so Postgres
+     run supportability does not collide during multi-method alternative generation,
+   - mixed waves with simulated eligible items plus degraded/review-required exceptions now roll up
+     to `PARTIALLY_SIMULATED`, allowing approval-with-exceptions instead of failing the state
+     machine.
+9. a stale RFC/API gap was closed by implementing `POST /api/v1/rebalance/waves/{wave_id}/cancel`
+   with actor-attributed cancellation evidence and no external execution claim.
+
+The latest live proof result is `passed`. RFC-0041 remains `IN PROGRESS` until Slice 11 hardening
+and Slice 12 closure are completed.
 
 ### Slice 11 - Second-Last Hardening and Review
 

@@ -117,6 +117,41 @@ class PostgresDpmWaveRepository:
             return None
         return load_model_json(DpmRebalanceWave, _payload(row))
 
+    def list_waves(
+        self,
+        *,
+        state: str | None = None,
+        trigger_type: str | None = None,
+        as_of_date: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmRebalanceWave]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        if state is not None:
+            clauses.append("state = %s")
+            args.append(state)
+        if trigger_type is not None:
+            clauses.append("trigger_type = %s")
+            args.append(trigger_type)
+        if as_of_date is not None:
+            clauses.append("as_of_date = %s")
+            args.append(as_of_date)
+        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT wave_json
+                FROM dpm_rebalance_waves
+                {where_clause}
+                ORDER BY created_at DESC, wave_id DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(args),
+            ).fetchall()
+        return [load_model_json(DpmRebalanceWave, _payload(row)) for row in rows]
+
     def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
         with closing(self._connect()) as connection:
             result = connection.execute(

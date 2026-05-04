@@ -47,6 +47,9 @@ function Ensure-CanonicalPostgres {
   }
 
   if (-not [string]::IsNullOrWhiteSpace($env:DPM_SUPPORTABILITY_POSTGRES_DSN)) {
+    if ([string]::IsNullOrWhiteSpace($env:DPM_MANAGE_POSTGRES_DSN)) {
+      $env:DPM_MANAGE_POSTGRES_DSN = $env:DPM_SUPPORTABILITY_POSTGRES_DSN
+    }
     return
   }
 
@@ -78,6 +81,7 @@ function Ensure-CanonicalPostgres {
 
   $dsn = "postgresql://manage:manage@127.0.0.1:$PostgresHostPort/manage_supportability"
   $env:DPM_SUPPORTABILITY_POSTGRES_DSN = $dsn
+  $env:DPM_MANAGE_POSTGRES_DSN = $dsn
   if ([string]::IsNullOrWhiteSpace($env:DPM_POLICY_PACK_POSTGRES_DSN)) {
     $env:DPM_POLICY_PACK_POSTGRES_DSN = $dsn
   }

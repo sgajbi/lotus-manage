@@ -34,6 +34,7 @@ from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
+    DpmWaveHandoffRef,
     DpmWaveTrigger,
     WaveItemState,
     WaveState,
@@ -1048,6 +1049,103 @@ def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
     ]
 
 
+def test_wave_cancel_is_durable_idempotent_and_rejects_handoff_ready_waves() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-cancel-created"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        cancelled = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/cancel",
+            json={
+                "actor_id": "pm_001",
+                "reason_code": "PM_CANCELLED_BEFORE_REVIEW",
+                "comment": "Cancelled before downstream work.",
+            },
+            headers={"X-Correlation-Id": "corr-wave-cancel-created"},
+        )
+        replay = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/cancel",
+            json={"actor_id": "pm_001", "reason_code": "PM_CANCELLED_BEFORE_REVIEW"},
+        )
+
+        handoff_ready = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-cancel-handoff"},
+        )
+        handoff_wave_id = handoff_ready.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
+        client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                    }
+                ],
+            },
+        )
+        client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/items/{wave_item_id}/select",
+            json={
+                "alternative_id": "alt_min_turnover",
+                "actor_id": "pm_001",
+                "reason_code": "LOWER_TURNOVER_WITH_ACCEPTABLE_DRIFT",
+            },
+        )
+        client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/approve",
+            json={"actor_id": "pm_001", "reason_code": "PROOF_PACK_REVIEWED"},
+        )
+        client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/stage",
+            json={"actor_id": "ops_001", "reason_code": "READY_FOR_OPERATIONS_REVIEW"},
+        )
+        client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/handoff",
+            json={"actor_id": "ops_001", "reason_code": "OPERATIONS_PACKAGE_PREPARED"},
+        )
+        invalid = client.post(
+            f"/api/v1/rebalance/waves/{handoff_wave_id}/cancel",
+            json={"actor_id": "pm_001", "reason_code": "PM_CANCELLED_TOO_LATE"},
+        )
+
+    assert cancelled.status_code == 200
+    payload = cancelled.json()
+    assert payload["wave"]["state"] == "CANCELLED"
+    assert payload["wave"]["items"][0]["state"] == "EXCLUDED"
+    assert payload["wave"]["items"][0]["diagnostics"]["cancel_actor_id"] == "pm_001"
+    assert payload["wave"]["items"][0]["diagnostics"]["external_execution_claimed"] is False
+    assert payload["wave"]["events"][-1]["reason_code"] == "WAVE_CANCELLED"
+    assert replay.json()["idempotent_replay"] is True
+    persisted = wave_repository.get_wave(wave_id=wave_id)
+    assert persisted is not None
+    assert persisted.state == "CANCELLED"
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "DPM_WAVE_CANCEL_INVALID_STATE"
+
+
 def test_wave_approval_excludes_blocked_items_and_stages_only_approved_items() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()
@@ -1374,6 +1472,129 @@ def test_wave_supportability_service_reports_degraded_and_blocked_actions() -> N
     assert "PB_SG_CONFIDENTIAL" not in str(blocked)
 
 
+def test_wave_simulation_rollup_treats_degraded_and_review_items_as_partial() -> None:
+    result_state = wave_service._simulation_result_state(  # noqa: SLF001
+        [
+            _wave_item(
+                wave_item_id="dwi_simulated",
+                portfolio_id="PB_SG_SIMULATED",
+                state="SIMULATED",
+            ),
+            _wave_item(
+                wave_item_id="dwi_degraded",
+                portfolio_id="PB_SG_DEGRADED",
+                state="SOURCE_DEGRADED",
+            ),
+            _wave_item(
+                wave_item_id="dwi_review",
+                portfolio_id="PB_SG_REVIEW",
+                state="REVIEW_REQUIRED",
+            ),
+        ]
+    )
+
+    assert result_state == "PARTIALLY_SIMULATED"
+
+
+def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_posture() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    wave_repository = InMemoryDpmWaveRepository()
+    wave = DpmRebalanceWave(
+        wave_id="dwv_read_001",
+        state="HANDOFF_READY",
+        trigger=DpmWaveTrigger(
+            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_id="manual-wave-read-001",
+            rationale="Retrieve a completed wave for command-center evidence.",
+        ),
+        as_of_date="2026-05-03",
+        created_by="pm_001",
+        correlation_id="corr-wave-read-001",
+        version=7,
+        items=[
+            DpmRebalanceWaveItem(
+                wave_item_id="dwi_read_ready",
+                portfolio_id=PORTFOLIO_ID,
+                state="HANDOFF_READY",
+                selected_alternative_id="alt_min_turnover",
+                proof_pack_id="dpp_read_ready",
+                reason_codes=[
+                    "CONSTRUCTION_ALTERNATIVE_SELECTED",
+                    "PROOF_PACK_READY",
+                    "WAVE_ITEM_HANDOFF_READY",
+                ],
+                diagnostics={
+                    "proof_pack_state": "READY",
+                    "external_execution_claimed": False,
+                },
+            )
+        ],
+        aggregate_metrics=DpmWaveAggregateMetrics(
+            item_count=1,
+            state_counts={"HANDOFF_READY": 1},
+            ready_item_count=1,
+            blocked_item_count=0,
+            review_required_item_count=0,
+            source_degraded_item_count=0,
+        ),
+        handoff_refs=[
+            DpmWaveHandoffRef(
+                handoff_ref_id="dwh_read_001",
+                wave_id="dwv_read_001",
+                item_ids=["dwi_read_ready"],
+                actor_id="ops_001",
+                reason_code="READY_FOR_OPERATIONS_REVIEW",
+                correlation_id="corr-wave-read-handoff",
+                external_execution_claimed=False,
+                content_hash="sha256:read-handoff",
+            )
+        ],
+    )
+    wave_repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+
+    with _client(mandate_repository, wave_repository) as client:
+        search = client.get(
+            "/api/v1/rebalance/waves",
+            params={
+                "state": "HANDOFF_READY",
+                "trigger_type": "EXPLICIT_PORTFOLIO_LIST",
+                "as_of_date": "2026-05-03",
+                "supportability_state": "ready",
+            },
+        )
+        detail = client.get("/api/v1/rebalance/waves/dwv_read_001")
+        items = client.get("/api/v1/rebalance/waves/dwv_read_001/items")
+        proof_pack = client.get("/api/v1/rebalance/waves/dwv_read_001/proof-pack")
+        missing = client.get("/api/v1/rebalance/waves/dwv_missing")
+
+    assert search.status_code == 200
+    search_payload = search.json()
+    assert search_payload["returned_count"] == 1
+    assert search_payload["items"][0]["wave_id"] == "dwv_read_001"
+    assert search_payload["items"][0]["supportability_state"] == "ready"
+    assert search_payload["items"][0]["aggregate_metrics"]["state_counts"] == {"HANDOFF_READY": 1}
+
+    assert detail.status_code == 200
+    detail_payload = detail.json()
+    assert detail_payload["wave"]["wave_id"] == "dwv_read_001"
+    assert detail_payload["supportability"]["supportability_state"] == "ready"
+    assert detail_payload["proof_pack_posture"]["linked_item_count"] == 1
+
+    assert items.status_code == 200
+    items_payload = items.json()
+    assert items_payload["items"][0]["proof_pack_id"] == "dpp_read_ready"
+    assert items_payload["aggregate_metrics"]["ready_item_count"] == 1
+
+    assert proof_pack.status_code == 200
+    proof_payload = proof_pack.json()
+    assert proof_payload["ready_proof_pack_count"] == 1
+    assert proof_payload["external_execution_claimed"] is False
+    assert proof_payload["handoff_refs"][0]["handoff_ref_id"] == "dwh_read_001"
+
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+
+
 def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post(
@@ -1391,17 +1612,27 @@ def test_wave_openapi_documents_preview_and_create() -> None:
 
     preview = openapi["paths"]["/api/v1/rebalance/waves/preview"]["post"]
     create = openapi["paths"]["/api/v1/rebalance/waves"]["post"]
+    search = openapi["paths"]["/api/v1/rebalance/waves"]["get"]
+    detail = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}"]["get"]
+    items = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/items"]["get"]
+    proof_pack = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/proof-pack"]["get"]
     source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check"]["post"]
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]
+    cancel = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/cancel"]["post"]
     supportability = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/supportability"]["get"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
+    assert search["tags"] == ["lotus-manage Rebalance Waves"]
+    assert detail["tags"] == ["lotus-manage Rebalance Waves"]
+    assert items["tags"] == ["lotus-manage Rebalance Waves"]
+    assert proof_pack["tags"] == ["lotus-manage Rebalance Waves"]
     assert source_check["tags"] == ["lotus-manage Rebalance Waves"]
     assert approve["tags"] == ["lotus-manage Rebalance Waves"]
     assert stage["tags"] == ["lotus-manage Rebalance Waves"]
     assert handoff["tags"] == ["lotus-manage Rebalance Waves"]
+    assert cancel["tags"] == ["lotus-manage Rebalance Waves"]
     assert supportability["tags"] == ["lotus-manage Rebalance Waves"]
     assert preview["responses"]["200"]["content"]["application/json"]["example"]["durable"] is False
     assert create["responses"]["201"]["content"]["application/json"]["example"]["durable"] is True
@@ -1411,9 +1642,14 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     )
     assert "422" in preview["responses"]
     assert "409" in create["responses"]
+    assert "durable RFC-0041 waves" in search["description"]
+    assert "does not regenerate downstream" in detail["description"]
+    assert "without UI-side recomputation" in items["description"]
+    assert "does not rebuild proof packs" in proof_pack["description"]
     assert "404" in source_check["responses"]
     assert "409" in source_check["responses"]
     assert "422" in source_check["responses"]
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
+    assert "does not cancel external orders" in cancel["description"]
     assert "excludes portfolio identifiers" in supportability["description"]

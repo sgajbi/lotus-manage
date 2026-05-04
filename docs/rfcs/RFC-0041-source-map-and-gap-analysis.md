@@ -425,6 +425,74 @@ Production boundary:
 4. Full front-office support remains unpromoted until downstream implementation and live proof are
    complete.
 
+## Slice 10 Live Implementation Proof Result
+
+Slice 10 generated live, machine-readable implementation proof against the canonical manage runtime
+with Postgres-backed repositories. The evidence pack is
+`output/rfc0041-wave-proof/20260504-231914/`.
+
+Validated flow:
+
+1. `POST /api/v1/mandates/{mandate_id}/health/recalculate` seeded source-backed ready,
+   degraded, and pending-review mandate health states.
+2. `POST /api/v1/rebalance/waves/preview` proved non-durable mixed candidate and blocked
+   affected-portfolio posture.
+3. `POST /api/v1/rebalance/waves` proved durable wave creation and idempotency-key posture.
+4. `POST /api/v1/rebalance/waves/{wave_id}/source-check` proved one `SOURCE_READY`, one
+   `SOURCE_DEGRADED`, one `REVIEW_REQUIRED`, and one `SOURCE_BLOCKED` item.
+5. `POST /api/v1/rebalance/waves/{wave_id}/simulate` delegated to RFC-0039 construction for the
+   ready item only.
+6. `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select` generated RFC-0040
+   proof-pack linkage for the selected alternative.
+7. `POST /api/v1/rebalance/waves/{wave_id}/approve`, `stage`, and `handoff` proved
+   approval-with-exceptions, approved-item-only staging, append-only internal handoff refs, and
+   `external_execution_claimed=false`.
+8. `POST /api/v1/rebalance/waves/{wave_id}/cancel` proved actor-attributed cancellation on a
+   separate durable wave before downstream work, with no external execution claim.
+9. `GET /api/v1/rebalance/waves`, `GET /api/v1/rebalance/waves/{wave_id}`,
+   `GET /api/v1/rebalance/waves/{wave_id}/items`,
+   `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`, and
+   `GET /api/v1/rebalance/waves/{wave_id}/supportability` proved retrieve, search, item,
+   proof-pack posture, and product-safe supportability read models.
+10. OpenAPI certification checked 13 wave operations and found no missing or weak route contracts.
+11. Aggregate reconciliation passed with one handoff-ready item and three visible exceptions.
+
+Issues found and fixed during live proof:
+
+1. RFC-0039 construction delegation reused one wave simulation correlation id for multiple method
+   runs, which collided with Postgres run-supportability uniqueness. The fix records
+   method-specific run correlation ids while preserving the parent wave correlation in wave events.
+2. Mixed waves with a simulated eligible item plus degraded or review-required exceptions rolled up
+   to `SIMULATED`, which made approval-with-exceptions invalid. The fix classifies any simulated
+   wave with remaining non-simulated exceptions as `PARTIALLY_SIMULATED`.
+3. RFC-0041 read-side gaps were closed with repository-backed wave search/detail/item/proof-pack
+   posture APIs before live proof was accepted.
+4. Canonical startup now exports `DPM_MANAGE_POSTGRES_DSN` so wave, mandate, construction, and
+   proof-pack repositories can use the same durable Postgres backing during live proof.
+5. The RFC-listed cancel command was implemented instead of leaving cancellation as a state-machine
+   only concept.
+
+Evidence:
+
+1. `scripts/generate_rfc0041_wave_evidence.py`
+2. `output/rfc0041-wave-proof/20260504-231914/manifest.json`
+3. `output/rfc0041-wave-proof/20260504-231914/critical-review.json`
+4. `output/rfc0041-wave-proof/20260504-231914/critical-review.md`
+5. `output/rfc0041-wave-proof/20260504-231914/17-openapi-certification.json`
+6. `output/rfc0041-wave-proof/20260504-231914/18-aggregate-reconciliation.json`
+7. `tests/unit/test_rfc0041_evidence_script.py`
+8. `tests/unit/dpm/api/test_waves_api.py`
+9. `tests/unit/dpm/construction/test_enrichment.py`
+10. `tests/unit/api/test_dependencies.py`
+
+Production boundary:
+
+1. Slice 10 proves the manage backend authority, not the full front-office product experience.
+2. Gateway and Workbench remain unpromoted until their implementation RFCs are executed and proven.
+3. Automatic PM-book and CIO model-change cohort discovery remain deferred until source-owning
+   products expose implementation-backed source evidence.
+4. RFC-0041 remains open for Slice 11 hardening and Slice 12 final closure.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:

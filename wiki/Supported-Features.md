@@ -33,6 +33,7 @@ It is intentionally a navigation and demo-prep page; deep mechanics stay in `doc
 | Construction alternative generation | `/api/v1/construction/alternative-sets/generate` | Supported as RFC-0039 manage backend foundation for first-wave and authority-backed methods: do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained, risk-aware through `lotus-risk` concentration authority, liquidity-aware, currency-overlay, and regime-stress-aware. ESG/restriction-aware construction is explicitly deferred until source-backed restriction and sustainability profiles exist. Full product realization through Gateway/Workbench is not yet implemented. | `src/api/routers/construction.py`, `src/api/services/construction_service.py`, `src/core/construction/`, `src/infrastructure/risk_authority/`, `tests/unit/dpm/api/test_construction_api.py`, `tests/unit/dpm/infrastructure/test_risk_authority_client.py`, OpenAPI certification matrix, `scripts/validate_live_api.py` first-wave and authority-backed construction probes |
 | Construction alternative read and selection | `GET /api/v1/construction/alternative-sets/{alternative_set_id}`, `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections` | Supported as persisted backend read and actor-attributed selection foundation. Selection records the preferred alternative but does not execute orders. Postgres-backed live proof passed generate/read/select and supportability summary checks. | `src/core/construction/repository.py`, `src/infrastructure/construction/`, `src/infrastructure/postgres_migrations/dpm/0005_construction_alternatives.sql`, `tests/unit/dpm/construction/test_repository.py`, `tests/unit/dpm/api/test_construction_api.py`, `output/rfc0039-proof/20260503-173624-canonical-postgres/summary.json` |
 | Pre-trade proof packs | `POST /api/v1/rebalance/proof-packs`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`, `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input` | Supported as RFC-0040 manage backend authority for durable proof-pack JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, immutable persistence, append-only refs, retention metadata, hashes, lineage, source-backed mandate-context attachment, and truthful degraded/pending-review/blocked section states. Gateway composition, Workbench review UX, report materialization, and AI memo generation are not supported by `lotus-manage`. | `src/core/proof_packs/`, `src/api/routers/proof_packs.py`, `src/infrastructure/proof_packs/`, `tests/unit/dpm/proof_packs/`, `tests/unit/dpm/api/test_proof_pack_api.py`, `scripts/generate_rfc0040_proof_pack_evidence.py`, `output/rfc0040-proof/20260503-145818/manifest.json`, `output/rfc0040-proof/20260503-145818/critical-review.json` |
+| Explicit portfolio-list rebalance waves | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves`, `GET /api/v1/rebalance/waves`, `GET /api/v1/rebalance/waves/{wave_id}`, `GET /api/v1/rebalance/waves/{wave_id}/items`, `POST /api/v1/rebalance/waves/{wave_id}/source-check`, `POST /api/v1/rebalance/waves/{wave_id}/simulate`, `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`, `POST /api/v1/rebalance/waves/{wave_id}/approve`, `POST /api/v1/rebalance/waves/{wave_id}/stage`, `POST /api/v1/rebalance/waves/{wave_id}/handoff`, `POST /api/v1/rebalance/waves/{wave_id}/cancel`, `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`, `GET /api/v1/rebalance/waves/{wave_id}/supportability` | Supported as RFC-0041 manage backend authority after Slice 10 live proof for explicit portfolio-list waves. Manage persists wave state, item states, events, aggregate metrics, proof-pack refs, supportability posture, internal handoff refs, and pre-execution cancellation evidence; it delegates construction to RFC-0039, proof-pack generation to RFC-0040, preserves degraded/review/blocked exceptions, and never claims external execution. Automatic PM-book/CIO cohort discovery, Gateway composition, Workbench UX, and full front-office product support are not supported by `lotus-manage`. | `src/core/waves/`, `src/api/routers/waves.py`, `src/api/services/wave_service.py`, `src/infrastructure/waves/`, `tests/unit/dpm/api/test_waves_api.py`, `tests/unit/dpm/waves/test_wave_domain.py`, `scripts/generate_rfc0041_wave_evidence.py`, `output/rfc0041-wave-proof/20260504-231914/manifest.json`, `output/rfc0041-wave-proof/20260504-231914/critical-review.json` |
 
 ## Pre-Trade Proof Pack Flow
 
@@ -81,6 +82,52 @@ Audience notes:
 4. Sales, pre-sales, and client-demo material can show the evidence-fabric flow, but must not claim
    a full Workbench review product until Gateway and Workbench RFC-0098 implementations are live
    and canonical front-office QA passes.
+
+## Rebalance Wave Flow
+
+RFC-0041 makes `lotus-manage` the backend authority for explicit portfolio-list rebalance waves.
+It is a manage-owned orchestration and evidence surface, not an order-execution engine and not a
+Workbench product claim.
+
+```mermaid
+flowchart LR
+    PM[PM or CIO operator] --> Preview[Preview explicit portfolio-list wave]
+    Preview --> Create[Create durable wave]
+    Create --> SourceCheck[Source-check mandate health and readiness]
+    SourceCheck --> Ready[Ready item]
+    SourceCheck --> Exceptions[Degraded / review / blocked exceptions]
+    Ready --> Simulate[RFC-0039 construction alternatives]
+    Simulate --> Select[Actor-attributed selection]
+    Select --> Proof[RFC-0040 proof pack]
+    Proof --> Approve[Approve eligible item]
+    Approve --> Stage[Stage approved item]
+    Stage --> Handoff[Internal operations handoff<br/>external_execution_claimed=false]
+    Exceptions --> Support[Product-safe supportability]
+    Handoff --> ReadModels[Search, detail, item, proof-pack posture APIs]
+    Support --> ReadModels
+    ReadModels -. downstream RFC-0098 .-> Gateway[lotus-gateway composition]
+    Gateway -. downstream RFC-0098 .-> Workbench[lotus-workbench command center]
+```
+
+Current supported manage-backend behavior:
+
+1. explicit portfolio-list wave preview and durable create,
+2. source-check classification across `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, and
+   `SOURCE_BLOCKED`,
+3. RFC-0039 construction delegation for ready items only,
+4. RFC-0040 proof-pack linkage from selected alternatives,
+5. approval-with-exceptions, approved-item-only staging, internal handoff evidence, and
+   pre-execution cancellation,
+6. retrieve/search/item/proof-pack/supportability read models for Gateway and operations,
+7. bounded supportability diagnostics and telemetry without portfolio/client labels,
+8. Postgres-backed live proof under `output/rfc0041-wave-proof/20260504-231914/`.
+
+Current boundaries:
+
+1. automatic PM-book and CIO model-change affected-cohort discovery are not supported yet,
+2. Gateway and Workbench command-center realization are planned but not implemented here,
+3. manage handoff refs are internal readiness evidence and must not be described as external
+   execution or order routing.
 
 ```mermaid
 flowchart LR
@@ -161,7 +208,7 @@ evidence.
 | Tax, liquidity, risk, currency, and regime-aware construction | RFC-0039 | Supported as manage backend construction capabilities with explicit source-authority context. ESG/restriction-aware construction remains deferred until source-backed restriction and sustainability profiles exist. Promote to full product outcome only after Gateway/Workbench implementation and canonical browser proof. |
 | Full front-office proof-pack review | RFC-0040, Gateway RFC-0098, Workbench RFC-0098 | Manage backend proof-pack authority is supported. Promote full product outcome only after Gateway composition, Workbench review UX, report materialization posture, AI memo posture, browser validation, and canonical front-office proof are implemented in the owning apps. |
 | Decision timeline and portfolio memory | RFC-0040 | Linked mandate, exception, alternative, approval, wave, handoff, and outcome events. |
-| CIO model-change and rebalance waves | RFC-0041 | Proposed only. RFC-0041 is complete through Slice 9 source-map, platform-scaffold evidence improvement, cleanup review, wave domain contracts, persistence foundation, explicit affected-portfolio preview, idempotent durable create, durable source-check classification, ready-item construction simulation, item-level alternative selection, proof-pack linkage, approval, staging, internal operations handoff evidence, product-safe wave supportability/observability diagnostics, and Gateway/Workbench RFC-0098 wave realization addenda. Explicit portfolio-list waves are the first implementation target; automatic PM-book/CIO model-change cohort discovery remains deferred until source-owning products are proven. Simulation delegates to RFC-0039 and requires caller-supplied construction inputs; selection delegates to RFC-0039 and proof-pack linkage delegates to RFC-0040. Approval/staging/handoff never promote blocked items and never claim external execution. Supportability diagnostics expose source owners, reason codes, remediation routes, and bounded telemetry without portfolio/client identifiers. No supported feature claim may be promoted until live mixed-readiness proof, Gateway implementation, Workbench implementation, canonical browser evidence, wiki publication, and supported-feature evidence are complete. |
+| CIO model-change and full front-office rebalance waves | RFC-0041, Gateway RFC-0098, Workbench RFC-0098 | Manage backend support is implementation-backed for explicit portfolio-list waves after Slice 10 live proof. Automatic PM-book/CIO model-change cohort discovery remains deferred until source-owning products are proven. Full Gateway/Workbench command-center product support remains proposed until Gateway implementation, Workbench implementation, canonical browser evidence, wiki publication, and supported-feature evidence are complete. |
 | Post-trade outcome feedback | RFC-0042 | Expected-versus-realized review sourced from core, risk, and performance evidence. |
 | Governed AI PM copilot | RFC-0043 | `lotus-ai` workflow-pack integration, guardrail tests, provenance, and AI-unavailable fallback. |
 

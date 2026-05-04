@@ -208,12 +208,21 @@ def test_postgres_wave_repository_initializes_migrations(monkeypatch: pytest.Mon
 
 
 class _FakeCursor:
-    def __init__(self, row: dict[str, object] | None = None, rowcount: int = 0) -> None:
+    def __init__(
+        self,
+        row: dict[str, object] | None = None,
+        rows: list[dict[str, object]] | None = None,
+        rowcount: int = 0,
+    ) -> None:
         self._row = row
+        self._rows = rows or ([] if row is None else [row])
         self.rowcount = rowcount
 
     def fetchone(self) -> dict[str, object] | None:
         return self._row
+
+    def fetchall(self) -> list[dict[str, object]]:
+        return self._rows
 
 
 class _FakeWaveConnection:
@@ -261,6 +270,11 @@ class _FakeWaveConnection:
             if indexed is None:
                 return _FakeCursor()
             return _FakeCursor(self.waves.get(str(indexed["wave_id"])))
+        if "SELECT wave_json FROM dpm_rebalance_waves" in sql and "ORDER BY created_at DESC" in sql:
+            rows = list(self.waves.values())
+            limit = int(args[-2])
+            offset = int(args[-1])
+            return _FakeCursor(rows=rows[offset : offset + limit])
         if "UPDATE dpm_rebalance_waves" in sql:
             wave_id = str(args[4])
             row = self.waves.get(wave_id)
@@ -313,9 +327,10 @@ def test_postgres_wave_repository_roundtrip_idempotency_and_update() -> None:
     assert loaded == wave
     assert replay == wave
     assert repository.get_wave(wave_id=wave.wave_id) == updated
+    assert repository.list_waves(limit=10, offset=0) == [updated]
     assert sorted(fake.events) == ["evt-draft-previewed", "evt-previewed-created"]
     assert fake.commits == 2
-    assert fake.closed == 5
+    assert fake.closed == 6
 
 
 def test_postgres_wave_repository_conflicts() -> None:

@@ -55,8 +55,9 @@ Current repository posture:
     `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`,
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
-11. RFC-0037 through RFC-0043 define the proposed strategic revamp into a DPM operating system.
-    RFC-0038 is now implementation-backed; the remaining roadmap RFCs stay target-state planning
+11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
+    RFC-0038, RFC-0039, RFC-0040, and the manage-owned explicit portfolio-list wave scope of
+    RFC-0041 are now implementation-backed. Remaining roadmap scope stays target-state planning
     material until implementation-backed support, live proof, and supported-feature promotion are
     completed.
 12. RFC-0038 has delivered the first implementation-backed DPM operating-system foundation with a
@@ -94,6 +95,17 @@ Current repository posture:
     the post-merge canonical front-office QA run exposed a downstream risk-drawdown `partial`
     boundary tracked as `sgajbi/lotus-gateway#182`, and therefore no full product UX support claim
     is made here.
+15. RFC-0041 has delivered implementation-backed manage backend authority for explicit
+    portfolio-list rebalance waves through Slice 10 live proof: durable preview/create,
+    source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
+    linkage, approval-with-exceptions, staging, internal operations handoff evidence with
+    `external_execution_claimed=false`, actor-attributed pre-execution cancellation,
+    repository-backed wave search/detail/item/proof-pack posture/supportability read models,
+    OpenAPI certification, and aggregate reconciliation under
+    `output/rfc0041-wave-proof/20260504-231914`. The canonical proof used Postgres-backed manage
+    repositories via `DPM_MANAGE_POSTGRES_DSN`. Automatic PM-book and CIO model-change cohort
+    discovery, Gateway composition, Workbench UX, and full front-office product support remain
+    unpromoted until owning source products and downstream implementations are live-proven.
 
 ## Architecture And Module Map
 
