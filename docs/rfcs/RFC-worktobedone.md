@@ -2246,7 +2246,7 @@ artifacts belong to report/render/archive services, and AI narrative belongs to 
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0042 |
 | --- | --- | --- | --- | --- |
-| RFC42-WTBD-001 | Gateway outcome-review composition and BFF contract | `lotus-gateway` | Downstream proposed through RFC-0098 | Manage APIs were stabilized first. Gateway must compose without recomputing or weakening supportability. |
+| RFC42-WTBD-001 | Gateway outcome-review composition and BFF contract | `lotus-gateway` | Implemented in `lotus-gateway` branch `feat/rfc42-outcome-review-gateway`; pending PR/merge/live proof promotion | Manage APIs were stabilized first. Gateway now composes the BFF route family without recomputing outcome truth; final supported-feature promotion requires PR merge, live proof, and wiki publication. |
 | RFC42-WTBD-002 | Workbench post-trade outcome review UX | `lotus-workbench` through Gateway/BFF | Downstream proposed through RFC-0098 | Workbench must consume Gateway only and cannot claim outcome UX until Gateway composition exists. |
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Pending downstream implementation and canonical proof | Manage backend proof is complete, but product support requires Gateway, Workbench, browser validation, docs, and wiki publication. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive` | Downstream reporting work | Manage emits bounded report input only; it must not render, archive, or claim generated-document support. |
@@ -2265,11 +2265,21 @@ Gateway exposes a product-facing outcome-review contract for command-center and 
 consumers while preserving manage-owned source lineage, state, reason codes, supportability,
 report-input refs, and AI-evidence refs.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-RFC-0042 stabilized the manage API surface first. Gateway composition must consume the certified
-surface and must not reconstruct expected-versus-realized calculations or hide degraded source
-states.
+`lotus-gateway` branch `feat/rfc42-outcome-review-gateway` implements the first RFC-0042
+realization slice. Gateway now has typed manage client methods, DPM command-center outcome-review
+BFF contracts, a service layer, and route handlers for preview, create, search, detail,
+source-refresh, supportability, report-input, AI-evidence input, run lookup, and wave lookup.
+Gateway preserves manage-owned payloads and supportability and does not recompute expected values,
+realized values, variance, tolerance, hashes, lineage, freshness, or review state. Local Gateway
+`make ci` has passed; PR, merge, live Gateway proof, and wiki publication remain before this item
+can be promoted to fully closed/supported.
+
+Why it was not done in RFC-0042:
+
+RFC-0042 intentionally stabilized the manage API surface first. Gateway composition had to consume
+the certified surface after manage closure and remain in the Gateway owning repository.
 
 Dependencies before implementation:
 
@@ -2281,15 +2291,24 @@ Dependencies before implementation:
 
 Expected implementation wave:
 
-Implement in `lotus-gateway` before any Workbench outcome-review product surface.
+Complete the `lotus-gateway` PR, run local and GitHub gates, capture live Gateway proof against
+manage outcome-review APIs, publish wiki, and then unblock Workbench outcome-review UX work.
 
 Promotion proof:
 
-1. Gateway unit and contract tests,
-2. Gateway OpenAPI/Swagger certification,
-3. live Gateway proof against manage outcome-review APIs,
-4. degraded, missing, blocked, unsupported, and unavailable-state tests,
-5. Gateway README/wiki/supported-feature updates.
+1. Gateway unit and contract tests: focused tests added in
+   `tests/unit/test_dpm_command_center_service.py`,
+   `tests/unit/test_upstream_clients.py`,
+   `tests/integration/test_dpm_command_center_router.py`, and
+   `tests/contract/test_dpm_command_center_contract.py`,
+2. Gateway OpenAPI/Swagger certification: route family registered with What/When/How descriptions
+   and response schema descriptions; local `make check` and `make ci` passed,
+3. live Gateway proof against manage outcome-review APIs still required before supported-feature
+   promotion,
+4. degraded, blocked, unsupported, unavailable, and upstream-error coverage has been added at the
+   Gateway service/router layer; live degraded proof remains required,
+5. Gateway README/wiki/context updates started in the Gateway branch; final supported-feature and
+   wiki publication remain PR-closure requirements.
 
 #### RFC42-WTBD-002 - Workbench Post-Trade Outcome Review UX
 
