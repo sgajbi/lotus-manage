@@ -181,9 +181,9 @@ def test_foundation_rfcs_are_rebaselined_to_current_dpm_scope() -> None:
     assert "`GET /api/v1/integration/capabilities`" in rfc_0028
     assert "`GET /integration/capabilities`" not in rfc_0028
 
-    early_foundation = (
-        ROOT / "docs" / "rfcs" / "RFC-0001-rebalance-simulation-mvp.md"
-    ).read_text(encoding="utf-8")
+    early_foundation = (ROOT / "docs" / "rfcs" / "RFC-0001-rebalance-simulation-mvp.md").read_text(
+        encoding="utf-8"
+    )
     assert "historical MVP foundation" in early_foundation
     assert "not be read as the target-state product definition" in early_foundation
 
