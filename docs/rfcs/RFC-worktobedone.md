@@ -297,9 +297,9 @@ Current closure status:
 RFC-0037 is a `PROPOSED` strategic parent roadmap, not a single implementation closure. It defines
 the target DPM operating-system proposition and the execution contract inherited by RFC-0038
 through RFC-0043. Implementation-backed support has advanced through RFC-0038, RFC-0039, RFC-0040,
-and the manage-owned explicit-list scope of RFC-0041. RFC-0042 and RFC-0043 remain proposed, while
-multiple Gateway, Workbench, report, AI, source-product, and canonical front-office realization
-items remain unpromoted.
+the manage-owned explicit-list scope of RFC-0041, and the RFC-0042 manage backend outcome-review
+authority. RFC-0043 remains proposed, while multiple Gateway, Workbench, report, AI,
+source-product, and canonical front-office realization items remain unpromoted.
 
 Closure evidence:
 
@@ -309,8 +309,8 @@ Closure evidence:
 | RFC family status | `docs/rfcs/README.md` |
 | Supported feature truth | `wiki/Supported-Features.md` |
 | Repository current-state truth | `REPOSITORY-ENGINEERING-CONTEXT.md` |
-| Implementation-backed child RFCs | RFC-0038, RFC-0039, RFC-0040, RFC-0041 |
-| Remaining proposed child RFCs | RFC-0042, RFC-0043 |
+| Implementation-backed child RFCs | RFC-0038, RFC-0039, RFC-0040, RFC-0041, RFC-0042 manage backend authority |
+| Remaining proposed child RFCs | RFC-0043 |
 
 ### Remaining Work Summary
 
@@ -320,13 +320,13 @@ not to mark RFC-0037 complete from roadmap text alone.
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0037 |
 | --- | --- | --- | --- | --- |
-| RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance` | Proposed | RFC-0037 identifies outcome learning as target-state; execution requires a dedicated source-mapped RFC. |
+| RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench` | Manage backend complete; downstream/source-owner realization remains | RFC-0037 identifies outcome learning as target-state. RFC-0042 delivered the manage authority; full product and richer source-owner realization still require owning-app work. |
 | RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Proposed | AI must use governed workflow packs, guardrails, provenance, and unavailable fallback; roadmap text is not implementation. |
 | RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Proposed / downstream addenda exist for several features | Backend child RFCs do not equal product-surface support. Gateway and Workbench must implement and prove the full experience. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive` | Proposed downstream work | RFC-0040 provides proof-pack input; generated documents and archive lifecycle belong to report/render/archive. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Proposed | RFC-0037 requires demo-ready story only after backend APIs, Gateway, Workbench, seeds, browser proof, and docs are aligned. |
-| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, and AI events | Cross-app, with manage as workflow/evidence participant | Proposed strategic extension | Child RFC event sources are not all implemented yet; RFC-0042 outcome events and downstream product surfaces are still missing. |
+| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, and AI events | Cross-app, with manage as workflow/evidence participant | Proposed strategic extension | Manage outcome-review events now exist from RFC-0042, but full portfolio memory still needs downstream product surfaces and report/AI event sources. |
 
 ### Detailed Follow-Up Items
 
@@ -337,29 +337,46 @@ Target business outcome:
 Expected-versus-realized outcome evidence closes the DPM loop so future construction, monitoring,
 and governance can learn from actual execution, risk, and performance outcomes.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-RFC-0042 is still proposed. Outcome feedback needs source-backed post-trade, risk, and performance
-evidence and must not be approximated from pre-trade proof packs or wave state.
+RFC-0042 is done for the `lotus-manage` backend authority. Manage now provides source-backed
+outcome-review preview/create/retrieve/search, immutable persistence and append-only events,
+source-refresh eventing, supportability diagnostics, certified OpenAPI, and bounded report-input
+and AI-evidence input handoffs. It deliberately does not claim Gateway/Workbench product support,
+rendered reports, AI narrative, execution/OMS integration, PM scoring, or source-owner
+risk/performance/tax/FX/cash methodologies.
 
-Dependencies before implementation:
+Why work remains:
 
-1. RFC-0042 tightened to execution-grade form,
-2. source map across `lotus-core`, `lotus-risk`, and `lotus-performance`,
-3. manage outcome event and persistence contracts,
-4. report/AI/Gateway/Workbench posture if surfaced,
-5. live evidence with expected-versus-realized reconciliation.
+The full RFC-0037 outcome-learning business outcome requires downstream product realization and
+source-owner enrichment beyond the manage backend. Gateway and Workbench must implement the
+RFC-0098 realization path, and richer realized risk/performance/execution/tax/FX/cash source
+methodologies must come from owning apps rather than manage-local approximation.
+
+Dependencies before remaining work:
+
+1. Gateway outcome-review composition over certified manage APIs,
+2. Workbench outcome-review UX through Gateway/BFF only,
+3. source-owner contracts for any richer realized risk, performance, execution, tax, FX, cash, or
+   attribution dimensions,
+4. report/render/archive implementation if generated outcome artifacts are required,
+5. RFC-0043 or `lotus-ai` workflow-pack implementation for governed AI narrative over outcome
+   evidence,
+6. canonical front-office proof before any product-surface support claim.
 
 Expected implementation wave:
 
-Tighten RFC-0042 first, then implement slice by slice with source-owner changes where required.
+Use the RFC-0042 manage backend as the authority. Implement remaining work in the owning apps:
+Gateway first, Workbench second, then report/render/archive, AI, and source-owner enrichment as
+separate governed slices.
 
 Promotion proof:
 
-1. source-owner contracts and tests,
-2. manage outcome APIs and persistence tests,
-3. live reconciliation evidence,
-4. OpenAPI certification and supported-feature updates.
+1. Gateway and Workbench API/BFF/UI tests,
+2. source-owner contract and live evidence tests for any new realized dimensions,
+3. canonical front-office evidence with populated and degraded outcome-review states,
+4. OpenAPI certification and supported-feature updates in every owning app,
+5. wiki publication and branch cleanup after merge.
 
 #### RFC37-WTBD-002 - RFC-0043 Governed AI PM Copilot
 
@@ -2207,6 +2224,18 @@ Closure evidence:
 | Live proof | `output/rfc0042-outcome-proof/20260505-024352/critical-review.json` |
 | Hardening proof | `output/rfc0042-outcome-proof/20260505-025613/critical-review.json` |
 | Post-merge audit rerun | `output/rfc0042-outcome-proof/20260505-040212/critical-review.json` |
+
+Audit refresh on 2026-05-05:
+
+1. `lotus-manage` mainline truth was reconciled with `git fetch origin --prune` and
+   `git branch -r --no-merged origin/main`; no unmerged remote branch carried RFC-0042 durable
+   truth.
+2. `lotus-gateway` commit `38d46f9` and `lotus-workbench` commit `3b5182f`, referenced by Slice
+   10, are present on `origin/main` in their owning repositories; the realization RFC addenda are
+   not stranded on side branches.
+3. The RFC-0042 manage implementation evidence remains consistent with the support claim:
+   backend authority is implemented and proven; downstream product, report, AI narrative,
+   execution/OMS, PM scoring, and richer source-owner methodology work remains unpromoted.
 
 ### Remaining Work Summary
 
