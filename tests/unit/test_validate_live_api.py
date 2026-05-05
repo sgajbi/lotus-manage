@@ -9,6 +9,114 @@ def _json_response(status_code: int, body: dict) -> httpx.Response:
     return httpx.Response(status_code, json=body)
 
 
+def _construction_alternative_set() -> dict:
+    return {
+        "alternative_set_id": "cas_live_test",
+        "alternatives": [
+            {
+                "alternative_id": "alt_do_nothing_baseline",
+                "method": "DO_NOTHING_BASELINE",
+                "method_status": "READY",
+                "comparison_metrics": {
+                    "drift_after": "1.0000",
+                    "turnover_weight": "0.0000",
+                    "trade_count": 0,
+                },
+            },
+            {
+                "alternative_id": "alt_heuristic_explainable",
+                "method": "HEURISTIC_EXPLAINABLE",
+                "method_status": "READY",
+                "comparison_metrics": {
+                    "drift_after": "0.0000",
+                    "turnover_weight": "1.0000",
+                    "trade_count": 2,
+                },
+            },
+            {
+                "alternative_id": "alt_min_turnover",
+                "method": "MIN_TURNOVER",
+                "method_status": "PENDING_REVIEW",
+                "comparison_metrics": {
+                    "drift_after": "1.0000",
+                    "turnover_weight": "0.0000",
+                    "trade_count": 0,
+                },
+            },
+            {
+                "alternative_id": "alt_tax_aware",
+                "method": "TAX_AWARE",
+                "method_status": "READY",
+                "comparison_metrics": {
+                    "drift_after": "0.0000",
+                    "turnover_weight": "1.0000",
+                    "trade_count": 2,
+                },
+            },
+        ],
+    }
+
+
+def _construction_second_wave_alternative_set() -> dict:
+    methods = [
+        "SOLVER_CONSTRAINED",
+        "RISK_AWARE",
+        "LIQUIDITY_AWARE",
+        "CURRENCY_OVERLAY",
+        "REGIME_STRESS_AWARE",
+    ]
+    reason_codes = {
+        "SOLVER_CONSTRAINED": ["TARGET_METHOD_COMPARISON_AVAILABLE"],
+        "RISK_AWARE": ["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"],
+        "LIQUIDITY_AWARE": ["SETTLEMENT_AWARENESS_ENABLED", "LIQUIDITY_POLICY_READY"],
+        "CURRENCY_OVERLAY": [
+            "CURRENCY_OVERLAY_FX_SOURCE_READY",
+            "CURRENCY_OVERLAY_POLICY_READY",
+        ],
+        "REGIME_STRESS_AWARE": ["REGIME_SCENARIO_PACK_READY"],
+    }
+    return {
+        "alternative_set_id": "cas_live_test_second_wave",
+        "alternatives": [
+            {
+                "alternative_id": f"alt_{method.lower()}",
+                "method": method,
+                "method_status": "READY",
+                "comparison_metrics": {
+                    "drift_after": "0.0000",
+                    "turnover_weight": "1.0000",
+                    "trade_count": 2,
+                },
+                "diagnostics": {"enrichment_summary": {"reason_codes": reason_codes[method]}},
+            }
+            for method in methods
+        ],
+    }
+
+
+def _construction_response(request: httpx.Request) -> httpx.Response | None:
+    path = request.url.path
+    if path == "/api/v1/construction/alternative-sets/generate":
+        body = json.loads(request.content.decode("utf-8")) if request.content else {}
+        if "SOLVER_CONSTRAINED" in body.get("methods", []):
+            return _json_response(200, _construction_second_wave_alternative_set())
+        return _json_response(200, _construction_alternative_set())
+    if path == "/api/v1/construction/alternative-sets/cas_live_test":
+        return _json_response(200, _construction_alternative_set())
+    if path == "/api/v1/construction/alternative-sets/cas_live_test/selections":
+        return _json_response(
+            200,
+            {
+                "selection_id": "casel_live_test",
+                "alternative_set_id": "cas_live_test",
+                "alternative_id": "alt_heuristic_explainable",
+                "actor_id": "live_validator",
+                "reason_code": "MAX_DRIFT_REDUCTION_ACCEPTABLE_TURNOVER",
+            },
+        )
+    return None
+
+
 def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",
@@ -22,6 +130,9 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal async_posts
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
         if path == "/api/v1/integration/capabilities":
@@ -115,6 +226,8 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
         "openapi_certification_contract",
         "removed_proposal_route_404",
         "stateful_core_sourcing_guard",
+        "construction_alternatives_first_wave",
+        "construction_alternatives_authority_backed",
         "async_duplicate_correlation_conflict",
         "supportability_postgres_summary",
         "metrics_exposed_bounded_supportability",
@@ -132,6 +245,9 @@ def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> No
 
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
         if path == "/api/v1/integration/capabilities":
@@ -207,6 +323,9 @@ def test_live_api_validation_reports_stale_openapi_certification_contract(monkey
 
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
         if path == "/api/v1/integration/capabilities":
@@ -293,6 +412,9 @@ def test_live_api_validation_reports_missing_error_response_examples(monkeypatch
 
     def handler(request: httpx.Request) -> httpx.Response:
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
         if path == "/api/v1/integration/capabilities":
@@ -398,6 +520,9 @@ def test_live_api_validation_can_probe_current_core_route_absence(monkeypatch) -
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal async_posts
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if request.url.host == "core.test":
             if path == "/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context":
                 return _json_response(404, {"detail": "Not Found"})
@@ -486,6 +611,9 @@ def test_live_api_validation_can_probe_available_stateful_core_sourcing(monkeypa
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal async_posts
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
         if path == "/api/v1/integration/capabilities":
@@ -615,6 +743,9 @@ def test_live_api_validation_fails_when_core_route_posture_changes_unexpectedly(
         if request.url.host == "core.test":
             return _json_response(200, {"source_lineage": {"source_system": "lotus-core"}})
         path = request.url.path
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
         if path == "/health/ready":
             return _json_response(200, {"status": "ready"})
         if path == "/api/v1/integration/capabilities":

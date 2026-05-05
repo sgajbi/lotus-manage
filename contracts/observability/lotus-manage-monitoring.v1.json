@@ -137,6 +137,57 @@
         "outcome": ["success", "not_found", "disabled", "conflict", "error"]
       },
       "source": "src.api.observability.record_workflow_decision"
+    },
+    {
+      "name": "lotus_manage_wave_supportability_total",
+      "type": "counter",
+      "description": "Counts product-safe rebalance wave supportability endpoint outcomes.",
+      "labels": {
+        "surface": ["rebalance/waves/supportability"],
+        "supportability_state": ["ready", "degraded", "blocked", "not_found"],
+        "reason": [
+          "wave_supportability_ready",
+          "wave_degraded_items",
+          "wave_blocked_items",
+          "wave_not_found",
+          "wave_supportability_error"
+        ]
+      },
+      "source": "src.api.observability.record_wave_supportability"
+    },
+    {
+      "name": "lotus_manage_outcome_review_supportability_total",
+      "type": "counter",
+      "description": "Counts product-safe post-trade outcome-review API and supportability outcomes.",
+      "labels": {
+        "surface": [
+          "rebalance/outcome-reviews/create",
+          "rebalance/outcome-reviews/refresh-sources",
+          "rebalance/outcome-reviews/supportability"
+        ],
+        "supportability_state": [
+          "ready",
+          "pending_review",
+          "breached",
+          "degraded",
+          "blocked",
+          "not_supported",
+          "not_found",
+          "error"
+        ],
+        "reason": [
+          "outcome_review_ready",
+          "outcome_review_pending_review",
+          "outcome_review_breached",
+          "outcome_review_degraded",
+          "outcome_review_blocked",
+          "outcome_review_not_supported",
+          "outcome_review_source_refreshed",
+          "outcome_review_not_found",
+          "outcome_review_error"
+        ]
+      },
+      "source": "src.api.observability.record_outcome_review_supportability"
     }
   ],
   "dashboards": [
@@ -185,6 +236,13 @@
           "metric": "lotus_manage_workflow_decision_total",
           "query": "sum by (surface, action, outcome) (rate(lotus_manage_workflow_decision_total[5m]))",
           "use_when": "Monitor discretionary mandate review-gate action outcomes without actor, run, or portfolio identifiers."
+        },
+        {
+          "panel_id": "outcome-review-supportability",
+          "title": "Post-Trade Outcome Review Supportability",
+          "metric": "lotus_manage_outcome_review_supportability_total",
+          "query": "sum by (surface, supportability_state, reason) (rate(lotus_manage_outcome_review_supportability_total[5m]))",
+          "use_when": "Monitor RFC-0042 outcome-review create, source-refresh, and supportability outcomes without portfolio, run, proof-pack, wave, or actor identifiers."
         }
       ]
     }
@@ -252,6 +310,15 @@
       "for": "10m",
       "description": "Workflow action requests are conflicting with current discretionary mandate review state.",
       "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-outcome-review-blocked",
+      "severity": "warning",
+      "metric": "lotus_manage_outcome_review_supportability_total",
+      "expression": "sum(rate(lotus_manage_outcome_review_supportability_total{supportability_state=\"blocked\"}[15m])) > 0",
+      "for": "15m",
+      "description": "Post-trade outcome reviews are blocked by missing or invalid source evidence.",
+      "runbook": "wiki/Operations-Runbook.md#rfc-0042-outcome-review-supportability"
     }
   ],
   "evidence": {

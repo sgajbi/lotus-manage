@@ -165,6 +165,219 @@ python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/u
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint family: mandate digital twin foundation
+
+Routes:
+
+- `GET /api/v1/mandates/by-portfolio/{portfolio_id}`
+- `GET /api/v1/mandates/{mandate_id}`
+- `GET /api/v1/mandates/{mandate_id}/versions`
+- `GET /api/v1/mandates/{mandate_id}/diff`
+- `POST /api/v1/mandates/{mandate_id}/refresh-from-core`
+- `GET /api/v1/mandates/{mandate_id}/health`
+- `POST /api/v1/mandates/{mandate_id}/health/recalculate`
+- `POST /api/v1/dpm/monitoring/run-once`
+- `GET /api/v1/dpm/monitoring/runs`
+- `GET /api/v1/dpm/monitoring/runs/{monitoring_run_id}`
+- `GET /api/v1/dpm/command-center`
+- `GET /api/v1/dpm/exceptions`
+- `POST /api/v1/dpm/exceptions/{exception_id}/resolve`
+
+Purpose:
+
+RFC-0038 mandate digital-twin foundation for discretionary portfolio management. These endpoints
+let lotus-manage refresh mandate state from product-specific `lotus-core` source products, persist
+the compiled mandate digital twin, read the latest portfolio or mandate view, inspect version
+history, explain what changed between versions, recalculate health, run bounded mandate monitoring,
+search monitoring runs, summarize a bounded command-center view, search exception queues, and
+resolve reviewed exceptions. They are not advisory proposal endpoints and do not claim Gateway or
+Workbench product-surface integration.
+
+Functional behavior:
+
+- `refresh-from-core` composes `DiscretionaryMandateBinding:v1`,
+  `DpmModelPortfolioTarget:v1`, and optional `MarketDataCoverageWindow:v1`.
+- Refresh returns the persisted `DpmMandateDigitalTwin`, a generated mandate-health snapshot,
+  derived monitoring exceptions, and explicit field-gap codes for source products not yet
+  available in core.
+- Read by portfolio and read by mandate return only previously refreshed state and return `404`
+  when no mandate snapshot exists.
+- Version listing returns persisted mandate twins newest first.
+- Diff compares the latest two versions by default, or caller-supplied `from_version` and
+  `to_version`, and labels materiality for changed mandate fields.
+- Health read returns the latest persisted mandate health snapshot.
+- Health recalculate persists a new snapshot and derived exceptions from explicit monitoring input.
+- Monitoring run-once evaluates caller-supplied mandate ids that have already been refreshed.
+- Monitoring run search and detail return persisted run records.
+- Command center aggregates persisted monitoring runs and active exceptions into health
+  distribution, attention buckets, recommended actions, and supportability state.
+- Exception search supports mandate, portfolio, state, cursor, and limit filters.
+- Exception resolve requires an auditable resolution reason and returns the resolved exception.
+- Core unavailable maps to `503 DPM_MANDATE_SOURCE_UNAVAILABLE`.
+- Core incomplete maps to `424 DPM_MANDATE_SOURCE_INCOMPLETE`.
+- Legacy unversioned aliases such as `/mandates/{mandate_id}` remain absent.
+
+```mermaid
+flowchart LR
+    Caller[Gateway, operator, or validation probe] --> Refresh[POST /api/v1/mandates/{mandate_id}/refresh-from-core]
+    Refresh --> Binding[lotus-core mandate binding]
+    Refresh --> Targets[lotus-core model targets]
+    Refresh --> Coverage[lotus-core market-data coverage]
+    Binding --> Twin[DPM mandate digital twin]
+    Targets --> Twin
+    Coverage --> Health[Mandate health snapshot]
+    Twin --> Repo[(Mandate repository)]
+    Health --> Repo
+    Repo --> Read[Read by portfolio or mandate]
+    Repo --> Versions[Version history]
+    Versions --> Diff[Version diff]
+    Repo --> HealthRead[Health read]
+    Health --> Monitoring[Monitoring run-once]
+    Monitoring --> CommandCenter[DPM command center]
+    Monitoring --> ExceptionQueue[Exception queue and resolution]
+```
+
+Non-functional posture:
+
+- The refresh command is a bounded source-product composition. It does not call the retired
+  monolithic DPM execution-context route and does not source raw portfolio ledger truth locally.
+- The API preserves source-lineage records from core and keeps missing source products explicit
+  through `field_gap_codes`.
+- Diff output is deterministic and ignores volatile source-lineage ordering.
+- The default repository profile is in-memory for local runtime and tests; the Postgres repository
+  and migrations exist for production profile wiring.
+- Swagger groups the endpoints under `lotus-manage Mandates` with route-local examples and bounded
+  failure descriptions.
+
+Upstream integration posture:
+
+`lotus-core` remains authoritative for mandate binding, model targets, market data, portfolio state,
+eligibility, tax lots, cash, prices, and FX. RFC-0038 Slice 3 uses only the source products required
+to compile the minimum viable mandate twin. Objective profile, client restriction profile,
+sustainability preference profile, and portfolio cash-flow forecast remain explicit source-data
+gaps until core exposes them as governed data products.
+
+Downstream consumers:
+
+- No production downstream consumer is assumed for the new RFC-0038 target APIs.
+- Future `lotus-gateway` and `lotus-workbench` integration should consume these routes through a
+  certified Gateway contract rather than reconstructing mandate state client-side.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_mandates_api.py tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py tests/integration/test_openapi_certification_matrix.py -q
+LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
+## Certified endpoint family: construction alternatives foundation
+
+Routes:
+
+- `POST /api/v1/construction/alternative-sets/generate`
+- `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
+- `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+
+Purpose:
+
+RFC-0039 manage-side backend foundation for discretionary portfolio construction alternatives.
+These endpoints generate, persist, retrieve, and select a comparable set of construction choices
+for one mandate execution context. They support portfolio-manager decisioning before proof packs,
+workflow approval, rebalance waves, or downstream product-surface integration. They are not order
+execution endpoints and are not advisor-led proposal endpoints.
+
+Functional behavior:
+
+- Generate accepts the same explicit execution envelope posture as rebalance simulation: stateless
+  inline snapshots or stateful lotus-core source resolution when the stateful core resolver is
+  enabled.
+- Generate requires `Idempotency-Key`; a same-key same-request replay returns the original
+  alternative set, while same-key different-request usage returns `409`.
+- First-wave generation returns do-nothing baseline, explainable heuristic, minimum-turnover, and
+  tax-aware posture unless a caller explicitly narrows the method list.
+- Authority-backed construction methods return explicit method plans, supportability states, and
+  method-specific source-authority context. `SOLVER_CONSTRAINED`, `RISK_AWARE`,
+  `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` must not report `READY` when
+  required authority evidence is absent.
+- `ESG_AWARE` is explicitly deferred and degrades with
+  `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED` until restriction and sustainability source
+  products exist.
+- Do-nothing baseline keeps trade count and turnover at zero so "take no action" is visible as a
+  governed comparator.
+- Minimum-turnover applies a stricter turnover posture and surfaces pending-review behavior when
+  turnover budget drops intents.
+- Tax-aware posture uses tax-aware engine behavior where tax lots are available and exposes
+  degraded supportability reason codes where authoritative transaction cost, risk, or performance
+  enrichment is absent.
+- Read returns a persisted alternative set by id without recomputation.
+- Select records an actor-attributed selection decision with reason code, optional comment, and
+  optional correlation id. It does not execute trades.
+- Unknown alternative sets and unknown alternative ids return governed `404` errors.
+
+```mermaid
+flowchart LR
+    Caller[Gateway, operator, or certification probe] --> Generate[POST generate]
+    Generate --> Envelope[Stateless bundle or gated stateful core context]
+    Envelope --> Methods[First-wave and authority-backed methods]
+    Methods --> Baseline[Do-nothing baseline]
+    Methods --> Heuristic[Explainable heuristic]
+    Methods --> Turnover[Minimum-turnover posture]
+    Methods --> Tax[Tax-aware posture]
+    Methods --> Risk[Risk-aware via lotus-risk concentration]
+    Methods --> Liquidity[Liquidity and settlement aware]
+    Methods --> Currency[Currency-overlay policy]
+    Methods --> Regime[Regime-stress scenario pack]
+    Baseline --> Set[Persisted alternative set]
+    Heuristic --> Set
+    Turnover --> Set
+    Tax --> Set
+    Risk --> Set
+    Liquidity --> Set
+    Currency --> Set
+    Regime --> Set
+    Set --> Read[GET alternative set]
+    Set --> Select[POST selection decision]
+```
+
+Non-functional posture:
+
+- The route family is grouped under `lotus-manage Construction Alternatives`.
+- OpenAPI includes route-level request/response examples and bounded error descriptions.
+- Persistence is behind `ConstructionRepository`, with in-memory local/test support and a Postgres
+  repository plus migration for production profile wiring.
+- Selection is an audit decision, not an execution command.
+- Gateway and Workbench are not yet integrated; paired realization RFCs are written after manage
+  proof and hardening when the backend contract and evidence are stable.
+- The first-wave and authority-backed generate/read/select contracts are live-proven through the
+  repeatable validator against a canonical manage runtime.
+
+Upstream integration posture:
+
+Stateless calls rely on caller-provided source-governed snapshots. Stateful calls use the existing
+gated lotus-core source resolver from RFC-0036/RFC-0087 and preserve source supportability state on
+the alternative set. `RISK_AWARE` can consume `lotus-risk` concentration authority through the
+bounded risk-authority client when configured. `REGIME_STRESS_AWARE` requires source-backed
+scenario-pack authority context until a first-class risk/CIO scenario endpoint exists.
+`lotus-manage` does not become authority for portfolio ledger state, risk methodology, performance,
+tax lots, market data, eligibility, ESG/restriction profiles, or UI composition.
+
+Downstream consumers:
+
+No current production Gateway or Workbench consumer is assumed. Gateway and Workbench must consume
+this surface only after paired realization RFCs define the composition contract and user
+experience from the implemented manage evidence.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/construction tests/unit/dpm/api/test_construction_api.py -q
+python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q
+python scripts/openapi_quality_gate.py
+python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
+powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8020
+python scripts/validate_live_api.py --base-url http://127.0.0.1:8020 --skip-demo-pack --json-output output/rfc0039-proof/<timestamp>-authority-backed-canonical/summary.json
+```
+
 ## Certified endpoint family: policy-pack read supportability
 
 Routes:
@@ -1312,4 +1525,442 @@ Evidence commands:
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_correlation_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+```
+
+## Certified endpoint: proof-pack generation
+
+Route:
+
+- `POST /api/v1/rebalance/proof-packs`
+
+Purpose:
+
+Generates and persists an immutable RFC-0040 pre-trade proof pack from either a persisted rebalance
+run or a selected RFC-0039 construction alternative. The endpoint is the manage-owned proof-pack
+authority and records degraded or blocked section states when required source evidence is not yet
+available.
+
+Request surface:
+
+- Header: `Idempotency-Key` is required for replay-safe generation.
+- Optional header: `X-Correlation-Id`.
+- Body: `DpmProofPackGenerateRequest`.
+- Response: `DpmProofPackGenerateResponse`.
+- Missing source fields return `422`.
+- Missing source records return `404`.
+- identity or idempotency conflicts return `409`.
+
+Functional coverage:
+
+- direct rebalance-run proof-pack generation,
+- idempotent replay with stable content hash,
+- selected-alternative source validation,
+- persisted proof-pack lookup after generation,
+- optional Markdown/report/AI link generation in the response,
+- source-backed mandate-context attachment from the persisted RFC-0038 mandate digital twin and
+  latest mandate-health snapshot when available,
+- truthful mandate-context degradation when a caller supplies only a mandate id without persisted
+  mandate evidence,
+- portfolio-mismatched mandate evidence is rejected and exposed as
+  `DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH` rather than attached to the proof pack.
+
+Non-functional posture:
+
+- Proof-pack content is hashed and persisted immutably.
+- `mandate_context` cannot be promoted to `READY` solely from caller-supplied identity; proof-pack
+  source hashes must carry mandate twin and mandate-health evidence for ready mandate-context
+  posture.
+- The route does not reconstruct source facts from downstream report, AI, Gateway, or Workbench
+  layers.
+- Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
+  `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
+  not inferred from these refs.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py -q
+python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py::test_mandate_context_degrades_when_only_identifier_is_available -q
+python -m pytest tests/unit/test_rfc0040_evidence_script.py tests/unit/dpm/proof_packs/test_proof_pack_service.py -q
+python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0.1:8024
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, and supportability
+
+Routes:
+
+- `POST /api/v1/rebalance/waves/preview`
+- `POST /api/v1/rebalance/waves`
+- `GET /api/v1/rebalance/waves`
+- `GET /api/v1/rebalance/waves/{wave_id}`
+- `GET /api/v1/rebalance/waves/{wave_id}/items`
+- `POST /api/v1/rebalance/waves/{wave_id}/source-check`
+- `POST /api/v1/rebalance/waves/{wave_id}/simulate`
+- `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
+- `POST /api/v1/rebalance/waves/{wave_id}/approve`
+- `POST /api/v1/rebalance/waves/{wave_id}/stage`
+- `POST /api/v1/rebalance/waves/{wave_id}/handoff`
+- `POST /api/v1/rebalance/waves/{wave_id}/cancel`
+- `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
+- `GET /api/v1/rebalance/waves/{wave_id}/supportability`
+
+Purpose:
+
+RFC-0041 Slice 4 manage-owned wave entrypoint for the first supported trigger:
+`EXPLICIT_PORTFOLIO_LIST`. The preview endpoint builds a non-durable affected-portfolio wave so
+portfolio managers and downstream orchestration can see the candidate set, source refs, blocked
+items, aggregate counts, and event posture before persistence. The create endpoint persists the same
+governed wave contract with an idempotency key. Slice 5 adds durable source-check classification
+for persisted waves, using manage-owned mandate twins, mandate health snapshots, source-readiness
+state, and available upstream `lotus-core` lineage refs. Slice 6 adds ready-item construction
+simulation through RFC-0039 and item-level alternative selection with RFC-0040 proof-pack linkage.
+Slice 7 adds manage-owned approval, staging, internal operations handoff, and cancellation evidence
+without external execution claims. Slice 8 adds product-safe operator supportability diagnostics and
+bounded wave supportability telemetry. Slice 10 closes the read-side proof surface with
+repository-backed wave search, detail, item-list, and proof-pack posture APIs, then proves the full
+flow live against Postgres-backed manage repositories.
+
+Functional coverage:
+
+- explicit affected-portfolio input only,
+- source-backed candidate selection from caller-supplied source refs,
+- source-backed candidate enrichment from an existing RFC-0038 mandate digital twin,
+- truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
+- unsupported trigger rejection with `NOT_SUPPORTED_TRIGGER`,
+- durable create with idempotent replay,
+- durable source-check from `CREATED` to `SOURCE_CHECKED`,
+- item classification as `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, or
+  `SOURCE_BLOCKED`,
+- mandate digital-twin, mandate-health, source-readiness, and available `lotus-core` lineage refs
+  attached to each item where present,
+- source-check idempotent replay for already source-checked waves without duplicate events,
+- simulation calls RFC-0039 construction alternatives only for `SOURCE_READY` items,
+- ready items without real RFC-0039 construction input become `SIMULATION_BLOCKED`,
+- source-blocked, degraded, and review-required item reasons are preserved through simulation,
+- item selection delegates to RFC-0039 selection and persists selected alternative ids,
+- proof-pack linkage delegates to RFC-0040 and degrades source-honestly when generation is not
+  requested or fails,
+- approval promotes only selected or proof-pack-ready items and never promotes blocked items,
+- mixed approval produces `APPROVED_WITH_EXCEPTIONS`,
+- staging promotes only approved items and records no-external-execution posture,
+- handoff creates append-only internal operations handoff refs with actor, reason, item ids,
+  content hash, and `external_execution_claimed=false`,
+- cancellation records actor-attributed cancellation, marks non-handoff items `EXCLUDED`, and does
+  not claim external order cancellation or execution,
+- search returns bounded durable wave pages filtered by state, trigger type, as-of date, and
+  derived supportability posture,
+- detail returns persisted wave truth plus supportability and proof-pack posture without
+  recomputing construction or proof-pack outputs,
+- item-list returns item-level source, selection, proof-pack, and handoff posture for Gateway and
+  operations without UI-side recomputation,
+- proof-pack posture returns linked proof-pack refs, degraded proof-pack counts, handoff refs, and
+  the external-execution boundary,
+- supportability returns wave posture, issue counts, source owners, bounded reason codes,
+  remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
+  trace details,
+- no PM-book discovery, CIO model-change cohort discovery, Gateway composition, or Workbench
+  product claim in these slices.
+
+Non-functional posture:
+
+- Preview is side-effect free and does not persist wave state.
+- Create requires `Idempotency-Key` and stores a durable wave using optimistic-concurrency-ready
+  repository contracts introduced in Slice 3.
+- Aggregate metrics are reconciled from item state, not caller-provided totals.
+- Missing source authority is exposed as blocked evidence instead of defaulting to readiness.
+- Source-check does not promote any item to ready from a caller-supplied portfolio id or caller
+  source ref alone; ready requires authoritative mandate twin and ready health/source-readiness
+  evidence.
+- Simulation does not synthesize holdings, market data, model targets, or shelf entries from
+  mandate identifiers. It requires caller-supplied RFC-0039 construction input for each ready item.
+- Selection appends a durable item-selection event without advancing approval or handoff state.
+- Approval, staging, and handoff commands are idempotent after their terminal command states and do
+  not append duplicate events or duplicate handoff refs.
+- Handoff evidence is an internal operations readiness package only; it is not an OMS handoff,
+  order execution instruction, or client communication.
+- Supportability emits bounded structured logs and `lotus_manage_wave_supportability_total` with
+  allowlisted `surface`, `supportability_state`, and `reason` labels.
+- Read models are repository-backed and do not regenerate construction alternatives, proof packs,
+  supportability source evidence, or handoff refs.
+- The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
+  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 10.
+
+Upstream integration posture:
+
+The supported RFC-0041 manage source inputs are existing manage-owned mandate digital twins, mandate
+health snapshots, their source-readiness state, their persisted source lineage, explicit
+caller-supplied affected-portfolio source refs, caller-supplied RFC-0039 construction inputs for
+ready items, RFC-0040 proof-pack outputs generated from selected alternatives, and manage-owned
+workflow decisions captured through actor-attributed approval/staging/handoff commands.
+Supportability diagnostics are derived from persisted wave state and bounded item diagnostics.
+Automatic PM-book or CIO model-change cohort discovery remains deferred until the owning app exposes
+a certified source product.
+
+Downstream consumers:
+
+- `lotus-gateway` and `lotus-workbench` have RFC-0098 wave-realization addenda, but must wait for
+  implementation and canonical browser proof before advertising this as a full front-office product
+  flow.
+- Operators and API consumers may use these endpoints as manage backend preview/create contracts.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py tests/unit/dpm/waves/test_wave_domain.py tests/unit/test_rfc0041_evidence_script.py -q
+python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py src/api/services/construction_service.py scripts/generate_rfc0041_wave_evidence.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_rfc0041_evidence_script.py
+python scripts/openapi_quality_gate.py
+python scripts/api_vocabulary_inventory.py --validate-only
+python scripts/generate_rfc0041_wave_evidence.py --base-url http://127.0.0.1:8001
+```
+
+Live evidence:
+
+- `output/rfc0041-wave-proof/20260504-231914/manifest.json`
+- `output/rfc0041-wave-proof/20260504-231914/critical-review.json`
+- `output/rfc0041-wave-proof/20260504-231914/17-openapi-certification.json`
+- `output/rfc0041-wave-proof/20260504-231914/18-aggregate-reconciliation.json`
+
+## Certified endpoint family: post-trade outcome review API foundation
+
+Routes:
+
+- `POST /api/v1/rebalance/outcome-reviews/preview`
+- `POST /api/v1/rebalance/outcome-reviews`
+- `GET /api/v1/rebalance/outcome-reviews`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}`
+- `POST /api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review`
+- `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`
+
+Purpose:
+
+RFC-0042 Slice 7 exposes the first manage-owned post-trade outcome-review API foundation. The
+surface previews expected-versus-realized comparisons, creates immutable outcome reviews with
+idempotency, retrieves and searches reviews, appends real source-refresh re-evaluation events, and
+returns operator-safe supportability posture. It is not a Gateway, Workbench, report, archive, AI,
+execution, risk, or performance authority.
+
+Functional behavior:
+
+- Preview compares caller-supplied expected and realized snapshots without persistence.
+- Create requires `Idempotency-Key`; same-key same-evidence replay returns the original persisted
+  review, while same-key changed evidence is rejected as `DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT`.
+- Create persists source lineage, source hashes, section hashes, content hash, correlation id,
+  retention posture, and append-only creation event.
+- Search returns bounded repository-backed review pages filtered by portfolio, mandate, wave, run,
+  and state.
+- Lookup returns the immutable persisted review by id.
+- Source refresh accepts a fresh realized source-owner snapshot, recomputes comparison against the
+  immutable expected snapshot, and appends an `OUTCOME_REVIEW_SOURCE_REFRESHED` event carrying the
+  refreshed state and source refs.
+- Supportability returns bounded state, reason-code posture, source-owner families, source-ref
+  count, dimension-state counts, freshness-state counts, and remediation routes without raw
+  upstream payloads.
+- Report input returns deterministic report-ready facts, source hashes, supportability, dimension
+  outcomes, and a canonical handoff hash without rendering reports or archive records.
+- AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
+  refs, and a canonical handoff hash without generating prompts, memos, recommendations, approvals,
+  client communications, or execution instructions.
+- Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
+
+Non-functional posture:
+
+- The endpoints are grouped under `lotus-manage Outcome Reviews`.
+- Preview is side-effect free.
+- Create and repository behavior are immutable and idempotency-protected.
+- Refresh does not mutate the original review body; history is append-only.
+- Report and AI handoff contracts are derived from persisted review truth and remain downstream
+  input contracts only.
+- Slice 9 adds `lotus_manage_outcome_review_supportability_total` for create, source-refresh, and
+  supportability-read posture with bounded `surface`, `supportability_state`, and `reason` labels.
+  The metric, dashboard panel, and alert are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`.
+- Supportability inspection logs use the bounded `outcome_review.supportability.inspected` event
+  with state/count fields only; no portfolio, actor, review, source-payload, proof-pack, wave,
+  request-hash, idempotency, or raw upstream identifiers are emitted.
+- OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
+  guidance for preview, create, search, lookup, refresh, supportability, report input, AI evidence
+  input, run lookup, and wave lookup.
+- Slice 11 live proof passed at `output/rfc0042-outcome-proof/20260505-024352/` after the proof
+  process found and fixed stale runtime restart handling plus GET endpoint guidance gaps.
+- Slice 12 hardening proof passed at `output/rfc0042-outcome-proof/20260505-025613/` and added
+  live same-key replay plus same-key changed-evidence conflict proof.
+- Full RFC-0042 product support remains unclaimed until downstream realization where surfaced,
+  PR/CI, merge, and wiki publication are complete.
+
+Upstream integration posture:
+
+The current API foundation accepts implementation-backed expected and realized snapshots. Expected
+snapshot assembly exists in manage from RFC-0039/RFC-0040/RFC-0041 artifacts. Realized evidence
+must come from source owners such as `lotus-core`, `lotus-risk`, and `lotus-performance` or be
+represented as blocked, degraded, or not supported. `lotus-manage` does not clone source-owner
+calculations.
+
+Downstream consumers:
+
+Gateway and Workbench must wait for the RFC-0042 downstream realization RFC slice before product
+implementation. Report, render, archive, and AI services must treat these endpoints as input
+contracts only; owning apps remain responsible for materialization, archive lifecycle, workflow
+packs, prompts, generated narrative, and provider guardrails.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/api/test_outcome_reviews_api.py -q
+python -m pytest tests/unit/core/test_outcome_handoffs.py -q
+python -m pytest tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py -q
+python scripts/validate_observability_contracts.py
+powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8001
+python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001
+python -m ruff check scripts/generate_rfc0042_outcome_evidence.py src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
+```
+
+## Certified endpoint: proof-pack detail
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`
+
+Purpose:
+
+Returns the persisted proof-pack JSON contract, including section states, source refs, evidence
+refs, decision timeline, lineage, supportability counts, source hashes, and content hash.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Response: `DpmProofPackLookupResponse`.
+- Missing proof pack returns `404`.
+
+Functional coverage:
+
+- persisted proof-pack retrieval,
+- hash and lineage round-trip,
+- section-state visibility for ready, degraded, blocked, and pending-review posture.
+
+Non-functional posture:
+
+- The endpoint reads the stored proof-pack artifact and does not regenerate calculations.
+- The response is bounded to the proof-pack contract and avoids raw upstream payload exposure.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack Markdown summary
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`
+
+Purpose:
+
+Returns deterministic human-readable Markdown rendered from the persisted proof pack for PM,
+compliance, operations, audit, sales/pre-sales, and client-demo review material.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Response: `text/plain` Markdown.
+- Missing proof pack returns `404`.
+
+Functional coverage:
+
+- deterministic Markdown rendering,
+- supportability matrix and evidence-gap visibility,
+- timeline and integrity hash presentation.
+
+Non-functional posture:
+
+- Markdown is derived from persisted proof-pack truth and does not become a separate evidence
+  authority.
+- Degraded source evidence remains visible in the rendered summary.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack tests/unit/dpm/proof_packs/test_proof_pack_markdown.py -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack report input
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`
+
+Purpose:
+
+Returns deterministic `DpmProofPackReportInput` for a persisted proof pack. `lotus-report` can use
+this payload for report materialization without reconstructing proof-pack sections, source hashes,
+or supportability posture.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Success response: `DpmProofPackReportInput`.
+- Missing proof pack returns `404`.
+
+Functional coverage:
+
+- deterministic report-input generation,
+- OpenAPI success contract for report payloads,
+- append-only evidence ref generation when requested by the proof-pack generation call,
+- report-input boundary kept separate from report materialization.
+
+Non-functional posture:
+
+- `lotus-manage` exposes report input only; `lotus-report` owns report materialization.
+- The payload includes Markdown and section evidence derived from immutable proof-pack truth.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack -q
+python scripts/openapi_quality_gate.py
+```
+
+## Certified endpoint: proof-pack AI-evidence input
+
+Route:
+
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input`
+
+Purpose:
+
+Returns deterministic `DpmProofPackAiEvidenceInput` for a persisted proof pack. The payload is
+bounded for downstream AI workflows and carries forbidden-action guardrails.
+
+Request surface:
+
+- Path parameter: `proof_pack_id`.
+- Success response: `DpmProofPackAiEvidenceInput`.
+- Missing proof pack returns `404`.
+
+Functional coverage:
+
+- deterministic AI-evidence input generation,
+- OpenAPI success contract for bounded AI-evidence payloads,
+- forbidden-field removal,
+- forbidden-action guardrails,
+- append-only evidence ref generation when requested by the proof-pack generation call,
+- AI-evidence boundary kept separate from AI PM memo generation.
+
+Non-functional posture:
+
+- `lotus-manage` exposes bounded evidence only; RFC-0043 and `lotus-ai` own memo generation.
+- The payload must not be treated as approval, execution instruction, or client communication.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_and_render_direct_run_proof_pack -q
+python scripts/openapi_quality_gate.py
 ```

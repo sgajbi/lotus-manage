@@ -1,0 +1,291 @@
+from fastapi.testclient import TestClient
+
+from src.api.dependencies import get_outcome_review_repository
+from src.api.main import app
+from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
+from tests.unit.infrastructure.test_outcome_review_repository import _review
+
+
+def _request_payload() -> dict:
+    review = _review()
+    return {
+        "expected_snapshot": review.expected_snapshot.model_dump(mode="json"),
+        "realized_snapshot": review.realized_snapshot.model_dump(mode="json"),
+        "dimension_configs": [
+            {
+                "dimension": "DRIFT_REDUCTION",
+                "tolerance": {"soft": "0.0025", "hard": "0.0100"},
+                "materiality": "0.0050",
+                "direction": "LOWER_IS_BETTER",
+            }
+        ],
+        "actor_id": "pm_001",
+    }
+
+
+def _refresh_payload() -> dict:
+    payload = _request_payload()
+    return {
+        "actor_id": "system",
+        "realized_snapshot": payload["realized_snapshot"],
+        "dimension_configs": payload["dimension_configs"],
+    }
+
+
+def test_outcome_review_api_preview_create_lookup_supportability_and_events() -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    try:
+        with TestClient(app) as client:
+            preview = client.post(
+                "/api/v1/rebalance/outcome-reviews/preview", json=_request_payload()
+            )
+            assert preview.status_code == 200
+            assert preview.json()["comparison"]["state"] == "READY"
+
+            created = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=_request_payload(),
+                headers={"Idempotency-Key": "outcome-idem-001", "X-Correlation-Id": "corr-001"},
+            )
+            assert created.status_code == 200
+            outcome_review = created.json()["outcome_review"]
+            outcome_review_id = outcome_review["outcome_review_id"]
+            assert outcome_review["state"] == "READY"
+            assert outcome_review["content_hash"].startswith("sha256:")
+
+            replay = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=_request_payload(),
+                headers={"Idempotency-Key": "outcome-idem-001", "X-Correlation-Id": "corr-001"},
+            )
+            assert replay.status_code == 200
+            assert replay.json()["outcome_review"]["outcome_review_id"] == outcome_review_id
+
+            conflicting_payload = _request_payload()
+            conflicting_payload["realized_snapshot"]["realized_values"]["DRIFT_REDUCTION"][
+                "value"
+            ] = "0.0200"
+            conflict = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=conflicting_payload,
+                headers={"Idempotency-Key": "outcome-idem-001", "X-Correlation-Id": "corr-001"},
+            )
+            assert conflict.status_code == 409
+            assert conflict.json()["detail"] == "DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT"
+
+            lookup = client.get(f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}")
+            assert lookup.status_code == 200
+            supportability = client.get(
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability"
+            )
+            assert supportability.status_code == 200
+            supportability_body = supportability.json()
+            assert supportability_body["state"] == "READY"
+            assert supportability_body["source_owners"] == ["lotus-manage"]
+            assert supportability_body["dimension_state_counts"] == {"READY": 1}
+            assert supportability_body["blocked_dimension_count"] == 0
+            assert supportability_body["remediation_routes"] == []
+
+            report = client.get(
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"
+            )
+            assert report.status_code == 200
+            report_input = report.json()
+            assert report_input["outcome_review_id"] == outcome_review_id
+            assert report_input["outcome_review_content_hash"] == outcome_review["content_hash"]
+            assert report_input["content_hash"].startswith("sha256:")
+            assert report_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_REPORT_INPUT"
+
+            ai = client.get(
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"
+            )
+            assert ai.status_code == 200
+            ai_input = ai.json()
+            assert ai_input["outcome_review_id"] == outcome_review_id
+            assert ai_input["outcome_review_content_hash"] == outcome_review["content_hash"]
+            assert ai_input["content_hash"].startswith("sha256:")
+            assert ai_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_AI_EVIDENCE_INPUT"
+            assert "place_orders" in ai_input["forbidden_actions"]
+            assert "score_portfolio_manager" in ai_input["forbidden_actions"]
+
+            refresh = client.post(
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources",
+                json=_refresh_payload(),
+            )
+            assert refresh.status_code == 200
+            assert refresh.json()["event"]["event_type"] == "OUTCOME_REVIEW_SOURCE_REFRESHED"
+            assert refresh.json()["comparison"]["state"] == "READY"
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
+    with TestClient(app) as client:
+        schema = client.get("/openapi.json").json()
+
+    expected_paths = [
+        "/api/v1/rebalance/outcome-reviews/preview",
+        "/api/v1/rebalance/outcome-reviews",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input",
+        "/api/v1/rebalance/runs/{rebalance_run_id}/outcome-review",
+        "/api/v1/rebalance/waves/{wave_id}/outcome-reviews",
+    ]
+    for path in expected_paths:
+        assert path in schema["paths"]
+
+    preview = schema["paths"]["/api/v1/rebalance/outcome-reviews/preview"]["post"]
+    assert preview["tags"] == ["lotus-manage Outcome Reviews"]
+    assert all(marker in preview["description"] for marker in ["What:", "When:", "How:"])
+    assert "requestBody" in preview
+    assert "200" in preview["responses"]
+
+    create = schema["paths"]["/api/v1/rebalance/outcome-reviews"]["post"]
+    assert create["tags"] == ["lotus-manage Outcome Reviews"]
+    assert "Idempotency-Key" in str(create["parameters"])
+    assert "same-key changed evidence" in create["description"]
+
+    refresh = schema["paths"][
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources"
+    ]["post"]
+    assert refresh["tags"] == ["lotus-manage Outcome Reviews"]
+    assert all(marker in refresh["description"] for marker in ["What:", "When:", "How:"])
+    assert "requestBody" in refresh
+    assert "200" in refresh["responses"]
+
+    report = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"][
+        "get"
+    ]
+    assert all(marker in report["description"] for marker in ["What:", "When:", "How:"])
+    ai = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"][
+        "get"
+    ]
+    assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
+
+    guided_get_paths = [
+        ("/api/v1/rebalance/outcome-reviews", "get"),
+        ("/api/v1/rebalance/outcome-reviews/{outcome_review_id}", "get"),
+        ("/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability", "get"),
+        ("/api/v1/rebalance/runs/{rebalance_run_id}/outcome-review", "get"),
+        ("/api/v1/rebalance/waves/{wave_id}/outcome-reviews", "get"),
+    ]
+    for path, method in guided_get_paths:
+        operation = schema["paths"][path][method]
+        assert all(marker in operation["description"] for marker in ["What:", "When:", "How:"])
+
+
+def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    try:
+        with TestClient(app) as client:
+            created = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=_request_payload(),
+                headers={"Idempotency-Key": "outcome-idem-002"},
+            )
+            assert created.status_code == 200
+            review_id = created.json()["outcome_review"]["outcome_review_id"]
+
+            search = client.get(
+                "/api/v1/rebalance/outcome-reviews",
+                params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            )
+            assert search.status_code == 200
+            assert search.json()["items"][0]["outcome_review_id"] == review_id
+
+            invalid_state = client.get(
+                "/api/v1/rebalance/outcome-reviews",
+                params={"state": "NOT_A_REVIEW_STATE"},
+            )
+            assert invalid_state.status_code == 422
+
+            by_run = client.get("/api/v1/rebalance/runs/rr_001/outcome-review")
+            assert by_run.status_code == 200
+            by_wave = client.get("/api/v1/rebalance/waves/dwv_001/outcome-reviews")
+            assert by_wave.status_code == 200
+            assert by_wave.json()["items"][0]["outcome_review_id"] == review_id
+
+            bad_payload = _request_payload()
+            bad_payload["dimension_configs"][0]["dimension"] = "PERFORMANCE"
+            bad = client.post("/api/v1/rebalance/outcome-reviews/preview", json=bad_payload)
+            assert bad.status_code == 422
+            assert "DPM_OUTCOME_DIMENSION_EVIDENCE_MISSING" in bad.text
+            bad_create = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=bad_payload,
+                headers={"Idempotency-Key": "outcome-idem-bad"},
+            )
+            assert bad_create.status_code == 422
+            assert "DPM_OUTCOME_DIMENSION_EVIDENCE_MISSING" in bad_create.text
+
+            for path in [
+                "/api/v1/rebalance/outcome-reviews/missing",
+                "/api/v1/rebalance/outcome-reviews/missing/supportability",
+                "/api/v1/rebalance/outcome-reviews/missing/report-input",
+                "/api/v1/rebalance/outcome-reviews/missing/ai-evidence-input",
+                "/api/v1/rebalance/runs/missing/outcome-review",
+            ]:
+                missing = client.get(path)
+                assert missing.status_code == 404
+                assert missing.json()["detail"] == "OUTCOME_REVIEW_NOT_FOUND"
+
+            missing_refresh = client.post(
+                "/api/v1/rebalance/outcome-reviews/missing/refresh-sources",
+                json=_refresh_payload(),
+            )
+            assert missing_refresh.status_code == 404
+
+            invalid_refresh_payload = _refresh_payload()
+            invalid_refresh_payload["dimension_configs"][0]["dimension"] = "PERFORMANCE"
+            invalid_refresh = client.post(
+                f"/api/v1/rebalance/outcome-reviews/{review_id}/refresh-sources",
+                json=invalid_refresh_payload,
+            )
+            assert invalid_refresh.status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_outcome_review_supportability_routes_source_owner_remediation() -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    repository.save_outcome_review(
+        review=_review(
+            state="DEGRADED",
+            content_hash="sha256:degraded",
+            idempotency_key="degraded-idem",
+        ).model_copy(
+            update={
+                "supportability": _review().supportability.model_copy(
+                    update={
+                        "state": "DEGRADED",
+                        "reason_codes": [
+                            "RISK_SOURCE_UNAVAILABLE",
+                            "PERFORMANCE_SOURCE_UNAVAILABLE",
+                            "EXECUTION_EVIDENCE_BLOCKED",
+                            "FX_SOURCE_STALE",
+                        ],
+                    }
+                )
+            }
+        ),
+        retention_expires_at=None,
+    )
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/rebalance/outcome-reviews/dor_001/supportability")
+
+        assert response.status_code == 200
+        assert response.json()["remediation_routes"] == [
+            "execution-owner:certify-fill-and-order-evidence",
+            "lotus-performance:refresh-post-trade-performance-source",
+            "lotus-risk:refresh-post-trade-risk-source",
+            "source-owner:refresh-realized-outcome-source",
+        ]
+    finally:
+        app.dependency_overrides.clear()

@@ -20,8 +20,16 @@ function Test-PythonModule {
     [string]$ModuleName
   )
 
-  & $PythonPath -c "import $ModuleName" 2>$null
-  return $LASTEXITCODE -eq 0
+  try {
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & $PythonPath -c "import $ModuleName" *> $null
+    return $LASTEXITCODE -eq 0
+  } catch {
+    return $false
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
 }
 
 function Ensure-CanonicalPostgres {
@@ -39,6 +47,9 @@ function Ensure-CanonicalPostgres {
   }
 
   if (-not [string]::IsNullOrWhiteSpace($env:DPM_SUPPORTABILITY_POSTGRES_DSN)) {
+    if ([string]::IsNullOrWhiteSpace($env:DPM_MANAGE_POSTGRES_DSN)) {
+      $env:DPM_MANAGE_POSTGRES_DSN = $env:DPM_SUPPORTABILITY_POSTGRES_DSN
+    }
     return
   }
 
@@ -70,6 +81,7 @@ function Ensure-CanonicalPostgres {
 
   $dsn = "postgresql://manage:manage@127.0.0.1:$PostgresHostPort/manage_supportability"
   $env:DPM_SUPPORTABILITY_POSTGRES_DSN = $dsn
+  $env:DPM_MANAGE_POSTGRES_DSN = $dsn
   if ([string]::IsNullOrWhiteSpace($env:DPM_POLICY_PACK_POSTGRES_DSN)) {
     $env:DPM_POLICY_PACK_POSTGRES_DSN = $dsn
   }
@@ -117,8 +129,8 @@ if ($Foreground) {
 try {
   $existing = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop |
     Select-Object -ExpandProperty OwningProcess -Unique
-  foreach ($pid in $existing) {
-    Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+  foreach ($processId in $existing) {
+    Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
   }
 } catch {
 }

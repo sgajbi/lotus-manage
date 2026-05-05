@@ -33,6 +33,60 @@ storage-layer constraint.
 - `/api/v1/integration/capabilities`
   backend-owned feature and workflow discovery for gateway and platform consumers
 
+## Construction alternative surfaces
+
+- `POST /api/v1/construction/alternative-sets/generate`
+  generates and persists a comparable RFC-0039 construction alternative set with do-nothing,
+  explainable heuristic, minimum-turnover, tax-aware, solver-constrained, risk-aware,
+  liquidity-aware, currency-overlay, and regime-stress-aware alternatives with explicit
+  supportability and source-authority posture. ESG/restriction-aware construction is intentionally
+  deferred until source-backed restriction and sustainability profiles exist.
+- `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
+  retrieves a previously generated alternative set without recomputation.
+- `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+  records the actor-attributed selected alternative for audit and later workflow handoff.
+
+These routes are manage-owned backend contracts. Gateway and Workbench are not yet integrated with
+this surface; construction-specific realization requirements now live in Gateway RFC-0098,
+Workbench RFC-0098, and
+[`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
+
+## Proof-pack surfaces
+
+- `POST /api/v1/rebalance/proof-packs`
+  generates and persists an immutable RFC-0040 pre-trade proof pack from a persisted rebalance run
+  or selected RFC-0039 construction alternative. Calls require `Idempotency-Key` and preserve
+  source-backed degraded or blocked section states instead of inventing missing evidence.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}`
+  retrieves the persisted proof-pack JSON contract with section states, hashes, lineage, retention
+  posture, source references, and supportability summary.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/summary.md`
+  renders deterministic human-readable Markdown from the persisted proof pack.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/report-input`
+  returns deterministic `DpmProofPackReportInput` for downstream report materialization without
+  requiring `lotus-report` to reconstruct proof-pack truth.
+- `GET /api/v1/rebalance/proof-packs/{proof_pack_id}/ai-evidence-input`
+  returns bounded `DpmProofPackAiEvidenceInput` with forbidden-action guardrails and forbidden-field
+  filtering for downstream AI workflows.
+
+These are manage-owned backend authority endpoints. Gateway and Workbench must consume these
+contracts later without reconstructing proof-pack evidence. Report materialization and AI memo
+generation remain downstream responsibilities and are not claimed by this manage implementation.
+
+```mermaid
+flowchart LR
+    Source[Run or selected alternative] --> Generate[POST /proof-packs]
+    Generate --> Store[(Immutable proof-pack store)]
+    Store --> Detail[GET proof-pack JSON]
+    Store --> Summary[GET summary.md]
+    Store --> Report[GET report-input]
+    Store --> AI[GET ai-evidence-input]
+    Report -. downstream-owned .-> LotusReport[lotus-report]
+    AI -. downstream-owned .-> LotusAI[lotus-ai]
+    Detail -. downstream RFC-0098 .-> Gateway[lotus-gateway]
+    Gateway -. downstream RFC-0098 .-> Workbench[lotus-workbench]
+```
+
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.

@@ -33,9 +33,9 @@ This repo does not own:
 - canonical host runtime on port `8001` so both services can coexist locally
 - explicit no-alias, OpenAPI, vocabulary, migration, and security governance in CI
 - proposal simulation, artifacts, consent, and lifecycle routes are owned by `lotus-advise`
-- stateless execution is the implemented and advertised runtime mode
-- stateful `portfolio_id` execution is modeled behind guardrails, but not promoted until
-  `lotus-core` exposes the RFC-087 certified composed DPM source-data products
+- stateless execution is the default implemented and advertised runtime mode
+- stateful `portfolio_id` execution is implemented behind explicit runtime gates and promoted only
+  when the canonical core/manage configuration proves RFC-087 source-product readiness
 
 ```mermaid
 flowchart LR
@@ -47,12 +47,28 @@ flowchart LR
     Advise[lotus-advise] -. advisor-led proposal workflows .-> Gateway
 ```
 
+## Target Strategic Role
+
+RFC-0037 through RFC-0043 define the proposed revamp from a certified rebalance/supportability
+service into a discretionary mandate portfolio-management operating system.
+
+The target operating model adds mandate digital twins, health scoring, portfolio-manager command
+center, advanced construction alternatives, pre-trade proof packs and decision timeline, CIO
+model-change and rebalance waves, post-trade outcome feedback, and governed AI PM support.
+
+RFC-0038 has implemented and live-proven the backend mandate digital-twin, health-score,
+monitoring, and bounded command-center foundation. Later roadmap features remain proposed until
+implementation and live evidence prove them. Target-state work may replace older manage APIs rather
+than preserving backward compatibility because there is no assumed production downstream dependency
+for the revamp surface.
+
 ## Current Proof Posture
 
-Current branch code has strengthened API, OpenAPI, mesh, observability, and live core-sourcing
-validation. After bringing up the core/manage proof path on 2026-05-02, direct canonical-host
-manage API proof passed 11/11 probes against `http://manage.dev.lotus`,
-`http://core-control.dev.lotus`, and `http://core-query.dev.lotus`.
+Current code has strengthened API, OpenAPI, mesh, observability, mandate health, command-center,
+and live core-sourcing validation. The RFC-0036 proof path passed direct canonical-host manage API
+proof against `http://manage.dev.lotus`, `http://core-control.dev.lotus`, and
+`http://core-query.dev.lotus`. RFC-0038 additionally passed local manage proof and local canonical
+manage plus live `lotus-core` proof for the mandate/monitoring/command-center backend foundation.
 
 That proof covers the implemented stateless API surface and the explicitly gated stateful
 `portfolio_id` path. Stateful mode composes RFC-087 `lotus-core` source products and publishes

@@ -45,6 +45,16 @@ DPM_WORKFLOW_DECISION_TOTAL = Counter(
     "lotus-manage workflow decision outcomes.",
     ["surface", "action", "outcome"],
 )
+WAVE_SUPPORTABILITY_TOTAL = Counter(
+    "lotus_manage_wave_supportability_total",
+    "lotus-manage rebalance wave supportability endpoint outcomes.",
+    ["surface", "supportability_state", "reason"],
+)
+OUTCOME_REVIEW_SUPPORTABILITY_TOTAL = Counter(
+    "lotus_manage_outcome_review_supportability_total",
+    "lotus-manage outcome review API and supportability outcomes.",
+    ["surface", "supportability_state", "reason"],
+)
 
 ACTION_REGISTER_SUPPORTABILITY_SURFACE = "rebalance/supportability/summary"
 UNKNOWN_ACTION_REGISTER_SURFACE = "unknown_surface"
@@ -111,6 +121,49 @@ _ALLOWED_POLICY_PACK_SELECTED = frozenset({"true", "false"})
 _ALLOWED_WORKFLOW_SURFACES = frozenset({"run", "trace", "retry"})
 _ALLOWED_WORKFLOW_ACTIONS = frozenset({"approve", "reject", "request_changes", "unknown"})
 _ALLOWED_WORKFLOW_OUTCOMES = frozenset({"success", "not_found", "disabled", "conflict", "error"})
+_ALLOWED_WAVE_SUPPORTABILITY_SURFACES = frozenset({"rebalance/waves/supportability"})
+_ALLOWED_WAVE_SUPPORTABILITY_STATES = frozenset({"ready", "degraded", "blocked", "not_found"})
+_ALLOWED_WAVE_SUPPORTABILITY_REASONS = frozenset(
+    {
+        "wave_supportability_ready",
+        "wave_degraded_items",
+        "wave_blocked_items",
+        "wave_not_found",
+        "wave_supportability_error",
+    }
+)
+_ALLOWED_OUTCOME_REVIEW_SURFACES = frozenset(
+    {
+        "rebalance/outcome-reviews/create",
+        "rebalance/outcome-reviews/refresh-sources",
+        "rebalance/outcome-reviews/supportability",
+    }
+)
+_ALLOWED_OUTCOME_REVIEW_STATES = frozenset(
+    {
+        "ready",
+        "pending_review",
+        "breached",
+        "degraded",
+        "blocked",
+        "not_supported",
+        "not_found",
+        "error",
+    }
+)
+_ALLOWED_OUTCOME_REVIEW_REASONS = frozenset(
+    {
+        "outcome_review_ready",
+        "outcome_review_pending_review",
+        "outcome_review_breached",
+        "outcome_review_degraded",
+        "outcome_review_blocked",
+        "outcome_review_not_supported",
+        "outcome_review_source_refreshed",
+        "outcome_review_not_found",
+        "outcome_review_error",
+    }
+)
 _SENSITIVE_LOG_FIELD_NAMES = frozenset(
     {
         "account_id",
@@ -427,5 +480,55 @@ def record_workflow_decision(
             outcome,
             allowed_values=_ALLOWED_WORKFLOW_OUTCOMES,
             fallback="error",
+        ),
+    ).inc()
+
+
+def record_wave_supportability(
+    *,
+    surface: str,
+    supportability_state: str,
+    reason: str,
+) -> None:
+    WAVE_SUPPORTABILITY_TOTAL.labels(
+        surface=_safe_metric_label(
+            surface,
+            allowed_values=_ALLOWED_WAVE_SUPPORTABILITY_SURFACES,
+            fallback="rebalance/waves/supportability",
+        ),
+        supportability_state=_safe_metric_label(
+            supportability_state,
+            allowed_values=_ALLOWED_WAVE_SUPPORTABILITY_STATES,
+            fallback="blocked",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_WAVE_SUPPORTABILITY_REASONS,
+            fallback="wave_supportability_error",
+        ),
+    ).inc()
+
+
+def record_outcome_review_supportability(
+    *,
+    surface: str,
+    supportability_state: str,
+    reason: str,
+) -> None:
+    OUTCOME_REVIEW_SUPPORTABILITY_TOTAL.labels(
+        surface=_safe_metric_label(
+            surface,
+            allowed_values=_ALLOWED_OUTCOME_REVIEW_SURFACES,
+            fallback="rebalance/outcome-reviews/supportability",
+        ),
+        supportability_state=_safe_metric_label(
+            supportability_state,
+            allowed_values=_ALLOWED_OUTCOME_REVIEW_STATES,
+            fallback="error",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_OUTCOME_REVIEW_REASONS,
+            fallback="outcome_review_error",
         ),
     ).inc()

@@ -50,11 +50,20 @@ def implemented_metric_contract() -> dict[str, tuple[str, ...]]:
         f"{observability.DPM_WORKFLOW_DECISION_TOTAL._name}_total": tuple(
             observability.DPM_WORKFLOW_DECISION_TOTAL._labelnames
         ),
+        f"{observability.WAVE_SUPPORTABILITY_TOTAL._name}_total": tuple(
+            observability.WAVE_SUPPORTABILITY_TOTAL._labelnames
+        ),
+        f"{observability.OUTCOME_REVIEW_SUPPORTABILITY_TOTAL._name}_total": tuple(
+            observability.OUTCOME_REVIEW_SUPPORTABILITY_TOTAL._labelnames
+        ),
     }
 
 
 def _load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Observability contract root must be an object.")
+    return payload
 
 
 def _markdown_slug(heading: str) -> str:

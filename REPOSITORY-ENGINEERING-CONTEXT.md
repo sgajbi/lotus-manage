@@ -55,6 +55,67 @@ Current repository posture:
     `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`,
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
+11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
+    RFC-0038, RFC-0039, RFC-0040, and the manage-owned explicit portfolio-list wave scope of
+    RFC-0041 are now implementation-backed. Remaining roadmap scope stays target-state planning
+    material until implementation-backed support, live proof, and supported-feature promotion are
+    completed.
+12. RFC-0038 has delivered the first implementation-backed DPM operating-system foundation with a
+    source-mapped `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine,
+    derived monitoring-exception taxonomy, repository contract, in-memory and PostgreSQL
+    persistence, mandate migrations, certified mandate refresh/read/version/diff APIs, standalone
+    health APIs, bounded monitoring/exception APIs, and a bounded command-center summary API.
+    Local manage proof, local canonical manage plus live `lotus-core` proof, supported-feature
+    promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
+    platform canonical seed automation remain governed downstream follow-up in the owning
+    repositories.
+13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
+    bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
+    risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,
+    migration `0005_construction_alternatives.sql`, and certified APIs for generating, retrieving,
+    and selecting persisted alternative sets. First-wave and mandatory authority-backed methods are
+    supported as manage backend capabilities: solver-constrained, risk-aware through `lotus-risk`
+    concentration authority, liquidity-aware, currency-overlay, and regime-stress-aware through
+    source-backed authority context. ESG/restriction-aware construction is explicitly deferred until
+    restriction and sustainability source products exist. Gateway and Workbench are not yet
+    integrated with this surface; paired realization RFCs have been created and must be
+    implemented/proven downstream before a full front-office product outcome is claimed.
+14. RFC-0040 has delivered the implementation-backed manage pre-trade proof-pack backend
+    foundation: durable `DpmPreTradeProofPack` JSON, deterministic Markdown summary, report-input
+    handoff, AI-evidence handoff with forbidden-action/field guardrails, immutable in-memory and
+    PostgreSQL persistence, append-only refs, retention metadata, section/content hashes, source
+    lineage, source-backed mandate-context attachment from persisted RFC-0038 mandate twin and
+    health evidence when available, certified `/api/v1/rebalance/proof-packs/*` APIs, and
+    canonical Postgres-backed live proof under `output/rfc0040-proof/20260503-135112`,
+    post-merge audit rerun `output/rfc0040-proof/20260503-142438`, and mandate-context hardening
+    rerun `output/rfc0040-proof/20260503-145818`. `lotus-gateway` and `lotus-workbench` RFC-0098
+    documents have been aligned to consume manage truth without reconstruction. Gateway
+    composition, Workbench proof-pack review UX, report materialization, AI memo generation, and
+    full front-office product-outcome support remain downstream work in the owning repositories;
+    the post-merge canonical front-office QA run exposed a downstream risk-drawdown `partial`
+    boundary tracked as `sgajbi/lotus-gateway#182`, and therefore no full product UX support claim
+    is made here.
+15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
+    portfolio-list rebalance waves: durable preview/create,
+    source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
+    linkage, approval-with-exceptions, staging, internal operations handoff evidence with
+    `external_execution_claimed=false`, actor-attributed pre-execution cancellation,
+    repository-backed wave search/detail/item/proof-pack posture/supportability read models,
+    OpenAPI certification, and aggregate reconciliation under
+    `output/rfc0041-wave-proof/20260504-231914`. The canonical proof used Postgres-backed manage
+    repositories via `DPM_MANAGE_POSTGRES_DSN`. Automatic PM-book and CIO model-change cohort
+    discovery, Gateway composition, Workbench UX, and full front-office product support remain
+    unpromoted until owning source products and downstream implementations are live-proven.
+16. RFC-0042 is `DONE` for manage backend authority:
+    source-backed outcome-review preview/create/retrieve/search, immutable persistence and
+    append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
+    supportability diagnostics, bounded metrics/logging, live canonical manage proof under
+    `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
+    `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
+    restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on
+    outcome-review GET routes, same-key changed-evidence idempotency conflict handling, and invalid
+    search-state filter validation. Full product support remains downstream until Gateway/Workbench
+    implementation where surfaced is complete and canonically proven.
 
 ## Architecture And Module Map
 
@@ -62,6 +123,18 @@ Primary areas:
 
 1. `src/`
    management APIs, workflow logic, and supporting modules.
+   RFC-0038 mandate digital-twin and health-scoring domain primitives live in
+   `src/core/mandates.py`; repository and persistence primitives live in
+   `src/core/mandate_repository.py` and `src/infrastructure/mandates/`; mandate API orchestration
+   lives in `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, and
+   `src/api/routers/monitoring.py`, including the bounded command-center summary endpoint.
+   RFC-0039 construction-alternative domain primitives live in `src/core/construction/`;
+   construction persistence lives in `src/core/construction/repository.py` and
+   `src/infrastructure/construction/`; construction API orchestration lives in
+   `src/api/services/construction_service.py` and `src/api/routers/construction.py`.
+   RFC-0042 outcome-review authority lives in `src/core/outcomes/`; outcome persistence lives in
+   `src/infrastructure/outcomes/`; API orchestration lives in
+   `src/api/services/outcome_review_service.py` and `src/api/routers/outcome_reviews.py`.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.
 3. `docs/`
@@ -169,9 +242,13 @@ Most relevant current governance:
 9. `make check` may refresh generated API vocabulary output; docs-only slices should inspect that
    diff and avoid committing timestamp-only churn when the semantic inventory is unchanged,
 10. the current repo-native domain-data-product declaration intentionally records only governed
-   `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
-   market-data and future stateful `portfolio_id` resolution must be added only after upstream
-   producer approval and an explicit source-data retrieval design.
+    `PortfolioStateSnapshot` input consumption through caller-supplied management request payloads;
+    market-data and future stateful `portfolio_id` resolution must be added only after upstream
+    producer approval and an explicit source-data retrieval design.
+11. target-state RFC-0037 through RFC-0043 work may redesign or remove stale manage APIs because
+    no production downstream dependency is assumed for the revamp surface. Any downstream usage
+    discovered during implementation should be documented and migrated to the certified target
+    contract rather than preserved through permanent compatibility aliases.
 
 ## Context Maintenance Rule
 

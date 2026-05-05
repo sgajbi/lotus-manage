@@ -63,6 +63,42 @@
   `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
   `/api/v1/integration/capabilities`.
 
+## RFC-0042 outcome review supportability
+
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability` returns
+  operator-safe review diagnostics for RFC-0042 post-trade outcome reviews. The response includes
+  review state, bounded reason codes, source-owner families, source-ref counts, dimension-state
+  counts, freshness-state counts, and remediation routes.
+- Treat `BLOCKED` dimensions as missing, conflicting, or invalid mandatory source evidence. Treat
+  `DEGRADED` dimensions as partial, stale, unavailable, or non-critical evidence gaps. Treat
+  `NOT_SUPPORTED` dimensions as explicitly unsupported until a source-owning app exposes and
+  certifies the required post-trade contract.
+- Remediation routes are operator hints by owner family, such as
+  `lotus-risk:refresh-post-trade-risk-source`,
+  `lotus-performance:refresh-post-trade-performance-source`,
+  `execution-owner:certify-fill-and-order-evidence`, or
+  `source-owner:refresh-realized-outcome-source`. They are not raw upstream URLs and must not
+  include portfolio, client, actor, run, proof-pack, wave, source-payload, request-hash, or
+  correlation identifiers.
+- `/metrics` exposes `lotus_manage_outcome_review_supportability_total` with only bounded
+  `surface`, `supportability_state`, and `reason` labels. `surface` is limited to route-family
+  values for create, source refresh, and supportability. `supportability_state` and `reason` are
+  allowlisted by code and contract.
+- The metric is intended for create, source-refresh, supportability-read, not-found, blocked, and
+  error posture. It must not include source hashes, raw source refs, review ids, portfolio ids,
+  actor ids, proof-pack ids, wave ids, request hashes, idempotency keys, or raw upstream errors.
+- Service logs for supportability inspection use the bounded
+  `outcome_review.supportability.inspected` event and numeric counts only. Keep raw review ids,
+  source refs, and source payload content out of message strings and free-text log fields.
+- Report and AI endpoints are handoff contracts only:
+  `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input` and
+  `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input` do not render
+  reports, archive artifacts, create AI prompts, generate PM memos, or issue recommendations.
+- Dashboard panels and alert rules are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`. Run
+  `python scripts/validate_observability_contracts.py` after changing metric code or monitoring
+  contracts.
+
 ## Docker production readiness
 
 - Compose waits for the internal PostgreSQL service to be healthy before starting

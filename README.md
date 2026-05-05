@@ -60,6 +60,47 @@ Current posture under RFC-0082:
 5. Solver-capable development and CI installs include the `solver` extra (`cvxpy` and `numpy`) so
    solver-mode target generation is validated instead of silently skipped.
 
+## Strategic DPM Roadmap
+
+RFC-0037 through RFC-0043 define the revamp from a certified rebalance/supportability service into
+a discretionary mandate portfolio-management operating system.
+
+RFC-0038 is now implementation-backed for the mandate digital-twin, health-score, monitoring, and
+command-center backend foundation. RFC-0039 is implementation-backed for the manage-side
+construction-alternative foundation: first-wave and authority-backed generate/read/select APIs,
+do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained,
+risk-aware, liquidity-aware, currency-overlay, and regime-stress-aware methods. ESG/restriction-aware
+construction is explicitly deferred until source-backed restriction and sustainability profiles
+exist. Postgres persistence, live proof, and downstream Gateway/Workbench realization requirements
+are documented, but full product-surface support still requires Gateway and Workbench implementation
+and proof. RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
+JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, hashes, lineage, retention
+metadata, immutable persistence, certified APIs, source-backed mandate-context attachment from
+RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway
+composition, Workbench review UX, report materialization, and AI memo generation remain downstream
+work in their owning apps; the post-merge gold-pass audit also records a canonical front-office
+risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no full proof-pack
+product UX support is claimed here. RFC-0041 is implementation-backed and closed as `DONE`
+for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
+RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
+internal handoff evidence, retrieve/search/item/proof-pack/supportability read models, and
+Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway and Workbench
+implementation, automatic PM-book/CIO cohort discovery, and full front-office support remain
+unpromoted. RFC-0042 is `DONE` for manage backend authority:
+source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
+source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
+and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
+hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
+state-filter validation evidence. Full post-trade outcome product support remains downstream until
+Gateway/Workbench implementation where surfaced is complete and canonically proven. The remaining
+target-state RFC covers governed AI PM support. Target-state features are not support claims until
+the owning RFC is implemented, certified, live-proven, and reflected in
+[wiki/Supported-Features.md](wiki/Supported-Features.md).
+
+The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
+or redesigned rather than preserved for backward compatibility. Future gateway and Workbench
+integration should be rebuilt against the certified target contract.
+
 ## Architecture At A Glance
 
 Main runtime surfaces come from [src/api/main.py](src/api/main.py):
@@ -71,6 +112,24 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/lineage/*`, `/api/v1/rebalance/idempotency/*`
 - policy-pack supportability
   `/api/v1/rebalance/policies/*`
+- mandate digital twin and health
+  `/api/v1/mandates/*`
+- DPM monitoring, exceptions, and command center
+  `/api/v1/dpm/monitoring/*`, `/api/v1/dpm/exceptions*`, `/api/v1/dpm/command-center`
+- construction alternatives
+  `/api/v1/construction/alternative-sets/generate`,
+  `/api/v1/construction/alternative-sets/{alternative_set_id}`,
+  `/api/v1/construction/alternative-sets/{alternative_set_id}/selections`
+- rebalance waves
+  `/api/v1/rebalance/waves`, `/api/v1/rebalance/waves/preview`,
+  `/api/v1/rebalance/waves/{wave_id}`, `/api/v1/rebalance/waves/{wave_id}/items`,
+  `/api/v1/rebalance/waves/{wave_id}/source-check`,
+  `/api/v1/rebalance/waves/{wave_id}/simulate`,
+  `/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`,
+  `/api/v1/rebalance/waves/{wave_id}/approve`, `/api/v1/rebalance/waves/{wave_id}/stage`,
+  `/api/v1/rebalance/waves/{wave_id}/handoff`, `/api/v1/rebalance/waves/{wave_id}/cancel`,
+  `/api/v1/rebalance/waves/{wave_id}/proof-pack`,
+  `/api/v1/rebalance/waves/{wave_id}/supportability`
 - integration capabilities
   `/api/v1/integration/capabilities`
 - platform surfaces
@@ -84,8 +143,15 @@ Key code areas:
   discretionary portfolio-management simulation engine and supporting rebalance modules
 - `src/core/dpm_source_context.py`
   stateful source-context models and transformation helpers for governed core sourcing
+- `src/core/mandates.py`
+  mandate digital-twin, mandate health, monitoring exception, monitoring run, and command-center
+  domain models
 - `src/core/rebalance_runs/`
   async operation, workflow, artifact, and supportability services for rebalance runs
+- `src/api/routers/mandates.py` and `src/api/routers/monitoring.py`
+  mandate, health, monitoring-run, exception, and command-center API routers
+- `src/infrastructure/mandates/`
+  in-memory and PostgreSQL mandate/health/monitoring repository implementations
 - `src/infrastructure/core_sourcing/`
   bounded `lotus-core` resolver client that composes RFC-087 source products for stateful execution
 - `src/infrastructure/`
@@ -201,6 +267,8 @@ Operationally important truths:
   [docs/documentation/project-overview.md](docs/documentation/project-overview.md)
 - architecture review ledger:
   [docs/architecture/CODEBASE-REVIEW-LEDGER.md](docs/architecture/CODEBASE-REVIEW-LEDGER.md)
+- DPM command-center gateway and Workbench handoff:
+  [docs/architecture/dpm-command-center-gateway-workbench-handoff.md](docs/architecture/dpm-command-center-gateway-workbench-handoff.md)
 - operations and CI strategy:
   [docs/operations/development-workflow-and-ci-strategy.md](docs/operations/development-workflow-and-ci-strategy.md)
 - service runbook:

@@ -19,6 +19,7 @@ from src.api.openapi_enrichment import enrich_openapi_schema
 from src.api.persistence_profile import validate_persistence_profile_guardrails
 from src.api.persistence_profile import app_persistence_profile_name
 from src.api.production_cutover_contract import validate_cutover_migrations_applied
+from src.api.routers.construction import router as construction_router
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
@@ -39,6 +40,15 @@ from src.api.routers.rebalance_simulation import (
 from src.api.routers.integration_capabilities import (
     router as integration_capabilities_router,
 )
+from src.api.routers.mandates import router as mandates_router
+from src.api.routers.monitoring import router as monitoring_router
+from src.api.routers.proof_packs import router as proof_pack_router
+from src.api.routers.outcome_reviews import (
+    router as outcome_reviews_router,
+    run_lookup_router as outcome_review_run_lookup_router,
+    wave_lookup_router as outcome_review_wave_lookup_router,
+)
+from src.api.routers.waves import router as waves_router
 from src.api.services.rebalance_simulation_service import (
     DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
     DPM_IDEMPOTENCY_CACHE,
@@ -117,6 +127,41 @@ app = FastAPI(
             "name": "lotus-manage Run Supportability",
             "description": "Run, operation, idempotency, and artifact retrieval endpoints.",
         },
+        {
+            "name": "lotus-manage Mandates",
+            "description": (
+                "Discretionary mandate digital twin, version history, diff, and core refresh "
+                "endpoints for RFC-0038."
+            ),
+        },
+        {
+            "name": "lotus-manage Monitoring",
+            "description": "Mandate health monitoring runs and exception queue endpoints.",
+        },
+        {
+            "name": "lotus-manage Construction Alternatives",
+            "description": (
+                "RFC-0039 portfolio construction alternative generation, retrieval, and "
+                "selection endpoints."
+            ),
+        },
+        {
+            "name": "lotus-manage Proof Packs",
+            "description": "RFC-0040 pre-trade proof-pack generation and evidence endpoints.",
+        },
+        {
+            "name": "lotus-manage Rebalance Waves",
+            "description": (
+                "RFC-0041 rebalance-wave preview and durable creation endpoints for explicit "
+                "affected-portfolio lists."
+            ),
+        },
+        {
+            "name": "lotus-manage Outcome Reviews",
+            "description": (
+                "RFC-0042 post-trade expected-versus-realized outcome-review endpoints."
+            ),
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -148,6 +193,14 @@ app.include_router(rebalance_run_support_router, prefix="/api/v1")
 app.include_router(rebalance_policy_pack_router, prefix="/api/v1")
 app.include_router(rebalance_simulation_router, prefix="/api/v1")
 app.include_router(integration_capabilities_router, prefix="/api/v1")
+app.include_router(mandates_router, prefix="/api/v1")
+app.include_router(monitoring_router, prefix="/api/v1")
+app.include_router(construction_router, prefix="/api/v1")
+app.include_router(proof_pack_router, prefix="/api/v1")
+app.include_router(waves_router, prefix="/api/v1")
+app.include_router(outcome_reviews_router, prefix="/api/v1")
+app.include_router(outcome_review_run_lookup_router, prefix="/api/v1")
+app.include_router(outcome_review_wave_lookup_router, prefix="/api/v1")
 
 
 @app.get(
