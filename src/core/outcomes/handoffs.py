@@ -137,7 +137,7 @@ def build_report_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeReportInp
         source_hashes=review.source_hashes,
         section_hashes=review.section_hashes,
         redaction_policy="NO_RAW_PAYLOADS",
-        evidence_ref=_placeholder_ref(
+        evidence_ref=_handoff_ref(
             ref_type=OUTCOME_REPORT_INPUT_REF_TYPE,
             outcome_review_id=review.outcome_review_id,
         ),
@@ -181,7 +181,7 @@ def build_ai_evidence_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeAiEv
         reason_codes=review.supportability.reason_codes,
         dimensions=dimensions,
         source_refs=_dedupe_source_refs(review),
-        evidence_ref=_placeholder_ref(
+        evidence_ref=_handoff_ref(
             ref_type=OUTCOME_AI_EVIDENCE_REF_TYPE,
             outcome_review_id=review.outcome_review_id,
         ),
@@ -259,7 +259,7 @@ def _dedupe_source_refs(review: DpmPostTradeOutcomeReview) -> list[DpmOutcomeSou
     return list(refs_by_key.values())
 
 
-def _placeholder_ref(*, ref_type: str, outcome_review_id: str) -> DpmOutcomeSourceRef:
+def _handoff_ref(*, ref_type: str, outcome_review_id: str) -> DpmOutcomeSourceRef:
     return DpmOutcomeSourceRef(
         source_system="lotus-manage",
         source_type=ref_type,

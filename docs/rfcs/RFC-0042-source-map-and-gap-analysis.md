@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-11 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-12 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -388,6 +388,33 @@ The proof found real quality gaps and they were fixed before the slice was accep
 No full RFC-0042 product support is promoted by Slice 11. Manage backend behavior is live-proven;
 hardening, final closure, PR/CI, merge, wiki publication, and downstream product realization where
 surfaced remain required.
+
+---
+
+## Slice 12 Hardening Review Result
+
+Slice 12 evidence is recorded in `docs/rfcs/RFC-0042-hardening-review-slice12.md`.
+
+Hardening proof output:
+
+`output/rfc0042-outcome-proof/20260505-025613/`
+
+Critical review result:
+
+`output/rfc0042-outcome-proof/20260505-025613/critical-review.json` => `passed`.
+
+Hardening changes made:
+
+1. same-key changed-evidence create now raises `DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT`,
+2. same-key same-evidence replay remains supported and returns the original review,
+3. outcome-review search `state` is now API-validated as `OutcomeReviewState`,
+4. misleading `_placeholder_ref` naming in report/AI handoffs was removed in favor of
+   `_handoff_ref`,
+5. live proof now captures `04a-idempotency-replay-response.json` and
+   `04b-idempotency-conflict-response.json`.
+
+No full RFC-0042 product support is promoted by Slice 12. Final closure, PR/CI, merge, wiki
+publication, branch cleanup, and downstream product realization where surfaced remain required.
 
 ---
 

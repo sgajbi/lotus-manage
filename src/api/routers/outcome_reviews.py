@@ -31,6 +31,7 @@ from src.core.outcomes import (
     DpmRealizedOutcomeSnapshot,
     OutcomeComparisonDirection,
     OutcomeDimension,
+    OutcomeReviewState,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
 
@@ -200,7 +201,8 @@ def preview_outcome_review_endpoint(
         "What: Persist an immutable RFC-0042 outcome review with source lineage, hashes, "
         "dimension states, supportability, and append-only creation event.\n"
         "When: Use after preview once source-owner evidence has been reviewed.\n"
-        "How: Provide `Idempotency-Key`; replay returns the original review for the same key."
+        "How: Provide `Idempotency-Key`; same-key same-evidence replay returns the original review, "
+        "while same-key changed evidence is rejected as an idempotency conflict."
     ),
 )
 def create_outcome_review_endpoint(
@@ -257,7 +259,11 @@ def list_outcome_reviews_endpoint(
     mandate_id: str | None = Query(default=None, description="Optional mandate id filter."),
     wave_id: str | None = Query(default=None, description="Optional wave id filter."),
     rebalance_run_id: str | None = Query(default=None, description="Optional rebalance run id filter."),
-    state: str | None = Query(default=None, description="Optional review state filter."),
+    state: OutcomeReviewState | None = Query(
+        default=None,
+        description="Optional review state filter.",
+        examples=["READY"],
+    ),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum reviews to return."),
     offset: int = Query(default=0, ge=0, description="Zero-based page offset."),
     repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),

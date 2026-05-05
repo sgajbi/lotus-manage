@@ -60,6 +60,18 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert replay.status_code == 200
             assert replay.json()["outcome_review"]["outcome_review_id"] == outcome_review_id
 
+            conflicting_payload = _request_payload()
+            conflicting_payload["realized_snapshot"]["realized_values"]["DRIFT_REDUCTION"][
+                "value"
+            ] = "0.0200"
+            conflict = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=conflicting_payload,
+                headers={"Idempotency-Key": "outcome-idem-001", "X-Correlation-Id": "corr-001"},
+            )
+            assert conflict.status_code == 409
+            assert conflict.json()["detail"] == "DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT"
+
             lookup = client.get(f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}")
             assert lookup.status_code == 200
             supportability = client.get(
@@ -130,6 +142,11 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert "requestBody" in preview
     assert "200" in preview["responses"]
 
+    create = schema["paths"]["/api/v1/rebalance/outcome-reviews"]["post"]
+    assert create["tags"] == ["lotus-manage Outcome Reviews"]
+    assert "Idempotency-Key" in str(create["parameters"])
+    assert "same-key changed evidence" in create["description"]
+
     refresh = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources"][
         "post"
     ]
@@ -178,6 +195,12 @@ def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() ->
             )
             assert search.status_code == 200
             assert search.json()["items"][0]["outcome_review_id"] == review_id
+
+            invalid_state = client.get(
+                "/api/v1/rebalance/outcome-reviews",
+                params={"state": "NOT_A_REVIEW_STATE"},
+            )
+            assert invalid_state.status_code == 422
 
             by_run = client.get("/api/v1/rebalance/runs/rr_001/outcome-review")
             assert by_run.status_code == 200

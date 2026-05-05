@@ -1747,7 +1747,8 @@ execution, risk, or performance authority.
 Functional behavior:
 
 - Preview compares caller-supplied expected and realized snapshots without persistence.
-- Create requires `Idempotency-Key`; same-key replay returns the original persisted review.
+- Create requires `Idempotency-Key`; same-key same-evidence replay returns the original persisted
+  review, while same-key changed evidence is rejected as `DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT`.
 - Create persists source lineage, source hashes, section hashes, content hash, correlation id,
   retention posture, and append-only creation event.
 - Search returns bounded repository-backed review pages filtered by portfolio, mandate, wave, run,
@@ -1786,8 +1787,10 @@ Non-functional posture:
   input, run lookup, and wave lookup.
 - Slice 11 live proof passed at `output/rfc0042-outcome-proof/20260505-024352/` after the proof
   process found and fixed stale runtime restart handling plus GET endpoint guidance gaps.
-- Full RFC-0042 product support remains unclaimed until hardening, downstream realization where
-  surfaced, PR/CI, merge, and wiki publication are complete.
+- Slice 12 hardening proof passed at `output/rfc0042-outcome-proof/20260505-025613/` and added
+  live same-key replay plus same-key changed-evidence conflict proof.
+- Full RFC-0042 product support remains unclaimed until downstream realization where surfaced,
+  PR/CI, merge, and wiki publication are complete.
 
 Upstream integration posture:
 

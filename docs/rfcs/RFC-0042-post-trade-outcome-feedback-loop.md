@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-11 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-12 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -23,6 +23,7 @@
 | **Slice 9 Supportability Evidence** | `docs/rfcs/RFC-0042-supportability-observability-slice9.md` |
 | **Slice 10 Gateway/Workbench Evidence** | `docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md` |
 | **Slice 11 Implementation Proof Evidence** | `docs/rfcs/RFC-0042-implementation-proof-slice11.md`; live proof: `output/rfc0042-outcome-proof/20260505-024352/manifest.json` |
+| **Slice 12 Hardening Evidence** | `docs/rfcs/RFC-0042-hardening-review-slice12.md`; hardening proof: `output/rfc0042-outcome-proof/20260505-025613/manifest.json` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -676,6 +677,14 @@ Acceptance:
 2. tests are high-value and not superficial,
 3. API and OpenAPI posture is production-grade.
 
+Slice 12 evidence:
+
+`docs/rfcs/RFC-0042-hardening-review-slice12.md`
+
+Hardening proof output:
+
+`output/rfc0042-outcome-proof/20260505-025613/`
+
 ### Slice 13 - Final Closure
 
 1. update this RFC with final gold-pass assessment,
@@ -847,7 +856,7 @@ It must state:
 
 Current gold-pass state:
 
-`IN PROGRESS - SLICES 0-11 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
+`IN PROGRESS - SLICES 0-12 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
 evidence, cleanup/structure evidence, pure comparison, expected snapshot assembly, realized
 source-degraded handling, immutable persistence/events, and a certified manage API/OpenAPI
 foundation, deterministic report-input and AI-evidence handoff contracts, and bounded
@@ -856,6 +865,10 @@ supportability/observability diagnostics. Gateway and Workbench realization RFCs
 against the canonical manage runtime and passed at
 `output/rfc0042-outcome-proof/20260505-024352/critical-review.json`. The proof found and drove a
 real fix for stale-server restart handling in `scripts/Start-CanonicalManage.ps1` and OpenAPI
-What/When/How guidance on outcome-review GET endpoints before evidence was accepted. Full
-supported-feature promotion remains pending hardening, final documentation, PR/CI, merge, wiki
-publication, downstream Gateway/Workbench implementation where surfaced, and branch cleanup.
+What/When/How guidance on outcome-review GET endpoints before evidence was accepted. Slice 12
+hardening then fixed same-key changed-evidence idempotency behavior, tightened the search `state`
+filter to the outcome-review enum, renamed misleading handoff-ref code, and reran live proof at
+`output/rfc0042-outcome-proof/20260505-025613/critical-review.json` with idempotency replay and
+conflict checks included. Full supported-feature promotion remains pending final documentation,
+PR/CI, merge, wiki publication, downstream Gateway/Workbench implementation where surfaced, and
+branch cleanup.

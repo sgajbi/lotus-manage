@@ -24,7 +24,7 @@ from src.core.outcomes import (
     build_report_input,
     compare_outcome_dimensions,
 )
-from src.core.outcomes.repository import DpmOutcomeReviewRepository
+from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
 
 OUTCOME_REVIEW_RETENTION_DAYS = 365 * 7
 
@@ -62,14 +62,21 @@ def create_outcome_review(
     idempotency_key: str,
     repository: DpmOutcomeReviewRepository,
 ) -> DpmPostTradeOutcomeReview:
-    existing = repository.get_outcome_review_by_idempotency(idempotency_key=idempotency_key)
-    if existing is not None:
-        return existing
     comparison = preview_outcome_review(
         expected_snapshot=expected_snapshot,
         realized_snapshot=realized_snapshot,
         dimension_configs=dimension_configs,
     )
+    content_hash = _review_content_hash(
+        expected_snapshot=expected_snapshot,
+        realized_snapshot=realized_snapshot,
+        comparison=comparison,
+    )
+    existing = repository.get_outcome_review_by_idempotency(idempotency_key=idempotency_key)
+    if existing is not None:
+        if existing.content_hash != content_hash:
+            raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT")
+        return existing
     created_at = datetime.now(timezone.utc)
     outcome_review_id = f"dor_{uuid4().hex[:16]}"
     event = DpmOutcomeEvent(
@@ -81,16 +88,6 @@ def create_outcome_review(
         state=comparison.state,
         reason_codes=comparison.supportability.reason_codes,
         source_refs=[*expected_snapshot.source_lineage, *realized_snapshot.source_lineage],
-    )
-    content_hash = _content_hash(
-        {
-            "expected_snapshot": expected_snapshot.model_dump(mode="json"),
-            "realized_snapshot": realized_snapshot.model_dump(mode="json"),
-            "dimension_results": [
-                result.model_dump(mode="json") for result in comparison.dimension_results
-            ],
-            "correlation_id": correlation_id,
-        }
     )
     review = DpmPostTradeOutcomeReview(
         outcome_review_id=outcome_review_id,
@@ -235,3 +232,20 @@ def _created_event_type(state: str) -> OutcomeEventType:
 def _content_hash(payload: dict[str, object]) -> str:
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _review_content_hash(
+    *,
+    expected_snapshot: DpmExpectedOutcomeSnapshot,
+    realized_snapshot: DpmRealizedOutcomeSnapshot,
+    comparison: DpmOutcomeReviewComparison,
+) -> str:
+    return _content_hash(
+        {
+            "expected_snapshot": expected_snapshot.model_dump(mode="json"),
+            "realized_snapshot": realized_snapshot.model_dump(mode="json"),
+            "dimension_results": [
+                result.model_dump(mode="json") for result in comparison.dimension_results
+            ],
+        }
+    )

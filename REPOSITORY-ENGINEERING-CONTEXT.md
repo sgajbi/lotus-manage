@@ -109,12 +109,13 @@ Current repository posture:
 16. RFC-0042 is in implementation with manage backend slices through live proof complete:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
-    supportability diagnostics, bounded metrics/logging, and live canonical manage proof under
-    `output/rfc0042-outcome-proof/20260505-024352`. The proof found and fixed stale listener
-    restart handling in `scripts/Start-CanonicalManage.ps1` and OpenAPI What/When/How gaps on
-    outcome-review GET routes. Full product support remains unpromoted until hardening, PR/CI,
-    merge, wiki publication, and downstream Gateway/Workbench implementation where surfaced are
-    complete.
+    supportability diagnostics, bounded metrics/logging, live canonical manage proof under
+    `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
+    `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
+    restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on
+    outcome-review GET routes, same-key changed-evidence idempotency conflict handling, and invalid
+    search-state filter validation. Full product support remains unpromoted until PR/CI, merge,
+    wiki publication, and downstream Gateway/Workbench implementation where surfaced are complete.
 
 ## Architecture And Module Map
 

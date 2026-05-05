@@ -322,9 +322,17 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
     degraded = cast(dict[str, Any], manifest["degraded_source_example"])
     openapi = cast(dict[str, Any], manifest["openapi_certification"])
     variance = cast(dict[str, Any], manifest["variance_worked_example"])
+    idempotency_replay = cast(dict[str, Any], manifest["idempotency_replay"])
+    idempotency_conflict = cast(dict[str, Any], manifest["idempotency_conflict"])
     review = create_response["outcome_review"]
     checks = {
         "review_created_ready": review["state"] == "READY",
+        "idempotency_replay_preserved_review": idempotency_replay["outcome_review"][
+            "outcome_review_id"
+        ]
+        == review["outcome_review_id"],
+        "idempotency_conflict_rejected": idempotency_conflict["detail"]
+        == "DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT",
         "source_lineage_preserved": len(review["source_lineage"]) >= 2,
         "supportability_operator_fields_present": supportability["source_ref_count"] >= 2
         and supportability["dimension_state_counts"].get("READY") == 1,
@@ -448,6 +456,41 @@ def generate_evidence(base_url: str, output_root: Path) -> dict[str, Any]:
         manifest_files.append(_write_json(output_dir, "03-create-response.json", create_response))
         outcome_review_id = str(create_response["outcome_review"]["outcome_review_id"])
 
+        idempotency_replay = _json(
+            _request(
+                client,
+                "POST",
+                "/api/v1/rebalance/outcome-reviews",
+                expected_status=200,
+                json_body=create_request,
+                headers={
+                    "Idempotency-Key": f"rfc0042-outcome-{token}",
+                    "X-Correlation-Id": f"corr-rfc0042-{token}-replay",
+                },
+            )
+        )
+        _assert(
+            idempotency_replay["outcome_review"]["outcome_review_id"] == outcome_review_id,
+            "same-key same-evidence replay must return the original review",
+        )
+        conflict_request = cast(dict[str, Any], json.loads(json.dumps(create_request)))
+        conflict_request["realized_snapshot"]["realized_values"]["DRIFT_REDUCTION"][
+            "value"
+        ] = "0.0200"
+        idempotency_conflict = _json(
+            _request(
+                client,
+                "POST",
+                "/api/v1/rebalance/outcome-reviews",
+                expected_status=409,
+                json_body=conflict_request,
+                headers={
+                    "Idempotency-Key": f"rfc0042-outcome-{token}",
+                    "X-Correlation-Id": f"corr-rfc0042-{token}-conflict",
+                },
+            )
+        )
+
         retrieved_review = _json(
             _request(
                 client,
@@ -528,6 +571,12 @@ def generate_evidence(base_url: str, output_root: Path) -> dict[str, Any]:
         openapi_certification = _openapi_certification(client)
 
     manifest_files.append(_write_json(output_dir, "04-retrieved-review.json", retrieved_review))
+    manifest_files.append(
+        _write_json(output_dir, "04a-idempotency-replay-response.json", idempotency_replay)
+    )
+    manifest_files.append(
+        _write_json(output_dir, "04b-idempotency-conflict-response.json", idempotency_conflict)
+    )
     manifest_files.append(_write_json(output_dir, "05-search-response.json", search_response))
     manifest_files.append(
         _write_json(output_dir, "06-supportability-response.json", supportability_response)
@@ -556,6 +605,8 @@ def generate_evidence(base_url: str, output_root: Path) -> dict[str, Any]:
         "base_url": base_url,
         "output_dir": output_dir.relative_to(ROOT).as_posix(),
         "create_response": create_response,
+        "idempotency_replay": idempotency_replay,
+        "idempotency_conflict": idempotency_conflict,
         "supportability_response": supportability_response,
         "report_input": report_input,
         "ai_evidence_input": ai_evidence_input,

@@ -89,9 +89,11 @@ implementation, automatic PM-book/CIO cohort discovery, and full front-office su
 unpromoted. RFC-0042 is in implementation with manage backend slices through live proof complete:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
-and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`. Full
-post-trade outcome product support is still unpromoted until hardening, PR/CI, merge, wiki
-publication, and Gateway/Workbench implementation where surfaced are complete. The remaining
+and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
+hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
+state-filter validation evidence. Full post-trade outcome product support is still unpromoted until
+PR/CI, merge, wiki publication, and Gateway/Workbench implementation where surfaced are complete.
+The remaining
 target-state RFC covers governed AI PM support. Target-state features are not support claims until
 the owning RFC is implemented, certified, live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
