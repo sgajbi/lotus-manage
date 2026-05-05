@@ -91,10 +91,16 @@ evidence, and supported-feature promotion.
   support remains proposed until downstream implementation and canonical front-office proof are
   complete.
 - RFC-0042
-  proposed post-trade outcome feedback loop; gold-standard tightened on 2026-05-05 as an
-  implementation-ready execution guide, with source-map guardrails and no supported-feature claim
-  until source-backed implementation, Gateway/Workbench realization, live proof, and wiki
-  publication are complete
+  post-trade outcome feedback loop; `DONE` for the manage backend authority after gold-standard
+  tightening on 2026-05-05, with Slice 0 source-map guardrails, Slice 1 platform scaffold evidence, Slice 2 cleanup/structure
+  evidence, Slice 3 pure domain comparison evidence, Slice 4 expected snapshot assembly evidence,
+  Slice 5 realized source-degraded evidence, Slice 6 persistence/events evidence, Slice 7 certified
+  manage API/OpenAPI evidence, Slice 8 report-input/AI-evidence handoff contracts, Slice 9
+  supportability/observability diagnostics, Slice 10 Gateway/Workbench realization RFC alignment,
+  Slice 11 live manage implementation proof at
+  `output/rfc0042-outcome-proof/20260505-024352/`, and Slice 12 hardening proof at
+  `output/rfc0042-outcome-proof/20260505-025613/`. Full Gateway/Workbench product support remains
+  downstream until implemented and canonically proven in the owning apps
 - RFC-0043
   proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
   ownership to AI

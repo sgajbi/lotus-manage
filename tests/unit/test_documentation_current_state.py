@@ -431,6 +431,42 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     source_map = (ROOT / "docs" / "rfcs" / "RFC-0042-source-map-and-gap-analysis.md").read_text(
         encoding="utf-8"
     )
+    platform_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-platform-automation-slice1.md").read_text(
+        encoding="utf-8"
+    )
+    cleanup_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-cleanup-and-structure-slice2.md").read_text(
+        encoding="utf-8"
+    )
+    domain_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-domain-model-slice3.md").read_text(
+        encoding="utf-8"
+    )
+    expected_snapshot_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-expected-snapshot-slice4.md"
+    ).read_text(encoding="utf-8")
+    realized_source_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-realized-source-adapters-slice5.md"
+    ).read_text(encoding="utf-8")
+    persistence_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-persistence-events-slice6.md"
+    ).read_text(encoding="utf-8")
+    api_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-api-openapi-slice7.md").read_text(
+        encoding="utf-8"
+    )
+    handoff_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-report-ai-handoffs-slice8.md").read_text(
+        encoding="utf-8"
+    )
+    supportability_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-supportability-observability-slice9.md"
+    ).read_text(encoding="utf-8")
+    gateway_workbench_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-gateway-workbench-realization-slice10.md"
+    ).read_text(encoding="utf-8")
+    implementation_proof_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-implementation-proof-slice11.md"
+    ).read_text(encoding="utf-8")
+    hardening_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-hardening-review-slice12.md").read_text(
+        encoding="utf-8"
+    )
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -453,11 +489,28 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "PROPOSED - GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED" in rfc
+    assert "DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
-    assert "No feature below is supported until implementation" in rfc
-    assert "Current gold-pass state:" in rfc
-    assert "`NOT STARTED`" in rfc
+    assert "RFC-0042-platform-automation-slice1.md" in rfc
+    assert "RFC-0042-cleanup-and-structure-slice2.md" in rfc
+    assert "RFC-0042-domain-model-slice3.md" in rfc
+    assert "RFC-0042-expected-snapshot-slice4.md" in rfc
+    assert "RFC-0042-realized-source-adapters-slice5.md" in rfc
+    assert "RFC-0042-persistence-events-slice6.md" in rfc
+    assert "RFC-0042-api-openapi-slice7.md" in rfc
+    assert "RFC-0042-report-ai-handoffs-slice8.md" in rfc
+    assert "RFC-0042-supportability-observability-slice9.md" in rfc
+    assert "RFC-0042-gateway-workbench-realization-slice10.md" in rfc
+    assert "RFC-0042-implementation-proof-slice11.md" in rfc
+    assert "RFC-0042-hardening-review-slice12.md" in rfc
+    assert "RFC-0042-final-closure-slice13.md" in rfc
+    assert "Support below is limited to the manage backend authority" in rfc
+    assert "Outcome review creation | Supported as manage backend authority" in rfc
+    assert "Gold-standard conclusion" in rfc
+    assert "genuinely reached the expected enterprise standard" in rfc
+    assert "output/rfc0042-outcome-proof/20260505-024352/critical-review.json" in rfc
+    assert "output/rfc0042-outcome-proof/20260505-025613/critical-review.json" in rfc
+    assert "scripts/Start-CanonicalManage.ps1" in rfc
     assert "Gateway and Workbench product support must not be claimed" in rfc
     assert "`lotus-manage` must not clone risk, performance, tax-lot, fill, cash" in rfc
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in rfc
@@ -471,9 +524,47 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
 
     assert "## Slice 0 Result" in source_map
     assert "No route, persistence table, runtime capability" in source_map
+    assert "## Slice 1 Platform Result" in source_map
+    assert "sgajbi/lotus-platform#297" in source_map
+    assert "## Slice 2 Cleanup and Structure Result" in source_map
+    assert "wiki/Supported-Features.md" in source_map
+    assert "## Slice 3 Domain Model and Pure Comparison Result" in source_map
+    assert "src/core/outcomes/" in source_map
+    assert "## Slice 4 Expected Snapshot Assembly Result" in source_map
+    assert "does not default" in source_map
+    assert "risk, performance, tax, FX, or execution-quality values" in source_map
+    assert "## Slice 5 Realized Source Adapter Result" in source_map
+    assert "`EXECUTION_EVIDENCE_BLOCKED`" in source_map
+    assert "## Slice 6 Persistence, Repository, Events, and Retention Result" in source_map
+    assert "0008_post_trade_outcome_reviews.sql" in source_map
+    assert "## Slice 7 Certified Manage APIs and OpenAPI Quality Result" in source_map
+    assert "src/api/routers/outcome_reviews.py" in source_map
+    assert "source-refresh re-evaluation with append-only event evidence" in source_map
+    assert "## Slice 8 Report Input and AI Evidence Input Handoffs Result" in source_map
+    assert "DpmOutcomeReportInput" in source_map
+    assert "DpmOutcomeAiEvidenceInput" in source_map
+    assert "## Slice 9 Supportability, Observability, and Operator Diagnostics Result" in source_map
+    assert "lotus_manage_outcome_review_supportability_total" in source_map
+    assert "## Slice 10 Gateway and Workbench Realization RFC Result" in source_map
+    assert "`lotus-gateway` RFC-0098" in source_map
+    assert "`lotus-workbench` RFC-0098" in source_map
+    assert "## Slice 11 Live Implementation Proof Result" in source_map
+    assert "output/rfc0042-outcome-proof/20260505-024352/" in source_map
+    assert "What/When/How OpenAPI guidance" in source_map
+    assert "reserved PowerShell `$PID` variable" in source_map
+    assert "## Slice 12 Hardening Review Result" in source_map
+    assert "DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT" in source_map
+    assert "04b-idempotency-conflict-response.json" in source_map
+    assert "## Slice 13 Final Closure Result" in source_map
+    assert "DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING" in source_map
+    assert (
+        "Skills/context/guidance decision: no central Lotus skill or context change is needed"
+        in (source_map)
+    )
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
-    assert "No supported feature is promoted by RFC-0042 tightening" in source_map
+    assert "RFC-0042 promotes manage backend outcome-review authority only" in source_map
+    assert "Deferred Questions After Manage Closure" in source_map
     assert (
         "| Fill/order/execution detail | `lotus-core` or future execution/OMS owner |" in source_map
     )
@@ -481,12 +572,142 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Workbench must consume Gateway/BFF only" in source_map
     assert "PB_SG_GLOBAL_BAL_001" in source_map
 
+    assert "Slice 1 - Platform Automation and Scaffolding Improvement" in platform_slice
+    assert "sgajbi/lotus-platform#297" in platform_slice
+    assert "source-degraded and reconciliation endpoint" in platform_slice
+    assert "does not clone calculations owned by another Lotus app" in platform_slice
+    assert "No supported feature is promoted by this slice" in platform_slice
+
+    assert "Slice 2 - Cleanup and Structure" in cleanup_slice
+    assert "No runtime `outcomes` authority exists yet" in cleanup_slice
+    assert "No supported feature is promoted by Slice 2" in cleanup_slice
+    assert "dedicated outcome domain" in cleanup_slice
+    assert "API router" in cleanup_slice
+
+    assert "Slice 3 - Domain Model and Pure Comparison Engine" in domain_slice
+    assert "Unsupported dimensions cannot become `READY`" in domain_slice
+    assert "PM scoring, AI judgment, and narrative generation are absent" in domain_slice
+    assert "`10 passed`" in domain_slice
+
+    assert "Slice 4 - Expected Snapshot Assembly" in expected_snapshot_slice
+    assert "Handoff refs must belong to the wave" in expected_snapshot_slice
+    assert "Missing values are" in expected_snapshot_slice
+    assert "omitted rather than silently defaulted" in expected_snapshot_slice
+    assert "`5 passed`" in expected_snapshot_slice
+
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | PROPOSED (GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED)"
+        "Slice 5 - Realized Source Adapters and Degraded Source Handling" in realized_source_slice
+    )
+    assert "does not calculate source-owner truth locally" in realized_source_slice
+    assert "Missing `EXECUTION_QUALITY` source" in realized_source_slice
+    assert "`6 passed`" in realized_source_slice
+
+    assert "Slice 6 - Persistence, Repository, Events, and Retention" in persistence_slice
+    assert "Review body is immutable" in persistence_slice
+    assert "Postgres stores the complete review JSON" in persistence_slice
+    assert "`5 passed`" in persistence_slice
+
+    assert "Slice 7 - Certified Manage APIs and OpenAPI Quality" in api_slice
+    assert "POST /api/v1/rebalance/outcome-reviews/preview" in api_slice
+    assert "Source refresh reuses the immutable expected snapshot" in api_slice
+    assert "No full RFC-0042 supported feature is promoted by Slice 7" in api_slice
+
+    assert "Slice 8 - Report Input and AI Evidence Input Handoffs" in handoff_slice
+    assert "DpmOutcomeReportInput" in handoff_slice
+    assert "DpmOutcomeAiEvidenceInput" in handoff_slice
+    assert "score_portfolio_manager" in handoff_slice
+    assert "No full outcome-review product support is claimed" in handoff_slice
+
+    assert "Slice 9 - Supportability, Observability, and Operator Diagnostics" in (
+        supportability_slice
+    )
+    assert "lotus_manage_outcome_review_supportability_total" in supportability_slice
+    assert "outcome_review.supportability.inspected" in supportability_slice
+    assert "No live canonical product proof is claimed by this slice" in supportability_slice
+
+    assert "Slice 10 - Gateway and Workbench Realization RFCs" in gateway_workbench_slice
+    assert "`lotus-gateway` | `feat/rfc0042-outcome-realization` | `38d46f9`" in (
+        gateway_workbench_slice
+    )
+    assert "`lotus-workbench` | `feat/rfc0042-outcome-realization` | `3b5182f`" in (
+        gateway_workbench_slice
+    )
+    assert "/api/v1/dpm/command-center/outcome-reviews*" in gateway_workbench_slice
+
+    assert "Slice 11 - Implementation Proof" in implementation_proof_slice
+    assert "output/rfc0042-outcome-proof/20260505-024352/" in implementation_proof_slice
+    assert "The accepted run is `passed`." in implementation_proof_slice
+    assert "What/When/How guidance" in implementation_proof_slice
+    assert "reserved `$PID` variable" in implementation_proof_slice
+    assert "No full RFC-0042 product support is promoted by Slice 11" in implementation_proof_slice
+
+    assert "Slice 12 - Second-Last Hardening and Review" in hardening_slice
+    assert "output/rfc0042-outcome-proof/20260505-025613/" in hardening_slice
+    assert "same-key changed-evidence" in hardening_slice
+    assert "OutcomeReviewState" in hardening_slice
+    assert "_handoff_ref" in hardening_slice
+    assert "idempotency_conflict_rejected" in hardening_slice
+    assert "No full RFC-0042 product support is promoted by Slice 12" in hardening_slice
+
+    closure_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-final-closure-slice13.md").read_text(
+        encoding="utf-8"
+    )
+    assert "Slice 13 - Final Closure" in closure_slice
+    assert "COMPLETE FOR MANAGE BACKEND" in closure_slice
+    assert "No central Lotus skill or context change is required" in closure_slice
+    assert "full Gateway/Workbench product experience" in closure_slice
+
+    assert (
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | DONE (MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING)"
         in index
     )
+    assert "API evidence: `docs/rfcs/RFC-0042-api-openapi-slice7.md`" in index
+    assert "report/AI evidence: `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md`" in index
+    assert (
+        "supportability evidence: `docs/rfcs/RFC-0042-supportability-observability-slice9.md`"
+        in index
+    )
+    assert (
+        "Gateway/Workbench evidence: `docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md`"
+        in index
+    )
+    assert "implementation proof: `docs/rfcs/RFC-0042-implementation-proof-slice11.md`" in index
+    assert "hardening evidence: `docs/rfcs/RFC-0042-hardening-review-slice12.md`" in index
+    assert "closure evidence: `docs/rfcs/RFC-0042-final-closure-slice13.md`" in index
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
-    assert "gold-standard tightened on 2026-05-05" in wiki_index
-    assert "implementation has not started" in roadmap
+    assert "gold-standard" in wiki_index
+    assert "tightening on 2026-05-05" in wiki_index
+    assert "Slice 3 pure domain comparison evidence" in wiki_index
+    assert "Slice 4 expected snapshot assembly evidence" in wiki_index
+    assert "Slice 5 realized source-degraded evidence" in wiki_index
+    assert "Slice 6 persistence/events evidence" in wiki_index
+    assert "Slice 7 certified\n  manage API/OpenAPI evidence" in wiki_index
+    assert "Slice 8 report-input/AI-evidence handoff contracts" in wiki_index
+    assert "Slice 9\n  supportability/observability diagnostics" in wiki_index
+    assert "Slice 10 Gateway/Workbench realization RFC" in wiki_index
+    assert "Slice 11 live manage implementation proof" in wiki_index
+    assert "output/rfc0042-outcome-proof/20260505-024352/" in wiki_index
+    assert "Slice 12 hardening proof" in wiki_index
+    assert "output/rfc0042-outcome-proof/20260505-025613/" in wiki_index
+    assert "`DONE` for the manage backend authority" in wiki_index
+    assert "Slice 0 source-map guardrails" in roadmap
+    assert "Slice 3 pure domain comparison" in roadmap
+    assert "Slice 4 expected snapshot assembly" in roadmap
+    assert "Slice 5 realized source-degraded handling" in roadmap
+    assert "Slice 6 persistence/events" in roadmap
+    assert "Slice 7 manage API/OpenAPI foundation" in roadmap
+    assert "Slice 8 report-input/AI-evidence handoff contracts" in roadmap
+    assert "Slice 9 supportability/observability diagnostics" in roadmap
+    assert "Slice 10 Gateway/Workbench realization RFC alignment" in roadmap
+    assert "Slice 11 live manage proof" in roadmap
+    assert "Slice 12 hardening" in roadmap
+    assert "Slice 13 closure are complete" in roadmap
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
-    assert "Supported as RFC-0042" not in supported_features
+    assert "manage outcome-review events are supported where implementation-backed" in (
+        supported_features
+    )
+    assert "Supported as RFC-0042 manage backend authority" in supported_features
+    assert "output/rfc0042-outcome-proof/20260505-024352/" in supported_features
+    assert "output/rfc0042-outcome-proof/20260505-025613/" in supported_features
+    assert "handoff, and outcome events" not in supported_features
+    assert "Supported as RFC-0042 full product experience" not in supported_features

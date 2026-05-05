@@ -86,9 +86,16 @@ RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-wit
 internal handoff evidence, retrieve/search/item/proof-pack/supportability read models, and
 Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway and Workbench
 implementation, automatic PM-book/CIO cohort discovery, and full front-office support remain
-unpromoted. The remaining target-state RFCs cover post-trade outcome feedback and governed AI PM
-support. Target-state features are not support claims until the owning RFC is implemented,
-certified, live-proven, and reflected in [wiki/Supported-Features.md](wiki/Supported-Features.md).
+unpromoted. RFC-0042 is `DONE` for manage backend authority:
+source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
+source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
+and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
+hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
+state-filter validation evidence. Full post-trade outcome product support remains downstream until
+Gateway/Workbench implementation where surfaced is complete and canonically proven. The remaining
+target-state RFC covers governed AI PM support. Target-state features are not support claims until
+the owning RFC is implemented, certified, live-proven, and reflected in
+[wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
 or redesigned rather than preserved for backward compatibility. Future gateway and Workbench

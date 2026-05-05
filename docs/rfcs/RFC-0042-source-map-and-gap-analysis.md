@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | DRAFT - GOLD-STANDARD TIGHTENING COMPLETE; IMPLEMENTATION NOT STARTED |
+| **Status** | DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -38,6 +38,191 @@ Slice 0 result:
 
 No route, persistence table, runtime capability, Gateway behavior, Workbench behavior, report
 artifact, AI narrative, or supported-feature claim is added by Slice 0.
+
+---
+
+## Slice 1 Platform Result
+
+Slice 1 platform evidence is recorded in
+`docs/rfcs/RFC-0042-platform-automation-slice1.md`.
+
+The cross-cutting platform gap was source-degraded and reconciliation endpoint guidance in the
+backend service scaffold. `sgajbi/lotus-platform#297`, merged as `1b9671e`, updates
+`automation/New-Lotus-Service.ps1` so new backend services start with source-owner, freshness,
+lineage, supportability, degraded-state, no-local-clone, and documentation-promotion expectations
+in generated API certification guidance.
+
+Slice 1 is `DONE`; no manage runtime code or supported-feature claim was added in this slice.
+
+---
+
+## Slice 2 Cleanup and Structure Result
+
+Slice 2 completed a cleanup and structure review before runtime implementation. Evidence lives in
+`docs/rfcs/RFC-0042-cleanup-and-structure-slice2.md`.
+
+The review found no existing runtime outcome authority to refactor or remove. The key cleanup was
+documentation truth: `wiki/Supported-Features.md` no longer implies that outcome events are already
+part of supported decision-timeline memory. Outcome events remain RFC-0042 proposed work until
+source-backed runtime implementation, proof, downstream realization where surfaced, and wiki
+publication are complete.
+
+The implementation boundary is now explicit: RFC-0042 should introduce a dedicated outcome domain,
+repository, service, router, source-adapter, and handoff structure instead of adding outcome
+behavior to the wave router or cloning source-owner methodology.
+
+No supported feature is promoted by Slice 2.
+
+---
+
+## Slice 3 Domain Model and Pure Comparison Result
+
+Slice 3 evidence is recorded in `docs/rfcs/RFC-0042-domain-model-slice3.md`.
+
+`src/core/outcomes/` now contains typed outcome-review domain primitives and a deterministic
+comparison engine over supplied expected and realized snapshots. The implementation deliberately
+does not call source-owner apps, persist reviews, expose APIs, produce reports, produce AI evidence,
+or claim product support.
+
+Tests prove lower-is-better, higher-is-better, soft tolerance, hard tolerance, missing source values,
+degraded source values, `NOT_SUPPORTED` source posture, execution-evidence blocking, roll-up
+precedence, and invalid tolerance rejection.
+
+No supported feature is promoted by Slice 3.
+
+---
+
+## Slice 4 Expected Snapshot Assembly Result
+
+Slice 4 evidence is recorded in `docs/rfcs/RFC-0042-expected-snapshot-slice4.md`.
+
+`src/core/outcomes/snapshots.py` now assembles expected outcome snapshots from RFC-0039 selected
+alternatives, RFC-0040 proof packs, and optional RFC-0041 wave item and internal operations handoff
+refs. The assembly rejects mismatched portfolio, mandate, run, alternative, proof-pack, wave, and
+handoff linkages and preserves source refs, source hashes, section hashes, and supportability.
+
+The expected snapshot only includes values that exist in the selected alternative. It does not default
+risk, performance, tax, FX, or execution-quality values.
+
+No supported feature is promoted by Slice 4.
+
+---
+
+## Slice 5 Realized Source Adapter Result
+
+Slice 5 evidence is recorded in `docs/rfcs/RFC-0042-realized-source-adapters-slice5.md`.
+
+`src/core/outcomes/realized_sources.py` now translates explicit source-owner realized snapshots into
+comparable outcome metrics while preserving source refs, source hashes, freshness, quality posture,
+and supportability. It handles ready, missing, stale, unavailable, partial, malformed, conflicting,
+blocked, and not-supported source evidence without calculating source-owner truth locally.
+
+The implementation records the first-wave boundary: missing execution evidence emits
+`EXECUTION_EVIDENCE_BLOCKED`, missing risk evidence emits `RISK_OUTCOME_NOT_SUPPORTED`, and missing
+performance evidence emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED` until certified review-window
+contracts exist.
+
+No supported feature is promoted by Slice 5.
+
+---
+
+## Slice 6 Persistence, Repository, Events, and Retention Result
+
+Slice 6 evidence is recorded in `docs/rfcs/RFC-0042-persistence-events-slice6.md`.
+
+`DpmPostTradeOutcomeReview`, `DpmOutcomeReviewRepository`,
+`InMemoryDpmOutcomeReviewRepository`, `PostgresDpmOutcomeReviewRepository`, and migration
+`0008_post_trade_outcome_reviews.sql` now provide immutable review persistence, idempotency
+protection, filtered search, retention metadata, and append-only outcome events.
+
+No supported feature is promoted by Slice 6.
+
+---
+
+## Slice 7 Certified Manage APIs and OpenAPI Quality Result
+
+Slice 7 evidence is recorded in `docs/rfcs/RFC-0042-api-openapi-slice7.md`.
+
+`src/api/routers/outcome_reviews.py` and `src/api/services/outcome_review_service.py` now expose
+the manage-owned RFC-0042 outcome-review API foundation:
+
+1. preview expected-versus-realized comparison without persistence,
+2. idempotent immutable review creation,
+3. bounded review search,
+4. review lookup,
+5. source-refresh re-evaluation with append-only event evidence,
+6. operator-safe supportability lookup,
+7. run and wave read-side lookup routes.
+
+OpenAPI paths are grouped under `lotus-manage Outcome Reviews`, and tests pin the route presence,
+request/response body presence, and What/When/How guidance for preview and refresh.
+
+No full RFC-0042 supported feature is promoted by Slice 7. Report input, AI evidence input,
+supportability/observability hardening, live canonical proof, Gateway/Workbench realization RFCs,
+final hardening, PR merge, and wiki publication remain pending.
+
+---
+
+## Slice 8 Report Input and AI Evidence Input Handoffs Result
+
+Slice 8 evidence is recorded in `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md`.
+
+`src/core/outcomes/handoffs.py` now builds deterministic `DpmOutcomeReportInput` and
+`DpmOutcomeAiEvidenceInput` contracts from the persisted immutable outcome review. The report input
+is report-ready but does not render a report or create an archive record. The AI evidence input is
+bounded, hash-linked, source-ref-backed, and includes explicit forbidden actions for order
+placement, approval, control override, invented evidence, PM scoring, and client contact.
+
+`src/api/routers/outcome_reviews.py` exposes:
+
+1. `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input`,
+2. `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input`.
+
+No downstream product claim is promoted by Slice 8. `lotus-report`, `lotus-render`,
+`lotus-archive`, and `lotus-ai` own artifact generation, archive lifecycle, workflow packs,
+prompts, generated narrative, and AI execution guardrails.
+
+---
+
+## Slice 9 Supportability, Observability, and Operator Diagnostics Result
+
+Slice 9 evidence is recorded in
+`docs/rfcs/RFC-0042-supportability-observability-slice9.md`.
+
+`lotus_manage_outcome_review_supportability_total` now records bounded create, source-refresh, and
+supportability-read posture for outcome reviews. The monitoring contract defines allowlisted
+`surface`, `supportability_state`, and `reason` labels, adds an outcome-review supportability panel,
+and adds a blocked-state alert linked to the RFC-0042 runbook.
+
+`GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability` now returns
+operator-safe source-owner, source-ref count, dimension-state count, freshness-state count, and
+remediation-route diagnostics. The router emits safe supportability inspection logs with counts and
+bounded state only.
+
+No full RFC-0042 product support is promoted by Slice 9. Live source-backed proof,
+Gateway/Workbench realization RFCs, final hardening, PR merge, and wiki publication remain pending.
+
+---
+
+## Slice 10 Gateway and Workbench Realization RFC Result
+
+Slice 10 evidence is recorded in
+`docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md`.
+
+`lotus-gateway` RFC-0098 was tightened on branch `feat/rfc0042-outcome-realization` and pushed at
+commit `38d46f9`. It now defines strategic Gateway routes under
+`/api/v1/dpm/command-center/outcome-reviews*`, typed manage upstream consumption, required
+outcome-review modules, supportability preservation, no-recompute rules, and live proof
+expectations.
+
+`lotus-workbench` RFC-0098 was tightened on branch `feat/rfc0042-outcome-realization` and pushed at
+commit `3b5182f`. It now defines the future post-trade outcome-review workspace, required panels,
+required UI states, Gateway-only route consumption, no client-side calculation posture, and
+promotion gates for canonical browser proof.
+
+No Gateway or Workbench supported-feature claim is promoted by Slice 10. Downstream implementation,
+canonical product proof, PR merge, and wiki publication remain required before product realization
+can be claimed.
 
 ---
 
@@ -165,6 +350,104 @@ No Gateway or Workbench supported-feature claim may be made from manage-only evi
 
 ---
 
+## Slice 11 Live Implementation Proof Result
+
+Slice 11 evidence is recorded in `docs/rfcs/RFC-0042-implementation-proof-slice11.md`.
+
+Live accepted output:
+
+`output/rfc0042-outcome-proof/20260505-024352/`
+
+Critical review result:
+
+`output/rfc0042-outcome-proof/20260505-024352/critical-review.json` => `passed`.
+
+The live proof exercised the canonical manage runtime and verified:
+
+1. health readiness,
+2. preview and durable create for a source-backed `PB_SG_GLOBAL_BAL_001` outcome review,
+3. retrieve, search, supportability, report-input, and AI-evidence endpoints,
+4. source lineage and SHA-256 content hashes across `lotus-manage` expected evidence and
+   `lotus-core` realized evidence refs,
+5. worked variance example for `DRIFT_REDUCTION`,
+6. degraded realized source behavior,
+7. append-only source refresh event behavior,
+8. run and wave lookup routes,
+9. live OpenAPI certification for all RFC-0042 outcome-review paths.
+
+The proof found real quality gaps and they were fixed before the slice was accepted:
+
+1. stale canonical runtime restart handling caused an old OpenAPI document to remain live on
+   `8001`; `scripts/Start-CanonicalManage.ps1` now avoids the reserved PowerShell `$PID` variable
+   when stopping an existing listener.
+2. five GET endpoints lacked explicit What/When/How OpenAPI guidance; the router descriptions and
+   API contract test now guard that standard.
+3. generated proof payloads now use proper SHA-256 source and section hashes and keep refreshed
+   realized source refs consistent across lineage, source hashes, and dimension refs.
+
+No full RFC-0042 product support is promoted by Slice 11. Manage backend behavior is live-proven;
+hardening, final closure, PR/CI, merge, wiki publication, and downstream product realization where
+surfaced remain required.
+
+---
+
+## Slice 12 Hardening Review Result
+
+Slice 12 evidence is recorded in `docs/rfcs/RFC-0042-hardening-review-slice12.md`.
+
+Hardening proof output:
+
+`output/rfc0042-outcome-proof/20260505-025613/`
+
+Critical review result:
+
+`output/rfc0042-outcome-proof/20260505-025613/critical-review.json` => `passed`.
+
+Hardening changes made:
+
+1. same-key changed-evidence create now raises `DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT`,
+2. same-key same-evidence replay remains supported and returns the original review,
+3. outcome-review search `state` is now API-validated as `OutcomeReviewState`,
+4. misleading `_placeholder_ref` naming in report/AI handoffs was removed in favor of
+   `_handoff_ref`,
+5. live proof now captures `04a-idempotency-replay-response.json` and
+   `04b-idempotency-conflict-response.json`.
+
+No full RFC-0042 product support is promoted by Slice 12. Final closure, PR/CI, merge, wiki
+publication, branch cleanup, and downstream product realization where surfaced remain required.
+
+---
+
+## Slice 13 Final Closure Result
+
+Slice 13 evidence is recorded in `docs/rfcs/RFC-0042-final-closure-slice13.md`.
+
+Closure result:
+
+`DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING`.
+
+Manage backend support now includes:
+
+1. outcome-review preview/create/retrieve/search,
+2. immutable persistence, idempotency, retention, source refs, hashes, and events,
+3. source-refresh eventing,
+4. run and wave lookup routes,
+5. supportability diagnostics and bounded observability,
+6. report-input and AI-evidence input handoff contracts.
+
+Explicitly outside manage support:
+
+1. Gateway/Workbench product realization,
+2. rendered report/archive lifecycle,
+3. AI narrative/copilot generation,
+4. execution/OMS integration and PM quality scoring,
+5. risk/performance/tax/FX/cash methodology ownership.
+
+Skills/context/guidance decision: no central Lotus skill or context change is needed. Repository
+context was updated because manage ownership and live proof paths changed.
+
+---
+
 ## Evidence Convention
 
 Future implementation evidence must be captured under:
@@ -197,16 +480,29 @@ demo-ready material before API, calculation, and panel validation pass.
 
 ## Supported-Features Decision
 
-No supported feature is promoted by RFC-0042 tightening.
+RFC-0042 promotes manage backend outcome-review authority only. Full Gateway/Workbench product
+support remains downstream.
 
-The current documentation update may state that RFC-0042 is tightened and implementation-ready, but
-must not state that post-trade outcome feedback is supported. Promotion requires implementation,
-tests, live evidence, OpenAPI certification, README/wiki/supported-feature updates, PR merge, wiki
-publication, and branch cleanup.
+Supported by manage:
+
+1. source-backed outcome-review preview/create/retrieve/search,
+2. immutable persistence/events with idempotency, retention, lineage, and hashes,
+3. source-refresh eventing,
+4. supportability diagnostics and bounded observability,
+5. report-input and AI-evidence input handoff contracts.
+
+Not supported by manage:
+
+1. full front-office Gateway/Workbench product experience,
+2. rendered report/archive lifecycle,
+3. AI narrative generation or recommendations,
+4. execution/OMS integration,
+5. PM quality scoring,
+6. source-owner risk/performance/tax/FX/cash methodology ownership.
 
 ---
 
-## Open Questions for Implementation Slice 0 Review
+## Deferred Questions After Manage Closure
 
 1. Which `lotus-core` source product should be the first certified transaction/fill window for
    outcome reviews?
@@ -216,4 +512,5 @@ publication, and branch cleanup.
    is a performance-owner RFC required first?
 4. Should first-wave live proof block on `EXECUTION_QUALITY`, or should execution quality remain
    `NOT_SUPPORTED` while drift/source/risk/performance dimensions proceed?
-5. Which downstream Gateway and Workbench RFC identifiers will own outcome-feedback realization?
+5. When should `lotus-gateway` and `lotus-workbench` implement the RFC-0098 outcome-review
+   realization addenda?

@@ -1721,6 +1721,104 @@ Live evidence:
 - `output/rfc0041-wave-proof/20260504-231914/17-openapi-certification.json`
 - `output/rfc0041-wave-proof/20260504-231914/18-aggregate-reconciliation.json`
 
+## Certified endpoint family: post-trade outcome review API foundation
+
+Routes:
+
+- `POST /api/v1/rebalance/outcome-reviews/preview`
+- `POST /api/v1/rebalance/outcome-reviews`
+- `GET /api/v1/rebalance/outcome-reviews`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}`
+- `POST /api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review`
+- `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`
+
+Purpose:
+
+RFC-0042 Slice 7 exposes the first manage-owned post-trade outcome-review API foundation. The
+surface previews expected-versus-realized comparisons, creates immutable outcome reviews with
+idempotency, retrieves and searches reviews, appends real source-refresh re-evaluation events, and
+returns operator-safe supportability posture. It is not a Gateway, Workbench, report, archive, AI,
+execution, risk, or performance authority.
+
+Functional behavior:
+
+- Preview compares caller-supplied expected and realized snapshots without persistence.
+- Create requires `Idempotency-Key`; same-key same-evidence replay returns the original persisted
+  review, while same-key changed evidence is rejected as `DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT`.
+- Create persists source lineage, source hashes, section hashes, content hash, correlation id,
+  retention posture, and append-only creation event.
+- Search returns bounded repository-backed review pages filtered by portfolio, mandate, wave, run,
+  and state.
+- Lookup returns the immutable persisted review by id.
+- Source refresh accepts a fresh realized source-owner snapshot, recomputes comparison against the
+  immutable expected snapshot, and appends an `OUTCOME_REVIEW_SOURCE_REFRESHED` event carrying the
+  refreshed state and source refs.
+- Supportability returns bounded state, reason-code posture, source-owner families, source-ref
+  count, dimension-state counts, freshness-state counts, and remediation routes without raw
+  upstream payloads.
+- Report input returns deterministic report-ready facts, source hashes, supportability, dimension
+  outcomes, and a canonical handoff hash without rendering reports or archive records.
+- AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
+  refs, and a canonical handoff hash without generating prompts, memos, recommendations, approvals,
+  client communications, or execution instructions.
+- Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
+
+Non-functional posture:
+
+- The endpoints are grouped under `lotus-manage Outcome Reviews`.
+- Preview is side-effect free.
+- Create and repository behavior are immutable and idempotency-protected.
+- Refresh does not mutate the original review body; history is append-only.
+- Report and AI handoff contracts are derived from persisted review truth and remain downstream
+  input contracts only.
+- Slice 9 adds `lotus_manage_outcome_review_supportability_total` for create, source-refresh, and
+  supportability-read posture with bounded `surface`, `supportability_state`, and `reason` labels.
+  The metric, dashboard panel, and alert are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`.
+- Supportability inspection logs use the bounded `outcome_review.supportability.inspected` event
+  with state/count fields only; no portfolio, actor, review, source-payload, proof-pack, wave,
+  request-hash, idempotency, or raw upstream identifiers are emitted.
+- OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
+  guidance for preview, create, search, lookup, refresh, supportability, report input, AI evidence
+  input, run lookup, and wave lookup.
+- Slice 11 live proof passed at `output/rfc0042-outcome-proof/20260505-024352/` after the proof
+  process found and fixed stale runtime restart handling plus GET endpoint guidance gaps.
+- Slice 12 hardening proof passed at `output/rfc0042-outcome-proof/20260505-025613/` and added
+  live same-key replay plus same-key changed-evidence conflict proof.
+- Full RFC-0042 product support remains unclaimed until downstream realization where surfaced,
+  PR/CI, merge, and wiki publication are complete.
+
+Upstream integration posture:
+
+The current API foundation accepts implementation-backed expected and realized snapshots. Expected
+snapshot assembly exists in manage from RFC-0039/RFC-0040/RFC-0041 artifacts. Realized evidence
+must come from source owners such as `lotus-core`, `lotus-risk`, and `lotus-performance` or be
+represented as blocked, degraded, or not supported. `lotus-manage` does not clone source-owner
+calculations.
+
+Downstream consumers:
+
+Gateway and Workbench must wait for the RFC-0042 downstream realization RFC slice before product
+implementation. Report, render, archive, and AI services must treat these endpoints as input
+contracts only; owning apps remain responsible for materialization, archive lifecycle, workflow
+packs, prompts, generated narrative, and provider guardrails.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/api/test_outcome_reviews_api.py -q
+python -m pytest tests/unit/core/test_outcome_handoffs.py -q
+python -m pytest tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py -q
+python scripts/validate_observability_contracts.py
+powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8001
+python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001
+python -m ruff check scripts/generate_rfc0042_outcome_evidence.py src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
+```
+
 ## Certified endpoint: proof-pack detail
 
 Route:

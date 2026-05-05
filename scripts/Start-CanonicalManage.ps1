@@ -129,8 +129,8 @@ if ($Foreground) {
 try {
   $existing = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction Stop |
     Select-Object -ExpandProperty OwningProcess -Unique
-  foreach ($pid in $existing) {
-    Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+  foreach ($processId in $existing) {
+    Stop-Process -Id $processId -Force -ErrorAction SilentlyContinue
   }
 } catch {
 }
