@@ -87,7 +87,7 @@ RFC-0036 intentionally cleaned the manage API first. Gateway integration was exp
 follow-on work so downstream composition consumes the final certified surface rather than shaping
 the service around stale consumers.
 
-Dependencies before implementation:
+Dependencies satisfied:
 
 1. typed Gateway client uses canonical manage `/api/v1` APIs only,
 2. Gateway respects stateful capability publication gates,
@@ -119,7 +119,7 @@ Why it cannot be done now:
 Workbench must consume Gateway/BFF only. RFC-0036 did not implement Gateway composition, so a
 Workbench product surface would either call manage directly or duplicate capability/source logic.
 
-Dependencies before implementation:
+Dependencies satisfied:
 
 1. RFC36-WTBD-001 complete,
 2. Workbench BFF/client modules consume Gateway only,
@@ -2236,6 +2236,11 @@ Audit refresh on 2026-05-05:
 3. The RFC-0042 manage implementation evidence remains consistent with the support claim:
    backend authority is implemented and proven; downstream product, report, AI narrative,
    execution/OMS, PM scoring, and richer source-owner methodology work remains unpromoted.
+4. RFC42-WTBD-002 and RFC42-WTBD-003 were completed after the audit through the downstream owning
+   repositories: `lotus-workbench` PR #146, `lotus-gateway` PR #187, `lotus-platform` PR #300, and
+   `lotus-core` PR #336 are merged, Workbench wiki publication completed, and canonical
+   front-office evidence is captured under
+   `lotus-workbench/output/playwright/live-canonical-rfc42-outcome-review/`.
 
 ### Remaining Work Summary
 
@@ -2247,8 +2252,8 @@ artifacts belong to report/render/archive services, and AI narrative belongs to 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0042 |
 | --- | --- | --- | --- | --- |
 | RFC42-WTBD-001 | Gateway outcome-review composition and BFF contract | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #186; live canonical product proof remains part of RFC42-WTBD-003 | Manage APIs were stabilized first. Gateway now composes the BFF route family without recomputing outcome truth. Product support still requires Workbench implementation and canonical front-office proof. |
-| RFC42-WTBD-002 | Workbench post-trade outcome review UX | `lotus-workbench` through Gateway/BFF | Downstream proposed through RFC-0098 | Workbench must consume Gateway only and cannot claim outcome UX until Gateway composition exists. |
-| RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Pending downstream implementation and canonical proof | Manage backend proof is complete, but product support requires Gateway, Workbench, browser validation, docs, and wiki publication. |
+| RFC42-WTBD-002 | Workbench post-trade outcome review UX | `lotus-workbench` through Gateway/BFF | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #146 | Workbench now consumes Gateway/BFF outcome-review contracts only, presents manage-owned outcome truth without recomputation, and is proven by canonical Workbench validation. |
+| RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive` | Downstream reporting work | Manage emits bounded report input only; it must not render, archive, or claim generated-document support. |
 | RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, RFC-0043, Gateway/Workbench | Pending AI workflow contract | Manage emits AI evidence input only; prompt execution, model posture, guardrails, and narrative generation belong to `lotus-ai`. |
 | RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | Source-owner follow-on | RFC-0042 preserves missing/unsupported/degraded source states instead of cloning calculations in manage. |
@@ -2319,10 +2324,31 @@ PMs, CIO, compliance, and operations can review expected-versus-realized outcome
 clear state, variance, source lineage, supportability, report/AI handoff posture, and next-action
 guidance.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-Workbench must consume Gateway/BFF only. Until Gateway composition exists, implementing a Workbench
-surface would require direct manage calls or duplicated outcome logic.
+`lotus-workbench` PR #146 implements the RFC-0042 post-trade outcome-review UX on
+`/workbench/{portfolioId}`. The panel consumes Gateway/BFF contracts only through the shared
+Workbench API layer, normalizes manage-owned outcome-review payloads in a deterministic view-model,
+and renders review state, expected-versus-realized dimensions, variance/tolerance posture, source
+lineage, hashes, supportability, report-input refs, AI-evidence refs, and next-action posture
+without client-side outcome calculation. Server-side Workbench Gateway reads now share governed
+caller-context propagation with the BFF route. The canonical live validator certifies
+`dpm.outcome_review` as a governed panel and captures machine-readable API/panel proof plus the
+`dpm-outcome-review-live.png` screenshot.
+
+Cross-repo hardening completed during live proof:
+
+1. `lotus-gateway` PR #187 fixed platform-capabilities live fanout and the manage capability
+   contract route so Workbench no longer sees false platform degradation.
+2. `lotus-platform` PR #300 registered `dpm.outcome_review` in the governed Workbench panel
+   registry and analytics UI observability readiness contracts.
+3. `lotus-core` PR #336 passed governed caller-context headers during canonical front-office seed
+   validation and added unit coverage for that contract.
+
+Why it was not done in RFC-0042:
+
+Workbench had to wait until manage and Gateway contracts stabilized. Implementing earlier would
+have forced direct manage calls, duplicated outcome logic, or speculative UI behavior.
 
 Dependencies before implementation:
 
@@ -2335,15 +2361,27 @@ Dependencies before implementation:
 
 Expected implementation wave:
 
-Implement in `lotus-workbench` after Gateway composition is certified.
+Complete. This item merged through `lotus-workbench` PR #146 after Gateway, platform governance,
+and core caller-context dependencies were raised, fixed, green, and merged.
 
 Promotion proof:
 
-1. Workbench unit/component/BFF/browser tests,
-2. accessibility and responsive layout proof,
-3. canonical front-office evidence pack,
-4. screenshots only after API, calculation, and panel validation pass,
-5. Workbench README/wiki/supported-feature updates.
+1. Workbench unit/component/BFF/browser tests:
+   `tests/unit/outcome-review-view-model.test.ts`, `tests/unit/outcome-review-panel.test.tsx`,
+   `tests/unit/workbench-api.test.ts`, `tests/unit/live-validation-probes.test.ts`,
+   `tests/unit/live-validation-browser-workflows.test.ts`, and
+   `tests/integration/workbench-page.test.tsx`,
+2. local gates: `npm run typecheck`, `npm run lint`, `npm run build`, `make check`, and
+   `git diff --check`,
+3. GitHub checks: `lotus-workbench` PR #146 Feature Lane and PR Merge Gate green,
+4. canonical proof:
+   `lotus-workbench/output/playwright/live-canonical-rfc42-outcome-review/live-validation-summary.json`
+   shows `DPM outcome reviews` API status 200 and `dpm.outcome_review` panel state `ready`,
+5. screenshot index:
+   `lotus-workbench/output/playwright/live-canonical-rfc42-outcome-review/SHOT-INDEX.md` lists
+   `dpm-outcome-review-live.png` as `demo_ready`,
+6. Workbench README/wiki/context updates merged, and Workbench wiki source was published with
+   commit `650f698` to `lotus-workbench.wiki`.
 
 #### RFC42-WTBD-003 - Full Front-Office Post-Trade Outcome Feedback Product Support
 
@@ -2353,10 +2391,19 @@ The RFC-0042 capability becomes an end-to-end product workflow: manage creates d
 reviews, Gateway composes them, Workbench presents them, and documentation supports business,
 operations, sales/pre-sales, client demos, and engineering.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-Manage backend authority is complete, but full product support requires downstream implementation
-and canonical front-office proof in the owning repositories.
+The first-wave front-office product path is complete for RFC-0042 outcome review. Manage remains
+the backend authority, Gateway composes the outcome-review contract, Workbench presents the
+post-trade outcome-review panel through Gateway/BFF only, platform governance registers the panel,
+and canonical Workbench validation proves the populated panel on `PB_SG_GLOBAL_BAL_001` with
+machine-readable API, panel, and screenshot evidence.
+
+Why it was not done in RFC-0042:
+
+The original RFC-0042 closure was intentionally limited to manage backend authority. Gateway,
+Workbench, platform panel governance, and core seed-validation hardening had to be implemented in
+their owning repositories after manage contracts and live proof stabilized.
 
 Dependencies before implementation:
 
@@ -2368,15 +2415,28 @@ Dependencies before implementation:
 
 Expected implementation wave:
 
-Close as a cross-repo proof slice after Gateway and Workbench PRs merge.
+Complete for current Gateway/Workbench product realization. Remaining reporting, AI, OMS,
+source-owner methodology, and PM-scoring work stays in RFC42-WTBD-004 through RFC42-WTBD-008.
 
 Promotion proof:
 
-1. canonical front-office evidence pack,
-2. API/BFF/UI checks green,
-3. screenshots tied to validated backend evidence,
-4. README/wiki/supported-features aligned across apps,
-5. no unsupported product-support claim remains.
+1. manage backend authority: RFC-0042 proof under
+   `lotus-manage/output/rfc0042-outcome-proof/20260505-024352/`,
+   `20260505-025613/`, and post-merge audit `20260505-040212/`,
+2. Gateway composition: `lotus-gateway` PR #186 merged as `a71275d`; Gateway wiki publication was
+   completed with zero drift,
+3. Gateway live-proof hardening: `lotus-gateway` PR #187 merged and all GitHub Feature Lane /
+   PR Merge Gate checks passed,
+4. platform panel governance: `lotus-platform` PR #300 merged and all platform contract/vocabulary
+   checks passed,
+5. core caller-context validation: `lotus-core` PR #336 merged after local targeted proof,
+   `make warning-gate`, and full GitHub Feature Lane / PR Merge Gate including Docker, E2E,
+   latency, fast load, and coverage gates,
+6. Workbench UX: `lotus-workbench` PR #146 merged after Feature Lane and PR Merge Gate passed,
+7. canonical evidence:
+   `lotus-workbench/output/playwright/live-canonical-rfc42-outcome-review/live-validation-summary.json`,
+   `SHOT-INDEX.md`, and `dpm-outcome-review-live.png`,
+8. Workbench wiki was published from repo source after merge.
 
 #### RFC42-WTBD-004 - Rendered Outcome Reports And Archive Lifecycle
 
