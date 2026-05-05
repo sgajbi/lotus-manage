@@ -434,6 +434,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     platform_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-platform-automation-slice1.md").read_text(
         encoding="utf-8"
     )
+    cleanup_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-cleanup-and-structure-slice2.md"
+    ).read_text(encoding="utf-8")
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -456,9 +459,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "PROPOSED - GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED" in rfc
+    assert "IN IMPLEMENTATION - SLICES 0-2 COMPLETE; NO RUNTIME SUPPORT CLAIM" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
     assert "RFC-0042-platform-automation-slice1.md" in rfc
+    assert "RFC-0042-cleanup-and-structure-slice2.md" in rfc
     assert "No feature below is supported until implementation" in rfc
     assert "Current gold-pass state:" in rfc
     assert "`NOT STARTED`" in rfc
@@ -477,6 +481,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "No route, persistence table, runtime capability" in source_map
     assert "## Slice 1 Platform Result" in source_map
     assert "sgajbi/lotus-platform#297" in source_map
+    assert "## Slice 2 Cleanup and Structure Result" in source_map
+    assert "wiki/Supported-Features.md" in source_map
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
     assert "No supported feature is promoted by RFC-0042 tightening" in source_map
@@ -493,12 +499,23 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "does not clone calculations owned by another Lotus app" in platform_slice
     assert "No supported feature is promoted by this slice" in platform_slice
 
+    assert "Slice 2 - Cleanup and Structure" in cleanup_slice
+    assert "No runtime `outcomes` authority exists yet" in cleanup_slice
+    assert "No supported feature is promoted by Slice 2" in cleanup_slice
+    assert "dedicated outcome domain" in cleanup_slice
+    assert "API router" in cleanup_slice
+
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | PROPOSED (GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED)"
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-2 COMPLETE; NO RUNTIME SUPPORT CLAIM)"
         in index
     )
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
     assert "gold-standard tightened on 2026-05-05" in wiki_index
-    assert "implementation has not started" in roadmap
+    assert "Slice 0 source-map guardrails" in roadmap
+    assert "No runtime outcome-review support is claimed yet" in roadmap
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
+    assert "Outcome events remain proposed until RFC-0042 source-backed implementation" in (
+        supported_features
+    )
+    assert "handoff, and outcome events" not in supported_features
     assert "Supported as RFC-0042" not in supported_features

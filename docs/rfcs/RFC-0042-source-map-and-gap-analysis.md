@@ -56,6 +56,25 @@ Slice 1 is `DONE`; no manage runtime code or supported-feature claim was added i
 
 ---
 
+## Slice 2 Cleanup and Structure Result
+
+Slice 2 completed a cleanup and structure review before runtime implementation. Evidence lives in
+`docs/rfcs/RFC-0042-cleanup-and-structure-slice2.md`.
+
+The review found no existing runtime outcome authority to refactor or remove. The key cleanup was
+documentation truth: `wiki/Supported-Features.md` no longer implies that outcome events are already
+part of supported decision-timeline memory. Outcome events remain RFC-0042 proposed work until
+source-backed runtime implementation, proof, downstream realization where surfaced, and wiki
+publication are complete.
+
+The implementation boundary is now explicit: RFC-0042 should introduce a dedicated outcome domain,
+repository, service, router, source-adapter, and handoff structure instead of adding outcome
+behavior to the wave router or cloning source-owner methodology.
+
+No supported feature is promoted by Slice 2.
+
+---
+
 ## Current Foundation Evidence
 
 | Foundation | Current evidence | RFC-0042 implication |
