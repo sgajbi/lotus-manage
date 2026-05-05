@@ -529,6 +529,57 @@ Validation:
 Slice 11 did not add new product claims. It tightened implementation-backed truth before Slice 12
 final closure, wiki-publication governance, and gold-pass assessment marked RFC-0041 `DONE`.
 
+## Post-Closure Audit Result - 2026-05-05
+
+The post-closure slice-by-slice audit found one documentation-quality gap and no manage backend
+implementation gap.
+
+What was tightened:
+
+1. The RFC aggregate, item, persistence, and index sections still carried pre-implementation field
+   names for PM-book and CIO-model-change discovery that were intentionally deferred. The RFC now
+   matches the implemented `DpmRebalanceWave`, `DpmRebalanceWaveItem`, and durable persistence
+   contract in `src/infrastructure/postgres_migrations/dpm/0007_rebalance_waves.sql`.
+2. The final gold-pass heading no longer reads as a template. It is the completed assessment for
+   the delivered manage-owned explicit portfolio-list wave authority.
+3. Documentation guardrail tests now fail if the RFC reintroduces unsupported
+   `portfolio_manager_id` or `dpm_cio_model_change_impacts` claims before owning source products
+   and downstream routes are implemented and proven.
+
+Validation rerun:
+
+1. `python -m pytest tests/unit/test_documentation_current_state.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_wave_domain.py tests/unit/dpm/waves/test_source_readiness.py -q`
+2. `python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`
+3. `python scripts/openapi_quality_gate.py`
+4. `python scripts/api_vocabulary_inventory.py --validate-only`
+
+Front-office audit boundary:
+
+1. Canonical front-office validation was attempted through
+   `lotus-platform/automation/Invoke-Canonical-FrontOffice-QA.ps1` against
+   `PB_SG_GLOBAL_BAL_001`.
+2. The 2026-05-05 run reached canonical seed readiness, verified DNS, Gateway readiness, Workbench
+   portfolio/performance routes, `lotus-manage` readiness, `lotus-manage` supportability summary,
+   report integration capabilities, and Gateway workspace/performance/risk/advisor probes before
+   failing browser validation with `Canonical Workbench browser validation failed with exit code 1`.
+   Evidence is in
+   `../lotus-platform/output/front-office-qa/canonical-front-office-qa-20260505-084445.json`,
+   `../lotus-platform/output/front-office-qa/canonical-front-office-qa-20260505-084445.md`, and
+   `../lotus-platform/output/front-office-qa/canonical-front-office-qa-20260505-084445.log`.
+3. The failed live front-office result is not a manage RFC-0041 implementation failure: the manage
+   readiness and supportability probes passed, and the failure occurred in downstream canonical
+   Workbench browser validation outside the manage-owned wave authority.
+4. RFC-0041 still does not claim Workbench wave command-center support because the downstream
+   Gateway and Workbench realization RFCs are not implemented as runtime product surfaces.
+5. Any canonical Workbench evidence captured during this audit is treated as stack/boundary
+   evidence only, not as proof of a supported RFC-0041 wave UI.
+
+Wiki decision:
+
+1. No wiki source change is required for this post-closure audit. The wiki already states the
+   implementation-backed manage boundary and keeps Gateway/Workbench wave product support
+   unpromoted.
+
 ## Slice 12 Final Closure Result
 
 Slice 12 closed RFC-0041 after implementation, live proof, hardening, documentation alignment, and

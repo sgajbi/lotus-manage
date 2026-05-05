@@ -292,47 +292,39 @@ or returned as `NOT_SUPPORTED`; they must not appear as supported features.
 Required fields:
 
 1. `wave_id`
-2. `wave_name`
-3. `trigger`
-4. `state`
-5. `state_version`
-6. `as_of_date`
-7. `tenant_id`
-8. `portfolio_manager_id`
-9. `selection_criteria`
+2. `wave_version`
+3. `state`
+4. `trigger`
+5. `as_of_date`
+6. `created_at`
+7. `created_by`
+8. `correlation_id`
+9. `version`
 10. `items`
 11. `aggregate_metrics`
-12. `source_readiness_summary`
-13. `approval_summary`
-14. `handoff_summary`
-15. `supportability`
-16. `lineage`
-17. `retention`
-18. `created_at`
-19. `updated_at`
+12. `events`
+13. `handoff_refs`
+14. `retention_policy`
+
+PM-book, portfolio-manager, and CIO model-change cohort fields are intentionally not required wave
+aggregate fields in the implemented RFC-0041 manage backend. They remain deferred until the owning
+source products and downstream composition routes are implemented and proven.
 
 ### 8.2 `DpmRebalanceWaveItem`
 
 Required fields:
 
 1. `wave_item_id`
-2. `wave_id`
-3. `portfolio_id`
-4. `mandate_id`
-5. `model_portfolio_id`
-6. `state`
-7. `state_version`
-8. `source_readiness_state`
-9. `alternative_set_id`
-10. `selected_alternative_id`
-11. `proof_pack_id`
-12. `rebalance_run_id`
-13. `blocking_reasons`
-14. `review_reasons`
-15. `approval_state`
-16. `handoff_state`
-17. `source_refs`
-18. `lineage`
+2. `portfolio_id`
+3. `mandate_id`
+4. `model_portfolio_id`
+5. `state`
+6. `reason_codes`
+7. `source_refs`
+8. `alternative_set_id`
+9. `selected_alternative_id`
+10. `proof_pack_id`
+11. `diagnostics`
 
 ### 8.3 `DpmCioModelChangeImpact`
 
@@ -406,19 +398,24 @@ them before support promotion.
 Required tables:
 
 1. `dpm_rebalance_waves`
-2. `dpm_rebalance_wave_items`
+2. `dpm_rebalance_wave_idempotency`
 3. `dpm_rebalance_wave_events`
-4. `dpm_cio_model_change_impacts`
-5. optional `dpm_rebalance_wave_handoff_refs`
+
+Wave items, handoff refs, aggregate metrics, and supportability posture are persisted inside the
+immutable `wave_json` body for the current manage backend implementation. Automatic CIO
+model-change impact persistence is not implemented because automatic CIO model-change cohort
+discovery remains deferred with no supported-feature claim.
 
 Required indexes:
 
-1. `(state, updated_at desc)`
-2. `(portfolio_manager_id, created_at desc)`
-3. `(trigger_type, created_at desc)`
-4. `(wave_id, state)`
-5. `(portfolio_id, created_at desc)`
-6. unique command/idempotency identity for mutating commands
+1. `(state, created_at desc)`
+2. unique `(correlation_id)`
+3. idempotency key primary key for command replay/conflict detection
+4. `(wave_id, created_at asc)` on wave events
+
+`trigger_type` and `as_of_date` are stored as queryable wave columns and supported by repository
+filters. PM-book and portfolio-manager indexes must not be added or documented until the owning
+book/cohort source product exists and the API promotes that search posture.
 
 Retention:
 
@@ -940,7 +937,7 @@ RFC-0041 is complete only when:
 
 ---
 
-## 19. Final Gold-Pass Assessment Template
+## 19. Final Gold-Pass Assessment
 
 | Assessment Area | Final Result |
 | --- | --- |

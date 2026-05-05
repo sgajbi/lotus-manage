@@ -105,8 +105,12 @@ evidence, and supported-feature promotion.
   supportability/observability diagnostics, Slice 10 Gateway/Workbench realization RFC alignment,
   Slice 11 live manage implementation proof at
   `output/rfc0042-outcome-proof/20260505-024352/`, and Slice 12 hardening proof at
-  `output/rfc0042-outcome-proof/20260505-025613/`. Full Gateway/Workbench product support remains
-  downstream until implemented and canonically proven in the owning apps
+  `output/rfc0042-outcome-proof/20260505-025613/`. Post-merge audit proof at
+  `output/rfc0042-outcome-proof/20260505-040212/` restored the cross-RFC work-to-be-done ledger,
+  added RFC-0042 remaining-work ownership, reran live manage proof, and passed canonical
+  front-office validation for `PB_SG_GLOBAL_BAL_001` without promoting downstream
+  Gateway/Workbench outcome-review UX. Full Gateway/Workbench product support remains downstream
+  until implemented and canonically proven in the owning apps
 - RFC-0043
   proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
   ownership to AI
