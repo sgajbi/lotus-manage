@@ -4,6 +4,11 @@ from src.core.outcomes.comparison import (
     compare_outcome_dimension,
     compare_outcome_dimensions,
 )
+from src.core.outcomes.core_sources import (
+    CoreOutcomeSourceError,
+    realized_cash_source_from_cash_balances_response,
+    unavailable_core_cash_source,
+)
 from src.core.outcomes.models import (
     DpmExpectedOutcomeSnapshot,
     DpmOutcomeDimensionInput,
@@ -74,6 +79,7 @@ __all__ = [
     "DpmPostTradeOutcomeReview",
     "DpmRealizedOutcomeSnapshot",
     "DpmRealizedSourceSnapshot",
+    "CoreOutcomeSourceError",
     "OutcomeComparisonDirection",
     "OutcomeDimension",
     "OutcomeDimensionState",
@@ -90,8 +96,10 @@ __all__ = [
     "build_report_input",
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
+    "realized_cash_source_from_cash_balances_response",
     "realized_performance_source_from_workspace_summary",
     "realized_risk_source_from_risk_metrics_report",
+    "unavailable_core_cash_source",
     "unavailable_performance_source",
     "unavailable_risk_source",
 ]

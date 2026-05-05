@@ -620,8 +620,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "performance_sources.py" in realized_source_slice
     assert "RISK_METRICS_REPORT" in realized_source_slice
     assert "risk_sources.py" in realized_source_slice
+    assert "HOLDINGS_AS_OF_CASH_BALANCE" in realized_source_slice
+    assert "core_sources.py" in realized_source_slice
     assert "`17 passed`" in realized_source_slice
     assert "`20 passed`" in realized_source_slice
+    assert "`18 passed`" in realized_source_slice
 
     assert "Slice 6 - Persistence, Repository, Events, and Retention" in persistence_slice
     assert "Review body is immutable" in persistence_slice
