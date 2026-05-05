@@ -749,8 +749,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-outcome-proof/20260505-040212/" in supported_features
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in supported_features
     assert (
-        "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/"
-        in supported_features
+        "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in supported_features
     )
     assert "output/rfc0042-outcome-proof/20260505-040212/" in wiki_index
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in wiki_index
