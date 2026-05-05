@@ -168,3 +168,134 @@ def test_malformed_source_blocks_without_using_partial_value() -> None:
     assert drift.value is None
     assert drift.supportability.state == "BLOCKED"
     assert drift.supportability.reason_codes[0] == "SOURCE_EVIDENCE_INCOMPLETE"
+
+
+def test_ready_source_without_value_blocks_dimension() -> None:
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[
+            _source(
+                dimension="DRIFT_REDUCTION",
+                source_id="core_drift_empty",
+                value=None,
+            )
+        ],
+        required_dimensions=["DRIFT_REDUCTION"],
+    )
+
+    drift = snapshot.realized_values["DRIFT_REDUCTION"]
+    assert snapshot.supportability.state == "BLOCKED"
+    assert drift.supportability.state == "BLOCKED"
+    assert drift.supportability.reason_codes[0] == "SOURCE_EVIDENCE_INCOMPLETE"
+
+
+def test_source_owner_not_supported_degrades_mixed_snapshot_without_value() -> None:
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[
+            _source(
+                dimension="RISK_REDUCTION",
+                source_system="lotus-risk",
+                source_id="risk_unsupported",
+                value="0.0100",
+                source_state="NOT_SUPPORTED",
+                quality="NOT_SUPPORTED",
+            ),
+            _source(
+                dimension="CASH_RESIDUAL",
+                source_id="core_cash_ready",
+                value="0.0410",
+            ),
+        ],
+        required_dimensions=["RISK_REDUCTION", "CASH_RESIDUAL"],
+    )
+
+    risk = snapshot.realized_values["RISK_REDUCTION"]
+    assert snapshot.supportability.state == "DEGRADED"
+    assert risk.value is None
+    assert risk.supportability.state == "NOT_SUPPORTED"
+    assert risk.supportability.reason_codes[0] == "RISK_OUTCOME_NOT_SUPPORTED"
+
+
+def test_unavailable_risk_and_performance_sources_use_owner_specific_reasons() -> None:
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[
+            _source(
+                dimension="RISK_REDUCTION",
+                source_system="lotus-risk",
+                source_id="risk_unavailable",
+                value=None,
+                source_state="DEGRADED",
+                quality="UNAVAILABLE",
+            ),
+            _source(
+                dimension="PERFORMANCE",
+                source_system="lotus-performance",
+                source_id="performance_partial",
+                value=None,
+                source_state="DEGRADED",
+                quality="PARTIAL",
+            ),
+        ],
+        required_dimensions=["RISK_REDUCTION", "PERFORMANCE"],
+    )
+
+    assert snapshot.supportability.state == "DEGRADED"
+    assert snapshot.realized_values["RISK_REDUCTION"].supportability.reason_codes[0] == (
+        "RISK_SOURCE_UNAVAILABLE"
+    )
+    assert snapshot.realized_values["PERFORMANCE"].supportability.reason_codes[0] == (
+        "PERFORMANCE_SOURCE_UNAVAILABLE"
+    )
+
+
+def test_empty_required_dimension_set_is_blocked_with_incomplete_reason() -> None:
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[],
+        required_dimensions=[],
+    )
+
+    assert snapshot.supportability.state == "BLOCKED"
+    assert snapshot.supportability.reason_codes == ["SOURCE_EVIDENCE_INCOMPLETE"]
+    assert snapshot.source_lineage == []
+
+
+def test_generic_missing_blocked_and_degraded_reasons_are_source_incomplete() -> None:
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[
+            _source(
+                dimension="EXECUTION_QUALITY",
+                source_system="execution-owner",
+                source_id="execution_blocked",
+                value="0.9500",
+                source_state="BLOCKED",
+                quality="MISSING",
+            ),
+            _source(
+                dimension="TAX",
+                source_id="tax_unavailable",
+                value=None,
+                source_state="DEGRADED",
+                quality="UNAVAILABLE",
+            ),
+        ],
+        required_dimensions=["COST", "EXECUTION_QUALITY", "TAX"],
+    )
+
+    assert snapshot.realized_values["COST"].supportability.reason_codes == [
+        "SOURCE_EVIDENCE_INCOMPLETE"
+    ]
+    assert snapshot.realized_values["EXECUTION_QUALITY"].supportability.reason_codes[0] == (
+        "EXECUTION_EVIDENCE_BLOCKED"
+    )
+    assert snapshot.realized_values["TAX"].supportability.reason_codes[0] == (
+        "SOURCE_EVIDENCE_INCOMPLETE"
+    )

@@ -215,13 +215,77 @@ def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() ->
             bad = client.post("/api/v1/rebalance/outcome-reviews/preview", json=bad_payload)
             assert bad.status_code == 422
             assert "DPM_OUTCOME_DIMENSION_EVIDENCE_MISSING" in bad.text
+            bad_create = client.post(
+                "/api/v1/rebalance/outcome-reviews",
+                json=bad_payload,
+                headers={"Idempotency-Key": "outcome-idem-bad"},
+            )
+            assert bad_create.status_code == 422
+            assert "DPM_OUTCOME_DIMENSION_EVIDENCE_MISSING" in bad_create.text
 
             for path in [
+                "/api/v1/rebalance/outcome-reviews/missing",
+                "/api/v1/rebalance/outcome-reviews/missing/supportability",
                 "/api/v1/rebalance/outcome-reviews/missing/report-input",
                 "/api/v1/rebalance/outcome-reviews/missing/ai-evidence-input",
+                "/api/v1/rebalance/runs/missing/outcome-review",
             ]:
                 missing = client.get(path)
                 assert missing.status_code == 404
                 assert missing.json()["detail"] == "OUTCOME_REVIEW_NOT_FOUND"
+
+            missing_refresh = client.post(
+                "/api/v1/rebalance/outcome-reviews/missing/refresh-sources",
+                json=_refresh_payload(),
+            )
+            assert missing_refresh.status_code == 404
+
+            invalid_refresh_payload = _refresh_payload()
+            invalid_refresh_payload["dimension_configs"][0]["dimension"] = "PERFORMANCE"
+            invalid_refresh = client.post(
+                f"/api/v1/rebalance/outcome-reviews/{review_id}/refresh-sources",
+                json=invalid_refresh_payload,
+            )
+            assert invalid_refresh.status_code == 422
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_outcome_review_supportability_routes_source_owner_remediation() -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    repository.save_outcome_review(
+        review=_review(
+            state="DEGRADED",
+            content_hash="sha256:degraded",
+            idempotency_key="degraded-idem",
+        ).model_copy(
+            update={
+                "supportability": _review().supportability.model_copy(
+                    update={
+                        "state": "DEGRADED",
+                        "reason_codes": [
+                            "RISK_SOURCE_UNAVAILABLE",
+                            "PERFORMANCE_SOURCE_UNAVAILABLE",
+                            "EXECUTION_EVIDENCE_BLOCKED",
+                            "FX_SOURCE_STALE",
+                        ],
+                    }
+                )
+            }
+        ),
+        retention_expires_at=None,
+    )
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/rebalance/outcome-reviews/dor_001/supportability")
+
+        assert response.status_code == 200
+        assert response.json()["remediation_routes"] == [
+            "execution-owner:certify-fill-and-order-evidence",
+            "lotus-performance:refresh-post-trade-performance-source",
+            "lotus-risk:refresh-post-trade-risk-source",
+            "source-owner:refresh-realized-outcome-source",
+        ]
     finally:
         app.dependency_overrides.clear()

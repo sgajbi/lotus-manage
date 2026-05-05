@@ -287,3 +287,199 @@ def test_expected_snapshot_rejects_handoff_external_execution_claim() -> None:
             wave_item_id="dwi_001",
             handoff_ref_id="dwh_001",
         )
+
+
+def test_expected_snapshot_rejects_selection_set_wave_and_handoff_shape_errors() -> None:
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="alternative_set_id"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=ConstructionAlternativeSelection(
+                **{
+                    **_selection().model_dump(),
+                    "alternative_set_id": "cas_other",
+                }
+            ),
+            proof_pack=_proof_pack(),
+        )
+
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="without wave"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+            wave_item_id="dwi_001",
+        )
+
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="required when wave"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+            wave=_wave(),
+        )
+
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="does not exist in wave"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+            wave=_wave(),
+            wave_item_id="missing",
+        )
+
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="requires wave and wave_item"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+            handoff_ref_id="dwh_001",
+        )
+
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="handoff_ref_id does not exist"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+            wave=_wave(),
+            wave_item_id="dwi_001",
+            handoff_ref_id="missing",
+        )
+
+    wave = _wave()
+    wave.handoff_refs[0].item_ids = ["dwi_other"]
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="does not include"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=_alternative_set(),
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+            wave=wave,
+            wave_item_id="dwi_001",
+            handoff_ref_id="dwh_001",
+        )
+
+
+def test_expected_snapshot_rejects_selected_alternative_without_expected_values() -> None:
+    alternative_set = _alternative_set()
+    metrics = alternative_set.alternatives[0].comparison_metrics
+    metrics.drift_after = None
+    metrics.estimated_transaction_cost = None
+    metrics.cash_weight_after = None
+
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="does not expose"):
+        assemble_expected_outcome_snapshot(
+            alternative_set=alternative_set,
+            selection=_selection(),
+            proof_pack=_proof_pack(),
+        )
+
+
+def test_expected_snapshot_dedupes_lineage_refs_from_proof_sections() -> None:
+    proof_pack = _proof_pack()
+    proof_pack.sections[0].source_refs.append(
+        DpmProofPackSourceRef(
+            source_system="lotus-manage",
+            source_type="PRE_TRADE_PROOF_PACK",
+            source_id="dpp_001",
+            supportability_state="READY",
+            content_hash="sha256:proof-pack",
+        )
+    )
+
+    snapshot = assemble_expected_outcome_snapshot(
+        alternative_set=_alternative_set(),
+        selection=_selection(),
+        proof_pack=proof_pack,
+    )
+
+    assert [
+        (ref.source_system, ref.source_type, ref.source_id) for ref in snapshot.source_lineage
+    ].count(("lotus-manage", "PRE_TRADE_PROOF_PACK", "dpp_001")) == 1
+
+
+@pytest.mark.parametrize(
+    ("set_status", "method_status", "source_state", "proof_status", "wave_item_state", "expected"),
+    [
+        (
+            ConstructionMethodStatus.BLOCKED,
+            ConstructionMethodStatus.READY,
+            "READY",
+            "READY",
+            "HANDOFF_READY",
+            "BLOCKED",
+        ),
+        (
+            ConstructionMethodStatus.READY,
+            ConstructionMethodStatus.PENDING_REVIEW,
+            "READY",
+            "READY",
+            "HANDOFF_READY",
+            "PENDING_REVIEW",
+        ),
+        (
+            ConstructionMethodStatus.READY,
+            ConstructionMethodStatus.READY,
+            "DEGRADED",
+            "READY",
+            "HANDOFF_READY",
+            "DEGRADED",
+        ),
+        (
+            ConstructionMethodStatus.READY,
+            ConstructionMethodStatus.DEGRADED,
+            "READY",
+            "READY",
+            "HANDOFF_READY",
+            "DEGRADED",
+        ),
+        (
+            ConstructionMethodStatus.READY,
+            ConstructionMethodStatus.READY,
+            "READY",
+            "UNRECOGNIZED",
+            "HANDOFF_READY",
+            "BLOCKED",
+        ),
+        (
+            ConstructionMethodStatus.READY,
+            ConstructionMethodStatus.READY,
+            "READY",
+            "READY",
+            "SOURCE_DEGRADED",
+            "DEGRADED",
+        ),
+        (
+            ConstructionMethodStatus.READY,
+            ConstructionMethodStatus.READY,
+            "READY",
+            "READY",
+            "SOURCE_BLOCKED",
+            "BLOCKED",
+        ),
+    ],
+)
+def test_expected_snapshot_rolls_up_pre_trade_supportability_states(
+    set_status: ConstructionMethodStatus,
+    method_status: ConstructionMethodStatus,
+    source_state: str,
+    proof_status: str,
+    wave_item_state: str,
+    expected: str,
+) -> None:
+    alternative_set = _alternative_set()
+    alternative_set.status = set_status
+    alternative_set.source_supportability_state = source_state
+    alternative_set.alternatives[0].method_status = method_status
+    proof_pack = _proof_pack()
+    proof_pack.status = proof_status
+    wave = _wave()
+    wave.items[0].state = wave_item_state
+
+    snapshot = assemble_expected_outcome_snapshot(
+        alternative_set=alternative_set,
+        selection=_selection(),
+        proof_pack=proof_pack,
+        wave=wave,
+        wave_item_id="dwi_001",
+    )
+
+    assert snapshot.supportability.state == expected

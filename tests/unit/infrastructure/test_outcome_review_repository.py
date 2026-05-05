@@ -19,6 +19,46 @@ from src.core.outcomes import (
 from src.core.outcomes.models import DpmOutcomeDimensionInput
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
+from src.infrastructure.outcomes.postgres import (
+    PostgresDpmOutcomeReviewRepository,
+    _insert_event,
+    _import_psycopg,
+    _payload,
+)
+
+
+class _Cursor:
+    def __init__(
+        self, *, row: dict[str, object] | None = None, rows: list[dict[str, object]] | None = None
+    ):
+        self._row = row
+        self._rows = rows or []
+
+    def fetchone(self) -> dict[str, object] | None:
+        return self._row
+
+    def fetchall(self) -> list[dict[str, object]]:
+        return self._rows
+
+
+class _FakeConnection:
+    def __init__(self, cursors: list[_Cursor] | None = None) -> None:
+        self._cursors = cursors or []
+        self.executed: list[tuple[str, tuple[object, ...]]] = []
+        self.committed = False
+        self.closed = False
+
+    def execute(self, sql: str, params: tuple[object, ...] = ()) -> _Cursor:
+        self.executed.append((sql, params))
+        if self._cursors:
+            return self._cursors.pop(0)
+        return _Cursor()
+
+    def commit(self) -> None:
+        self.committed = True
+
+    def close(self) -> None:
+        self.closed = True
 
 
 def _window() -> DpmOutcomeReviewWindow:
@@ -139,6 +179,13 @@ def _review(
     )
 
 
+def _postgres_repository(connection: _FakeConnection) -> PostgresDpmOutcomeReviewRepository:
+    repository = PostgresDpmOutcomeReviewRepository.__new__(PostgresDpmOutcomeReviewRepository)
+    repository._dsn = "postgresql://unit-test"  # noqa: SLF001
+    repository._connect = lambda: connection  # type: ignore[method-assign]  # noqa: SLF001
+    return repository
+
+
 def test_in_memory_outcome_repository_persists_immutable_review_and_retention() -> None:
     repository = InMemoryDpmOutcomeReviewRepository()
     review = _review()
@@ -221,3 +268,214 @@ def test_in_memory_outcome_repository_returns_deep_copies() -> None:
     loaded.state = "BLOCKED"
 
     assert repository.get_outcome_review(outcome_review_id="dor_001").state == "READY"  # type: ignore[union-attr]
+
+
+def test_postgres_outcome_repository_requires_dsn_and_driver(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with pytest.raises(RuntimeError, match="DSN_REQUIRED"):
+        PostgresDpmOutcomeReviewRepository(dsn="")
+
+    monkeypatch.setattr("src.infrastructure.outcomes.postgres.has_psycopg", lambda: False)
+
+    with pytest.raises(RuntimeError, match="DRIVER_MISSING"):
+        PostgresDpmOutcomeReviewRepository(dsn="postgresql://unit-test")
+
+
+def test_postgres_outcome_repository_initializes_when_driver_is_available(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("src.infrastructure.outcomes.postgres.has_psycopg", lambda: True)
+    monkeypatch.setattr(
+        "src.infrastructure.outcomes.postgres.PostgresDpmOutcomeReviewRepository._init_db",
+        lambda self: None,
+    )
+
+    repository = PostgresDpmOutcomeReviewRepository(dsn="postgresql://unit-test")
+
+    assert repository._dsn == "postgresql://unit-test"  # noqa: SLF001
+
+
+def test_postgres_outcome_repository_saves_review_events_and_retention() -> None:
+    connection = _FakeConnection(cursors=[_Cursor(), _Cursor()])
+    repository = _postgres_repository(connection)
+    review = _review()
+
+    repository.save_outcome_review(
+        review=review,
+        retention_expires_at=datetime(2033, 5, 6, tzinfo=timezone.utc),
+    )
+
+    assert connection.committed is True
+    assert connection.closed is True
+    assert len(connection.executed) == 4
+    insert_review_params = connection.executed[2][1]
+    assert insert_review_params[0] == "dor_001"
+    assert insert_review_params[13] == "2033-05-06T00:00:00+00:00"
+    insert_event_params = connection.executed[3][1]
+    assert insert_event_params[:3] == (
+        "dor_001_created",
+        "dor_001",
+        "OUTCOME_REVIEW_CREATED",
+    )
+
+
+def test_postgres_outcome_repository_rejects_immutable_and_idempotency_conflicts() -> None:
+    immutable_connection = _FakeConnection(
+        cursors=[_Cursor(row={"content_hash": "sha256:different"})]
+    )
+    immutable_repository = _postgres_repository(immutable_connection)
+
+    with pytest.raises(DpmOutcomeReviewConflictError, match="IMMUTABLE"):
+        immutable_repository.save_outcome_review(review=_review(), retention_expires_at=None)
+
+    idempotency_connection = _FakeConnection(
+        cursors=[_Cursor(), _Cursor(row={"outcome_review_id": "dor_other"})]
+    )
+    idempotency_repository = _postgres_repository(idempotency_connection)
+
+    with pytest.raises(DpmOutcomeReviewConflictError, match="IDEMPOTENCY"):
+        idempotency_repository.save_outcome_review(review=_review(), retention_expires_at=None)
+
+
+def test_postgres_outcome_repository_reads_review_lookup_list_retention_and_events() -> None:
+    review = _review()
+    event = review.events[0]
+    payload_json = review.model_dump_json()
+    event_json = event.model_dump_json()
+
+    get_connection = _FakeConnection(cursors=[_Cursor(row={"payload_json": payload_json})])
+    assert (
+        _postgres_repository(get_connection)
+        .get_outcome_review(outcome_review_id="dor_001")
+        .outcome_review_id
+        == "dor_001"
+    )
+
+    missing_connection = _FakeConnection(cursors=[_Cursor()])
+    assert (
+        _postgres_repository(missing_connection).get_outcome_review(outcome_review_id="missing")
+        is None
+    )
+
+    idempotency_connection = _FakeConnection(cursors=[_Cursor(row={"payload_json": payload_json})])
+    assert (
+        _postgres_repository(idempotency_connection)
+        .get_outcome_review_by_idempotency(idempotency_key="idem_001")
+        .idempotency_key
+        == "idem_001"
+    )
+    missing_idempotency_connection = _FakeConnection(cursors=[_Cursor()])
+    assert (
+        _postgres_repository(missing_idempotency_connection).get_outcome_review_by_idempotency(
+            idempotency_key="missing"
+        )
+        is None
+    )
+
+    list_connection = _FakeConnection(
+        cursors=[_Cursor(rows=[{"payload_json": payload_json}, {"payload_json": payload_json}])]
+    )
+    listed = _postgres_repository(list_connection).list_outcome_reviews(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        wave_id="dwv_001",
+        rebalance_run_id="rr_001",
+        state="READY",
+        limit=2,
+        offset=1,
+    )
+    assert [item.outcome_review_id for item in listed] == ["dor_001", "dor_001"]
+    assert list_connection.executed[0][1] == (
+        "PB_SG_GLOBAL_BAL_001",
+        "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "dwv_001",
+        "rr_001",
+        "READY",
+        2,
+        1,
+    )
+
+    retention_connection = _FakeConnection(
+        cursors=[
+            _Cursor(
+                row={
+                    "outcome_review_id": "dor_001",
+                    "retention_policy": "DPM_OUTCOME_REVIEW_7Y",
+                    "retention_expires_at": datetime(2033, 5, 6, tzinfo=timezone.utc),
+                    "legal_hold_state": "NONE",
+                }
+            )
+        ]
+    )
+    retention = _postgres_repository(retention_connection).get_retention_metadata(
+        outcome_review_id="dor_001"
+    )
+    assert retention is not None
+    assert retention.retention_expires_at == "2033-05-06T00:00:00+00:00"
+    missing_retention_connection = _FakeConnection(cursors=[_Cursor()])
+    assert (
+        _postgres_repository(missing_retention_connection).get_retention_metadata(
+            outcome_review_id="missing"
+        )
+        is None
+    )
+
+    events_connection = _FakeConnection(cursors=[_Cursor(rows=[{"payload_json": event_json}])])
+    assert [
+        item.event_type
+        for item in _postgres_repository(events_connection).list_events(outcome_review_id="dor_001")
+    ] == ["OUTCOME_REVIEW_CREATED"]
+
+
+def test_postgres_outcome_repository_appends_event_and_normalizes_payload() -> None:
+    event = _review().events[0]
+    connection = _FakeConnection()
+
+    _postgres_repository(connection).append_event(event=event)
+
+    assert connection.committed is True
+    assert connection.executed[0][1][:2] == ("dor_001_created", "dor_001")
+    assert _payload({"payload_json": {"outcome_review_id": "dor_001"}}) == {
+        "outcome_review_id": "dor_001"
+    }
+    assert _payload({"payload_json": ["not", "a", "dict"]}) == '["not", "a", "dict"]'
+
+
+def test_postgres_insert_event_uses_idempotent_event_key() -> None:
+    event = _review().events[0]
+    connection = _FakeConnection()
+
+    _insert_event(connection=connection, event=event)
+
+    sql, params = connection.executed[0]
+    assert "ON CONFLICT (event_id) DO NOTHING" in sql
+    assert params[:6] == (
+        "dor_001_created",
+        "dor_001",
+        "OUTCOME_REVIEW_CREATED",
+        "2026-05-06T01:20:00Z",
+        "pm_001",
+        "READY",
+    )
+
+
+def test_postgres_init_connect_and_driver_import_branches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    migration_calls: list[str] = []
+    connection = _FakeConnection()
+    repository = _postgres_repository(connection)
+
+    monkeypatch.setattr(
+        "src.infrastructure.outcomes.postgres.apply_postgres_migrations",
+        lambda *, connection, namespace: migration_calls.append(namespace),
+    )
+
+    repository._init_db()  # noqa: SLF001
+
+    assert migration_calls == ["dpm"]
+    assert connection.closed is True
+    psycopg, dict_row = _import_psycopg()
+    assert hasattr(psycopg, "connect")
+    assert dict_row is not None
