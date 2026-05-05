@@ -38,6 +38,8 @@ from src.core.outcomes.snapshots import (
 from src.core.outcomes.realized_sources import assemble_realized_outcome_snapshot
 from src.core.outcomes.performance_sources import (
     PerformanceOutcomeSourceError,
+    realized_active_performance_source_from_workspace_summary,
+    realized_mwr_source_from_workspace_summary,
     realized_performance_source_from_workspace_summary,
     unavailable_performance_source,
 )
@@ -97,6 +99,8 @@ __all__ = [
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
     "realized_cash_source_from_cash_balances_response",
+    "realized_active_performance_source_from_workspace_summary",
+    "realized_mwr_source_from_workspace_summary",
     "realized_performance_source_from_workspace_summary",
     "realized_risk_source_from_risk_metrics_report",
     "unavailable_core_cash_source",

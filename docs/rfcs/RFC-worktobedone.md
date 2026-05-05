@@ -2290,7 +2290,7 @@ artifacts belong to report/render/archive services, and AI narrative execution b
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-gateway`, `lotus-workbench` | Implemented, merged, CI-proven, and wiki-published through `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 | Manage emits bounded report input only; downstream services now consume it to create deterministic outcome-review report artifacts, preserve archive posture, expose Gateway submission, and add the Workbench report request action without recomputing outcome truth. |
 | RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, Gateway, Workbench, with manage as evidence authority | Implemented, merged, CI-proven, and wiki-published through `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 | Manage emits AI evidence input only; `lotus-ai` now owns guarded workflow-pack narrative execution, Gateway composes the evidence/narrative BFF, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
-| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, performance workspace-summary TWR output, and core HoldingsAsOf cash totals now have manage adapters; richer risk/performance, tax, FX, cash movements, liquidity, and execution methodologies stay source-owner follow-on work. |
+| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, performance workspace-summary TWR, active return, MWR output, and core HoldingsAsOf cash totals now have manage adapters; richer risk/performance, tax, FX, cash movements, liquidity, and execution methodologies stay source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration and acknowledgements | Execution/OMS owner, `lotus-manage` consumer | Ownership not established | RFC-0042 can compare expected and realized evidence, but OMS integration needs a separate owner, controls, acknowledgements, and reconciliation contract. |
 | RFC42-WTBD-008 | PM quality scoring or behavioral analytics | Business owner, methodology owner, `lotus-ai` only if approved | Not supported | RFC-0042 intentionally avoids scoring PMs. Any future scoring requires business approval, auditable methodology, bias controls, and governance. |
 
@@ -2627,20 +2627,22 @@ liquidity, and execution dimensions using source-owner methodologies and certifi
 
 Implementation-backed progress:
 
-1. `src/core/outcomes/performance_sources.py` adds the first WTBD-006 source-family adapter for
-   `lotus-performance` workspace-summary TWR return evidence,
+1. `src/core/outcomes/performance_sources.py` adds WTBD-006 source-family adapters for
+   `lotus-performance` workspace-summary TWR return, active return, and MWR return evidence,
 2. `src/core/outcomes/risk_sources.py` adds the first WTBD-006 source-family adapter for
    `lotus-risk` `RiskMetricsReport:v1` evidence,
 3. `src/core/outcomes/core_sources.py` adds the first WTBD-006 `lotus-core` source-family adapter
    for `HoldingsAsOf:v1` cash-total evidence,
-4. the performance adapter consumes source-owned `WORKSPACE_SUMMARY_TWR_RETURN` output and converts
+4. the performance adapters consume source-owned `WORKSPACE_SUMMARY_TWR_RETURN`,
+   `WORKSPACE_SUMMARY_ACTIVE_RETURN`, and `WORKSPACE_SUMMARY_MWR_RETURN` output and convert
    percentage-point return units to RFC-0042 ratio units without calculating performance locally,
 5. the risk adapter consumes source-owned `RISK_METRICS_REPORT` output and preserves selected
    source metric values without calculating risk locally,
 6. the core cash adapter consumes source-owned `HOLDINGS_AS_OF_CASH_BALANCE` totals without
    aggregating cash accounts or deriving tax/FX/transaction facts locally,
-7. performance source lineage is preserved through calculation id, calculation hash, selected period, selected
-   basis, selected measure, source owner, source type, and reason codes,
+7. performance source lineage is preserved through calculation id, calculation hash, selected
+   period, selected basis or MWR method, selected measure, source owner, source type, and reason
+   codes,
 8. risk source lineage is preserved through request fingerprint, selected period, selected risk
    metric, source supportability state, source supportability reason, as-of date, source owner,
    source type, and reason codes,
@@ -2648,18 +2650,19 @@ Implementation-backed progress:
    generated/evidence timestamp, data-quality posture, source fingerprint, source owner, source type,
    and reason codes,
 10. focused tests prove ready, missing, degraded/unavailable, permission-blocked, explicit metric,
-   source supportability, and malformed payload behavior,
+   source supportability, source-owned active return, source-owned MWR return, and malformed
+   payload behavior,
 11. no broader methodology is claimed yet: tax, FX, transaction-cost, execution, cash movements,
-   liquidity ladders, risk attribution, rolling-risk, drawdown-report, concentration, MWR,
-   contribution, attribution, benchmark-relative performance analysis, and full review-window source
-   contracts remain source-owner follow-on scope.
+   liquidity ladders, risk attribution, rolling-risk, drawdown-report, concentration,
+   contribution, attribution, broader benchmark-relative performance analysis, and full
+   review-window source contracts remain source-owner follow-on scope.
 
 Why it cannot be done now:
 
 RFC-0042 intentionally avoided local calculation clones. The first risk, performance, and core cash
 adapters are possible because `lotus-risk` publishes `RiskMetricsReport:v1` output,
-`lotus-performance` publishes workspace-summary TWR output, and `lotus-core` publishes
-`HoldingsAsOf:v1` cash totals. Remaining source-owner methods are surfaced as degraded,
+`lotus-performance` publishes workspace-summary TWR, active return, and MWR output, and
+`lotus-core` publishes `HoldingsAsOf:v1` cash totals. Remaining source-owner methods are surfaced as degraded,
 unsupported, unavailable, malformed, conflicting, or blocked states until their owning applications
 publish certified contracts.
 
@@ -2681,6 +2684,15 @@ Promotion proof:
 2. manage adapter tests,
 3. live evidence with ready and degraded examples,
 4. README/wiki/context updates in both source and manage repositories.
+
+Latest WTBD-006 tightening proof:
+
+1. local critical review evidence:
+   `output/rfc0042-wtbd006-source-methodology-proof/20260506-060312/critical-review.json`,
+2. repo-native `make check` passed with `874` unit tests, lint, typecheck, OpenAPI quality,
+   API vocabulary, no-alias, mesh contracts, and monetary-float guard,
+3. focused source-adapter/doc proof passed with `52` tests across documentation current-state,
+   performance, risk, core cash, and realized-source assembly behavior.
 
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
 
