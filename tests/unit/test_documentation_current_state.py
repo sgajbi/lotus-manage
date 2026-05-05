@@ -338,7 +338,7 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
         "### Slice 11 - Second-Last Hardening and Review",
         "### Slice 12 - Final Closure",
         "## 15. Supported-Features Ledger",
-        "## 19. Final Gold-Pass Assessment Template",
+        "## 19. Final Gold-Pass Assessment",
     ]
     missing_sections = [section for section in required_sections if section not in rfc]
 
@@ -418,6 +418,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
     assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
     assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map
+    assert "`portfolio_manager_id`" not in rfc
+    assert "`dpm_cio_model_change_impacts`" not in rfc
     assert "output/rfc0041-wave-proof/<timestamp>/" in source_map
     assert (
         "Do not start product implementation before this Slice 0 artifact is reviewed" in source_map
