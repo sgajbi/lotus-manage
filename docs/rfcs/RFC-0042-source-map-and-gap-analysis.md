@@ -41,6 +41,21 @@ artifact, AI narrative, or supported-feature claim is added by Slice 0.
 
 ---
 
+## Slice 1 Platform Result
+
+Slice 1 platform evidence is recorded in
+`docs/rfcs/RFC-0042-platform-automation-slice1.md`.
+
+The cross-cutting platform gap was source-degraded and reconciliation endpoint guidance in the
+backend service scaffold. `sgajbi/lotus-platform#297`, merged as `1b9671e`, updates
+`automation/New-Lotus-Service.ps1` so new backend services start with source-owner, freshness,
+lineage, supportability, degraded-state, no-local-clone, and documentation-promotion expectations
+in generated API certification guidance.
+
+Slice 1 is `DONE`; no manage runtime code or supported-feature claim was added in this slice.
+
+---
+
 ## Current Foundation Evidence
 
 | Foundation | Current evidence | RFC-0042 implication |

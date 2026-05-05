@@ -12,6 +12,7 @@
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
 | **Future Implementation Branch** | `feat/rfc0042-implementation` unless an active RFC-0042 implementation branch already exists |
 | **Slice 0 Source Map** | `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md` |
+| **Slice 1 Platform Evidence** | `docs/rfcs/RFC-0042-platform-automation-slice1.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -445,6 +446,10 @@ Acceptance:
 1. platform improvements are merged or a documented no-change decision exists,
 2. future apps benefit from any cross-cutting fix,
 3. local manage code does not carry a platform concern that belongs in scaffolding.
+
+Slice 1 evidence:
+
+`docs/rfcs/RFC-0042-platform-automation-slice1.md`
 
 ### Slice 2 - Cleanup and Structure
 

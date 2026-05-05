@@ -431,6 +431,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     source_map = (ROOT / "docs" / "rfcs" / "RFC-0042-source-map-and-gap-analysis.md").read_text(
         encoding="utf-8"
     )
+    platform_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-platform-automation-slice1.md").read_text(
+        encoding="utf-8"
+    )
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -455,6 +458,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert missing_sections == []
     assert "PROPOSED - GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
+    assert "RFC-0042-platform-automation-slice1.md" in rfc
     assert "No feature below is supported until implementation" in rfc
     assert "Current gold-pass state:" in rfc
     assert "`NOT STARTED`" in rfc
@@ -471,6 +475,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
 
     assert "## Slice 0 Result" in source_map
     assert "No route, persistence table, runtime capability" in source_map
+    assert "## Slice 1 Platform Result" in source_map
+    assert "sgajbi/lotus-platform#297" in source_map
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
     assert "No supported feature is promoted by RFC-0042 tightening" in source_map
@@ -480,6 +486,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "| `EXECUTION_QUALITY` | Fill/order/execution source exists" in source_map
     assert "Workbench must consume Gateway/BFF only" in source_map
     assert "PB_SG_GLOBAL_BAL_001" in source_map
+
+    assert "Slice 1 - Platform Automation and Scaffolding Improvement" in platform_slice
+    assert "sgajbi/lotus-platform#297" in platform_slice
+    assert "source-degraded and reconciliation endpoint" in platform_slice
+    assert "does not clone calculations owned by another Lotus app" in platform_slice
+    assert "No supported feature is promoted by this slice" in platform_slice
 
     assert (
         "| RFC-0042 | Post-Trade Outcome Feedback Loop | PROPOSED (GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED)"
