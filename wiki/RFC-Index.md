@@ -91,7 +91,10 @@ evidence, and supported-feature promotion.
   support remains proposed until downstream implementation and canonical front-office proof are
   complete.
 - RFC-0042
-  proposed post-trade outcome feedback-loop roadmap
+  proposed post-trade outcome feedback loop; gold-standard tightened on 2026-05-05 as an
+  implementation-ready execution guide, with source-map guardrails and no supported-feature claim
+  until source-backed implementation, Gateway/Workbench realization, live proof, and wiki
+  publication are complete
 - RFC-0043
   proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
   ownership to AI
