@@ -493,6 +493,43 @@ Production boundary:
    products expose implementation-backed source evidence.
 4. RFC-0041 remains open for Slice 11 hardening and Slice 12 final closure.
 
+## Slice 11 Hardening Review Result
+
+Slice 11 performed the second-last production-readiness review across the manage wave authority,
+endpoint contracts, documentation claims, tests, and proof posture.
+
+Review findings fixed:
+
+1. The RFC endpoint table overstated `GET /api/v1/rebalance/waves` filtering by mentioning book and
+   PM filters. The implemented API is intentionally narrower and certified for `state`,
+   `trigger_type`, `as_of_date`, derived `supportability_state`, `limit`, and `offset`. The RFC now
+   states that book/PM filters remain deferred until an owning source product exists.
+2. The trigger contract still used stale `MANUAL_PORTFOLIO_LIST` wording from the pre-hardening
+   draft. It now matches the implemented `EXPLICIT_PORTFOLIO_LIST` contract.
+3. The RFC supported-features ledger still read as pre-implementation promotion rules. It now records
+   which explicit-list wave capabilities are implementation-backed and which CIO/PM/Gateway/
+   Workbench capabilities remain unpromoted.
+
+Hardening tests added:
+
+1. `tests/unit/dpm/waves/test_source_readiness.py` covers missing mandate twins, missing/stale health,
+   blocked source readiness, degraded readiness, pending-review health, ready health, and lineage
+   filtering when a source lineage record id is absent.
+2. `tests/unit/dpm/api/test_waves_api.py` now covers alternative-selection optimistic-lock conflict
+   mapping to `DPM_WAVE_VERSION_CONFLICT`.
+
+Validation:
+
+1. `python -m pytest tests/unit/dpm/api/test_waves_api.py::test_wave_selection_translates_durable_write_conflict_to_governed_error tests/unit/dpm/waves/test_source_readiness.py -q`
+2. `python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py tests/unit/test_documentation_current_state.py -q`
+3. `python scripts/openapi_quality_gate.py`
+4. `python scripts/api_vocabulary_inventory.py --validate-only`
+5. `make check`
+
+Slice 11 did not add new product claims. It tightened implementation-backed truth and leaves only
+Slice 12 final closure, wiki publication, and gold-pass assessment before RFC-0041 can be marked
+`DONE`.
+
 ## Implementation Order Confirmation
 
 RFC-0041 should proceed in the RFC-defined order:
