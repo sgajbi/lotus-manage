@@ -9,6 +9,7 @@
 | Manage status | `DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING` |
 | Live proof | `output/rfc0042-outcome-proof/20260505-024352/` |
 | Hardening proof | `output/rfc0042-outcome-proof/20260505-025613/` |
+| Post-merge audit proof | `output/rfc0042-outcome-proof/20260505-040212/` |
 
 ## Closure Summary
 
@@ -74,3 +75,24 @@ git diff --check
 ```
 
 Wiki sync check and publication are required by the Lotus wiki publication rule.
+
+## Post-Merge Gold-Pass Audit Addendum
+
+Post-merge audit on 2026-05-05 revalidated the RFC-0042 manage backend authority and found one
+documentation control gap: `docs/rfcs/RFC-worktobedone.md` existed only on historical side
+branches and was absent from `main`. The audit restored the ledger, added RFC-0042 remaining-work
+ownership, and pinned it in `tests/unit/test_documentation_current_state.py`.
+
+Additional proof captured during the audit:
+
+1. `python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001`
+   produced `output/rfc0042-outcome-proof/20260505-040212/critical-review.json` with result
+   `passed`.
+2. `npm run live:stack:up` and `npm run live:validate` passed for `PB_SG_GLOBAL_BAL_001` after
+   stale manage action-register supportability evidence was refreshed.
+3. Canonical screenshots were written under
+   `lotus-workbench/output/playwright/live-canonical`.
+
+The front-office validation proves current stack health and supportability readiness. It does not
+promote Gateway or Workbench outcome-review product support; that remains downstream RFC-0098
+realization work.

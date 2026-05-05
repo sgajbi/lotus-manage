@@ -350,7 +350,7 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
         "### Slice 11 - Second-Last Hardening and Review",
         "### Slice 12 - Final Closure",
         "## 15. Supported-Features Ledger",
-        "## 19. Final Gold-Pass Assessment Template",
+        "## 19. Final Gold-Pass Assessment",
     ]
     missing_sections = [section for section in required_sections if section not in rfc]
 
@@ -430,6 +430,9 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
     assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
     assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map
+    assert "`portfolio_manager_id`" not in rfc
+    assert "`dpm_cio_model_change_impacts`" not in rfc
+    assert "## Post-Closure Audit Result - 2026-05-05" in source_map
     assert "output/rfc0041-wave-proof/<timestamp>/" in source_map
     assert (
         "Do not start product implementation before this Slice 0 artifact is reviewed" in source_map
@@ -687,6 +690,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "hardening evidence: `docs/rfcs/RFC-0042-hardening-review-slice12.md`" in index
     assert "closure evidence: `docs/rfcs/RFC-0042-final-closure-slice13.md`" in index
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
+    assert "Durable cross-RFC follow-up control" in index
+    assert "docs/rfcs/RFC-worktobedone.md" in index
     assert "gold-standard" in wiki_index
     assert "tightening on 2026-05-05" in wiki_index
     assert "Slice 3 pure domain comparison evidence" in wiki_index
@@ -721,5 +726,19 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Supported as RFC-0042 manage backend authority" in supported_features
     assert "output/rfc0042-outcome-proof/20260505-024352/" in supported_features
     assert "output/rfc0042-outcome-proof/20260505-025613/" in supported_features
+    assert "output/rfc0042-outcome-proof/20260505-040212/" in supported_features
+    assert "output/rfc0042-outcome-proof/20260505-040212/" in wiki_index
+    assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
     assert "handoff, and outcome events" not in supported_features
     assert "Supported as RFC-0042 full product experience" not in supported_features
+
+    work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    assert "RFC Work To Be Done Ledger" in work_to_be_done
+    assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
+    assert "RFC42-WTBD-001" in work_to_be_done
+    assert "RFC42-WTBD-008" in work_to_be_done
+    assert "no item in this ledger is a supported-feature claim" in work_to_be_done
+    assert "Post-merge audit rerun" in work_to_be_done
+    assert "output/rfc0042-outcome-proof/20260505-040212/critical-review.json" in (work_to_be_done)
+    assert "Workbench must consume Gateway/BFF only" in work_to_be_done
+    assert "PM quality scoring" in work_to_be_done

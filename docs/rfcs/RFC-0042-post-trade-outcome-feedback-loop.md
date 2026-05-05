@@ -893,10 +893,31 @@ Proof:
 1. live proof: `output/rfc0042-outcome-proof/20260505-024352/critical-review.json` => `passed`,
 2. hardening proof: `output/rfc0042-outcome-proof/20260505-025613/critical-review.json` =>
    `passed`,
-3. local RFC-0042 gate: `62 passed`,
-4. OpenAPI certification matrix: `80 passed`,
-5. OpenAPI quality gate, API vocabulary inventory, no-alias guard, Ruff, and diff whitespace gates
+3. post-merge audit proof:
+   `output/rfc0042-outcome-proof/20260505-040212/critical-review.json` => `passed`,
+4. targeted RFC-0042 API/domain/observability gate: `73 passed`,
+5. documentation/current-state guard: `13 passed`,
+6. OpenAPI certification matrix: `80 passed`,
+7. OpenAPI quality gate, API vocabulary inventory, no-alias guard, Ruff, and diff whitespace gates
    passed during closure.
+
+Post-merge gold-pass audit addendum:
+
+1. The cross-RFC work-to-be-done ledger was found missing from `main`, restored from historical
+   commit `b3ba7bf`, extended with RFC-0042 remaining-work ownership, and pinned by
+   `tests/unit/test_documentation_current_state.py`.
+2. Current manage live proof was rerun on 2026-05-05 at
+   `output/rfc0042-outcome-proof/20260505-040212/`; the critical review passed and revalidated
+   preview/create/retrieve/search, idempotency replay/conflict, supportability, report input,
+   AI-evidence input, source lineage, degraded-source example, refresh eventing, run lookup, wave
+   lookup, and OpenAPI coverage.
+3. Canonical front-office validation was run through `lotus-workbench` using
+   `npm run live:stack:up` and `npm run live:validate`; after stale manage action-register evidence
+   was refreshed, validation passed for `PB_SG_GLOBAL_BAL_001` with screenshots under
+   `lotus-workbench/output/playwright/live-canonical`.
+4. The canonical validation does not promote Workbench outcome-review UX. It proves the current
+   front-office stack and supportability boundary are healthy while preserving the downstream
+   Gateway/Workbench RFC-0098 product-realization requirement.
 
 Remaining outside the support claim:
 
