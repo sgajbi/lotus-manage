@@ -80,7 +80,7 @@ RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway
 composition, Workbench review UX, report materialization, and AI memo generation remain downstream
 work in their owning apps; the post-merge gold-pass audit also records a canonical front-office
 risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no full proof-pack
-product UX support is claimed here. RFC-0041 is implementation-backed through Slice 11 hardening
+product UX support is claimed here. RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
 internal handoff evidence, retrieve/search/item/proof-pack/supportability read models, and
