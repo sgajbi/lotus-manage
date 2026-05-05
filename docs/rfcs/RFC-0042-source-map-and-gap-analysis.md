@@ -75,6 +75,23 @@ No supported feature is promoted by Slice 2.
 
 ---
 
+## Slice 3 Domain Model and Pure Comparison Result
+
+Slice 3 evidence is recorded in `docs/rfcs/RFC-0042-domain-model-slice3.md`.
+
+`src/core/outcomes/` now contains typed outcome-review domain primitives and a deterministic
+comparison engine over supplied expected and realized snapshots. The implementation deliberately
+does not call source-owner apps, persist reviews, expose APIs, produce reports, produce AI evidence,
+or claim product support.
+
+Tests prove lower-is-better, higher-is-better, soft tolerance, hard tolerance, missing source values,
+degraded source values, `NOT_SUPPORTED` source posture, execution-evidence blocking, roll-up
+precedence, and invalid tolerance rejection.
+
+No supported feature is promoted by Slice 3.
+
+---
+
 ## Current Foundation Evidence
 
 | Foundation | Current evidence | RFC-0042 implication |

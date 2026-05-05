@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-2 COMPLETE; NO RUNTIME SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-3 COMPLETE; NO RUNTIME SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -14,6 +14,7 @@
 | **Slice 0 Source Map** | `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md` |
 | **Slice 1 Platform Evidence** | `docs/rfcs/RFC-0042-platform-automation-slice1.md` |
 | **Slice 2 Cleanup Evidence** | `docs/rfcs/RFC-0042-cleanup-and-structure-slice2.md` |
+| **Slice 3 Domain Evidence** | `docs/rfcs/RFC-0042-domain-model-slice3.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -484,6 +485,10 @@ Acceptance:
 1. pure tests prove variance and classification behavior,
 2. unsupported dimensions cannot become `READY`,
 3. PM scoring or AI judgment is absent.
+
+Slice 3 evidence:
+
+`docs/rfcs/RFC-0042-domain-model-slice3.md`
 
 ### Slice 4 - Expected Snapshot Assembly
 

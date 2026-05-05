@@ -437,6 +437,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     cleanup_slice = (
         ROOT / "docs" / "rfcs" / "RFC-0042-cleanup-and-structure-slice2.md"
     ).read_text(encoding="utf-8")
+    domain_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-domain-model-slice3.md").read_text(
+        encoding="utf-8"
+    )
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -459,10 +462,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN IMPLEMENTATION - SLICES 0-2 COMPLETE; NO RUNTIME SUPPORT CLAIM" in rfc
+    assert "IN IMPLEMENTATION - SLICES 0-3 COMPLETE; NO RUNTIME SUPPORT CLAIM" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
     assert "RFC-0042-platform-automation-slice1.md" in rfc
     assert "RFC-0042-cleanup-and-structure-slice2.md" in rfc
+    assert "RFC-0042-domain-model-slice3.md" in rfc
     assert "No feature below is supported until implementation" in rfc
     assert "Current gold-pass state:" in rfc
     assert "`NOT STARTED`" in rfc
@@ -483,6 +487,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "sgajbi/lotus-platform#297" in source_map
     assert "## Slice 2 Cleanup and Structure Result" in source_map
     assert "wiki/Supported-Features.md" in source_map
+    assert "## Slice 3 Domain Model and Pure Comparison Result" in source_map
+    assert "src/core/outcomes/" in source_map
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
     assert "No supported feature is promoted by RFC-0042 tightening" in source_map
@@ -505,13 +511,20 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "dedicated outcome domain" in cleanup_slice
     assert "API router" in cleanup_slice
 
+    assert "Slice 3 - Domain Model and Pure Comparison Engine" in domain_slice
+    assert "Unsupported dimensions cannot become `READY`" in domain_slice
+    assert "PM scoring, AI judgment, and narrative generation are absent" in domain_slice
+    assert "`10 passed`" in domain_slice
+
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-2 COMPLETE; NO RUNTIME SUPPORT CLAIM)"
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-3 COMPLETE; NO RUNTIME SUPPORT CLAIM)"
         in index
     )
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
     assert "gold-standard tightened on 2026-05-05" in wiki_index
+    assert "Slice 3 pure domain comparison evidence" in wiki_index
     assert "Slice 0 source-map guardrails" in roadmap
+    assert "Slice 3 pure domain comparison complete" in roadmap
     assert "No runtime outcome-review support is claimed yet" in roadmap
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
     assert "Outcome events remain proposed until RFC-0042 source-backed implementation" in (
