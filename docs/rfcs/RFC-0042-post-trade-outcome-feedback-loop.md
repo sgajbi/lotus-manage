@@ -2,160 +2,308 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED |
+| **Status** | PROPOSED - GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED |
 | **Created** | 2026-05-03 |
+| **Gold Tightening Date** | 2026-05-05 |
+| **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
 | **Depends On** | RFC-0017, RFC-0019, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, RFC-0040, RFC-0041 |
+| **Source Owners** | `lotus-core`, `lotus-risk`, `lotus-performance`, future execution/OMS owner where execution evidence is required |
+| **Downstream Owners** | `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` |
+| **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
+| **Future Implementation Branch** | `feat/rfc0042-implementation` unless an active RFC-0042 implementation branch already exists |
+| **Slice 0 Source Map** | `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
 
 ## 0. Executive Summary
 
-RFC-0042 closes the DPM decision loop. After a rebalance is approved and execution records arrive
-from `lotus-core`, `lotus-manage` should compare expected versus realized outcomes across drift,
-risk, performance, turnover, cost, tax, FX, cash, and execution quality.
+RFC-0042 closes the discretionary portfolio-management feedback loop. It creates a
+source-authoritative post-trade outcome review that compares what `lotus-manage` expected before
+trade with what actually happened after execution, settlement, risk recalculation, and performance
+measurement.
 
-This creates a feedback system for PMs, CIO teams, operations, risk oversight, and sales demos. It
-proves not only what the engine proposed, but whether the decision achieved its intended outcome.
+The first implementation target is a `lotus-manage` backend authority for `DpmPostTradeOutcomeReview`.
+The review must link back to RFC-0039 construction alternatives, RFC-0040 proof packs, and RFC-0041
+waves or operations handoff evidence. It must consume realized evidence from source-owning
+applications rather than calculating source truth locally.
 
----
-
-## 1. Problem Statement
-
-Without outcome feedback:
-
-1. expected drift reduction is not compared to realized drift reduction,
-2. expected risk improvement is not compared to realized risk,
-3. transaction cost and tax estimates are not checked,
-4. execution slippage and partial fills are not measured,
-5. PMs cannot learn which construction method performed best,
-6. CIO teams cannot see whether model-change waves were implemented effectively,
-7. audit evidence stops before the outcome.
-
-## 1.5 Business Outcomes
-
-This RFC targets the following business outcomes:
-
-1. **Close the discretionary management loop**
-   prove whether approved actions achieved their intended drift, risk, liquidity, tax, and cost
-   outcomes.
-2. **Improve PM accountability**
-   give PMs and leaders evidence on expected versus realized impact without relying on manual
-   post-trade analysis.
-3. **Improve model and construction quality**
-   reveal which construction methods produce better realized outcomes under different mandate
-   conditions.
-4. **Strengthen governance and audit**
-   connect pre-trade proof, execution evidence, risk/performance outcomes, and post-trade review in
-   one traceable chain.
-5. **Reduce future errors**
-   identify recurring slippage, partial-fill, tax, cash, source-data, or risk variance patterns.
-6. **Create high-value reporting content**
-   provide outcome review material for client reports, PM reviews, CIO reviews, and sales demos.
+RFC-0042 is not complete when a local manage object exists. It is complete only when source lineage,
+supportability, persistence, APIs, OpenAPI quality, degraded-state behavior, report/AI evidence
+handoffs, live proof, documentation, and downstream realization direction are all implementation
+backed. Gateway and Workbench product support must not be claimed until downstream RFCs are created
+or tightened, implemented, certified, and proven through the governed front-office runtime.
 
 ---
 
-## 2. Goals and Non-Goals
+## 1. Critical Review of the Prior Draft
 
-### 2.1 Goals
+| Area | Prior weakness | Gold-standard correction |
+| --- | --- | --- |
+| Scope | The draft said "compare expected versus realized outcomes" without defining first-wave boundaries. | This RFC defines source ownership, first-wave support, unsupported states, and promotion rules. |
+| Source authority | `lotus-core`, `lotus-risk`, and `lotus-performance` were named but not contractually bounded. | Each source family has an owner, required posture, degraded behavior, and source-gap policy. |
+| Execution evidence | Partial fills and slippage were listed as if execution truth already existed. | Execution-quality support is blocked unless `lotus-core` or an execution/OMS owner exposes certified fill/order evidence. |
+| PM quality metrics | The draft proposed PM quality and method quality metrics too early. | First wave may emit outcome facts and review classifications only. PM scoring, ranking, or AI judgment is not supported. |
+| API quality | Endpoint list lacked supportability, report input, AI input, refresh, and source-check behavior. | API surface now includes certified review, search, supportability, report input, AI evidence input, and source refresh contracts. |
+| Persistence | Tables were underspecified and did not cover immutability, hashes, idempotency, or retention. | Persistence now requires immutable review snapshots, append-only events, source hashes, retention, and legal-hold compatibility. |
+| Downstream realization | Gateway and Workbench were not explicitly planned. | A dedicated slice creates or tightens Gateway and Workbench RFCs after manage contracts stabilize. |
+| Documentation | The draft did not require supported-feature discipline or wiki/product material. | Final closure requires README, wiki, supported-features, RFC, source-map, and context alignment without aspirational claims. |
 
-1. Add post-trade outcome review model and APIs.
-2. Compare expected versus realized outcomes.
-3. Integrate with `lotus-core` execution/transaction records.
-4. Integrate with `lotus-risk` for post-trade risk.
-5. Integrate with `lotus-performance` for post-trade returns and attribution.
-6. Link outcome review to proof packs, alternatives, waves, and runs.
-7. Persist outcome evidence and supportability.
-8. Produce PM quality and method quality metrics.
-
-### 2.2 Non-Goals
-
-1. Book transactions.
-2. Calculate authoritative performance or risk locally.
-3. Replace operations break management.
-4. Trigger client communications directly.
-5. Use AI to judge PM quality.
+Implementation must not begin until Slice 0 source-map review confirms which outcome dimensions can
+be supported from current source-owner contracts and which must remain blocked or deferred.
 
 ---
 
-## 3. Outcome Dimensions
+## 2. Problem Statement
 
-Required dimensions:
+Without a governed post-trade feedback loop:
 
-1. `DRIFT_OUTCOME`
-2. `RISK_OUTCOME`
-3. `PERFORMANCE_OUTCOME`
-4. `TURNOVER_OUTCOME`
-5. `TRANSACTION_COST_OUTCOME`
-6. `TAX_OUTCOME`
-7. `FX_OUTCOME`
-8. `CASH_OUTCOME`
-9. `EXECUTION_QUALITY`
-10. `RULE_OUTCOME`
-11. `SOURCE_DATA_OUTCOME`
-
-Each dimension includes:
-
-1. expected value,
-2. realized value,
-3. variance,
-4. tolerance,
-5. state,
-6. reason code,
-7. source refs.
+1. expected drift reduction is not compared with realized drift reduction,
+2. expected risk improvement is not reconciled to source-owned post-trade risk,
+3. expected return, contribution, and attribution posture is not compared with performance truth,
+4. transaction-cost, tax, FX, cash, and liquidity estimates are not checked against booked evidence,
+5. partial fills, cancellations, slippage, and execution timing cannot be audited,
+6. PMs cannot learn which construction method performed well under specific mandate conditions,
+7. CIO teams cannot see whether model-change waves were implemented effectively,
+8. audit evidence stops at pre-trade proof and handoff rather than closing the outcome chain,
+9. future reports, AI assistance, and demos lack implementation-backed outcome material.
 
 ---
 
-## 4. Outcome Classification
+## 3. Business Outcomes
 
-Outcome states:
+RFC-0042 targets these business outcomes:
 
-1. `READY`: outcome is within expected tolerance or positive,
-2. `PENDING_REVIEW`: variance exceeds soft tolerance or requires PM explanation,
-3. `BLOCKED`: source evidence is incomplete or outcome breach requires formal review.
+1. **Close the DPM loop**: connect mandate, construction, proof pack, wave, operations handoff,
+   realized source evidence, and outcome review into one traceable chain.
+2. **Improve PM accountability**: provide factual expected-versus-realized evidence without manual
+   spreadsheet reconciliation.
+3. **Improve construction quality**: show which method, constraint, and source-readiness patterns
+   produced better realized outcomes.
+4. **Improve CIO wave governance**: confirm whether staged model-change or rebalance waves achieved
+   intended outcomes across affected portfolios.
+5. **Strengthen operations and audit**: expose partial, stale, missing, or conflicting evidence as
+   explicit supportability states.
+6. **Create product-grade evidence material**: provide report and AI evidence inputs that downstream
+   services can consume without recomputing investment truth.
+7. **Enable future portfolio memory**: emit outcome events that can later join mandate, proof-pack,
+   wave, report, and AI events into a longitudinal portfolio memory.
 
-Reason codes:
+---
+
+## 4. Goals and Non-Goals
+
+### 4.1 Goals
+
+1. Add `DpmPostTradeOutcomeReview` as the manage-owned outcome-review authority.
+2. Compare expected snapshots from RFC-0039/RFC-0040/RFC-0041 with realized source evidence.
+3. Preserve source lineage, source hashes, freshness, supportability, and calculation provenance.
+4. Persist immutable review snapshots, append-only events, idempotency keys, and retention posture.
+5. Expose certified APIs for create, preview/source-check, retrieve, search, refresh, supportability,
+   report input, and AI evidence input.
+6. Make degraded, blocked, unsupported, stale, partial, and source-conflict states explicit.
+7. Produce report input and AI evidence input contracts without generating reports or AI narrative.
+8. Create or tighten paired Gateway and Workbench realization RFCs once manage contracts are stable.
+9. Capture machine-readable evidence under `output/rfc0042-outcome-proof/<timestamp>/`.
+10. Update RFC, source map, README/wiki/support material, supported-features, and context truth at
+    closure.
+
+### 4.2 Non-Goals
+
+1. Book trades, create orders, or replace external execution/OMS integration.
+2. Calculate authoritative risk, performance, holdings, cash, FX, tax, transaction, or fill truth in
+   `lotus-manage`.
+3. Generate client reports, rendered documents, archived artifacts, or legal-record output locally.
+4. Generate AI memos, AI prompts, PM judgments, or recommendations locally.
+5. Rank PMs, score PM quality, or make personnel/performance judgments.
+6. Claim Gateway, Workbench, report, archive, or AI support before owning apps implement and prove
+   the product surface.
+7. Promote automatic external execution feedback unless a certified source-owner contract exists.
+
+---
+
+## 5. Architecture Direction
+
+```mermaid
+flowchart LR
+    Alt[RFC-0039<br/>Construction alternatives]
+    Proof[RFC-0040<br/>Pre-trade proof pack]
+    Wave[RFC-0041<br/>Wave and handoff evidence]
+    Core[lotus-core<br/>booked transactions, fills, holdings, cash, FX, tax lots]
+    Risk[lotus-risk<br/>post-trade risk and supportability]
+    Perf[lotus-performance<br/>returns, contribution, attribution]
+    Manage[lotus-manage<br/>DpmPostTradeOutcomeReview]
+    Report[Report input<br/>for lotus-report/render/archive]
+    AI[AI evidence input<br/>for lotus-ai]
+    Gateway[Gateway realization RFC]
+    Workbench[Workbench realization RFC]
+
+    Alt --> Manage
+    Proof --> Manage
+    Wave --> Manage
+    Core --> Manage
+    Risk --> Manage
+    Perf --> Manage
+    Manage --> Report
+    Manage --> AI
+    Manage --> Gateway
+    Gateway --> Workbench
+```
+
+Ownership rules:
+
+1. `lotus-manage` owns the expected-versus-realized review, review state machine, workflow memory,
+   supportability roll-up, and evidence handoff contracts.
+2. `lotus-core` owns booked transactions, holdings, cash movements, FX executions, tax lots, source
+   readiness, and any fill or transaction-window source products it exposes.
+3. `lotus-risk` owns risk, stress, concentration, drawdown, and risk supportability calculations.
+4. `lotus-performance` owns returns, contribution, attribution, benchmark-relative context, and
+   performance supportability calculations.
+5. External execution, order state, broker acknowledgements, or OMS reconciliation belong to a
+   future execution/OMS owner unless already certified through `lotus-core`.
+6. `lotus-gateway` composes backend truth for product clients and must not reconstruct outcome
+   state.
+7. `lotus-workbench` consumes Gateway/BFF routes only and must not call manage directly.
+
+---
+
+## 6. Work-To-Be-Done Ledger Intake
+
+RFC-0042 deliberately pulls in some ledger items and leaves others outside the first implementation
+boundary.
+
+| Ledger source | RFC-0042 treatment | Boundary |
+| --- | --- | --- |
+| `RFC37-WTBD-001` complete post-trade outcome loop | Included as the governing feature scope. | Requires source-owner contracts and live reconciliation proof. |
+| `RFC37-WTBD-007` portfolio memory | Partially included through outcome events and review lineage. | Full portfolio memory across all events remains a later cross-app capability. |
+| `RFC40-WTBD-010` decision timeline and portfolio memory | Included only where outcome reviews attach to proof-pack and decision timeline references. | Full timeline UI and cross-app memory remain downstream/future. |
+| `RFC41-WTBD-004` risk/performance enrichment | Included only through source-owned `lotus-risk` and `lotus-performance` evidence. | Missing analytics must be implemented in owning apps or marked unsupported. |
+| `RFC41-WTBD-005` Gateway wave composition | Not implemented in manage. | RFC-0042 must create/tighten Gateway outcome-realization RFC direction. |
+| `RFC41-WTBD-006` Workbench wave command center | Not implemented in manage. | RFC-0042 must create/tighten Workbench outcome-realization RFC direction. |
+| `RFC41-WTBD-008` report materialization | Only report input contract is included. | Rendering and archive lifecycle remain `lotus-report`, `lotus-render`, and `lotus-archive`. |
+| `RFC41-WTBD-009` AI PM memo generation | Only bounded AI evidence input is included. | AI workflow packs, prompts, guardrails, and generated narrative remain RFC-0043/`lotus-ai`. |
+| `RFC41-WTBD-010` external execution integration | Treated as a source dependency, not a manage feature. | External execution support requires an owner, contract, controls, and separate proof. |
+
+---
+
+## 7. Source Map and Gap Policy
+
+The detailed source map lives in `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`. The policy is:
+
+1. no outcome dimension may be `READY` unless every mandatory expected and realized source is
+   present, fresh enough, lineage-backed, and tested,
+2. missing source-owner capability must be implemented in the owning app or represented as
+   `BLOCKED`, `DEGRADED`, or `NOT_SUPPORTED`,
+3. `lotus-manage` must not clone risk, performance, tax-lot, fill, cash, holdings, or attribution
+   methodology,
+4. realized source data must include source refs, source timestamps, freshness posture, and
+   supportability,
+5. source conflicts must be visible and must not be hidden by best-effort roll-ups,
+6. every source adapter must have successful, missing, stale, unavailable, partial, and malformed
+   evidence tests,
+7. live canonical proof must use source-owner responses, not fixtures, for any supported claim.
+
+| Source family | Owning app | First-wave role | Gap behavior |
+| --- | --- | --- | --- |
+| Expected construction alternative | `lotus-manage` RFC-0039 | Required | Block create if no selected alternative lineage exists. |
+| Expected proof pack | `lotus-manage` RFC-0040 | Required for proof-pack-linked reviews | Allow diagnostic preview only if absent; no supported proof-pack outcome claim. |
+| Wave and handoff evidence | `lotus-manage` RFC-0041 | Required for wave outcome reviews | Block wave review if wave state or handoff lineage is inconsistent. |
+| Booked transactions, holdings, cash, FX, tax | `lotus-core` | Required for matching outcome dimensions | Mark specific dimensions `BLOCKED` or `NOT_SUPPORTED` if unavailable. |
+| Fill/order/execution quality | `lotus-core` or future execution owner | Required only for `EXECUTION_QUALITY` support | `EXECUTION_EVIDENCE_BLOCKED` until certified source exists. |
+| Post-trade risk | `lotus-risk` | Required for `RISK_OUTCOME` | `RISK_SOURCE_UNAVAILABLE` or `RISK_OUTCOME_NOT_SUPPORTED`. |
+| Returns, contribution, attribution | `lotus-performance` | Required for `PERFORMANCE_OUTCOME` | `PERFORMANCE_SOURCE_UNAVAILABLE` or `PERFORMANCE_OUTCOME_NOT_SUPPORTED`. |
+| Report materialization | `lotus-report`, `lotus-render`, `lotus-archive` | Downstream only | Manage emits input; no report output claim. |
+| AI narrative | `lotus-ai` | Downstream only | Manage emits evidence input; no AI output claim. |
+| Product UI | `lotus-gateway`, `lotus-workbench` | Downstream only | No UI support claim until downstream RFCs are complete. |
+
+---
+
+## 8. First-Wave Support Boundary
+
+First-wave RFC-0042 support is limited to explicitly requested outcome reviews tied to
+implementation-backed source evidence. Automatic portfolio cohort discovery, external execution,
+PM scoring, AI narrative, and front-office UI realization remain outside the manage backend support
+claim.
+
+Supported review anchors:
+
+1. selected RFC-0039 construction alternative,
+2. RFC-0040 proof pack,
+3. RFC-0041 wave item or operations handoff record,
+4. explicit review window with start and end semantics,
+5. source-authoritative realized evidence from owning apps.
+
+Outcome dimension states:
+
+1. `READY`: source evidence is complete and the realized value is within or better than tolerance.
+2. `PENDING_REVIEW`: source evidence is complete but variance exceeds soft tolerance or needs PM
+   explanation.
+3. `BREACHED`: source evidence is complete and hard tolerance is breached.
+4. `DEGRADED`: non-critical source evidence is missing, stale, partial, or unavailable.
+5. `BLOCKED`: mandatory source evidence is missing, conflicting, or invalid.
+6. `NOT_SUPPORTED`: no certified source-owner contract exists for the dimension.
+
+Reason codes must include at least:
 
 1. `DRIFT_REDUCTION_ACHIEVED`
 2. `DRIFT_REDUCTION_SHORTFALL`
 3. `RISK_REDUCTION_ACHIEVED`
 4. `RISK_INCREASED`
-5. `COST_ABOVE_ESTIMATE`
-6. `TAX_ABOVE_BUDGET`
-7. `SLIPPAGE_ABOVE_TOLERANCE`
-8. `PARTIAL_FILL_IMPACT`
-9. `FX_RESIDUAL_VARIANCE`
-10. `CASH_RESIDUAL_OUT_OF_BAND`
-11. `PERFORMANCE_BELOW_EXPECTATION`
-12. `SOURCE_EVIDENCE_INCOMPLETE`
+5. `PERFORMANCE_BELOW_EXPECTATION`
+6. `COST_ABOVE_ESTIMATE`
+7. `TAX_ABOVE_BUDGET`
+8. `SLIPPAGE_ABOVE_TOLERANCE`
+9. `PARTIAL_FILL_IMPACT`
+10. `FX_RESIDUAL_VARIANCE`
+11. `CASH_RESIDUAL_OUT_OF_BAND`
+12. `RULE_OUTCOME_BREACHED`
+13. `SOURCE_EVIDENCE_INCOMPLETE`
+14. `EXECUTION_EVIDENCE_BLOCKED`
+15. `RISK_OUTCOME_NOT_SUPPORTED`
+16. `PERFORMANCE_OUTCOME_NOT_SUPPORTED`
 
 ---
 
-## 5. Domain Models
+## 9. Domain Models
 
-### 5.1 DpmPostTradeOutcomeReview
+### 9.1 DpmPostTradeOutcomeReview
 
 Required fields:
 
 1. `outcome_review_id`
-2. `portfolio_id`
-3. `mandate_id`
-4. `rebalance_run_id`
-5. `alternative_set_id`
-6. `selected_alternative_id`
-7. `wave_id`
-8. `proof_pack_id`
-9. `review_window_start`
-10. `review_window_end`
-11. `overall_state`
-12. `dimension_results`
-13. `expected_snapshot`
-14. `realized_snapshot`
-15. `variance_summary`
-16. `source_lineage`
-17. `created_at`
+2. `outcome_review_version`
+3. `state`
+4. `portfolio_id`
+5. `mandate_id`
+6. `rebalance_run_id`
+7. `alternative_set_id`
+8. `selected_alternative_id`
+9. `proof_pack_id`
+10. `wave_id`
+11. `wave_item_id`
+12. `operations_handoff_ref_id`
+13. `execution_evidence_ref`
+14. `review_window`
+15. `expected_snapshot`
+16. `realized_snapshot`
+17. `dimension_results`
+18. `overall_outcome`
+19. `variance_summary`
+20. `supportability`
+21. `source_lineage`
+22. `source_hashes`
+23. `section_hashes`
+24. `events`
+25. `report_input_ref`
+26. `ai_evidence_ref`
+27. `retention_policy`
+28. `legal_hold_state`
+29. `created_at`
+30. `created_by`
+31. `correlation_id`
+32. `idempotency_key`
 
-### 5.2 DpmOutcomeDimensionResult
+### 9.2 DpmOutcomeDimensionResult
 
 Required fields:
 
@@ -166,10 +314,14 @@ Required fields:
 5. `realized`
 6. `variance`
 7. `tolerance`
-8. `explanation`
-9. `source_refs`
+8. `materiality`
+9. `explanation`
+10. `source_refs`
+11. `source_freshness`
+12. `supportability`
+13. `calculation_trace`
 
-### 5.3 DpmExecutionQualitySummary
+### 9.3 DpmExecutionQualitySummary
 
 Required fields:
 
@@ -177,253 +329,464 @@ Required fields:
 2. `executed_trade_count`
 3. `cancelled_trade_count`
 4. `partial_fill_count`
-5. `estimated_cost_base`
-6. `realized_cost_base`
-7. `estimated_tax_base`
-8. `realized_tax_base`
-9. `slippage_base`
-10. `residual_cash_base`
+5. `unfilled_trade_count`
+6. `estimated_cost_base`
+7. `realized_cost_base`
+8. `estimated_tax_base`
+9. `realized_tax_base`
+10. `slippage_base`
+11. `residual_cash_base`
+12. `execution_source_state`
+13. `source_refs`
+
+### 9.4 DpmOutcomeEvent
+
+Outcome reviews must emit append-only events suitable for future portfolio memory:
+
+1. `OUTCOME_REVIEW_CREATED`
+2. `OUTCOME_REVIEW_SOURCE_REFRESHED`
+3. `OUTCOME_REVIEW_DEGRADED`
+4. `OUTCOME_REVIEW_BLOCKED`
+5. `OUTCOME_REVIEW_READY`
+6. `OUTCOME_REVIEW_PM_EXPLANATION_ADDED`
+7. `OUTCOME_REVIEW_REPORT_INPUT_CREATED`
+8. `OUTCOME_REVIEW_AI_EVIDENCE_INPUT_CREATED`
 
 ---
 
-## 6. API Surface
+## 10. API Surface
 
-### 6.1 Create Outcome Review
+Every endpoint must be certified against the Lotus API certification pattern and OpenAPI quality
+rules. Swagger must state what the endpoint is for, when to use it, how to call it, example
+requests/responses, error responses, and every attribute description/type/example.
 
-`POST /api/v1/rebalance/outcome-reviews`
+| Endpoint | Purpose |
+| --- | --- |
+| `POST /api/v1/rebalance/outcome-reviews/preview` | Validate expected and realized source availability before durable review creation. |
+| `POST /api/v1/rebalance/outcome-reviews` | Create an immutable outcome review with idempotency and source lineage. |
+| `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}` | Retrieve the full review. |
+| `GET /api/v1/rebalance/outcome-reviews` | Search reviews by portfolio, mandate, wave, run, state, reason code, and date window. |
+| `GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review` | Find the review for a run when one exists. |
+| `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews` | Retrieve outcome reviews associated with a wave. |
+| `POST /api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources` | Re-evaluate realized source evidence and append a source-refresh event. |
+| `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability` | Retrieve operator-safe source, state, freshness, and degraded diagnostics. |
+| `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input` | Return bounded report input for downstream report/render/archive services. |
+| `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input` | Return bounded, provenance-rich AI evidence input for RFC-0043/`lotus-ai`. |
 
-Purpose:
+API guardrails:
 
-1. create outcome review for a run, alternative, or wave item,
-2. source realized evidence,
-3. persist review.
-
-Request fields:
-
-1. `rebalance_run_id`
-2. `alternative_set_id`
-3. `selected_alternative_id`
-4. `wave_id`
-5. `wave_item_id`
-6. `review_window_start`
-7. `review_window_end`
-8. `include_risk`
-9. `include_performance`
-10. `actor`
-
-### 6.2 Retrieve Outcome Review
-
-`GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}`
-
-### 6.3 Find Outcome Review By Run
-
-`GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review`
-
-### 6.4 Search Outcome Reviews
-
-`GET /api/v1/rebalance/outcome-reviews`
-
-Filters:
-
-1. `portfolio_id`
-2. `mandate_id`
-3. `wave_id`
-4. `overall_state`
-5. `reason_code`
-6. `from`
-7. `to`
+1. create and refresh must be idempotent,
+2. preview must not persist durable review state,
+3. supportability must not expose sensitive client data or raw upstream payloads,
+4. report and AI input endpoints must not generate downstream artifacts,
+5. search must be bounded and indexed,
+6. source-unavailable responses must be structured and test-covered,
+7. no endpoint may return a supported state for an unsupported source dimension.
 
 ---
 
-## 7. Source Integrations
+## 11. Persistence
 
-`lotus-core`:
+The implementation must provide immutable review storage and queryable operational metadata.
 
-1. transaction/fill window,
-2. post-trade holdings,
-3. cash movements,
-4. FX executions,
-5. tax-lot realization data.
+Required storage:
 
-`lotus-risk`:
-
-1. risk after execution,
-2. risk before/after comparison,
-3. concentration and stress posture.
-
-`lotus-performance`:
-
-1. return since rebalance,
-2. contribution and attribution,
-3. benchmark-relative impact.
-
-If any source is unavailable, the outcome review must degrade explicitly.
-
----
-
-## 8. Persistence
-
-Tables:
-
-1. `dpm_outcome_reviews`
-2. `dpm_outcome_dimension_results`
-3. `dpm_outcome_source_refs`
-
-Indexes:
-
-1. `(rebalance_run_id)`
-2. `(portfolio_id, created_at desc)`
-3. `(mandate_id, created_at desc)`
-4. `(wave_id, created_at desc)`
-5. `(overall_state, created_at desc)`
+1. `dpm_outcome_reviews` for immutable review body, state, hashes, lineage, review window, and
+   searchable columns,
+2. `dpm_outcome_review_events` for append-only lifecycle and source-refresh events,
+3. `dpm_outcome_review_idempotency` for create/refresh idempotency replay,
+4. generated or indexed columns for `portfolio_id`, `mandate_id`, `rebalance_run_id`, `wave_id`,
+   `wave_item_id`, `proof_pack_id`, `state`, `review_window_end`, `created_at`, and supportability
+   state,
+5. section/source hashes for expected snapshot, realized snapshot, dimension results, report input,
+   and AI evidence input,
+6. retention metadata and legal-hold compatibility.
 
 Retention:
 
-1. 7 years for selected/approved rebalance outcomes,
-2. 3 years for diagnostic-only reviews not tied to execution,
-3. legal/audit hold support must be compatible with future archive policy.
+1. selected/approved rebalance outcomes: 7 years minimum,
+2. diagnostic previews: not persisted as durable reviews,
+3. diagnostic-only created reviews not tied to execution: 3 years unless legal hold applies,
+4. archive handoff must remain compatible with future `lotus-archive` policy.
 
 ---
 
-## 9. Implementation Slices
+## 12. Implementation Slices
 
-### Slice 0 - Source Evidence Mapping
+Work must proceed slice by slice. Do not move to the next slice until the current slice is
+implemented, validated, reviewed, documented, and in a solid state.
 
-1. map expected fields from proof pack and alternatives,
-2. map realized fields from core/risk/performance,
-3. identify gaps,
-4. define first-wave review window semantics.
+### Slice 0 - Source Map, Boundary, and Critical Review
 
-### Slice 1 - Pure Outcome Comparison
+1. complete `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`,
+2. classify every source family as supported, source-owner required, blocked, or not supported,
+3. map work-to-be-done ledger items into RFC-0042 or out of scope,
+4. define review-window semantics,
+5. define first-wave outcome dimensions and blocked dimensions,
+6. record no supported-feature promotion because implementation has not started.
 
-1. add domain models,
-2. compare expected vs realized from provided fixtures,
-3. implement variance and tolerance logic,
-4. add reason codes.
+Acceptance:
 
-### Slice 2 - Persistence and APIs
+1. source map is reviewed and linked from this RFC,
+2. unsupported claims are removed,
+3. tests pin the source-map and no-claim boundary.
 
-1. add migrations,
-2. add repositories,
-3. add create/retrieve/search APIs,
-4. add OpenAPI docs.
+### Slice 1 - Platform Automation and Scaffolding Improvement
 
-### Slice 3 - Core/Risk/Performance Integration
+1. identify gaps in `lotus-platform` automation that should be scaffolded by default,
+2. improve platform/app scaffolding for API certification pattern, Swagger quality, observability,
+   health/readiness, structured logging, error handling, test scaffolding, CI defaults,
+   documentation scaffolding, and governance hooks where gaps are real,
+3. add reusable docs/test examples for source-degraded reconciliation APIs if platform lacks them,
+4. record a no-change decision if platform automation is already sufficient.
 
-1. add source clients or seams,
-2. add degraded-source handling,
-3. add supportability and lineage.
+Acceptance:
 
-### Slice 4 - Live Proof and Reporting Handoff
+1. platform improvements are merged or a documented no-change decision exists,
+2. future apps benefit from any cross-cutting fix,
+3. local manage code does not carry a platform concern that belongs in scaffolding.
 
-1. generate outcome review from canonical executed example,
-2. link proof pack and report evidence,
-3. update docs/wiki.
+### Slice 2 - Cleanup and Structure
+
+1. remove dead or misleading post-trade, execution, proof, or outcome-adjacent code,
+2. separate pure comparison logic, source adapters, persistence, API presentation, supportability,
+   and handoff contracts,
+3. reduce documentation sprawl by keeping long-lived product and operator material in wiki and
+   detailed execution evidence in RFC/source-map docs,
+4. ensure no duplicate or stale supported-feature text exists.
+
+Acceptance:
+
+1. code and docs are simpler than before,
+2. no cosmetic-only cleanup is counted as slice completion,
+3. docs tests guard current truth.
+
+### Slice 3 - Domain Model and Pure Comparison Engine
+
+1. implement typed outcome-review domain models,
+2. implement deterministic expected-versus-realized comparison from provided source snapshots,
+3. implement tolerance, materiality, state, and reason-code logic,
+4. implement supportability roll-up without source clients or persistence coupling,
+5. add high-value unit tests for all dimensions and edge cases.
+
+Acceptance:
+
+1. pure tests prove variance and classification behavior,
+2. unsupported dimensions cannot become `READY`,
+3. PM scoring or AI judgment is absent.
+
+### Slice 4 - Expected Snapshot Assembly
+
+1. assemble expected snapshots from RFC-0039 selected alternatives,
+2. attach RFC-0040 proof-pack source lineage and section hashes,
+3. attach RFC-0041 wave item and handoff refs when applicable,
+4. reject inconsistent run/portfolio/mandate/proof/wave linkages,
+5. preserve source refs and supportability from upstream manage artifacts.
+
+Acceptance:
+
+1. integration tests cover selected alternative, proof pack, wave item, and handoff combinations,
+2. missing or mismatched expected evidence blocks durable creation,
+3. no expected value is silently defaulted.
+
+### Slice 5 - Realized Source Adapters and Degraded Source Handling
+
+1. consume booked transactions, holdings, cash, FX, tax, and fill evidence from `lotus-core` or
+   execution-owner contracts where available,
+2. consume risk evidence from `lotus-risk` only through certified owner contracts,
+3. consume performance evidence from `lotus-performance` only through certified owner contracts,
+4. implement missing source-owner capabilities in the owning app when a dimension is required for
+   support,
+5. represent missing, stale, unavailable, partial, malformed, and conflicting sources explicitly.
+
+Acceptance:
+
+1. adapter tests cover ready and degraded paths,
+2. source-owner contract tests exist for any upstream change,
+3. manage does not duplicate source-owner calculations,
+4. `EXECUTION_EVIDENCE_BLOCKED` is emitted where execution truth is unavailable.
+
+### Slice 6 - Persistence, Repository, Events, and Retention
+
+1. add migrations and repositories,
+2. persist immutable review JSON and queryable metadata,
+3. persist append-only outcome events,
+4. implement idempotency replay,
+5. implement retention and legal-hold metadata,
+6. add repository tests for create, replay, retrieve, search, refresh, and event order.
+
+Acceptance:
+
+1. Postgres-backed tests cover persistence behavior,
+2. hashes and lineage are stable,
+3. review history is auditable.
+
+### Slice 7 - Certified Manage APIs and OpenAPI Quality
+
+1. implement the API surface in Section 10,
+2. certify each endpoint using the Lotus endpoint certification loop,
+3. add OpenAPI examples for success, degraded, blocked, unsupported, not found, validation, and
+   idempotency replay cases,
+4. ensure every request/response/error attribute has description, type, and example,
+5. update endpoint certification wiki/source docs.
+
+Acceptance:
+
+1. API, integration, and OpenAPI tests pass,
+2. no alias, undocumented route, or unsupported endpoint exists,
+3. Swagger is useful to developers, operators, demos, and downstream teams.
+
+### Slice 8 - Report Input and AI Evidence Input Handoffs
+
+1. create `DpmOutcomeReportInput` with bounded report-ready facts,
+2. create `DpmOutcomeAiEvidenceInput` with provenance, source hashes, forbidden-field posture, and
+   unsupported-action posture,
+3. add guardrail tests proving manage does not generate reports, rendered artifacts, archived
+   records, AI prompts, or AI narrative,
+4. document downstream owner expectations.
+
+Acceptance:
+
+1. report and AI inputs are deterministic and hash-linked,
+2. no report/AI product claim is made in manage,
+3. RFC-0043 can consume AI evidence without re-sourcing outcome truth.
+
+### Slice 9 - Supportability, Observability, and Operator Diagnostics
+
+1. add bounded metrics for review creation, states, degraded sources, blocked dimensions, and source
+   refresh outcomes,
+2. add structured logs with correlation ids and no sensitive raw payloads,
+3. expose operator-safe supportability diagnostics,
+4. update health/readiness posture if new dependencies require it,
+5. add degraded-state tests for source outages and partial evidence.
+
+Acceptance:
+
+1. diagnostics identify source owner and dimension without leaking sensitive data,
+2. metrics are bounded and product-safe,
+3. operators can distinguish source gaps from manage defects.
+
+### Slice 10 - Gateway and Workbench Realization RFC Slice
+
+After manage contracts and live proof are stable, create or tighten downstream RFCs:
+
+1. `lotus-gateway` RFC/addendum for outcome-review composition,
+2. `lotus-workbench` RFC/addendum for post-trade outcome review surfaces,
+3. route and payload strategy that preserves manage outcome truth and source supportability,
+4. Workbench UX boundaries for review list, review detail, source-degraded states, PM explanation,
+   proof-pack/wave links, report/AI posture, and operator diagnostics,
+5. canonical front-office validation plan using `PB_SG_GLOBAL_BAL_001` where demo-ready proof is
+   required.
+
+Acceptance:
+
+1. downstream RFCs exist before Gateway/Workbench implementation starts,
+2. no product-surface support is claimed from manage-only proof,
+3. Gateway and Workbench docs state that UI must consume Gateway/BFF only.
+
+### Slice 11 - Implementation Proof
+
+1. prove one or more outcome reviews end to end against live canonical source evidence,
+2. capture machine-readable evidence under `output/rfc0042-outcome-proof/<timestamp>/`,
+3. include create request/response, retrieved review, search result, supportability response,
+   report input, AI evidence input, OpenAPI certification summary, source responses or source refs,
+   and critical review notes,
+4. review each expected value, realized value, variance, tolerance, state, source ref, and degraded
+   reason critically,
+5. fix gaps found during evidence review before proceeding.
+
+Acceptance:
+
+1. evidence proves implemented behavior rather than fixture-only behavior,
+2. every supported dimension reconciles to source-owner truth,
+3. degraded examples are present and clear.
+
+### Slice 12 - Second-Last Hardening and Review
+
+1. perform a proper code review of the full implementation,
+2. remove dead code and reduce coupling discovered during review,
+3. verify API certification pattern compliance,
+4. verify platform governance and enterprise data-mesh standards,
+5. verify Swagger completeness and examples,
+6. verify error handling, idempotency, retention, source-refresh, and degraded-state tests,
+7. run local and GitHub checks and fix failures promptly.
+
+Acceptance:
+
+1. review findings are closed or explicitly documented with owner and reason,
+2. tests are high-value and not superficial,
+3. API and OpenAPI posture is production-grade.
+
+### Slice 13 - Final Closure
+
+1. update this RFC with final gold-pass assessment,
+2. update source-map evidence and implementation proof links,
+3. update README, wiki, supported-features, endpoint certification, and repository context,
+4. publish wiki after merge using governed wiki synchronization,
+5. consciously review whether skills, guidance, documentation, or agent context need changes,
+6. record explicit no-change decisions where appropriate,
+7. ensure branch hygiene, PR merge, CI, wiki publication, and cleanup are complete.
+
+Acceptance:
+
+1. supported-features list contains only implementation-backed claims,
+2. wiki is useful for developers, business users, operations, sales/pre-sales, client demos, and
+   engineering,
+3. all PRs are merged or explicitly linked as downstream pending work,
+4. the repository is clean before moving to RFC-0043.
 
 ---
 
-## 10. Testing Requirements
+## 13. Testing and Evidence Requirements
 
-1. pure variance calculations,
-2. tolerance thresholds,
-3. source-unavailable degradation,
-4. partial fills,
-5. slippage,
-6. tax variance,
-7. risk/performance enrichment,
-8. repository persistence,
-9. API and OpenAPI,
-10. live canonical evidence.
+Required tests:
+
+1. pure variance and tolerance calculations,
+2. dimension state and reason-code classification,
+3. selected-alternative/proof-pack/wave/handoff expected snapshot assembly,
+4. source adapters for success, missing, stale, unavailable, partial, malformed, and conflicting
+   responses,
+5. unsupported source dimensions,
+6. repository persistence, idempotency, hashes, events, retention, and search,
+7. API behavior and error contracts,
+8. OpenAPI/Swagger contract quality,
+9. report input and AI evidence input guardrails,
+10. supportability, metrics, logs, and no-sensitive-telemetry behavior,
+11. live canonical evidence for supported dimensions,
+12. Gateway/Workbench RFC guardrail tests if docs are added in downstream repositories.
+
+Evidence root:
+
+`output/rfc0042-outcome-proof/<timestamp>/`
+
+Required evidence files at closure:
+
+1. `manifest.json`
+2. `source-map-review.json`
+3. `create-request.json`
+4. `create-response.json`
+5. `retrieved-review.json`
+6. `search-response.json`
+7. `supportability-response.json`
+8. `report-input.json`
+9. `ai-evidence-input.json`
+10. `source-lineage.json`
+11. `variance-worked-example.json`
+12. `degraded-source-example.json`
+13. `openapi-certification.json`
+14. `critical-review.json`
+15. `test-summary.json`
 
 ---
 
-## 11. Acceptance Criteria
+## 14. API Certification and Swagger Quality Standard
 
-RFC-0042 is complete when:
+Every RFC-0042 endpoint must satisfy:
 
-1. outcome review can be generated from a selected rebalance,
-2. expected versus realized metrics are decomposed,
-3. degraded source behavior is explicit,
-4. reviews are persisted and searchable,
-5. APIs are certified,
-6. live proof shows at least one post-trade feedback story,
-7. outcome feedback can feed future PM dashboards without recomputing domain truth in UI.
+1. route is grouped under the correct rebalance/outcome API tag,
+2. summary states what the endpoint does,
+3. description states when to use it and how it participates in the DPM workflow,
+4. request model has complete descriptions, types, examples, constraints, and validation errors,
+5. response model has complete descriptions, types, examples, supportability fields, and source
+   lineage fields,
+6. error model includes validation, not found, conflict, blocked source, unsupported dimension,
+   upstream unavailable, stale source, and idempotency replay cases,
+7. examples are realistic and source-authoritative,
+8. OpenAPI snapshot and API vocabulary governance pass,
+9. endpoint certification wiki/source docs are updated,
+10. no route alias or undocumented compatibility path is added.
 
 ---
 
-## 12. Gold-Standard Execution Contract
+## 15. Supported-Features Ledger
 
-RFC-0042 closes the investment feedback loop. It must compare what `lotus-manage` expected before
-trade with what actually happened after execution, using source-authoritative evidence rather than
-PM anecdotes or UI-side recomputation.
+No feature below is supported until implementation, tests, evidence, docs, PR merge, and wiki
+publication are complete.
 
-### 12.1 Supported-Features Ledger
-
-| Feature | Support state before implementation | Promotion rule |
+| Feature | Current state | Promotion rule |
 | --- | --- | --- |
-| Outcome review creation | Proposed | Promote only after expected and realized data are reconciled with source refs. |
-| Variance decomposition | Proposed | Promote only after drift, cost, tax, FX, risk, performance, and execution-quality dimensions are tested. |
-| Source-degraded outcome review | Proposed | Promote only after missing core/risk/performance data is explicit and non-misleading. |
-| Searchable outcome memory | Proposed | Promote only after reviews are persisted, searchable, and linked to runs, waves, and proof packs. |
-| Feedback to future construction | Proposed | Promote only after feedback outputs are safe for future PM dashboards and construction quality review. |
+| Outcome review creation | Proposed; implementation not started | Promote only after durable source-backed create/retrieve/search APIs are certified and proven. |
+| Expected-versus-realized variance decomposition | Proposed; implementation not started | Promote only per dimension after expected and realized source evidence reconcile with lineage and tests. |
+| Source-degraded outcome review | Proposed; implementation not started | Promote only after degraded, blocked, unsupported, stale, partial, and source-conflict states are tested and documented. |
+| Searchable outcome memory | Proposed; implementation not started | Promote only after immutable persistence, events, source hashes, and indexed search are proven. |
+| Report input from outcome review | Proposed; implementation not started | Promote only as a manage handoff contract; do not claim rendered report support. |
+| AI evidence input from outcome review | Proposed; implementation not started | Promote only as a bounded evidence contract; do not claim AI narrative support. |
+| Gateway outcome composition | Downstream proposed | Promote in `lotus-gateway` only after downstream RFC implementation and proof. |
+| Workbench outcome review UX | Downstream proposed | Promote in `lotus-workbench` only after Gateway composition and canonical front-office proof. |
+| PM quality scoring | Not supported | Requires a separate governed methodology and business approval; not an RFC-0042 first-wave claim. |
+| External execution integration | Not supported | Requires execution/OMS owner, certified contract, controls, and proof. |
 
-### 12.2 Architecture and Domain Direction
+---
 
-Implementation must preserve source authority:
+## 16. Documentation, Wiki, and Product Material Requirements
 
-1. `lotus-core` owns fills, transactions, cash movements, FX executions, holdings, and tax
-   realizations,
-2. `lotus-risk` owns post-trade risk and stress posture,
-3. `lotus-performance` owns post-trade returns, attribution, contribution, and benchmark context,
-4. `lotus-manage` owns expected-versus-realized decision review and PM workflow memory,
-5. no UI or AI layer may recompute outcome truth from partial evidence.
+Documentation is part of the product. Closure must update:
 
-### 12.3 Mandatory Delivery Slices
+1. this RFC with implementation evidence and final gold-pass assessment,
+2. `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`,
+3. `docs/rfcs/README.md`,
+4. README and repository engineering context if commands, dependencies, or supported behavior change,
+5. `wiki/RFC-Index.md`,
+6. `wiki/Roadmap.md`,
+7. `wiki/Supported-Features.md` only for implementation-backed support,
+8. endpoint certification and API examples,
+9. downstream Gateway/Workbench RFCs and wiki pages when product realization work begins.
 
-These slices are mandatory in addition to the feature-specific slices in Section 9.
+The wiki must remain useful to developers, business users, operations, sales/pre-sales, client
+demos, and engineering. It should explain feature coverage, upstream/downstream integrations,
+business flows, non-functional posture, architecture, operational behavior, and diagrams where they
+improve understanding.
 
-#### Mandatory Slice A - Platform Automation and Scaffolding Improvement
+---
 
-Review whether platform scaffolding should provide reusable outcome-review evidence patterns,
-source-degraded examples, post-trade telemetry fields, and OpenAPI examples for reconciliation
-surfaces. Improve platform automation for repeatable gaps; otherwise record a no-change decision.
+## 17. Risks and Controls
 
-#### Mandatory Slice B - Cleanup and Structure
+| Risk | Control |
+| --- | --- |
+| Manage fabricates realized truth | Enforce source-owner adapters and tests; no local methodology clone. |
+| Execution-quality claims lack fill/order evidence | Emit `EXECUTION_EVIDENCE_BLOCKED` until certified source exists. |
+| PM scoring is inferred from outcome facts | Keep scoring out of first wave and reject AI/personnel judgments. |
+| Source outages look like manage defects | Expose operator-safe supportability and source-owner diagnostics. |
+| UI claims outrun backend truth | Require Gateway/Workbench RFCs, implementation, and canonical proof before promotion. |
+| Report/AI claims outrun handoff contracts | Manage emits only bounded inputs; owning apps generate artifacts/narratives. |
+| OpenAPI is too thin for downstream consumers | Enforce endpoint certification and examples for every field and error case. |
+| Documentation becomes aspirational | Supported-features promotion requires implementation-backed proof and wiki publication. |
 
-Separate pure variance calculations from source clients, persistence, and API presentation. Remove
-any generic "review result" naming that should be outcome, variance, execution-quality, or
-expected-versus-realized terminology.
+---
 
-#### Mandatory Slice C - Implementation Proof
+## 18. Definition of Done
 
-Capture evidence for at least one post-trade review linked to a proof pack and selected alternative.
-Review every expected value, realized value, tolerance, variance, classification, and degraded-source
-reason.
+RFC-0042 is done only when:
 
-#### Mandatory Slice D - Second-Last Hardening and Review
+1. all slices are completed in order,
+2. source-owner dependencies are implemented or explicitly represented as blocked/not supported,
+3. outcome reviews are durable, immutable, searchable, source-backed, and idempotent,
+4. every supported dimension has expected and realized evidence with lineage and hashes,
+5. APIs and Swagger/OpenAPI are certified,
+6. report input and AI evidence input are bounded and guardrailed,
+7. supportability, metrics, logs, retention, and diagnostics are production-ready,
+8. local and GitHub CI gates are green,
+9. live canonical evidence is captured and critically reviewed,
+10. downstream Gateway and Workbench RFCs exist or are explicitly tightened for realization,
+11. README/wiki/supported-features/context truth is updated,
+12. final gold-pass assessment is written,
+13. PRs are merged, wiki is published, and branches are clean.
 
-Review numerical determinism, source staleness, tolerance policy, OpenAPI field examples, bounded
-metrics/logs, retention posture, error handling, and test-pyramid adequacy.
+---
 
-#### Mandatory Slice E - Final Closure
+## 19. Final Gold-Pass Assessment
 
-Update wiki with outcome-feedback behavior and business value, update supported-features only after
-live proof, update context/skills decisions, and leave branch/PR/CI clean.
+This section must be completed during Slice 13 after implementation proof and hardening are complete.
+It must state:
 
-### 12.4 Evidence Expectations
+1. what was truly completed,
+2. which quality improvements were made,
+3. which debt was removed,
+4. what was proven through tests and machine-readable evidence,
+5. which source-owner and downstream items remain outside the support claim,
+6. whether RFC-0042 genuinely reached the expected enterprise standard.
 
-Closure evidence must include:
+Current gold-pass state:
 
-1. outcome review creation request/response,
-2. source lineage for expected and realized values,
-3. variance/tolerance worked example,
-4. source-unavailable degraded example,
-5. search/filter example,
-6. OpenAPI/API certification summary,
-7. local and GitHub check summary.
-
-### 12.5 Enterprise Baseline
-
-This RFC inherits RFC-0037 Section 19.4. Completion requires expected-versus-realized lineage,
-source-readiness metadata, outcome audit events, bounded variance metrics, structured logs,
-operator diagnostics, API certification, and GitHub lane evidence for every outcome-review endpoint.
+`NOT STARTED`. This RFC has been tightened into an implementation-ready execution guide. No
+RFC-0042 runtime capability or supported feature is claimed by this documentation-only slice.
