@@ -6,7 +6,8 @@
 | Slice | 13 - Final Closure |
 | Status | COMPLETE FOR MANAGE BACKEND |
 | Branch | `feat/rfc0042-implementation` |
-| Manage status | `DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING` |
+| Original manage-closure status | `DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING` |
+| Current WTBD audit status | `DONE - MANAGE BACKEND COMPLETE; FIRST-WAVE PRODUCT REALIZATION COMPLETE; SOURCE-OWNER ENRICHMENT REMAINS` |
 | Live proof | `output/rfc0042-outcome-proof/20260505-024352/` |
 | Hardening proof | `output/rfc0042-outcome-proof/20260505-025613/` |
 | Post-merge audit proof | `output/rfc0042-outcome-proof/20260505-040212/` |
@@ -19,6 +20,13 @@ evidence, preserve lineage and hashes, expose supportability, and emit report/AI
 without taking ownership of downstream rendering, AI narrative, Gateway composition, Workbench UX,
 execution, risk, performance, tax, FX, or cash methodologies.
 
+Post-closure WTBD audit on 2026-05-06 proved the first-wave Gateway/Workbench product path with
+canonical Workbench evidence at
+`lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`. The original Slice 13
+manage boundary remains valid: manage owns the outcome-review authority, while Gateway,
+Workbench, report/render/archive, and AI own their product realization surfaces and must keep using
+manage handoff contracts instead of recomputing outcome truth.
+
 ## Product Truth
 
 Supported after merge:
@@ -29,7 +37,7 @@ Supported after merge:
 4. supportability diagnostics and bounded observability posture,
 5. deterministic report-input and AI-evidence input contracts.
 
-Not supported by manage:
+Not supported by manage, and still not promoted as RFC-0042 source-owner truth:
 
 1. full Gateway/Workbench product experience,
 2. rendered reports and archive lifecycle,

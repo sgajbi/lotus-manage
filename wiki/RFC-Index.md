@@ -106,11 +106,12 @@ evidence, and supported-feature promotion.
   Slice 11 live manage implementation proof at
   `output/rfc0042-outcome-proof/20260505-024352/`, and Slice 12 hardening proof at
   `output/rfc0042-outcome-proof/20260505-025613/`. Post-merge audit proof at
-  `output/rfc0042-outcome-proof/20260505-040212/` restored the cross-RFC work-to-be-done ledger,
-  added RFC-0042 remaining-work ownership, reran live manage proof, and passed canonical
-  front-office validation for `PB_SG_GLOBAL_BAL_001` without promoting downstream
-  Gateway/Workbench outcome-review UX. Full Gateway/Workbench product support remains downstream
-  until implemented and canonically proven in the owning apps
+  `output/rfc0042-outcome-proof/20260505-040212/` restored the cross-RFC work-to-be-done ledger.
+  WTBD audit proof at `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/` and canonical
+  Workbench evidence at `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`
+  prove the first-wave Gateway/Workbench outcome-review product path after owning-app
+  implementation. Remaining RFC-0042 work is source-owner methodology enrichment, external
+  execution/OMS ownership, and any separately governed PM quality-scoring RFC
 - RFC-0043
   proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
   ownership to AI

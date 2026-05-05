@@ -1789,8 +1789,10 @@ Non-functional posture:
   process found and fixed stale runtime restart handling plus GET endpoint guidance gaps.
 - Slice 12 hardening proof passed at `output/rfc0042-outcome-proof/20260505-025613/` and added
   live same-key replay plus same-key changed-evidence conflict proof.
-- Full RFC-0042 product support remains unclaimed until downstream realization where surfaced,
-  PR/CI, merge, and wiki publication are complete.
+- Manage endpoint certification remains scoped to manage-owned outcome-review authority. First-wave
+  downstream product realization is now complete in owning apps and canonically proven at
+  `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`; richer source-owner
+  methodologies, external execution/OMS, and PM quality scoring remain outside this API claim.
 
 Upstream integration posture:
 
@@ -1802,10 +1804,10 @@ calculations.
 
 Downstream consumers:
 
-Gateway and Workbench must wait for the RFC-0042 downstream realization RFC slice before product
-implementation. Report, render, archive, and AI services must treat these endpoints as input
-contracts only; owning apps remain responsible for materialization, archive lifecycle, workflow
-packs, prompts, generated narrative, and provider guardrails.
+Gateway, Workbench, report, render, archive, and AI first-wave realization is implemented in the
+owning repositories. Those consumers must still treat manage as outcome-review authority: Gateway
+and Workbench must not recompute outcome truth, report/render/archive must consume bounded report
+input contracts, and AI must consume bounded evidence input with provider guardrails.
 
 Evidence commands:
 

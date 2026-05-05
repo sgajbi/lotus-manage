@@ -2204,13 +2204,16 @@ Before any item above moves from this ledger into a supported-feature claim:
 
 Current closure status:
 
-RFC-0042 is `DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING`.
-`lotus-manage` owns the implementation-backed outcome-review authority: source-backed
-preview/create/retrieve/search, immutable persistence and append-only events, source-refresh
-eventing, supportability diagnostics, deterministic report-input and AI-evidence input handoff
-contracts, certified OpenAPI, and live manage proof under
+RFC-0042 is `DONE - MANAGE BACKEND COMPLETE; FIRST-WAVE PRODUCT REALIZATION COMPLETE; SOURCE-OWNER
+ENRICHMENT REMAINS`. `lotus-manage` owns the implementation-backed outcome-review authority:
+source-backed preview/create/retrieve/search, immutable persistence and append-only events,
+source-refresh eventing, supportability diagnostics, deterministic report-input and AI-evidence
+input handoff contracts, certified OpenAPI, and live manage proof under
 `output/rfc0042-outcome-proof/20260505-024352/` plus hardening proof under
-`output/rfc0042-outcome-proof/20260505-025613/`.
+`output/rfc0042-outcome-proof/20260505-025613/`. Gateway, Workbench, report/render/archive, and
+AI first-wave realization is now implemented and merged in the owning repositories. Remaining
+ledger work is limited to source-owner methodology enrichment, external execution/OMS ownership,
+and any future PM quality-scoring RFC.
 
 Closure evidence:
 
@@ -2224,6 +2227,8 @@ Closure evidence:
 | Live proof | `output/rfc0042-outcome-proof/20260505-024352/critical-review.json` |
 | Hardening proof | `output/rfc0042-outcome-proof/20260505-025613/critical-review.json` |
 | Post-merge audit rerun | `output/rfc0042-outcome-proof/20260505-040212/critical-review.json` |
+| WTBD audit outcome proof | `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/critical-review.json` |
+| WTBD canonical Workbench proof | `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/live-validation-summary.json` |
 
 Audit refresh on 2026-05-05:
 
@@ -2241,6 +2246,34 @@ Audit refresh on 2026-05-05:
    `lotus-core` PR #336 are merged, Workbench wiki publication completed, and canonical
    front-office evidence is captured under
    `lotus-workbench/output/playwright/live-canonical-rfc42-outcome-review/`.
+
+WTBD audit refresh on 2026-05-06:
+
+1. Rebuilt stale local `lotus-gateway`, `lotus-manage`, and `lotus-workbench` Docker images before
+   accepting live evidence; stale images initially hid merged route/UI truth and caused false live
+   failures.
+2. Generated a durable live manage-backed outcome review with
+   `python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001
+   --output-root C:\Users\Sandeep\projects\lotus-manage\output\rfc0042-wtbd-audit-outcome-proof`.
+   The accepted critical review is
+   `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/critical-review.json` and it passed
+   review creation, idempotency replay/conflict, source lineage, supportability, report input, AI
+   guardrails, degraded-source posture, refresh eventing, OpenAPI certification, and variance
+   worked-example checks.
+3. Fixed the `lotus-workbench` outcome-review view model after screenshot review found manage-owned
+   `source_system`, `source_id`, and `content_hash` lineage rendered as `N/A`. The corrected panel
+   now shows `lotus-manage` and `lotus-core` source refs and hashes from the Gateway contract.
+4. Fixed the manage RFC-0042 evidence generator so relative `--output-root` paths resolve under the
+   repository root instead of failing before manifest publication.
+5. Reran canonical front-office validation after the fixes. Accepted evidence is
+   `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/live-validation-summary.json`,
+   `SHOT-INDEX.md`, and `dpm-outcome-review-live.png`; the DPM outcome-review panel is
+   `demo_ready`, contains one manage-backed review, one dimension row, and two source-lineage rows.
+6. Residual non-RFC42 findings remain bounded: the Workbench page still includes separate
+   non-outcome sections showing unavailable reporting/analytics placeholders and existing build
+   warnings for CSS autoprefixer/dependency audit posture. These are not outcome-review contract
+   failures and should be handled by their owning Workbench/platform hygiene items rather than
+   weakening RFC42-WTBD closure.
 
 ### Remaining Work Summary
 

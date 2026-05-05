@@ -638,7 +638,10 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://127.0.0.1:8001")
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT))
     args = parser.parse_args()
-    manifest = generate_evidence(args.base_url, Path(args.output_root))
+    output_root = Path(args.output_root)
+    if not output_root.is_absolute():
+        output_root = ROOT / output_root
+    manifest = generate_evidence(args.base_url, output_root)
     print(_stable_json(manifest))
 
 
