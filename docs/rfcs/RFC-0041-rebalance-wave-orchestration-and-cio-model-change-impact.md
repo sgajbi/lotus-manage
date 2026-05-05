@@ -2,9 +2,9 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN PROGRESS - SLICE 11 HARDENING COMPLETE |
+| **Status** | DONE |
 | **Created** | 2026-05-03 |
-| **Last Tightened** | 2026-05-03 |
+| **Last Tightened** | 2026-05-05 |
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | CIO desk, DPM head, portfolio manager, investment control, operations, compliance, sales/pre-sales |
 | **Depends On** | RFC-0018, RFC-0020, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, RFC-0040, `lotus-core` RFC-0087 |
@@ -23,6 +23,7 @@
 | **Slice 9 Downstream RFC Evidence** | `lotus-gateway` PR #183 merge `e0e4b1b`, `lotus-workbench` PR #143 merge `c4888d4`, Gateway wiki publish `3fc30e8`, Workbench wiki publish `25566cb` |
 | **Slice 10 Live Proof Evidence** | `output/rfc0041-wave-proof/20260504-231914/manifest.json`, `critical-review.json`, `critical-review.md`, live Postgres-backed manage runtime on `http://127.0.0.1:8001` |
 | **Slice 11 Hardening Evidence** | RFC/API contract drift removed, source-readiness and selection-conflict tests added, OpenAPI/vocabulary/docs gates passed |
+| **Slice 12 Closure Evidence** | Final gold-pass assessment complete, README/RFC index/context/wiki/supported-features aligned, wiki publish required after merge |
 | **Doc Location** | `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` |
 
 ---
@@ -716,8 +717,8 @@ Slice 10 result:
 9. a stale RFC/API gap was closed by implementing `POST /api/v1/rebalance/waves/{wave_id}/cancel`
    with actor-attributed cancellation evidence and no external execution claim.
 
-The latest live proof result is `passed`. RFC-0041 remains `IN PROGRESS` until Slice 11 hardening
-and Slice 12 closure are completed.
+The latest live proof result is `passed`. Slice 11 hardening and Slice 12 closure are complete, so
+RFC-0041 is `DONE` for the manage-owned explicit portfolio-list wave backend authority.
 
 ### Slice 11 - Second-Last Hardening and Review
 
@@ -769,9 +770,9 @@ Slice 11 result:
 6. endpoint certification, OpenAPI quality, API vocabulary, documentation guardrails, and the
    repo-native `make check` gate passed after the hardening changes.
 
-No unsupported feature claim was promoted during Slice 11. Remaining closure work is Slice 12:
-final gold-pass assessment, final docs/wiki/context posture, PR merge, wiki publication, and branch
-hygiene.
+No unsupported feature claim was promoted during Slice 11. Slice 12 final closure records the
+gold-pass assessment, final docs/wiki/context posture, PR merge requirement, wiki publication
+requirement, and branch-hygiene requirement.
 
 ### Slice 12 - Final Closure
 
@@ -794,6 +795,19 @@ Acceptance:
 4. final RFC status is updated only after implementation and proof are complete,
 5. skills/context decision is explicitly recorded as `updated`, `no change needed`, or
    `follow-up required`.
+
+Slice 12 result:
+
+1. README, RFC index, repository context, supported-features, wiki source, and endpoint
+   certification pages reflect the final implementation-backed manage backend posture.
+2. The final gold-pass assessment below is complete and evidence-backed.
+3. Skills/context/guidance decision: `no change needed`. The existing Lotus backend delivery,
+   endpoint certification, README/wiki governance, pre-merge gate, and front-office runtime skills
+   were sufficient for RFC-0041. No durable routing change, AGENTS.md update, or central context
+   change is required by this RFC because no new platform-wide operating pattern was introduced in
+   Slice 12.
+4. Final closure does not promote Gateway/Workbench product support, PM-book automatic discovery, or
+   CIO model-change cohort discovery. Those remain deferred to the owning downstream/source RFCs.
 
 ---
 
@@ -928,23 +942,19 @@ RFC-0041 is complete only when:
 
 ## 19. Final Gold-Pass Assessment Template
 
-This section must be completed during Slice 12, not before implementation.
-
 | Assessment Area | Final Result |
 | --- | --- |
-| What was truly completed | TBD |
-| Quality improvements made | TBD |
-| Debt removed | TBD |
-| Platform/scaffold improvements | TBD |
-| Cross-app changes and evidence | TBD |
-| APIs certified | TBD |
-| Wave states and sections proven | TBD |
-| Report/AI/proof-pack handoff posture | TBD |
-| Live evidence reviewed | TBD |
-| Gateway/Workbench realization RFC result | TBD |
-| Documentation/wiki result | TBD |
-| Skills/context/guidance decision | TBD |
-| Tests and evidence | TBD |
-| Gold-standard conclusion | TBD |
-
-Do not mark RFC-0041 `DONE` until this table is complete and evidence-backed.
+| What was truly completed | `lotus-manage` now owns an implementation-backed explicit portfolio-list rebalance-wave backend authority: preview, durable create, source-check, simulate, select, proof-pack linkage, approve, stage, handoff, cancel, search, detail, item list, proof-pack posture, and supportability. |
+| Quality improvements made | Slice 10 added live proof and fixed production defects found under Postgres-backed execution. Slice 11 removed RFC/API contract drift, tightened trigger wording, and added source-readiness and selection-conflict hardening tests. |
+| Debt removed | Removed misleading RFC claims around unsupported book/PM search filters and stale `MANUAL_PORTFOLIO_LIST` wording. Avoided manage-local clones of RFC-0039 construction and RFC-0040 proof-pack methodology. |
+| Platform/scaffold improvements | Slice 1 improved `lotus-platform` RFC evidence scaffolding through PR #296 (`47d3c7f`) so future state-machine/API-heavy RFCs start with stronger evidence manifests. |
+| Cross-app changes and evidence | Gateway RFC-0098 and Workbench RFC-0098 received RFC-0041 wave-realization addenda through `lotus-gateway` PR #183 (`e0e4b1b`) and `lotus-workbench` PR #143 (`c4888d4`). Those addenda define downstream integration without promoting product support before implementation. |
+| APIs certified | 13 RFC-0041 wave operations are OpenAPI-certified with route grouping, examples, request/response schemas, error posture, and vocabulary inventory validation. |
+| Wave states and sections proven | Live proof validated mixed `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, `SOURCE_BLOCKED`, `PARTIALLY_SIMULATED`, approval-with-exceptions, `STAGED`, `HANDOFF_READY`, and `CANCELLED` behavior with aggregate reconciliation. |
+| Report/AI/proof-pack handoff posture | Wave selection delegates proof-pack generation to RFC-0040 and exposes proof-pack/handoff posture. Report materialization and AI memo generation remain downstream/owning-app concerns with no unsupported claim. |
+| Live evidence reviewed | Machine-readable proof exists under `output/rfc0041-wave-proof/20260504-231914/`; `critical-review.json` and `critical-review.md` passed after fixing the live-found gaps. |
+| Gateway/Workbench realization RFC result | Downstream realization RFC addenda are complete; implementation and canonical UI proof remain future downstream work and are not claimed as supported by `lotus-manage`. |
+| Documentation/wiki result | README, RFC index, repository context, source-map, supported-features, endpoint certification wiki, RFC index wiki, and roadmap wiki are aligned to implementation truth. Wiki publication is required after the Slice 12 PR merges. |
+| Skills/context/guidance decision | `no change needed`; current Lotus skills and agent context were sufficient and no new reusable execution rule emerged from final closure. |
+| Tests and evidence | Local gates passed: focused hardening tests, OpenAPI certification/docs tests, OpenAPI quality gate, API vocabulary validation, `make check`, and full coverage gate at 99.17%. GitHub PR gates must pass before merge. |
+| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves. Full front-office command-center product support, automatic PM-book discovery, and automatic CIO model-change cohort discovery remain explicitly deferred and unpromoted. |

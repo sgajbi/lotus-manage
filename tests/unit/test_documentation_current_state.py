@@ -343,8 +343,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN PROGRESS - SLICE 11 HARDENING COMPLETE" in rfc
-    assert "IN PROGRESS - SLICE 11 HARDENING COMPLETE" in index
+    assert "| **Status** | DONE |" in rfc
+    assert "| RFC-0041 | Rebalance Wave Orchestration and CIO Model Change Impact | DONE |" in index
     assert "feat/rfc0041-gold-standard-tightening" in rfc
     assert "feat/rfc0041-implementation" in rfc
     assert "RFC-0041-source-map-and-gap-analysis.md" in rfc
@@ -353,14 +353,15 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "No source-data gap may be hidden in manage-local placeholders" in rfc
     assert "create or tighten paired RFCs in" in rfc
     assert "`lotus-gateway` and `lotus-workbench`" in rfc
-    assert "Do not mark RFC-0041 `DONE`" in rfc
-    assert "implementation is in progress through Slice 11 hardening" in wiki_index_normalized
-    assert "implementation is complete through Slice 11 hardening" in roadmap
-    assert "| Explicit portfolio-list rebalance waves |" in supported_features
+    assert "Gold-standard conclusion" in rfc
+    assert "is `DONE` for the manage-owned explicit portfolio-list wave backend authority" in rfc
     assert (
-        "Supported as RFC-0041 manage backend authority after Slice 11 hardening"
-        in supported_features
+        "is `DONE` for the manage-owned explicit portfolio-list wave backend authority"
+        in wiki_index_normalized
     )
+    assert "Manage backend implementation is `DONE` for explicit portfolio-list waves" in roadmap
+    assert "| Explicit portfolio-list rebalance waves |" in supported_features
+    assert "Supported as RFC-0041 `DONE` manage backend authority" in supported_features
     assert "Automatic PM-book/CIO cohort discovery" in supported_features
     assert (
         "full front-office product support are not supported by `lotus-manage`"
@@ -412,6 +413,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "## Slice 11 Hardening Review Result" in source_map
     assert "book/PM filters remain deferred" in source_map
     assert "tests/unit/dpm/waves/test_source_readiness.py" in source_map
+    assert "## Slice 12 Final Closure Result" in source_map
+    assert "Skills/context/guidance decision is `no change needed`" in source_map
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
     assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
     assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map

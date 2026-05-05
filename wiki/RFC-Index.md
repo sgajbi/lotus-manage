@@ -77,8 +77,8 @@ evidence, and supported-feature promotion.
   `output/rfc0040-proof`, and no full product-surface claim until downstream implementation is
   complete
 - RFC-0041
-  rebalance-wave orchestration and CIO model-change impact implementation is in progress through
-  Slice 11 hardening. Source-map, platform-scaffold evidence improvement, cleanup review, wave
+  rebalance-wave orchestration and CIO model-change impact is `DONE` for the manage-owned explicit
+  portfolio-list wave backend authority. Source-map, platform-scaffold evidence improvement, cleanup review, wave
   domain contracts, persistence foundation, explicit affected-portfolio preview, idempotent
   durable create, durable source-check classification, ready-item simulation, item-level
   alternative selection, proof-pack linkage, approval, staging, internal operations handoff

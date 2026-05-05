@@ -491,7 +491,7 @@ Production boundary:
 2. Gateway and Workbench remain unpromoted until their implementation RFCs are executed and proven.
 3. Automatic PM-book and CIO model-change cohort discovery remain deferred until source-owning
    products expose implementation-backed source evidence.
-4. RFC-0041 remains open for Slice 11 hardening and Slice 12 final closure.
+4. RFC-0041 proceeded to Slice 11 hardening and Slice 12 final closure after live proof passed.
 
 ## Slice 11 Hardening Review Result
 
@@ -526,9 +526,38 @@ Validation:
 4. `python scripts/api_vocabulary_inventory.py --validate-only`
 5. `make check`
 
-Slice 11 did not add new product claims. It tightened implementation-backed truth and leaves only
-Slice 12 final closure, wiki publication, and gold-pass assessment before RFC-0041 can be marked
-`DONE`.
+Slice 11 did not add new product claims. It tightened implementation-backed truth before Slice 12
+final closure, wiki-publication governance, and gold-pass assessment marked RFC-0041 `DONE`.
+
+## Slice 12 Final Closure Result
+
+Slice 12 closed RFC-0041 after implementation, live proof, hardening, documentation alignment, and
+PR/wiki governance were complete.
+
+Closure result:
+
+1. RFC-0041 status is `DONE` for the manage-owned explicit portfolio-list wave backend authority.
+2. The final gold-pass assessment in the RFC is complete and records completed scope, quality
+   improvements, removed debt, platform/scaffold impact, cross-app evidence, certified APIs, live
+   proof, documentation/wiki result, and residual deferred boundaries.
+3. README, RFC index, repository engineering context, supported-features, wiki source, and endpoint
+   certification pages are aligned to final implementation truth.
+4. Skills/context/guidance decision is `no change needed`: existing Lotus backend delivery,
+   endpoint certification, README/wiki governance, pre-merge gate, and front-office runtime skills
+   were sufficient. No central context or AGENTS.md operating-contract update is required by this
+   final closure slice.
+5. Remaining unpromoted capabilities are explicit: automatic PM-book discovery, automatic CIO
+   model-change affected-cohort discovery, Gateway composition implementation, Workbench command
+   center implementation, report materialization, AI memo generation, and external execution.
+
+Validation:
+
+1. `python -m pytest tests/unit/test_documentation_current_state.py -q`
+2. `python scripts/openapi_quality_gate.py`
+3. `python scripts/api_vocabulary_inventory.py --validate-only`
+4. `make check`
+
+Wiki publication is required after the Slice 12 PR merges.
 
 ## Implementation Order Confirmation
 

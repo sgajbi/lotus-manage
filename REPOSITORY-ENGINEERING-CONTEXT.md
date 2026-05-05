@@ -95,8 +95,8 @@ Current repository posture:
     the post-merge canonical front-office QA run exposed a downstream risk-drawdown `partial`
     boundary tracked as `sgajbi/lotus-gateway#182`, and therefore no full product UX support claim
     is made here.
-15. RFC-0041 has delivered implementation-backed manage backend authority for explicit
-    portfolio-list rebalance waves through Slice 11 hardening: durable preview/create,
+15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
+    portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
     linkage, approval-with-exceptions, staging, internal operations handoff evidence with
     `external_execution_claimed=false`, actor-attributed pre-execution cancellation,
