@@ -446,6 +446,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     realized_source_slice = (
         ROOT / "docs" / "rfcs" / "RFC-0042-realized-source-adapters-slice5.md"
     ).read_text(encoding="utf-8")
+    persistence_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-persistence-events-slice6.md"
+    ).read_text(encoding="utf-8")
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -468,13 +471,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN IMPLEMENTATION - SLICES 0-5 COMPLETE; NO RUNTIME SUPPORT CLAIM" in rfc
+    assert "IN IMPLEMENTATION - SLICES 0-6 COMPLETE; NO RUNTIME SUPPORT CLAIM" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
     assert "RFC-0042-platform-automation-slice1.md" in rfc
     assert "RFC-0042-cleanup-and-structure-slice2.md" in rfc
     assert "RFC-0042-domain-model-slice3.md" in rfc
     assert "RFC-0042-expected-snapshot-slice4.md" in rfc
     assert "RFC-0042-realized-source-adapters-slice5.md" in rfc
+    assert "RFC-0042-persistence-events-slice6.md" in rfc
     assert "No feature below is supported until implementation" in rfc
     assert "Current gold-pass state:" in rfc
     assert "`NOT STARTED`" in rfc
@@ -502,6 +506,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "risk, performance, tax, FX, or execution-quality values" in source_map
     assert "## Slice 5 Realized Source Adapter Result" in source_map
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in source_map
+    assert "## Slice 6 Persistence, Repository, Events, and Retention Result" in source_map
+    assert "0008_post_trade_outcome_reviews.sql" in source_map
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
     assert "No supported feature is promoted by RFC-0042 tightening" in source_map
@@ -540,8 +546,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Missing `EXECUTION_QUALITY` source" in realized_source_slice
     assert "`6 passed`" in realized_source_slice
 
+    assert "Slice 6 - Persistence, Repository, Events, and Retention" in persistence_slice
+    assert "Review body is immutable" in persistence_slice
+    assert "Postgres stores the complete review JSON" in persistence_slice
+    assert "`5 passed`" in persistence_slice
+
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-5 COMPLETE; NO RUNTIME SUPPORT CLAIM)"
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-6 COMPLETE; NO RUNTIME SUPPORT CLAIM)"
         in index
     )
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
@@ -549,10 +560,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Slice 3 pure domain comparison evidence" in wiki_index
     assert "Slice 4 expected snapshot assembly evidence" in wiki_index
     assert "Slice 5 realized source-degraded evidence" in wiki_index
+    assert "Slice 6 persistence/events evidence" in wiki_index
     assert "Slice 0 source-map guardrails" in roadmap
     assert "Slice 3 pure domain comparison" in roadmap
     assert "Slice 4 expected snapshot assembly" in roadmap
-    assert "Slice 5 realized source-degraded handling complete" in roadmap
+    assert "Slice 5 realized source-degraded handling" in roadmap
+    assert "Slice 6 persistence/events complete" in roadmap
     assert "No runtime outcome-review support is claimed yet" in roadmap
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
     assert "Outcome events remain proposed until RFC-0042 source-backed implementation" in (

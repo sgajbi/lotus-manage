@@ -126,6 +126,19 @@ No supported feature is promoted by Slice 5.
 
 ---
 
+## Slice 6 Persistence, Repository, Events, and Retention Result
+
+Slice 6 evidence is recorded in `docs/rfcs/RFC-0042-persistence-events-slice6.md`.
+
+`DpmPostTradeOutcomeReview`, `DpmOutcomeReviewRepository`,
+`InMemoryDpmOutcomeReviewRepository`, `PostgresDpmOutcomeReviewRepository`, and migration
+`0008_post_trade_outcome_reviews.sql` now provide immutable review persistence, idempotency
+protection, filtered search, retention metadata, and append-only outcome events.
+
+No supported feature is promoted by Slice 6.
+
+---
+
 ## Current Foundation Evidence
 
 | Foundation | Current evidence | RFC-0042 implication |

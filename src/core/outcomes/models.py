@@ -1,5 +1,6 @@
 """Domain models for RFC-0042 post-trade outcome reviews."""
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -397,3 +398,86 @@ class DpmOutcomeEvent(BaseModel):
         default_factory=list,
         description="Source refs linked to the event.",
     )
+
+
+class DpmOutcomeRetentionMetadata(BaseModel):
+    """Retention metadata for an immutable outcome review."""
+
+    outcome_review_id: str = Field(description="Outcome review identifier.")
+    retention_policy: str = Field(description="Retention policy applied to the outcome review.")
+    retention_expires_at: str | None = Field(
+        default=None,
+        description="UTC retention expiry timestamp when configured.",
+    )
+    legal_hold_state: Literal["NONE", "ACTIVE"] = Field(
+        default="NONE",
+        description="Legal hold posture for retention enforcement.",
+    )
+
+
+class DpmPostTradeOutcomeReview(BaseModel):
+    """Immutable RFC-0042 post-trade outcome review."""
+
+    outcome_review_id: str = Field(description="Stable outcome review identifier.")
+    outcome_review_version: str = Field(
+        default="1.0.0",
+        description="Outcome-review contract version.",
+    )
+    state: OutcomeReviewState = Field(description="Overall outcome-review state.")
+    portfolio_id: str = Field(description="Portfolio identifier.")
+    mandate_id: str | None = Field(default=None, description="Mandate identifier when available.")
+    rebalance_run_id: str | None = Field(default=None, description="Rebalance run identifier.")
+    alternative_set_id: str = Field(description="RFC-0039 alternative set identifier.")
+    selected_alternative_id: str = Field(description="RFC-0039 selected alternative identifier.")
+    proof_pack_id: str = Field(description="RFC-0040 proof-pack identifier.")
+    wave_id: str | None = Field(default=None, description="RFC-0041 wave identifier.")
+    wave_item_id: str | None = Field(default=None, description="RFC-0041 wave item identifier.")
+    operations_handoff_ref_id: str | None = Field(
+        default=None,
+        description="RFC-0041 internal operations handoff ref.",
+    )
+    execution_evidence_ref: DpmOutcomeSourceRef | None = Field(
+        default=None,
+        description="Execution-owner evidence ref when certified evidence exists.",
+    )
+    review_window: DpmOutcomeReviewWindow = Field(description="Post-trade review window.")
+    expected_snapshot: DpmExpectedOutcomeSnapshot = Field(description="Expected pre-trade snapshot.")
+    realized_snapshot: DpmRealizedOutcomeSnapshot = Field(description="Realized source-owner snapshot.")
+    dimension_results: list[DpmOutcomeDimensionResult] = Field(
+        description="Dimension comparison results.",
+    )
+    overall_outcome: str = Field(description="Deterministic overall outcome summary.")
+    variance_summary: dict[str, Decimal | None] = Field(description="Variance by outcome dimension.")
+    supportability: DpmOutcomeSupportability = Field(description="Review supportability roll-up.")
+    source_lineage: list[DpmOutcomeSourceRef] = Field(
+        description="Combined expected and realized source refs.",
+    )
+    source_hashes: dict[str, str] = Field(description="Source hashes used by the review.")
+    section_hashes: dict[str, str] = Field(
+        description="Proof-pack section hashes used by the review.",
+    )
+    events: list[DpmOutcomeEvent] = Field(
+        default_factory=list,
+        description="Append-only events included when the review was created.",
+    )
+    report_input_ref: DpmOutcomeSourceRef | None = Field(
+        default=None,
+        description="Outcome report input ref when produced.",
+    )
+    ai_evidence_ref: DpmOutcomeSourceRef | None = Field(
+        default=None,
+        description="Outcome AI evidence input ref when produced.",
+    )
+    retention_policy: str = Field(
+        default="DPM_OUTCOME_REVIEW_7Y",
+        description="Retention policy.",
+    )
+    legal_hold_state: Literal["NONE", "ACTIVE"] = Field(
+        default="NONE",
+        description="Legal hold state.",
+    )
+    content_hash: str = Field(description="Canonical immutable review content hash.")
+    created_at: datetime = Field(description="UTC creation timestamp.")
+    created_by: str = Field(description="Actor or service that created the review.")
+    correlation_id: str = Field(description="Correlation identifier.")
+    idempotency_key: str | None = Field(default=None, description="Create idempotency key.")
