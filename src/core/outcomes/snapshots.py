@@ -257,7 +257,9 @@ def _expected_values_from_alternative(
             supportability=supportability,
         ),
     }
-    return {dimension: value for dimension, value in expected_values.items() if value.value is not None}
+    return {
+        dimension: value for dimension, value in expected_values.items() if value.value is not None
+    }
 
 
 def _roll_up_expected_supportability(
@@ -430,14 +432,20 @@ def _construction_state(
     alternative_set: ConstructionAlternativeSet,
     selected_alternative: ConstructionAlternative,
 ) -> OutcomeDimensionState:
-    if str(alternative_set.status) == "BLOCKED" or str(selected_alternative.method_status) == "BLOCKED":
+    if (
+        str(alternative_set.status) == "BLOCKED"
+        or str(selected_alternative.method_status) == "BLOCKED"
+    ):
         return "BLOCKED"
     if (
         str(alternative_set.status) == "PENDING_REVIEW"
         or str(selected_alternative.method_status) == "PENDING_REVIEW"
     ):
         return "PENDING_REVIEW"
-    if str(alternative_set.status) == "DEGRADED" or str(selected_alternative.method_status) == "DEGRADED":
+    if (
+        str(alternative_set.status) == "DEGRADED"
+        or str(selected_alternative.method_status) == "DEGRADED"
+    ):
         return "DEGRADED"
     if alternative_set.source_supportability_state == "DEGRADED":
         return "DEGRADED"

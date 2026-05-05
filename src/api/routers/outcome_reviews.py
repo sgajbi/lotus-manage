@@ -188,7 +188,9 @@ def preview_outcome_review_endpoint(
             dimension_configs=[config.to_domain() for config in request.dimension_configs],
         )
     except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     return DpmOutcomeReviewPreviewResponse(comparison=comparison)
 
 
@@ -231,7 +233,9 @@ def create_outcome_review_endpoint(
             repository=repository,
         )
     except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     except DpmOutcomeReviewConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     record_outcome_review_supportability(
@@ -258,7 +262,9 @@ def list_outcome_reviews_endpoint(
     portfolio_id: str | None = Query(default=None, description="Optional portfolio id filter."),
     mandate_id: str | None = Query(default=None, description="Optional mandate id filter."),
     wave_id: str | None = Query(default=None, description="Optional wave id filter."),
-    rebalance_run_id: str | None = Query(default=None, description="Optional rebalance run id filter."),
+    rebalance_run_id: str | None = Query(
+        default=None, description="Optional rebalance run id filter."
+    ),
     state: OutcomeReviewState | None = Query(
         default=None,
         description="Optional review state filter.",
@@ -298,7 +304,9 @@ def get_outcome_review_endpoint(
 ) -> DpmOutcomeReviewLookupResponse:
     review = repository.get_outcome_review(outcome_review_id=outcome_review_id)
     if review is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
+        )
     return DpmOutcomeReviewLookupResponse(outcome_review=review)
 
 
@@ -335,9 +343,13 @@ def refresh_outcome_review_sources_endpoint(
             supportability_state="not_found",
             reason="outcome_review_not_found",
         )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
+        ) from exc
     except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     record_outcome_review_supportability(
         surface=OUTCOME_REFRESH_SURFACE,
         supportability_state=_metric_state(comparison.state),
@@ -370,7 +382,9 @@ def get_outcome_review_supportability_endpoint(
             supportability_state="not_found",
             reason="outcome_review_not_found",
         )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
+        )
     response = _supportability_response(review)
     record_outcome_review_supportability(
         surface=OUTCOME_SUPPORTABILITY_SURFACE,
@@ -469,7 +483,9 @@ def get_outcome_review_report_input_endpoint(
     try:
         return get_report_input(outcome_review_id=outcome_review_id, repository=repository)
     except DpmOutcomeReviewNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
+        ) from exc
 
 
 @router.get(
@@ -492,7 +508,9 @@ def get_outcome_review_ai_evidence_input_endpoint(
     try:
         return get_ai_evidence_input(outcome_review_id=outcome_review_id, repository=repository)
     except DpmOutcomeReviewNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND") from exc
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
+        ) from exc
 
 
 run_lookup_router = APIRouter(prefix="/rebalance/runs", tags=["lotus-manage Outcome Reviews"])
@@ -517,7 +535,9 @@ def get_outcome_review_by_run_endpoint(
 ) -> DpmOutcomeReviewLookupResponse:
     items = repository.list_outcome_reviews(rebalance_run_id=rebalance_run_id, limit=1)
     if not items:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
+        )
     return DpmOutcomeReviewLookupResponse(outcome_review=items[0])
 
 

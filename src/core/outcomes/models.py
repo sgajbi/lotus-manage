@@ -168,7 +168,9 @@ class DpmOutcomeDimensionInput(BaseModel):
         examples=["DRIFT_REDUCTION"],
     )
     expected: DpmOutcomeMetricValue = Field(description="Expected value from pre-trade evidence.")
-    realized: DpmOutcomeMetricValue = Field(description="Realized value from post-trade source truth.")
+    realized: DpmOutcomeMetricValue = Field(
+        description="Realized value from post-trade source truth."
+    )
     tolerance: DpmOutcomeTolerance = Field(description="Soft and hard tolerance.")
     materiality: Decimal = Field(
         default=Decimal("0"),
@@ -233,7 +235,9 @@ class DpmOutcomeReviewComparison(BaseModel):
 class DpmExpectedOutcomeSnapshot(BaseModel):
     """Expected outcome snapshot assembled from pre-trade manage artifacts."""
 
-    portfolio_id: str = Field(description="Portfolio identifier.", examples=["PB_SG_GLOBAL_BAL_001"])
+    portfolio_id: str = Field(
+        description="Portfolio identifier.", examples=["PB_SG_GLOBAL_BAL_001"]
+    )
     mandate_id: str | None = Field(
         default=None,
         description="Mandate identifier when available.",
@@ -295,10 +299,18 @@ class DpmExpectedOutcomeSnapshot(BaseModel):
 class DpmOutcomeReviewWindow(BaseModel):
     """Review window used to request and reconcile post-trade source evidence."""
 
-    start_at: str = Field(description="Inclusive UTC review-window start.", examples=["2026-05-05T01:00:00Z"])
-    end_at: str = Field(description="Exclusive UTC review-window end.", examples=["2026-05-06T01:00:00Z"])
-    as_of_date: str = Field(description="Business as-of date for the review.", examples=["2026-05-06"])
-    timezone: str = Field(default="UTC", description="Window timezone.", examples=["Asia/Singapore"])
+    start_at: str = Field(
+        description="Inclusive UTC review-window start.", examples=["2026-05-05T01:00:00Z"]
+    )
+    end_at: str = Field(
+        description="Exclusive UTC review-window end.", examples=["2026-05-06T01:00:00Z"]
+    )
+    as_of_date: str = Field(
+        description="Business as-of date for the review.", examples=["2026-05-06"]
+    )
+    timezone: str = Field(
+        default="UTC", description="Window timezone.", examples=["Asia/Singapore"]
+    )
 
 
 class DpmRealizedSourceSnapshot(BaseModel):
@@ -313,7 +325,9 @@ class DpmRealizedSourceSnapshot(BaseModel):
         description="Source-owner contract or data product type.",
         examples=["POST_TRADE_HOLDINGS_DRIFT"],
     )
-    source_id: str = Field(description="Source-owner evidence identifier.", examples=["core_drift_001"])
+    source_id: str = Field(
+        description="Source-owner evidence identifier.", examples=["core_drift_001"]
+    )
     value: Decimal | None = Field(
         default=None,
         description="Realized value from source truth, or null when unavailable.",
@@ -359,8 +373,12 @@ class DpmRealizedSourceSnapshot(BaseModel):
 class DpmRealizedOutcomeSnapshot(BaseModel):
     """Realized outcome snapshot assembled from source-owner evidence."""
 
-    portfolio_id: str = Field(description="Portfolio identifier.", examples=["PB_SG_GLOBAL_BAL_001"])
-    review_window: DpmOutcomeReviewWindow = Field(description="Review window for realized evidence.")
+    portfolio_id: str = Field(
+        description="Portfolio identifier.", examples=["PB_SG_GLOBAL_BAL_001"]
+    )
+    review_window: DpmOutcomeReviewWindow = Field(
+        description="Review window for realized evidence."
+    )
     realized_values: dict[OutcomeDimension, DpmOutcomeMetricValue] = Field(
         description="Realized values or explicit missing/not-supported postures by dimension.",
     )
@@ -441,13 +459,19 @@ class DpmPostTradeOutcomeReview(BaseModel):
         description="Execution-owner evidence ref when certified evidence exists.",
     )
     review_window: DpmOutcomeReviewWindow = Field(description="Post-trade review window.")
-    expected_snapshot: DpmExpectedOutcomeSnapshot = Field(description="Expected pre-trade snapshot.")
-    realized_snapshot: DpmRealizedOutcomeSnapshot = Field(description="Realized source-owner snapshot.")
+    expected_snapshot: DpmExpectedOutcomeSnapshot = Field(
+        description="Expected pre-trade snapshot."
+    )
+    realized_snapshot: DpmRealizedOutcomeSnapshot = Field(
+        description="Realized source-owner snapshot."
+    )
     dimension_results: list[DpmOutcomeDimensionResult] = Field(
         description="Dimension comparison results.",
     )
     overall_outcome: str = Field(description="Deterministic overall outcome summary.")
-    variance_summary: dict[str, Decimal | None] = Field(description="Variance by outcome dimension.")
+    variance_summary: dict[str, Decimal | None] = Field(
+        description="Variance by outcome dimension."
+    )
     supportability: DpmOutcomeSupportability = Field(description="Review supportability roll-up.")
     source_lineage: list[DpmOutcomeSourceRef] = Field(
         description="Combined expected and realized source refs.",

@@ -202,9 +202,9 @@ def test_in_memory_outcome_repository_lists_filters_and_append_only_events() -> 
         )
     )
 
-    assert [review.outcome_review_id for review in repository.list_outcome_reviews(state="READY")] == [
-        "dor_ready"
-    ]
+    assert [
+        review.outcome_review_id for review in repository.list_outcome_reviews(state="READY")
+    ] == ["dor_ready"]
     events = repository.list_events(outcome_review_id="dor_ready")
     assert [event.event_type for event in events] == [
         "OUTCOME_REVIEW_CREATED",

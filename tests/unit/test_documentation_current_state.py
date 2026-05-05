@@ -434,9 +434,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     platform_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-platform-automation-slice1.md").read_text(
         encoding="utf-8"
     )
-    cleanup_slice = (
-        ROOT / "docs" / "rfcs" / "RFC-0042-cleanup-and-structure-slice2.md"
-    ).read_text(encoding="utf-8")
+    cleanup_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-cleanup-and-structure-slice2.md").read_text(
+        encoding="utf-8"
+    )
     domain_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-domain-model-slice3.md").read_text(
         encoding="utf-8"
     )
@@ -464,9 +464,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     implementation_proof_slice = (
         ROOT / "docs" / "rfcs" / "RFC-0042-implementation-proof-slice11.md"
     ).read_text(encoding="utf-8")
-    hardening_slice = (
-        ROOT / "docs" / "rfcs" / "RFC-0042-hardening-review-slice12.md"
-    ).read_text(encoding="utf-8")
+    hardening_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-hardening-review-slice12.md").read_text(
+        encoding="utf-8"
+    )
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -557,8 +557,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "04b-idempotency-conflict-response.json" in source_map
     assert "## Slice 13 Final Closure Result" in source_map
     assert "DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING" in source_map
-    assert "Skills/context/guidance decision: no central Lotus skill or context change is needed" in (
-        source_map
+    assert (
+        "Skills/context/guidance decision: no central Lotus skill or context change is needed"
+        in (source_map)
     )
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
@@ -594,7 +595,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "omitted rather than silently defaulted" in expected_snapshot_slice
     assert "`5 passed`" in expected_snapshot_slice
 
-    assert "Slice 5 - Realized Source Adapters and Degraded Source Handling" in realized_source_slice
+    assert (
+        "Slice 5 - Realized Source Adapters and Degraded Source Handling" in realized_source_slice
+    )
     assert "does not calculate source-owner truth locally" in realized_source_slice
     assert "Missing `EXECUTION_QUALITY` source" in realized_source_slice
     assert "`6 passed`" in realized_source_slice
@@ -646,9 +649,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "idempotency_conflict_rejected" in hardening_slice
     assert "No full RFC-0042 product support is promoted by Slice 12" in hardening_slice
 
-    closure_slice = (
-        ROOT / "docs" / "rfcs" / "RFC-0042-final-closure-slice13.md"
-    ).read_text(encoding="utf-8")
+    closure_slice = (ROOT / "docs" / "rfcs" / "RFC-0042-final-closure-slice13.md").read_text(
+        encoding="utf-8"
+    )
     assert "Slice 13 - Final Closure" in closure_slice
     assert "COMPLETE FOR MANAGE BACKEND" in closure_slice
     assert "No central Lotus skill or context change is required" in closure_slice

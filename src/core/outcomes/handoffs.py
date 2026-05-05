@@ -45,8 +45,12 @@ class DpmOutcomeReportDimension(BaseModel):
     realized: str | None = Field(description="Realized value serialized for report consumers.")
     variance: str | None = Field(description="Realized minus expected variance when comparable.")
     explanation: str = Field(description="Operator-safe deterministic explanation.")
-    source_refs: list[DpmOutcomeSourceRef] = Field(description="Source refs supporting the dimension.")
-    supportability: DpmOutcomeSupportability = Field(description="Dimension supportability posture.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Source refs supporting the dimension."
+    )
+    supportability: DpmOutcomeSupportability = Field(
+        description="Dimension supportability posture."
+    )
 
 
 class DpmOutcomeReportInput(BaseModel):
@@ -65,11 +69,15 @@ class DpmOutcomeReportInput(BaseModel):
     state: OutcomeReviewState = Field(description="Overall outcome-review state.")
     overall_outcome: str = Field(description="Deterministic overall outcome summary.")
     variance_summary: dict[str, str | None] = Field(description="Variance by outcome dimension.")
-    supportability: DpmOutcomeSupportability = Field(description="Outcome-review supportability posture.")
+    supportability: DpmOutcomeSupportability = Field(
+        description="Outcome-review supportability posture."
+    )
     dimensions: list[DpmOutcomeReportDimension] = Field(description="Report-safe dimension facts.")
     source_lineage: list[DpmOutcomeSourceRef] = Field(description="Source lineage for audit trace.")
     source_hashes: dict[str, str] = Field(description="Source hashes carried by the review.")
-    section_hashes: dict[str, str] = Field(description="Proof-pack section hashes carried by the review.")
+    section_hashes: dict[str, str] = Field(
+        description="Proof-pack section hashes carried by the review."
+    )
     redaction_policy: str = Field(description="Redaction policy applied to report input.")
     evidence_ref: DpmOutcomeSourceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical report-input hash.")
@@ -102,7 +110,9 @@ class DpmOutcomeAiEvidenceInput(BaseModel):
     state: OutcomeReviewState = Field(description="Overall outcome-review state.")
     overall_outcome: str = Field(description="Deterministic overall outcome summary.")
     reason_codes: list[str] = Field(description="Aggregate outcome-review reason codes.")
-    dimensions: list[DpmOutcomeAiDimensionEvidence] = Field(description="AI-safe dimension evidence.")
+    dimensions: list[DpmOutcomeAiDimensionEvidence] = Field(
+        description="AI-safe dimension evidence."
+    )
     source_refs: list[DpmOutcomeSourceRef] = Field(description="AI-safe source references.")
     evidence_ref: DpmOutcomeSourceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical AI-evidence input hash.")

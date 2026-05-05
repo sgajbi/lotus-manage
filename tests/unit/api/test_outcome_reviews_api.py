@@ -37,7 +37,9 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
     app.dependency_overrides[get_outcome_review_repository] = lambda: repository
     try:
         with TestClient(app) as client:
-            preview = client.post("/api/v1/rebalance/outcome-reviews/preview", json=_request_payload())
+            preview = client.post(
+                "/api/v1/rebalance/outcome-reviews/preview", json=_request_payload()
+            )
             assert preview.status_code == 200
             assert preview.json()["comparison"]["state"] == "READY"
 
@@ -147,9 +149,9 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert "Idempotency-Key" in str(create["parameters"])
     assert "same-key changed evidence" in create["description"]
 
-    refresh = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources"][
-        "post"
-    ]
+    refresh = schema["paths"][
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources"
+    ]["post"]
     assert refresh["tags"] == ["lotus-manage Outcome Reviews"]
     assert all(marker in refresh["description"] for marker in ["What:", "When:", "How:"])
     assert "requestBody" in refresh

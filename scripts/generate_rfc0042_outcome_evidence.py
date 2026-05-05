@@ -209,7 +209,9 @@ def _degraded_request(token: str) -> dict[str, Any]:
 
 
 def _refresh_request(create_request: dict[str, Any]) -> dict[str, Any]:
-    realized_snapshot = cast(dict[str, Any], json.loads(json.dumps(create_request["realized_snapshot"])))
+    realized_snapshot = cast(
+        dict[str, Any], json.loads(json.dumps(create_request["realized_snapshot"]))
+    )
     refreshed_hash = _content_hash(
         f"rfc0042:realized:post-trade-holdings-refresh:"
         f"{realized_snapshot['source_lineage'][0]['source_id']}"
@@ -220,9 +222,9 @@ def _refresh_request(create_request: dict[str, Any]) -> dict[str, Any]:
     realized_snapshot["source_lineage"][0]["source_id"] = (
         f"{realized_snapshot['source_lineage'][0]['source_id']}-refresh"
     )
-    realized_snapshot["realized_values"]["DRIFT_REDUCTION"]["source_refs"][0][
-        "content_hash"
-    ] = refreshed_hash
+    realized_snapshot["realized_values"]["DRIFT_REDUCTION"]["source_refs"][0]["content_hash"] = (
+        refreshed_hash
+    )
     realized_snapshot["realized_values"]["DRIFT_REDUCTION"]["source_refs"][0]["source_id"] = (
         realized_snapshot["source_lineage"][0]["source_id"]
     )
@@ -474,9 +476,9 @@ def generate_evidence(base_url: str, output_root: Path) -> dict[str, Any]:
             "same-key same-evidence replay must return the original review",
         )
         conflict_request = cast(dict[str, Any], json.loads(json.dumps(create_request)))
-        conflict_request["realized_snapshot"]["realized_values"]["DRIFT_REDUCTION"][
-            "value"
-        ] = "0.0200"
+        conflict_request["realized_snapshot"]["realized_values"]["DRIFT_REDUCTION"]["value"] = (
+            "0.0200"
+        )
         idempotency_conflict = _json(
             _request(
                 client,
