@@ -3,6 +3,7 @@ import pytest
 from src.core.outcomes import (
     RiskOutcomeSourceError,
     assemble_realized_outcome_snapshot,
+    realized_concentration_source_from_concentration_response,
     realized_drawdown_source_from_drawdown_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
@@ -136,6 +137,94 @@ def _drawdown_response() -> dict[str, object]:
     }
 
 
+def _concentration_response() -> dict[str, object]:
+    return {
+        "source_service": "lotus-risk",
+        "input_mode": "stateful",
+        "risk_proxy": {
+            "hhi_current": 1345.677131,
+            "hhi_proposed": 1410.218372,
+            "hhi_delta": 64.541241,
+        },
+        "single_position_concentration": {
+            "top_position_weight_current": 0.1245,
+            "top_position_weight_proposed": 0.142,
+            "top_position_weight_delta": 0.0175,
+            "top_n_cumulative_weight_current": 0.4123,
+            "top_n_cumulative_weight_proposed": 0.4551,
+            "top_n_cumulative_weight_delta": 0.0428,
+            "top_n": 10,
+            "top_position_current": {
+                "security_id": "FO_FUND_PIMCO_INC",
+                "security_name": "PIMCO GIS Income Fund",
+                "weight": 0.1245,
+            },
+            "top_position_proposed": {
+                "security_id": "FO_FUND_PIMCO_INC",
+                "security_name": "PIMCO GIS Income Fund",
+                "weight": 0.142,
+            },
+        },
+        "issuer_concentration": {
+            "hhi_current": 3200.0,
+            "hhi_proposed": 3475.0,
+            "hhi_delta": 275.0,
+            "top_issuer_weight_current": 0.18,
+            "top_issuer_weight_proposed": 0.21,
+            "top_issuer_weight_delta": 0.03,
+            "coverage_status": "complete",
+            "covered_position_count_current": 30,
+            "covered_position_count_proposed": 31,
+            "total_position_count_current": 30,
+            "total_position_count_proposed": 31,
+            "uncovered_position_count_current": 0,
+            "uncovered_position_count_proposed": 0,
+            "coverage_ratio_current": 1.0,
+            "coverage_ratio_proposed": 1.0,
+            "note": None,
+            "top_issuer_current": {
+                "issuer_id": "ULTIMATE_PIMCO",
+                "issuer_name": "Pacific Investment Management Company LLC",
+                "weight": 0.18,
+            },
+            "top_issuer_proposed": {
+                "issuer_id": "ULTIMATE_PIMCO",
+                "issuer_name": "Pacific Investment Management Company LLC",
+                "weight": 0.21,
+            },
+        },
+        "valuation_context": {
+            "portfolio_currency": "USD",
+            "reporting_currency": "USD",
+            "position_basis": "market_value_base",
+            "weight_basis": "total_market_value_base",
+        },
+        "metadata": {
+            "contract_version": "v1",
+            "methodology_version": "concentration.v1",
+            "request_fingerprint": "sha256:concentration-request",
+            "as_of_date": "2026-05-06",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "issuer_grouping_level": "ultimate_parent",
+            "enrichment_policy": "merge_caller_then_core",
+            "include_cash_positions": True,
+            "include_zero_quantity_positions": False,
+            "source_services": ["lotus-risk", "lotus-core"],
+            "upstream_request_fingerprints": {
+                "lotus-core:/integration/holdings/as-of": "sha256:holdings-as-of"
+            },
+            "calculation_supportability": {
+                "state": "ready",
+                "reason": "calculation_complete",
+                "freshness_bucket": "current",
+                "degraded_metric_count": 0,
+                "empty_period_count": 0,
+                "evaluated_period_count": 1,
+            },
+        },
+    }
+
+
 def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() -> None:
     source = realized_risk_source_from_risk_metrics_report(_risk_metrics_report())
 
@@ -153,6 +242,116 @@ def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() 
         "RISK_PERIOD_YTD",
         "RISK_METRIC_VOLATILITY",
     ]
+
+
+def test_concentration_adapter_wraps_source_owned_hhi_without_recalculation() -> None:
+    source = realized_concentration_source_from_concentration_response(_concentration_response())
+
+    assert source.dimension == "RISK_REDUCTION"
+    assert source.source_system == "lotus-risk"
+    assert source.source_type == "CONCENTRATION_RESPONSE"
+    assert source.source_id == "sha256:concentration-request:hhi_current"
+    assert str(source.value) == "1345.677131"
+    assert source.unit == "hhi"
+    assert source.as_of_date == "2026-05-06"
+    assert source.content_hash == "sha256:concentration-request"
+    assert source.reason_codes == [
+        "RISK_SOURCE_READY",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_CONCENTRATION_MEASURE_HHI_CURRENT",
+        "RISK_CONCENTRATION_INPUT_MODE_STATEFUL",
+        "RISK_CONCENTRATION_ISSUER_COVERAGE_COMPLETE",
+    ]
+
+
+def test_concentration_adapter_wraps_single_position_weight() -> None:
+    source = realized_concentration_source_from_concentration_response(
+        _concentration_response(),
+        measure="top_position_weight_current",
+    )
+
+    assert source.source_id == "sha256:concentration-request:top_position_weight_current"
+    assert str(source.value) == "0.1245"
+    assert source.unit == "ratio"
+    assert "RISK_CONCENTRATION_MEASURE_TOP_POSITION_WEIGHT_CURRENT" in source.reason_codes
+
+
+def test_concentration_adapter_wraps_issuer_concentration_with_complete_coverage() -> None:
+    source = realized_concentration_source_from_concentration_response(
+        _concentration_response(),
+        measure="issuer_hhi_current",
+    )
+
+    assert source.source_state == "READY"
+    assert source.quality == "COMPLETE"
+    assert str(source.value) == "3200.0"
+    assert source.unit == "hhi"
+    assert "RISK_CONCENTRATION_ISSUER_COVERAGE_COMPLETE" in source.reason_codes
+
+
+def test_concentration_adapter_degrades_issuer_measure_when_coverage_is_partial() -> None:
+    response = _concentration_response()
+    issuer = response["issuer_concentration"]
+    assert isinstance(issuer, dict)
+    issuer["coverage_status"] = "partial"
+    issuer["coverage_ratio_current"] = 0.833333
+    issuer["uncovered_position_count_current"] = 5
+    issuer["note"] = "issuer_id missing in lotus-core instrument_enrichment"
+
+    source = realized_concentration_source_from_concentration_response(
+        response,
+        measure="issuer_hhi_current",
+    )
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "PARTIAL"
+    assert str(source.value) == "3200.0"
+    assert snapshot.supportability.state == "DEGRADED"
+    assert "RISK_CONCENTRATION_ISSUER_COVERAGE_PARTIAL" in source.reason_codes
+
+
+def test_concentration_adapter_degrades_issuer_measure_when_coverage_is_missing() -> None:
+    response = _concentration_response()
+    issuer = response["issuer_concentration"]
+    assert isinstance(issuer, dict)
+    del issuer["coverage_status"]
+
+    source = realized_concentration_source_from_concentration_response(
+        response,
+        measure="issuer_coverage_ratio_current",
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "PARTIAL"
+    assert str(source.value) == "1.0"
+    assert "RISK_CONCENTRATION_ISSUER_COVERAGE_UNKNOWN" in source.reason_codes
+
+
+def test_concentration_source_can_make_rfc42_risk_dimension_ready() -> None:
+    source = realized_concentration_source_from_concentration_response(
+        _concentration_response(),
+        measure="top_position_weight_proposed",
+    )
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    risk = snapshot.realized_values["RISK_REDUCTION"]
+    assert snapshot.supportability.state == "READY"
+    assert risk.value == source.value
+    assert risk.source_refs[0].source_type == "CONCENTRATION_RESPONSE"
+    assert risk.supportability.reason_codes[0] == "SOURCE_READY"
 
 
 def test_drawdown_response_adapter_wraps_source_owned_max_drawdown() -> None:
@@ -399,6 +598,16 @@ def test_drawdown_adapter_rejects_response_without_trust_fingerprint() -> None:
         realized_drawdown_source_from_drawdown_response(malformed)
 
 
+def test_concentration_adapter_rejects_response_without_trust_fingerprint() -> None:
+    malformed = _concentration_response()
+    metadata = malformed["metadata"]
+    assert isinstance(metadata, dict)
+    del metadata["request_fingerprint"]
+
+    with pytest.raises(RiskOutcomeSourceError, match="request_fingerprint"):
+        realized_concentration_source_from_concentration_response(malformed)
+
+
 def test_risk_adapter_rejects_missing_ready_metric_value() -> None:
     malformed = _risk_metrics_report()
     results = malformed["results"]
@@ -425,3 +634,13 @@ def test_drawdown_adapter_rejects_missing_ready_max_drawdown_value() -> None:
 
     with pytest.raises(RiskOutcomeSourceError, match="numeric max_drawdown value"):
         realized_drawdown_source_from_drawdown_response(malformed)
+
+
+def test_concentration_adapter_rejects_missing_ready_measure_value() -> None:
+    malformed = _concentration_response()
+    risk_proxy = malformed["risk_proxy"]
+    assert isinstance(risk_proxy, dict)
+    risk_proxy["hhi_current"] = None
+
+    with pytest.raises(RiskOutcomeSourceError, match="numeric hhi_current value"):
+        realized_concentration_source_from_concentration_response(malformed)
