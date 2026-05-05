@@ -31,6 +31,11 @@ from src.core.outcomes.snapshots import (
     assemble_expected_outcome_snapshot,
 )
 from src.core.outcomes.realized_sources import assemble_realized_outcome_snapshot
+from src.core.outcomes.performance_sources import (
+    PerformanceOutcomeSourceError,
+    realized_performance_source_from_workspace_summary,
+    unavailable_performance_source,
+)
 from src.core.outcomes.handoffs import (
     OUTCOME_AI_EVIDENCE_REF_TYPE,
     OUTCOME_REPORT_INPUT_REF_TYPE,
@@ -71,6 +76,7 @@ __all__ = [
     "OutcomeReviewState",
     "OUTCOME_AI_EVIDENCE_REF_TYPE",
     "OUTCOME_REPORT_INPUT_REF_TYPE",
+    "PerformanceOutcomeSourceError",
     "assemble_expected_outcome_snapshot",
     "assemble_realized_outcome_snapshot",
     "assert_no_ai_forbidden_fields",
@@ -78,4 +84,6 @@ __all__ = [
     "build_report_input",
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
+    "realized_performance_source_from_workspace_summary",
+    "unavailable_performance_source",
 ]

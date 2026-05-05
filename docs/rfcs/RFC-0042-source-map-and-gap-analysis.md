@@ -119,8 +119,15 @@ blocked, and not-supported source evidence without calculating source-owner trut
 
 The implementation records the first-wave boundary: missing execution evidence emits
 `EXECUTION_EVIDENCE_BLOCKED`, missing risk evidence emits `RISK_OUTCOME_NOT_SUPPORTED`, and missing
-performance evidence emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED` until certified review-window
-contracts exist.
+performance evidence emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`.
+
+The WTBD-006 performance follow-on adds the first source-owner adapter for `lotus-performance`
+workspace-summary TWR output. `src/core/outcomes/performance_sources.py` wraps
+`WORKSPACE_SUMMARY_TWR_RETURN` evidence into RFC-0042 `PERFORMANCE` realized-source snapshots,
+preserving calculation id, calculation hash, selected period, selected basis, selected measure, and
+source reason codes. The adapter only converts source-owned percentage-point values into RFC-0042
+ratio units; it does not compute TWR, benchmark-relative performance, MWR, contribution, or
+attribution in manage.
 
 No supported feature is promoted by Slice 5.
 
@@ -269,7 +276,7 @@ can be claimed.
 | FX executions and currency exposures | `lotus-core` or treasury source owner | `FX_OUTCOME` | Source-owner required | Consume source product; no local treasury-depth reconstruction. |
 | Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Source-owner required | Consume source product; no manage-local tax-lot authority. |
 | Risk after execution | `lotus-risk` | `RISK_OUTCOME` | Supported only if endpoint supports review window and portfolio context | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
-| Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Supported only if endpoint supports review window and benchmark context | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
+| Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Workspace-summary TWR return output is the first implemented adapter; broader review-window MWR, contribution, attribution, and benchmark-relative outcome contracts remain source-owner follow-on work. | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
 | Report artifact | `lotus-report`, `lotus-render`, `lotus-archive` | Reports and archive | Downstream only | Manage emits `DpmOutcomeReportInput`; no artifact claim. |
 | AI memo/copilot output | `lotus-ai` | AI assistance | Downstream only | Manage emits `DpmOutcomeAiEvidenceInput`; no narrative claim. |
 | Product composition | `lotus-gateway` | Product API | Downstream RFC required | Gateway must preserve manage truth and source supportability. |
@@ -283,7 +290,7 @@ can be claimed.
 | --- | --- | --- |
 | `DRIFT_OUTCOME` | Expected target/current state plus post-trade holdings are source-backed. | `DRIFT_SOURCE_INCOMPLETE` if holdings or expected target is missing. |
 | `RISK_OUTCOME` | `lotus-risk` provides post-trade risk for the review window with supportability. | `RISK_OUTCOME_NOT_SUPPORTED` or `RISK_SOURCE_UNAVAILABLE`. |
-| `PERFORMANCE_OUTCOME` | `lotus-performance` provides returns/contribution/attribution for the review window. | `PERFORMANCE_OUTCOME_NOT_SUPPORTED` or `PERFORMANCE_SOURCE_UNAVAILABLE`. |
+| `PERFORMANCE_OUTCOME` | `lotus-performance` provides source-owned workspace-summary TWR return output for the selected period/basis/measure; richer contribution, attribution, MWR, and benchmark-relative evidence require future source-owner contracts. | `PERFORMANCE_OUTCOME_NOT_SUPPORTED` or `PERFORMANCE_SOURCE_UNAVAILABLE`. |
 | `TURNOVER_OUTCOME` | Booked transaction window is source-backed. | `TRANSACTION_SOURCE_INCOMPLETE`. |
 | `TRANSACTION_COST_OUTCOME` | Realized cost source is available and comparable to estimated cost basis. | `COST_SOURCE_INCOMPLETE`. |
 | `TAX_OUTCOME` | Realized tax/tax-lot evidence is source-backed. | `TAX_SOURCE_INCOMPLETE`. |
