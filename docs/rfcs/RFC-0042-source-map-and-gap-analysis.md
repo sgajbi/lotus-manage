@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-7 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-8 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -160,6 +160,27 @@ request/response body presence, and What/When/How guidance for preview and refre
 No full RFC-0042 supported feature is promoted by Slice 7. Report input, AI evidence input,
 supportability/observability hardening, live canonical proof, Gateway/Workbench realization RFCs,
 final hardening, PR merge, and wiki publication remain pending.
+
+---
+
+## Slice 8 Report Input and AI Evidence Input Handoffs Result
+
+Slice 8 evidence is recorded in `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md`.
+
+`src/core/outcomes/handoffs.py` now builds deterministic `DpmOutcomeReportInput` and
+`DpmOutcomeAiEvidenceInput` contracts from the persisted immutable outcome review. The report input
+is report-ready but does not render a report or create an archive record. The AI evidence input is
+bounded, hash-linked, source-ref-backed, and includes explicit forbidden actions for order
+placement, approval, control override, invented evidence, PM scoring, and client contact.
+
+`src/api/routers/outcome_reviews.py` exposes:
+
+1. `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input`,
+2. `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input`.
+
+No downstream product claim is promoted by Slice 8. `lotus-report`, `lotus-render`,
+`lotus-archive`, and `lotus-ai` own artifact generation, archive lifecycle, workflow packs,
+prompts, generated narrative, and AI execution guardrails.
 
 ---
 

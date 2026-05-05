@@ -94,10 +94,11 @@ evidence, and supported-feature promotion.
   post-trade outcome feedback loop; gold-standard tightened on 2026-05-05 and now in implementation,
   with Slice 0 source-map guardrails, Slice 1 platform scaffold evidence, Slice 2 cleanup/structure
   evidence, Slice 3 pure domain comparison evidence, Slice 4 expected snapshot assembly evidence,
-  Slice 5 realized source-degraded evidence, Slice 6 persistence/events evidence, and Slice 7
-  certified manage API/OpenAPI evidence. No full supported-feature claim is made until report/AI
-  handoffs, supportability/observability hardening, source-backed live proof, Gateway/Workbench
-  realization where surfaced, final PR/CI, and wiki publication are complete
+  Slice 5 realized source-degraded evidence, Slice 6 persistence/events evidence, Slice 7 certified
+  manage API/OpenAPI evidence, and Slice 8 report-input/AI-evidence handoff contracts. No full
+  supported-feature claim is made until supportability/observability hardening, source-backed live
+  proof, Gateway/Workbench realization where surfaced, final PR/CI, and wiki publication are
+  complete
 - RFC-0043
   proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
   ownership to AI

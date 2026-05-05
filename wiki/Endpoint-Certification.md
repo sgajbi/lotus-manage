@@ -1731,6 +1731,8 @@ Routes:
 - `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}`
 - `POST /api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources`
 - `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input`
 - `GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review`
 - `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`
 
@@ -1755,6 +1757,11 @@ Functional behavior:
   immutable expected snapshot, and appends an `OUTCOME_REVIEW_SOURCE_REFRESHED` event carrying the
   refreshed state and source refs.
 - Supportability returns bounded state and reason-code posture without raw upstream payloads.
+- Report input returns deterministic report-ready facts, source hashes, supportability, dimension
+  outcomes, and a canonical handoff hash without rendering reports or archive records.
+- AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
+  refs, and a canonical handoff hash without generating prompts, memos, recommendations, approvals,
+  client communications, or execution instructions.
 - Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
 
 Non-functional posture:
@@ -1763,11 +1770,13 @@ Non-functional posture:
 - Preview is side-effect free.
 - Create and repository behavior are immutable and idempotency-protected.
 - Refresh does not mutate the original review body; history is append-only.
+- Report and AI handoff contracts are derived from persisted review truth and remain downstream
+  input contracts only.
 - OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
-  guidance for preview and refresh.
-- Full RFC-0042 product support remains unclaimed until report/AI handoff contracts,
-  supportability/observability, live canonical proof, downstream realization RFCs, hardening, PR/CI,
-  merge, and wiki publication are complete.
+  guidance for preview, refresh, report input, and AI evidence input.
+- Full RFC-0042 product support remains unclaimed until supportability/observability, live
+  canonical proof, downstream realization RFCs, hardening, PR/CI, merge, and wiki publication are
+  complete.
 
 Upstream integration posture:
 
@@ -1780,13 +1789,15 @@ calculations.
 Downstream consumers:
 
 Gateway and Workbench must wait for the RFC-0042 downstream realization RFC slice before product
-implementation. Report and AI consumers must wait for Slice 8 report-input and AI-evidence input
-handoff contracts before using this feature as product material.
+implementation. Report, render, archive, and AI services must treat these endpoints as input
+contracts only; owning apps remain responsible for materialization, archive lifecycle, workflow
+packs, prompts, generated narrative, and provider guardrails.
 
 Evidence commands:
 
 ```bash
 python -m pytest tests/unit/api/test_outcome_reviews_api.py -q
+python -m pytest tests/unit/core/test_outcome_handoffs.py -q
 python -m ruff check src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
 ```
 

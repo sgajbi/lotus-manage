@@ -31,16 +31,31 @@ from src.core.outcomes.snapshots import (
     assemble_expected_outcome_snapshot,
 )
 from src.core.outcomes.realized_sources import assemble_realized_outcome_snapshot
+from src.core.outcomes.handoffs import (
+    OUTCOME_AI_EVIDENCE_REF_TYPE,
+    OUTCOME_REPORT_INPUT_REF_TYPE,
+    DpmOutcomeAiEvidenceInput,
+    DpmOutcomeAiDimensionEvidence,
+    DpmOutcomeReportDimension,
+    DpmOutcomeReportInput,
+    assert_no_ai_forbidden_fields,
+    build_ai_evidence_input,
+    build_report_input,
+)
 
 __all__ = [
     "DpmExpectedOutcomeSnapshot",
     "DpmExpectedSnapshotAssemblyError",
+    "DpmOutcomeAiDimensionEvidence",
+    "DpmOutcomeAiEvidenceInput",
     "DpmOutcomeDimensionInput",
     "DpmOutcomeDimensionResult",
     "DpmOutcomeEvent",
     "DpmOutcomeMetricValue",
     "DpmOutcomeReviewWindow",
     "DpmOutcomeReviewComparison",
+    "DpmOutcomeReportDimension",
+    "DpmOutcomeReportInput",
     "DpmOutcomeRetentionMetadata",
     "DpmOutcomeSourceFreshness",
     "DpmOutcomeSourceRef",
@@ -54,8 +69,13 @@ __all__ = [
     "OutcomeDimensionState",
     "OutcomeEventType",
     "OutcomeReviewState",
+    "OUTCOME_AI_EVIDENCE_REF_TYPE",
+    "OUTCOME_REPORT_INPUT_REF_TYPE",
     "assemble_expected_outcome_snapshot",
     "assemble_realized_outcome_snapshot",
+    "assert_no_ai_forbidden_fields",
+    "build_ai_evidence_input",
+    "build_report_input",
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
 ]

@@ -68,6 +68,28 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert supportability.status_code == 200
             assert supportability.json()["state"] == "READY"
 
+            report = client.get(
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"
+            )
+            assert report.status_code == 200
+            report_input = report.json()
+            assert report_input["outcome_review_id"] == outcome_review_id
+            assert report_input["outcome_review_content_hash"] == outcome_review["content_hash"]
+            assert report_input["content_hash"].startswith("sha256:")
+            assert report_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_REPORT_INPUT"
+
+            ai = client.get(
+                f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"
+            )
+            assert ai.status_code == 200
+            ai_input = ai.json()
+            assert ai_input["outcome_review_id"] == outcome_review_id
+            assert ai_input["outcome_review_content_hash"] == outcome_review["content_hash"]
+            assert ai_input["content_hash"].startswith("sha256:")
+            assert ai_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_AI_EVIDENCE_INPUT"
+            assert "place_orders" in ai_input["forbidden_actions"]
+            assert "score_portfolio_manager" in ai_input["forbidden_actions"]
+
             refresh = client.post(
                 f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources",
                 json=_refresh_payload(),
@@ -89,6 +111,8 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}",
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources",
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input",
+        "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input",
         "/api/v1/rebalance/runs/{rebalance_run_id}/outcome-review",
         "/api/v1/rebalance/waves/{wave_id}/outcome-reviews",
     ]
@@ -108,6 +132,15 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert all(marker in refresh["description"] for marker in ["What:", "When:", "How:"])
     assert "requestBody" in refresh
     assert "200" in refresh["responses"]
+
+    report = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"][
+        "get"
+    ]
+    assert all(marker in report["description"] for marker in ["What:", "When:", "How:"])
+    ai = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"][
+        "get"
+    ]
+    assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
 
 
 def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() -> None:
@@ -141,5 +174,13 @@ def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() ->
             bad = client.post("/api/v1/rebalance/outcome-reviews/preview", json=bad_payload)
             assert bad.status_code == 422
             assert "DPM_OUTCOME_DIMENSION_EVIDENCE_MISSING" in bad.text
+
+            for path in [
+                "/api/v1/rebalance/outcome-reviews/missing/report-input",
+                "/api/v1/rebalance/outcome-reviews/missing/ai-evidence-input",
+            ]:
+                missing = client.get(path)
+                assert missing.status_code == 404
+                assert missing.json()["detail"] == "OUTCOME_REVIEW_NOT_FOUND"
     finally:
         app.dependency_overrides.clear()

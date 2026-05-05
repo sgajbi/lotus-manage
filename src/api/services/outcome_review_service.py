@@ -11,13 +11,17 @@ from src.core.outcomes import (
     DpmExpectedOutcomeSnapshot,
     DpmOutcomeDimensionInput,
     DpmOutcomeEvent,
+    DpmOutcomeAiEvidenceInput,
     DpmOutcomeReviewComparison,
+    DpmOutcomeReportInput,
     DpmOutcomeTolerance,
     DpmPostTradeOutcomeReview,
     DpmRealizedOutcomeSnapshot,
     OutcomeComparisonDirection,
     OutcomeDimension,
     OutcomeEventType,
+    build_ai_evidence_input,
+    build_report_input,
     compare_outcome_dimensions,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -161,6 +165,26 @@ def refresh_outcome_review_sources(
     )
     repository.append_event(event=event)
     return event, comparison
+
+
+def get_report_input(
+    *,
+    outcome_review_id: str,
+    repository: DpmOutcomeReviewRepository,
+) -> DpmOutcomeReportInput:
+    return build_report_input(
+        get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
+    )
+
+
+def get_ai_evidence_input(
+    *,
+    outcome_review_id: str,
+    repository: DpmOutcomeReviewRepository,
+) -> DpmOutcomeAiEvidenceInput:
+    return build_ai_evidence_input(
+        get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
+    )
 
 
 @dataclass(frozen=True)
