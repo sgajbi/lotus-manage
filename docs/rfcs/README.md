@@ -6,6 +6,16 @@ Standards for all current and future RFCs:
 Durable cross-RFC follow-up control:
 - `docs/rfcs/RFC-worktobedone.md`
 
+Mandatory branch hygiene for RFC work:
+- Before RFC tightening, implementation start, final closure, post-merge audit, or moving to the
+  next RFC, run stranded-truth reconciliation with `git fetch origin --prune` and
+  `git branch -r --no-merged origin/main`.
+- Inspect unmerged branches that touch `docs/rfcs/`, `wiki/`, README, repository engineering
+  context, AGENTS, contracts, standards, OpenAPI/vocabulary,
+  migrations, CI workflows, or supported-features material.
+- Classify each branch as `must-merge`, `cherry-pick`, `superseded`, `delete`, or `active`.
+  Closure truth that exists only on an unmerged side branch is not complete.
+
 Governance boundary:
 - Service-specific implementation RFCs belong in this repository.
 - Cross-cutting platform and multi-service RFCs belong in `https://github.com/sgajbi/lotus-platform`.

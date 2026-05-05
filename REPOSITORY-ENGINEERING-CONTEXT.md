@@ -207,6 +207,15 @@ Important validation expectations:
 6. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
    `lotus-manage` service, image, and ingress identity while clearly labeling historical local-only
    debug paths.
+7. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
+   closure, post-merge audit, and move-on to the next RFC. Run `git fetch origin --prune` and
+   `git branch -r --no-merged origin/main`, inspect unmerged branches touching `docs/rfcs/`,
+   `wiki/`, `README.md`, `REPOSITORY-ENGINEERING-CONTEXT.md`, `AGENTS.md`, contracts, standards,
+   OpenAPI/vocabulary, migrations, CI workflows, or supported-features material, and classify each
+   branch as `must-merge`, `cherry-pick`, `superseded`, `delete`, or `active`. This is mandatory
+   because RFC-0036 through RFC-0042 work previously exposed a failure mode where
+   `docs/rfcs/RFC-worktobedone.md` and an RFC-0041 post-closure documentation correction were
+   stranded on unmerged side branches instead of reaching `main`.
 
 ## Standards And RFCs That Govern This Repository
 
@@ -249,6 +258,10 @@ Most relevant current governance:
     no production downstream dependency is assumed for the revamp surface. Any downstream usage
     discovered during implementation should be documented and migrated to the certified target
     contract rather than preserved through permanent compatibility aliases.
+12. durable RFC control artifacts such as `docs/rfcs/RFC-worktobedone.md`, source maps, proof
+    indexes, and supported-feature ledgers must be referenced from stable navigation docs and pinned
+    by `tests/unit/test_documentation_current_state.py` or an equivalent docs/current-state test
+    whenever practical.
 
 ## Context Maintenance Rule
 
