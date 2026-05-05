@@ -2254,7 +2254,7 @@ artifacts belong to report/render/archive services, and AI narrative belongs to 
 | RFC42-WTBD-001 | Gateway outcome-review composition and BFF contract | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #186; live canonical product proof remains part of RFC42-WTBD-003 | Manage APIs were stabilized first. Gateway now composes the BFF route family without recomputing outcome truth. Product support still requires Workbench implementation and canonical front-office proof. |
 | RFC42-WTBD-002 | Workbench post-trade outcome review UX | `lotus-workbench` through Gateway/BFF | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #146 | Workbench now consumes Gateway/BFF outcome-review contracts only, presents manage-owned outcome truth without recomputation, and is proven by canonical Workbench validation. |
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
-| RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive` | Downstream reporting work | Manage emits bounded report input only; it must not render, archive, or claim generated-document support. |
+| RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-gateway`, `lotus-workbench` | Implemented, merged, CI-proven, and wiki-published through `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 | Manage emits bounded report input only; downstream services now consume it to create deterministic outcome-review report artifacts, preserve archive posture, expose Gateway submission, and add the Workbench report request action without recomputing outcome truth. |
 | RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, RFC-0043, Gateway/Workbench | Pending AI workflow contract | Manage emits AI evidence input only; prompt execution, model posture, guardrails, and narrative generation belong to `lotus-ai`. |
 | RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | Source-owner follow-on | RFC-0042 preserves missing/unsupported/degraded source states instead of cloning calculations in manage. |
 | RFC42-WTBD-007 | External execution/OMS integration and acknowledgements | Execution/OMS owner, `lotus-manage` consumer | Ownership not established | RFC-0042 can compare expected and realized evidence, but OMS integration needs a separate owner, controls, acknowledgements, and reconciliation contract. |
@@ -2445,31 +2445,70 @@ Target business outcome:
 Outcome reviews can be turned into governed report artifacts with deterministic rendering,
 retention, archive retrieval, legal hold posture, and access audit.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-`lotus-manage` emits `DpmOutcomeReportInput`; report generation, rendering, archive persistence,
-retrieval, and retention lifecycle are owned by downstream reporting services.
+Complete for the first-wave generated outcome-review report artifact path. `lotus-report` now
+accepts manage-owned `DpmOutcomeReportInput` through `POST /reports/outcome-reviews`, persists the
+handoff as the immutable report snapshot, records lineage back to `lotus-manage`, builds the
+`dpm_outcome_report_input.v1` render package, submits the `outcome-review` template to
+`lotus-render` when PDF is requested, and hands rendered artifacts to the existing
+`lotus-archive` generated-document lifecycle. `lotus-render` now owns the deterministic
+`outcome-review/v1` Typst template and registry manifest. `lotus-archive` documentation confirms
+that outcome-review generated documents inherit the existing archive, retrieval, retention,
+legal-hold, access-audit, purge, and lifecycle posture when supplied by `lotus-report`.
+
+Gateway and Workbench realization is complete for report-request submission: `lotus-gateway`
+exposes `POST /api/v1/reports/outcome-reviews` as a pass-through Experience API route to
+`lotus-report`, preserving caller context and idempotency without recomputing outcome truth.
+`lotus-workbench` adds a governed outcome-review report request action in the DPM outcome panel,
+calling Gateway/BFF only and recording the `dpm.outcome-review.report-job.submit` observability
+surface.
+
+Why it was not done in the original RFC-0042 manage closure:
+
+`lotus-manage` correctly emits bounded `DpmOutcomeReportInput`; report generation, rendering,
+archive persistence, retrieval, and retention lifecycle are owned by downstream reporting services.
+The work had to land in the owning repositories after manage report-input contracts stabilized.
 
 Dependencies before implementation:
 
-1. `lotus-report` contract for consuming outcome-review report input,
-2. `lotus-render` deterministic rendering contract,
-3. `lotus-archive` retention, legal hold, access-audit, and retrieval contract,
-4. Gateway/Workbench posture for report availability,
-5. reconciliation from generated artifact back to manage evidence hashes.
+1. `lotus-report` contract for consuming outcome-review report input - complete in PR #88,
+2. `lotus-render` deterministic rendering contract - complete in PR #9,
+3. `lotus-archive` retention, legal hold, access-audit, and retrieval posture - documented and
+   merged in PR #21,
+4. Gateway/Workbench posture for report availability and submission - complete in Gateway PR #188
+   and Workbench PR #147,
+5. reconciliation from generated artifact back to manage evidence hashes - complete through
+   `lotus-report` snapshot lineage, render package hashes, and archive metadata handoff.
 
 Expected implementation wave:
 
-Implement through reporting/render/archive RFC work after report scope and artifact lifecycle are
-clear.
+Complete for first-wave outcome-review generated reports. A future enhancement may add direct
+Workbench retrieval/download affordances once the broader generated-document discovery UX is
+standardized, but report request, render, archive handoff, and lifecycle posture are now
+implementation-backed and must not remain listed as deferred.
 
 Promotion proof:
 
-1. report/render/archive tests,
-2. deterministic artifact evidence,
-3. archive retrieval and retention proof,
-4. failure and unavailable-state tests,
-5. supported-feature updates in owning apps.
+1. `lotus-render` PR #9 merged after Feature Lane and PR Merge Gate passed, including lint,
+   unit/integration/e2e tests, coverage, Docker build validation, and template-registry gate;
+   wiki published from repo source as `lotus-render.wiki` commit `e09f36e`,
+2. `lotus-archive` PR #21 merged after Feature Lane and PR Merge Gate passed, including lint,
+   unit/integration/e2e tests, coverage, Docker build validation, and documentation posture tests;
+   wiki published from repo source as `lotus-archive.wiki` commit `47b59e0`,
+3. `lotus-report` PR #88 merged after Feature Lane and PR Merge Gate passed, including lint,
+   unit/integration/e2e tests, 99 percent coverage gate, Docker build validation, OpenAPI wording
+   guardrails, immutable snapshot capture, report render package tests, idempotency guardrails,
+   degraded validation coverage, and supported-features/wiki updates; wiki published from repo
+   source as `lotus-report.wiki` commit `aa6d487`,
+4. `lotus-gateway` PR #188 merged after Feature Lane and PR Merge Gate passed, including lint,
+   typecheck, unit/contract/integration tests, coverage, Docker parity, Docker build validation,
+   caller-context/idempotency forwarding tests, OpenAPI route registration, README, and wiki
+   updates; wiki published from repo source as `lotus-gateway.wiki` commit `483f627`,
+5. `lotus-workbench` PR #147 merged after Feature Lane and PR Merge Gate passed, including lint,
+   typecheck, focused unit/component tests, coverage/build, Docker parity, Playwright smoke,
+   Docker build validation, BFF/API tests, component action tests, observability registry tests,
+   and wiki updates; wiki published from repo source as `lotus-workbench.wiki` commit `6db1daa`.
 
 #### RFC42-WTBD-005 - Governed AI Narrative/Copilot Over Outcome Evidence
 
