@@ -45,6 +45,7 @@ from src.core.outcomes.performance_sources import (
 )
 from src.core.outcomes.risk_sources import (
     RiskOutcomeSourceError,
+    realized_drawdown_source_from_drawdown_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
 )
@@ -100,6 +101,7 @@ __all__ = [
     "compare_outcome_dimensions",
     "realized_cash_source_from_cash_balances_response",
     "realized_active_performance_source_from_workspace_summary",
+    "realized_drawdown_source_from_drawdown_response",
     "realized_mwr_source_from_workspace_summary",
     "realized_performance_source_from_workspace_summary",
     "realized_risk_source_from_risk_metrics_report",

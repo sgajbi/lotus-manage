@@ -3,6 +3,7 @@ import pytest
 from src.core.outcomes import (
     RiskOutcomeSourceError,
     assemble_realized_outcome_snapshot,
+    realized_drawdown_source_from_drawdown_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
 )
@@ -62,6 +63,79 @@ def _risk_metrics_report() -> dict[str, object]:
     }
 
 
+def _drawdown_response() -> dict[str, object]:
+    return {
+        "source_service": "lotus-risk",
+        "input_mode": "stateful",
+        "scope": {
+            "as_of_date": "2026-05-06",
+            "reporting_currency": "USD",
+            "net_or_gross": "NET",
+        },
+        "results": {
+            "YTD": {
+                "start_date": "2026-01-02",
+                "end_date": "2026-05-06",
+                "portfolio_observation_count": 64,
+                "benchmark_observation_count": 64,
+                "summary": {
+                    "max_drawdown": -0.084211,
+                    "max_drawdown_peak_date": "2026-01-11",
+                    "max_drawdown_trough_date": "2026-02-03",
+                    "max_drawdown_recovery_date": "2026-02-19",
+                    "is_recovered": True,
+                    "days_to_trough": 16,
+                    "days_to_recovery": 11,
+                    "time_under_water_days": 27,
+                    "average_drawdown": -0.041208,
+                    "ulcer_index": 0.053901,
+                    "drawdown_at_risk_95": -0.101552,
+                    "conditional_drawdown_at_risk_95": -0.117884,
+                },
+                "relative_to_benchmark": {
+                    "max_drawdown": -0.026414,
+                    "max_drawdown_peak_date": "2026-01-04",
+                    "max_drawdown_trough_date": "2026-02-15",
+                    "max_drawdown_recovery_date": "2026-02-28",
+                    "is_recovered": True,
+                    "days_to_trough": 12,
+                    "days_to_recovery": 10,
+                    "time_under_water_days": 21,
+                },
+                "relative_to_benchmark_context": {
+                    "requested": True,
+                    "applied": True,
+                    "reason": "APPLIED",
+                    "aligned_observation_count": 61,
+                },
+                "episodes": [],
+                "error": None,
+            }
+        },
+        "metadata": {
+            "contract_version": "v1",
+            "methodology_version": "drawdown.v1",
+            "request_fingerprint": "sha256:drawdown-request",
+            "source_services": ["lotus-risk", "lotus-performance"],
+            "upstream_request_fingerprints": {
+                "lotus-performance:/integration/returns/series": "sha256:returns-series"
+            },
+            "include_underwater_series": False,
+            "include_episode_list": True,
+            "include_benchmark": True,
+            "missing_benchmark_policy": "IGNORE",
+            "calculation_supportability": {
+                "state": "ready",
+                "reason": "calculation_complete",
+                "freshness_bucket": "current",
+                "degraded_metric_count": 0,
+                "empty_period_count": 0,
+                "evaluated_period_count": 1,
+            },
+        },
+    }
+
+
 def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() -> None:
     source = realized_risk_source_from_risk_metrics_report(_risk_metrics_report())
 
@@ -81,6 +155,39 @@ def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() 
     ]
 
 
+def test_drawdown_response_adapter_wraps_source_owned_max_drawdown() -> None:
+    source = realized_drawdown_source_from_drawdown_response(_drawdown_response())
+
+    assert source.dimension == "RISK_REDUCTION"
+    assert source.source_system == "lotus-risk"
+    assert source.source_type == "DRAWDOWN_RESPONSE"
+    assert source.source_id == "sha256:drawdown-request:YTD:max_drawdown"
+    assert str(source.value) == "-0.084211"
+    assert source.unit == "ratio"
+    assert source.content_hash == "sha256:drawdown-request"
+    assert source.reason_codes == [
+        "RISK_SOURCE_READY",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_PERIOD_YTD",
+        "RISK_DRAWDOWN_MEASURE_MAX_DRAWDOWN",
+        "RISK_DRAWDOWN_ABSOLUTE",
+    ]
+
+
+def test_drawdown_response_adapter_wraps_source_owned_relative_max_drawdown() -> None:
+    source = realized_drawdown_source_from_drawdown_response(
+        _drawdown_response(),
+        measure="relative_max_drawdown",
+    )
+
+    assert source.source_type == "DRAWDOWN_RESPONSE"
+    assert source.source_id == "sha256:drawdown-request:YTD:relative_max_drawdown"
+    assert str(source.value) == "-0.026414"
+    assert "RISK_DRAWDOWN_MEASURE_RELATIVE_MAX_DRAWDOWN" in source.reason_codes
+    assert "RISK_DRAWDOWN_RELATIVE_APPLIED" in source.reason_codes
+
+
 def test_risk_metrics_report_adapter_supports_explicit_metric() -> None:
     source = realized_risk_source_from_risk_metrics_report(
         _risk_metrics_report(),
@@ -91,6 +198,23 @@ def test_risk_metrics_report_adapter_supports_explicit_metric() -> None:
     assert source.unit == "percentage_point"
     assert source.source_id.endswith(":YTD:VAR")
     assert "RISK_METRIC_VAR" in source.reason_codes
+
+
+def test_drawdown_source_can_make_rfc42_risk_dimension_ready() -> None:
+    source = realized_drawdown_source_from_drawdown_response(_drawdown_response())
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    risk = snapshot.realized_values["RISK_REDUCTION"]
+    assert snapshot.supportability.state == "READY"
+    assert risk.value == source.value
+    assert risk.source_refs[0].source_type == "DRAWDOWN_RESPONSE"
+    assert risk.supportability.reason_codes[0] == "SOURCE_READY"
 
 
 def test_risk_source_can_make_rfc42_risk_dimension_ready() -> None:
@@ -147,6 +271,42 @@ def test_unavailable_risk_source_preserves_degraded_owner_posture() -> None:
     ]
 
 
+def test_relative_drawdown_not_applied_preserves_degraded_source_posture() -> None:
+    response = _drawdown_response()
+    results = response["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    ytd["relative_to_benchmark_context"] = {
+        "requested": True,
+        "applied": False,
+        "reason": "BENCHMARK_UNAVAILABLE",
+        "aligned_observation_count": 0,
+    }
+    ytd["relative_to_benchmark"] = None
+
+    source = realized_drawdown_source_from_drawdown_response(
+        response,
+        measure="relative_max_drawdown",
+    )
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "UNAVAILABLE"
+    assert snapshot.supportability.state == "DEGRADED"
+    assert snapshot.realized_values["RISK_REDUCTION"].value is None
+    assert snapshot.realized_values["RISK_REDUCTION"].supportability.reason_codes[:2] == [
+        "RISK_SOURCE_UNAVAILABLE",
+        "RISK_SOURCE_DEGRADED",
+    ]
+    assert "RISK_DRAWDOWN_RELATIVE_BENCHMARK_UNAVAILABLE" in source.reason_codes
+
+
 def test_degraded_risk_report_preserves_source_owner_supportability() -> None:
     report = _risk_metrics_report()
     metadata = report["metadata"]
@@ -197,6 +357,28 @@ def test_permission_blocked_risk_report_blocks_ready_claim() -> None:
     ]
 
 
+def test_degraded_drawdown_response_preserves_source_owner_supportability() -> None:
+    response = _drawdown_response()
+    metadata = response["metadata"]
+    assert isinstance(metadata, dict)
+    metadata["calculation_supportability"] = {
+        "state": "stale",
+        "reason": "stale_source_observations",
+        "freshness_bucket": "stale",
+    }
+
+    source = realized_drawdown_source_from_drawdown_response(response)
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "STALE"
+    assert source.value is not None
+    assert source.reason_codes[:3] == [
+        "RISK_SOURCE_DEGRADED",
+        "RISK_SUPPORTABILITY_STALE",
+        "RISK_REASON_STALE_SOURCE_OBSERVATIONS",
+    ]
+
+
 def test_risk_adapter_rejects_report_without_trust_fingerprint() -> None:
     malformed = _risk_metrics_report()
     metadata = malformed["metadata"]
@@ -205,6 +387,16 @@ def test_risk_adapter_rejects_report_without_trust_fingerprint() -> None:
 
     with pytest.raises(RiskOutcomeSourceError, match="request_fingerprint"):
         realized_risk_source_from_risk_metrics_report(malformed)
+
+
+def test_drawdown_adapter_rejects_response_without_trust_fingerprint() -> None:
+    malformed = _drawdown_response()
+    metadata = malformed["metadata"]
+    assert isinstance(metadata, dict)
+    del metadata["request_fingerprint"]
+
+    with pytest.raises(RiskOutcomeSourceError, match="request_fingerprint"):
+        realized_drawdown_source_from_drawdown_response(malformed)
 
 
 def test_risk_adapter_rejects_missing_ready_metric_value() -> None:
@@ -219,3 +411,17 @@ def test_risk_adapter_rejects_missing_ready_metric_value() -> None:
 
     with pytest.raises(RiskOutcomeSourceError, match="numeric VOLATILITY value"):
         realized_risk_source_from_risk_metrics_report(malformed)
+
+
+def test_drawdown_adapter_rejects_missing_ready_max_drawdown_value() -> None:
+    malformed = _drawdown_response()
+    results = malformed["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    summary = ytd["summary"]
+    assert isinstance(summary, dict)
+    summary["max_drawdown"] = None
+
+    with pytest.raises(RiskOutcomeSourceError, match="numeric max_drawdown value"):
+        realized_drawdown_source_from_drawdown_response(malformed)
