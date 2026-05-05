@@ -291,6 +291,95 @@ class DpmExpectedOutcomeSnapshot(BaseModel):
     )
 
 
+class DpmOutcomeReviewWindow(BaseModel):
+    """Review window used to request and reconcile post-trade source evidence."""
+
+    start_at: str = Field(description="Inclusive UTC review-window start.", examples=["2026-05-05T01:00:00Z"])
+    end_at: str = Field(description="Exclusive UTC review-window end.", examples=["2026-05-06T01:00:00Z"])
+    as_of_date: str = Field(description="Business as-of date for the review.", examples=["2026-05-06"])
+    timezone: str = Field(default="UTC", description="Window timezone.", examples=["Asia/Singapore"])
+
+
+class DpmRealizedSourceSnapshot(BaseModel):
+    """Source-owner realized value or explicit degraded-source posture."""
+
+    dimension: OutcomeDimension = Field(description="Outcome dimension supplied by the source.")
+    source_system: str = Field(
+        description="Source owner that produced the realized evidence.",
+        examples=["lotus-core"],
+    )
+    source_type: str = Field(
+        description="Source-owner contract or data product type.",
+        examples=["POST_TRADE_HOLDINGS_DRIFT"],
+    )
+    source_id: str = Field(description="Source-owner evidence identifier.", examples=["core_drift_001"])
+    value: Decimal | None = Field(
+        default=None,
+        description="Realized value from source truth, or null when unavailable.",
+        examples=["0.0375"],
+    )
+    unit: str = Field(description="Value unit.", examples=["ratio"])
+    source_state: OutcomeDimensionState = Field(
+        description="Source supportability state for this dimension.",
+        examples=["READY"],
+    )
+    quality: Literal[
+        "COMPLETE",
+        "MISSING",
+        "STALE",
+        "UNAVAILABLE",
+        "PARTIAL",
+        "MALFORMED",
+        "CONFLICTING",
+        "NOT_SUPPORTED",
+    ] = Field(description="Specific source-quality posture.", examples=["COMPLETE"])
+    observed_at: str | None = Field(
+        default=None,
+        description="UTC timestamp when the source value was observed.",
+        examples=["2026-05-06T01:10:00Z"],
+    )
+    as_of_date: str | None = Field(
+        default=None,
+        description="Business as-of date for the source value.",
+        examples=["2026-05-06"],
+    )
+    content_hash: str | None = Field(
+        default=None,
+        description="Canonical content hash when available.",
+        examples=["sha256:realized-source"],
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Source-owner reason codes.",
+        examples=[["SOURCE_READY"]],
+    )
+
+
+class DpmRealizedOutcomeSnapshot(BaseModel):
+    """Realized outcome snapshot assembled from source-owner evidence."""
+
+    portfolio_id: str = Field(description="Portfolio identifier.", examples=["PB_SG_GLOBAL_BAL_001"])
+    review_window: DpmOutcomeReviewWindow = Field(description="Review window for realized evidence.")
+    realized_values: dict[OutcomeDimension, DpmOutcomeMetricValue] = Field(
+        description="Realized values or explicit missing/not-supported postures by dimension.",
+    )
+    supportability: DpmOutcomeSupportability = Field(
+        description="Realized snapshot supportability rolled up from source evidence.",
+    )
+    source_lineage: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Source-owner refs used by the realized snapshot.",
+    )
+    source_hashes: dict[str, str] = Field(
+        default_factory=dict,
+        description="Canonical source hashes by source identifier.",
+    )
+    quality_summary: dict[str, int] = Field(
+        default_factory=dict,
+        description="Counts by realized source quality posture.",
+    )
+
+
 class DpmOutcomeEvent(BaseModel):
     """Append-only event suitable for future portfolio memory."""
 

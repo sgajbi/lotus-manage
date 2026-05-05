@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-4 COMPLETE; NO RUNTIME SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-5 COMPLETE; NO RUNTIME SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -16,6 +16,7 @@
 | **Slice 2 Cleanup Evidence** | `docs/rfcs/RFC-0042-cleanup-and-structure-slice2.md` |
 | **Slice 3 Domain Evidence** | `docs/rfcs/RFC-0042-domain-model-slice3.md` |
 | **Slice 4 Expected Snapshot Evidence** | `docs/rfcs/RFC-0042-expected-snapshot-slice4.md` |
+| **Slice 5 Realized Source Evidence** | `docs/rfcs/RFC-0042-realized-source-adapters-slice5.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -525,6 +526,10 @@ Acceptance:
 2. source-owner contract tests exist for any upstream change,
 3. manage does not duplicate source-owner calculations,
 4. `EXECUTION_EVIDENCE_BLOCKED` is emitted where execution truth is unavailable.
+
+Slice 5 evidence:
+
+`docs/rfcs/RFC-0042-realized-source-adapters-slice5.md`
 
 ### Slice 6 - Persistence, Repository, Events, and Retention
 

@@ -94,7 +94,7 @@ evidence, and supported-feature promotion.
   post-trade outcome feedback loop; gold-standard tightened on 2026-05-05 and now in implementation,
   with Slice 0 source-map guardrails, Slice 1 platform scaffold evidence, Slice 2 cleanup/structure
   evidence, Slice 3 pure domain comparison evidence, Slice 4 expected snapshot assembly evidence,
-  and no supported-feature claim until source-backed runtime implementation,
+  Slice 5 realized source-degraded evidence, and no supported-feature claim until source-backed runtime implementation,
   Gateway/Workbench realization where surfaced, live proof, and wiki
   publication are complete
 - RFC-0043

@@ -108,6 +108,24 @@ No supported feature is promoted by Slice 4.
 
 ---
 
+## Slice 5 Realized Source Adapter Result
+
+Slice 5 evidence is recorded in `docs/rfcs/RFC-0042-realized-source-adapters-slice5.md`.
+
+`src/core/outcomes/realized_sources.py` now translates explicit source-owner realized snapshots into
+comparable outcome metrics while preserving source refs, source hashes, freshness, quality posture,
+and supportability. It handles ready, missing, stale, unavailable, partial, malformed, conflicting,
+blocked, and not-supported source evidence without calculating source-owner truth locally.
+
+The implementation records the first-wave boundary: missing execution evidence emits
+`EXECUTION_EVIDENCE_BLOCKED`, missing risk evidence emits `RISK_OUTCOME_NOT_SUPPORTED`, and missing
+performance evidence emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED` until certified review-window
+contracts exist.
+
+No supported feature is promoted by Slice 5.
+
+---
+
 ## Current Foundation Evidence
 
 | Foundation | Current evidence | RFC-0042 implication |
