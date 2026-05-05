@@ -16,6 +16,25 @@ RiskOutcomeMeasure = Literal[
     "VAR",
 ]
 DrawdownOutcomeMeasure = Literal["max_drawdown", "relative_max_drawdown"]
+ConcentrationOutcomeMeasure = Literal[
+    "hhi_current",
+    "hhi_proposed",
+    "hhi_delta",
+    "top_position_weight_current",
+    "top_position_weight_proposed",
+    "top_position_weight_delta",
+    "top_n_cumulative_weight_current",
+    "top_n_cumulative_weight_proposed",
+    "top_n_cumulative_weight_delta",
+    "issuer_hhi_current",
+    "issuer_hhi_proposed",
+    "issuer_hhi_delta",
+    "top_issuer_weight_current",
+    "top_issuer_weight_proposed",
+    "top_issuer_weight_delta",
+    "issuer_coverage_ratio_current",
+    "issuer_coverage_ratio_proposed",
+]
 
 
 class RiskOutcomeSourceError(ValueError):
@@ -34,15 +53,13 @@ def realized_risk_source_from_risk_metrics_report(
     metric_result = _read_mapping(_read_mapping(result.get("metrics")).get(metric))
     metadata = _read_mapping(response.get("metadata"))
     scope = _read_mapping(response.get("scope"))
-    supportability = _read_mapping(metadata.get("calculation_supportability"))
     request_fingerprint = _read_text(metadata.get("request_fingerprint"))
     if request_fingerprint is None:
         raise RiskOutcomeSourceError(
             "lotus-risk metrics report is missing metadata.request_fingerprint"
         )
 
-    supportability_state = _read_text(supportability.get("state")) or "ready"
-    supportability_reason = _read_text(supportability.get("reason")) or "calculation_complete"
+    supportability_state, supportability_reason = _supportability(metadata)
     value = (
         _decimal_value(metric_result.get("value"))
         if metric_result.get("value") is not None
@@ -90,15 +107,13 @@ def realized_drawdown_source_from_drawdown_response(
     result = _read_mapping(_read_mapping(response.get("results")).get(period))
     metadata = _read_mapping(response.get("metadata"))
     scope = _read_mapping(response.get("scope"))
-    supportability = _read_mapping(metadata.get("calculation_supportability"))
     request_fingerprint = _read_text(metadata.get("request_fingerprint"))
     if request_fingerprint is None:
         raise RiskOutcomeSourceError(
             "lotus-risk drawdown response is missing metadata.request_fingerprint"
         )
 
-    supportability_state = _read_text(supportability.get("state")) or "ready"
-    supportability_reason = _read_text(supportability.get("reason")) or "calculation_complete"
+    supportability_state, supportability_reason = _supportability(metadata)
     value, measure_reason = _drawdown_value(result=result, measure=measure)
     source_state, quality = _drawdown_source_posture(
         supportability_state=supportability_state,
@@ -133,6 +148,63 @@ def realized_drawdown_source_from_drawdown_response(
     )
 
 
+def realized_concentration_source_from_concentration_response(
+    response: dict[str, Any],
+    *,
+    measure: ConcentrationOutcomeMeasure = "hhi_current",
+) -> DpmRealizedSourceSnapshot:
+    """Adapt a lotus-risk concentration response without recalculating concentration locally."""
+
+    metadata = _read_mapping(response.get("metadata"))
+    request_fingerprint = _read_text(metadata.get("request_fingerprint"))
+    if request_fingerprint is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk concentration response is missing metadata.request_fingerprint"
+        )
+
+    supportability_state, supportability_reason = _supportability(metadata)
+    value = _concentration_value(response=response, measure=measure)
+    issuer_coverage_status = _issuer_coverage_status(response)
+    source_state, quality = _concentration_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+        measure=measure,
+        issuer_coverage_status=issuer_coverage_status,
+    )
+    if source_state == "READY" and value is None:
+        raise RiskOutcomeSourceError(
+            f"lotus-risk concentration response is missing a numeric {measure} value"
+        )
+
+    reason_codes = [
+        _primary_reason(source_state),
+        f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+        f"RISK_REASON_{supportability_reason.upper()}",
+        f"RISK_CONCENTRATION_MEASURE_{measure.upper()}",
+        "RISK_CONCENTRATION_INPUT_MODE_"
+        f"{(_read_text(response.get('input_mode')) or 'UNKNOWN').upper()}",
+    ]
+    if issuer_coverage_status is not None or _is_issuer_concentration_measure(measure):
+        reason_codes.append(
+            f"RISK_CONCENTRATION_ISSUER_COVERAGE_{(issuer_coverage_status or 'unknown').upper()}"
+        )
+
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="CONCENTRATION_RESPONSE",
+        source_id=f"{request_fingerprint}:{measure}",
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit=_concentration_unit(measure),
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=_read_text(metadata.get("as_of_date")),
+        content_hash=request_fingerprint,
+        reason_codes=reason_codes,
+    )
+
+
 def unavailable_risk_source(
     *,
     source_id: str,
@@ -154,6 +226,14 @@ def unavailable_risk_source(
         as_of_date=as_of_date,
         content_hash=None,
         reason_codes=[reason_code],
+    )
+
+
+def _supportability(metadata: dict[str, Any]) -> tuple[str, str]:
+    supportability = _read_mapping(metadata.get("calculation_supportability"))
+    return (
+        _read_text(supportability.get("state")) or "ready",
+        _read_text(supportability.get("reason")) or "calculation_complete",
     )
 
 
@@ -185,6 +265,61 @@ def _drawdown_value(
     )
 
 
+def _concentration_value(
+    *,
+    response: dict[str, Any],
+    measure: ConcentrationOutcomeMeasure,
+) -> Decimal | None:
+    risk_proxy = _read_mapping(response.get("risk_proxy"))
+    single_position = _read_mapping(response.get("single_position_concentration"))
+    issuer = _read_mapping(response.get("issuer_concentration"))
+    value_by_measure = {
+        "hhi_current": risk_proxy.get("hhi_current"),
+        "hhi_proposed": risk_proxy.get("hhi_proposed"),
+        "hhi_delta": risk_proxy.get("hhi_delta"),
+        "top_position_weight_current": single_position.get("top_position_weight_current"),
+        "top_position_weight_proposed": single_position.get("top_position_weight_proposed"),
+        "top_position_weight_delta": single_position.get("top_position_weight_delta"),
+        "top_n_cumulative_weight_current": single_position.get("top_n_cumulative_weight_current"),
+        "top_n_cumulative_weight_proposed": single_position.get("top_n_cumulative_weight_proposed"),
+        "top_n_cumulative_weight_delta": single_position.get("top_n_cumulative_weight_delta"),
+        "issuer_hhi_current": issuer.get("hhi_current"),
+        "issuer_hhi_proposed": issuer.get("hhi_proposed"),
+        "issuer_hhi_delta": issuer.get("hhi_delta"),
+        "top_issuer_weight_current": issuer.get("top_issuer_weight_current"),
+        "top_issuer_weight_proposed": issuer.get("top_issuer_weight_proposed"),
+        "top_issuer_weight_delta": issuer.get("top_issuer_weight_delta"),
+        "issuer_coverage_ratio_current": issuer.get("coverage_ratio_current"),
+        "issuer_coverage_ratio_proposed": issuer.get("coverage_ratio_proposed"),
+    }[measure]
+    return _decimal_value(value_by_measure) if value_by_measure is not None else None
+
+
+def _issuer_coverage_status(response: dict[str, Any]) -> str | None:
+    issuer = _read_mapping(response.get("issuer_concentration"))
+    return _read_text(issuer.get("coverage_status"))
+
+
+def _concentration_source_posture(
+    *,
+    supportability_state: str,
+    value: Decimal | None,
+    measure: ConcentrationOutcomeMeasure,
+    issuer_coverage_status: str | None,
+) -> tuple[
+    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
+    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
+]:
+    source_state, quality = _risk_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+    )
+    if source_state == "READY" and _is_issuer_concentration_measure(measure):
+        if issuer_coverage_status != "complete":
+            return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+    return source_state, quality
+
+
 def _drawdown_source_posture(
     *,
     supportability_state: str,
@@ -205,6 +340,10 @@ def _drawdown_source_posture(
     if supportability_state != "ready":
         return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
     return "READY", "COMPLETE"
+
+
+def _is_issuer_concentration_measure(measure: ConcentrationOutcomeMeasure) -> bool:
+    return measure.startswith("issuer_") or measure.startswith("top_issuer_")
 
 
 def _risk_source_posture(
@@ -241,6 +380,12 @@ def _metric_unit(metric: RiskOutcomeMeasure) -> str:
         return "percentage_point"
     if metric in {"SHARPE", "SORTINO", "BETA", "INFORMATION_RATIO"}:
         return "ratio"
+    return "ratio"
+
+
+def _concentration_unit(measure: ConcentrationOutcomeMeasure) -> str:
+    if "hhi" in measure:
+        return "hhi"
     return "ratio"
 
 
