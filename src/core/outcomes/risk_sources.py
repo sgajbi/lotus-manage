@@ -15,6 +15,7 @@ RiskOutcomeMeasure = Literal[
     "INFORMATION_RATIO",
     "VAR",
 ]
+DrawdownOutcomeMeasure = Literal["max_drawdown", "relative_max_drawdown"]
 
 
 class RiskOutcomeSourceError(ValueError):
@@ -78,6 +79,60 @@ def realized_risk_source_from_risk_metrics_report(
     )
 
 
+def realized_drawdown_source_from_drawdown_response(
+    response: dict[str, Any],
+    *,
+    period: str = "YTD",
+    measure: DrawdownOutcomeMeasure = "max_drawdown",
+) -> DpmRealizedSourceSnapshot:
+    """Adapt a lotus-risk DrawdownResponse without recalculating drawdown locally."""
+
+    result = _read_mapping(_read_mapping(response.get("results")).get(period))
+    metadata = _read_mapping(response.get("metadata"))
+    scope = _read_mapping(response.get("scope"))
+    supportability = _read_mapping(metadata.get("calculation_supportability"))
+    request_fingerprint = _read_text(metadata.get("request_fingerprint"))
+    if request_fingerprint is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk drawdown response is missing metadata.request_fingerprint"
+        )
+
+    supportability_state = _read_text(supportability.get("state")) or "ready"
+    supportability_reason = _read_text(supportability.get("reason")) or "calculation_complete"
+    value, measure_reason = _drawdown_value(result=result, measure=measure)
+    source_state, quality = _drawdown_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+        measure_reason=measure_reason,
+    )
+    if source_state == "READY" and value is None:
+        raise RiskOutcomeSourceError(
+            f"lotus-risk drawdown response is missing a numeric {measure} value for {period}"
+        )
+
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="DRAWDOWN_RESPONSE",
+        source_id=f"{request_fingerprint}:{period}:{measure}",
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=_read_text(scope.get("as_of_date")),
+        content_hash=request_fingerprint,
+        reason_codes=[
+            _primary_reason(source_state),
+            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+            f"RISK_REASON_{supportability_reason.upper()}",
+            f"RISK_PERIOD_{period}",
+            f"RISK_DRAWDOWN_MEASURE_{measure.upper()}",
+            measure_reason,
+        ],
+    )
+
+
 def unavailable_risk_source(
     *,
     source_id: str,
@@ -100,6 +155,56 @@ def unavailable_risk_source(
         content_hash=None,
         reason_codes=[reason_code],
     )
+
+
+def _drawdown_value(
+    *,
+    result: dict[str, Any],
+    measure: DrawdownOutcomeMeasure,
+) -> tuple[Decimal | None, str]:
+    if measure == "max_drawdown":
+        summary = _read_mapping(result.get("summary"))
+        return (
+            _decimal_value(summary.get("max_drawdown"))
+            if summary.get("max_drawdown") is not None
+            else None,
+            "RISK_DRAWDOWN_ABSOLUTE",
+        )
+
+    relative_context = _read_mapping(result.get("relative_to_benchmark_context"))
+    applied = relative_context.get("applied") is True
+    reason = _read_text(relative_context.get("reason")) or "UNKNOWN"
+    if not applied:
+        return None, f"RISK_DRAWDOWN_RELATIVE_{reason.upper()}"
+    relative = _read_mapping(result.get("relative_to_benchmark"))
+    return (
+        _decimal_value(relative.get("max_drawdown"))
+        if relative.get("max_drawdown") is not None
+        else None,
+        f"RISK_DRAWDOWN_RELATIVE_{reason.upper()}",
+    )
+
+
+def _drawdown_source_posture(
+    *,
+    supportability_state: str,
+    value: Decimal | None,
+    measure_reason: str,
+) -> tuple[
+    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
+    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
+]:
+    if supportability_state == "unsupported":
+        return "NOT_SUPPORTED", "NOT_SUPPORTED"
+    if supportability_state == "permission_blocked":
+        return "BLOCKED", "MISSING"
+    if supportability_state == "stale":
+        return "DEGRADED", "STALE"
+    if value is None and measure_reason != "RISK_DRAWDOWN_ABSOLUTE":
+        return "DEGRADED", "UNAVAILABLE"
+    if supportability_state != "ready":
+        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+    return "READY", "COMPLETE"
 
 
 def _risk_source_posture(
