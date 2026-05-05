@@ -486,6 +486,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+    development_workflow = (ROOT / "wiki" / "Development-Workflow.md").read_text(encoding="utf-8")
 
     required_sections = [
         "## 1. Critical Review of the Prior Draft",
@@ -692,6 +693,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
     assert "Durable cross-RFC follow-up control" in index
     assert "docs/rfcs/RFC-worktobedone.md" in index
+    assert "Mandatory branch hygiene for RFC work" in index
+    assert "git branch -r --no-merged origin/main" in index
+    assert "Closure truth that exists only on an unmerged side branch is not complete" in index
+    assert "stranded-truth reconciliation" in development_workflow
+    assert "git branch -r --no-merged origin/main" in development_workflow
+    assert (
+        "do not claim RFC closure while durable truth exists only on an unmerged side branch"
+        in (development_workflow)
+    )
     assert "gold-standard" in wiki_index
     assert "tightening on 2026-05-05" in wiki_index
     assert "Slice 3 pure domain comparison evidence" in wiki_index
