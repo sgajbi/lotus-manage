@@ -8,6 +8,13 @@ from src.core.outcomes.models import DpmRealizedSourceSnapshot
 
 PerformanceReturnMeasure = Literal["period_return", "cumulative_return", "annualized_return"]
 PerformanceBasis = Literal["net", "gross"]
+ContributionOutcomeMeasure = Literal[
+    "total_contribution",
+    "total_portfolio_return",
+    "summary_portfolio_contribution",
+    "summary_local_contribution",
+    "summary_fx_contribution",
+]
 
 
 class PerformanceOutcomeSourceError(ValueError):
@@ -147,6 +154,53 @@ def realized_mwr_source_from_workspace_summary(
     )
 
 
+def realized_contribution_source_from_contribution_response(
+    response: dict[str, Any],
+    *,
+    period: str = "YTD",
+    measure: ContributionOutcomeMeasure = "total_contribution",
+) -> DpmRealizedSourceSnapshot:
+    """Adapt lotus-performance contribution output without local contribution math."""
+
+    period_result = _contribution_period(response, period=period)
+    metadata = _performance_metadata(response)
+    supportability_state, supportability_reason = _performance_supportability(response)
+    value = _contribution_value(period_result=period_result, measure=measure)
+    source_state, quality = _performance_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+    )
+    if source_state == "READY" and value is None:
+        raise PerformanceOutcomeSourceError(
+            f"lotus-performance contribution response is missing a numeric {measure} for {period}"
+        )
+
+    input_mode = _read_text(response.get("input_mode")) or "unknown"
+    source_id = f"{metadata['calculation_id']}:{period}:contribution:{measure}"
+    return DpmRealizedSourceSnapshot(
+        dimension="PERFORMANCE",
+        source_system="lotus-performance",
+        source_type="PERFORMANCE_CONTRIBUTION",
+        source_id=source_id,
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["calculation_hash"],
+        reason_codes=[
+            _performance_primary_reason(source_state),
+            f"PERFORMANCE_SUPPORTABILITY_{_reason_token(supportability_state)}",
+            f"PERFORMANCE_REASON_{_reason_token(supportability_reason)}",
+            f"PERFORMANCE_PERIOD_{period}",
+            "PERFORMANCE_MEASURE_FAMILY_CONTRIBUTION",
+            f"PERFORMANCE_MEASURE_{measure.upper()}",
+            f"PERFORMANCE_INPUT_MODE_{_reason_token(input_mode)}",
+        ],
+    )
+
+
 def unavailable_performance_source(
     *,
     source_id: str,
@@ -183,7 +237,15 @@ def _workspace_period(response: dict[str, Any], *, period: str) -> dict[str, Any
     return _read_mapping(_read_mapping(response.get("results_by_period")).get(period))
 
 
+def _contribution_period(response: dict[str, Any], *, period: str) -> dict[str, Any]:
+    return _read_mapping(_read_mapping(response.get("results_by_period")).get(period))
+
+
 def _workspace_metadata(response: dict[str, Any]) -> dict[str, str | None]:
+    return _performance_metadata(response)
+
+
+def _performance_metadata(response: dict[str, Any]) -> dict[str, str | None]:
     meta = _read_mapping(response.get("meta"))
     diagnostics = _read_mapping(response.get("diagnostics"))
     periods = _read_mapping(meta.get("periods"))
@@ -200,6 +262,64 @@ def _workspace_metadata(response: dict[str, Any]) -> dict[str, str | None]:
         "as_of_date": _read_text(periods.get("master_end"))
         or _read_text(diagnostics.get("effective_period_start")),
     }
+
+
+def _performance_supportability(response: dict[str, Any]) -> tuple[str, str]:
+    supportability = _read_mapping(response.get("calculation_supportability"))
+    return (
+        _read_text(supportability.get("state")) or "ready",
+        _read_text(supportability.get("reason")) or "calculation_complete",
+    )
+
+
+def _contribution_value(
+    *,
+    period_result: dict[str, Any],
+    measure: ContributionOutcomeMeasure,
+) -> Decimal | None:
+    summary = _read_mapping(period_result.get("summary"))
+    value_by_measure = {
+        "total_contribution": period_result.get("total_contribution"),
+        "total_portfolio_return": period_result.get("total_portfolio_return"),
+        "summary_portfolio_contribution": summary.get("portfolio_contribution"),
+        "summary_local_contribution": summary.get("local_contribution"),
+        "summary_fx_contribution": summary.get("fx_contribution"),
+    }[measure]
+    if value_by_measure is None:
+        return None
+    return _decimal_from_percentage_points(
+        value_by_measure,
+        context=f"contribution {measure}",
+    )
+
+
+def _performance_source_posture(
+    *,
+    supportability_state: str,
+    value: Decimal | None,
+) -> tuple[
+    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
+    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
+]:
+    if supportability_state == "unsupported":
+        return "NOT_SUPPORTED", "NOT_SUPPORTED"
+    if supportability_state in {"error", "empty"}:
+        return "BLOCKED", "MISSING"
+    if supportability_state == "stale":
+        return "DEGRADED", "STALE"
+    if supportability_state != "ready":
+        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+    return "READY", "COMPLETE"
+
+
+def _performance_primary_reason(source_state: str) -> str:
+    if source_state == "READY":
+        return "PERFORMANCE_SOURCE_READY"
+    if source_state == "NOT_SUPPORTED":
+        return "PERFORMANCE_SOURCE_NOT_SUPPORTED"
+    if source_state == "BLOCKED":
+        return "PERFORMANCE_SOURCE_BLOCKED"
+    return "PERFORMANCE_SOURCE_DEGRADED"
 
 
 def _decimal_from_percentage_points(value: Any, *, context: str) -> Decimal:

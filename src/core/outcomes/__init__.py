@@ -39,6 +39,7 @@ from src.core.outcomes.realized_sources import assemble_realized_outcome_snapsho
 from src.core.outcomes.performance_sources import (
     PerformanceOutcomeSourceError,
     realized_active_performance_source_from_workspace_summary,
+    realized_contribution_source_from_contribution_response,
     realized_mwr_source_from_workspace_summary,
     realized_performance_source_from_workspace_summary,
     unavailable_performance_source,
@@ -103,6 +104,7 @@ __all__ = [
     "realized_cash_source_from_cash_balances_response",
     "realized_active_performance_source_from_workspace_summary",
     "realized_concentration_source_from_concentration_response",
+    "realized_contribution_source_from_contribution_response",
     "realized_drawdown_source_from_drawdown_response",
     "realized_mwr_source_from_workspace_summary",
     "realized_performance_source_from_workspace_summary",
