@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-6 COMPLETE; NO RUNTIME SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-7 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -18,6 +18,7 @@
 | **Slice 4 Expected Snapshot Evidence** | `docs/rfcs/RFC-0042-expected-snapshot-slice4.md` |
 | **Slice 5 Realized Source Evidence** | `docs/rfcs/RFC-0042-realized-source-adapters-slice5.md` |
 | **Slice 6 Persistence Evidence** | `docs/rfcs/RFC-0042-persistence-events-slice6.md` |
+| **Slice 7 API Evidence** | `docs/rfcs/RFC-0042-api-openapi-slice7.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -566,6 +567,10 @@ Acceptance:
 2. no alias, undocumented route, or unsupported endpoint exists,
 3. Swagger is useful to developers, operators, demos, and downstream teams.
 
+Slice 7 evidence:
+
+`docs/rfcs/RFC-0042-api-openapi-slice7.md`
+
 ### Slice 8 - Report Input and AI Evidence Input Handoffs
 
 1. create `DpmOutcomeReportInput` with bounded report-ready facts,
@@ -818,5 +823,9 @@ It must state:
 
 Current gold-pass state:
 
-`NOT STARTED`. This RFC has been tightened into an implementation-ready execution guide. No
-RFC-0042 runtime capability or supported feature is claimed by this documentation-only slice.
+`IN PROGRESS - SLICES 0-7 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
+evidence, cleanup/structure evidence, pure comparison, expected snapshot assembly, realized
+source-degraded handling, immutable persistence/events, and a certified manage API/OpenAPI
+foundation. Full supported-feature promotion remains pending report/AI handoffs,
+supportability/observability, live canonical proof, downstream realization RFCs, hardening, final
+documentation, PR/CI, merge, wiki publication, and branch cleanup.

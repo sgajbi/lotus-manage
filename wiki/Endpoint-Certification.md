@@ -1721,6 +1721,75 @@ Live evidence:
 - `output/rfc0041-wave-proof/20260504-231914/17-openapi-certification.json`
 - `output/rfc0041-wave-proof/20260504-231914/18-aggregate-reconciliation.json`
 
+## Certified endpoint family: post-trade outcome review API foundation
+
+Routes:
+
+- `POST /api/v1/rebalance/outcome-reviews/preview`
+- `POST /api/v1/rebalance/outcome-reviews`
+- `GET /api/v1/rebalance/outcome-reviews`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}`
+- `POST /api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources`
+- `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability`
+- `GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review`
+- `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews`
+
+Purpose:
+
+RFC-0042 Slice 7 exposes the first manage-owned post-trade outcome-review API foundation. The
+surface previews expected-versus-realized comparisons, creates immutable outcome reviews with
+idempotency, retrieves and searches reviews, appends real source-refresh re-evaluation events, and
+returns operator-safe supportability posture. It is not a Gateway, Workbench, report, archive, AI,
+execution, risk, or performance authority.
+
+Functional behavior:
+
+- Preview compares caller-supplied expected and realized snapshots without persistence.
+- Create requires `Idempotency-Key`; same-key replay returns the original persisted review.
+- Create persists source lineage, source hashes, section hashes, content hash, correlation id,
+  retention posture, and append-only creation event.
+- Search returns bounded repository-backed review pages filtered by portfolio, mandate, wave, run,
+  and state.
+- Lookup returns the immutable persisted review by id.
+- Source refresh accepts a fresh realized source-owner snapshot, recomputes comparison against the
+  immutable expected snapshot, and appends an `OUTCOME_REVIEW_SOURCE_REFRESHED` event carrying the
+  refreshed state and source refs.
+- Supportability returns bounded state and reason-code posture without raw upstream payloads.
+- Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
+
+Non-functional posture:
+
+- The endpoints are grouped under `lotus-manage Outcome Reviews`.
+- Preview is side-effect free.
+- Create and repository behavior are immutable and idempotency-protected.
+- Refresh does not mutate the original review body; history is append-only.
+- OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
+  guidance for preview and refresh.
+- Full RFC-0042 product support remains unclaimed until report/AI handoff contracts,
+  supportability/observability, live canonical proof, downstream realization RFCs, hardening, PR/CI,
+  merge, and wiki publication are complete.
+
+Upstream integration posture:
+
+The current API foundation accepts implementation-backed expected and realized snapshots. Expected
+snapshot assembly exists in manage from RFC-0039/RFC-0040/RFC-0041 artifacts. Realized evidence
+must come from source owners such as `lotus-core`, `lotus-risk`, and `lotus-performance` or be
+represented as blocked, degraded, or not supported. `lotus-manage` does not clone source-owner
+calculations.
+
+Downstream consumers:
+
+Gateway and Workbench must wait for the RFC-0042 downstream realization RFC slice before product
+implementation. Report and AI consumers must wait for Slice 8 report-input and AI-evidence input
+handoff contracts before using this feature as product material.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/api/test_outcome_reviews_api.py -q
+python -m ruff check src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
+```
+
 ## Certified endpoint: proof-pack detail
 
 Route:

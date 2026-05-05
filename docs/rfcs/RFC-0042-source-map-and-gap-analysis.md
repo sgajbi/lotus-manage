@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | DRAFT - GOLD-STANDARD TIGHTENING COMPLETE; IMPLEMENTATION NOT STARTED |
+| **Status** | IN IMPLEMENTATION - SLICES 0-7 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -136,6 +136,30 @@ Slice 6 evidence is recorded in `docs/rfcs/RFC-0042-persistence-events-slice6.md
 protection, filtered search, retention metadata, and append-only outcome events.
 
 No supported feature is promoted by Slice 6.
+
+---
+
+## Slice 7 Certified Manage APIs and OpenAPI Quality Result
+
+Slice 7 evidence is recorded in `docs/rfcs/RFC-0042-api-openapi-slice7.md`.
+
+`src/api/routers/outcome_reviews.py` and `src/api/services/outcome_review_service.py` now expose
+the manage-owned RFC-0042 outcome-review API foundation:
+
+1. preview expected-versus-realized comparison without persistence,
+2. idempotent immutable review creation,
+3. bounded review search,
+4. review lookup,
+5. source-refresh re-evaluation with append-only event evidence,
+6. operator-safe supportability lookup,
+7. run and wave read-side lookup routes.
+
+OpenAPI paths are grouped under `lotus-manage Outcome Reviews`, and tests pin the route presence,
+request/response body presence, and What/When/How guidance for preview and refresh.
+
+No full RFC-0042 supported feature is promoted by Slice 7. Report input, AI evidence input,
+supportability/observability hardening, live canonical proof, Gateway/Workbench realization RFCs,
+final hardening, PR merge, and wiki publication remain pending.
 
 ---
 

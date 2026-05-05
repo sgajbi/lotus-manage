@@ -4,6 +4,7 @@ from typing import AsyncIterator
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.waves.repository import DpmWaveRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.construction import PostgresConstructionRepository
@@ -12,6 +13,10 @@ from src.infrastructure.proof_packs import (
     InMemoryDpmProofPackRepository,
     PostgresDpmProofPackRepository,
 )
+from src.infrastructure.outcomes import (
+    InMemoryDpmOutcomeReviewRepository,
+    PostgresDpmOutcomeReviewRepository,
+)
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
 from src.infrastructure.waves import InMemoryDpmWaveRepository, PostgresDpmWaveRepository
 
@@ -19,10 +24,12 @@ from src.infrastructure.waves import InMemoryDpmWaveRepository, PostgresDpmWaveR
 _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
 _CONSTRUCTION_REPOSITORY = InMemoryConstructionRepository()
 _PROOF_PACK_REPOSITORY = InMemoryDpmProofPackRepository()
+_OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
 _POSTGRES_CONSTRUCTION_REPOSITORY: PostgresConstructionRepository | None = None
 _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
+_POSTGRES_OUTCOME_REVIEW_REPOSITORY: PostgresDpmOutcomeReviewRepository | None = None
 _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
 
 
@@ -70,6 +77,18 @@ def get_proof_pack_repository() -> DpmProofPackRepository:
             _POSTGRES_PROOF_PACK_REPOSITORY = PostgresDpmProofPackRepository(dsn=dsn)
         return _POSTGRES_PROOF_PACK_REPOSITORY
     return _PROOF_PACK_REPOSITORY
+
+
+def get_outcome_review_repository() -> DpmOutcomeReviewRepository:
+    """Return the RFC-0042 outcome-review repository for local and test runtimes."""
+
+    dsn = _repository_dsn("DPM_OUTCOME_REVIEW_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_OUTCOME_REVIEW_REPOSITORY
+        if _POSTGRES_OUTCOME_REVIEW_REPOSITORY is None:
+            _POSTGRES_OUTCOME_REVIEW_REPOSITORY = PostgresDpmOutcomeReviewRepository(dsn=dsn)
+        return _POSTGRES_OUTCOME_REVIEW_REPOSITORY
+    return _OUTCOME_REVIEW_REPOSITORY
 
 
 def get_wave_repository() -> DpmWaveRepository:
