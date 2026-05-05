@@ -422,3 +422,71 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert (
         "Do not start product implementation before this Slice 0 artifact is reviewed" in source_map
     )
+
+
+def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
+    rfc = (ROOT / "docs" / "rfcs" / "RFC-0042-post-trade-outcome-feedback-loop.md").read_text(
+        encoding="utf-8"
+    )
+    source_map = (ROOT / "docs" / "rfcs" / "RFC-0042-source-map-and-gap-analysis.md").read_text(
+        encoding="utf-8"
+    )
+    index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
+    wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
+    roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_sections = [
+        "## 1. Critical Review of the Prior Draft",
+        "## 6. Work-To-Be-Done Ledger Intake",
+        "## 7. Source Map and Gap Policy",
+        "## 8. First-Wave Support Boundary",
+        "### Slice 1 - Platform Automation and Scaffolding Improvement",
+        "### Slice 2 - Cleanup and Structure",
+        "### Slice 10 - Gateway and Workbench Realization RFC Slice",
+        "### Slice 11 - Implementation Proof",
+        "### Slice 12 - Second-Last Hardening and Review",
+        "### Slice 13 - Final Closure",
+        "## 15. Supported-Features Ledger",
+        "## 19. Final Gold-Pass Assessment",
+    ]
+    missing_sections = [section for section in required_sections if section not in rfc]
+
+    assert missing_sections == []
+    assert "PROPOSED - GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED" in rfc
+    assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
+    assert "No feature below is supported until implementation" in rfc
+    assert "Current gold-pass state:" in rfc
+    assert "`NOT STARTED`" in rfc
+    assert "Gateway and Workbench product support must not be claimed" in rfc
+    assert "`lotus-manage` must not clone risk, performance, tax-lot, fill, cash" in rfc
+    assert "`EXECUTION_EVIDENCE_BLOCKED`" in rfc
+    assert "RFC41-WTBD-010" in rfc
+    assert "DpmOutcomeReportInput" in rfc
+    assert "DpmOutcomeAiEvidenceInput" in rfc
+    assert "PM quality scoring | Not supported" in rfc
+    assert "External execution integration | Not supported" in rfc
+    assert "feat/rfc0042-implementation" in rfc
+    assert "output/rfc0042-outcome-proof/<timestamp>/" in rfc
+
+    assert "## Slice 0 Result" in source_map
+    assert "No route, persistence table, runtime capability" in source_map
+    assert "First-Wave Outcome Dimension Posture" in source_map
+    assert "Gateway and Workbench Realization Boundary" in source_map
+    assert "No supported feature is promoted by RFC-0042 tightening" in source_map
+    assert (
+        "| Fill/order/execution detail | `lotus-core` or future execution/OMS owner |" in source_map
+    )
+    assert "| `EXECUTION_QUALITY` | Fill/order/execution source exists" in source_map
+    assert "Workbench must consume Gateway/BFF only" in source_map
+    assert "PB_SG_GLOBAL_BAL_001" in source_map
+
+    assert (
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | PROPOSED (GOLD-STANDARD TIGHTENED; IMPLEMENTATION NOT STARTED)"
+        in index
+    )
+    assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
+    assert "gold-standard tightened on 2026-05-05" in wiki_index
+    assert "implementation has not started" in roadmap
+    assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
+    assert "Supported as RFC-0042" not in supported_features
