@@ -244,7 +244,13 @@ def create_outcome_review_endpoint(
     "",
     response_model=DpmOutcomeReviewListResponse,
     summary="Search post-trade outcome reviews",
-    description="Search persisted RFC-0042 outcome reviews using bounded metadata filters.",
+    description=(
+        "What: Search persisted RFC-0042 outcome reviews using bounded metadata filters.\n"
+        "When: Use for PM, CIO, operations, report, or AI consumers that need outcome-review "
+        "memory without recomputing source truth.\n"
+        "How: Apply portfolio, mandate, wave, run, state, limit, and offset filters. The response "
+        "returns immutable review records from manage persistence."
+    ),
 )
 def list_outcome_reviews_endpoint(
     portfolio_id: str | None = Query(default=None, description="Optional portfolio id filter."),
@@ -272,7 +278,13 @@ def list_outcome_reviews_endpoint(
     "/{outcome_review_id}",
     response_model=DpmOutcomeReviewLookupResponse,
     summary="Get post-trade outcome review",
-    description="Retrieve one immutable RFC-0042 outcome review by id.",
+    description=(
+        "What: Retrieve one immutable RFC-0042 outcome review by id.\n"
+        "When: Use after create, search, run lookup, or wave lookup to inspect persisted "
+        "expected-versus-realized evidence.\n"
+        "How: Provide the manage-owned outcome review id. The endpoint returns stored review "
+        "truth and does not refresh sources or recalculate source-owner values."
+    ),
 )
 def get_outcome_review_endpoint(
     outcome_review_id: str,
@@ -332,7 +344,14 @@ def refresh_outcome_review_sources_endpoint(
     "/{outcome_review_id}/supportability",
     response_model=DpmOutcomeReviewSupportabilityResponse,
     summary="Get outcome-review supportability",
-    description="Return operator-safe RFC-0042 state, source posture, and reason codes.",
+    description=(
+        "What: Return operator-safe RFC-0042 state, source posture, source-owner families, "
+        "dimension counts, freshness counts, and reason codes.\n"
+        "When: Use when PMs, operations, support, Gateway, or Workbench need to distinguish source "
+        "gaps from manage defects.\n"
+        "How: Provide the outcome review id. The response emits bounded diagnostics and "
+        "remediation routes without raw source payloads or sensitive identifiers."
+    ),
 )
 def get_outcome_review_supportability_endpoint(
     outcome_review_id: str,
@@ -478,7 +497,13 @@ wave_lookup_router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Ou
     "/{rebalance_run_id}/outcome-review",
     response_model=DpmOutcomeReviewLookupResponse,
     summary="Get outcome review by rebalance run",
-    description="Return the first persisted outcome review for a rebalance run when one exists.",
+    description=(
+        "What: Return the first persisted outcome review for a rebalance run when one exists.\n"
+        "When: Use to connect RFC-0039/RFC-0040/RFC-0041 run evidence to the RFC-0042 outcome "
+        "review that closed the loop.\n"
+        "How: Provide the rebalance run id. The endpoint searches persisted manage outcome-review "
+        "truth and returns 404 when no review has been created."
+    ),
 )
 def get_outcome_review_by_run_endpoint(
     rebalance_run_id: str,
@@ -494,7 +519,13 @@ def get_outcome_review_by_run_endpoint(
     "/{wave_id}/outcome-reviews",
     response_model=DpmOutcomeReviewListResponse,
     summary="List outcome reviews by rebalance wave",
-    description="Return persisted outcome reviews associated with a rebalance wave.",
+    description=(
+        "What: Return persisted outcome reviews associated with a rebalance wave.\n"
+        "When: Use after RFC-0041 wave approval, staging, or handoff to inspect post-trade "
+        "reviews for affected portfolios.\n"
+        "How: Provide the manage-owned wave id plus optional pagination. The endpoint lists "
+        "stored review records without deriving wave state locally."
+    ),
 )
 def list_outcome_reviews_by_wave_endpoint(
     wave_id: str,

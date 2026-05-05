@@ -147,6 +147,17 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     ]
     assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
 
+    guided_get_paths = [
+        ("/api/v1/rebalance/outcome-reviews", "get"),
+        ("/api/v1/rebalance/outcome-reviews/{outcome_review_id}", "get"),
+        ("/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability", "get"),
+        ("/api/v1/rebalance/runs/{rebalance_run_id}/outcome-review", "get"),
+        ("/api/v1/rebalance/waves/{wave_id}/outcome-reviews", "get"),
+    ]
+    for path, method in guided_get_paths:
+        operation = schema["paths"][path][method]
+        assert all(marker in operation["description"] for marker in ["What:", "When:", "How:"])
+
 
 def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() -> None:
     repository = InMemoryDpmOutcomeReviewRepository()

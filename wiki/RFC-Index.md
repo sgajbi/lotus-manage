@@ -96,9 +96,11 @@ evidence, and supported-feature promotion.
   evidence, Slice 3 pure domain comparison evidence, Slice 4 expected snapshot assembly evidence,
   Slice 5 realized source-degraded evidence, Slice 6 persistence/events evidence, Slice 7 certified
   manage API/OpenAPI evidence, Slice 8 report-input/AI-evidence handoff contracts, Slice 9
-  supportability/observability diagnostics, and Slice 10 Gateway/Workbench realization RFC
-  alignment. No full supported-feature claim is made until source-backed live proof,
-  Gateway/Workbench implementation where surfaced, final PR/CI, and wiki publication are complete
+  supportability/observability diagnostics, Slice 10 Gateway/Workbench realization RFC alignment,
+  and Slice 11 live manage implementation proof at
+  `output/rfc0042-outcome-proof/20260505-024352/`. No full supported-feature claim is made until
+  hardening, Gateway/Workbench implementation where surfaced, final PR/CI, merge, and wiki
+  publication are complete
 - RFC-0043
   proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
   ownership to AI

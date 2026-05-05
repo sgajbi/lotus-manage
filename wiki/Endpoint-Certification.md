@@ -1782,9 +1782,12 @@ Non-functional posture:
   with state/count fields only; no portfolio, actor, review, source-payload, proof-pack, wave,
   request-hash, idempotency, or raw upstream identifiers are emitted.
 - OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
-  guidance for preview, refresh, report input, and AI evidence input.
-- Full RFC-0042 product support remains unclaimed until live canonical proof, downstream
-  realization RFCs, hardening, PR/CI, merge, and wiki publication are complete.
+  guidance for preview, create, search, lookup, refresh, supportability, report input, AI evidence
+  input, run lookup, and wave lookup.
+- Slice 11 live proof passed at `output/rfc0042-outcome-proof/20260505-024352/` after the proof
+  process found and fixed stale runtime restart handling plus GET endpoint guidance gaps.
+- Full RFC-0042 product support remains unclaimed until hardening, downstream realization where
+  surfaced, PR/CI, merge, and wiki publication are complete.
 
 Upstream integration posture:
 
@@ -1808,7 +1811,9 @@ python -m pytest tests/unit/api/test_outcome_reviews_api.py -q
 python -m pytest tests/unit/core/test_outcome_handoffs.py -q
 python -m pytest tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py -q
 python scripts/validate_observability_contracts.py
-python -m ruff check src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
+powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8001
+python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001
+python -m ruff check scripts/generate_rfc0042_outcome_evidence.py src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
 ```
 
 ## Certified endpoint: proof-pack detail

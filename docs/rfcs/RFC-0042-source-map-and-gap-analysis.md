@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-10 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-11 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -347,6 +347,47 @@ Workbench RFC/addendum must specify:
 6. canonical front-office proof through Gateway/BFF only.
 
 No Gateway or Workbench supported-feature claim may be made from manage-only evidence.
+
+---
+
+## Slice 11 Live Implementation Proof Result
+
+Slice 11 evidence is recorded in `docs/rfcs/RFC-0042-implementation-proof-slice11.md`.
+
+Live accepted output:
+
+`output/rfc0042-outcome-proof/20260505-024352/`
+
+Critical review result:
+
+`output/rfc0042-outcome-proof/20260505-024352/critical-review.json` => `passed`.
+
+The live proof exercised the canonical manage runtime and verified:
+
+1. health readiness,
+2. preview and durable create for a source-backed `PB_SG_GLOBAL_BAL_001` outcome review,
+3. retrieve, search, supportability, report-input, and AI-evidence endpoints,
+4. source lineage and SHA-256 content hashes across `lotus-manage` expected evidence and
+   `lotus-core` realized evidence refs,
+5. worked variance example for `DRIFT_REDUCTION`,
+6. degraded realized source behavior,
+7. append-only source refresh event behavior,
+8. run and wave lookup routes,
+9. live OpenAPI certification for all RFC-0042 outcome-review paths.
+
+The proof found real quality gaps and they were fixed before the slice was accepted:
+
+1. stale canonical runtime restart handling caused an old OpenAPI document to remain live on
+   `8001`; `scripts/Start-CanonicalManage.ps1` now avoids the reserved PowerShell `$PID` variable
+   when stopping an existing listener.
+2. five GET endpoints lacked explicit What/When/How OpenAPI guidance; the router descriptions and
+   API contract test now guard that standard.
+3. generated proof payloads now use proper SHA-256 source and section hashes and keep refreshed
+   realized source refs consistent across lineage, source hashes, and dimension refs.
+
+No full RFC-0042 product support is promoted by Slice 11. Manage backend behavior is live-proven;
+hardening, final closure, PR/CI, merge, wiki publication, and downstream product realization where
+surfaced remain required.
 
 ---
 

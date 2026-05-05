@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-10 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-11 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -22,6 +22,7 @@
 | **Slice 8 Report/AI Handoff Evidence** | `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md` |
 | **Slice 9 Supportability Evidence** | `docs/rfcs/RFC-0042-supportability-observability-slice9.md` |
 | **Slice 10 Gateway/Workbench Evidence** | `docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md` |
+| **Slice 11 Implementation Proof Evidence** | `docs/rfcs/RFC-0042-implementation-proof-slice11.md`; live proof: `output/rfc0042-outcome-proof/20260505-024352/manifest.json` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -651,6 +652,14 @@ Acceptance:
 2. every supported dimension reconciles to source-owner truth,
 3. degraded examples are present and clear.
 
+Slice 11 evidence:
+
+`docs/rfcs/RFC-0042-implementation-proof-slice11.md`
+
+Live proof output:
+
+`output/rfc0042-outcome-proof/20260505-024352/`
+
 ### Slice 12 - Second-Last Hardening and Review
 
 1. perform a proper code review of the full implementation,
@@ -838,11 +847,15 @@ It must state:
 
 Current gold-pass state:
 
-`IN PROGRESS - SLICES 0-10 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
+`IN PROGRESS - SLICES 0-11 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
 evidence, cleanup/structure evidence, pure comparison, expected snapshot assembly, realized
 source-degraded handling, immutable persistence/events, and a certified manage API/OpenAPI
 foundation, deterministic report-input and AI-evidence handoff contracts, and bounded
 supportability/observability diagnostics. Gateway and Workbench realization RFCs are aligned through
-`lotus-gateway` commit `38d46f9` and `lotus-workbench` commit `3b5182f`. Full supported-feature
-promotion remains pending live canonical proof, hardening, final documentation, PR/CI, merge, wiki
-publication, and branch cleanup.
+`lotus-gateway` commit `38d46f9` and `lotus-workbench` commit `3b5182f`. Slice 11 live proof ran
+against the canonical manage runtime and passed at
+`output/rfc0042-outcome-proof/20260505-024352/critical-review.json`. The proof found and drove a
+real fix for stale-server restart handling in `scripts/Start-CanonicalManage.ps1` and OpenAPI
+What/When/How guidance on outcome-review GET endpoints before evidence was accepted. Full
+supported-feature promotion remains pending hardening, final documentation, PR/CI, merge, wiki
+publication, downstream Gateway/Workbench implementation where surfaced, and branch cleanup.
