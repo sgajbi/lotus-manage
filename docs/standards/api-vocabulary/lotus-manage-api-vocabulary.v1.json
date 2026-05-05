@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-05T02:08:19.572301+00:00",
+  "generatedAt": "2026-05-05T02:21:48.085652+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -743,6 +743,20 @@
       ],
       "observedTypes": [
         "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.blocked_dimension_count",
+      "canonicalTerm": "blocked_dimension_count",
+      "preferredName": "blocked_dimension_count",
+      "description": "Number of blocked dimensions.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -1706,6 +1720,20 @@
       ]
     },
     {
+      "semanticId": "lotus.degraded_dimension_count",
+      "canonicalTerm": "degraded_dimension_count",
+      "preferredName": "degraded_dimension_count",
+      "description": "Number of degraded dimensions.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.degraded_proof_pack_count",
       "canonicalTerm": "degraded_proof_pack_count",
       "preferredName": "degraded_proof_pack_count",
@@ -1901,6 +1929,22 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.dimension_state_counts",
+      "canonicalTerm": "dimension_state_counts",
+      "preferredName": "dimension_state_counts",
+      "description": "Count of compared dimensions by outcome state.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -2742,6 +2786,22 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.freshness_state_counts",
+      "canonicalTerm": "freshness_state_counts",
+      "preferredName": "freshness_state_counts",
+      "description": "Count of source freshness states across compared dimensions.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -6046,6 +6106,22 @@
       ]
     },
     {
+      "semanticId": "lotus.remediation_routes",
+      "canonicalTerm": "remediation_routes",
+      "preferredName": "remediation_routes",
+      "description": "Operator-safe remediation routes by source-owner family.",
+      "example": [
+        "sample_remediation_routes_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.replay_enabled",
       "canonicalTerm": "replay_enabled",
       "preferredName": "replay_enabled",
@@ -7266,6 +7342,22 @@
       ]
     },
     {
+      "semanticId": "lotus.source_owners",
+      "canonicalTerm": "source_owners",
+      "preferredName": "source_owners",
+      "description": "Bounded source-owner systems represented in lineage.",
+      "example": [
+        "sample_source_owners_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.source_readiness_state",
       "canonicalTerm": "source_readiness_state",
       "preferredName": "source_readiness_state",
@@ -7307,6 +7399,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_ref_count",
+      "canonicalTerm": "source_ref_count",
+      "preferredName": "source_ref_count",
+      "description": "Count of source refs linked to the review.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -8499,6 +8605,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.unsupported_dimension_count",
+      "canonicalTerm": "unsupported_dimension_count",
+      "preferredName": "unsupported_dimension_count",
+      "description": "Number of not-supported dimensions.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -68808,6 +68928,70 @@
             "type": "array",
             "semanticId": "lotus.reason_codes",
             "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "source_owners",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_owners",
+            "attributeRef": "#/attributeCatalog/lotus.source_owners"
+          },
+          {
+            "name": "dimension_state_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.dimension_state_counts",
+            "attributeRef": "#/attributeCatalog/lotus.dimension_state_counts"
+          },
+          {
+            "name": "blocked_dimension_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.blocked_dimension_count",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_dimension_count"
+          },
+          {
+            "name": "degraded_dimension_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.degraded_dimension_count",
+            "attributeRef": "#/attributeCatalog/lotus.degraded_dimension_count"
+          },
+          {
+            "name": "unsupported_dimension_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.unsupported_dimension_count",
+            "attributeRef": "#/attributeCatalog/lotus.unsupported_dimension_count"
+          },
+          {
+            "name": "freshness_state_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.freshness_state_counts",
+            "attributeRef": "#/attributeCatalog/lotus.freshness_state_counts"
+          },
+          {
+            "name": "remediation_routes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.remediation_routes",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_routes"
           }
         ]
       }

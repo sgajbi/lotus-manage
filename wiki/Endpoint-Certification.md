@@ -1756,7 +1756,9 @@ Functional behavior:
 - Source refresh accepts a fresh realized source-owner snapshot, recomputes comparison against the
   immutable expected snapshot, and appends an `OUTCOME_REVIEW_SOURCE_REFRESHED` event carrying the
   refreshed state and source refs.
-- Supportability returns bounded state and reason-code posture without raw upstream payloads.
+- Supportability returns bounded state, reason-code posture, source-owner families, source-ref
+  count, dimension-state counts, freshness-state counts, and remediation routes without raw
+  upstream payloads.
 - Report input returns deterministic report-ready facts, source hashes, supportability, dimension
   outcomes, and a canonical handoff hash without rendering reports or archive records.
 - AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
@@ -1772,11 +1774,17 @@ Non-functional posture:
 - Refresh does not mutate the original review body; history is append-only.
 - Report and AI handoff contracts are derived from persisted review truth and remain downstream
   input contracts only.
+- Slice 9 adds `lotus_manage_outcome_review_supportability_total` for create, source-refresh, and
+  supportability-read posture with bounded `surface`, `supportability_state`, and `reason` labels.
+  The metric, dashboard panel, and alert are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`.
+- Supportability inspection logs use the bounded `outcome_review.supportability.inspected` event
+  with state/count fields only; no portfolio, actor, review, source-payload, proof-pack, wave,
+  request-hash, idempotency, or raw upstream identifiers are emitted.
 - OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
   guidance for preview, refresh, report input, and AI evidence input.
-- Full RFC-0042 product support remains unclaimed until supportability/observability, live
-  canonical proof, downstream realization RFCs, hardening, PR/CI, merge, and wiki publication are
-  complete.
+- Full RFC-0042 product support remains unclaimed until live canonical proof, downstream
+  realization RFCs, hardening, PR/CI, merge, and wiki publication are complete.
 
 Upstream integration posture:
 
@@ -1798,6 +1806,8 @@ Evidence commands:
 ```bash
 python -m pytest tests/unit/api/test_outcome_reviews_api.py -q
 python -m pytest tests/unit/core/test_outcome_handoffs.py -q
+python -m pytest tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py -q
+python scripts/validate_observability_contracts.py
 python -m ruff check src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
 ```
 

@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-8 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-9 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -181,6 +181,26 @@ placement, approval, control override, invented evidence, PM scoring, and client
 No downstream product claim is promoted by Slice 8. `lotus-report`, `lotus-render`,
 `lotus-archive`, and `lotus-ai` own artifact generation, archive lifecycle, workflow packs,
 prompts, generated narrative, and AI execution guardrails.
+
+---
+
+## Slice 9 Supportability, Observability, and Operator Diagnostics Result
+
+Slice 9 evidence is recorded in
+`docs/rfcs/RFC-0042-supportability-observability-slice9.md`.
+
+`lotus_manage_outcome_review_supportability_total` now records bounded create, source-refresh, and
+supportability-read posture for outcome reviews. The monitoring contract defines allowlisted
+`surface`, `supportability_state`, and `reason` labels, adds an outcome-review supportability panel,
+and adds a blocked-state alert linked to the RFC-0042 runbook.
+
+`GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability` now returns
+operator-safe source-owner, source-ref count, dimension-state count, freshness-state count, and
+remediation-route diagnostics. The router emits safe supportability inspection logs with counts and
+bounded state only.
+
+No full RFC-0042 product support is promoted by Slice 9. Live source-backed proof,
+Gateway/Workbench realization RFCs, final hardening, PR merge, and wiki publication remain pending.
 
 ---
 

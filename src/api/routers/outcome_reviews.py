@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from decimal import Decimal
 from typing import Annotated
 
@@ -7,6 +8,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from src.api.dependencies import get_outcome_review_repository
+from src.api.observability import record_outcome_review_supportability
 from src.api.services.outcome_review_service import (
     DpmOutcomeDimensionConfig,
     DpmOutcomeReviewNotFoundError,
@@ -31,6 +33,11 @@ from src.core.outcomes import (
     OutcomeDimension,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
+
+logger = logging.getLogger("lotus-manage.outcome_reviews")
+OUTCOME_CREATE_SURFACE = "rebalance/outcome-reviews/create"
+OUTCOME_REFRESH_SURFACE = "rebalance/outcome-reviews/refresh-sources"
+OUTCOME_SUPPORTABILITY_SURFACE = "rebalance/outcome-reviews/supportability"
 
 
 class DpmOutcomeDimensionConfigRequest(BaseModel):
@@ -98,6 +105,38 @@ class DpmOutcomeReviewSupportabilityResponse(BaseModel):
     supportability: DpmOutcomeSupportability = Field(description="Operator-safe supportability.")
     state: str = Field(description="Outcome review state.", examples=["DEGRADED"])
     reason_codes: list[str] = Field(description="Bounded supportability reason codes.")
+    source_ref_count: int = Field(
+        description="Count of source refs linked to the review.",
+        examples=[3],
+    )
+    source_owners: list[str] = Field(
+        description="Bounded source-owner systems represented in lineage.",
+        examples=[["lotus-manage", "lotus-risk", "lotus-performance"]],
+    )
+    dimension_state_counts: dict[str, int] = Field(
+        description="Count of compared dimensions by outcome state.",
+        examples=[{"READY": 2, "DEGRADED": 1, "BLOCKED": 1}],
+    )
+    blocked_dimension_count: int = Field(
+        description="Number of blocked dimensions.",
+        examples=[1],
+    )
+    degraded_dimension_count: int = Field(
+        description="Number of degraded dimensions.",
+        examples=[1],
+    )
+    unsupported_dimension_count: int = Field(
+        description="Number of not-supported dimensions.",
+        examples=[0],
+    )
+    freshness_state_counts: dict[str, int] = Field(
+        description="Count of source freshness states across compared dimensions.",
+        examples=[{"CURRENT": 2, "STALE": 1}],
+    )
+    remediation_routes: list[str] = Field(
+        description="Operator-safe remediation routes by source-owner family.",
+        examples=[["lotus-risk:refresh-post-trade-risk-source"]],
+    )
 
 
 class DpmOutcomeReviewRefreshSourcesRequest(BaseModel):
@@ -193,6 +232,11 @@ def create_outcome_review_endpoint(
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
     except DpmOutcomeReviewConflictError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    record_outcome_review_supportability(
+        surface=OUTCOME_CREATE_SURFACE,
+        supportability_state=_metric_state(review.state),
+        reason=_metric_reason(review.state),
+    )
     return DpmOutcomeReviewCreateResponse(outcome_review=review)
 
 
@@ -268,9 +312,19 @@ def refresh_outcome_review_sources_endpoint(
             repository=repository,
         )
     except DpmOutcomeReviewNotFoundError as exc:
+        record_outcome_review_supportability(
+            surface=OUTCOME_REFRESH_SURFACE,
+            supportability_state="not_found",
+            reason="outcome_review_not_found",
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND") from exc
     except DpmOutcomeReviewValidationError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)) from exc
+    record_outcome_review_supportability(
+        surface=OUTCOME_REFRESH_SURFACE,
+        supportability_state=_metric_state(comparison.state),
+        reason="outcome_review_source_refreshed",
+    )
     return DpmOutcomeReviewRefreshSourcesResponse(event=event, comparison=comparison)
 
 
@@ -286,13 +340,89 @@ def get_outcome_review_supportability_endpoint(
 ) -> DpmOutcomeReviewSupportabilityResponse:
     review = repository.get_outcome_review(outcome_review_id=outcome_review_id)
     if review is None:
+        record_outcome_review_supportability(
+            surface=OUTCOME_SUPPORTABILITY_SURFACE,
+            supportability_state="not_found",
+            reason="outcome_review_not_found",
+        )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND")
+    response = _supportability_response(review)
+    record_outcome_review_supportability(
+        surface=OUTCOME_SUPPORTABILITY_SURFACE,
+        supportability_state=_metric_state(review.state),
+        reason=_metric_reason(review.state),
+    )
+    logger.info(
+        "outcome_review.supportability.inspected",
+        extra={
+            "extra_fields": {
+                "outcome_state": _metric_state(review.state),
+                "reason": _metric_reason(review.state),
+                "dimension_count": len(review.dimension_results),
+                "blocked_dimension_count": response.blocked_dimension_count,
+                "degraded_dimension_count": response.degraded_dimension_count,
+                "unsupported_dimension_count": response.unsupported_dimension_count,
+                "source_ref_count": response.source_ref_count,
+            }
+        },
+    )
+    return response
+
+
+def _supportability_response(
+    review: DpmPostTradeOutcomeReview,
+) -> DpmOutcomeReviewSupportabilityResponse:
+    dimension_state_counts: dict[str, int] = {}
+    freshness_state_counts: dict[str, int] = {}
+    for result in review.dimension_results:
+        dimension_state_counts[result.state] = dimension_state_counts.get(result.state, 0) + 1
+        for freshness in result.source_freshness:
+            freshness_state_counts[freshness.freshness_state] = (
+                freshness_state_counts.get(freshness.freshness_state, 0) + 1
+            )
     return DpmOutcomeReviewSupportabilityResponse(
-        outcome_review_id=outcome_review_id,
+        outcome_review_id=review.outcome_review_id,
         supportability=review.supportability,
         state=review.state,
         reason_codes=review.supportability.reason_codes,
+        source_ref_count=len(review.source_lineage),
+        source_owners=sorted({ref.source_system for ref in review.source_lineage}),
+        dimension_state_counts=dimension_state_counts,
+        blocked_dimension_count=dimension_state_counts.get("BLOCKED", 0),
+        degraded_dimension_count=dimension_state_counts.get("DEGRADED", 0),
+        unsupported_dimension_count=dimension_state_counts.get("NOT_SUPPORTED", 0),
+        freshness_state_counts=freshness_state_counts,
+        remediation_routes=_remediation_routes(review),
     )
+
+
+def _remediation_routes(review: DpmPostTradeOutcomeReview) -> list[str]:
+    routes: set[str] = set()
+    for reason in review.supportability.reason_codes:
+        if "RISK" in reason:
+            routes.add("lotus-risk:refresh-post-trade-risk-source")
+        elif "PERFORMANCE" in reason:
+            routes.add("lotus-performance:refresh-post-trade-performance-source")
+        elif "EXECUTION" in reason:
+            routes.add("execution-owner:certify-fill-and-order-evidence")
+        elif "SOURCE" in reason or "CASH" in reason or "FX" in reason or "TAX" in reason:
+            routes.add("source-owner:refresh-realized-outcome-source")
+    return sorted(routes)
+
+
+def _metric_state(state: str) -> str:
+    return state.lower()
+
+
+def _metric_reason(state: str) -> str:
+    return {
+        "READY": "outcome_review_ready",
+        "PENDING_REVIEW": "outcome_review_pending_review",
+        "BREACHED": "outcome_review_breached",
+        "DEGRADED": "outcome_review_degraded",
+        "BLOCKED": "outcome_review_blocked",
+        "NOT_SUPPORTED": "outcome_review_not_supported",
+    }.get(state, "outcome_review_error")
 
 
 @router.get(

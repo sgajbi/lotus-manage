@@ -66,7 +66,12 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
                 f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability"
             )
             assert supportability.status_code == 200
-            assert supportability.json()["state"] == "READY"
+            supportability_body = supportability.json()
+            assert supportability_body["state"] == "READY"
+            assert supportability_body["source_owners"] == ["lotus-manage"]
+            assert supportability_body["dimension_state_counts"] == {"READY": 1}
+            assert supportability_body["blocked_dimension_count"] == 0
+            assert supportability_body["remediation_routes"] == []
 
             report = client.get(
                 f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/report-input"

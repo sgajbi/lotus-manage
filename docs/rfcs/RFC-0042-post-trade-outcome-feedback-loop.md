@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-8 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-9 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -20,6 +20,7 @@
 | **Slice 6 Persistence Evidence** | `docs/rfcs/RFC-0042-persistence-events-slice6.md` |
 | **Slice 7 API Evidence** | `docs/rfcs/RFC-0042-api-openapi-slice7.md` |
 | **Slice 8 Report/AI Handoff Evidence** | `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md` |
+| **Slice 9 Supportability Evidence** | `docs/rfcs/RFC-0042-supportability-observability-slice9.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -606,6 +607,10 @@ Acceptance:
 2. metrics are bounded and product-safe,
 3. operators can distinguish source gaps from manage defects.
 
+Slice 9 evidence:
+
+`docs/rfcs/RFC-0042-supportability-observability-slice9.md`
+
 ### Slice 10 - Gateway and Workbench Realization RFC Slice
 
 After manage contracts and live proof are stable, create or tighten downstream RFCs:
@@ -828,10 +833,10 @@ It must state:
 
 Current gold-pass state:
 
-`IN PROGRESS - SLICES 0-8 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
+`IN PROGRESS - SLICES 0-9 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
 evidence, cleanup/structure evidence, pure comparison, expected snapshot assembly, realized
 source-degraded handling, immutable persistence/events, and a certified manage API/OpenAPI
-foundation, plus deterministic report-input and AI-evidence handoff contracts. Full
-supported-feature promotion remains pending supportability/observability, live canonical proof,
-downstream realization RFCs, hardening, final documentation, PR/CI, merge, wiki publication, and
-branch cleanup.
+foundation, deterministic report-input and AI-evidence handoff contracts, and bounded
+supportability/observability diagnostics. Full supported-feature promotion remains pending live
+canonical proof, downstream realization RFCs, hardening, final documentation, PR/CI, merge, wiki
+publication, and branch cleanup.
