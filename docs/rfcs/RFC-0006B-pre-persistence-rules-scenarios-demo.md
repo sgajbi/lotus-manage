@@ -24,6 +24,24 @@ RFC-0006B bridges the gap between a functional calculator and a demo-credible, i
 2. Dependency linking for FX-funded buys is implemented in `_generate_fx_and_simulate`.
 3. Rule emission includes all core rule IDs; `MIN_TRADE_SIZE` currently emits as `SOFT/PASS` with diagnostics context.
 
+### 0.2 Current Status Review (2026-05-03)
+
+RFC-0006B is **implemented** as the rules configurability, FX dependency, and scenario-matrix
+foundation. It remains product-relevant because configurable constraints and deterministic
+dependency ordering are core to discretionary mandate portfolio management.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Request/policy-driven rule thresholds | `src/core/models.py`, `src/core/compliance.py`, policy-pack RFC-0022 implementation | Implemented and extended |
+| FX-funded security buys include deterministic dependencies | `src/core/rebalance/engine.py`, multi-currency golden scenarios | Implemented |
+| Golden 300-series institutional scenario matrix | `tests/unit/dpm/golden_data/scenario_301_*` through `scenario_312_*` | Implemented |
+| Demo scenarios executable from JSON | `docs/demo/README.md`, demo request packs | Implemented |
+| Avoid hard-coded rule thresholds in core engine paths | `src/core/models.py`, `src/core/compliance.py`, policy-pack tests | Implemented |
+
+Future work should evaluate whether the heuristic and solver target generation quality is best-in-
+class for mandate portfolio use cases, but that belongs to RFC-0012 and later core-sourcing work,
+not this pre-persistence hardening RFC.
+
 ---
 
 ## 1. Problem Statement

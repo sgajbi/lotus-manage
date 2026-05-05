@@ -153,7 +153,13 @@ def test_endpoint_certification_wiki_covers_openapi_paths() -> None:
 
 def test_foundation_rfcs_are_rebaselined_to_current_dpm_scope() -> None:
     reviewed_rfcs = [
+        "RFC-0001-rebalance-simulation-mvp.md",
         "RFC-0002-rebalance-simulation-mvp-hardening-enterprise-completeness.md",
+        "RFC-0003-contract-engine-completion.md",
+        "RFC-0004-institutional-afterstate-holdings-goldens.md",
+        "RFC-0005-institutional-tightening-post-trade-rules-reconciliation-demo-pack.md",
+        "RFC-0006A-pre-persistence-safety-afterstate.md",
+        "RFC-0006B-pre-persistence-rules-scenarios-demo.md",
         "RFC-0007A-contract-tightening.md",
         "RFC-0021-dpm-openapi-contract-hardening.md",
         "RFC-0024-unified-postgresql-persistence-for-dpm-and-advisory.md",
@@ -174,6 +180,12 @@ def test_foundation_rfcs_are_rebaselined_to_current_dpm_scope() -> None:
     ).read_text(encoding="utf-8")
     assert "`GET /api/v1/integration/capabilities`" in rfc_0028
     assert "`GET /integration/capabilities`" not in rfc_0028
+
+    early_foundation = (ROOT / "docs" / "rfcs" / "RFC-0001-rebalance-simulation-mvp.md").read_text(
+        encoding="utf-8"
+    )
+    assert "historical MVP foundation" in early_foundation
+    assert "not be read as the target-state product definition" in early_foundation
 
     for rfc in [
         "RFC-0024-unified-postgresql-persistence-for-dpm-and-advisory.md",

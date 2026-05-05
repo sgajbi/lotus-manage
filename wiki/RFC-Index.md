@@ -13,9 +13,15 @@
 
 - RFC-0001 to RFC-0013
   core rebalance simulation, controls, optimization, and what-if analysis foundation
+- RFC-0001
+  implemented deterministic DPM simulation foundation; later RFCs own current persistence,
+  idempotency, supportability, and stateful sourcing layers
 - RFC-0002
   implemented enterprise hardening baseline; durable idempotency and persistence are now delivered
   by later supportability RFCs rather than deferred work
+- RFC-0003 to RFC-0006B
+  implemented audit bundle, holdings-aware after-state, reconciliation, safety, configurable rules,
+  FX dependencies, and institutional scenario matrix foundations
 - RFC-0007A
   implemented contract-tightening baseline for the canonical rebalance execution surface
 - RFC-0016
@@ -118,8 +124,10 @@ evidence, and supported-feature promotion.
 
 ## Rebaselined foundation RFCs
 
-- RFC-0002, RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were reviewed against current
-  implementation evidence on 2026-05-03.
+- RFC-0001 through RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were reviewed against
+  current implementation evidence on 2026-05-03.
+- Early MVP and pre-persistence RFCs are preserved as historical foundation layers. They should not
+  be read as the current product ceiling for enterprise lotus-manage.
 - RFC-0024 and RFC-0025 are complete for current lotus-manage DPM supportability and production
   cutover scope. Historical advisory migration notes remain in the RFC files for audit traceability
   only.

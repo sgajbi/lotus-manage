@@ -52,8 +52,9 @@ contract. Do not treat their features as supported until implementation, API cer
 evidence, wiki updates, and supported-feature promotion are complete.
 
 Review note:
-- RFC-0002, RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were rebaselined on
-  2026-05-03 against current lotus-manage DPM implementation evidence. RFC-0024 and RFC-0025
+- RFC-0001 through RFC-0007A, RFC-0021, RFC-0024, RFC-0025, and RFC-0028 were rebaselined on
+  2026-05-03 against current lotus-manage DPM implementation evidence. Early MVP/pre-persistence
+  RFCs are historical foundation layers, not the current product ceiling. RFC-0024 and RFC-0025
   retain historical advisory migration notes only; active advisory proposal ownership is
   `lotus-advise`, not `lotus-manage`.
 

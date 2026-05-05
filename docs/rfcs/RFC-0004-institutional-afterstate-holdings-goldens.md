@@ -26,6 +26,23 @@ This RFC is strictly **pre-persistence** (runs may still be in-memory).
 2. Golden suite is implemented with filenames `scenario_101...scenario_114` under `tests/unit/dpm/golden_data/`.
 3. Rule and diagnostics outputs are present and exercised by golden tests.
 
+### 0.2 Current Status Review (2026-05-03)
+
+RFC-0004 is **implemented** and should now be read as the holdings-aware after-state foundation,
+not as an active "pre-persistence" target state. Later RFCs added durable supportability,
+idempotency, core sourcing, and endpoint consolidation on top of this behavior.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Complete before/after portfolio state | `src/core/valuation.py`, `src/core/models.py`, golden tests | Implemented |
+| Real holdings, sells, buys, multi-currency valuation | `tests/unit/dpm/golden_data/scenario_101_*` through `scenario_114_*` | Implemented |
+| Shelf behavior, missing data, rounding, and dust diagnostics | Golden data scenarios and `tests/unit/dpm/golden/test_golden_scenarios.py` | Implemented |
+| Demo pack aligned to executable JSON | `docs/demo/README.md` and demo request packs | Implemented and updated by later RFCs |
+| Persistence excluded from this RFC | Later RFCs own persistence and supportability | Superseded by RFC-0016/RFC-0017/RFC-0023/RFC-0024 |
+
+The business value remains current: the engine must produce explainable before/after mandate
+portfolio state for real holdings, not just target weights or headline trade counts.
+
 ---
 
 ## 1. Problem Statement

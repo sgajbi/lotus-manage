@@ -29,6 +29,25 @@ The service provides a **single, golden endpoint** that accepts a portfolio snap
 3. Implemented domain failures return HTTP 200 with `status=BLOCKED` for valid payloads.
 4. Persistence and durable idempotency store are not implemented in this codebase yet.
 
+### 1.2 Current Status Review (2026-05-03)
+
+RFC-0001 is the historical MVP foundation for the current lotus-manage DPM product. It remains
+**implemented**, but the dated implementation note above is no longer complete because persistence,
+idempotency, stateful sourcing, supportability, OpenAPI certification, and Postgres production
+posture have since been delivered by later RFCs.
+
+| Original requirement | Current implementation evidence | Current status |
+| --- | --- | --- |
+| Deterministic rebalance simulation endpoint | `src/api/routers/rebalance.py`, `src/api/services/rebalance_simulation_service.py` | Implemented |
+| Functional pipeline from universe to target, intents, FX, after-state, and compliance | `src/core/rebalance/`, `src/core/valuation.py`, `src/core/compliance.py` | Implemented and modularized |
+| Audit lineage and evidence bundle | `src/core/models.py`, `src/core/rebalance_runs/`, lineage/support-bundle APIs | Implemented by current supportability layer |
+| Persistence and durable idempotency | RFC-0016, RFC-0017, RFC-0023, RFC-0024 implementation and tests | Implemented by later RFCs |
+| No order execution or OMS routing | No execution adapter exists; operation execute remains governed supportability/workflow behavior | Still out of scope |
+
+This RFC should not be read as the target-state product definition. Current lotus-manage is an
+enterprise discretionary mandate portfolio-management app; RFC-0001 explains the original
+deterministic engine foundation on which the later enterprise layers were built.
+
 ---
 
 ## 2. Problem Statement
