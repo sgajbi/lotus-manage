@@ -2247,7 +2247,8 @@ Audit refresh on 2026-05-05:
 These items are outside the RFC-0042 manage closure because outcome review backend authority is
 necessary but not sufficient for the full front-office learning loop. Source calculations belong
 to source-owning services, product composition belongs to Gateway and Workbench, generated
-artifacts belong to report/render/archive services, and AI narrative belongs to `lotus-ai`.
+artifacts belong to report/render/archive services, and AI narrative execution belongs to
+`lotus-ai`.
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0042 |
 | --- | --- | --- | --- | --- |
@@ -2255,7 +2256,7 @@ artifacts belong to report/render/archive services, and AI narrative belongs to 
 | RFC42-WTBD-002 | Workbench post-trade outcome review UX | `lotus-workbench` through Gateway/BFF | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #146 | Workbench now consumes Gateway/BFF outcome-review contracts only, presents manage-owned outcome truth without recomputation, and is proven by canonical Workbench validation. |
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-gateway`, `lotus-workbench` | Implemented, merged, CI-proven, and wiki-published through `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 | Manage emits bounded report input only; downstream services now consume it to create deterministic outcome-review report artifacts, preserve archive posture, expose Gateway submission, and add the Workbench report request action without recomputing outcome truth. |
-| RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, RFC-0043, Gateway/Workbench | Pending AI workflow contract | Manage emits AI evidence input only; prompt execution, model posture, guardrails, and narrative generation belong to `lotus-ai`. |
+| RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, Gateway, Workbench, with manage as evidence authority | Implemented, merged, CI-proven, and wiki-published through `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 | Manage emits AI evidence input only; `lotus-ai` now owns guarded workflow-pack narrative execution, Gateway composes the evidence/narrative BFF, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
 | RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | Source-owner follow-on | RFC-0042 preserves missing/unsupported/degraded source states instead of cloning calculations in manage. |
 | RFC42-WTBD-007 | External execution/OMS integration and acknowledgements | Execution/OMS owner, `lotus-manage` consumer | Ownership not established | RFC-0042 can compare expected and realized evidence, but OMS integration needs a separate owner, controls, acknowledgements, and reconciliation contract. |
 | RFC42-WTBD-008 | PM quality scoring or behavioral analytics | Business owner, methodology owner, `lotus-ai` only if approved | Not supported | RFC-0042 intentionally avoids scoring PMs. Any future scoring requires business approval, auditable methodology, bias controls, and governance. |
@@ -2517,31 +2518,72 @@ Target business outcome:
 PMs and CIO users can request governed AI support over outcome-review evidence without inventing
 missing facts, scoring PMs, contacting clients, approving trades, or bypassing controls.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-`lotus-manage` emits bounded `DpmOutcomeAiEvidenceInput`; AI workflow execution belongs to
-`lotus-ai` and RFC-0043.
+Complete for first-wave governed outcome-review narrative support. `lotus-ai` now owns
+`outcome_review_narrative.pack@v1`, including supported caller governance, narrative guardrails,
+stub-provider execution, workflow-pack registry exposure, queue policy, and supportability
+metadata. `lotus-gateway` composes the product route
+`POST /api/v1/dpm/command-center/outcome-reviews/{outcome_review_id}/ai-narrative` by fetching
+manage-owned `DpmOutcomeAiEvidenceInput`, forwarding a bounded request to `lotus-ai`, preserving
+manage as evidence/workflow authority, and returning explicit manage/AI upstream posture.
+`lotus-workbench` exposes the governed action on the RFC-0042 outcome-review panel through the
+Gateway BFF only, records bounded observability for `dpm.outcome-review.ai-narrative`, and displays
+workflow-pack run posture without constructing prompts, scoring PMs, approving trades, or calling
+raw manage/AI services.
 
-Dependencies before implementation:
+Why it was not done in the original RFC-0042 manage closure:
 
-1. RFC-0043 or `lotus-ai` workflow-pack contract,
-2. prompt/model/provenance and evidence-hash capture,
-3. forbidden action and forbidden field enforcement,
-4. unavailable and guardrail-blocked states,
-5. Gateway/Workbench UX for AI posture without direct manage or AI bypasses.
+`lotus-manage` correctly emitted bounded AI evidence input but was not the AI workflow owner.
+Prompt execution, model posture, guardrails, narrative execution, and unavailable/blocked AI states
+belong in `lotus-ai`; product composition belongs in Gateway; user realization belongs in
+Workbench. The item could only close after all three owning repositories implemented and proved
+their contracts.
+
+Dependencies satisfied:
+
+1. `lotus-ai` workflow-pack contract and registry entry for `outcome_review_narrative.pack@v1`,
+2. guardrails that block forbidden actions, forbidden fields, unsupported/degraded evidence,
+   empty review evidence, and missing required evidence hashes,
+3. caller governance for both `lotus-manage` and `lotus-gateway`,
+4. Gateway route and service composition that calls manage and AI through typed owning-service
+   contracts without recomputing outcome truth,
+5. Workbench BFF/API/component realization through Gateway only, with bounded metric labels that
+   exclude outcome review ids, workflow-pack run ids, request bodies, response bodies, hashes, and
+   lineage references.
 
 Expected implementation wave:
 
-Implement in `lotus-ai`, then expose through Gateway/Workbench after the AI workflow contract is
-stable.
+Complete for first-wave governed AI narrative support over RFC-0042 outcome evidence. Future
+enhancements, such as non-stub model providers, richer narrative templates, or additional PM/CIO
+workflow outputs, must remain in `lotus-ai` and preserve the same evidence, guardrail, provenance,
+Gateway-only, and Workbench-no-autonomy boundaries.
 
 Promotion proof:
 
-1. AI guardrail and provenance tests,
-2. redaction and forbidden-action evidence,
-3. unavailable and blocked-state proof,
-4. Gateway/Workbench tests if surfaced,
-5. supported-feature entries that do not imply autonomous execution authority.
+1. `lotus-ai` PR #59 merged as `6e547866e0e7254a4d03bc8cf94101d70eaef221` after Feature Lane and
+   PR Merge Gate passed; post-merge validation
+   `python -m pytest tests/unit/test_outcome_review_narrative_guardrails.py tests/unit/test_workflow_pack_execution.py tests/integration/test_workflow_pack_run_api_contract.py -q`
+   passed `49` tests; wiki published from repo source as `lotus-ai.wiki` commit `89b873b`,
+2. `lotus-ai` PR #60 merged as `d1df451` after Feature Lane and PR Merge Gate passed, adding
+   `lotus-gateway` as an explicit supported caller and proving Gateway caller execution through
+   targeted integration/registry tests,
+3. `lotus-gateway` PR #189 merged as `9d1d04794ea7ee0a733a76e671fd927a3a2d862c` after Feature
+   Lane and PR Merge Gate passed, including service/router/contract tests, OpenAPI route
+   registration, local `make ci`, and post-merge targeted validation
+   `python -m pytest tests/unit/test_dpm_command_center_service.py tests/integration/test_dpm_command_center_router.py tests/contract/test_dpm_command_center_contract.py -q`
+   with `17` passing tests; wiki published from repo source as `lotus-gateway.wiki` commit
+   `e4dbdd0`,
+4. `lotus-workbench` PR #148 merged as `46fe13ad3dd43f3a3150f6c2966c59e88a8a3e95` after Feature
+   Lane and PR Merge Gate passed, including lint, typecheck, coverage/build, Playwright smoke,
+   Docker build, Docker parity, focused API/component/observability tests, and local
+   `make test-coverage` with `695` passing tests and `91.06%` statement coverage; post-merge
+   targeted validation
+   `npm test -- --run tests/unit/outcome-review-panel.test.tsx tests/unit/workbench-api.test.ts tests/unit/analytics-observability-metrics.test.ts`
+   passed `58` tests,
+5. `lotus-workbench` wiki was published from repo source as `lotus-workbench.wiki` commit
+   `e223851` and `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-workbench` returned clean
+   synchronization.
 
 #### RFC42-WTBD-006 - Source-Owned Realized Outcome Methodologies
 
@@ -2643,20 +2685,20 @@ Promotion proof:
 
 Recommended order:
 
-1. implement Gateway outcome-review composition,
-2. implement Workbench outcome-review UX through Gateway/BFF,
-3. prove full front-office post-trade outcome feedback product support,
-4. add report/render/archive materialization where product demand justifies generated artifacts,
-5. implement governed AI narrative only through RFC-0043/`lotus-ai`,
-6. add source-owned risk/performance/tax/FX/cash/execution methodologies as source owners publish
+1. maintain the implemented Gateway/Workbench outcome-review composition as contracts evolve,
+2. maintain generated report/render/archive materialization and retrieval posture,
+3. maintain governed AI narrative support only through `lotus-ai`, Gateway, and Workbench,
+4. add source-owned risk/performance/tax/FX/cash/execution methodologies as source owners publish
    certified contracts,
-7. evaluate PM quality scoring only as a separate governance-heavy RFC.
+5. evaluate PM quality scoring only as a separate governance-heavy RFC.
 
 Rationale:
 
-Gateway and Workbench can realize the already-supported manage backend without waiting for every
-future source methodology. Reporting, AI, execution, and scoring introduce separate ownership,
-control, audit, and regulatory considerations and should not be folded back into manage.
+Gateway, Workbench, report/render/archive, and governed AI narrative now realize the supported
+manage backend for the first-wave RFC-0042 product path without waiting for every future source
+methodology. Execution/OMS integration, richer source-owned outcome methodologies, and PM scoring
+still introduce separate ownership, control, audit, and regulatory considerations and must not be
+folded back into manage.
 
 ### RFC-0042 Promotion Checklist For Any Future Item
 
