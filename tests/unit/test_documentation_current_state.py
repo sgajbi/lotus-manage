@@ -339,7 +339,6 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     wiki_index_normalized = " ".join(wiki_index.split())
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    development_workflow = (ROOT / "wiki" / "Development-Workflow.md").read_text(encoding="utf-8")
 
     required_sections = [
         "## 1. Critical Review of the Prior Draft",
