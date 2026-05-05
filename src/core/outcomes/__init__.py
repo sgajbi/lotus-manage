@@ -5,6 +5,7 @@ from src.core.outcomes.comparison import (
     compare_outcome_dimensions,
 )
 from src.core.outcomes.models import (
+    DpmExpectedOutcomeSnapshot,
     DpmOutcomeDimensionInput,
     DpmOutcomeDimensionResult,
     DpmOutcomeEvent,
@@ -20,8 +21,14 @@ from src.core.outcomes.models import (
     OutcomeEventType,
     OutcomeReviewState,
 )
+from src.core.outcomes.snapshots import (
+    DpmExpectedSnapshotAssemblyError,
+    assemble_expected_outcome_snapshot,
+)
 
 __all__ = [
+    "DpmExpectedOutcomeSnapshot",
+    "DpmExpectedSnapshotAssemblyError",
     "DpmOutcomeDimensionInput",
     "DpmOutcomeDimensionResult",
     "DpmOutcomeEvent",
@@ -36,6 +43,7 @@ __all__ = [
     "OutcomeDimensionState",
     "OutcomeEventType",
     "OutcomeReviewState",
+    "assemble_expected_outcome_snapshot",
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
 ]

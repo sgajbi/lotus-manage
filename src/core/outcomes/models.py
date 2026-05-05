@@ -229,6 +229,68 @@ class DpmOutcomeReviewComparison(BaseModel):
     )
 
 
+class DpmExpectedOutcomeSnapshot(BaseModel):
+    """Expected outcome snapshot assembled from pre-trade manage artifacts."""
+
+    portfolio_id: str = Field(description="Portfolio identifier.", examples=["PB_SG_GLOBAL_BAL_001"])
+    mandate_id: str | None = Field(
+        default=None,
+        description="Mandate identifier when available.",
+        examples=["MANDATE_PB_SG_GLOBAL_BAL_001"],
+    )
+    rebalance_run_id: str | None = Field(
+        default=None,
+        description="RFC-0036/0039 rebalance run identifier when available.",
+        examples=["rr_001"],
+    )
+    alternative_set_id: str = Field(
+        description="RFC-0039 construction alternative set identifier.",
+        examples=["cas_001"],
+    )
+    selected_alternative_id: str = Field(
+        description="Selected RFC-0039 alternative identifier.",
+        examples=["alt_min_turnover"],
+    )
+    proof_pack_id: str = Field(description="RFC-0040 proof-pack identifier.", examples=["dpp_001"])
+    wave_id: str | None = Field(
+        default=None,
+        description="RFC-0041 wave identifier when the expected snapshot is wave-linked.",
+        examples=["dwv_001"],
+    )
+    wave_item_id: str | None = Field(
+        default=None,
+        description="RFC-0041 wave item identifier when available.",
+        examples=["dwi_001"],
+    )
+    operations_handoff_ref_id: str | None = Field(
+        default=None,
+        description="RFC-0041 internal operations handoff ref when available.",
+        examples=["dwh_001"],
+    )
+    expected_values: dict[OutcomeDimension, DpmOutcomeMetricValue] = Field(
+        description="Expected comparable values by outcome dimension. No value is defaulted.",
+    )
+    supportability: DpmOutcomeSupportability = Field(
+        description="Expected snapshot supportability rolled up from manage artifacts.",
+    )
+    source_lineage: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Source refs preserved from construction, proof-pack, wave, and handoff evidence.",
+    )
+    source_hashes: dict[str, str] = Field(
+        default_factory=dict,
+        description="Canonical source hashes carried from the proof pack.",
+    )
+    section_hashes: dict[str, str] = Field(
+        default_factory=dict,
+        description="RFC-0040 proof-pack section hashes.",
+    )
+    calculation_trace: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Bounded trace explaining how the expected snapshot was assembled.",
+    )
+
+
 class DpmOutcomeEvent(BaseModel):
     """Append-only event suitable for future portfolio memory."""
 

@@ -92,6 +92,22 @@ No supported feature is promoted by Slice 3.
 
 ---
 
+## Slice 4 Expected Snapshot Assembly Result
+
+Slice 4 evidence is recorded in `docs/rfcs/RFC-0042-expected-snapshot-slice4.md`.
+
+`src/core/outcomes/snapshots.py` now assembles expected outcome snapshots from RFC-0039 selected
+alternatives, RFC-0040 proof packs, and optional RFC-0041 wave item and internal operations handoff
+refs. The assembly rejects mismatched portfolio, mandate, run, alternative, proof-pack, wave, and
+handoff linkages and preserves source refs, source hashes, section hashes, and supportability.
+
+The expected snapshot only includes values that exist in the selected alternative. It does not default
+risk, performance, tax, FX, or execution-quality values.
+
+No supported feature is promoted by Slice 4.
+
+---
+
 ## Current Foundation Evidence
 
 | Foundation | Current evidence | RFC-0042 implication |
