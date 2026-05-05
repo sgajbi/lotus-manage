@@ -535,6 +535,68 @@ def test_rfc0038_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
     )
 
 
+def test_rfc0036_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    ledger_normalized = " ".join(ledger.split())
+
+    required_items = [
+        "RFC36-WTBD-001",
+        "RFC36-WTBD-002",
+        "RFC36-WTBD-003",
+        "RFC36-WTBD-004",
+        "RFC36-WTBD-005",
+        "RFC36-WTBD-006",
+    ]
+    missing_items = [item for item in required_items if item not in ledger]
+
+    assert missing_items == []
+    assert "RFC-0036 - DPM Stateful Core Sourcing And Endpoint Consolidation" in ledger
+    assert "make live-api-validate-core" in ledger
+    assert "DpmModelPortfolioTarget:v1" in ledger
+    assert "DpmSourceReadiness:v1" in ledger
+    assert "Gateway integration rebuilt against canonical `/api/v1` manage APIs" in ledger
+    assert "Workbench product surfaces over stateful manage execution" in ledger
+    assert "Portfolio-level DPM operation dashboards over stateful executions" in ledger
+    assert "Promote additional stateful DPM source-data products into platform mesh certification" in (
+        ledger
+    )
+    assert "Additional upstream source-product depth for stateful execution" in ledger
+    assert "Conditional Downstream Migration Handling" in ledger
+    assert "canonical `/api/v1` contracts remain the only supported service APIs" in (
+        ledger_normalized
+    )
+
+
+def test_rfc0037_work_to_be_done_ledger_preserves_target_state_boundaries() -> None:
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    ledger_normalized = " ".join(ledger.split())
+
+    required_items = [
+        "RFC37-WTBD-001",
+        "RFC37-WTBD-002",
+        "RFC37-WTBD-003",
+        "RFC37-WTBD-004",
+        "RFC37-WTBD-005",
+        "RFC37-WTBD-006",
+        "RFC37-WTBD-007",
+    ]
+    missing_items = [item for item in required_items if item not in ledger]
+
+    assert missing_items == []
+    assert "RFC-0037 - DPM Operating System And Mandate Intelligence" in ledger
+    assert "strategic parent roadmap" in ledger
+    assert "Complete RFC-0042 post-trade outcome feedback loop" in ledger
+    assert "Complete RFC-0043 governed AI PM copilot" in ledger
+    assert "Full front-office DPM product realization across Gateway and Workbench" in ledger
+    assert "Source-product depth for mandate personalization" in ledger
+    assert "Report, archive, and client/internal evidence materialization" in ledger
+    assert "Canonical sales/demo story from implementation-backed stack evidence" in ledger
+    assert "Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, and AI events" in (
+        ledger
+    )
+    assert "proof exists beyond roadmap language" in ledger_normalized
+
+
 def test_rfc0039_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
     ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
     ledger_normalized = " ".join(ledger.split())

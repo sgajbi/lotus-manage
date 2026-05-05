@@ -28,11 +28,556 @@ Governance rules:
 Wiki decision for this ledger update:
 
 The existing `wiki/Supported-Features.md`, `wiki/RFC-Index.md`, and `wiki/Roadmap.md` already state
-the RFC-0038 through RFC-0041 supported boundaries and the major unpromoted capabilities. This
+the RFC-0036 through RFC-0041 supported boundaries and the major unpromoted capabilities. This
 ledger is a repo-local planning/control artifact for follow-up sequencing, so no additional wiki
 source change is required for this slice. If this ledger later becomes the public cross-RFC backlog
 used for product planning or client roadmap discussion, add a wiki page and sidebar link in the
 same PR.
+
+## RFC-0036 - DPM Stateful Core Sourcing And Endpoint Consolidation
+
+Current closure status:
+
+RFC-0036 is implemented and gold-pass clean for the `lotus-manage` API surface and stateful
+core-sourced execution path. It removed duplicate unversioned routes and advisory/proposal runtime
+remnants, made stateless execution explicit, added the gated stateful `portfolio_id` execution
+envelope, composed governed `lotus-core` RFC-087 source products, preserved source lineage and
+supportability, certified the implemented APIs, proved live `manage.dev.lotus` plus
+`core-control.dev.lotus` / `core-query.dev.lotus`, published wiki truth, and kept stateful
+capability publication behind explicit runtime gates.
+
+Closure evidence:
+
+| Evidence | Location |
+| --- | --- |
+| Governing RFC | `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` |
+| Supported feature claims | `wiki/Supported-Features.md` stateful execution and core source-sourcing rows |
+| Manage/core proof target | `make live-api-validate-core` |
+| Manage implementation | `src/core/dpm_source_context.py`, `src/infrastructure/core_sourcing/`, rebalance simulate/analyze/async API paths |
+| Source products proven | `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, `MarketDataCoverageWindow:v1`, `DpmSourceReadiness:v1` |
+| Live proof posture | RFC-087 core validation 7/7 and manage/core validation 11/11 with `--expect-stateful-core-sourcing available` |
+
+### Remaining Work Summary
+
+These items are deliberately outside RFC-0036 closure because RFC-0036 certified the service API
+surface and stateful source resolver, while product composition, richer upstream source depth, and
+mesh/product promotion belong to downstream or platform/source owners.
+
+| ID | Work item | Owner | Current status | Why it was not done in RFC-0036 |
+| --- | --- | --- | --- | --- |
+| RFC36-WTBD-001 | Gateway integration rebuilt against canonical `/api/v1` manage APIs | `lotus-gateway` | Follow-on, not part of RFC-0036 | Endpoint cleanup intentionally accepted breaking stale Gateway assumptions. Gateway must consume certified manage APIs without reintroducing aliases or monolithic context assumptions. |
+| RFC36-WTBD-002 | Workbench product surfaces over stateful manage execution | `lotus-workbench` through Gateway/BFF | Follow-on after Gateway | Workbench must not call manage directly and should only surface stateful behavior once Gateway composition is certified. |
+| RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Proposed | RFC-0036 certified execution/source posture, not product dashboards over operations and supportability. |
+| RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-platform` with source producers and `lotus-manage` consumer declarations | Deferred until source-data lineage stabilizes | Current source products are live-proven; future stateful products need producer approval, declarations, trust telemetry, SLO/access/evidence policies, and certification. |
+| RFC36-WTBD-005 | Additional upstream source-product depth for stateful execution | `lotus-core` and future source owners | Deferred source enrichment | RFC-0036 consumes the certified RFC-087 products. Additional portfolio, market-data, cashflow, benchmark, restriction, or execution-depth sources require explicit retrieval design. |
+| RFC36-WTBD-006 | Downstream migration handling if production consumers of removed aliases are discovered | Owning consumer repo, likely `lotus-gateway` | Conditional | RFC-0036 removed stale aliases by design. Permanent compatibility code should not be added unless a real production dependency is proven. |
+
+### Detailed Follow-Up Items
+
+#### RFC36-WTBD-001 - Gateway Integration Rebuilt Against Canonical `/api/v1` Manage APIs
+
+Target business outcome:
+
+Gateway composes the certified manage rebalance, supportability, capability, and stateful-source
+posture through clean `/api/v1` contracts without stale aliases or retired monolithic core context.
+
+Why it cannot be done now:
+
+RFC-0036 intentionally cleaned the manage API first. Gateway integration was explicitly recorded as
+follow-on work so downstream composition consumes the final certified surface rather than shaping
+the service around stale consumers.
+
+Dependencies before implementation:
+
+1. typed Gateway client uses canonical manage `/api/v1` APIs only,
+2. Gateway respects stateful capability publication gates,
+3. Gateway preserves source lineage and supportability from manage,
+4. no retired unversioned routes, platform capability aliases, or monolithic `dpm-execution-context`
+   assumptions are reintroduced,
+5. Gateway OpenAPI and no-alias checks pass.
+
+Expected implementation wave:
+
+Implement in `lotus-gateway` before any Workbench stateful product surface.
+
+Promotion proof:
+
+1. Gateway unit and contract tests,
+2. no-alias and no-monolithic-context tests,
+3. live Gateway proof against manage with stateful gates enabled and disabled,
+4. Gateway README/wiki/supported-feature updates.
+
+#### RFC36-WTBD-002 - Workbench Product Surfaces Over Stateful Manage Execution
+
+Target business outcome:
+
+Workbench can present stateful DPM execution readiness and outcomes to users through Gateway-backed
+flows, while hiding the technical source-resolution complexity.
+
+Why it cannot be done now:
+
+Workbench must consume Gateway/BFF only. RFC-0036 did not implement Gateway composition, so a
+Workbench product surface would either call manage directly or duplicate capability/source logic.
+
+Dependencies before implementation:
+
+1. RFC36-WTBD-001 complete,
+2. Workbench BFF/client modules consume Gateway only,
+3. UI clearly distinguishes stateless and stateful availability,
+4. source-incomplete states are visible and not treated as generic failures,
+5. canonical browser proof covers stateful available and unavailable modes.
+
+Expected implementation wave:
+
+Implement in `lotus-workbench` after Gateway integration is certified.
+
+Promotion proof:
+
+1. Workbench BFF/component/browser tests,
+2. accessibility and degraded-state proof,
+3. canonical front-office evidence,
+4. supported-feature updates that do not imply direct Workbench/manage coupling.
+
+#### RFC36-WTBD-003 - Portfolio-Level DPM Operation Dashboards
+
+Target business outcome:
+
+Operations and PM users can monitor stateful DPM execution supportability, source readiness,
+recent runs, errors, and workflow posture at portfolio/book level.
+
+Why it cannot be done now:
+
+RFC-0036 focused on source resolution, endpoint cleanup, execution envelopes, and capability truth.
+Dashboards require product composition and durable UX/reporting decisions across Gateway and
+Workbench.
+
+Dependencies before implementation:
+
+1. Gateway/Workbench stateful integration complete,
+2. dashboard information architecture and supportability taxonomy defined,
+3. manage exposes any missing read models through certified APIs instead of UI-side aggregation,
+4. no-sensitive telemetry and bounded labels are preserved,
+5. canonical proof includes useful populated and degraded cases.
+
+Expected implementation wave:
+
+Implement after the command-center and stateful execution product paths are clear, likely alongside
+RFC-0038/RFC-0041 product realization.
+
+Promotion proof:
+
+1. manage read-model tests if new APIs are needed,
+2. Gateway/Workbench dashboard tests,
+3. live/canonical evidence,
+4. operations-facing wiki/runbook updates.
+
+#### RFC36-WTBD-004 - Additional Stateful Source Products In Mesh Certification
+
+Target business outcome:
+
+Every stateful source product used by DPM execution has producer declarations, consumer
+declarations, trust telemetry, SLO/access/evidence policies, and platform certification.
+
+Why it cannot be done now:
+
+RFC-0036 validated current RFC-087 source products and existing declarations. Future products must
+wait for upstream producer approval and stable lineage/supportability semantics.
+
+Dependencies before implementation:
+
+1. source owner declares the product,
+2. `lotus-manage` adds or updates consumer declarations,
+3. trust telemetry and SLO/access/evidence policies are available,
+4. platform mesh certification includes the product,
+5. live proof shows source readiness and degraded behavior.
+
+Expected implementation wave:
+
+Implement product by product as new stateful source dependencies are introduced.
+
+Promotion proof:
+
+1. producer and consumer declarations validate,
+2. platform mesh certification passes,
+3. manage live proof consumes the product,
+4. README/wiki/context updates state the new source dependency.
+
+#### RFC36-WTBD-005 - Additional Upstream Source-Product Depth
+
+Target business outcome:
+
+Stateful DPM execution can consume richer source truth, such as benchmark, cashflow, restriction,
+market-data depth, execution cost, or portfolio operations data, without expanding manage into a
+source-data owner.
+
+Why it cannot be done now:
+
+RFC-0036 proved the RFC-087 source family and explicitly states that future stateful resolution
+must be added only after upstream producer approval and explicit retrieval design.
+
+Dependencies before implementation:
+
+1. source owner and contract for each new source family,
+2. source-readiness and lineage semantics,
+3. manage resolver and transformer tests,
+4. feature-gated capability publication if user-visible,
+5. live proof for ready, stale, missing, and incomplete source states.
+
+Expected implementation wave:
+
+Add only when a downstream RFC requires the source and the source owner is ready.
+
+Promotion proof:
+
+1. source-owner certification,
+2. manage resolver tests,
+3. `make live-api-validate-core` or successor live proof,
+4. supported-feature/context updates.
+
+#### RFC36-WTBD-006 - Conditional Downstream Migration Handling
+
+Target business outcome:
+
+If a real production consumer of removed aliases or retired routes appears, it is migrated without
+polluting the strategic manage API contract.
+
+Why it cannot be done now:
+
+RFC-0036 found no production dependency that justified permanent compatibility code. Adding aliases
+preemptively would reverse the cleanup and weaken the target contract.
+
+Dependencies before implementation:
+
+1. consumer and route/payload dependency are proven,
+2. owning consumer repo accepts a migration issue,
+3. any temporary adapter has an expiry/removal plan,
+4. manage API vocabulary remains clean,
+5. no unsupported legacy behavior is advertised.
+
+Expected implementation wave:
+
+Only execute if a real consumer dependency is discovered.
+
+Promotion proof:
+
+1. migration issue and owner,
+2. temporary adapter tests if needed,
+3. removal evidence,
+4. docs explaining the strategic contract remains canonical.
+
+### Suggested Sequencing
+
+Recommended order:
+
+1. rebuild Gateway integration against canonical manage APIs,
+2. add Workbench product surfaces through Gateway,
+3. implement portfolio-level operation dashboards if needed,
+4. add new source products and mesh certification as future RFCs require them,
+5. handle legacy-consumer migration only if an actual production dependency is proven.
+
+### RFC-0036 Promotion Checklist For Any Future Item
+
+Before any item above moves from this ledger into a supported-feature claim:
+
+1. canonical `/api/v1` contracts remain the only supported service APIs,
+2. stateful capability publication remains gated and truthful,
+3. manage does not become a source-data owner,
+4. Gateway and Workbench consume through the governed product path,
+5. source-ready, stale, missing, unavailable, and disabled-gate states are tested,
+6. OpenAPI/Swagger quality is certified for every API added or changed,
+7. live or canonical front-office evidence is captured and critically reviewed,
+8. README, RFC, wiki, supported-features, endpoint certification, and repository context are
+   aligned,
+9. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
+
+## RFC-0037 - DPM Operating System And Mandate Intelligence
+
+Current closure status:
+
+RFC-0037 is a `PROPOSED` strategic parent roadmap, not a single implementation closure. It defines
+the target DPM operating-system proposition and the execution contract inherited by RFC-0038
+through RFC-0043. Implementation-backed support has advanced through RFC-0038, RFC-0039, RFC-0040,
+and the manage-owned explicit-list scope of RFC-0041. RFC-0042 and RFC-0043 remain proposed, while
+multiple Gateway, Workbench, report, AI, source-product, and canonical front-office realization
+items remain unpromoted.
+
+Closure evidence:
+
+| Evidence | Location |
+| --- | --- |
+| Strategic RFC | `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md` |
+| RFC family status | `docs/rfcs/README.md` |
+| Supported feature truth | `wiki/Supported-Features.md` |
+| Repository current-state truth | `REPOSITORY-ENGINEERING-CONTEXT.md` |
+| Implementation-backed child RFCs | RFC-0038, RFC-0039, RFC-0040, RFC-0041 |
+| Remaining proposed child RFCs | RFC-0042, RFC-0043 |
+
+### Remaining Work Summary
+
+These items remain because RFC-0037 is intentionally a strategic target-state roadmap. The correct
+delivery path is to complete and prove the child RFCs and downstream/source-owner implementations,
+not to mark RFC-0037 complete from roadmap text alone.
+
+| ID | Work item | Owner | Current status | Why it was not done in RFC-0037 |
+| --- | --- | --- | --- | --- |
+| RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance` | Proposed | RFC-0037 identifies outcome learning as target-state; execution requires a dedicated source-mapped RFC. |
+| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Proposed | AI must use governed workflow packs, guardrails, provenance, and unavailable fallback; roadmap text is not implementation. |
+| RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Proposed / downstream addenda exist for several features | Backend child RFCs do not equal product-surface support. Gateway and Workbench must implement and prove the full experience. |
+| RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
+| RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive` | Proposed downstream work | RFC-0040 provides proof-pack input; generated documents and archive lifecycle belong to report/render/archive. |
+| RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Proposed | RFC-0037 requires demo-ready story only after backend APIs, Gateway, Workbench, seeds, browser proof, and docs are aligned. |
+| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, and AI events | Cross-app, with manage as workflow/evidence participant | Proposed strategic extension | Child RFC event sources are not all implemented yet; RFC-0042 outcome events and downstream product surfaces are still missing. |
+
+### Detailed Follow-Up Items
+
+#### RFC37-WTBD-001 - RFC-0042 Post-Trade Outcome Feedback Loop
+
+Target business outcome:
+
+Expected-versus-realized outcome evidence closes the DPM loop so future construction, monitoring,
+and governance can learn from actual execution, risk, and performance outcomes.
+
+Why it cannot be done now:
+
+RFC-0042 is still proposed. Outcome feedback needs source-backed post-trade, risk, and performance
+evidence and must not be approximated from pre-trade proof packs or wave state.
+
+Dependencies before implementation:
+
+1. RFC-0042 tightened to execution-grade form,
+2. source map across `lotus-core`, `lotus-risk`, and `lotus-performance`,
+3. manage outcome event and persistence contracts,
+4. report/AI/Gateway/Workbench posture if surfaced,
+5. live evidence with expected-versus-realized reconciliation.
+
+Expected implementation wave:
+
+Tighten RFC-0042 first, then implement slice by slice with source-owner changes where required.
+
+Promotion proof:
+
+1. source-owner contracts and tests,
+2. manage outcome APIs and persistence tests,
+3. live reconciliation evidence,
+4. OpenAPI certification and supported-feature updates.
+
+#### RFC37-WTBD-002 - RFC-0043 Governed AI PM Copilot
+
+Target business outcome:
+
+AI assists PMs with summarization, evidence packaging, exception narratives, and review support
+without becoming the source of investment truth.
+
+Why it cannot be done now:
+
+RFC-0043 remains proposed and AI behavior belongs to `lotus-ai`. Manage can provide structured
+evidence, but AI workflow packs, prompts, guardrails, provenance, and fallback behavior must be
+implemented in the owning service.
+
+Dependencies before implementation:
+
+1. RFC-0043 tightened to execution-grade form,
+2. `lotus-ai` workflow-pack and guardrail contracts,
+3. evidence input contracts from RFC-0040/RFC-0041/RFC-0042,
+4. Gateway/Workbench AI posture and unavailable-state rules,
+5. sensitive-field and unsupported-action tests.
+
+Expected implementation wave:
+
+Implement in `lotus-ai` and integrate through Gateway/Workbench after evidence contracts are
+stable.
+
+Promotion proof:
+
+1. AI guardrail/eval tests,
+2. provenance and evidence-hash proof,
+3. unavailable/blocked fallback evidence,
+4. Gateway/Workbench integration proof if surfaced.
+
+#### RFC37-WTBD-003 - Full Front-Office DPM Product Realization
+
+Target business outcome:
+
+The DPM operating system is visible as a coherent front-office workflow: command center,
+construction lab, proof-pack review, rebalance waves, outcome feedback, and AI assistance.
+
+Why it cannot be done now:
+
+Manage child RFCs have delivered backend foundations, but full product realization requires
+Gateway composition, Workbench UX, canonical seed data, browser proof, and audience-ready
+documentation across apps.
+
+Dependencies before implementation:
+
+1. Gateway compositions for RFC-0038 through RFC-0043 features,
+2. Workbench panels and workflows through BFF only,
+3. canonical front-office seed and validation automation,
+4. backend supportability and degraded states surfaced truthfully,
+5. product docs and demos backed by live evidence.
+
+Expected implementation wave:
+
+Execute feature by feature after the owning backend contracts are stable, then close with a
+cross-app product-realization proof.
+
+Promotion proof:
+
+1. canonical front-office evidence pack,
+2. API/BFF/browser/accessibility/visual checks,
+3. demo screenshots only after validation passes,
+4. wiki material for developers, business users, operations, sales/pre-sales, and client demos.
+
+#### RFC37-WTBD-004 - Source-Product Depth For Crown-Jewel DPM
+
+Target business outcome:
+
+DPM decisions are based on rich private-banking source truth: mandate objectives, PM books,
+benchmarks, risk/performance analytics, client restrictions, sustainability, cashflow, costs,
+currency policy, and scenarios.
+
+Why it cannot be done now:
+
+These source products belong to domain owners. RFC-0037 correctly states the ambition but does not
+make manage the source authority.
+
+Dependencies before implementation:
+
+1. source-owner contracts and declarations,
+2. producer and consumer mesh certification where applicable,
+3. manage adapters and degraded-state behavior,
+4. Gateway/Workbench posture rules,
+5. live proof with missing/stale/partial source states.
+
+Expected implementation wave:
+
+Add source depth as demanded by child RFCs and product-realization slices. Do not bundle unrelated
+source families into one large manage change.
+
+Promotion proof:
+
+1. owner API certification,
+2. manage consumer tests,
+3. live/canonical evidence,
+4. supported-feature updates naming the exact source products.
+
+#### RFC37-WTBD-005 - Report, Archive, And Evidence Materialization
+
+Target business outcome:
+
+PM, investment committee, client, compliance, and audit audiences can receive governed documents
+and archives generated from DPM evidence.
+
+Why it cannot be done now:
+
+`lotus-report`, `lotus-render`, and `lotus-archive` own generated documents and archive lifecycle.
+RFC-0037 cannot claim those outputs until owning apps implement them against manage evidence.
+
+Dependencies before implementation:
+
+1. report-input contracts from proof packs, waves, and outcomes,
+2. render templates and deterministic output rules,
+3. archive retention/legal-hold/access-audit rules,
+4. Gateway/Workbench report posture,
+5. live proof that documents reconcile to source evidence.
+
+Expected implementation wave:
+
+Implement through report/render/archive RFCs after evidence contracts stabilize.
+
+Promotion proof:
+
+1. report/render/archive tests,
+2. deterministic artifact evidence,
+3. archive retrieval and retention proof,
+4. docs and supported-feature promotion in owning apps.
+
+#### RFC37-WTBD-006 - Canonical Sales/Demo Story
+
+Target business outcome:
+
+Sales, pre-sales, marketing, client demos, operations, and engineering can show the crown-jewel DPM
+story using real canonical stack evidence rather than screenshots disconnected from backend truth.
+
+Why it cannot be done now:
+
+Several product surfaces and source-product depths remain unimplemented. Demo material must wait
+until canonical API, calculation, panel, and browser validation pass.
+
+Dependencies before implementation:
+
+1. canonical seed automation,
+2. Gateway and Workbench product surfaces,
+3. backend live evidence for promoted features,
+4. wiki pages with diagrams and audience-aware explanations,
+5. demo screenshots labeled and tied to validated evidence.
+
+Expected implementation wave:
+
+Build progressively as each product surface becomes implementation-backed, then package a
+cross-app demo/pitch evidence set.
+
+Promotion proof:
+
+1. canonical front-office QA evidence,
+2. screenshots after validation only,
+3. wiki/demo pages linked to implementation evidence,
+4. no unsupported feature claims.
+
+#### RFC37-WTBD-007 - Portfolio Memory Across The DPM Lifecycle
+
+Target business outcome:
+
+Lotus preserves a durable, searchable, governed decision memory across mandate health,
+construction, proof packs, rebalance waves, execution outcomes, reports, and AI evidence.
+
+Why it cannot be done now:
+
+RFC-0038 through RFC-0041 provide important event/evidence pieces, but RFC-0042 outcome events,
+report/archive materialization, AI provenance, and front-office surfaces are still incomplete.
+
+Dependencies before implementation:
+
+1. event identity and retention policy across child RFCs,
+2. RFC-0042 outcome events,
+3. report/archive and AI evidence refs,
+4. Gateway/Workbench timeline/search UX,
+5. access, redaction, and audit policy.
+
+Expected implementation wave:
+
+Treat as a later cross-RFC portfolio-memory RFC or closure slice after RFC-0042/RFC-0043 and
+downstream product surfaces are implemented.
+
+Promotion proof:
+
+1. event reconciliation tests,
+2. timeline/search API and UI proof,
+3. access/redaction tests,
+4. canonical evidence and documentation.
+
+### Suggested Sequencing
+
+Recommended order:
+
+1. tighten and implement RFC-0042,
+2. tighten and implement RFC-0043 with `lotus-ai`,
+3. complete Gateway/Workbench realization for RFC-0038 through RFC-0043,
+4. add source-product depth in owning apps as specific product claims require it,
+5. implement report/render/archive evidence materialization,
+6. package canonical sales/demo story,
+7. close portfolio-memory as a cross-RFC product capability.
+
+### RFC-0037 Promotion Checklist For Any Future Item
+
+Before any RFC-0037 target-state item moves into a supported-feature claim:
+
+1. owning child RFC or downstream/source-owner RFC is implementation-backed,
+2. source ownership remains explicit,
+3. Gateway and Workbench consume through the governed product path,
+4. proof exists beyond roadmap language,
+5. docs/wiki/supported-features distinguish backend foundation from full product realization,
+6. canonical evidence supports demo/pitch material,
+7. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
 
 ## RFC-0038 - Mandate Digital Twin, Health Score, And DPM Command Center Foundation
 
