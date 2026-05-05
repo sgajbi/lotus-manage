@@ -2246,7 +2246,7 @@ artifacts belong to report/render/archive services, and AI narrative belongs to 
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0042 |
 | --- | --- | --- | --- | --- |
-| RFC42-WTBD-001 | Gateway outcome-review composition and BFF contract | `lotus-gateway` | Implemented in `lotus-gateway` branch `feat/rfc42-outcome-review-gateway`; pending PR/merge/live proof promotion | Manage APIs were stabilized first. Gateway now composes the BFF route family without recomputing outcome truth; final supported-feature promotion requires PR merge, live proof, and wiki publication. |
+| RFC42-WTBD-001 | Gateway outcome-review composition and BFF contract | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #186; live canonical product proof remains part of RFC42-WTBD-003 | Manage APIs were stabilized first. Gateway now composes the BFF route family without recomputing outcome truth. Product support still requires Workbench implementation and canonical front-office proof. |
 | RFC42-WTBD-002 | Workbench post-trade outcome review UX | `lotus-workbench` through Gateway/BFF | Downstream proposed through RFC-0098 | Workbench must consume Gateway only and cannot claim outcome UX until Gateway composition exists. |
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Pending downstream implementation and canonical proof | Manage backend proof is complete, but product support requires Gateway, Workbench, browser validation, docs, and wiki publication. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive` | Downstream reporting work | Manage emits bounded report input only; it must not render, archive, or claim generated-document support. |
@@ -2272,9 +2272,10 @@ realization slice. Gateway now has typed manage client methods, DPM command-cent
 BFF contracts, a service layer, and route handlers for preview, create, search, detail,
 source-refresh, supportability, report-input, AI-evidence input, run lookup, and wave lookup.
 Gateway preserves manage-owned payloads and supportability and does not recompute expected values,
-realized values, variance, tolerance, hashes, lineage, freshness, or review state. Local Gateway
-`make ci` has passed; PR, merge, live Gateway proof, and wiki publication remain before this item
-can be promoted to fully closed/supported.
+realized values, variance, tolerance, hashes, lineage, freshness, or review state. Gateway PR #186
+merged to `main` as `a71275d` after local `make ci` and GitHub PR Merge Gate passed. Gateway wiki
+publication completed with zero drift. End-to-end product proof remains under RFC42-WTBD-003
+because it requires Workbench UX implementation and canonical front-office validation.
 
 Why it was not done in RFC-0042:
 
@@ -2291,8 +2292,9 @@ Dependencies before implementation:
 
 Expected implementation wave:
 
-Complete the `lotus-gateway` PR, run local and GitHub gates, capture live Gateway proof against
-manage outcome-review APIs, publish wiki, and then unblock Workbench outcome-review UX work.
+This item is complete enough to unblock Workbench outcome-review UX work. The next implementation
+wave is RFC42-WTBD-002 in `lotus-workbench`, followed by RFC42-WTBD-003 for full canonical
+front-office product proof.
 
 Promotion proof:
 
@@ -2303,12 +2305,11 @@ Promotion proof:
    `tests/contract/test_dpm_command_center_contract.py`,
 2. Gateway OpenAPI/Swagger certification: route family registered with What/When/How descriptions
    and response schema descriptions; local `make check` and `make ci` passed,
-3. live Gateway proof against manage outcome-review APIs still required before supported-feature
-   promotion,
+3. live canonical front-office proof remains required before full product-support promotion under
+   RFC42-WTBD-003,
 4. degraded, blocked, unsupported, unavailable, and upstream-error coverage has been added at the
    Gateway service/router layer; live degraded proof remains required,
-5. Gateway README/wiki/context updates started in the Gateway branch; final supported-feature and
-   wiki publication remain PR-closure requirements.
+5. Gateway README/wiki/context updates are merged and wiki source was published.
 
 #### RFC42-WTBD-002 - Workbench Post-Trade Outcome Review UX
 
