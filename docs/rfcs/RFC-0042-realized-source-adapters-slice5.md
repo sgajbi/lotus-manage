@@ -26,11 +26,15 @@ Slice 5 adds the source-owner realized evidence boundary:
 5. A follow-on WTBD-006 risk adapter in `src/core/outcomes/risk_sources.py` that wraps
    `lotus-risk` `RiskMetricsReport:v1` output into RFC-0042 realized `RISK_REDUCTION` evidence
    without recalculating risk methodology locally.
-6. Unit tests covering ready source evidence, missing execution evidence, missing risk/performance
+6. A follow-on WTBD-006 core cash adapter in `src/core/outcomes/core_sources.py` that wraps the
+   `lotus-core` `HoldingsAsOf:v1` cash total into RFC-0042 realized `CASH_RESIDUAL` evidence
+   without aggregating cash or tax/FX/transaction rows in manage.
+7. Unit tests covering ready source evidence, missing execution evidence, missing risk/performance
    contracts, stale source degradation, conflicting source values, malformed source blocking,
    performance source wrapping, degraded performance-source posture, malformed performance payload
    rejection, risk source wrapping, risk supportability preservation, permission-blocked risk
-   posture, and malformed risk payload rejection.
+   posture, malformed risk payload rejection, core cash source wrapping, degraded core cash posture,
+   and invalid core cash source payload rejection.
 
 ## Source-Owner Boundary
 
@@ -39,7 +43,7 @@ in this slice and does not calculate source-owner truth locally.
 
 | Source Owner | RFC-0042 First-Wave Posture |
 | --- | --- |
-| `lotus-core` | Can provide explicit realized snapshots for holdings drift, booked transaction cost, cash residual, tax, FX, and rule evidence when a certified source contract is supplied. Missing or malformed evidence blocks affected dimensions. |
+| `lotus-core` | First supported adapter consumes `HoldingsAsOf:v1` cash total evidence for `CASH_RESIDUAL`. It preserves source product metadata, as-of date, generated/evidence timestamp, data-quality posture, and source fingerprint. Missing or malformed evidence blocks affected dimensions. Tax, FX, transaction-cost, execution, and rule outcome adapters remain source-owner follow-on work until core exposes owned scalar totals or certified outcome contracts. |
 | execution/OMS owner | No certified first-wave fill/order contract is assumed. Missing execution evidence emits `EXECUTION_EVIDENCE_BLOCKED`. |
 | `lotus-risk` | First supported adapter consumes `RiskMetricsReport:v1` evidence from the `lotus-risk` risk-calculate response. It preserves request fingerprint, selected period, selected risk metric, source supportability, and source reason codes. Missing evidence still emits `RISK_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `RISK_SOURCE_UNAVAILABLE`. Historical attribution, rolling-risk, drawdown-report, and concentration-specific outcome adapters remain source-owner follow-on work. |
 | `lotus-performance` | First supported adapter consumes `WORKSPACE_SUMMARY_TWR_RETURN` evidence from the `lotus-performance` workspace-summary response. It performs only percentage-point to ratio unit conversion plus lineage wrapping. Missing evidence still emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `PERFORMANCE_SOURCE_UNAVAILABLE`. Richer MWR, contribution, and attribution outcome adapters remain source-owner follow-on work. |
@@ -61,6 +65,33 @@ in this slice and does not calculate source-owner truth locally.
 | Unavailable `lotus-risk` risk metrics report source | `DEGRADED` with `RISK_SOURCE_UNAVAILABLE` plus the source-supplied reason code |
 | `lotus-performance` workspace-summary TWR source | `READY` when the source response includes the selected period, basis, measure, calculation id, and numeric base return |
 | Unavailable `lotus-performance` workspace-summary source | `DEGRADED` with `PERFORMANCE_SOURCE_UNAVAILABLE` plus the source-supplied reason code |
+| `lotus-core` HoldingsAsOf cash total source | `READY` when the source response includes product identity, portfolio id, as-of date, selected cash total, and complete/ready data quality |
+| Degraded `lotus-core` HoldingsAsOf cash total source | `DEGRADED` when source data quality is incomplete, partial, stale, unavailable, or unknown |
+
+## Core Cash Adapter Contract
+
+`realized_cash_source_from_cash_balances_response` accepts a validated `lotus-core`
+`HoldingsAsOf:v1` cash-balance response and emits a `DpmRealizedSourceSnapshot` for
+`CASH_RESIDUAL`.
+
+Implemented behavior:
+
+1. source owner remains `lotus-core`,
+2. source type is `HOLDINGS_AS_OF_CASH_BALANCE`,
+3. default cash basis is the source-owned reporting-currency total,
+4. optional portfolio-currency basis uses the source-owned portfolio-currency total,
+5. `product_name`, `product_version`, `portfolio_id`, `as_of_date`, generated/evidence timestamp,
+   data-quality status, source batch fingerprint, snapshot id, and correlation id are preserved as
+   available,
+6. malformed source payloads or unsupported basis requests raise `CoreOutcomeSourceError` and
+   cannot silently produce a ready cash value.
+
+Out of scope for this adapter:
+
+1. aggregating cash-account rows locally,
+2. deriving tax, FX, transaction-cost, liquidity, execution, or rule outcomes from transaction rows,
+3. converting currencies locally,
+4. fabricating source fingerprints, evidence timestamps, or data-quality posture.
 
 ## Risk Adapter Contract
 
@@ -118,6 +149,7 @@ Commands:
 python -m pytest tests\unit\core\test_realized_outcome_sources.py -q
 python -m pytest tests\unit\core\test_performance_realized_outcome_sources.py tests\unit\core\test_realized_outcome_sources.py -q
 python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py tests\unit\core\test_realized_outcome_sources.py -q
+python -m pytest tests\unit\core\test_core_realized_outcome_sources.py tests\unit\core\test_realized_outcome_sources.py -q
 python -m ruff check src\core\outcomes tests\unit\core\test_realized_outcome_sources.py
 ```
 
@@ -126,14 +158,16 @@ Observed result:
 1. `6 passed`
 2. `17 passed`
 3. `20 passed`
-4. `All checks passed!`
+4. `18 passed`
+5. `All checks passed!`
 
 ## Supported-Feature Decision
 
 The WTBD-006 performance and risk adapters promote only implementation-backed source-integration
 capabilities inside manage: RFC-0042 can now mark `PERFORMANCE` ready when a certified
 `lotus-performance` workspace-summary TWR response is supplied, and `RISK_REDUCTION` ready when a
-certified `lotus-risk` `RiskMetricsReport:v1` response is supplied. They do not promote a full
-post-trade outcome-review product claim by themselves. Runtime support still requires durable
-persistence, APIs, OpenAPI certification, live evidence, documentation publication, and downstream
-realization where surfaced.
+certified `lotus-risk` `RiskMetricsReport:v1` response is supplied. The WTBD-006 core cash adapter
+can mark `CASH_RESIDUAL` ready when a certified `lotus-core` `HoldingsAsOf:v1` cash total is
+supplied. They do not promote a full post-trade outcome-review product claim by themselves. Runtime
+support still requires durable persistence, APIs, OpenAPI certification, live evidence,
+documentation publication, and downstream realization where surfaced.

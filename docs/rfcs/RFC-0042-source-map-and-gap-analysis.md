@@ -129,6 +129,14 @@ source supportability reason, and as-of date. The adapter preserves source metri
 units; it does not compute volatility, drawdown, VaR, Sharpe, Sortino, beta, tracking error,
 information ratio, attribution, or concentration in manage.
 
+The WTBD-006 core cash follow-on adds the first source-owner adapter for `lotus-core`
+`HoldingsAsOf:v1` cash totals. `src/core/outcomes/core_sources.py` wraps
+`HOLDINGS_AS_OF_CASH_BALANCE` evidence into RFC-0042 `CASH_RESIDUAL` realized-source snapshots,
+preserving product identity, portfolio id, as-of date, generated/evidence timestamp, data-quality
+posture, and source fingerprint. The adapter consumes source-owned cash totals only; it does not
+aggregate cash-account rows, derive tax, FX, transaction-cost, execution, liquidity, or rule
+outcomes, or convert currencies in manage.
+
 The WTBD-006 performance follow-on adds the first source-owner adapter for `lotus-performance`
 workspace-summary TWR output. `src/core/outcomes/performance_sources.py` wraps
 `WORKSPACE_SUMMARY_TWR_RETURN` evidence into RFC-0042 `PERFORMANCE` realized-source snapshots,
@@ -280,7 +288,7 @@ can be claimed.
 | Booked transactions | `lotus-core` | Turnover, cost, cash, tax, execution reconciliation | Source-owner required | Consume certified product if available; otherwise block affected dimensions. |
 | Fill/order/execution detail | `lotus-core` or future execution/OMS owner | `EXECUTION_QUALITY` | Blocked until certified | Do not infer partial fills or slippage from manage intent. |
 | Post-trade holdings and positions | `lotus-core` | Drift, rule, cash/security residuals | Source-owner required | Consume source product with as-of date and lineage. |
-| Cash movements | `lotus-core` | `CASH_OUTCOME` and MWR-related context | Source-owner required | Consume source product; missing source blocks cash outcome. |
+| Cash movements | `lotus-core` | `CASH_OUTCOME` and MWR-related context | HoldingsAsOf cash totals are the first implemented adapter; cash movements, liquidity ladders, and MWR-related flow context remain source-owner follow-on work. | Consume source product; missing source blocks cash outcome. |
 | FX executions and currency exposures | `lotus-core` or treasury source owner | `FX_OUTCOME` | Source-owner required | Consume source product; no local treasury-depth reconstruction. |
 | Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Source-owner required | Consume source product; no manage-local tax-lot authority. |
 | Risk after execution | `lotus-risk` | `RISK_OUTCOME` | RiskMetricsReport volatility and selected risk-metric output are the first implemented adapter; historical attribution, rolling-risk, drawdown-report, and concentration-specific outcome contracts remain source-owner follow-on work. | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
@@ -303,7 +311,7 @@ can be claimed.
 | `TRANSACTION_COST_OUTCOME` | Realized cost source is available and comparable to estimated cost basis. | `COST_SOURCE_INCOMPLETE`. |
 | `TAX_OUTCOME` | Realized tax/tax-lot evidence is source-backed. | `TAX_SOURCE_INCOMPLETE`. |
 | `FX_OUTCOME` | FX executions/currency exposures are source-backed. | `FX_SOURCE_INCOMPLETE`. |
-| `CASH_OUTCOME` | Post-trade cash movements and balances are source-backed. | `CASH_SOURCE_INCOMPLETE`. |
+| `CASH_OUTCOME` | `lotus-core` provides source-owned HoldingsAsOf cash total evidence; cash movements, liquidity ladders, and MWR flow context require future source-owner contracts. | `CASH_SOURCE_INCOMPLETE`. |
 | `EXECUTION_QUALITY` | Fill/order/execution source exists with partial, cancelled, unfilled, slippage, and timing evidence. | `EXECUTION_EVIDENCE_BLOCKED`. |
 | `RULE_OUTCOME` | Rule source and post-trade state source both exist. | `RULE_SOURCE_INCOMPLETE`. |
 | `SOURCE_DATA_OUTCOME` | Manage can classify completeness and supportability of all requested source families. | Always available as a classification, but never converts blocked dimensions to ready. |
