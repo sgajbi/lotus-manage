@@ -498,3 +498,75 @@ def test_rfc0040_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
     assert "Portfolio memory should wait until wave and post-trade outcome events exist" in (
         ledger_normalized
     )
+
+
+def test_rfc0038_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    ledger_normalized = " ".join(ledger.split())
+
+    required_items = [
+        "RFC38-WTBD-001",
+        "RFC38-WTBD-002",
+        "RFC38-WTBD-003",
+        "RFC38-WTBD-004",
+        "RFC38-WTBD-005",
+        "RFC38-WTBD-006",
+        "RFC38-WTBD-007",
+        "RFC38-WTBD-008",
+    ]
+    missing_items = [item for item in required_items if item not in ledger]
+
+    assert missing_items == []
+    assert "RFC-0038 - Mandate Digital Twin, Health Score" in ledger
+    assert "output/rfc0038-live-proof/20260503T063617Z/summary.json" in ledger
+    assert "sgajbi/lotus-gateway#180" in ledger
+    assert "sgajbi/lotus-workbench#140" in ledger
+    assert "sgajbi/lotus-platform#294" in ledger
+    assert "Gateway DPM command-center composition" in ledger
+    assert "Workbench DPM cockpit panels" in ledger
+    assert "Platform canonical seed automation" in ledger
+    assert "PM-book discovery for monitoring and command-center cohorts" in ledger
+    assert "Mandate objective, benchmark, review cadence, and model-change source products" in ledger
+    assert "Client restriction, sustainability, and cashflow source products" in ledger
+    assert "Broader risk and performance health enrichment" in ledger
+    assert "Full front-office command-center product support" in ledger
+    assert "Gateway and Workbench can realize the already-supported backend foundation" in (
+        ledger_normalized
+    )
+
+
+def test_rfc0039_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    ledger_normalized = " ".join(ledger.split())
+
+    required_items = [
+        "RFC39-WTBD-001",
+        "RFC39-WTBD-002",
+        "RFC39-WTBD-003",
+        "RFC39-WTBD-004",
+        "RFC39-WTBD-005",
+        "RFC39-WTBD-006",
+        "RFC39-WTBD-007",
+        "RFC39-WTBD-008",
+        "RFC39-WTBD-009",
+        "RFC39-WTBD-010",
+    ]
+    missing_items = [item for item in required_items if item not in ledger]
+
+    assert missing_items == []
+    assert "RFC-0039 - Advanced Portfolio Construction And Rebalance Alternatives" in ledger
+    assert "output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json" in ledger
+    assert "ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED" in ledger
+    assert "Gateway construction-alternatives composition" in ledger
+    assert "Workbench construction lab / alternatives comparison UX" in ledger
+    assert "Full front-office construction-lab product realization" in ledger
+    assert "ESG/restriction-aware construction support" in ledger
+    assert "Broader risk/performance alternative enrichment" in ledger
+    assert "Authoritative transaction-cost and cost-aware alternatives" in ledger
+    assert "Cashflow/income-need aware liquidity construction" in ledger
+    assert "Treasury-depth currency overlay" in ledger
+    assert "First-class regime scenario-pack source" in ledger
+    assert "Construction Lifecycle Across Proof Packs, Waves, Reports, And AI" in ledger
+    assert "Gateway and Workbench can expose the supported manage backend methods" in (
+        ledger_normalized
+    )

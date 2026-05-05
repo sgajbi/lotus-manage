@@ -28,10 +28,755 @@ Governance rules:
 Wiki decision for this ledger update:
 
 The existing `wiki/Supported-Features.md`, `wiki/RFC-Index.md`, and `wiki/Roadmap.md` already state
-the RFC-0040 and RFC-0041 supported boundaries and the major unpromoted capabilities. This ledger is
-a repo-local planning/control artifact for follow-up sequencing, so no additional wiki source change
-is required for this slice. If this ledger later becomes the public cross-RFC backlog used for
-product planning or client roadmap discussion, add a wiki page and sidebar link in the same PR.
+the RFC-0038 through RFC-0041 supported boundaries and the major unpromoted capabilities. This
+ledger is a repo-local planning/control artifact for follow-up sequencing, so no additional wiki
+source change is required for this slice. If this ledger later becomes the public cross-RFC backlog
+used for product planning or client roadmap discussion, add a wiki page and sidebar link in the
+same PR.
+
+## RFC-0038 - Mandate Digital Twin, Health Score, And DPM Command Center Foundation
+
+Current closure status:
+
+RFC-0038 delivered the implementation-backed `lotus-manage` backend foundation for mandate digital
+twins, deterministic mandate health, monitoring exceptions, monitoring runs, and a bounded DPM
+command-center summary. The supported scope is backend/API foundation: source-mapped refresh/read,
+version, diff, health read/recalculate, monitoring run, exception, and command-center APIs with
+in-memory and PostgreSQL persistence, OpenAPI certification, local live proof, local canonical
+manage plus live `lotus-core` proof, README/wiki/supported-feature updates, and published wiki
+truth.
+
+Closure evidence:
+
+| Evidence | Location |
+| --- | --- |
+| Governing RFC | `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md` |
+| Source-data field map | `docs/rfcs/RFC-0038-source-data-field-map.md` |
+| Supported feature claims | `wiki/Supported-Features.md` mandate digital-twin, monitoring, exceptions, and command-center rows |
+| Manage live proof | `output/rfc0038-live-proof/20260503T063617Z/summary.json` |
+| Manage implementation | `src/core/mandates.py`, `src/core/mandate_repository.py`, `src/api/services/mandate_service.py`, `src/api/routers/mandates.py`, `src/api/routers/monitoring.py`, `src/infrastructure/mandates/` |
+| Tests | `tests/unit/dpm/core/test_mandate_health.py`, `tests/unit/dpm/api/test_mandates_api.py`, `tests/unit/dpm/api/test_monitoring_api.py`, `tests/unit/dpm/supportability/test_dpm_mandate_repository.py` |
+| Downstream handoff | `docs/architecture/dpm-command-center-gateway-workbench-handoff.md`, `sgajbi/lotus-gateway#180`, `sgajbi/lotus-workbench#140`, `sgajbi/lotus-platform#294` |
+
+### Remaining Work Summary
+
+These items are deliberately not done in RFC-0038 because the RFC delivered manage backend
+foundation, while full command-center product realization, PM-book discovery, richer source
+products, and canonical seed automation belong to downstream or source-owning applications.
+
+| ID | Work item | Owner | Current status | Why it was not done in RFC-0038 |
+| --- | --- | --- | --- | --- |
+| RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Downstream issue opened; implementation not supported yet | Manage contracts had to stabilize first. Gateway must compose manage mandate/health/monitoring truth without becoming mandate-health authority. |
+| RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Downstream issue opened; implementation not supported yet | Workbench must consume Gateway/BFF only and must not reconstruct health scoring or source readiness in browser code. |
+| RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Downstream issue opened | Manage proof used canonical IDs, but durable cross-app seed automation for populated, partial, and empty command-center states belongs to platform/source owners. |
+| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` or future relationship-book authority | Deferred with no support claim | RFC-0038 supports caller-supplied mandate IDs and persisted monitoring runs. No certified PM-book membership source exists yet. |
+| RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
+| RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
+| RFC38-WTBD-007 | Broader risk and performance health enrichment | `lotus-risk`, `lotus-performance` | Deferred unless owning-service contracts are consumed | Manage health cannot clone risk or performance methodology. Risk/performance attention must come from certified owners. |
+| RFC38-WTBD-008 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend foundation | Proposed, not supported | Full product support requires Gateway composition, Workbench cockpit implementation, canonical runtime proof, and cross-app documentation. |
+
+### Detailed Follow-Up Items
+
+#### RFC38-WTBD-001 - Gateway DPM Command-Center Composition
+
+Target business outcome:
+
+Gateway exposes a product-facing DPM command-center contract that composes mandate digital twins,
+health, monitoring runs, active exceptions, supportability, and drill-down links while preserving
+`lotus-manage` as the health and monitoring authority.
+
+Why it cannot be done now:
+
+RFC-0038 had to first stabilize manage APIs, monitoring-run scoping, exception filtering, source
+readiness, and OpenAPI contracts. Gateway implementation before that proof would have created
+speculative composition or duplicated health logic.
+
+Dependencies before implementation:
+
+1. use `docs/architecture/dpm-command-center-gateway-workbench-handoff.md` and
+   `sgajbi/lotus-gateway#180` as execution inputs,
+2. typed Gateway client consumes manage mandate, health, monitoring, exception, and command-center
+   APIs,
+3. Gateway preserves manage supportability, reason codes, latest-run identity, and attention
+   counts,
+4. Gateway does not recompute health scores, source readiness, or exception taxonomy,
+5. Gateway OpenAPI and endpoint certification cover degraded, empty, partial, and populated states.
+
+Expected implementation wave:
+
+Implement in `lotus-gateway` before Workbench DPM cockpit panels.
+
+Promotion proof:
+
+1. Gateway unit and contract tests,
+2. no-reconstruction tests for health dimensions and exception state,
+3. live Gateway proof against manage,
+4. OpenAPI quality and vocabulary validation,
+5. Gateway README/wiki/supported-features updates.
+
+#### RFC38-WTBD-002 - Workbench DPM Cockpit Panels
+
+Target business outcome:
+
+PMs and operations users can view mandate health, source readiness, attention queues, recommended
+actions, latest monitoring run, and mandate drill-downs through a populated Workbench cockpit.
+
+Why it cannot be done now:
+
+Workbench must consume Gateway/BFF contracts only. Implementing panels before Gateway composition
+would force direct manage calls or UI-side health reconstruction, both of which RFC-0038 explicitly
+forbids.
+
+Dependencies before implementation:
+
+1. RFC38-WTBD-001 complete,
+2. Workbench BFF/client modules consume Gateway only,
+3. panels cover populated, partial, empty, degraded, and unavailable states,
+4. browser code does not calculate health, source readiness, or supportability,
+5. canonical runtime proof uses governed front-office validation paths.
+
+Expected implementation wave:
+
+Implement in `lotus-workbench` after Gateway composition. Use `PB_SG_GLOBAL_BAL_001` and governed
+canonical runtime proof when producing demo-ready screenshots.
+
+Promotion proof:
+
+1. Workbench component, BFF, and browser tests,
+2. accessibility and visual validation,
+3. canonical front-office evidence with populated panels,
+4. screenshots only after validation passes,
+5. Workbench README/wiki/supported-features updates.
+
+#### RFC38-WTBD-003 - Platform Canonical Seed Automation
+
+Target business outcome:
+
+The canonical front-office stack can reliably seed and validate populated, partial, and empty DPM
+command-center states for demo, QA, and regression proof.
+
+Why it cannot be done now:
+
+RFC-0038 documented the required canonical identities and opened `sgajbi/lotus-platform#294`, but
+seed orchestration across core/manage/Gateway/Workbench belongs to `lotus-platform` and source-app
+owners.
+
+Dependencies before implementation:
+
+1. platform seed contract for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`,
+   `PM_SG_DPM_001`, `BOOK_SG_BALANCED_DPM`, tenant `default`, and RFC-087 source products,
+2. source apps expose or load required seed records,
+3. validation covers populated, partial, and empty command-center states,
+4. seed automation avoids stale Docker images and propagates stateful manage gates correctly,
+5. generated evidence records source lineage and supportability.
+
+Expected implementation wave:
+
+Implement in `lotus-platform` as canonical front-office seed/validation automation, then consume in
+Gateway and Workbench proof.
+
+Promotion proof:
+
+1. platform automation tests,
+2. canonical runtime validation artifacts,
+3. source-product lineage evidence,
+4. docs/runbook updates,
+5. downstream Gateway/Workbench proof reuse.
+
+#### RFC38-WTBD-004 - PM-Book Discovery For Monitoring And Command-Center Cohorts
+
+Target business outcome:
+
+The DPM command center can populate by PM book or portfolio-manager cohort without requiring
+callers to supply every mandate or portfolio id manually.
+
+Why it cannot be done now:
+
+No certified PM-book or portfolio-manager book authority exists. RFC-0038 therefore supports
+caller-supplied mandate IDs and persisted monitoring runs while making book discovery gaps explicit.
+
+Dependencies before implementation:
+
+1. PM-book or relationship-book source owner assigned,
+2. certified API exposes book identity, mandate/portfolio membership, as-of date, freshness,
+   permissions, lineage, and empty/partial semantics,
+3. manage consumer contract and degraded-state behavior,
+4. Gateway and Workbench product-state expectations updated,
+5. live proof covers populated, partial, empty, stale, and permission-denied books.
+
+Expected implementation wave:
+
+Implement after source product proof. This may align with RFC-0041 PM-book discovery work but must
+also support monitoring-run and command-center semantics.
+
+Promotion proof:
+
+1. source-owner OpenAPI/tests/live proof,
+2. manage monitoring and command-center integration tests,
+3. Gateway/Workbench integration proof if surfaced,
+4. supported-feature language that names the exact supported book source.
+
+#### RFC38-WTBD-005 - Mandate Objective, Benchmark, Review Cadence, And Model-Change Sources
+
+Target business outcome:
+
+Mandate twins and health scores can use source-backed objective profiles, benchmark bindings,
+review cadence, last/next review dates, and CIO model-change lifecycle rather than local defaults or
+gap-coded nulls.
+
+Why it cannot be done now:
+
+RFC-0038's MVP correctly used available `lotus-core` mandate binding and model target products,
+while recording missing fields as gaps. Inventing objective, benchmark, or model-change facts in
+manage would make the twin misleading.
+
+Dependencies before implementation:
+
+1. `MandateObjectiveProfile:v1` or equivalent source product,
+2. benchmark binding source from `lotus-core` or `lotus-performance`,
+3. review cadence/date source and CIO model-change event source,
+4. manage adapter and health-dimension tests,
+5. live proof with source-ready and source-gap cases.
+
+Expected implementation wave:
+
+Implement after source products are available. Update health scoring only where source evidence is
+clear and backward gap behavior remains explicit.
+
+Promotion proof:
+
+1. source-owner certification,
+2. manage twin/health tests,
+3. OpenAPI examples and field descriptions,
+4. live evidence with changed health outcomes from source-backed fields.
+
+#### RFC38-WTBD-006 - Client Restriction, Sustainability, And Cashflow Source Products
+
+Target business outcome:
+
+Mandate health can assess restriction, sustainability, liquidity, income-need, and cashflow risks
+from source-backed client and portfolio profiles.
+
+Why it cannot be done now:
+
+No certified `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, or
+`PortfolioCashflowForecast:v1` source exists for RFC-0038. Manage preserves gaps and does not
+fabricate compliance or cashflow facts.
+
+Dependencies before implementation:
+
+1. source-owner products and permission model,
+2. effective date, expiry, jurisdiction, client/mandate binding, and lineage semantics,
+3. health scoring rules for missing, stale, partial, and blocked profiles,
+4. Workbench/Gateway presentation rules if surfaced,
+5. documentation that avoids unsupported ESG/compliance claims.
+
+Expected implementation wave:
+
+Implement after source products exist. Coordinate with RFC-0039 ESG/restriction construction and
+RFC-0040 proof-pack enrichment so semantics stay consistent.
+
+Promotion proof:
+
+1. source-owner tests and live proof,
+2. manage health-dimension tests,
+3. canonical evidence with missing and partial profile cases,
+4. README/wiki/supported-feature updates.
+
+#### RFC38-WTBD-007 - Broader Risk And Performance Health Enrichment
+
+Target business outcome:
+
+Mandate health can incorporate benchmark-aware risk and performance attention from authoritative
+analytics services.
+
+Why it cannot be done now:
+
+Risk and performance methodology belong to `lotus-risk` and `lotus-performance`. RFC-0038 keeps
+health dimensions deterministic and source-aware without cloning those analytics.
+
+Dependencies before implementation:
+
+1. risk health/attention contract from `lotus-risk`,
+2. performance under-review/benchmark-relative attention contract from `lotus-performance`,
+3. benchmark identity and period semantics,
+4. manage adapter tests for ready/degraded/stale/partial analytics,
+5. Gateway/Workbench supportability presentation rules.
+
+Expected implementation wave:
+
+Implement after analytics contracts exist. Manage should consume supportability and reason codes
+from the owners.
+
+Promotion proof:
+
+1. owning-service API certification,
+2. manage health and command-center tests,
+3. live mixed-readiness proof,
+4. supported-feature updates naming supported analytics.
+
+#### RFC38-WTBD-008 - Full Front-Office Command-Center Product Support
+
+Target business outcome:
+
+DPM command-center becomes a complete front-office product surface across manage, Gateway, and
+Workbench, backed by canonical data and demo-ready documentation.
+
+Why it cannot be done now:
+
+RFC-0038 closed the backend foundation only. Full product support requires Gateway implementation,
+Workbench cockpit panels, canonical seed automation, browser proof, and cross-repo docs.
+
+Dependencies before implementation:
+
+1. RFC38-WTBD-001 complete,
+2. RFC38-WTBD-002 complete,
+3. RFC38-WTBD-003 complete,
+4. canonical front-office validation passes,
+5. supported-feature ledgers align across apps.
+
+Expected implementation wave:
+
+Close as a cross-app product-realization slice after Gateway, Workbench, and platform seed
+automation are implemented.
+
+Promotion proof:
+
+1. canonical front-office evidence pack,
+2. API/BFF/browser/accessibility/visual checks,
+3. demo screenshots tied to validated backend proof,
+4. wiki material suitable for business, operations, sales/pre-sales, and demos.
+
+### Suggested Sequencing
+
+Recommended order:
+
+1. implement Gateway DPM command-center composition,
+2. implement platform canonical seed automation or the minimum needed for populated product proof,
+3. implement Workbench DPM cockpit panels,
+4. prove full front-office command-center support,
+5. add PM-book discovery when a source authority exists,
+6. add objective, restriction, sustainability, cashflow, risk, and performance enrichments from
+   owning services.
+
+Rationale:
+
+Gateway and Workbench can realize the already-supported backend foundation before every enrichment
+source exists. Source enrichments should improve quality later without blocking product visibility,
+provided unsupported fields remain explicit and degraded.
+
+### RFC-0038 Promotion Checklist For Any Future Item
+
+Before any item above moves from this ledger into a supported-feature claim:
+
+1. owning repository and source contract are explicit,
+2. manage does not invent mandate, book, risk, performance, restriction, sustainability, or
+   cashflow facts,
+3. Gateway and Workbench consume through the governed product path,
+4. degraded, empty, partial, stale, unavailable, and permission-denied states are tested,
+5. OpenAPI/Swagger quality is certified for every API added or changed,
+6. live or canonical front-office evidence is captured and critically reviewed,
+7. README, RFC/source-map, wiki, supported-features, endpoint certification, and repository context
+   are aligned,
+8. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
+
+## RFC-0039 - Advanced Portfolio Construction And Rebalance Alternatives
+
+Current closure status:
+
+RFC-0039 delivered the implementation-backed `lotus-manage` backend foundation for construction
+alternative generation, comparison, retrieval, persistence, and actor-attributed selection. The
+supported manage backend methods are `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`,
+`MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `RISK_AWARE`, `LIQUIDITY_AWARE`,
+`CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE`. `ESG_AWARE` remains deliberately degraded with
+`ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`.
+
+Closure evidence:
+
+| Evidence | Location |
+| --- | --- |
+| Governing RFC | `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md` |
+| Source-data and method map | `docs/rfcs/RFC-0039-source-data-and-method-map.md` |
+| Supported feature claim | `wiki/Supported-Features.md` construction rows |
+| Live proof | `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json` |
+| Manage implementation | `src/core/construction/`, `src/api/services/construction_service.py`, `src/api/routers/construction.py`, `src/infrastructure/construction/`, `src/infrastructure/risk_authority/` |
+| Tests | `tests/unit/dpm/api/test_construction_api.py`, `tests/unit/dpm/infrastructure/test_risk_authority_client.py` |
+| Downstream handoff | `docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`, Gateway/Workbench RFC-0098 construction addenda |
+
+### Remaining Work Summary
+
+These items are deliberately not done in RFC-0039 because manage owns construction-alternative
+truth, while product realization and several richer source authorities belong outside manage.
+
+| ID | Work item | Owner | Current status | Why it was not done in RFC-0039 |
+| --- | --- | --- | --- | --- |
+| RFC39-WTBD-001 | Gateway construction-alternatives composition | `lotus-gateway` | Downstream RFC direction created; implementation not supported yet | Gateway must consume manage alternatives without recomputing construction truth or choosing alternatives. |
+| RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Downstream RFC direction created; implementation not supported yet | Workbench must consume Gateway/BFF only and must not run optimizer, selection, or comparison logic in browser code. |
+| RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | Manage backend proof does not equal a complete PM-facing product journey. |
+| RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` or dedicated client-governance/sustainability source, consumed by manage | Deferred with explicit degraded posture | No certified restriction and sustainability profile products exist. Full ESG support would be a false compliance claim. |
+| RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
+| RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | Future cost/execution source | Deferred with labelled local estimates only | No authoritative `TransactionCostCurve:v1` source exists. |
+| RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` or cashflow source | Deferred source depth | Current `LIQUIDITY_AWARE` uses settlement, funding, cash balances, and minimum cash policy; it does not own income/cashflow forecasts. |
+| RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
+| RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority | Deferred source depth beyond supplied context | `REGIME_STRESS_AWARE` accepts source-backed scenario context, but no certified scenario-pack endpoint exists. |
+| RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Proposed strategic extension | RFC-0039 selects alternatives; cross-RFC lifecycle needs RFC-0040 proof packs, RFC-0041 waves, report/AI owners, and product surfaces. |
+
+### Detailed Follow-Up Items
+
+#### RFC39-WTBD-001 - Gateway Construction-Alternatives Composition
+
+Target business outcome:
+
+Gateway exposes construction-alternative sets, comparison metrics, selected-alternative state,
+supportability, and action posture to Workbench while preserving manage as construction authority.
+
+Why it cannot be done now:
+
+RFC-0039 had to stabilize manage alternative contracts, selection events, source-supportability
+posture, and live evidence before Gateway composition could be implemented without speculation.
+
+Dependencies before implementation:
+
+1. Gateway RFC-0098 construction addendum is used as execution guide,
+2. typed Gateway client consumes manage generate/read/select APIs,
+3. Gateway preserves alternative IDs, method statuses, objective terms, constraint traces,
+   comparison metrics, source supportability, and selected state,
+4. Gateway does not run optimizer, recompute metrics, or choose alternatives,
+5. Gateway composes report/proof-pack/AI posture only from owning services.
+
+Expected implementation wave:
+
+Implement in `lotus-gateway` before Workbench construction lab.
+
+Promotion proof:
+
+1. Gateway unit and contract tests,
+2. no-reconstruction tests for comparison metrics and method states,
+3. OpenAPI certification,
+4. live Gateway proof against manage,
+5. Gateway README/wiki/supported-features updates.
+
+#### RFC39-WTBD-002 - Workbench Construction Lab / Alternatives Comparison UX
+
+Target business outcome:
+
+PMs can compare construction alternatives, inspect objective/constraint traces, understand degraded
+source posture, and select an alternative through a governed Workbench journey.
+
+Why it cannot be done now:
+
+Workbench must consume Gateway/BFF only. Implementing before Gateway composition would either
+create direct manage calls or move construction logic into the browser.
+
+Dependencies before implementation:
+
+1. RFC39-WTBD-001 complete,
+2. Workbench BFF/client modules consume Gateway only,
+3. UI covers alternative list, comparison matrix, detail drawer, source supportability, selected
+   state, degraded methods, infeasible/fallback solver posture, and action gating,
+4. browser code does not optimize, select automatically, or recompute metrics,
+5. canonical front-office validation is available.
+
+Expected implementation wave:
+
+Implement in `lotus-workbench` after Gateway construction composition.
+
+Promotion proof:
+
+1. Workbench unit/component/BFF tests,
+2. browser and accessibility validation,
+3. visual proof for populated and degraded alternatives,
+4. canonical front-office evidence,
+5. Workbench README/wiki/supported-features updates.
+
+#### RFC39-WTBD-003 - Full Front-Office Construction-Lab Product Realization
+
+Target business outcome:
+
+Construction alternatives become a complete front-office PM workflow across manage, Gateway, and
+Workbench, suitable for demos and real operating use.
+
+Why it cannot be done now:
+
+Manage backend alternatives are complete, but the full business outcome requires Gateway
+composition, Workbench UX, canonical browser proof, and cross-repo product documentation.
+
+Dependencies before implementation:
+
+1. RFC39-WTBD-001 complete,
+2. RFC39-WTBD-002 complete,
+3. canonical front-office validation passes,
+4. supported-feature ledgers align across apps,
+5. screenshots and demos are tied to validated backend evidence.
+
+Expected implementation wave:
+
+Treat as a cross-app product-realization closure after Gateway and Workbench implementations merge.
+
+Promotion proof:
+
+1. canonical front-office evidence pack,
+2. API/BFF/browser/accessibility/visual checks,
+3. demo material and wiki pages backed by implementation,
+4. no unsupported Gateway/Workbench product claims.
+
+#### RFC39-WTBD-004 - ESG/Restriction-Aware Construction Support
+
+Target business outcome:
+
+Construction alternatives can enforce client restrictions, sustainability preferences, product
+eligibility, and ESG exclusions from source-backed profiles.
+
+Why it cannot be done now:
+
+No certified `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` exists. RFC-0039
+therefore keeps `ESG_AWARE` degraded and prevents client/sales material from claiming full ESG or
+restriction-aware construction.
+
+Dependencies before implementation:
+
+1. restriction and sustainability source products,
+2. source-owner permission, effective-date, expiry, jurisdiction, client/mandate binding, and
+   lineage semantics,
+3. manage method eligibility and constraint tests,
+4. proof-pack and health semantics aligned with RFC-0038/RFC-0040,
+5. Workbench presentation rules if surfaced.
+
+Expected implementation wave:
+
+Implement only after source authorities exist. Coordinate with RFC-0038 health enrichment and
+RFC-0040 proof-pack enrichment.
+
+Promotion proof:
+
+1. source-owner certification,
+2. manage construction tests for ready/degraded/blocked profile states,
+3. live evidence with compliant and blocked portfolios,
+4. README/wiki/supported-feature updates that avoid unsupported ESG claims.
+
+#### RFC39-WTBD-005 - Broader Risk/Performance Alternative Enrichment
+
+Target business outcome:
+
+Alternative comparisons include source-backed tracking error, volatility, drawdown, stress
+contribution, attribution, and benchmark-relative performance context where available.
+
+Why it cannot be done now:
+
+Current support consumes `lotus-risk` concentration authority for `RISK_AWARE`, but broader risk
+and performance analytics need certified owner contracts. Manage must not recalculate risk or
+performance methodology.
+
+Dependencies before implementation:
+
+1. `RiskAlternativeEnrichment:v1` or equivalent from `lotus-risk`,
+2. `PerformanceBenchmarkContext:v1` or equivalent from `lotus-performance`,
+3. benchmark identity, as-of date, period vocabulary, freshness, and supportability semantics,
+4. manage adapter tests,
+5. Gateway/Workbench posture if displayed.
+
+Expected implementation wave:
+
+Implement after analytics source products exist. Preserve degraded supportability when unavailable.
+
+Promotion proof:
+
+1. owning-service API certification,
+2. manage alternative-enrichment tests,
+3. live proof with ready and degraded analytics,
+4. OpenAPI/endpoint-certification updates,
+5. supported-feature wording naming the exact analytics supported.
+
+#### RFC39-WTBD-006 - Authoritative Transaction-Cost And Cost-Aware Alternatives
+
+Target business outcome:
+
+PMs can compare alternatives using source-backed spread, commission, and market-impact estimates
+rather than local labelled diagnostics.
+
+Why it cannot be done now:
+
+No authoritative cost curve or execution-cost source exists. RFC-0039 allows only clearly labelled
+estimated cost diagnostics.
+
+Dependencies before implementation:
+
+1. `TransactionCostCurve:v1` or equivalent owner,
+2. instrument/venue/currency applicability and freshness semantics,
+3. manage cost-aware objective and constraint tests,
+4. degraded behavior for stale/missing/inapplicable curves,
+5. documentation distinguishing estimates from authoritative costs.
+
+Expected implementation wave:
+
+Implement after the cost/execution source is certified.
+
+Promotion proof:
+
+1. source-owner tests,
+2. manage method tests and live proof,
+3. OpenAPI/supportability updates,
+4. supported-feature promotion only for source-backed cost contexts.
+
+#### RFC39-WTBD-007 - Cashflow/Income-Need Aware Liquidity Construction
+
+Target business outcome:
+
+Liquidity-aware alternatives can account for client income needs, expected cashflows, and future
+liquidity events rather than only current cash, settlement, and minimum cash policy.
+
+Why it cannot be done now:
+
+No `PortfolioCashflowForecast:v1` or equivalent source exists. Manage must not fabricate cashflow
+needs.
+
+Dependencies before implementation:
+
+1. cashflow forecast source product,
+2. income need and forecast horizon semantics,
+3. source freshness and confidence posture,
+4. manage liquidity objective tests,
+5. proof-pack and Workbench presentation alignment if surfaced.
+
+Expected implementation wave:
+
+Implement after cashflow source proof.
+
+Promotion proof:
+
+1. source-owner certification,
+2. manage liquidity/cashflow tests,
+3. live evidence for ready and missing forecast cases,
+4. supported-feature update.
+
+#### RFC39-WTBD-008 - Treasury-Depth Currency Overlay
+
+Target business outcome:
+
+Currency-overlay construction can use treasury policy, forward curves, hedge instruments, and
+execution readiness rather than FX spot readiness and bounded policy context alone.
+
+Why it cannot be done now:
+
+RFC-0039 supports policy-backed overlay posture, but no treasury-depth source products exist for
+forward curves, hedge instruments, or execution readiness.
+
+Dependencies before implementation:
+
+1. `CurrencyExposurePolicy:v1` or treasury policy source,
+2. forward curves and hedge instrument eligibility,
+3. settlement/execution readiness for hedge actions,
+4. manage overlay tests for ready/degraded/blocked states,
+5. Gateway/Workbench display rules if surfaced.
+
+Expected implementation wave:
+
+Implement after treasury/source products are certified.
+
+Promotion proof:
+
+1. source-owner tests,
+2. manage overlay tests and live proof,
+3. documentation distinguishing policy-backed from treasury-backed overlay support.
+
+#### RFC39-WTBD-009 - First-Class Regime Scenario-Pack Source
+
+Target business outcome:
+
+Regime-stress-aware alternatives can consume governed scenario packs from risk/CIO authority with
+explicit assumptions, approvals, applicability, and stress result lineage.
+
+Why it cannot be done now:
+
+Current support accepts source-backed scenario authority context, but no certified scenario-pack API
+exists. Manage must not invent risk or CIO scenario methodology.
+
+Dependencies before implementation:
+
+1. `RegimeScenarioPack:v1` or equivalent source product,
+2. scenario identity, effective period, shock assumptions, approvals, portfolio applicability, and
+   lineage,
+3. manage scenario adapter tests,
+4. risk/CIO methodology documentation,
+5. Gateway/Workbench posture if surfaced.
+
+Expected implementation wave:
+
+Implement after risk/CIO scenario authority exists.
+
+Promotion proof:
+
+1. source-owner certification,
+2. manage scenario method tests,
+3. live proof with ready/degraded scenario posture,
+4. supported-feature update distinguishing supplied context from certified scenario support.
+
+#### RFC39-WTBD-010 - Construction Lifecycle Across Proof Packs, Waves, Reports, And AI
+
+Target business outcome:
+
+A selected construction alternative flows coherently into proof packs, rebalance waves, reports,
+and governed AI evidence without any app reconstructing construction truth.
+
+Why it cannot be done now:
+
+RFC-0039 stops at construction alternatives and selection. Cross-RFC lifecycle depends on RFC-0040
+proof packs, RFC-0041 waves, report/AI owning services, and Gateway/Workbench product surfaces.
+
+Dependencies before implementation:
+
+1. RFC-0040 proof-pack consumption of selected alternatives,
+2. RFC-0041 wave linkage and selected-alternative refs,
+3. report and AI owner contracts,
+4. Gateway/Workbench product surfaces,
+5. event and lineage reconciliation across artifacts.
+
+Expected implementation wave:
+
+Treat as a later cross-RFC closure/product-memory slice after downstream product surfaces and
+report/AI owners are implemented.
+
+Promotion proof:
+
+1. lineage tests across alternative, proof pack, wave, report, and AI evidence,
+2. live/canonical proof,
+3. no-reconstruction tests in Gateway/Workbench/report/AI,
+4. README/wiki/supported-feature updates.
+
+### Suggested Sequencing
+
+Recommended order:
+
+1. implement Gateway construction composition,
+2. implement Workbench construction lab,
+3. prove full front-office construction-lab product support,
+4. implement ESG/restriction source products and promote `ESG_AWARE`,
+5. add broader risk/performance, cost, cashflow, currency, and scenario source depth,
+6. close cross-RFC construction lifecycle after proof packs, waves, reports, AI, Gateway, and
+   Workbench are live.
+
+Rationale:
+
+Gateway and Workbench can expose the supported manage backend methods immediately once downstream
+composition exists. Enrichment items should be promoted later from source-authoritative contracts
+instead of blocking the product surface or creating manage-local methodology clones.
+
+### RFC-0039 Promotion Checklist For Any Future Item
+
+Before any item above moves from this ledger into a supported-feature claim:
+
+1. owning repository and source contract are explicit,
+2. manage does not clone risk, performance, cost, sustainability, restriction, cashflow, treasury,
+   scenario, report, AI, Gateway, or Workbench behavior,
+3. method status remains truthful: `READY`, `PENDING_REVIEW`, `BLOCKED`, or `DEGRADED`,
+4. Gateway and Workbench consume through the governed product path,
+5. degraded, blocked, stale, partial, unavailable, inapplicable, and solver-fallback states are
+   tested where applicable,
+6. OpenAPI/Swagger quality is certified for every API added or changed,
+7. live or canonical front-office evidence is captured and critically reviewed,
+8. README, RFC/source-map, wiki, supported-features, endpoint certification, and repository context
+   are aligned,
+9. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
 
 ## RFC-0040 - Pre-Trade Proof Pack And Evidence Fabric
 
