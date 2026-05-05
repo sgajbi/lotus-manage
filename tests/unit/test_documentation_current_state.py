@@ -457,3 +457,44 @@ def test_rfc0041_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
     assert "External execution integration" in ledger
     assert "Source-owned discovery should then improve trigger quality" in ledger_normalized
     assert "OpenAPI/Swagger quality is certified for every API added or changed" in ledger
+
+
+def test_rfc0040_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    ledger_normalized = " ".join(ledger.split())
+
+    required_items = [
+        "RFC40-WTBD-001",
+        "RFC40-WTBD-002",
+        "RFC40-WTBD-003",
+        "RFC40-WTBD-004",
+        "RFC40-WTBD-005",
+        "RFC40-WTBD-006",
+        "RFC40-WTBD-007",
+        "RFC40-WTBD-008",
+        "RFC40-WTBD-009",
+        "RFC40-WTBD-010",
+    ]
+    missing_items = [item for item in required_items if item not in ledger]
+
+    assert missing_items == []
+    assert "RFC-0040 - Pre-Trade Proof Pack And Evidence Fabric" in ledger
+    assert "DpmPreTradeProofPack" in ledger
+    assert "output/rfc0040-proof/20260503-145818/manifest.json" in ledger
+    assert "lotus-gateway` PR #181 merge `b2c3734" in ledger
+    assert "lotus-workbench` PR #142 merge `b63981b" in ledger
+    assert "sgajbi/lotus-gateway#182" in ledger
+    assert "Gateway proof-pack composition" in ledger
+    assert "Workbench proof-pack review UX" in ledger
+    assert "Full front-office proof-pack product realization" in ledger
+    assert "Report materialization from `DpmProofPackReportInput`" in ledger
+    assert "AI PM memo generation from `DpmProofPackAiEvidenceInput`" in ledger
+    assert "Broader risk and performance proof-pack enrichment" in ledger
+    assert "Authoritative transaction-cost curve" in ledger
+    assert "Sustainability preferences and client restriction profiles" in ledger
+    assert "Scenario-pack authority beyond supplied context" in ledger
+    assert "Decision Timeline And Portfolio Memory" in ledger
+    assert "manage remains proof-pack authority" in ledger
+    assert "Portfolio memory should wait until wave and post-trade outcome events exist" in (
+        ledger_normalized
+    )

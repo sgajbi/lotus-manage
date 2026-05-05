@@ -25,13 +25,443 @@ Governance rules:
    canonical evidence, README/wiki/supported-features updates, PR merge, wiki publication, and branch
    cleanup.
 
-Wiki decision for this first ledger slice:
+Wiki decision for this ledger update:
 
 The existing `wiki/Supported-Features.md`, `wiki/RFC-Index.md`, and `wiki/Roadmap.md` already state
-the RFC-0041 supported boundary and the major unpromoted capabilities. This ledger is a repo-local
-planning/control artifact for follow-up sequencing, so no additional wiki source change is required
-for this slice. If this ledger later becomes the public cross-RFC backlog used for product planning
-or client roadmap discussion, add a wiki page and sidebar link in the same PR.
+the RFC-0040 and RFC-0041 supported boundaries and the major unpromoted capabilities. This ledger is
+a repo-local planning/control artifact for follow-up sequencing, so no additional wiki source change
+is required for this slice. If this ledger later becomes the public cross-RFC backlog used for
+product planning or client roadmap discussion, add a wiki page and sidebar link in the same PR.
+
+## RFC-0040 - Pre-Trade Proof Pack And Evidence Fabric
+
+Current closure status:
+
+RFC-0040 is `DONE` for the `lotus-manage` owned backend proof-pack authority. The delivered scope
+includes `DpmPreTradeProofPack` generation from direct rebalance runs and selected construction
+alternatives, immutable JSON persistence, deterministic Markdown, section states, section and
+content hashes, lineage, retention metadata, append-only report/AI handoff refs, certified APIs,
+bounded report-input and AI-evidence-input adapters, forbidden-field/action guardrails, and
+source-backed RFC-0038 mandate-context attachment when mandate evidence exists.
+
+Closure evidence:
+
+| Evidence | Location |
+| --- | --- |
+| Governing RFC | `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md` |
+| Source-map and gap analysis | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
+| Supported feature claim | `wiki/Supported-Features.md` |
+| Live proof | `output/rfc0040-proof/20260503-145818/manifest.json` and `critical-review.json` |
+| Manage implementation | `src/core/proof_packs/`, `src/api/routers/proof_packs.py`, `src/infrastructure/proof_packs/` |
+| Tests | `tests/unit/dpm/proof_packs/`, `tests/unit/dpm/api/test_proof_pack_api.py` |
+| Downstream RFC alignment | `lotus-gateway` PR #181 merge `b2c3734`, `lotus-workbench` PR #142 merge `b63981b` |
+| Canonical front-office readiness boundary | `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260503-222559.json`, `sgajbi/lotus-gateway#182` |
+
+### Remaining Work Summary
+
+These items are deliberately not done in RFC-0040 because proof-pack backend authority is
+manage-owned, while full product realization, document materialization, AI narrative generation,
+analytics enrichment, and broader source coverage belong to other Lotus apps.
+
+| ID | Work item | Owner | Current status | Why it was not done in RFC-0040 |
+| --- | --- | --- | --- | --- |
+| RFC40-WTBD-001 | Gateway proof-pack composition | `lotus-gateway` | Downstream RFC direction aligned; implementation not supported yet | Gateway must consume stable manage proof-pack APIs without reconstructing sections, hashes, report refs, or AI refs. Manage implementation and proof had to stabilize first. |
+| RFC40-WTBD-002 | Workbench proof-pack review UX | `lotus-workbench` | Downstream RFC direction aligned; implementation not supported yet | Workbench must consume Gateway/BFF only. Implementing before Gateway composition would force direct manage calls or speculative UI state. |
+| RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | Manage backend proof is necessary but not sufficient. Canonical front-office QA exposed a downstream Gateway risk-drawdown `partial` boundary tracked in `sgajbi/lotus-gateway#182`. |
+| RFC40-WTBD-004 | Report materialization from `DpmProofPackReportInput` | `lotus-report`, `lotus-render`, `lotus-archive` | Deferred to owning services | Manage produces deterministic report input; it does not generate, render, archive, retain, or retrieve report documents. |
+| RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, later consumed through Gateway/Workbench | Deferred to RFC-0043 / AI owner | Manage produces bounded AI evidence with guardrails; it must not generate AI narrative, prompts, recommendations, or autonomous decisioning. |
+| RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Deferred unless owning-service contracts are consumed | RFC-0040 preserves degraded sections where source-backed risk/performance context is missing. Manage must not clone analytics methodology. |
+| RFC40-WTBD-007 | Authoritative transaction-cost curve | Future cost/execution source, likely execution/platform domain | Deferred with no support claim | Manage may expose labelled estimated cost, but no authoritative `TransactionCostCurve:v1` source exists. |
+| RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
+| RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority | Deferred beyond supplied source-backed context | Regime/scenario context can be preserved when supplied, but no first-class risk/CIO scenario-pack endpoint is certified for proof-pack enrichment. |
+| RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, and outcome events | `lotus-manage` with downstream/source participants | Proposed strategic extension | RFC-0040 creates proof-pack-local timeline/lineage. Cross-RFC portfolio memory needs RFC-0041 wave links, RFC-0042 outcome events, and product-surface realization before support can be claimed. |
+
+### Detailed Follow-Up Items
+
+#### RFC40-WTBD-001 - Gateway Proof-Pack Composition
+
+Target business outcome:
+
+Gateway exposes a Workbench-facing proof-pack contract that preserves manage-owned evidence while
+adding experience-layer posture for entitlements, availability, report status, AI status, archive
+status, and command-center context.
+
+Why it cannot be done now:
+
+RFC-0040 stabilized the manage proof-pack artifact, hashes, refs, and API shape. Gateway
+composition before that proof would have required speculative contracts or duplicated proof-pack
+logic. Slice 8 corrected the downstream RFC ownership language, but it did not implement runtime
+Gateway composition.
+
+Dependencies before implementation:
+
+1. Gateway RFC-0098 proof-pack addendum is used as execution guide,
+2. typed manage client consumes proof-pack generate/read/Markdown/report-input/AI-evidence routes,
+3. Gateway preserves manage `proof_pack_id`, section states, reason codes, source refs, hashes,
+   report refs, and AI refs,
+4. Gateway composes report/archive/AI posture only from owning services,
+5. Gateway does not calculate proof-pack section state or modify persisted evidence.
+
+Expected implementation wave:
+
+Implement in `lotus-gateway` before Workbench proof-pack UX. This should be a Gateway-owned RFC
+implementation slice with OpenAPI certification, no-reconstruction tests, and live Gateway proof
+against manage.
+
+Promotion proof:
+
+1. Gateway unit, contract, and OpenAPI tests,
+2. no-reconstruction tests for section states, hashes, refs, and reason codes,
+3. degraded/unavailable manage posture tests,
+4. live Gateway proof against manage proof-pack APIs,
+5. Gateway README/wiki/supported-features/endpoint-certification updates.
+
+#### RFC40-WTBD-002 - Workbench Proof-Pack Review UX
+
+Target business outcome:
+
+Portfolio managers, reviewers, operations, and client-facing teams can inspect proof packs in
+Workbench with section readiness, evidence drawers, Markdown preview, report/AI posture, lineage,
+hashes, and action eligibility backed by Gateway truth.
+
+Why it cannot be done now:
+
+Workbench must consume Gateway/BFF contracts only. Without Gateway proof-pack composition,
+Workbench would either call manage directly or recreate proof-pack posture in browser code. Both
+would violate the governed front-office architecture.
+
+Dependencies before implementation:
+
+1. RFC40-WTBD-001 complete,
+2. Workbench BFF/client modules consume Gateway only,
+3. UX covers section matrix, degraded/blocked/pending-review states, evidence detail, lineage,
+   Markdown preview, report/AI readiness, and supportability,
+4. no browser-side fact generation, hashing, report input generation, or AI evidence generation,
+5. canonical front-office validation path is available for proof.
+
+Expected implementation wave:
+
+Implement in `lotus-workbench` after Gateway composition. Use the canonical front-office runtime
+when producing demo-ready screenshots or proof.
+
+Promotion proof:
+
+1. Workbench component and BFF contract tests,
+2. browser validation for ready/degraded/blocked proof packs,
+3. accessibility and responsive layout checks,
+4. canonical front-office evidence with backend validation passed,
+5. Workbench README/wiki/supported-features updates.
+
+#### RFC40-WTBD-003 - Full Front-Office Proof-Pack Product Realization
+
+Target business outcome:
+
+Proof packs are available as an end-to-end product workflow across manage, Gateway, and Workbench,
+with validated backend evidence, composed experience APIs, browser proof, and demo-ready material.
+
+Why it cannot be done now:
+
+Manage proof-pack backend passed. Full product support also requires Gateway runtime composition,
+Workbench UX, and canonical front-office QA. The post-merge canonical QA run
+`canonical-front-office-qa-20260503-222559.json` failed at Workbench browser validation because
+Gateway risk drawdown returned `partial`; that boundary is tracked as `sgajbi/lotus-gateway#182`.
+
+Dependencies before implementation:
+
+1. RFC40-WTBD-001 complete,
+2. RFC40-WTBD-002 complete,
+3. `sgajbi/lotus-gateway#182` or equivalent front-office readiness blocker resolved or explicitly
+   reclassified,
+4. canonical front-office validation passes before screenshots are promoted as demo evidence,
+5. supported-feature ledgers across manage, Gateway, and Workbench are aligned.
+
+Expected implementation wave:
+
+Treat this as a cross-app closure/proof slice after Gateway and Workbench implementation. Do not
+claim full product support from manage evidence alone.
+
+Promotion proof:
+
+1. canonical front-office QA evidence pack,
+2. API, BFF, browser, accessibility, and visual validation pass,
+3. screenshots tied to validated backend evidence,
+4. no unresolved blocking downstream issue,
+5. public docs are suitable for developers, operations, business users, sales/pre-sales, and demos.
+
+#### RFC40-WTBD-004 - Report Materialization From `DpmProofPackReportInput`
+
+Target business outcome:
+
+A proof pack can be materialized into a governed report with deterministic rendering, archive
+records, retention, legal hold, retrieval, and access audit.
+
+Why it cannot be done now:
+
+`lotus-manage` owns proof-pack evidence and typed report input. It does not own document
+generation, rendering, archive lifecycle, or retrieval governance. Implementing those locally would
+duplicate `lotus-report`, `lotus-render`, and `lotus-archive` responsibilities.
+
+Dependencies before implementation:
+
+1. `lotus-report` consumer contract for `DpmProofPackReportInput`,
+2. render template and deterministic output contract in `lotus-render`,
+3. archive retention, legal hold, retrieval, and access-audit contract in `lotus-archive`,
+4. source-hash reconciliation from generated report back to manage proof-pack input,
+5. Gateway/Workbench report posture if surfaced.
+
+Expected implementation wave:
+
+Implement in report/render/archive owning RFCs after document output scope and audience rules are
+clear.
+
+Promotion proof:
+
+1. report/render/archive tests,
+2. deterministic report artifact and archive evidence,
+3. retention/retrieval/access-audit proof,
+4. Gateway/Workbench posture tests if exposed,
+5. supported-feature updates in owning apps.
+
+#### RFC40-WTBD-005 - AI PM Memo Generation From `DpmProofPackAiEvidenceInput`
+
+Target business outcome:
+
+PMs can request governed AI assistance over proof-pack evidence while preserving provenance,
+guardrails, forbidden-field protections, and unsupported-action blocking.
+
+Why it cannot be done now:
+
+RFC-0040 correctly stopped at bounded AI evidence input. AI prompts, memos, model invocation,
+guardrail evaluation, and provenance belong to `lotus-ai` and RFC-0043, not manage.
+
+Dependencies before implementation:
+
+1. RFC-0043 or `lotus-ai` workflow-pack contract,
+2. prompt/model provenance and evidence-hash lineage,
+3. forbidden-field and forbidden-action guardrails enforced in AI service,
+4. unavailable, blocked, redacted, and human-review states,
+5. Gateway/Workbench consumption rules if surfaced.
+
+Expected implementation wave:
+
+Implement in `lotus-ai` after RFC-0043 is tightened or executed. Manage remains the evidence
+source and should not become an AI generation surface.
+
+Promotion proof:
+
+1. AI guardrail/eval tests,
+2. provenance and evidence-hash proof,
+3. unavailable/blocked-state tests,
+4. Gateway/Workbench integration proof if exposed,
+5. supported-feature language that does not imply autonomous trading or approval authority.
+
+#### RFC40-WTBD-006 - Broader Risk And Performance Proof-Pack Enrichment
+
+Target business outcome:
+
+Proof packs include source-backed risk and performance context beyond the first manage-backed
+evidence, with clear degraded states when analytics are missing, stale, or partial.
+
+Why it cannot be done now:
+
+Risk and performance analytics are not manage-owned methodology. RFC-0040 can carry degraded
+sections and consume source-backed context, but it must not clone risk or performance calculations.
+
+Dependencies before implementation:
+
+1. `lotus-risk` proof-pack-compatible risk enrichment contract,
+2. `lotus-performance` benchmark/return/attention context contract,
+3. source refs, as-of semantics, benchmark identity, freshness, and supportability states,
+4. manage adapter tests for ready/degraded/stale/partial analytics,
+5. Gateway posture if analytics are surfaced in the product UI.
+
+Expected implementation wave:
+
+Implement after risk/performance contracts exist. Manage should consume and attach owning-service
+lineage, not calculate the analytics.
+
+Promotion proof:
+
+1. owning-service API certification,
+2. manage adapter and proof-pack section tests,
+3. live mixed-readiness proof,
+4. OpenAPI and endpoint-certification updates,
+5. supported-feature updates naming exactly which analytics are supported.
+
+#### RFC40-WTBD-007 - Authoritative Transaction-Cost Curve
+
+Target business outcome:
+
+Proof packs can distinguish labelled estimates from source-backed transaction-cost evidence and
+show cost supportability clearly.
+
+Why it cannot be done now:
+
+No authoritative transaction-cost source exists. RFC-0040 can preserve labelled estimated cost from
+manage diagnostics, but it cannot promote authoritative transaction-cost support.
+
+Dependencies before implementation:
+
+1. source owner assigned for `TransactionCostCurve:v1` or equivalent,
+2. curve identity, venue/asset/currency applicability, as-of timestamp, freshness, and lineage,
+3. manage adapter rules for missing/stale/inapplicable curves,
+4. tests for estimate versus authoritative-cost labeling,
+5. documentation warning against unsupported cost precision.
+
+Expected implementation wave:
+
+Implement after the cost/execution source is established and certified.
+
+Promotion proof:
+
+1. source-owner contract tests,
+2. manage proof-pack cost-section tests,
+3. live evidence for ready and degraded cost posture,
+4. OpenAPI/supportability documentation updates,
+5. supported-feature promotion only for source-backed cost contexts.
+
+#### RFC40-WTBD-008 - Sustainability Preferences And Client Restriction Profiles
+
+Target business outcome:
+
+Proof packs can explain client restrictions, sustainability preferences, and ESG/restriction
+controls from source-backed client governance profiles.
+
+Why it cannot be done now:
+
+No source-backed client restriction or sustainability preference profile is available to manage.
+Promoting ESG/restriction-ready proof packs without that source would create a false compliance
+claim.
+
+Dependencies before implementation:
+
+1. `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` or equivalent source
+   products,
+2. source-owner OpenAPI certification and permission model,
+3. effective date, expiry, jurisdiction, client/mandate binding, and lineage semantics,
+4. manage section-state tests for ready/degraded/blocked/pending-review posture,
+5. Workbench presentation rules if surfaced.
+
+Expected implementation wave:
+
+Implement only after the source authority exists. This may align with future core/client-governance
+or sustainability RFCs.
+
+Promotion proof:
+
+1. source-owner tests and live proof,
+2. manage proof-pack section tests,
+3. no unsupported ESG/restriction wording in README/wiki,
+4. canonical evidence with at least one missing or partial profile case,
+5. supported-feature entry that names the exact profile products consumed.
+
+#### RFC40-WTBD-009 - Scenario-Pack Authority Beyond Supplied Context
+
+Target business outcome:
+
+Proof packs can cite governed CIO/risk scenario packs and regime stress context without relying on
+caller-supplied metadata alone.
+
+Why it cannot be done now:
+
+RFC-0040 can preserve source-backed scenario context when supplied, but no first-class risk/CIO
+scenario-pack source is certified for proof-pack enrichment.
+
+Dependencies before implementation:
+
+1. scenario-pack owner assigned, likely `lotus-risk` or CIO authority,
+2. certified API for scenario identity, effective period, assumptions, approvals, lineage, and
+   applicable portfolio/mandate scope,
+3. manage adapter tests for supplied, certified, stale, missing, and inapplicable scenario packs,
+4. Gateway/Workbench posture if displayed,
+5. methodology and business documentation for scenario meaning.
+
+Expected implementation wave:
+
+Implement after the scenario-pack source exists. Keep supplied-context posture separate from
+source-certified scenario support.
+
+Promotion proof:
+
+1. source-owner API and methodology tests,
+2. manage proof-pack scenario-section tests,
+3. live proof with ready and degraded scenario posture,
+4. documentation and supported-feature updates that distinguish supplied from certified context.
+
+#### RFC40-WTBD-010 - Decision Timeline And Portfolio Memory
+
+Target business outcome:
+
+Lotus can show a durable portfolio-management memory across mandate health, monitoring exceptions,
+construction alternatives, proof packs, rebalance waves, approvals, operations handoff, and
+post-trade outcomes.
+
+Why it cannot be done now:
+
+RFC-0040 builds proof-pack-local lineage and decision timeline, but the cross-RFC memory requires
+RFC-0041 wave linkage, RFC-0042 outcome feedback, downstream product surfaces, and careful
+event-retention semantics. Promoting it from proof-pack evidence alone would overstate the current
+system.
+
+Dependencies before implementation:
+
+1. RFC-0041 wave events consumed as source-backed timeline nodes,
+2. RFC-0042 post-trade outcome events defined and implemented,
+3. event identity, retention, redaction, and audit policy across apps,
+4. Gateway/Workbench timeline views consume authoritative events only,
+5. report/AI consumers use timeline evidence without reconstructing facts.
+
+Expected implementation wave:
+
+Treat this as a later cross-RFC portfolio-memory slice after RFC-0042 is implemented and downstream
+product surfaces exist.
+
+Promotion proof:
+
+1. event contract and retention tests,
+2. manage/Gateway/Workbench integration tests,
+3. proof that timeline nodes reconcile to source artifacts,
+4. canonical front-office evidence,
+5. README/wiki/supported-feature updates explaining audience and retention boundaries.
+
+### Suggested Sequencing
+
+Recommended order:
+
+1. implement Gateway proof-pack composition,
+2. implement Workbench proof-pack review UX,
+3. resolve canonical front-office readiness blockers and prove full product realization,
+4. implement report materialization in report/render/archive owners,
+5. implement AI PM memo generation in `lotus-ai` under RFC-0043 controls,
+6. add broader risk/performance enrichment from owning analytics services,
+7. add transaction-cost, sustainability/restriction, and scenario-pack source products,
+8. revisit decision timeline and portfolio memory after RFC-0041 and RFC-0042 event sources are
+   fully available.
+
+Rationale:
+
+Gateway and Workbench can realize the already-supported manage proof-pack backend before broader
+source enrichment exists. Report and AI should follow their owning-service controls. Risk,
+performance, cost, sustainability, restriction, and scenario enrichment should be promoted only
+after source authorities are certified. Portfolio memory should wait until wave and post-trade
+outcome events exist.
+
+### RFC-0040 Promotion Checklist For Any Future Item
+
+Before any item above moves from this ledger into a supported-feature claim:
+
+1. owning repository and API/source contract are explicit,
+2. manage remains proof-pack authority and does not clone report, AI, Gateway, Workbench, risk,
+   performance, cost, sustainability, restriction, or scenario behavior,
+3. Gateway and Workbench consume through the governed product path,
+4. report/AI/archive products preserve proof-pack hashes and lineage,
+5. degraded, blocked, stale, partial, unavailable, permission-denied, redacted, and
+   human-review-required states are tested where applicable,
+6. OpenAPI/Swagger quality is certified for every API added or changed,
+7. live or canonical front-office evidence is captured and critically reviewed,
+8. README, RFC/source-map, wiki, supported-features, endpoint certification, and repository context
+   are aligned,
+9. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
 
 ## RFC-0041 - Rebalance Wave Orchestration And CIO Model Change Impact
 
@@ -462,4 +892,3 @@ Before any item above moves from this ledger into a supported-feature claim:
 7. live or canonical front-office evidence is captured and critically reviewed,
 8. README, RFC, source-map, wiki, supported-features, and repository context are aligned,
 9. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
-
