@@ -106,7 +106,7 @@ Current repository posture:
     repositories via `DPM_MANAGE_POSTGRES_DSN`. Automatic PM-book and CIO model-change cohort
     discovery, Gateway composition, Workbench UX, and full front-office product support remain
     unpromoted until owning source products and downstream implementations are live-proven.
-16. RFC-0042 is in implementation with manage backend slices through live proof complete:
+16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, live canonical manage proof under
@@ -114,8 +114,8 @@ Current repository posture:
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on
     outcome-review GET routes, same-key changed-evidence idempotency conflict handling, and invalid
-    search-state filter validation. Full product support remains unpromoted until PR/CI, merge,
-    wiki publication, and downstream Gateway/Workbench implementation where surfaced are complete.
+    search-state filter validation. Full product support remains downstream until Gateway/Workbench
+    implementation where surfaced is complete and canonically proven.
 
 ## Architecture And Module Map
 

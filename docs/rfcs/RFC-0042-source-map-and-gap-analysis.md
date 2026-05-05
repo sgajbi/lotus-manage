@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-12 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -418,6 +418,36 @@ publication, branch cleanup, and downstream product realization where surfaced r
 
 ---
 
+## Slice 13 Final Closure Result
+
+Slice 13 evidence is recorded in `docs/rfcs/RFC-0042-final-closure-slice13.md`.
+
+Closure result:
+
+`DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING`.
+
+Manage backend support now includes:
+
+1. outcome-review preview/create/retrieve/search,
+2. immutable persistence, idempotency, retention, source refs, hashes, and events,
+3. source-refresh eventing,
+4. run and wave lookup routes,
+5. supportability diagnostics and bounded observability,
+6. report-input and AI-evidence input handoff contracts.
+
+Explicitly outside manage support:
+
+1. Gateway/Workbench product realization,
+2. rendered report/archive lifecycle,
+3. AI narrative/copilot generation,
+4. execution/OMS integration and PM quality scoring,
+5. risk/performance/tax/FX/cash methodology ownership.
+
+Skills/context/guidance decision: no central Lotus skill or context change is needed. Repository
+context was updated because manage ownership and live proof paths changed.
+
+---
+
 ## Evidence Convention
 
 Future implementation evidence must be captured under:
@@ -450,16 +480,29 @@ demo-ready material before API, calculation, and panel validation pass.
 
 ## Supported-Features Decision
 
-No supported feature is promoted by RFC-0042 tightening.
+RFC-0042 promotes manage backend outcome-review authority only. Full Gateway/Workbench product
+support remains downstream.
 
-The current documentation update may state that RFC-0042 is tightened and implementation-ready, but
-must not state that post-trade outcome feedback is supported. Promotion requires implementation,
-tests, live evidence, OpenAPI certification, README/wiki/supported-feature updates, PR merge, wiki
-publication, and branch cleanup.
+Supported by manage:
+
+1. source-backed outcome-review preview/create/retrieve/search,
+2. immutable persistence/events with idempotency, retention, lineage, and hashes,
+3. source-refresh eventing,
+4. supportability diagnostics and bounded observability,
+5. report-input and AI-evidence input handoff contracts.
+
+Not supported by manage:
+
+1. full front-office Gateway/Workbench product experience,
+2. rendered report/archive lifecycle,
+3. AI narrative generation or recommendations,
+4. execution/OMS integration,
+5. PM quality scoring,
+6. source-owner risk/performance/tax/FX/cash methodology ownership.
 
 ---
 
-## Open Questions for Implementation Slice 0 Review
+## Deferred Questions After Manage Closure
 
 1. Which `lotus-core` source product should be the first certified transaction/fill window for
    outcome reviews?
@@ -469,4 +512,5 @@ publication, and branch cleanup.
    is a performance-owner RFC required first?
 4. Should first-wave live proof block on `EXECUTION_QUALITY`, or should execution quality remain
    `NOT_SUPPORTED` while drift/source/risk/performance dimensions proceed?
-5. Which downstream Gateway and Workbench RFC identifiers will own outcome-feedback realization?
+5. When should `lotus-gateway` and `lotus-workbench` implement the RFC-0098 outcome-review
+   realization addenda?

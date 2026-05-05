@@ -489,7 +489,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN IMPLEMENTATION - SLICES 0-12 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM" in rfc
+    assert "DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
     assert "RFC-0042-platform-automation-slice1.md" in rfc
     assert "RFC-0042-cleanup-and-structure-slice2.md" in rfc
@@ -503,9 +503,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC-0042-gateway-workbench-realization-slice10.md" in rfc
     assert "RFC-0042-implementation-proof-slice11.md" in rfc
     assert "RFC-0042-hardening-review-slice12.md" in rfc
-    assert "No feature below is supported until implementation" in rfc
-    assert "Current gold-pass state:" in rfc
-    assert "`IN PROGRESS - SLICES 0-12 COMPLETE`" in rfc
+    assert "RFC-0042-final-closure-slice13.md" in rfc
+    assert "Support below is limited to the manage backend authority" in rfc
+    assert "Outcome review creation | Supported as manage backend authority" in rfc
+    assert "Gold-standard conclusion" in rfc
+    assert "genuinely reached the expected enterprise standard" in rfc
     assert "output/rfc0042-outcome-proof/20260505-024352/critical-review.json" in rfc
     assert "output/rfc0042-outcome-proof/20260505-025613/critical-review.json" in rfc
     assert "scripts/Start-CanonicalManage.ps1" in rfc
@@ -553,9 +555,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## Slice 12 Hardening Review Result" in source_map
     assert "DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT" in source_map
     assert "04b-idempotency-conflict-response.json" in source_map
+    assert "## Slice 13 Final Closure Result" in source_map
+    assert "DONE - MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING" in source_map
+    assert "Skills/context/guidance decision: no central Lotus skill or context change is needed" in (
+        source_map
+    )
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
-    assert "No supported feature is promoted by RFC-0042 tightening" in source_map
+    assert "RFC-0042 promotes manage backend outcome-review authority only" in source_map
+    assert "Deferred Questions After Manage Closure" in source_map
     assert (
         "| Fill/order/execution detail | `lotus-core` or future execution/OMS owner |" in source_map
     )
@@ -638,8 +646,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "idempotency_conflict_rejected" in hardening_slice
     assert "No full RFC-0042 product support is promoted by Slice 12" in hardening_slice
 
+    closure_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-final-closure-slice13.md"
+    ).read_text(encoding="utf-8")
+    assert "Slice 13 - Final Closure" in closure_slice
+    assert "COMPLETE FOR MANAGE BACKEND" in closure_slice
+    assert "No central Lotus skill or context change is required" in closure_slice
+    assert "full Gateway/Workbench product experience" in closure_slice
+
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-12 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM)"
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | DONE (MANAGE BACKEND COMPLETE; DOWNSTREAM PRODUCT REALIZATION PENDING)"
         in index
     )
     assert "API evidence: `docs/rfcs/RFC-0042-api-openapi-slice7.md`" in index
@@ -654,8 +670,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "implementation proof: `docs/rfcs/RFC-0042-implementation-proof-slice11.md`" in index
     assert "hardening evidence: `docs/rfcs/RFC-0042-hardening-review-slice12.md`" in index
+    assert "closure evidence: `docs/rfcs/RFC-0042-final-closure-slice13.md`" in index
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
-    assert "gold-standard tightened on 2026-05-05" in wiki_index
+    assert "gold-standard" in wiki_index
+    assert "tightening on 2026-05-05" in wiki_index
     assert "Slice 3 pure domain comparison evidence" in wiki_index
     assert "Slice 4 expected snapshot assembly evidence" in wiki_index
     assert "Slice 5 realized source-degraded evidence" in wiki_index
@@ -668,6 +686,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-outcome-proof/20260505-024352/" in wiki_index
     assert "Slice 12 hardening proof" in wiki_index
     assert "output/rfc0042-outcome-proof/20260505-025613/" in wiki_index
+    assert "`DONE` for the manage backend authority" in wiki_index
     assert "Slice 0 source-map guardrails" in roadmap
     assert "Slice 3 pure domain comparison" in roadmap
     assert "Slice 4 expected snapshot assembly" in roadmap
@@ -678,14 +697,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Slice 9 supportability/observability diagnostics" in roadmap
     assert "Slice 10 Gateway/Workbench realization RFC alignment" in roadmap
     assert "Slice 11 live manage proof" in roadmap
-    assert "Slice 12 hardening complete" in roadmap
-    assert "No full product support is claimed yet" in roadmap
+    assert "Slice 12 hardening" in roadmap
+    assert "Slice 13 closure are complete" in roadmap
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
-    assert "Outcome-review events are manage-live-proven and hardening-reviewed through RFC-0042 Slice 12" in (
+    assert "manage outcome-review events are supported where implementation-backed" in (
         supported_features
     )
-    assert "Slices 0-12 have delivered" in supported_features
+    assert "Supported as RFC-0042 manage backend authority" in supported_features
     assert "output/rfc0042-outcome-proof/20260505-024352/" in supported_features
     assert "output/rfc0042-outcome-proof/20260505-025613/" in supported_features
     assert "handoff, and outcome events" not in supported_features
-    assert "Supported as RFC-0042" not in supported_features
+    assert "Supported as RFC-0042 full product experience" not in supported_features
