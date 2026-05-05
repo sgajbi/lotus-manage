@@ -4,6 +4,7 @@ from src.core.outcomes import (
     PerformanceOutcomeSourceError,
     assemble_realized_outcome_snapshot,
     realized_active_performance_source_from_workspace_summary,
+    realized_contribution_source_from_contribution_response,
     realized_mwr_source_from_workspace_summary,
     realized_performance_source_from_workspace_summary,
     unavailable_performance_source,
@@ -81,6 +82,57 @@ def _workspace_summary() -> dict[str, object]:
     }
 
 
+def _contribution_response() -> dict[str, object]:
+    return {
+        "calculation_id": "0d000004-1111-4222-8333-abcdefabcdef",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "input_mode": "stateful",
+        "results_by_period": {
+            "YTD": {
+                "total_portfolio_return": 3.41,
+                "total_contribution": 3.39,
+                "position_contributions": [
+                    {
+                        "position_id": "FO_FUND_PIMCO_INC",
+                        "total_contribution": 1.42,
+                        "average_weight": 12.45,
+                        "total_return": 11.405622,
+                        "local_contribution": 1.2,
+                        "fx_contribution": 0.22,
+                    }
+                ],
+                "timeseries": [{"date": "2026-05-06", "total_contribution": 0.18}],
+                "summary": {
+                    "portfolio_contribution": 3.39,
+                    "coverage_mv_pct": 99.2,
+                    "weighting_scheme": "average_weight",
+                    "local_contribution": 3.11,
+                    "fx_contribution": 0.28,
+                },
+            }
+        },
+        "calculation_supportability": {
+            "state": "ready",
+            "reason": "calculation_complete",
+            "freshness_bucket": "current",
+            "input_row_count": 64,
+            "resolved_period_count": 1,
+            "benchmark_row_count": 0,
+        },
+        "meta": {
+            "calculation_id": "0d000004-1111-4222-8333-abcdefabcdef",
+            "calculation_hash": "sha256:contribution",
+            "periods": {"master_start": "2026-01-02", "master_end": "2026-05-06"},
+        },
+        "diagnostics": {"effective_period_start": "2026-01-02", "notes": []},
+        "audit": {
+            "sum_of_parts_vs_total_bp": 0.2,
+            "residual_applied_bp": 0.2,
+            "counts": {"input_rows": 64, "position_count": 11},
+        },
+    }
+
+
 def test_performance_workspace_summary_adapter_wraps_source_truth_without_recalculation() -> None:
     source = realized_performance_source_from_workspace_summary(_workspace_summary())
 
@@ -100,6 +152,51 @@ def test_performance_workspace_summary_adapter_wraps_source_truth_without_recalc
         "PERFORMANCE_BASIS_NET",
         "PERFORMANCE_MEASURE_CUMULATIVE_RETURN",
     ]
+
+
+def test_contribution_adapter_wraps_source_owned_total_contribution() -> None:
+    source = realized_contribution_source_from_contribution_response(_contribution_response())
+
+    assert source.dimension == "PERFORMANCE"
+    assert source.source_system == "lotus-performance"
+    assert source.source_type == "PERFORMANCE_CONTRIBUTION"
+    assert source.source_id == (
+        "0d000004-1111-4222-8333-abcdefabcdef:YTD:contribution:total_contribution"
+    )
+    assert str(source.value) == "0.0339"
+    assert source.unit == "ratio"
+    assert source.content_hash == "sha256:contribution"
+    assert source.reason_codes == [
+        "PERFORMANCE_SOURCE_READY",
+        "PERFORMANCE_SUPPORTABILITY_READY",
+        "PERFORMANCE_REASON_CALCULATION_COMPLETE",
+        "PERFORMANCE_PERIOD_YTD",
+        "PERFORMANCE_MEASURE_FAMILY_CONTRIBUTION",
+        "PERFORMANCE_MEASURE_TOTAL_CONTRIBUTION",
+        "PERFORMANCE_INPUT_MODE_STATEFUL",
+    ]
+
+
+def test_contribution_adapter_wraps_source_owned_portfolio_return() -> None:
+    source = realized_contribution_source_from_contribution_response(
+        _contribution_response(),
+        measure="total_portfolio_return",
+    )
+
+    assert source.source_id.endswith(":YTD:contribution:total_portfolio_return")
+    assert str(source.value) == "0.0341"
+    assert "PERFORMANCE_MEASURE_TOTAL_PORTFOLIO_RETURN" in source.reason_codes
+
+
+def test_contribution_adapter_wraps_source_owned_summary_fx_contribution() -> None:
+    source = realized_contribution_source_from_contribution_response(
+        _contribution_response(),
+        measure="summary_fx_contribution",
+    )
+
+    assert source.source_id.endswith(":YTD:contribution:summary_fx_contribution")
+    assert str(source.value) == "0.0028"
+    assert "PERFORMANCE_MEASURE_SUMMARY_FX_CONTRIBUTION" in source.reason_codes
 
 
 def test_performance_workspace_summary_adapter_supports_explicit_basis_and_measure() -> None:
@@ -214,6 +311,23 @@ def test_source_owned_mwr_return_can_make_rfc42_performance_dimension_ready() ->
     assert performance.supportability.reason_codes[0] == "SOURCE_READY"
 
 
+def test_source_owned_contribution_can_make_rfc42_performance_dimension_ready() -> None:
+    source = realized_contribution_source_from_contribution_response(_contribution_response())
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["PERFORMANCE"],
+    )
+
+    performance = snapshot.realized_values["PERFORMANCE"]
+    assert snapshot.supportability.state == "READY"
+    assert performance.value == source.value
+    assert performance.source_refs[0].source_type == "PERFORMANCE_CONTRIBUTION"
+    assert performance.supportability.reason_codes[0] == "SOURCE_READY"
+
+
 def test_missing_performance_source_still_reports_not_supported_without_local_clone() -> None:
     snapshot = assemble_realized_outcome_snapshot(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -251,6 +365,60 @@ def test_unavailable_performance_source_preserves_degraded_owner_posture() -> No
     ]
 
 
+def test_degraded_contribution_preserves_source_owner_supportability() -> None:
+    response = _contribution_response()
+    supportability = response["calculation_supportability"]
+    assert isinstance(supportability, dict)
+    supportability.update(
+        {
+            "state": "stale",
+            "reason": "stale_source_observations",
+            "freshness_bucket": "stale",
+        }
+    )
+
+    source = realized_contribution_source_from_contribution_response(response)
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "STALE"
+    assert str(source.value) == "0.0339"
+    assert source.reason_codes[:3] == [
+        "PERFORMANCE_SOURCE_DEGRADED",
+        "PERFORMANCE_SUPPORTABILITY_STALE",
+        "PERFORMANCE_REASON_STALE_SOURCE_OBSERVATIONS",
+    ]
+
+
+def test_error_contribution_blocks_ready_claim() -> None:
+    response = _contribution_response()
+    supportability = response["calculation_supportability"]
+    assert isinstance(supportability, dict)
+    supportability.update(
+        {
+            "state": "error",
+            "reason": "calculation_quality_issue",
+            "freshness_bucket": "unknown",
+        }
+    )
+
+    source = realized_contribution_source_from_contribution_response(response)
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["PERFORMANCE"],
+    )
+
+    assert source.source_state == "BLOCKED"
+    assert source.quality == "MISSING"
+    assert snapshot.supportability.state == "BLOCKED"
+    assert snapshot.realized_values["PERFORMANCE"].value is None
+    assert snapshot.realized_values["PERFORMANCE"].supportability.reason_codes[:2] == [
+        "SOURCE_EVIDENCE_INCOMPLETE",
+        "PERFORMANCE_SOURCE_BLOCKED",
+    ]
+
+
 def test_performance_adapter_rejects_malformed_source_payload() -> None:
     malformed = _workspace_summary()
     del malformed["results_by_period"]
@@ -281,3 +449,15 @@ def test_mwr_adapter_rejects_missing_source_mwr_return() -> None:
 
     with pytest.raises(PerformanceOutcomeSourceError, match="numeric money-weighted return"):
         realized_mwr_source_from_workspace_summary(malformed)
+
+
+def test_contribution_adapter_rejects_missing_ready_source_value() -> None:
+    malformed = _contribution_response()
+    results_by_period = malformed["results_by_period"]
+    assert isinstance(results_by_period, dict)
+    ytd = results_by_period["YTD"]
+    assert isinstance(ytd, dict)
+    ytd["total_contribution"] = None
+
+    with pytest.raises(PerformanceOutcomeSourceError, match="numeric total_contribution"):
+        realized_contribution_source_from_contribution_response(malformed)

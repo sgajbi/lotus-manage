@@ -141,13 +141,15 @@ aggregate cash-account rows, derive tax, FX, transaction-cost, execution, liquid
 outcomes, or convert currencies in manage.
 
 The WTBD-006 performance follow-on adds source-owner adapters for `lotus-performance`
-workspace-summary TWR, active return, and money-weighted return output.
+workspace-summary TWR, active return, money-weighted return, and contribution output.
 `src/core/outcomes/performance_sources.py` wraps `WORKSPACE_SUMMARY_TWR_RETURN`,
-`WORKSPACE_SUMMARY_ACTIVE_RETURN`, and `WORKSPACE_SUMMARY_MWR_RETURN` evidence into RFC-0042
-`PERFORMANCE` realized-source snapshots, preserving calculation id, calculation hash, selected
-period, selected basis or MWR method, selected measure, source type, and source reason codes. The
-adapters only convert source-owned percentage-point values into RFC-0042 ratio units; they do not
-compute TWR, active return, MWR, benchmark-relative performance, contribution, or attribution in
+`WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, and
+`PERFORMANCE_CONTRIBUTION` evidence into RFC-0042 `PERFORMANCE` realized-source snapshots,
+preserving calculation id, calculation hash, selected period, selected basis or MWR method where
+applicable, selected return or contribution measure, source supportability, source type, and source
+reason codes. The adapters only convert source-owned percentage-point values into RFC-0042 ratio
+units; they do not compute TWR, active return, MWR, benchmark-relative performance, contribution,
+position-level contribution, hierarchy contribution, local/FX contribution, or attribution in
 manage.
 
 No supported feature is promoted by Slice 5.
@@ -297,7 +299,7 @@ can be claimed.
 | FX executions and currency exposures | `lotus-core` or treasury source owner | `FX_OUTCOME` | Source-owner required | Consume source product; no local treasury-depth reconstruction. |
 | Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Source-owner required | Consume source product; no manage-local tax-lot authority. |
 | Risk after execution | `lotus-risk` | `RISK_OUTCOME` | RiskMetricsReport selected metric output, drawdown response max-drawdown output, and concentration response selected-measure output have implemented adapters; historical attribution and rolling-risk outcome contracts remain source-owner follow-on work. | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
-| Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Workspace-summary TWR, active return, and MWR outputs have implemented adapters; contribution, attribution, and broader benchmark-relative outcome contracts remain source-owner follow-on work. | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
+| Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Workspace-summary TWR, active return, MWR, and contribution outputs have implemented adapters; attribution and broader benchmark-relative outcome contracts remain source-owner follow-on work. | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
 | Report artifact | `lotus-report`, `lotus-render`, `lotus-archive` | Reports and archive | Downstream only | Manage emits `DpmOutcomeReportInput`; no artifact claim. |
 | AI memo/copilot output | `lotus-ai` | AI assistance | Downstream only | Manage emits `DpmOutcomeAiEvidenceInput`; no narrative claim. |
 | Product composition | `lotus-gateway` | Product API | Downstream RFC required | Gateway must preserve manage truth and source supportability. |
@@ -311,7 +313,7 @@ can be claimed.
 | --- | --- | --- |
 | `DRIFT_OUTCOME` | Expected target/current state plus post-trade holdings are source-backed. | `DRIFT_SOURCE_INCOMPLETE` if holdings or expected target is missing. |
 | `RISK_OUTCOME` | `lotus-risk` provides source-owned RiskMetricsReport output for the selected period/metric, drawdown response output for absolute or benchmark-relative max drawdown, and concentration response output for selected HHI, single-position, issuer, or issuer-coverage measures; richer attribution and rolling-risk evidence require future source-owner contracts. | `RISK_OUTCOME_NOT_SUPPORTED` or `RISK_SOURCE_UNAVAILABLE`. |
-| `PERFORMANCE_OUTCOME` | `lotus-performance` provides source-owned workspace-summary TWR, active return, and MWR output for the selected period/basis/measure or MWR method; contribution, attribution, and broader benchmark-relative evidence require future source-owner contracts. | `PERFORMANCE_OUTCOME_NOT_SUPPORTED` or `PERFORMANCE_SOURCE_UNAVAILABLE`. |
+| `PERFORMANCE_OUTCOME` | `lotus-performance` provides source-owned workspace-summary TWR, active return, MWR output, and contribution output for the selected period/basis/measure, MWR method, or contribution measure; attribution and broader benchmark-relative evidence require future source-owner contracts. | `PERFORMANCE_OUTCOME_NOT_SUPPORTED` or `PERFORMANCE_SOURCE_UNAVAILABLE`. |
 | `TURNOVER_OUTCOME` | Booked transaction window is source-backed. | `TRANSACTION_SOURCE_INCOMPLETE`. |
 | `TRANSACTION_COST_OUTCOME` | Realized cost source is available and comparable to estimated cost basis. | `COST_SOURCE_INCOMPLETE`. |
 | `TAX_OUTCOME` | Realized tax/tax-lot evidence is source-backed. | `TAX_SOURCE_INCOMPLETE`. |
