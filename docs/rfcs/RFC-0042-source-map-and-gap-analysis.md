@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-9 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-10 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-05 |
 | **RFC** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 | **Tightening Branch** | `docs/rfc0042-gold-standard-tightening` |
@@ -201,6 +201,28 @@ bounded state only.
 
 No full RFC-0042 product support is promoted by Slice 9. Live source-backed proof,
 Gateway/Workbench realization RFCs, final hardening, PR merge, and wiki publication remain pending.
+
+---
+
+## Slice 10 Gateway and Workbench Realization RFC Result
+
+Slice 10 evidence is recorded in
+`docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md`.
+
+`lotus-gateway` RFC-0098 was tightened on branch `feat/rfc0042-outcome-realization` and pushed at
+commit `38d46f9`. It now defines strategic Gateway routes under
+`/api/v1/dpm/command-center/outcome-reviews*`, typed manage upstream consumption, required
+outcome-review modules, supportability preservation, no-recompute rules, and live proof
+expectations.
+
+`lotus-workbench` RFC-0098 was tightened on branch `feat/rfc0042-outcome-realization` and pushed at
+commit `3b5182f`. It now defines the future post-trade outcome-review workspace, required panels,
+required UI states, Gateway-only route consumption, no client-side calculation posture, and
+promotion gates for canonical browser proof.
+
+No Gateway or Workbench supported-feature claim is promoted by Slice 10. Downstream implementation,
+canonical product proof, PR merge, and wiki publication remain required before product realization
+can be claimed.
 
 ---
 

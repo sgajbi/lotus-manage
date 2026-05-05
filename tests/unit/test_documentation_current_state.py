@@ -458,6 +458,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     supportability_slice = (
         ROOT / "docs" / "rfcs" / "RFC-0042-supportability-observability-slice9.md"
     ).read_text(encoding="utf-8")
+    gateway_workbench_slice = (
+        ROOT / "docs" / "rfcs" / "RFC-0042-gateway-workbench-realization-slice10.md"
+    ).read_text(encoding="utf-8")
     index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
     roadmap = (ROOT / "wiki" / "Roadmap.md").read_text(encoding="utf-8")
@@ -480,7 +483,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "IN IMPLEMENTATION - SLICES 0-9 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM" in rfc
+    assert "IN IMPLEMENTATION - SLICES 0-10 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM" in rfc
     assert "RFC-0042-source-map-and-gap-analysis.md" in rfc
     assert "RFC-0042-platform-automation-slice1.md" in rfc
     assert "RFC-0042-cleanup-and-structure-slice2.md" in rfc
@@ -491,9 +494,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC-0042-api-openapi-slice7.md" in rfc
     assert "RFC-0042-report-ai-handoffs-slice8.md" in rfc
     assert "RFC-0042-supportability-observability-slice9.md" in rfc
+    assert "RFC-0042-gateway-workbench-realization-slice10.md" in rfc
     assert "No feature below is supported until implementation" in rfc
     assert "Current gold-pass state:" in rfc
-    assert "`IN PROGRESS - SLICES 0-9 COMPLETE`" in rfc
+    assert "`IN PROGRESS - SLICES 0-10 COMPLETE`" in rfc
     assert "Gateway and Workbench product support must not be claimed" in rfc
     assert "`lotus-manage` must not clone risk, performance, tax-lot, fill, cash" in rfc
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in rfc
@@ -528,6 +532,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "DpmOutcomeAiEvidenceInput" in source_map
     assert "## Slice 9 Supportability, Observability, and Operator Diagnostics Result" in source_map
     assert "lotus_manage_outcome_review_supportability_total" in source_map
+    assert "## Slice 10 Gateway and Workbench Realization RFC Result" in source_map
+    assert "`lotus-gateway` RFC-0098" in source_map
+    assert "`lotus-workbench` RFC-0098" in source_map
     assert "First-Wave Outcome Dimension Posture" in source_map
     assert "Gateway and Workbench Realization Boundary" in source_map
     assert "No supported feature is promoted by RFC-0042 tightening" in source_map
@@ -589,14 +596,27 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "outcome_review.supportability.inspected" in supportability_slice
     assert "No live canonical product proof is claimed by this slice" in supportability_slice
 
+    assert "Slice 10 - Gateway and Workbench Realization RFCs" in gateway_workbench_slice
+    assert "`lotus-gateway` | `feat/rfc0042-outcome-realization` | `38d46f9`" in (
+        gateway_workbench_slice
+    )
+    assert "`lotus-workbench` | `feat/rfc0042-outcome-realization` | `3b5182f`" in (
+        gateway_workbench_slice
+    )
+    assert "/api/v1/dpm/command-center/outcome-reviews*" in gateway_workbench_slice
+
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-9 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM)"
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | IN IMPLEMENTATION (SLICES 0-10 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM)"
         in index
     )
     assert "API evidence: `docs/rfcs/RFC-0042-api-openapi-slice7.md`" in index
     assert "report/AI evidence: `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md`" in index
     assert (
         "supportability evidence: `docs/rfcs/RFC-0042-supportability-observability-slice9.md`"
+        in index
+    )
+    assert (
+        "Gateway/Workbench evidence: `docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md`"
         in index
     )
     assert "source map: `docs/rfcs/RFC-0042-source-map-and-gap-analysis.md`" in index
@@ -608,6 +628,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Slice 7 certified\n  manage API/OpenAPI evidence" in wiki_index
     assert "Slice 8 report-input/AI-evidence handoff contracts" in wiki_index
     assert "Slice 9\n  supportability/observability diagnostics" in wiki_index
+    assert "Slice 10 Gateway/Workbench realization RFC" in wiki_index
     assert "Slice 0 source-map guardrails" in roadmap
     assert "Slice 3 pure domain comparison" in roadmap
     assert "Slice 4 expected snapshot assembly" in roadmap
@@ -615,12 +636,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Slice 6 persistence/events" in roadmap
     assert "Slice 7 manage API/OpenAPI foundation" in roadmap
     assert "Slice 8 report-input/AI-evidence handoff contracts" in roadmap
-    assert "Slice 9 supportability/observability diagnostics complete" in roadmap
+    assert "Slice 9 supportability/observability diagnostics" in roadmap
+    assert "Slice 10 Gateway/Workbench realization RFC alignment complete" in roadmap
     assert "No full product support is claimed yet" in roadmap
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
     assert "Outcome events remain proposed until RFC-0042 source-backed implementation" in (
         supported_features
     )
-    assert "Slices 0-9 have delivered" in supported_features
+    assert "Slices 0-10 have delivered" in supported_features
     assert "handoff, and outcome events" not in supported_features
     assert "Supported as RFC-0042" not in supported_features

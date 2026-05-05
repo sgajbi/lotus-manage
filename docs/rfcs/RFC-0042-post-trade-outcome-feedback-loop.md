@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | IN IMPLEMENTATION - SLICES 0-9 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
+| **Status** | IN IMPLEMENTATION - SLICES 0-10 COMPLETE; NO FULL PRODUCT SUPPORT CLAIM |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -21,6 +21,7 @@
 | **Slice 7 API Evidence** | `docs/rfcs/RFC-0042-api-openapi-slice7.md` |
 | **Slice 8 Report/AI Handoff Evidence** | `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md` |
 | **Slice 9 Supportability Evidence** | `docs/rfcs/RFC-0042-supportability-observability-slice9.md` |
+| **Slice 10 Gateway/Workbench Evidence** | `docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md` |
 | **Doc Location** | `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md` |
 
 ---
@@ -629,6 +630,10 @@ Acceptance:
 2. no product-surface support is claimed from manage-only proof,
 3. Gateway and Workbench docs state that UI must consume Gateway/BFF only.
 
+Slice 10 evidence:
+
+`docs/rfcs/RFC-0042-gateway-workbench-realization-slice10.md`
+
 ### Slice 11 - Implementation Proof
 
 1. prove one or more outcome reviews end to end against live canonical source evidence,
@@ -833,10 +838,11 @@ It must state:
 
 Current gold-pass state:
 
-`IN PROGRESS - SLICES 0-9 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
+`IN PROGRESS - SLICES 0-10 COMPLETE`. RFC-0042 now has source-map guardrails, platform-scaffold
 evidence, cleanup/structure evidence, pure comparison, expected snapshot assembly, realized
 source-degraded handling, immutable persistence/events, and a certified manage API/OpenAPI
 foundation, deterministic report-input and AI-evidence handoff contracts, and bounded
-supportability/observability diagnostics. Full supported-feature promotion remains pending live
-canonical proof, downstream realization RFCs, hardening, final documentation, PR/CI, merge, wiki
+supportability/observability diagnostics. Gateway and Workbench realization RFCs are aligned through
+`lotus-gateway` commit `38d46f9` and `lotus-workbench` commit `3b5182f`. Full supported-feature
+promotion remains pending live canonical proof, hardening, final documentation, PR/CI, merge, wiki
 publication, and branch cleanup.
