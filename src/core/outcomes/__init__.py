@@ -36,6 +36,11 @@ from src.core.outcomes.performance_sources import (
     realized_performance_source_from_workspace_summary,
     unavailable_performance_source,
 )
+from src.core.outcomes.risk_sources import (
+    RiskOutcomeSourceError,
+    realized_risk_source_from_risk_metrics_report,
+    unavailable_risk_source,
+)
 from src.core.outcomes.handoffs import (
     OUTCOME_AI_EVIDENCE_REF_TYPE,
     OUTCOME_REPORT_INPUT_REF_TYPE,
@@ -77,6 +82,7 @@ __all__ = [
     "OUTCOME_AI_EVIDENCE_REF_TYPE",
     "OUTCOME_REPORT_INPUT_REF_TYPE",
     "PerformanceOutcomeSourceError",
+    "RiskOutcomeSourceError",
     "assemble_expected_outcome_snapshot",
     "assemble_realized_outcome_snapshot",
     "assert_no_ai_forbidden_fields",
@@ -85,5 +91,7 @@ __all__ = [
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
     "realized_performance_source_from_workspace_summary",
+    "realized_risk_source_from_risk_metrics_report",
     "unavailable_performance_source",
+    "unavailable_risk_source",
 ]
