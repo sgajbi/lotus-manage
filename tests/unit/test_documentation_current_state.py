@@ -422,3 +422,38 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert (
         "Do not start product implementation before this Slice 0 artifact is reviewed" in source_map
     )
+
+
+def test_rfc0041_work_to_be_done_ledger_preserves_deferred_boundaries() -> None:
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    ledger_normalized = " ".join(ledger.split())
+    index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
+
+    required_items = [
+        "RFC41-WTBD-001",
+        "RFC41-WTBD-002",
+        "RFC41-WTBD-003",
+        "RFC41-WTBD-004",
+        "RFC41-WTBD-005",
+        "RFC41-WTBD-006",
+        "RFC41-WTBD-007",
+        "RFC41-WTBD-008",
+        "RFC41-WTBD-009",
+        "RFC41-WTBD-010",
+    ]
+    missing_items = [item for item in required_items if item not in ledger]
+
+    assert missing_items == []
+    assert "`docs/rfcs/RFC-worktobedone.md`" in index
+    assert "no item in this ledger is a supported-feature claim" in ledger
+    assert "no additional wiki source change is required for this slice" in ledger_normalized
+    assert "explicit portfolio-list rebalance waves" in ledger_normalized
+    assert "Automatic PM-book / portfolio-manager cohort discovery" in ledger
+    assert "Automatic CIO model-change affected-mandate discovery" in ledger
+    assert "Gateway wave composition" in ledger
+    assert "Workbench wave command center" in ledger
+    assert "Report materialization from wave/proof-pack evidence" in ledger_normalized
+    assert "AI PM memo generation from wave evidence" in ledger_normalized
+    assert "External execution integration" in ledger
+    assert "Source-owned discovery should then improve trigger quality" in ledger_normalized
+    assert "OpenAPI/Swagger quality is certified for every API added or changed" in ledger

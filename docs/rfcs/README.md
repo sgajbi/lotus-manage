@@ -2,6 +2,7 @@
 
 Standards for all current and future RFCs:
 - `docs/rfcs/RFC-CONVENTIONS.md`
+- `docs/rfcs/RFC-worktobedone.md`
 
 Governance boundary:
 - Service-specific implementation RFCs belong in this repository.
