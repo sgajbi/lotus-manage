@@ -67,8 +67,9 @@ Current repository posture:
     health APIs, bounded monitoring/exception APIs, and a bounded command-center summary API.
     Local manage proof, local canonical manage plus live `lotus-core` proof, supported-feature
     promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
-    platform canonical seed automation remain governed downstream follow-up in the owning
-    repositories.
+    populated platform canonical seed automation are now implementation-backed and live-proven in
+    their owning repositories; partial/empty command-center seed fixtures and PM-book discovery
+    remain governed downstream follow-up.
 13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
     bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
     risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,
