@@ -12,6 +12,7 @@ TransactionLedgerOutcomeMeasure = Literal[
     "realized_fx_pnl",
     "cashflow_amount",
 ]
+CashflowProjectionOutcomeMeasure = Literal["total_net_cashflow"]
 
 
 class CoreOutcomeSourceError(ValueError):
@@ -132,6 +133,71 @@ def realized_transaction_source_from_transaction_ledger_response(
     )
 
 
+def realized_cashflow_projection_source_from_cashflow_projection_response(
+    response: dict[str, Any],
+    *,
+    measure: CashflowProjectionOutcomeMeasure = "total_net_cashflow",
+) -> DpmRealizedSourceSnapshot:
+    """Adapt lotus-core cashflow projection output without forecasting locally."""
+
+    metadata = _core_metadata(response)
+    portfolio_id = _read_required_text(response.get("portfolio_id"), "portfolio_id")
+    range_start_date = _read_required_text(response.get("range_start_date"), "range_start_date")
+    range_end_date = _read_required_text(response.get("range_end_date"), "range_end_date")
+    include_projected = response.get("include_projected")
+    if not isinstance(include_projected, bool):
+        raise CoreOutcomeSourceError(
+            "lotus-core cashflow projection response is missing include_projected"
+        )
+
+    if measure != "total_net_cashflow":
+        raise CoreOutcomeSourceError("cashflow projection measure must be 'total_net_cashflow'")
+
+    total_net_cashflow = response.get("total_net_cashflow")
+    if total_net_cashflow is None:
+        raise CoreOutcomeSourceError(
+            "lotus-core cashflow projection response is missing total_net_cashflow"
+        )
+    portfolio_currency = _read_required_text(
+        response.get("portfolio_currency"),
+        "portfolio_currency",
+    )
+    projection_basis = (
+        f"cashflow_projection:{measure}:{range_start_date}:{range_end_date}:"
+        f"include_projected={str(include_projected).lower()}"
+    )
+    source_id = _source_id(
+        product_name=metadata["product_name"],
+        product_version=metadata["product_version"],
+        portfolio_id=portfolio_id,
+        as_of_date=metadata["as_of_date"],
+        basis=projection_basis,
+        fingerprint=metadata["content_hash"],
+    )
+    return DpmRealizedSourceSnapshot(
+        dimension="CASH_RESIDUAL",
+        source_system="lotus-core",
+        source_type="PORTFOLIO_CASHFLOW_PROJECTION",
+        source_id=source_id,
+        value=_decimal_value(total_net_cashflow),
+        unit=portfolio_currency,
+        source_state=_source_state(metadata["data_quality_status"]),
+        quality=_source_quality(metadata["data_quality_status"]),
+        observed_at=metadata["observed_at"],
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["content_hash"],
+        reason_codes=[
+            _primary_reason(metadata["data_quality_status"]),
+            f"CORE_PRODUCT_{metadata['product_name'].upper()}",
+            f"CORE_PRODUCT_VERSION_{metadata['product_version'].upper()}",
+            f"CASHFLOW_PROJECTION_MEASURE_{measure.upper()}",
+            f"CASHFLOW_PROJECTION_RANGE_{range_start_date}_TO_{range_end_date}",
+            f"CASHFLOW_PROJECTION_INCLUDE_PROJECTED_{str(include_projected).upper()}",
+            f"CORE_DATA_QUALITY_{metadata['data_quality_status'].upper()}",
+        ],
+    )
+
+
 def unavailable_core_cash_source(
     *,
     source_id: str,
@@ -144,6 +210,30 @@ def unavailable_core_cash_source(
         dimension="CASH_RESIDUAL",
         source_system="lotus-core",
         source_type="HOLDINGS_AS_OF_CASH_BALANCE",
+        source_id=source_id,
+        value=None,
+        unit="unknown",
+        source_state="DEGRADED",
+        quality="UNAVAILABLE",
+        observed_at=None,
+        as_of_date=as_of_date,
+        content_hash=None,
+        reason_codes=[reason_code],
+    )
+
+
+def unavailable_core_cashflow_projection_source(
+    *,
+    source_id: str,
+    reason_code: str,
+    as_of_date: str | None = None,
+) -> DpmRealizedSourceSnapshot:
+    """Return bounded unavailable cashflow-projection evidence for source-owner gaps."""
+
+    return DpmRealizedSourceSnapshot(
+        dimension="CASH_RESIDUAL",
+        source_system="lotus-core",
+        source_type="PORTFOLIO_CASHFLOW_PROJECTION",
         source_id=source_id,
         value=None,
         unit="unknown",

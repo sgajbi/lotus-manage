@@ -1,0 +1,47 @@
+{
+  "rfc": "RFC-0042",
+  "work_to_be_done_id": "RFC42-WTBD-006",
+  "slice": "core-cashflow-projection-source-adapter",
+  "repository": "lotus-manage",
+  "branch": "feat/rfc42-wtbd006-core-cashflow-projection-source",
+  "source_owner_prerequisite": {
+    "repository": "lotus-core",
+    "pull_request": 338,
+    "merge_commit": "1ab53453198bede79b1d8ec7326120f27adc9ba5",
+    "source_product": "PortfolioCashflowProjection:v1",
+    "post_merge_status": "merged_to_main_validated_and_wiki_published"
+  },
+  "implemented_behavior": [
+    "Added a lotus-core PortfolioCashflowProjection:v1 adapter that emits CASH_RESIDUAL realized source evidence from source-owned total_net_cashflow.",
+    "Preserves product identity, product version, portfolio id, as-of date, latest evidence timestamp, data-quality status, source fingerprint, projection range, include-projected posture, selected measure, and explicit portfolio currency.",
+    "Adds a bounded unavailable source helper for source-owner outage or unavailability states.",
+    "Rejects missing portfolio currency, missing total net cashflow, and missing include-projected posture instead of emitting unsupported ready evidence."
+  ],
+  "explicit_boundaries": [
+    "No cashflow forecasting in lotus-manage.",
+    "No local projection-point aggregation in lotus-manage.",
+    "No liquidity ladder, MWR flow, tax, FX, execution, or rule outcome derivation from the cashflow projection.",
+    "No currency conversion or inferred currency units."
+  ],
+  "tests_run": [
+    {
+      "command": "python -m pytest tests\\unit\\core\\test_core_realized_outcome_sources.py tests\\unit\\core\\test_realized_outcome_sources.py -q",
+      "result": "33 passed"
+    },
+    {
+      "command": "python -m ruff check src\\core\\outcomes tests\\unit\\core\\test_core_realized_outcome_sources.py --ignore E501,I001",
+      "result": "passed"
+    },
+    {
+      "command": "make check",
+      "result": "passed: ruff, format, monetary-float, no-alias, mypy, OpenAPI, API vocabulary, domain-product, trust-telemetry, observability, and 935 unit tests"
+    }
+  ],
+  "critical_review": {
+    "completeness": "Complete for the source-owned total net cashflow scalar now exposed by lotus-core PortfolioCashflowProjection:v1.",
+    "correctness": "The adapter consumes only explicit source-owned fields and blocks malformed or incomplete source contracts.",
+    "testing_quality": "Focused tests cover ready, degraded, unavailable, and malformed source behaviors plus realized snapshot assembly.",
+    "clean_code": "Implementation follows existing core source adapter structure and avoids new cross-module abstractions.",
+    "remaining_boundaries": "Broader cash movement totals, liquidity ladders, MWR flow context, and execution methodologies remain source-owner follow-on work."
+  }
+}
