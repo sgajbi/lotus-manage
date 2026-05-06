@@ -49,6 +49,7 @@ from src.core.outcomes.risk_sources import (
     RiskOutcomeSourceError,
     realized_concentration_source_from_concentration_response,
     realized_drawdown_source_from_drawdown_response,
+    realized_rolling_risk_source_from_rolling_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
 )
@@ -110,6 +111,7 @@ __all__ = [
     "realized_drawdown_source_from_drawdown_response",
     "realized_mwr_source_from_workspace_summary",
     "realized_performance_source_from_workspace_summary",
+    "realized_rolling_risk_source_from_rolling_response",
     "realized_risk_source_from_risk_metrics_report",
     "unavailable_core_cash_source",
     "unavailable_performance_source",

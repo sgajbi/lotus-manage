@@ -2632,8 +2632,8 @@ Implementation-backed progress:
    selected-measure evidence, and attribution reconciliation/level/currency selected-measure
    evidence,
 2. `src/core/outcomes/risk_sources.py` adds WTBD-006 source-family adapters for
-   `lotus-risk` `RiskMetricsReport:v1`, drawdown response evidence, and concentration response
-   selected-measure evidence,
+   `lotus-risk` `RiskMetricsReport:v1`, drawdown response evidence, concentration response
+   selected-measure evidence, and rolling metrics selected metric/statistic/window evidence,
 3. `src/core/outcomes/core_sources.py` adds the first WTBD-006 `lotus-core` source-family adapter
    for `HoldingsAsOf:v1` cash-total evidence,
 4. the performance adapters consume source-owned `WORKSPACE_SUMMARY_TWR_RETURN`,
@@ -2641,10 +2641,11 @@ Implementation-backed progress:
    `PERFORMANCE_CONTRIBUTION`, and `PERFORMANCE_ATTRIBUTION` output and convert percentage-point
    source units to RFC-0042 ratio units without calculating performance, contribution, or
    attribution locally,
-5. the risk adapters consume source-owned `RISK_METRICS_REPORT`, `DRAWDOWN_RESPONSE`, and
-   `CONCENTRATION_RESPONSE` output and preserve selected source metric, absolute max-drawdown,
-   benchmark-relative max-drawdown, HHI, single-position concentration, issuer concentration, or
-   issuer-coverage values without calculating risk locally,
+5. the risk adapters consume source-owned `RISK_METRICS_REPORT`, `DRAWDOWN_RESPONSE`,
+   `CONCENTRATION_RESPONSE`, and `ROLLING_RISK_METRICS_REPORT` output and preserve selected source
+   metric, absolute max-drawdown, benchmark-relative max-drawdown, HHI, single-position
+   concentration, issuer concentration, issuer-coverage, rolling metric, rolling statistic, and
+   rolling window values without calculating risk locally,
 6. the core cash adapter consumes source-owned `HOLDINGS_AS_OF_CASH_BALANCE` totals without
    aggregating cash accounts or deriving tax/FX/transaction facts locally,
 7. performance source lineage is preserved through calculation id, calculation hash, selected
@@ -2652,30 +2653,31 @@ Implementation-backed progress:
    attribution measure, attribution model, linking method, benchmark context where available,
    source supportability where applicable, source owner, source type, and reason codes,
 8. risk source lineage is preserved through request fingerprint, selected period where applicable,
-   selected risk metric, drawdown measure, or concentration measure, source supportability state,
-   source supportability reason, issuer coverage posture where applicable, as-of date, source
-   owner, source type, and reason codes,
+   selected risk metric, drawdown measure, concentration measure, rolling metric, rolling
+   statistic, rolling window length, source supportability state, source supportability reason,
+   issuer coverage posture where applicable, benchmark/risk-free context where applicable, latest
+   observation date, as-of date, source owner, source type, and reason codes,
 9. core cash source lineage is preserved through product identity, portfolio id, as-of date,
    generated/evidence timestamp, data-quality posture, source fingerprint, source owner, source type,
    and reason codes,
 10. focused tests prove ready, missing, degraded/unavailable, permission-blocked, explicit metric,
    source supportability, source-owned active return, source-owned MWR return, source-owned
-   absolute and relative max drawdown, relative-drawdown unavailable posture, contribution selected
-   measures, attribution reconciliation/level/currency selected measures, stale contribution and
-   attribution posture, errored contribution and attribution blocking posture, and malformed
-   payload behavior,
+   absolute and relative max drawdown, relative-drawdown unavailable posture, rolling metric
+   summaries, benchmark/risk-free rolling degraded posture, contribution selected measures,
+   attribution reconciliation/level/currency selected measures, stale contribution and attribution
+   posture, errored contribution and attribution blocking posture, and malformed payload behavior,
 11. no broader methodology is claimed yet: tax, FX, transaction-cost, execution, cash movements,
-   liquidity ladders, risk attribution, rolling-risk, broader benchmark-relative performance
-   analysis outside source-emitted attribution scalars, and full review-window source contracts
-   remain source-owner follow-on scope.
+   liquidity ladders, risk attribution outside source-emitted rolling metric summaries, broader
+   benchmark-relative performance analysis outside source-emitted attribution scalars, and full
+   review-window source contracts remain source-owner follow-on scope.
 
 Why it cannot be done now:
 
 RFC-0042 intentionally avoided local calculation clones. The first risk, performance, and core cash
 adapters are possible because `lotus-risk` publishes `RiskMetricsReport:v1`, drawdown response
-output, and concentration response output, `lotus-performance` publishes workspace-summary TWR,
-active return, MWR output, contribution output, and attribution output, and `lotus-core` publishes
-`HoldingsAsOf:v1` cash totals.
+output, concentration response output, and rolling metrics response output, `lotus-performance`
+publishes workspace-summary TWR, active return, MWR output, contribution output, and attribution
+output, and `lotus-core` publishes `HoldingsAsOf:v1` cash totals.
 Remaining source-owner methods are surfaced as degraded, unsupported, unavailable, malformed,
 conflicting, or blocked states until their owning applications publish certified contracts.
 
@@ -2732,6 +2734,22 @@ Latest WTBD-006 risk-concentration tightening proof:
 5. manage preserves `lotus-risk` request fingerprint, supportability truth, issuer coverage
    posture, and concentration source units, and performs no HHI, top-position, issuer, or coverage
    calculation locally.
+
+Latest WTBD-006 risk-rolling tightening proof:
+
+1. local critical review evidence:
+   `output/rfc0042-wtbd006-risk-rolling-proof/20260506-081336/critical-review.json`,
+2. `tests/unit/core/test_risk_realized_outcome_sources.py` passed with `33` tests,
+3. tests cover source-owned latest rolling volatility, beta percentile, ready snapshot assembly,
+   benchmark-unavailable degraded posture, risk-free-unavailable degraded posture, stale source
+   posture, permission-blocked posture, missing fingerprint, and missing ready-value guardrails,
+4. repo-native `make check` passed with `912` unit tests, lint, format, mypy, OpenAPI quality,
+   API vocabulary, domain-data-product, trust telemetry, and observability contract gates,
+5. manage preserves `lotus-risk` request fingerprint, supportability truth, selected period,
+   selected metric, selected statistic, selected window length, benchmark/risk-free context,
+   latest observation date, and source units, and performs no rolling-window, volatility, Sharpe,
+   beta, tracking-error, information-ratio, drawdown, percentile, benchmark-alignment, or
+   risk-free-alignment calculation locally.
 
 Latest WTBD-006 performance-contribution tightening proof:
 

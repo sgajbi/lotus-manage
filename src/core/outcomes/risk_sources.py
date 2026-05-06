@@ -35,6 +35,23 @@ ConcentrationOutcomeMeasure = Literal[
     "issuer_coverage_ratio_current",
     "issuer_coverage_ratio_proposed",
 ]
+RollingRiskOutcomeMetric = Literal[
+    "ROLLING_VOLATILITY",
+    "ROLLING_SHARPE",
+    "ROLLING_BETA",
+    "ROLLING_TRACKING_ERROR",
+    "ROLLING_INFORMATION_RATIO",
+    "ROLLING_MAX_DRAWDOWN",
+]
+RollingRiskOutcomeStatistic = Literal[
+    "latest",
+    "average",
+    "minimum",
+    "maximum",
+    "p05",
+    "p50",
+    "p95",
+]
 
 
 class RiskOutcomeSourceError(ValueError):
@@ -205,6 +222,79 @@ def realized_concentration_source_from_concentration_response(
     )
 
 
+def realized_rolling_risk_source_from_rolling_response(
+    response: dict[str, Any],
+    *,
+    period: str = "YTD",
+    metric: RollingRiskOutcomeMetric = "ROLLING_VOLATILITY",
+    statistic: RollingRiskOutcomeStatistic = "latest",
+    window_length: int | None = None,
+) -> DpmRealizedSourceSnapshot:
+    """Adapt a lotus-risk RollingResponse without recalculating rolling metrics locally."""
+
+    metadata = _read_mapping(response.get("metadata"))
+    scope = _read_mapping(response.get("scope"))
+    request_fingerprint = _read_text(metadata.get("request_fingerprint"))
+    if request_fingerprint is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk rolling response is missing metadata.request_fingerprint"
+        )
+
+    period_result = _read_mapping(_read_mapping(response.get("results")).get(period))
+    selected_window, resolved_window_length = _rolling_window_result(
+        period_result=period_result,
+        window_length=window_length,
+    )
+    metric_summary = _read_mapping(
+        _read_mapping(selected_window.get("metric_summaries")).get(metric)
+    )
+    value = (
+        _decimal_value(metric_summary.get(statistic))
+        if metric_summary.get(statistic) is not None
+        else None
+    )
+    supportability_state, supportability_reason = _supportability(metadata)
+    context_reason = _rolling_context_reason(period_result=period_result, metric=metric)
+    source_state, quality = _rolling_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+        context_reason=context_reason,
+    )
+    if source_state == "READY" and value is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk rolling response is missing a numeric "
+            f"{metric} {statistic} value for {period} window {resolved_window_length}"
+        )
+
+    input_mode = _read_text(response.get("input_mode")) or "unknown"
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="ROLLING_RISK_METRICS_REPORT",
+        source_id=(
+            f"{request_fingerprint}:{period}:rolling:{resolved_window_length}:{metric}:{statistic}"
+        ),
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=_read_text(metric_summary.get("latest_observation_date")),
+        as_of_date=_read_text(scope.get("as_of_date")),
+        content_hash=request_fingerprint,
+        reason_codes=[
+            _primary_reason(source_state),
+            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+            f"RISK_REASON_{supportability_reason.upper()}",
+            f"RISK_PERIOD_{period}",
+            f"RISK_ROLLING_METRIC_{metric}",
+            f"RISK_ROLLING_STATISTIC_{statistic.upper()}",
+            f"RISK_ROLLING_WINDOW_{resolved_window_length}",
+            f"RISK_ROLLING_INPUT_MODE_{input_mode.upper()}",
+            context_reason,
+        ],
+    )
+
+
 def unavailable_risk_source(
     *,
     source_id: str,
@@ -295,6 +385,42 @@ def _concentration_value(
     return _decimal_value(value_by_measure) if value_by_measure is not None else None
 
 
+def _rolling_window_result(
+    *,
+    period_result: dict[str, Any],
+    window_length: int | None,
+) -> tuple[dict[str, Any], int | str]:
+    window_results = period_result.get("window_results")
+    if not isinstance(window_results, list):
+        return {}, window_length or "unknown"
+    for window_result in window_results:
+        window_mapping = _read_mapping(window_result)
+        resolved_window = window_mapping.get("window_length")
+        if window_length is None or resolved_window == window_length:
+            return window_mapping, resolved_window if resolved_window is not None else "unknown"
+    return {}, window_length or "unknown"
+
+
+def _rolling_context_reason(
+    *,
+    period_result: dict[str, Any],
+    metric: RollingRiskOutcomeMetric,
+) -> str:
+    if metric in {
+        "ROLLING_BETA",
+        "ROLLING_TRACKING_ERROR",
+        "ROLLING_INFORMATION_RATIO",
+    }:
+        context = _read_mapping(period_result.get("benchmark_context"))
+        reason = _read_text(context.get("reason")) or "UNKNOWN"
+        return f"RISK_ROLLING_BENCHMARK_{reason.upper()}"
+    if metric == "ROLLING_SHARPE":
+        context = _read_mapping(period_result.get("risk_free_context"))
+        reason = _read_text(context.get("reason")) or "UNKNOWN"
+        return f"RISK_ROLLING_RISK_FREE_{reason.upper()}"
+    return "RISK_ROLLING_CONTEXT_NOT_REQUIRED"
+
+
 def _issuer_coverage_status(response: dict[str, Any]) -> str | None:
     issuer = _read_mapping(response.get("issuer_concentration"))
     return _read_text(issuer.get("coverage_status"))
@@ -336,6 +462,32 @@ def _drawdown_source_posture(
     if supportability_state == "stale":
         return "DEGRADED", "STALE"
     if value is None and measure_reason != "RISK_DRAWDOWN_ABSOLUTE":
+        return "DEGRADED", "UNAVAILABLE"
+    if supportability_state != "ready":
+        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+    return "READY", "COMPLETE"
+
+
+def _rolling_source_posture(
+    *,
+    supportability_state: str,
+    value: Decimal | None,
+    context_reason: str,
+) -> tuple[
+    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
+    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
+]:
+    if supportability_state == "unsupported":
+        return "NOT_SUPPORTED", "NOT_SUPPORTED"
+    if supportability_state == "permission_blocked":
+        return "BLOCKED", "MISSING"
+    if supportability_state == "stale":
+        return "DEGRADED", "STALE"
+    if (
+        context_reason.endswith("_BENCHMARK_UNAVAILABLE")
+        or context_reason.endswith("_RISK_FREE_UNAVAILABLE")
+        or context_reason.endswith("_NO_ALIGNED_OBSERVATIONS")
+    ):
         return "DEGRADED", "UNAVAILABLE"
     if supportability_state != "ready":
         return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
