@@ -5,6 +5,7 @@ from src.core.outcomes import (
     assemble_realized_outcome_snapshot,
     realized_concentration_source_from_concentration_response,
     realized_drawdown_source_from_drawdown_response,
+    realized_historical_attribution_source_from_attribution_response,
     realized_rolling_risk_source_from_rolling_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
@@ -364,6 +365,80 @@ def _rolling_response() -> dict[str, object]:
     }
 
 
+def _historical_attribution_response() -> dict[str, object]:
+    return {
+        "source_service": "lotus-risk",
+        "input_mode": "stateful",
+        "scope": {
+            "as_of_date": "2026-05-06",
+            "reporting_currency": "USD",
+            "net_or_gross": "NET",
+        },
+        "results": {
+            "YTD": {
+                "start_date": "2026-01-02",
+                "end_date": "2026-05-06",
+                "attribution_sets": [
+                    {
+                        "attribution_type": "ACTIVE_RISK",
+                        "metric": "TRACKING_ERROR",
+                        "grouping_dimension": "SECTOR",
+                        "total_value": 0.0642,
+                        "reconciled_sum": 0.0638,
+                        "residual": 0.0004,
+                        "contributors": [
+                            {
+                                "group_key": "SECTOR_TECH",
+                                "group_label": "Technology",
+                                "weight_average": 0.245,
+                                "marginal_contribution": 0.0911,
+                                "component_contribution": 0.0223,
+                                "percent_contribution": 0.3474,
+                            },
+                            {
+                                "group_key": "SECTOR_HEALTH",
+                                "group_label": "Healthcare",
+                                "weight_average": 0.184,
+                                "marginal_contribution": -0.0312,
+                                "component_contribution": -0.0057,
+                                "percent_contribution": -0.0888,
+                            },
+                        ],
+                        "quality_flags": [],
+                    }
+                ],
+                "error": None,
+            }
+        },
+        "metadata": {
+            "contract_version": "v1",
+            "methodology_version": "historical_attribution.v1",
+            "request_fingerprint": "sha256:risk-attribution-request",
+            "covariance_method": "EMPIRICAL",
+            "annualization_basis": 252,
+            "requested_attribution_types": ["ACTIVE_RISK"],
+            "requested_metrics": ["TRACKING_ERROR"],
+            "requested_grouping_dimensions": ["SECTOR"],
+            "min_observations_policy": "STRICT",
+            "stateful_active_risk_supported_grouping_dimensions": [
+                "POSITION",
+                "SECTOR",
+                "ASSET_CLASS",
+            ],
+            "stateful_active_risk_gated_grouping_dimensions": ["ISSUER"],
+            "stateful_active_risk_gate_reason": "benchmark issuer exposure semantics unavailable",
+            "calculation_supportability": {
+                "state": "ready",
+                "reason": "calculation_complete",
+                "freshness_bucket": "current",
+                "degraded_metric_count": 0,
+                "empty_period_count": 0,
+                "evaluated_period_count": 1,
+            },
+        },
+    }
+
+
 def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() -> None:
     source = realized_risk_source_from_risk_metrics_report(_risk_metrics_report())
 
@@ -457,6 +532,76 @@ def test_rolling_risk_source_can_make_rfc42_risk_dimension_ready() -> None:
     assert risk.value == source.value
     assert risk.source_refs[0].source_type == "ROLLING_RISK_METRICS_REPORT"
     assert risk.supportability.reason_codes[0] == "SOURCE_READY"
+
+
+def test_historical_attribution_adapter_wraps_source_owned_total_value() -> None:
+    source = realized_historical_attribution_source_from_attribution_response(
+        _historical_attribution_response()
+    )
+
+    assert source.dimension == "RISK_REDUCTION"
+    assert source.source_system == "lotus-risk"
+    assert source.source_type == "HISTORICAL_RISK_ATTRIBUTION"
+    assert source.source_id == (
+        "sha256:risk-attribution-request:YTD:historical-attribution:"
+        "ACTIVE_RISK:TRACKING_ERROR:SECTOR:total_value"
+    )
+    assert str(source.value) == "0.0642"
+    assert source.unit == "ratio"
+    assert source.observed_at == "2026-05-06"
+    assert source.as_of_date == "2026-05-06"
+    assert source.content_hash == "sha256:risk-attribution-request"
+    assert source.reason_codes == [
+        "RISK_SOURCE_READY",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_PERIOD_YTD",
+        "RISK_ATTRIBUTION_TYPE_ACTIVE_RISK",
+        "RISK_ATTRIBUTION_METRIC_TRACKING_ERROR",
+        "RISK_ATTRIBUTION_GROUPING_SECTOR",
+        "RISK_ATTRIBUTION_MEASURE_TOTAL_VALUE",
+        "RISK_ATTRIBUTION_INPUT_MODE_STATEFUL",
+        (
+            "RISK_ATTRIBUTION_STATEFUL_ACTIVE_RISK_SUPPORT_SUPPORTED_3_GATED_1_"
+            "REASON_BENCHMARK_ISSUER_EXPOSURE_SEMANTICS_UNAVAILABLE"
+        ),
+        "RISK_ATTRIBUTION_SET_LEVEL",
+        "RISK_ATTRIBUTION_QUALITY_FLAGS_0",
+        "RISK_ATTRIBUTION_PERIOD_OK",
+    ]
+
+
+def test_historical_attribution_adapter_wraps_source_owned_contributor_value() -> None:
+    source = realized_historical_attribution_source_from_attribution_response(
+        _historical_attribution_response(),
+        measure="contributor_component_contribution",
+        contributor_group_key="SECTOR_TECH",
+    )
+
+    assert source.source_id == (
+        "sha256:risk-attribution-request:YTD:historical-attribution:"
+        "ACTIVE_RISK:TRACKING_ERROR:SECTOR:contributor_component_contribution:SECTOR_TECH"
+    )
+    assert str(source.value) == "0.0223"
+    assert "RISK_ATTRIBUTION_CONTRIBUTOR_SECTOR_TECH" in source.reason_codes
+
+
+def test_historical_attribution_source_can_make_rfc42_risk_dimension_ready() -> None:
+    source = realized_historical_attribution_source_from_attribution_response(
+        _historical_attribution_response()
+    )
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    risk = snapshot.realized_values["RISK_REDUCTION"]
+    assert snapshot.supportability.state == "READY"
+    assert risk.value == source.value
+    assert risk.source_refs[0].source_type == "HISTORICAL_RISK_ATTRIBUTION"
 
 
 def test_concentration_adapter_wraps_single_position_weight() -> None:
@@ -769,6 +914,48 @@ def test_rolling_risk_free_unavailable_preserves_degraded_source_posture() -> No
     assert "RISK_ROLLING_RISK_FREE_RISK_FREE_UNAVAILABLE" in source.reason_codes
 
 
+def test_historical_attribution_quality_flags_preserve_degraded_source_posture() -> None:
+    response = _historical_attribution_response()
+    results = response["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    attribution_set = ytd["attribution_sets"][0]  # type: ignore[index]
+    assert isinstance(attribution_set, dict)
+    attribution_set["quality_flags"] = ["grouping:SECTOR:weight_not_sum_to_one"]
+
+    source = realized_historical_attribution_source_from_attribution_response(response)
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "PARTIAL"
+    assert source.value is not None
+    assert "RISK_ATTRIBUTION_QUALITY_FLAGS_1" in source.reason_codes
+
+
+def test_historical_attribution_period_error_blocks_ready_claim() -> None:
+    response = _historical_attribution_response()
+    results = response["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    ytd["error"] = "Insufficient aligned observations"
+    ytd["attribution_sets"] = []
+
+    source = realized_historical_attribution_source_from_attribution_response(response)
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    assert source.source_state == "BLOCKED"
+    assert source.quality == "MISSING"
+    assert source.value is None
+    assert snapshot.supportability.state == "BLOCKED"
+    assert "RISK_ATTRIBUTION_PERIOD_ERROR_INSUFFICIENT_ALIGNED_OBSERVATIONS" in source.reason_codes
+
+
 def test_degraded_risk_report_preserves_source_owner_supportability() -> None:
     report = _risk_metrics_report()
     metadata = report["metadata"]
@@ -927,6 +1114,16 @@ def test_rolling_adapter_rejects_response_without_trust_fingerprint() -> None:
         realized_rolling_risk_source_from_rolling_response(malformed)
 
 
+def test_historical_attribution_adapter_rejects_response_without_trust_fingerprint() -> None:
+    malformed = _historical_attribution_response()
+    metadata = malformed["metadata"]
+    assert isinstance(metadata, dict)
+    del metadata["request_fingerprint"]
+
+    with pytest.raises(RiskOutcomeSourceError, match="request_fingerprint"):
+        realized_historical_attribution_source_from_attribution_response(malformed)
+
+
 def test_risk_adapter_rejects_missing_ready_metric_value() -> None:
     malformed = _risk_metrics_report()
     results = malformed["results"]
@@ -981,3 +1178,25 @@ def test_rolling_adapter_rejects_missing_ready_metric_value() -> None:
 
     with pytest.raises(RiskOutcomeSourceError, match="ROLLING_VOLATILITY latest value"):
         realized_rolling_risk_source_from_rolling_response(malformed)
+
+
+def test_historical_attribution_adapter_rejects_missing_ready_set_value() -> None:
+    malformed = _historical_attribution_response()
+    results = malformed["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    attribution_set = ytd["attribution_sets"][0]  # type: ignore[index]
+    assert isinstance(attribution_set, dict)
+    attribution_set["total_value"] = None
+
+    with pytest.raises(RiskOutcomeSourceError, match="total_value value"):
+        realized_historical_attribution_source_from_attribution_response(malformed)
+
+
+def test_historical_attribution_contributor_measure_requires_group_key() -> None:
+    with pytest.raises(RiskOutcomeSourceError, match="contributor_group_key"):
+        realized_historical_attribution_source_from_attribution_response(
+            _historical_attribution_response(),
+            measure="contributor_component_contribution",
+        )

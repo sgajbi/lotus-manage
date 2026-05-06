@@ -52,6 +52,15 @@ RollingRiskOutcomeStatistic = Literal[
     "p50",
     "p95",
 ]
+HistoricalAttributionOutcomeMeasure = Literal[
+    "total_value",
+    "reconciled_sum",
+    "residual",
+    "contributor_weight_average",
+    "contributor_marginal_contribution",
+    "contributor_component_contribution",
+    "contributor_percent_contribution",
+]
 
 
 class RiskOutcomeSourceError(ValueError):
@@ -295,6 +304,96 @@ def realized_rolling_risk_source_from_rolling_response(
     )
 
 
+def realized_historical_attribution_source_from_attribution_response(
+    response: dict[str, Any],
+    *,
+    period: str = "YTD",
+    attribution_type: str = "ACTIVE_RISK",
+    metric: str = "TRACKING_ERROR",
+    grouping_dimension: str = "SECTOR",
+    measure: HistoricalAttributionOutcomeMeasure = "total_value",
+    contributor_group_key: str | None = None,
+) -> DpmRealizedSourceSnapshot:
+    """Adapt lotus-risk historical attribution without recalculating attribution locally."""
+
+    metadata = _read_mapping(response.get("metadata"))
+    scope = _read_mapping(response.get("scope"))
+    request_fingerprint = _read_text(metadata.get("request_fingerprint"))
+    if request_fingerprint is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk historical attribution response is missing metadata.request_fingerprint"
+        )
+
+    period_result = _read_mapping(_read_mapping(response.get("results")).get(period))
+    period_error = _read_text(period_result.get("error"))
+    attribution_set = _historical_attribution_set(
+        period_result=period_result,
+        attribution_type=attribution_type,
+        metric=metric,
+        grouping_dimension=grouping_dimension,
+    )
+    supportability_state, supportability_reason = _supportability(metadata)
+    quality_flags = _read_list(attribution_set.get("quality_flags"))
+    value, measure_reason = _historical_attribution_value(
+        attribution_set=attribution_set,
+        measure=measure,
+        contributor_group_key=contributor_group_key,
+    )
+    source_state, quality = _historical_attribution_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+        period_error=period_error,
+        quality_flags=quality_flags,
+    )
+    if source_state == "READY" and value is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk historical attribution response is missing a numeric "
+            f"{measure} value for {period} {attribution_type} {metric} {grouping_dimension}"
+        )
+
+    input_mode = _read_text(response.get("input_mode")) or "unknown"
+    source_id_parts = [
+        request_fingerprint,
+        period,
+        "historical-attribution",
+        attribution_type,
+        metric,
+        grouping_dimension,
+        measure,
+    ]
+    if contributor_group_key is not None:
+        source_id_parts.append(contributor_group_key)
+
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="HISTORICAL_RISK_ATTRIBUTION",
+        source_id=":".join(source_id_parts),
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=_read_text(period_result.get("end_date")),
+        as_of_date=_read_text(scope.get("as_of_date")),
+        content_hash=request_fingerprint,
+        reason_codes=[
+            _primary_reason(source_state),
+            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+            f"RISK_REASON_{supportability_reason.upper()}",
+            f"RISK_PERIOD_{period}",
+            f"RISK_ATTRIBUTION_TYPE_{attribution_type}",
+            f"RISK_ATTRIBUTION_METRIC_{metric}",
+            f"RISK_ATTRIBUTION_GROUPING_{grouping_dimension}",
+            f"RISK_ATTRIBUTION_MEASURE_{measure.upper()}",
+            f"RISK_ATTRIBUTION_INPUT_MODE_{input_mode.upper()}",
+            _historical_attribution_support_reason(metadata),
+            measure_reason,
+            _quality_flags_reason(quality_flags),
+            _period_error_reason(period_error),
+        ],
+    )
+
+
 def unavailable_risk_source(
     *,
     source_id: str,
@@ -421,6 +520,71 @@ def _rolling_context_reason(
     return "RISK_ROLLING_CONTEXT_NOT_REQUIRED"
 
 
+def _historical_attribution_set(
+    *,
+    period_result: dict[str, Any],
+    attribution_type: str,
+    metric: str,
+    grouping_dimension: str,
+) -> dict[str, Any]:
+    attribution_sets = period_result.get("attribution_sets")
+    if not isinstance(attribution_sets, list):
+        return {}
+    for attribution_set in attribution_sets:
+        set_mapping = _read_mapping(attribution_set)
+        if (
+            _read_text(set_mapping.get("attribution_type")) == attribution_type
+            and _read_text(set_mapping.get("metric")) == metric
+            and _read_text(set_mapping.get("grouping_dimension")) == grouping_dimension
+        ):
+            return set_mapping
+    return {}
+
+
+def _historical_attribution_value(
+    *,
+    attribution_set: dict[str, Any],
+    measure: HistoricalAttributionOutcomeMeasure,
+    contributor_group_key: str | None,
+) -> tuple[Decimal | None, str]:
+    if not measure.startswith("contributor_"):
+        raw_value = attribution_set.get(measure)
+        return (
+            _decimal_value(raw_value) if raw_value is not None else None,
+            "RISK_ATTRIBUTION_SET_LEVEL",
+        )
+
+    if contributor_group_key is None:
+        raise RiskOutcomeSourceError(
+            "lotus-risk historical attribution contributor measures require contributor_group_key"
+        )
+    source_field = measure.removeprefix("contributor_")
+    contributor = _historical_attribution_contributor(
+        attribution_set=attribution_set,
+        contributor_group_key=contributor_group_key,
+    )
+    raw_value = contributor.get(source_field)
+    return (
+        _decimal_value(raw_value) if raw_value is not None else None,
+        f"RISK_ATTRIBUTION_CONTRIBUTOR_{contributor_group_key}",
+    )
+
+
+def _historical_attribution_contributor(
+    *,
+    attribution_set: dict[str, Any],
+    contributor_group_key: str,
+) -> dict[str, Any]:
+    contributors = attribution_set.get("contributors")
+    if not isinstance(contributors, list):
+        return {}
+    for contributor in contributors:
+        contributor_mapping = _read_mapping(contributor)
+        if _read_text(contributor_mapping.get("group_key")) == contributor_group_key:
+            return contributor_mapping
+    return {}
+
+
 def _issuer_coverage_status(response: dict[str, Any]) -> str | None:
     issuer = _read_mapping(response.get("issuer_concentration"))
     return _read_text(issuer.get("coverage_status"))
@@ -494,6 +658,31 @@ def _rolling_source_posture(
     return "READY", "COMPLETE"
 
 
+def _historical_attribution_source_posture(
+    *,
+    supportability_state: str,
+    value: Decimal | None,
+    period_error: str | None,
+    quality_flags: list[Any],
+) -> tuple[
+    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
+    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
+]:
+    if supportability_state == "unsupported":
+        return "NOT_SUPPORTED", "NOT_SUPPORTED"
+    if supportability_state == "permission_blocked":
+        return "BLOCKED", "MISSING"
+    if period_error is not None:
+        return "BLOCKED", "MISSING"
+    if supportability_state == "stale":
+        return "DEGRADED", "STALE"
+    if supportability_state != "ready":
+        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+    if quality_flags:
+        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+    return "READY", "COMPLETE"
+
+
 def _is_issuer_concentration_measure(measure: ConcentrationOutcomeMeasure) -> bool:
     return measure.startswith("issuer_") or measure.startswith("top_issuer_")
 
@@ -539,6 +728,33 @@ def _concentration_unit(measure: ConcentrationOutcomeMeasure) -> str:
     if "hhi" in measure:
         return "hhi"
     return "ratio"
+
+
+def _historical_attribution_support_reason(metadata: dict[str, Any]) -> str:
+    supported = metadata.get("stateful_active_risk_supported_grouping_dimensions")
+    gated = metadata.get("stateful_active_risk_gated_grouping_dimensions")
+    gate_reason = _read_text(metadata.get("stateful_active_risk_gate_reason"))
+    supported_count = len(supported) if isinstance(supported, list) else 0
+    gated_count = len(gated) if isinstance(gated, list) else 0
+    reason = (gate_reason or "none").upper().replace(" ", "_")
+    return (
+        "RISK_ATTRIBUTION_STATEFUL_ACTIVE_RISK_SUPPORT_"
+        f"SUPPORTED_{supported_count}_GATED_{gated_count}_REASON_{reason}"
+    )
+
+
+def _quality_flags_reason(quality_flags: list[Any]) -> str:
+    return f"RISK_ATTRIBUTION_QUALITY_FLAGS_{len(quality_flags)}"
+
+
+def _period_error_reason(period_error: str | None) -> str:
+    if period_error is None:
+        return "RISK_ATTRIBUTION_PERIOD_OK"
+    return f"RISK_ATTRIBUTION_PERIOD_ERROR_{period_error.upper().replace(' ', '_')}"
+
+
+def _read_list(value: Any) -> list[Any]:
+    return value if isinstance(value, list) else []
 
 
 def _read_mapping(value: Any) -> dict[str, Any]:
