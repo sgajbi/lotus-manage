@@ -704,13 +704,13 @@ Closure evidence:
 
 These items are deliberately not done in RFC-0038 because the RFC delivered manage backend
 foundation, while full command-center product realization, PM-book discovery, richer source
-products, and canonical seed automation belong to downstream or source-owning applications.
+products, and canonical seed automation belonged to downstream or source-owning applications.
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0038 |
 | --- | --- | --- | --- | --- |
 | RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
-| RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and records the remaining canonical seed gap under RFC38-WTBD-003. |
-| RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Downstream issue opened | Manage proof used canonical IDs, but durable cross-app seed automation for populated, partial, and empty command-center states belongs to platform/source owners. |
+| RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and originally recorded the canonical seed gap that RFC38-WTBD-003 later resolved for the populated governed portfolio. |
+| RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed locally, runtime-proven, pending PR publication | Platform canonical automation now refreshes the governed DPM mandate from core through manage, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified `ready`. Partial and empty command-center state automation remains future depth. |
 | RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` or future relationship-book authority | Deferred with no support claim | RFC-0038 supports caller-supplied mandate IDs and persisted monitoring runs. No certified PM-book membership source exists yet. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
 | RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
@@ -827,56 +827,79 @@ Validation evidence:
    PR Merge Gate workflow lint, lint/typecheck/coverage/build, Playwright smoke, Docker build
    validation, and CI local Docker parity.
 
-Remaining governed follow-up:
+Seed gap resolution:
 
-The canonical `GET /api/v1/dpm/command-center/mandates/by-portfolio/PB_SG_GLOBAL_BAL_001` lookup
-still returns `DPM_MANDATE_NOT_FOUND` in the current seeded cross-app stack. Workbench records this
-as `seed_gap` in live validation instead of hiding it or inventing browser-side mandate truth.
-Durable populated, partial, and empty seed automation remains RFC38-WTBD-003 under `lotus-platform`
-and source-app ownership.
+The historical canonical
+`GET /api/v1/dpm/command-center/mandates/by-portfolio/PB_SG_GLOBAL_BAL_001` seed gap was resolved
+by RFC38-WTBD-003 platform automation on 2026-05-07. Workbench still preserves `seed_gap`
+classification for non-populated or incomplete environments, but the governed canonical runtime now
+proves the populated command-center path as `ready`.
 
 Gold-pass assessment:
 
 This WTBD has reached the expected standard for the Workbench cockpit slice. The implementation is
 merged to `lotus-workbench` `main`, proven by Feature Lane and PR Merge Gate, locally live-proven
 through the canonical Workbench runtime, and documented in repo context plus published wiki source.
-Full front-office command-center product support still depends on RFC38-WTBD-003 seed automation
-and later richer product slices, but the Workbench cockpit panel itself is implementation-backed.
+The Workbench cockpit panel itself is implementation-backed. RFC38-WTBD-003 later resolved the
+populated canonical seed gap; later richer product slices still govern PM-book discovery and
+partial/empty command-center fixture depth.
 
 #### RFC38-WTBD-003 - Platform Canonical Seed Automation
 
 Target business outcome:
 
-The canonical front-office stack can reliably seed and validate populated, partial, and empty DPM
-command-center states for demo, QA, and regression proof.
+The canonical front-office stack can reliably seed and validate a populated DPM command-center state
+for demo, QA, and regression proof.
 
-Why it cannot be done now:
+Closure status:
 
-RFC-0038 documented the required canonical identities and opened `sgajbi/lotus-platform#294`, but
-seed orchestration across core/manage/Gateway/Workbench belongs to `lotus-platform` and source-app
-owners.
+Completed locally on 2026-05-07 through `lotus-platform` canonical automation and a small
+`lotus-workbench` validation-governance update. PR publication remains pending.
 
-Dependencies before implementation:
+What was delivered:
 
-1. platform seed contract for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`,
-   `PM_SG_DPM_001`, `BOOK_SG_BALANCED_DPM`, tenant `default`, and RFC-087 source products,
-2. source apps expose or load required seed records,
-3. validation covers populated, partial, and empty command-center states,
-4. seed automation avoids stale Docker images and propagates stateful manage gates correctly,
-5. generated evidence records source lineage and supportability.
+1. `lotus-platform` added canonical DPM command-center seed identity to
+   `canonical-front-office-demo-data-contract.json` for `PB_SG_GLOBAL_BAL_001`,
+   `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, `BOOK_SG_BALANCED_DPM`, tenant `default`,
+   booking center `Singapore`, model `MODEL_PB_SG_GLOBAL_BAL_DPM`, policy pack
+   `POLICY_DPM_SG_BALANCED_V1`, and as-of date `2026-05-03`.
+2. `lotus-platform` added `Invoke-DpmCommandCenterSeed.ps1`, which refreshes the canonical mandate
+   from `lotus-core` through `lotus-manage`, verifies manage lookup by portfolio, verifies Gateway
+   mandate lookup by portfolio, verifies Gateway mandate health, and verifies the Gateway
+   command-center summary.
+3. `Invoke-Canonical-FrontOffice-QA.ps1` now runs the DPM command-center seed before Workbench
+   validation by default and records DPM seed evidence in the canonical front-office QA summary.
+4. The canonical data invariants, Workbench panel registry, analytics UI observability readiness
+   contract, and platform automation docs were updated to include `dpm.command_center`.
+5. `lotus-workbench` live validation now classifies `dpm.command_center` as a governed ready panel
+   and captures the registered DPM command-center screenshot during canonical browser validation.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-platform` as canonical front-office seed/validation automation, then consume in
-Gateway and Workbench proof.
+1. Platform focused tests passed:
+   `python -m pytest tests/unit/test_analytics_ui_rollout_readiness.py tests/unit/test_rfc_0076_canonical_demo_data_contract.py tests/unit/test_rfc_0077_panel_registry_contract.py tests/unit/test_front_office_runtime_automation_contract.py -q`
+   with 15 tests.
+2. Workbench focused tests passed:
+   `npm test -- --run tests/unit/live-canonical-validation-script.test.ts tests/unit/live-validation-browser-workflows.test.ts`
+   with 13 tests.
+3. Governed canonical runtime proof passed:
+   `powershell -ExecutionPolicy Bypass -File automation\Invoke-Canonical-FrontOffice-QA.ps1 -BringUp -LotusAiEnvFile .env.example -SeedWaitSeconds 1200`.
+4. Structured DPM seed evidence:
+   `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260507-013324.json` and
+   `lotus-platform/output/front-office-qa/dpm-command-center-seed-latest.json` show status `ok`
+   for manage refresh, manage lookup, Gateway mandate lookup, Gateway mandate health, and Gateway
+   command-center summary.
+5. Structured canonical QA evidence:
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-012800.json` and
+   `lotus-workbench/output/playwright/live-canonical/live-validation-summary.json` prove live
+   canonical Workbench validation passed for `PB_SG_GLOBAL_BAL_001`, with screenshots under
+   `lotus-workbench/output/playwright/live-canonical`.
 
-Promotion proof:
+Remaining governed follow-up:
 
-1. platform automation tests,
-2. canonical runtime validation artifacts,
-3. source-product lineage evidence,
-4. docs/runbook updates,
-5. downstream Gateway/Workbench proof reuse.
+Partial and empty command-center state automation is not claimed in this slice. Those states need
+separate seeded fixtures, supportability expectations, and browser-proof assertions before they can
+be promoted as durable demo or regression scenarios.
 
 #### RFC38-WTBD-004 - PM-Book Discovery For Monitoring And Command-Center Cohorts
 
