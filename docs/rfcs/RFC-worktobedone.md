@@ -709,7 +709,7 @@ products, and canonical seed automation belong to downstream or source-owning ap
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0038 |
 | --- | --- | --- | --- | --- |
 | RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
-| RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Downstream issue opened; implementation not supported yet | Workbench must consume Gateway/BFF only and must not reconstruct health scoring or source readiness in browser code. |
+| RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and records the remaining canonical seed gap under RFC38-WTBD-003. |
 | RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Downstream issue opened | Manage proof used canonical IDs, but durable cross-app seed automation for populated, partial, and empty command-center states belongs to platform/source owners. |
 | RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` or future relationship-book authority | Deferred with no support claim | RFC-0038 supports caller-supplied mandate IDs and persisted monitoring runs. No certified PM-book membership source exists yet. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
@@ -779,32 +779,69 @@ Target business outcome:
 PMs and operations users can view mandate health, source readiness, attention queues, recommended
 actions, latest monitoring run, and mandate drill-downs through a populated Workbench cockpit.
 
-Why it cannot be done now:
+Closure status:
 
-Workbench must consume Gateway/BFF contracts only. Implementing panels before Gateway composition
-would force direct manage calls or UI-side health reconstruction, both of which RFC-0038 explicitly
-forbids.
+Completed on 2026-05-06 through `lotus-workbench` PR #154,
+`Implement RFC38 DPM command-center cockpit`, merged to `main` at
+`2fbfac5dd00104cee2b1da7923efe0c64940a9f5`.
 
-Dependencies before implementation:
+What was delivered:
 
-1. RFC38-WTBD-001 complete,
-2. Workbench BFF/client modules consume Gateway only,
-3. panels cover populated, partial, empty, degraded, and unavailable states,
-4. browser code does not calculate health, source readiness, or supportability,
-5. canonical runtime proof uses governed front-office validation paths.
+1. `/workbench/{portfolioId}` now renders an embedded DPM Command Center cockpit for the canonical
+   front-office portfolio.
+2. Workbench consumes the Gateway command-center route family only:
+   `GET /api/v1/dpm/command-center`,
+   `POST /api/v1/dpm/command-center/monitoring/run-once`,
+   `GET /api/v1/dpm/command-center/exceptions`,
+   `GET /api/v1/dpm/command-center/mandates/by-portfolio/{portfolio_id}`, and
+   `GET /api/v1/dpm/command-center/mandates/{mandate_id}/health`.
+3. The Workbench view model preserves Gateway/manage supportability, source readiness, health
+   distribution, attention buckets, recommended actions, active exceptions, latest monitoring-run
+   lineage, and mandate-health dimensions without calculating mandate health, supportability, or
+   source readiness in browser code.
+4. The run-monitoring action calls the Gateway BFF mutation path and sends governed DPM context
+   for tenant `default`, PM `PM_SG_DPM_001`, book `BOOK_SG_BALANCED_DPM`, and as-of date
+   `2026-05-03`.
+5. Bounded observability surfaces were added for command-center summary, monitoring, exception,
+   mandate binding, and mandate-health operations without leaking portfolio ids, PM ids, mandate
+   ids, run ids, or exception ids into metric labels.
+6. `lotus-workbench` repository context, RFC-0098, and repo-authored wiki source were updated.
+   The `lotus-workbench` wiki was published after merge at wiki commit `86b6ee7`; check-only
+   verification then reported zero drift.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-workbench` after Gateway composition. Use `PB_SG_GLOBAL_BAL_001` and governed
-canonical runtime proof when producing demo-ready screenshots.
+1. Focused Workbench proof passed:
+   `npx vitest run tests/unit/live-canonical-validation-script.test.ts tests/unit/live-validation-browser-workflows.test.ts tests/unit/dpm-command-center-panel.test.tsx tests/unit/dpm-command-center-view-model.test.ts tests/unit/workbench-api.test.ts`
+   with 60 tests.
+2. Local repo gate `make check` passed in `lotus-workbench`, including lint, typecheck, coverage
+   tests, and production build.
+3. Canonical front-office live validation passed:
+   `powershell -ExecutionPolicy Bypass -File scripts/live/Start-LotusFrontOfficeCanonical.ps1 -LocalApps workbench,gateway -RunValidation -ScreenshotDirectory output/rfc38-wtbd002-command-center-cockpit-command-center-validated`.
+4. Structured live evidence:
+   `lotus-workbench/output/rfc38-wtbd002-command-center-cockpit-command-center-validated/live-validation-summary.json`
+   proves Gateway command-center summary status 200, active exceptions status 200, and populated UI
+   checks for DPM command-center health distribution, attention queue, active exceptions, and
+   mandate health dimensions.
+5. GitHub PR #154 checks passed before merge: Feature Lane workflow lint, Feature Lane lint/typecheck/test,
+   PR Merge Gate workflow lint, lint/typecheck/coverage/build, Playwright smoke, Docker build
+   validation, and CI local Docker parity.
 
-Promotion proof:
+Remaining governed follow-up:
 
-1. Workbench component, BFF, and browser tests,
-2. accessibility and visual validation,
-3. canonical front-office evidence with populated panels,
-4. screenshots only after validation passes,
-5. Workbench README/wiki/supported-features updates.
+The canonical `GET /api/v1/dpm/command-center/mandates/by-portfolio/PB_SG_GLOBAL_BAL_001` lookup
+still returns `DPM_MANDATE_NOT_FOUND` in the current seeded cross-app stack. Workbench records this
+as `seed_gap` in live validation instead of hiding it or inventing browser-side mandate truth.
+Durable populated, partial, and empty seed automation remains RFC38-WTBD-003 under `lotus-platform`
+and source-app ownership.
+
+Gold-pass assessment:
+
+This WTBD has reached the expected standard for the Workbench cockpit slice. The implementation is
+merged to `lotus-workbench` `main`, proven by Feature Lane and PR Merge Gate, locally live-proven
+through the canonical Workbench runtime, and documented in repo context plus published wiki source.
+Full front-office command-center product support still depends on RFC38-WTBD-003 seed automation
+and later richer product slices, but the Workbench cockpit panel itself is implementation-backed.
 
 #### RFC38-WTBD-003 - Platform Canonical Seed Automation
 
