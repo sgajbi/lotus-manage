@@ -4,6 +4,7 @@ from src.core.outcomes import (
     PerformanceOutcomeSourceError,
     assemble_realized_outcome_snapshot,
     realized_active_performance_source_from_workspace_summary,
+    realized_attribution_source_from_attribution_response,
     realized_contribution_source_from_contribution_response,
     realized_mwr_source_from_workspace_summary,
     realized_performance_source_from_workspace_summary,
@@ -133,6 +134,87 @@ def _contribution_response() -> dict[str, object]:
     }
 
 
+def _attribution_response() -> dict[str, object]:
+    return {
+        "calculation_id": "0d000005-1111-4222-8333-abcdefabcdef",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "input_mode": "stateful",
+        "model": "brinson_fachler",
+        "linking": "carino",
+        "results_by_period": {
+            "YTD": {
+                "levels": [
+                    {
+                        "dimension": "asset_class",
+                        "parent_key": None,
+                        "groups": [
+                            {
+                                "key": {"asset_class": "equity"},
+                                "portfolio_weight_avg": 62.5,
+                                "benchmark_weight_avg": 58.0,
+                                "portfolio_return": 4.1,
+                                "benchmark_return": 3.4,
+                                "allocation": 0.12,
+                                "selection": 0.31,
+                                "interaction": 0.04,
+                                "total_effect": 0.47,
+                            }
+                        ],
+                        "totals": {
+                            "allocation": 0.12,
+                            "selection": 0.31,
+                            "interaction": 0.04,
+                            "total_effect": 0.47,
+                        },
+                        "allocation_total_pct": 0.12,
+                        "selection_total_pct": 0.31,
+                        "interaction_total_pct": 0.04,
+                        "total_effect_pct": 0.47,
+                    }
+                ],
+                "reconciliation": {
+                    "total_active_return": 0.49,
+                    "sum_of_effects": 0.47,
+                    "residual": 0.02,
+                },
+                "currency_attribution": [
+                    {
+                        "currency": "USD",
+                        "weight_portfolio_avg": 64.0,
+                        "weight_benchmark_avg": 60.0,
+                        "effects": {
+                            "local_allocation": 0.03,
+                            "local_selection": 0.05,
+                            "currency_allocation": 0.02,
+                            "currency_selection": 0.01,
+                            "total_effect": 0.11,
+                        },
+                    }
+                ],
+            }
+        },
+        "benchmark_context": {
+            "benchmark_id": "BMK_GLOBAL_60_40",
+            "return_source": "calculated",
+        },
+        "calculation_supportability": {
+            "state": "ready",
+            "reason": "calculation_complete",
+            "freshness_bucket": "current",
+            "input_row_count": 128,
+            "resolved_period_count": 1,
+            "benchmark_row_count": 64,
+        },
+        "meta": {
+            "calculation_id": "0d000005-1111-4222-8333-abcdefabcdef",
+            "calculation_hash": "sha256:attribution",
+            "periods": {"master_start": "2026-01-02", "master_end": "2026-05-06"},
+        },
+        "diagnostics": {"effective_period_start": "2026-01-02", "notes": []},
+        "audit": {"counts": {"input_rows": 128, "benchmark_rows": 64}},
+    }
+
+
 def test_performance_workspace_summary_adapter_wraps_source_truth_without_recalculation() -> None:
     source = realized_performance_source_from_workspace_summary(_workspace_summary())
 
@@ -175,6 +257,76 @@ def test_contribution_adapter_wraps_source_owned_total_contribution() -> None:
         "PERFORMANCE_MEASURE_TOTAL_CONTRIBUTION",
         "PERFORMANCE_INPUT_MODE_STATEFUL",
     ]
+
+
+def test_attribution_adapter_wraps_source_owned_active_return_reconciliation() -> None:
+    source = realized_attribution_source_from_attribution_response(_attribution_response())
+
+    assert source.dimension == "PERFORMANCE"
+    assert source.source_system == "lotus-performance"
+    assert source.source_type == "PERFORMANCE_ATTRIBUTION"
+    assert source.source_id == (
+        "0d000005-1111-4222-8333-abcdefabcdef:YTD:attribution:"
+        "reconciliation_total_active_return:reconciliation"
+    )
+    assert str(source.value) == "0.0049"
+    assert source.unit == "ratio"
+    assert source.content_hash == "sha256:attribution"
+    assert source.reason_codes == [
+        "PERFORMANCE_SOURCE_READY",
+        "PERFORMANCE_SUPPORTABILITY_READY",
+        "PERFORMANCE_REASON_CALCULATION_COMPLETE",
+        "PERFORMANCE_PERIOD_YTD",
+        "PERFORMANCE_MEASURE_FAMILY_ATTRIBUTION",
+        "PERFORMANCE_ATTRIBUTION_MEASURE_RECONCILIATION_TOTAL_ACTIVE_RETURN",
+        "PERFORMANCE_ATTRIBUTION_SELECTOR_RECONCILIATION",
+        "PERFORMANCE_INPUT_MODE_STATEFUL",
+        "PERFORMANCE_ATTRIBUTION_MODEL_BRINSON_FACHLER",
+        "PERFORMANCE_ATTRIBUTION_LINKING_CARINO",
+        "PERFORMANCE_BENCHMARK_BMK_GLOBAL_60_40",
+        "PERFORMANCE_BENCHMARK_RETURN_SOURCE_CALCULATED",
+    ]
+
+
+def test_attribution_adapter_wraps_source_owned_level_total() -> None:
+    source = realized_attribution_source_from_attribution_response(
+        _attribution_response(),
+        measure="level_total_effect",
+        level_dimension="asset_class",
+    )
+
+    assert source.source_id.endswith(":YTD:attribution:level_total_effect:level:asset_class")
+    assert str(source.value) == "0.0047"
+    assert "PERFORMANCE_ATTRIBUTION_LEVEL_ASSET_CLASS" in source.reason_codes
+
+
+def test_attribution_adapter_wraps_source_owned_currency_effect() -> None:
+    source = realized_attribution_source_from_attribution_response(
+        _attribution_response(),
+        measure="currency_total_effect",
+        currency="USD",
+    )
+
+    assert source.source_id.endswith(":YTD:attribution:currency_total_effect:currency:usd")
+    assert str(source.value) == "0.0011"
+    assert "PERFORMANCE_ATTRIBUTION_CURRENCY_USD" in source.reason_codes
+
+
+def test_source_owned_attribution_can_make_rfc42_performance_dimension_ready() -> None:
+    source = realized_attribution_source_from_attribution_response(_attribution_response())
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["PERFORMANCE"],
+    )
+
+    performance = snapshot.realized_values["PERFORMANCE"]
+    assert snapshot.supportability.state == "READY"
+    assert performance.value == source.value
+    assert performance.source_refs[0].source_type == "PERFORMANCE_ATTRIBUTION"
+    assert performance.supportability.reason_codes[0] == "SOURCE_READY"
 
 
 def test_contribution_adapter_wraps_source_owned_portfolio_return() -> None:
@@ -419,6 +571,64 @@ def test_error_contribution_blocks_ready_claim() -> None:
     ]
 
 
+def test_degraded_attribution_preserves_source_owner_supportability() -> None:
+    response = _attribution_response()
+    supportability = response["calculation_supportability"]
+    assert isinstance(supportability, dict)
+    supportability.update(
+        {
+            "state": "stale",
+            "reason": "stale_source_observations",
+            "freshness_bucket": "stale",
+        }
+    )
+
+    source = realized_attribution_source_from_attribution_response(
+        response,
+        measure="level_total_effect",
+        level_dimension="asset_class",
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "STALE"
+    assert str(source.value) == "0.0047"
+    assert source.reason_codes[:3] == [
+        "PERFORMANCE_SOURCE_DEGRADED",
+        "PERFORMANCE_SUPPORTABILITY_STALE",
+        "PERFORMANCE_REASON_STALE_SOURCE_OBSERVATIONS",
+    ]
+
+
+def test_error_attribution_blocks_ready_claim() -> None:
+    response = _attribution_response()
+    supportability = response["calculation_supportability"]
+    assert isinstance(supportability, dict)
+    supportability.update(
+        {
+            "state": "error",
+            "reason": "calculation_quality_issue",
+            "freshness_bucket": "unknown",
+        }
+    )
+
+    source = realized_attribution_source_from_attribution_response(response)
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["PERFORMANCE"],
+    )
+
+    assert source.source_state == "BLOCKED"
+    assert source.quality == "MISSING"
+    assert snapshot.supportability.state == "BLOCKED"
+    assert snapshot.realized_values["PERFORMANCE"].value is None
+    assert snapshot.realized_values["PERFORMANCE"].supportability.reason_codes[:2] == [
+        "SOURCE_EVIDENCE_INCOMPLETE",
+        "PERFORMANCE_SOURCE_BLOCKED",
+    ]
+
+
 def test_performance_adapter_rejects_malformed_source_payload() -> None:
     malformed = _workspace_summary()
     del malformed["results_by_period"]
@@ -461,3 +671,20 @@ def test_contribution_adapter_rejects_missing_ready_source_value() -> None:
 
     with pytest.raises(PerformanceOutcomeSourceError, match="numeric total_contribution"):
         realized_contribution_source_from_contribution_response(malformed)
+
+
+def test_attribution_adapter_rejects_missing_ready_source_value() -> None:
+    malformed = _attribution_response()
+    results_by_period = malformed["results_by_period"]
+    assert isinstance(results_by_period, dict)
+    ytd = results_by_period["YTD"]
+    assert isinstance(ytd, dict)
+    reconciliation = ytd["reconciliation"]
+    assert isinstance(reconciliation, dict)
+    reconciliation["total_active_return"] = None
+
+    with pytest.raises(
+        PerformanceOutcomeSourceError,
+        match="numeric attribution reconciliation_total_active_return",
+    ):
+        realized_attribution_source_from_attribution_response(malformed)
