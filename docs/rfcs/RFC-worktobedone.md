@@ -65,7 +65,7 @@ mesh/product promotion belong to downstream or platform/source owners.
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0036 |
 | --- | --- | --- | --- | --- |
-| RFC36-WTBD-001 | Gateway integration rebuilt against canonical `/api/v1` manage APIs | `lotus-gateway` | Follow-on, not part of RFC-0036 | Endpoint cleanup intentionally accepted breaking stale Gateway assumptions. Gateway must consume certified manage APIs without reintroducing aliases or monolithic context assumptions. |
+| RFC36-WTBD-001 | Gateway integration rebuilt against canonical `/api/v1` manage APIs | `lotus-gateway` | Completed and merged to `lotus-gateway` `main` in PR #191 (`a68181b`) | Endpoint cleanup intentionally accepted breaking stale Gateway assumptions. Gateway now consumes certified manage APIs without reintroducing aliases or monolithic context assumptions. |
 | RFC36-WTBD-002 | Workbench product surfaces over stateful manage execution | `lotus-workbench` through Gateway/BFF | Follow-on after Gateway | Workbench must not call manage directly and should only surface stateful behavior once Gateway composition is certified. |
 | RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Proposed | RFC-0036 certified execution/source posture, not product dashboards over operations and supportability. |
 | RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-platform` with source producers and `lotus-manage` consumer declarations | Deferred until source-data lineage stabilizes | Current source products are live-proven; future stateful products need producer approval, declarations, trust telemetry, SLO/access/evidence policies, and certification. |
@@ -81,31 +81,44 @@ Target business outcome:
 Gateway composes the certified manage rebalance, supportability, capability, and stateful-source
 posture through clean `/api/v1` contracts without stale aliases or retired monolithic core context.
 
-Why it cannot be done now:
+Closure status:
 
-RFC-0036 intentionally cleaned the manage API first. Gateway integration was explicitly recorded as
-follow-on work so downstream composition consumes the final certified surface rather than shaping
-the service around stale consumers.
+Completed on 2026-05-06 through `lotus-gateway` PR #191,
+`test: guard manage canonical API consumption`, merged to `main` at
+`a68181bdd9b8721b5cd613709392ce0e6e89748b`.
 
-Dependencies satisfied:
+What was delivered:
 
-1. typed Gateway client uses canonical manage `/api/v1` APIs only,
-2. Gateway respects stateful capability publication gates,
-3. Gateway preserves source lineage and supportability from manage,
-4. no retired unversioned routes, platform capability aliases, or monolithic `dpm-execution-context`
-   assumptions are reintroduced,
-5. Gateway OpenAPI and no-alias checks pass.
+1. `lotus-gateway` already consumed manage through versioned `/api/v1` APIs for rebalance run
+   lookup, supportability summary, capability posture, construction alternatives, and
+   outcome-review report/AI evidence paths.
+2. Added executable regression coverage in
+   `lotus-gateway/tests/unit/test_upstream_clients.py::test_dpm_client_uses_only_canonical_manage_api_v1_contracts`
+   to exercise every manage-facing `DpmClient` method and reject retired unversioned route
+   families, platform capability aliases, and monolithic `dpm-execution-context` assumptions.
+3. Tightened `lotus-gateway/docs/standards/RFC-0082-upstream-contract-family-map.md` so the
+   manage upstream contract family explicitly records the canonical `/api/v1` route posture and
+   boundary rule.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-gateway` before any Workbench stateful product surface.
+1. Local targeted proof:
+   `python -m pytest tests/unit/test_upstream_clients.py -k "dpm_client_uses_only_canonical_manage_api_v1_contracts or dpm_client_manage_routes or dpm_client_outcome_review_command_routes or dpm_client_construction_generate_route"`
+   passed with 17 selected tests.
+2. Local repo gate: `make check` passed in `lotus-gateway`, including Ruff lint, Ruff format
+   check, monetary-float guard, mypy, Workbench contract smoke, and 423 unit/contract tests.
+3. GitHub PR #191 checks passed before merge: Feature Lane lint/typecheck/unit, Feature Lane
+   workflow lint, PR Merge Gate workflow lint, lint/typecheck/unit, integration tests, coverage
+   gate, Docker build validation, CI local Docker parity, and queue auto-merge.
+4. Wiki synchronization check/publish for `lotus-gateway` completed with diff count 0 because no
+   wiki source change was required for this developer-standards/test hardening.
 
-Promotion proof:
+Gold-pass assessment:
 
-1. Gateway unit and contract tests,
-2. no-alias and no-monolithic-context tests,
-3. live Gateway proof against manage with stateful gates enabled and disabled,
-4. Gateway README/wiki/supported-feature updates.
+This WTBD has reached the expected standard for its stated scope. The owning Gateway implementation
+is merged to `main`, the canonical manage route posture is protected by direct regression tests, the
+developer contract map is updated, CI has passed, and no unmerged Gateway branch contains additional
+durable truth for this item.
 
 #### RFC36-WTBD-002 - Workbench Product Surfaces Over Stateful Manage Execution
 
