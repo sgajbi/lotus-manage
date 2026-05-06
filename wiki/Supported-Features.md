@@ -1,7 +1,72 @@
 # Supported Features
 
 This page summarizes implementation-backed `lotus-manage` capabilities after the advisory cleanup.
-It is intentionally a navigation and demo-prep page; deep mechanics stay in `docs/`.
+It is intentionally a navigation and demo-prep page; deep mechanics stay in `docs/`. The page is
+written for developers, business users, operations, sales/pre-sales, and client-demo preparation, so
+it distinguishes supported capabilities from product-roadmap WTBD items that still need owning-app
+implementation and proof.
+
+## Product Readiness At A Glance
+
+`lotus-manage` is implementation-backed today as the discretionary portfolio management execution
+and evidence authority. It can support private-banking demos and operating review for the backend
+capabilities listed below, but full front-office product claims require the governed
+`lotus-gateway` and `lotus-workbench` realization path to be implemented, validated, merged, and
+published.
+
+```mermaid
+flowchart LR
+    Core[lotus-core<br/>portfolio, mandate, tax-lot, cashflow, market-data sources]
+    Risk[lotus-risk<br/>risk and scenario authority]
+    Performance[lotus-performance<br/>returns, contribution, attribution authority]
+    Manage[lotus-manage<br/>DPM workflow and evidence authority]
+    Gateway[lotus-gateway<br/>product API / BFF composition]
+    Workbench[lotus-workbench<br/>PM and CIO product surface]
+    Report[lotus-report / lotus-render / lotus-archive<br/>report and archive lifecycle]
+    AI[lotus-ai<br/>guarded narrative workflows]
+
+    Core --> Manage
+    Risk --> Manage
+    Performance --> Manage
+    Manage --> Gateway
+    Gateway --> Workbench
+    Manage --> Report
+    Manage --> AI
+```
+
+Current first-wave product posture:
+
+| Product area | Implementation-backed state | Product/demo posture |
+| --- | --- | --- |
+| Stateful DPM source execution | Manage composes governed `lotus-core` source products behind explicit runtime gates. | Backend and integration proof are suitable for technical demos when source gates are enabled. |
+| DPM command center foundation | Manage command-center APIs, Gateway composition, Workbench cockpit rendering, and populated canonical seed proof are merged and live-proven. | First-wave populated command-center demo path is implementation-backed; PM-book discovery and partial/empty seed fixtures remain future scope. |
+| Construction alternatives | Manage alternative generation/read/selection is implemented, with first-wave Gateway/Workbench realization for generated alternatives. | Suitable for demos of generated alternatives and selection posture; richer lifecycle choreography remains roadmap. |
+| Pre-trade proof packs | Manage owns durable proof-pack JSON, Markdown, report input, AI evidence input, hashes, lineage, and supportability states. | Backend proof is demoable; full front-office review UX is the next bank-buyable product-readiness priority. |
+| Explicit portfolio-list waves | Manage owns explicit wave preview/create/source-check/simulate/select/approve/stage/handoff supportability. | Backend authority is proven; Gateway and Workbench product realization remain next-wave work. |
+| Post-trade outcome feedback | Manage backend, Gateway/Workbench first-wave product path, rendered reports, archive lifecycle, and governed AI narrative request path are implemented in owning repos. | First-wave product path is implementation-backed; remaining source-owner methodology depth and OMS/PM-scoring work are not supported claims. |
+
+## WTBD Product-Readiness Roadmap
+
+`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it
+tracks 59 WTBD items: 16 done on merged/published truth, 3 partial or in progress, and 40 remaining
+or open. The next execution wave should focus on product surfaces that materially improve
+bank-buyable demo and operating value without inventing unsupported source truth.
+
+| Priority | WTBD | Business value | Required proof before support claim |
+| ---: | --- | --- | --- |
+| 1 | RFC40-WTBD-001 - Gateway proof-pack composition | Makes pre-trade evidence consumable through the governed product API. | Gateway composition merged, no-reconstruction tests, OpenAPI evidence, wiki publication. |
+| 2 | RFC40-WTBD-002 - Workbench proof-pack review UX | Gives PMs/CIOs a reviewable proof-pack surface for decision meetings and demos. | Workbench BFF-only implementation, ready/degraded/error states, browser proof, screenshot pack, wiki publication. |
+| 3 | RFC40-WTBD-003 - Full proof-pack product realization | Converts manage backend proof-pack authority into a bank-ready front-office product claim. | Gateway and Workbench proof-pack slices merged, canonical front-office QA green, audience-ready docs/wiki. |
+| 4 | RFC41-WTBD-005 - Gateway wave composition | Exposes explicit rebalance-wave authority without making Gateway the workflow owner. | Gateway route, contract, supportability, and no-reconstruction tests. |
+| 5 | RFC41-WTBD-006 - Workbench wave command center | Creates a PM operating cockpit for explicit portfolio-list waves. | Workbench UX, browser proof, canonical screenshots, operations/sales/client-demo wiki material. |
+
+Roadmap boundaries:
+
+1. Unsupported source products remain explicit gaps; do not fill them with local placeholders.
+2. Gateway and Workbench must consume supported backend APIs through the governed product path.
+3. README, RFC, wiki, and supported-feature updates are part of implementation, not post-work notes.
+4. A WTBD is not complete until merged to `main`, validated, wiki-published where needed, and branch
+   hygiene confirms no durable truth remains stranded.
 
 ## Functional Capabilities
 
