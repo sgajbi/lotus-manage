@@ -4,6 +4,7 @@ from decimal import Decimal
 from typing import cast
 
 from src.core.construction.models import (
+    AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
     ConstructionEnrichmentSummary,
@@ -45,6 +46,7 @@ def summarize_enrichment_posture(
     risk_context: AuthoritativeRiskContext | None = None,
     performance_required: bool = True,
     performance_context: AuthoritativePerformanceContext | None = None,
+    liquidity_context: AuthoritativeLiquidityContext | None = None,
 ) -> ConstructionEnrichmentSummary:
     """Summarize source-aware enrichment readiness without hiding degraded inputs."""
 
@@ -66,6 +68,18 @@ def summarize_enrichment_posture(
     if _cash_weight(result.after_simulated) is None:
         liquidity_status = ConstructionMethodStatus.DEGRADED
         reason_codes.append("CASH_WEIGHT_UNAVAILABLE")
+    if liquidity_context is not None:
+        liquidity_status = _lowest_status(
+            [
+                liquidity_status,
+                _authoritative_context_status(
+                    context_status=liquidity_context.supportability_status,
+                    missing_reason="LIQUIDITY_CONTEXT_UNAVAILABLE",
+                    context_reason_codes=_liquidity_context_reason_codes(liquidity_context),
+                    reason_codes=reason_codes,
+                ),
+            ]
+        )
 
     cost_status = ConstructionMethodStatus.READY
     if not authoritative_cost_available:
@@ -120,6 +134,26 @@ def _authoritative_context_status(
         return ConstructionMethodStatus.DEGRADED
     reason_codes.extend(context_reason_codes)
     return context_status
+
+
+def _liquidity_context_reason_codes(context: AuthoritativeLiquidityContext) -> list[str]:
+    reason_codes = list(context.reason_codes)
+    if context.cashflow_projection is not None:
+        reason_codes.extend(context.cashflow_projection.reason_codes)
+        reason_codes.append("CASHFLOW_PROJECTION_CONTEXT_PRESENT")
+    return reason_codes
+
+
+def _lowest_status(
+    statuses: list[ConstructionMethodStatus],
+) -> ConstructionMethodStatus:
+    status_order = {
+        ConstructionMethodStatus.BLOCKED: 0,
+        ConstructionMethodStatus.DEGRADED: 1,
+        ConstructionMethodStatus.PENDING_REVIEW: 2,
+        ConstructionMethodStatus.READY: 3,
+    }
+    return min(statuses, key=lambda item: status_order[item])
 
 
 def _cash_weight(state: object) -> Decimal | None:

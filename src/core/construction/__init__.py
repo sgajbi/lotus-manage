@@ -11,6 +11,7 @@ from src.core.construction.enrichment import (
 )
 from src.core.construction.models import (
     AuthoritativeCurrencyOverlayContext,
+    AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
     AuthoritativeRegimeStressContext,
@@ -48,6 +49,7 @@ __all__ = [
     "ConstructionAlternativeSelection",
     "ConstructionAlternativeSet",
     "AuthoritativeCurrencyOverlayContext",
+    "AuthoritativeLiquidityCashflowProjection",
     "AuthoritativeLiquidityContext",
     "AuthoritativePerformanceContext",
     "AuthoritativeRegimeStressContext",

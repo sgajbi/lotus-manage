@@ -128,18 +128,24 @@ flowchart TD
     Methods --> Heuristic[Explainable heuristic]
     Methods --> Turnover[Minimum-turnover posture]
     Methods --> Tax[Tax-aware posture]
+    Methods --> Liquidity[Liquidity-aware posture]
+    Core --> Cashflow[PortfolioCashflowProjection:v1]
+    Cashflow --> Liquidity
     Baseline --> Set[Persisted alternative set]
     Heuristic --> Set
     Turnover --> Set
     Tax --> Set
+    Liquidity --> Set
     Set --> Select[Actor-attributed selection]
     Select --> Gateway[Future gateway construction module]
     Gateway --> Workbench[Future construction lab]
 ```
 
 The important boundary is that `lotus-manage` owns construction alternatives and selection truth.
-Gateway and Workbench must consume that truth without recomputing construction methods or bypassing
-the experience API. The downstream handoff is maintained in
+For liquidity-aware construction, `PortfolioCashflowProjection:v1` is consumed as source-owned
+projected cash-pressure evidence; client income-need or liability-planning support is not inferred
+from projection totals. Gateway and Workbench must consume that truth without recomputing
+construction methods or bypassing the experience API. The downstream handoff is maintained in
 [`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
 ## Code map

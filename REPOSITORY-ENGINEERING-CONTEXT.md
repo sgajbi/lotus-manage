@@ -75,11 +75,14 @@ Current repository posture:
     migration `0005_construction_alternatives.sql`, and certified APIs for generating, retrieving,
     and selecting persisted alternative sets. First-wave and mandatory authority-backed methods are
     supported as manage backend capabilities: solver-constrained, risk-aware through `lotus-risk`
-    concentration authority, liquidity-aware, currency-overlay, and regime-stress-aware through
-    source-backed authority context. ESG/restriction-aware construction is explicitly deferred until
-    restriction and sustainability source products exist. Gateway and Workbench are not yet
-    integrated with this surface; paired realization RFCs have been created and must be
-    implemented/proven downstream before a full front-office product outcome is claimed.
+    concentration authority, liquidity-aware with optional `lotus-core`
+    `PortfolioCashflowProjection:v1` projected cash-pressure evidence, currency-overlay, and
+    regime-stress-aware through source-backed authority context. Client income-need planning is not
+    supported by cashflow projection totals and remains deferred until an owning source product
+    exists. ESG/restriction-aware construction is explicitly deferred until restriction and
+    sustainability source products exist. Gateway and Workbench are not yet integrated with this
+    surface; paired realization RFCs have been created and must be implemented/proven downstream
+    before a full front-office product outcome is claimed.
 14. RFC-0040 has delivered the implementation-backed manage pre-trade proof-pack backend
     foundation: durable `DpmPreTradeProofPack` JSON, deterministic Markdown summary, report-input
     handoff, AI-evidence handoff with forbidden-action/field guardrails, immutable in-memory and

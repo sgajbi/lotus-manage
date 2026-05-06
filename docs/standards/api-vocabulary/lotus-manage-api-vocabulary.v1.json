@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-05T02:21:48.085652+00:00",
+  "generatedAt": "2026-05-06T02:34:06.568120+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -1055,6 +1055,20 @@
       ]
     },
     {
+      "semanticId": "lotus.cashflow_projection",
+      "canonicalTerm": "cashflow_projection",
+      "preferredName": "cashflow_projection",
+      "description": "Optional lotus-core PortfolioCashflowProjection:v1 evidence used to evaluate future cash pressure against the liquidity policy. Absence preserves the settlement/current-cash-only liquidity behavior.",
+      "example": "cashflow_projection_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.changed_fields",
       "canonicalTerm": "changed_fields",
       "preferredName": "changed_fields",
@@ -1569,7 +1583,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "ConstructionMethodStatus"
       ]
     },
     {
@@ -3411,6 +3426,20 @@
       "canonicalTerm": "include_model_portfolio",
       "preferredName": "include_model_portfolio",
       "description": "Ask core to include model portfolio targets.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.include_projected",
+      "canonicalTerm": "include_projected",
+      "preferredName": "include_projected",
+      "description": "Whether the source product included projected future rows in total_net_cashflow.",
       "example": true,
       "type": "boolean",
       "locations": [
@@ -5541,6 +5570,34 @@
       ]
     },
     {
+      "semanticId": "lotus.projection_end",
+      "canonicalTerm": "projection_end",
+      "preferredName": "projection_end",
+      "description": "Inclusive projection-window end date when supplied by the source product.",
+      "example": "projection_end_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.projection_start",
+      "canonicalTerm": "projection_start",
+      "preferredName": "projection_start",
+      "description": "Inclusive projection-window start date when supplied by the source product.",
+      "example": "projection_start_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.proof_pack",
       "canonicalTerm": "proof_pack",
       "preferredName": "proof_pack",
@@ -7210,6 +7267,20 @@
       ]
     },
     {
+      "semanticId": "lotus.source_batch_fingerprint",
+      "canonicalTerm": "source_batch_fingerprint",
+      "preferredName": "source_batch_fingerprint",
+      "description": "Source-owned deterministic fingerprint for the projection batch.",
+      "example": "source_batch_fingerprint_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.source_degraded_item_count",
       "canonicalTerm": "source_degraded_item_count",
       "preferredName": "source_degraded_item_count",
@@ -7355,6 +7426,34 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_product_name",
+      "canonicalTerm": "source_product_name",
+      "preferredName": "source_product_name",
+      "description": "Source-owned cashflow projection data product name.",
+      "example": "sample_source_product_name",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_product_version",
+      "canonicalTerm": "source_product_version",
+      "preferredName": "source_product_version",
+      "description": "Source-owned cashflow projection data product version.",
+      "example": "sample_source_product_version",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -8348,6 +8447,22 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.total_net_cashflow",
+      "canonicalTerm": "total_net_cashflow",
+      "preferredName": "total_net_cashflow",
+      "description": "Canonical total net cashflow used by lotus-manage APIs.",
+      "example": {
+        "key": "value"
+      },
+      "type": "Money-Input",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "Money-Input"
       ]
     },
     {
@@ -51000,6 +51115,118 @@
             "type": "array",
             "semanticId": "lotus.allowed_liquidity_tiers",
             "attributeRef": "#/attributeCatalog/lotus.allowed_liquidity_tiers"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cashflow_projection",
+            "attributeRef": "#/attributeCatalog/lotus.cashflow_projection"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.source_product_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.source_product_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.total_net_cashflow",
+            "location": "body",
+            "required": true,
+            "type": "Money-Input",
+            "semanticId": "lotus.total_net_cashflow",
+            "attributeRef": "#/attributeCatalog/lotus.total_net_cashflow"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.total_net_cashflow.amount",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.amount",
+            "attributeRef": "#/attributeCatalog/lotus.amount"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.total_net_cashflow.currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.projection_start",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.projection_start",
+            "attributeRef": "#/attributeCatalog/lotus.projection_start"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.projection_end",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.projection_end",
+            "attributeRef": "#/attributeCatalog/lotus.projection_end"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.include_projected",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.include_projected",
+            "attributeRef": "#/attributeCatalog/lotus.include_projected"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.latest_evidence_timestamp",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_evidence_timestamp",
+            "attributeRef": "#/attributeCatalog/lotus.latest_evidence_timestamp"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.source_batch_fingerprint",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_batch_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.source_batch_fingerprint"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.data_quality_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.data_quality_status",
+            "attributeRef": "#/attributeCatalog/lotus.data_quality_status"
+          },
+          {
+            "name": "authority_context.liquidity_context.cashflow_projection.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
           },
           {
             "name": "authority_context.liquidity_context.reason_codes",

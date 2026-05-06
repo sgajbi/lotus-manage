@@ -6,6 +6,7 @@ from src.api.request_models import RebalanceRequest
 import src.api.services.construction_service as construction_service
 from src.core.construction import (
     AuthoritativeCurrencyOverlayContext,
+    AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
@@ -156,6 +157,73 @@ def test_construction_service_supportability_helper_edges() -> None:
         result=result,
         context=None,
     )
+
+
+def test_cashflow_projection_context_marks_future_cash_pressure_pending() -> None:
+    result = _trade_result()
+    context = AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.03"),
+        allowed_liquidity_tiers=["L1"],
+        cashflow_projection=AuthoritativeLiquidityCashflowProjection(
+            source_product_name="PortfolioCashflowProjection",
+            source_product_version="v1",
+            source_system="lotus-core",
+            total_net_cashflow={"amount": "-50.00", "currency": "USD"},
+            projection_start="2026-05-03",
+            projection_end="2026-06-03",
+            include_projected=True,
+            source_batch_fingerprint="cashflow-projection:pf_enrich_1:2026-05-03",
+            reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
+        ),
+        reason_codes=["LIQUIDITY_POLICY_READY"],
+    )
+
+    status = construction_service._liquidity_status(result=result, context=context)
+    reason_codes = construction_service._liquidity_reason_codes(
+        result=result,
+        context=context,
+    )
+
+    assert status == ConstructionMethodStatus.PENDING_REVIEW
+    assert "CORE_CASHFLOW_PROJECTION_READY" in reason_codes
+    assert "CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY" in reason_codes
+
+
+def test_cashflow_projection_context_rejects_unusable_projection_posture() -> None:
+    result = _trade_result()
+    context = AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.03"),
+        allowed_liquidity_tiers=["L1"],
+        cashflow_projection=AuthoritativeLiquidityCashflowProjection(
+            source_product_name="PortfolioCashflowProjection",
+            source_product_version="v1",
+            source_system="lotus-core",
+            total_net_cashflow={"amount": "100.00", "currency": "SGD"},
+            projection_start="2026-05-03",
+            projection_end="2026-06-03",
+            include_projected=False,
+            data_quality_status=ConstructionMethodStatus.DEGRADED,
+            reason_codes=["CORE_CASHFLOW_PROJECTION_STALE"],
+        ),
+        reason_codes=["LIQUIDITY_POLICY_READY"],
+    )
+
+    status = construction_service._liquidity_status(result=result, context=context)
+    reason_codes = construction_service._liquidity_reason_codes(
+        result=result,
+        context=context,
+    )
+
+    assert status == ConstructionMethodStatus.DEGRADED
+    assert "CASHFLOW_PROJECTION_CURRENCY_MISMATCH" in reason_codes
+    assert "CASHFLOW_PROJECTION_PROJECTED_ROWS_NOT_INCLUDED" in reason_codes
+    assert "CASHFLOW_PROJECTION_DEGRADED_BY_SOURCE" in reason_codes
 
 
 def test_construction_service_currency_overlay_helper_edges() -> None:

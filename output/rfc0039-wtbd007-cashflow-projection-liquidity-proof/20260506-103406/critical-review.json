@@ -1,0 +1,56 @@
+{
+  "rfc": "RFC-0039",
+  "wtbd_id": "RFC39-WTBD-007",
+  "slice": "cashflow-projection-aware liquidity construction",
+  "timestamp_sgt": "2026-05-06T10:34:06+08:00",
+  "branch": "feat/rfc39-wtbd007-cashflow-projection-liquidity",
+  "implementation_summary": {
+    "completed": [
+      "Extended AuthoritativeLiquidityContext with optional source-owned PortfolioCashflowProjection:v1 evidence.",
+      "Added CASHFLOW_PROJECTION to the bounded construction source-family vocabulary and LIQUIDITY_AWARE method requirements.",
+      "Updated liquidity supportability so source-owned projected total net cashflow can move LIQUIDITY_AWARE alternatives to PENDING_REVIEW when adjusted cash would breach policy.",
+      "Preserved truthful degraded behavior for stale, wrong-currency, no-projected-row, and source-degraded projection inputs.",
+      "Updated RFC work-to-be-done ledger, RFC-0039 source map, RFC-0039 gold assessment, README, repo context, and wiki source with implementation-backed wording."
+    ],
+    "explicit_non_claims": [
+      "No client income-need profile, liability ladder, or wealth-planning forecast is claimed.",
+      "No manage-local cashflow forecast methodology was created.",
+      "No Gateway or Workbench product-surface support is claimed by this manage backend slice."
+    ]
+  },
+  "critical_review": {
+    "design_assessment": "The implementation reuses the existing construction authority-context pattern instead of adding a parallel liquidity model. Source-owned projection data is carried as evidence and only used for a bounded policy-pressure calculation.",
+    "code_quality_improvements": [
+      "Nested projection model keeps source-product metadata, quality posture, and reason codes modular.",
+      "Shared post-trade cash-weight helper removes duplicated extraction logic in liquidity status and reason-code calculation.",
+      "Reason-code logic avoids reporting CASHFLOW_PROJECTION_READY when degraded projection flags are present."
+    ],
+    "remaining_boundaries": [
+      "Income-need construction remains deferred until an owning source product publishes client need/liability semantics.",
+      "Front-office construction-lab realization remains downstream Gateway/Workbench work."
+    ]
+  },
+  "validation": [
+    {
+      "command": "python -m pytest tests\\unit\\dpm\\construction\\test_enrichment.py tests\\unit\\dpm\\api\\test_construction_api.py -q",
+      "result": "24 passed"
+    },
+    {
+      "command": "python -m ruff format --check src\\core\\construction src\\api\\services\\construction_service.py tests\\unit\\dpm\\construction\\test_enrichment.py tests\\unit\\dpm\\api\\test_construction_api.py",
+      "result": "passed after formatting source-family files"
+    },
+    {
+      "command": "python -m ruff check src\\core\\construction src\\api\\services\\construction_service.py tests\\unit\\dpm\\construction\\test_enrichment.py tests\\unit\\dpm\\api\\test_construction_api.py --ignore E501,I001",
+      "result": "passed"
+    },
+    {
+      "command": "python -m pytest tests\\unit\\dpm\\construction\\test_enrichment.py tests\\unit\\dpm\\api\\test_construction_api.py tests\\unit\\test_documentation_current_state.py -q",
+      "result": "37 passed"
+    },
+    {
+      "command": "make check",
+      "result": "passed: Ruff, format, monetary-float guard, no-alias guard, mypy, OpenAPI quality, API vocabulary inventory, domain-data product contracts, trust telemetry, observability contracts, and 938 unit tests"
+    }
+  ],
+  "status": "ready_for_pr_after_wiki_context_checks"
+}

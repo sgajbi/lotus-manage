@@ -101,9 +101,12 @@ METHOD_REGISTRY: dict[ConstructionMethod, ConstructionMethodDefinition] = {
             ConstructionSourceFamily.INSTRUMENT_ELIGIBILITY,
             ConstructionSourceFamily.MARKET_DATA,
             ConstructionSourceFamily.LIQUIDITY_PROFILE,
+            ConstructionSourceFamily.CASHFLOW_PROJECTION,
         ],
         fallback_method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
-        support_promotion_gate="Cash, liquidity, settlement, and missing-cashflow proof.",
+        support_promotion_gate=(
+            "Cash, liquidity, settlement, and source-backed cashflow-projection proof."
+        ),
     ),
     ConstructionMethod.RISK_AWARE: ConstructionMethodDefinition(
         method=ConstructionMethod.RISK_AWARE,
