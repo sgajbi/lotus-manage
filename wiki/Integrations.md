@@ -134,10 +134,11 @@ policy context, and optional `lotus-core` `PortfolioCashflowProjection:v1` evide
 through `AuthoritativeLiquidityContext.cashflow_projection`. Manage applies the source-owned total
 net cashflow only as projected cash-pressure evidence against the minimum-cash policy; it does not
 invent client income needs, liability ladders, or planning forecasts. Currency-overlay construction
-uses FX readiness and bounded policy context. Regime-stress-aware construction requires
-source-backed scenario-pack authority context until a first-class `lotus-risk` or CIO scenario-pack
-endpoint exists. ESG/restriction-aware construction is intentionally deferred until restriction and
-sustainability source products are available.
+uses FX readiness and bounded policy context. Regime-stress-aware construction consumes `lotus-risk`
+`RegimeScenarioPackEvaluation:v1` through the bounded risk-authority client when `DPM_RISK_BASE_URL`
+is configured, and still accepts caller-supplied source-backed scenario-pack authority context.
+ESG/restriction-aware construction is intentionally deferred until restriction and sustainability
+source products are available.
 
 Removed or stale consumers should not call unversioned `/rebalance/*` routes, removed
 `/api/v1/platform/capabilities`, or proposal/advisory-era DPM endpoints.

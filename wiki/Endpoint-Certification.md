@@ -357,7 +357,8 @@ Stateless calls rely on caller-provided source-governed snapshots. Stateful call
 gated lotus-core source resolver from RFC-0036/RFC-0087 and preserve source supportability state on
 the alternative set. `RISK_AWARE` can consume `lotus-risk` concentration authority through the
 bounded risk-authority client when configured. `REGIME_STRESS_AWARE` requires source-backed
-scenario-pack authority context until a first-class risk/CIO scenario endpoint exists.
+scenario-pack authority context and can resolve `lotus-risk` `RegimeScenarioPackEvaluation:v1`
+through the same bounded risk-authority client when configured.
 `lotus-manage` does not become authority for portfolio ledger state, risk methodology, performance,
 tax lots, market data, eligibility, ESG/restriction profiles, or UI composition.
 

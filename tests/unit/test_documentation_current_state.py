@@ -224,7 +224,7 @@ def test_rfc0039_source_map_preserves_first_wave_and_source_authority() -> None:
         "`lotus-performance`",
         "TransactionCostCurve:v1",
         "CurrencyExposurePolicy:v1",
-        "RegimeScenarioPack:v1",
+        "RegimeScenarioPackEvaluation:v1",
     ]
     missing_authorities = [
         authority for authority in required_source_authorities if authority not in source_map
