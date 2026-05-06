@@ -25,8 +25,9 @@ Slice 5 adds the source-owner realized evidence boundary:
    attribution output into RFC-0042 realized `PERFORMANCE` evidence without recalculating
    performance methodology locally.
 5. Follow-on WTBD-006 risk adapters in `src/core/outcomes/risk_sources.py` that wrap
-   `lotus-risk` `RiskMetricsReport:v1`, drawdown response, and concentration response output into
-   RFC-0042 realized `RISK_REDUCTION` evidence without recalculating risk methodology locally.
+   `lotus-risk` `RiskMetricsReport:v1`, drawdown response, concentration response, and rolling
+   metrics response output into RFC-0042 realized `RISK_REDUCTION` evidence without recalculating
+   risk methodology locally.
 6. A follow-on WTBD-006 core cash adapter in `src/core/outcomes/core_sources.py` that wraps the
    `lotus-core` `HoldingsAsOf:v1` cash total into RFC-0042 realized `CASH_RESIDUAL` evidence
    without aggregating cash or tax/FX/transaction rows in manage.
@@ -46,7 +47,7 @@ in this slice and does not calculate source-owner truth locally.
 | --- | --- |
 | `lotus-core` | First supported adapter consumes `HoldingsAsOf:v1` cash total evidence for `CASH_RESIDUAL`. It preserves source product metadata, as-of date, generated/evidence timestamp, data-quality posture, and source fingerprint. Missing or malformed evidence blocks affected dimensions. Tax, FX, transaction-cost, execution, and rule outcome adapters remain source-owner follow-on work until core exposes owned scalar totals or certified outcome contracts. |
 | execution/OMS owner | No certified first-wave fill/order contract is assumed. Missing execution evidence emits `EXECUTION_EVIDENCE_BLOCKED`. |
-| `lotus-risk` | Supported adapters consume `RiskMetricsReport:v1`, drawdown response, and concentration response evidence from `lotus-risk`. They preserve request fingerprint, selected period where applicable, selected metric/measure, source supportability, issuer coverage posture where applicable, and source reason codes. Missing evidence still emits `RISK_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `RISK_SOURCE_UNAVAILABLE`. Historical attribution and rolling-risk outcome adapters remain source-owner follow-on work. |
+| `lotus-risk` | Supported adapters consume `RiskMetricsReport:v1`, drawdown response, concentration response, and rolling metrics response evidence from `lotus-risk`. They preserve request fingerprint, selected period where applicable, selected metric/measure/statistic/window, source supportability, benchmark/risk-free context, issuer coverage posture where applicable, and source reason codes. Missing evidence still emits `RISK_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `RISK_SOURCE_UNAVAILABLE`. Historical attribution outcome adapters remain source-owner follow-on work. |
 | `lotus-performance` | Supported adapters consume `WORKSPACE_SUMMARY_TWR_RETURN`, `WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, `PERFORMANCE_CONTRIBUTION`, and `PERFORMANCE_ATTRIBUTION` evidence from `lotus-performance`. They perform only percentage-point to ratio unit conversion plus lineage/supportability wrapping. Missing evidence still emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `PERFORMANCE_SOURCE_UNAVAILABLE`. Broader benchmark-relative outcome analysis outside source-emitted attribution scalars remains source-owner follow-on work. |
 
 ## Degraded-State Mapping
@@ -66,6 +67,8 @@ in this slice and does not calculate source-owner truth locally.
 | Unavailable `lotus-risk` risk metrics report source | `DEGRADED` with `RISK_SOURCE_UNAVAILABLE` plus the source-supplied reason code |
 | `lotus-risk` concentration response source | `READY` when the source response includes the selected HHI, top-position, issuer, or issuer-coverage measure, request fingerprint, ready supportability, and complete issuer coverage when an issuer measure is selected |
 | Partial issuer-coverage `lotus-risk` concentration response source | `DEGRADED` for issuer-specific measures while preserving the source-owned concentration value and coverage posture |
+| `lotus-risk` rolling metrics source | `READY` when the source response includes selected period, window length, rolling metric, statistic, request fingerprint, ready supportability, and numeric source-owned metric summary value |
+| Degraded `lotus-risk` rolling metrics source | `DEGRADED` or `BLOCKED` according to source supportability and benchmark/risk-free context; manage preserves missing benchmark, missing risk-free, no-aligned-observation, stale, and permission-blocked posture |
 | `lotus-performance` workspace-summary TWR source | `READY` when the source response includes the selected period, basis, measure, calculation id, and numeric base return |
 | `lotus-performance` contribution source | `READY` when the source response includes the selected period, selected contribution measure, calculation id, source supportability, and numeric source-owned contribution value |
 | Degraded `lotus-performance` contribution source | `DEGRADED` or `BLOCKED` according to `calculation_supportability.state`; manage preserves source posture and does not promote errored or empty calculations to ready |
@@ -151,6 +154,36 @@ Out of scope for this adapter:
    enrichment locally,
 2. deriving concentration attribution or rolling-risk context,
 3. fabricating missing source fingerprints, issuer coverage status, or as-of dates.
+
+## Risk Rolling Metrics Adapter Contract
+
+`realized_rolling_risk_source_from_rolling_response` accepts a validated `lotus-risk`
+rolling metrics response and emits a `DpmRealizedSourceSnapshot` for `RISK_REDUCTION`.
+
+Implemented behavior:
+
+1. source owner remains `lotus-risk`,
+2. source type is `ROLLING_RISK_METRICS_REPORT`,
+3. default period/metric/statistic is `YTD` / `ROLLING_VOLATILITY` / `latest`,
+4. selected source-owned rolling metric summary values are preserved in source decimal units,
+5. `metadata.request_fingerprint`, selected period, selected window length, selected metric,
+   selected statistic, source supportability state, supportability reason, benchmark context,
+   risk-free context, latest observation date, input mode, and as-of date are preserved as
+   lineage/supportability evidence,
+6. missing benchmark or risk-free context degrades dependent metrics instead of producing a ready
+   claim,
+7. permission-blocked source responses become `BLOCKED` rather than degraded or ready claims,
+8. malformed source payloads or missing ready metric values raise `RiskOutcomeSourceError` and
+   cannot silently produce a ready outcome value.
+
+Out of scope for this adapter:
+
+1. calculating rolling volatility, Sharpe, beta, tracking error, information ratio, or max
+   drawdown locally,
+2. deriving rolling paths, warm-up windows, percentiles, benchmark alignment, or risk-free
+   alignment locally,
+3. fabricating missing request fingerprints, benchmark context, risk-free context, freshness, or
+   observation timestamps.
 
 ## Performance Adapter Contract
 
@@ -250,7 +283,7 @@ Observed result:
 2. `17 passed`
 3. `26 passed`
 4. `20 passed`
-5. `24 passed`
+5. `33 passed`
 6. `18 passed`
 7. `All checks passed!`
 
@@ -260,9 +293,11 @@ The WTBD-006 performance and risk adapters promote only implementation-backed so
 capabilities inside manage: RFC-0042 can now mark `PERFORMANCE` ready when a certified
 `lotus-performance` workspace-summary TWR, active return, MWR, contribution, or attribution
 response is supplied, and
-`RISK_REDUCTION` ready when a certified `lotus-risk` `RiskMetricsReport:v1`, drawdown, or
-concentration response is supplied. Issuer-specific concentration evidence can be degraded when the
-risk-owned issuer coverage posture is partial or unavailable. The WTBD-006 core cash adapter can
+`RISK_REDUCTION` ready when a certified `lotus-risk` `RiskMetricsReport:v1`, drawdown,
+concentration, or rolling metrics response is supplied. Issuer-specific concentration evidence can
+be degraded when the risk-owned issuer coverage posture is partial or unavailable. Rolling
+benchmark-dependent and risk-free-dependent evidence can be degraded when source context is
+unavailable or unaligned. The WTBD-006 core cash adapter can
 mark `CASH_RESIDUAL` ready when a certified `lotus-core` `HoldingsAsOf:v1` cash total is supplied.
 They do not promote a full post-trade outcome-review product claim by themselves. Runtime support
 still requires durable persistence, APIs, OpenAPI certification, live evidence, documentation

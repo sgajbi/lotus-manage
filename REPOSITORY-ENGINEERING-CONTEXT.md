@@ -110,8 +110,9 @@ Current repository posture:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
-    `lotus-risk` `RiskMetricsReport:v1`, drawdown response max drawdown, and concentration
-    response selected measures, `lotus-performance` workspace-summary TWR/active/MWR returns,
+    `lotus-risk` `RiskMetricsReport:v1`, drawdown response max drawdown, concentration
+    response selected measures, and rolling metrics selected metric/statistic/window measures,
+    `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
     measures, and `lotus-core` `HoldingsAsOf:v1` cash totals, live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under

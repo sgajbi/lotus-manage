@@ -5,6 +5,7 @@ from src.core.outcomes import (
     assemble_realized_outcome_snapshot,
     realized_concentration_source_from_concentration_response,
     realized_drawdown_source_from_drawdown_response,
+    realized_rolling_risk_source_from_rolling_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
 )
@@ -225,6 +226,144 @@ def _concentration_response() -> dict[str, object]:
     }
 
 
+def _rolling_response() -> dict[str, object]:
+    return {
+        "source_service": "lotus-risk",
+        "input_mode": "stateful",
+        "scope": {
+            "as_of_date": "2026-05-06",
+            "reporting_currency": "USD",
+            "net_or_gross": "NET",
+        },
+        "results": {
+            "YTD": {
+                "start_date": "2026-01-02",
+                "end_date": "2026-05-06",
+                "series_count": 64,
+                "benchmark_series_count": 64,
+                "aligned_benchmark_series_count": 61,
+                "risk_free_series_count": 64,
+                "aligned_risk_free_series_count": 61,
+                "window_lengths_requested": [21],
+                "window_count_requested": 1,
+                "window_lengths_emitted": [21],
+                "window_count_emitted": 1,
+                "benchmark_context": {
+                    "requested": True,
+                    "available": True,
+                    "aligned": True,
+                    "reason": "APPLIED",
+                },
+                "risk_free_context": {
+                    "requested": True,
+                    "available": True,
+                    "aligned": True,
+                    "reason": "APPLIED",
+                },
+                "window_results": [
+                    {
+                        "window_length": 21,
+                        "metric_summaries": {
+                            "ROLLING_VOLATILITY": {
+                                "total_point_count": 64,
+                                "computed_point_count": 44,
+                                "coverage_ratio": 0.6875,
+                                "min_observations_required": 21,
+                                "warmup_point_count": 20,
+                                "non_computed_point_count": 20,
+                                "post_warmup_gap_point_count": 0,
+                                "latest_observation_date": "2026-05-06",
+                                "latest": 0.12538011,
+                                "average": 0.11844792,
+                                "minimum": 0.09122408,
+                                "maximum": 0.16651142,
+                                "p05": 0.09540187,
+                                "p50": 0.11793054,
+                                "p95": 0.15541828,
+                            },
+                            "ROLLING_BETA": {
+                                "total_point_count": 64,
+                                "computed_point_count": 44,
+                                "coverage_ratio": 0.6875,
+                                "min_observations_required": 21,
+                                "warmup_point_count": 20,
+                                "non_computed_point_count": 20,
+                                "post_warmup_gap_point_count": 0,
+                                "latest_observation_date": "2026-05-06",
+                                "latest": 0.41862514,
+                                "average": 0.04185233,
+                                "minimum": -0.32108851,
+                                "maximum": 0.41862514,
+                                "p05": -0.24148062,
+                                "p50": 0.05739184,
+                                "p95": 0.31680427,
+                            },
+                            "ROLLING_SHARPE": {
+                                "total_point_count": 64,
+                                "computed_point_count": 44,
+                                "coverage_ratio": 0.6875,
+                                "min_observations_required": 21,
+                                "warmup_point_count": 20,
+                                "non_computed_point_count": 20,
+                                "post_warmup_gap_point_count": 0,
+                                "latest_observation_date": "2026-05-06",
+                                "latest": 0.8123,
+                                "average": 0.7211,
+                                "minimum": 0.301,
+                                "maximum": 1.041,
+                                "p05": 0.402,
+                                "p50": 0.709,
+                                "p95": 0.998,
+                            },
+                        },
+                        "metric_series_context": {
+                            "requested": False,
+                            "included": False,
+                            "emitted_point_count": 0,
+                            "reason": "OMITTED_BY_REQUEST",
+                        },
+                        "metric_series": None,
+                    }
+                ],
+                "quality_flags": [],
+                "error": None,
+            }
+        },
+        "metadata": {
+            "contract_version": "v1",
+            "methodology_version": "rolling_metrics.v1",
+            "request_fingerprint": "sha256:rolling-request",
+            "annualization_basis": 252,
+            "requested_metrics": [
+                "ROLLING_VOLATILITY",
+                "ROLLING_BETA",
+                "ROLLING_SHARPE",
+            ],
+            "window_lengths_requested": [21],
+            "window_count_requested": 1,
+            "alignment_policy": "INNER_JOIN",
+            "min_observations_policy": "STRICT",
+            "include_time_series": False,
+            "benchmark_context": {
+                "requested": True,
+                "requested_metrics": ["ROLLING_BETA"],
+            },
+            "risk_free_context": {
+                "requested": True,
+                "requested_metrics": ["ROLLING_SHARPE"],
+            },
+            "calculation_supportability": {
+                "state": "ready",
+                "reason": "calculation_complete",
+                "freshness_bucket": "current",
+                "degraded_metric_count": 0,
+                "empty_period_count": 0,
+                "evaluated_period_count": 1,
+            },
+        },
+    }
+
+
 def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() -> None:
     source = realized_risk_source_from_risk_metrics_report(_risk_metrics_report())
 
@@ -263,6 +402,61 @@ def test_concentration_adapter_wraps_source_owned_hhi_without_recalculation() ->
         "RISK_CONCENTRATION_INPUT_MODE_STATEFUL",
         "RISK_CONCENTRATION_ISSUER_COVERAGE_COMPLETE",
     ]
+
+
+def test_rolling_risk_adapter_wraps_source_owned_latest_volatility() -> None:
+    source = realized_rolling_risk_source_from_rolling_response(_rolling_response())
+
+    assert source.dimension == "RISK_REDUCTION"
+    assert source.source_system == "lotus-risk"
+    assert source.source_type == "ROLLING_RISK_METRICS_REPORT"
+    assert source.source_id == ("sha256:rolling-request:YTD:rolling:21:ROLLING_VOLATILITY:latest")
+    assert str(source.value) == "0.12538011"
+    assert source.unit == "ratio"
+    assert source.observed_at == "2026-05-06"
+    assert source.as_of_date == "2026-05-06"
+    assert source.content_hash == "sha256:rolling-request"
+    assert source.reason_codes == [
+        "RISK_SOURCE_READY",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_PERIOD_YTD",
+        "RISK_ROLLING_METRIC_ROLLING_VOLATILITY",
+        "RISK_ROLLING_STATISTIC_LATEST",
+        "RISK_ROLLING_WINDOW_21",
+        "RISK_ROLLING_INPUT_MODE_STATEFUL",
+        "RISK_ROLLING_CONTEXT_NOT_REQUIRED",
+    ]
+
+
+def test_rolling_risk_adapter_wraps_source_owned_beta_percentile() -> None:
+    source = realized_rolling_risk_source_from_rolling_response(
+        _rolling_response(),
+        metric="ROLLING_BETA",
+        statistic="p95",
+        window_length=21,
+    )
+
+    assert source.source_id == "sha256:rolling-request:YTD:rolling:21:ROLLING_BETA:p95"
+    assert str(source.value) == "0.31680427"
+    assert "RISK_ROLLING_BENCHMARK_APPLIED" in source.reason_codes
+
+
+def test_rolling_risk_source_can_make_rfc42_risk_dimension_ready() -> None:
+    source = realized_rolling_risk_source_from_rolling_response(_rolling_response())
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    risk = snapshot.realized_values["RISK_REDUCTION"]
+    assert snapshot.supportability.state == "READY"
+    assert risk.value == source.value
+    assert risk.source_refs[0].source_type == "ROLLING_RISK_METRICS_REPORT"
+    assert risk.supportability.reason_codes[0] == "SOURCE_READY"
 
 
 def test_concentration_adapter_wraps_single_position_weight() -> None:
@@ -506,6 +700,75 @@ def test_relative_drawdown_not_applied_preserves_degraded_source_posture() -> No
     assert "RISK_DRAWDOWN_RELATIVE_BENCHMARK_UNAVAILABLE" in source.reason_codes
 
 
+def test_rolling_risk_benchmark_unavailable_preserves_degraded_source_posture() -> None:
+    response = _rolling_response()
+    results = response["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    ytd["benchmark_context"] = {
+        "requested": True,
+        "available": False,
+        "aligned": False,
+        "reason": "BENCHMARK_UNAVAILABLE",
+    }
+    window = ytd["window_results"][0]  # type: ignore[index]
+    assert isinstance(window, dict)
+    summaries = window["metric_summaries"]
+    assert isinstance(summaries, dict)
+    beta = summaries["ROLLING_BETA"]
+    assert isinstance(beta, dict)
+    beta["latest"] = None
+
+    source = realized_rolling_risk_source_from_rolling_response(
+        response,
+        metric="ROLLING_BETA",
+    )
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "UNAVAILABLE"
+    assert source.value is None
+    assert snapshot.supportability.state == "DEGRADED"
+    assert "RISK_ROLLING_BENCHMARK_BENCHMARK_UNAVAILABLE" in source.reason_codes
+
+
+def test_rolling_risk_free_unavailable_preserves_degraded_source_posture() -> None:
+    response = _rolling_response()
+    results = response["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    ytd["risk_free_context"] = {
+        "requested": True,
+        "available": False,
+        "aligned": False,
+        "reason": "RISK_FREE_UNAVAILABLE",
+    }
+    window = ytd["window_results"][0]  # type: ignore[index]
+    assert isinstance(window, dict)
+    summaries = window["metric_summaries"]
+    assert isinstance(summaries, dict)
+    sharpe = summaries["ROLLING_SHARPE"]
+    assert isinstance(sharpe, dict)
+    sharpe["latest"] = None
+
+    source = realized_rolling_risk_source_from_rolling_response(
+        response,
+        metric="ROLLING_SHARPE",
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "UNAVAILABLE"
+    assert source.value is None
+    assert "RISK_ROLLING_RISK_FREE_RISK_FREE_UNAVAILABLE" in source.reason_codes
+
+
 def test_degraded_risk_report_preserves_source_owner_supportability() -> None:
     report = _risk_metrics_report()
     metadata = report["metadata"]
@@ -525,6 +788,28 @@ def test_degraded_risk_report_preserves_source_owner_supportability() -> None:
         "RISK_SOURCE_DEGRADED",
         "RISK_SUPPORTABILITY_DEGRADED",
         "RISK_REASON_BENCHMARK_UNAVAILABLE",
+    ]
+
+
+def test_degraded_rolling_risk_preserves_source_owner_supportability() -> None:
+    response = _rolling_response()
+    metadata = response["metadata"]
+    assert isinstance(metadata, dict)
+    metadata["calculation_supportability"] = {
+        "state": "stale",
+        "reason": "stale_source_observations",
+        "freshness_bucket": "stale",
+    }
+
+    source = realized_rolling_risk_source_from_rolling_response(response)
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "STALE"
+    assert source.value is not None
+    assert source.reason_codes[:3] == [
+        "RISK_SOURCE_DEGRADED",
+        "RISK_SUPPORTABILITY_STALE",
+        "RISK_REASON_STALE_SOURCE_OBSERVATIONS",
     ]
 
 
@@ -554,6 +839,30 @@ def test_permission_blocked_risk_report_blocks_ready_claim() -> None:
         "SOURCE_EVIDENCE_INCOMPLETE",
         "RISK_SOURCE_BLOCKED",
     ]
+
+
+def test_permission_blocked_rolling_risk_blocks_ready_claim() -> None:
+    response = _rolling_response()
+    metadata = response["metadata"]
+    assert isinstance(metadata, dict)
+    metadata["calculation_supportability"] = {
+        "state": "permission_blocked",
+        "reason": "permission_blocked",
+        "freshness_bucket": "unknown",
+    }
+
+    source = realized_rolling_risk_source_from_rolling_response(response)
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["RISK_REDUCTION"],
+    )
+
+    assert source.source_state == "BLOCKED"
+    assert source.quality == "MISSING"
+    assert snapshot.supportability.state == "BLOCKED"
+    assert snapshot.realized_values["RISK_REDUCTION"].value is None
 
 
 def test_degraded_drawdown_response_preserves_source_owner_supportability() -> None:
@@ -608,6 +917,16 @@ def test_concentration_adapter_rejects_response_without_trust_fingerprint() -> N
         realized_concentration_source_from_concentration_response(malformed)
 
 
+def test_rolling_adapter_rejects_response_without_trust_fingerprint() -> None:
+    malformed = _rolling_response()
+    metadata = malformed["metadata"]
+    assert isinstance(metadata, dict)
+    del metadata["request_fingerprint"]
+
+    with pytest.raises(RiskOutcomeSourceError, match="request_fingerprint"):
+        realized_rolling_risk_source_from_rolling_response(malformed)
+
+
 def test_risk_adapter_rejects_missing_ready_metric_value() -> None:
     malformed = _risk_metrics_report()
     results = malformed["results"]
@@ -644,3 +963,21 @@ def test_concentration_adapter_rejects_missing_ready_measure_value() -> None:
 
     with pytest.raises(RiskOutcomeSourceError, match="numeric hhi_current value"):
         realized_concentration_source_from_concentration_response(malformed)
+
+
+def test_rolling_adapter_rejects_missing_ready_metric_value() -> None:
+    malformed = _rolling_response()
+    results = malformed["results"]
+    assert isinstance(results, dict)
+    ytd = results["YTD"]
+    assert isinstance(ytd, dict)
+    window = ytd["window_results"][0]  # type: ignore[index]
+    assert isinstance(window, dict)
+    summaries = window["metric_summaries"]
+    assert isinstance(summaries, dict)
+    volatility = summaries["ROLLING_VOLATILITY"]
+    assert isinstance(volatility, dict)
+    volatility["latest"] = None
+
+    with pytest.raises(RiskOutcomeSourceError, match="ROLLING_VOLATILITY latest value"):
+        realized_rolling_risk_source_from_rolling_response(malformed)

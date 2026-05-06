@@ -122,15 +122,17 @@ The implementation records the first-wave boundary: missing execution evidence e
 performance evidence emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`.
 
 The WTBD-006 risk follow-on adds source-owner adapters for `lotus-risk` `RiskMetricsReport:v1`,
-drawdown response output, and concentration response output. `src/core/outcomes/risk_sources.py`
-wraps `RISK_METRICS_REPORT`, `DRAWDOWN_RESPONSE`, and `CONCENTRATION_RESPONSE` evidence into
-RFC-0042 `RISK_REDUCTION` realized-source snapshots, preserving request fingerprint, selected
-period where applicable, selected risk metric, drawdown measure, or concentration measure, source
-supportability state, source supportability reason, issuer coverage posture where applicable, and
-as-of date. The adapters preserve source metric values in source units; they do not compute
-volatility, drawdown paths, drawdown episodes, VaR, Sharpe, Sortino, beta, tracking error,
-information ratio, attribution, HHI, issuer concentration, top-position concentration, or coverage
-ratios in manage.
+drawdown response output, concentration response output, and rolling metrics response output.
+`src/core/outcomes/risk_sources.py` wraps `RISK_METRICS_REPORT`, `DRAWDOWN_RESPONSE`,
+`CONCENTRATION_RESPONSE`, and `ROLLING_RISK_METRICS_REPORT` evidence into RFC-0042
+`RISK_REDUCTION` realized-source snapshots, preserving request fingerprint, selected period where
+applicable, selected risk metric, drawdown measure, concentration measure, rolling metric,
+statistic, window length, source supportability state, source supportability reason, issuer
+coverage posture where applicable, benchmark/risk-free context where applicable, latest
+observation date, and as-of date. The adapters preserve source metric values in source units; they
+do not compute volatility, drawdown paths, drawdown episodes, VaR, Sharpe, Sortino, beta, tracking
+error, information ratio, rolling windows, rolling percentiles, attribution, HHI, issuer
+concentration, top-position concentration, or coverage ratios in manage.
 
 The WTBD-006 core cash follow-on adds the first source-owner adapter for `lotus-core`
 `HoldingsAsOf:v1` cash totals. `src/core/outcomes/core_sources.py` wraps
@@ -300,7 +302,7 @@ can be claimed.
 | Cash movements | `lotus-core` | `CASH_OUTCOME` and MWR-related context | HoldingsAsOf cash totals are the first implemented adapter; cash movements, liquidity ladders, and MWR-related flow context remain source-owner follow-on work. | Consume source product; missing source blocks cash outcome. |
 | FX executions and currency exposures | `lotus-core` or treasury source owner | `FX_OUTCOME` | Source-owner required | Consume source product; no local treasury-depth reconstruction. |
 | Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Source-owner required | Consume source product; no manage-local tax-lot authority. |
-| Risk after execution | `lotus-risk` | `RISK_OUTCOME` | RiskMetricsReport selected metric output, drawdown response max-drawdown output, and concentration response selected-measure output have implemented adapters; historical attribution and rolling-risk outcome contracts remain source-owner follow-on work. | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
+| Risk after execution | `lotus-risk` | `RISK_OUTCOME` | RiskMetricsReport selected metric output, drawdown response max-drawdown output, concentration response selected-measure output, and rolling metrics selected metric/statistic/window output have implemented adapters; historical attribution outcome contracts remain source-owner follow-on work. | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
 | Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Workspace-summary TWR, active return, MWR, contribution, and attribution outputs have implemented adapters; broader benchmark-relative outcome contracts outside source-emitted attribution scalars remain source-owner follow-on work. | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
 | Report artifact | `lotus-report`, `lotus-render`, `lotus-archive` | Reports and archive | Downstream only | Manage emits `DpmOutcomeReportInput`; no artifact claim. |
 | AI memo/copilot output | `lotus-ai` | AI assistance | Downstream only | Manage emits `DpmOutcomeAiEvidenceInput`; no narrative claim. |
@@ -314,7 +316,7 @@ can be claimed.
 | Dimension | First-wave support condition | Blocked/not-supported posture |
 | --- | --- | --- |
 | `DRIFT_OUTCOME` | Expected target/current state plus post-trade holdings are source-backed. | `DRIFT_SOURCE_INCOMPLETE` if holdings or expected target is missing. |
-| `RISK_OUTCOME` | `lotus-risk` provides source-owned RiskMetricsReport output for the selected period/metric, drawdown response output for absolute or benchmark-relative max drawdown, and concentration response output for selected HHI, single-position, issuer, or issuer-coverage measures; richer attribution and rolling-risk evidence require future source-owner contracts. | `RISK_OUTCOME_NOT_SUPPORTED` or `RISK_SOURCE_UNAVAILABLE`. |
+| `RISK_OUTCOME` | `lotus-risk` provides source-owned RiskMetricsReport output for the selected period/metric, drawdown response output for absolute or benchmark-relative max drawdown, concentration response output for selected HHI, single-position, issuer, or issuer-coverage measures, and rolling metrics response output for selected rolling metric/statistic/window values; historical attribution evidence requires future source-owner contracts. | `RISK_OUTCOME_NOT_SUPPORTED` or `RISK_SOURCE_UNAVAILABLE`. |
 | `PERFORMANCE_OUTCOME` | `lotus-performance` provides source-owned workspace-summary TWR, active return, MWR output, contribution output, and attribution output for the selected period/basis/measure, MWR method, contribution measure, attribution reconciliation/level/currency measure, model, linking method, and benchmark context where available; broader benchmark-relative evidence outside source-emitted attribution scalars requires future source-owner contracts. | `PERFORMANCE_OUTCOME_NOT_SUPPORTED` or `PERFORMANCE_SOURCE_UNAVAILABLE`. |
 | `TURNOVER_OUTCOME` | Booked transaction window is source-backed. | `TRANSACTION_SOURCE_INCOMPLETE`. |
 | `TRANSACTION_COST_OUTCOME` | Realized cost source is available and comparable to estimated cost basis. | `COST_SOURCE_INCOMPLETE`. |
