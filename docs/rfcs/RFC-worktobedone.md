@@ -2628,8 +2628,9 @@ liquidity, and execution dimensions using source-owner methodologies and certifi
 Implementation-backed progress:
 
 1. `src/core/outcomes/performance_sources.py` adds WTBD-006 source-family adapters for
-   `lotus-performance` workspace-summary TWR return, active return, MWR return, and contribution
-   selected-measure evidence,
+   `lotus-performance` workspace-summary TWR return, active return, MWR return, contribution
+   selected-measure evidence, and attribution reconciliation/level/currency selected-measure
+   evidence,
 2. `src/core/outcomes/risk_sources.py` adds WTBD-006 source-family adapters for
    `lotus-risk` `RiskMetricsReport:v1`, drawdown response evidence, and concentration response
    selected-measure evidence,
@@ -2637,8 +2638,9 @@ Implementation-backed progress:
    for `HoldingsAsOf:v1` cash-total evidence,
 4. the performance adapters consume source-owned `WORKSPACE_SUMMARY_TWR_RETURN`,
    `WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, and
-   `PERFORMANCE_CONTRIBUTION` output and convert percentage-point source units to RFC-0042 ratio
-   units without calculating performance or contribution locally,
+   `PERFORMANCE_CONTRIBUTION`, and `PERFORMANCE_ATTRIBUTION` output and convert percentage-point
+   source units to RFC-0042 ratio units without calculating performance, contribution, or
+   attribution locally,
 5. the risk adapters consume source-owned `RISK_METRICS_REPORT`, `DRAWDOWN_RESPONSE`, and
    `CONCENTRATION_RESPONSE` output and preserve selected source metric, absolute max-drawdown,
    benchmark-relative max-drawdown, HHI, single-position concentration, issuer concentration, or
@@ -2646,7 +2648,8 @@ Implementation-backed progress:
 6. the core cash adapter consumes source-owned `HOLDINGS_AS_OF_CASH_BALANCE` totals without
    aggregating cash accounts or deriving tax/FX/transaction facts locally,
 7. performance source lineage is preserved through calculation id, calculation hash, selected
-   period, selected basis or MWR method where applicable, selected return or contribution measure,
+   period, selected basis or MWR method where applicable, selected return, contribution, or
+   attribution measure, attribution model, linking method, benchmark context where available,
    source supportability where applicable, source owner, source type, and reason codes,
 8. risk source lineage is preserved through request fingerprint, selected period where applicable,
    selected risk metric, drawdown measure, or concentration measure, source supportability state,
@@ -2658,20 +2661,21 @@ Implementation-backed progress:
 10. focused tests prove ready, missing, degraded/unavailable, permission-blocked, explicit metric,
    source supportability, source-owned active return, source-owned MWR return, source-owned
    absolute and relative max drawdown, relative-drawdown unavailable posture, contribution selected
-   measures, stale contribution posture, errored contribution blocking posture, and malformed
+   measures, attribution reconciliation/level/currency selected measures, stale contribution and
+   attribution posture, errored contribution and attribution blocking posture, and malformed
    payload behavior,
 11. no broader methodology is claimed yet: tax, FX, transaction-cost, execution, cash movements,
-   liquidity ladders, risk attribution, rolling-risk,
-   attribution, broader benchmark-relative performance analysis, and full
-   review-window source contracts remain source-owner follow-on scope.
+   liquidity ladders, risk attribution, rolling-risk, broader benchmark-relative performance
+   analysis outside source-emitted attribution scalars, and full review-window source contracts
+   remain source-owner follow-on scope.
 
 Why it cannot be done now:
 
 RFC-0042 intentionally avoided local calculation clones. The first risk, performance, and core cash
 adapters are possible because `lotus-risk` publishes `RiskMetricsReport:v1`, drawdown response
 output, and concentration response output, `lotus-performance` publishes workspace-summary TWR,
-active return, MWR output, and contribution output, and `lotus-core` publishes `HoldingsAsOf:v1`
-cash totals.
+active return, MWR output, contribution output, and attribution output, and `lotus-core` publishes
+`HoldingsAsOf:v1` cash totals.
 Remaining source-owner methods are surfaced as degraded, unsupported, unavailable, malformed,
 conflicting, or blocked states until their owning applications publish certified contracts.
 
@@ -2742,6 +2746,23 @@ Latest WTBD-006 performance-contribution tightening proof:
    input mode, selected contribution measure, and percentage-point to ratio unit conversion, and
    performs no position, daily, hierarchy, local/FX, benchmark-relative, or attribution calculation
    locally.
+
+Latest WTBD-006 performance-attribution tightening proof:
+
+1. local critical review evidence:
+   `output/rfc0042-wtbd006-performance-attribution-proof/20260506-075838/critical-review.json`,
+2. `tests/unit/core/test_performance_realized_outcome_sources.py` passed with `26` tests,
+3. tests cover source-owned active-return reconciliation, level total effect, currency total
+   effect, ready snapshot assembly, stale/degraded source-owner posture, errored source blocking
+   posture, and missing ready-value guardrails,
+4. repo-native `make check` passed with `903` unit tests, lint, format, mypy, OpenAPI quality,
+   API vocabulary, no-alias, domain-data-product, trust-telemetry, observability, and
+   monetary-float guardrails,
+5. manage preserves `lotus-performance` calculation id, calculation hash, supportability truth,
+   input mode, attribution model, linking method, benchmark context, selected attribution measure,
+   and percentage-point to ratio unit conversion, and performs no group-row summing, active-return,
+   allocation, selection, interaction, residual, currency-effect, benchmark-selection, or
+   attribution calculation locally.
 
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
 

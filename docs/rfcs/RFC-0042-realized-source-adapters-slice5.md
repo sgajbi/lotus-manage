@@ -21,9 +21,9 @@ Slice 5 adds the source-owner realized evidence boundary:
 3. Degraded, blocked, missing, stale, unavailable, partial, malformed, conflicting, and not-supported
    source behavior.
 4. Follow-on WTBD-006 performance adapters in `src/core/outcomes/performance_sources.py` that
-   wrap `lotus-performance` workspace-summary TWR, active return, MWR return, and contribution
-   output into RFC-0042 realized `PERFORMANCE` evidence without recalculating performance
-   methodology locally.
+   wrap `lotus-performance` workspace-summary TWR, active return, MWR return, contribution, and
+   attribution output into RFC-0042 realized `PERFORMANCE` evidence without recalculating
+   performance methodology locally.
 5. Follow-on WTBD-006 risk adapters in `src/core/outcomes/risk_sources.py` that wrap
    `lotus-risk` `RiskMetricsReport:v1`, drawdown response, and concentration response output into
    RFC-0042 realized `RISK_REDUCTION` evidence without recalculating risk methodology locally.
@@ -47,7 +47,7 @@ in this slice and does not calculate source-owner truth locally.
 | `lotus-core` | First supported adapter consumes `HoldingsAsOf:v1` cash total evidence for `CASH_RESIDUAL`. It preserves source product metadata, as-of date, generated/evidence timestamp, data-quality posture, and source fingerprint. Missing or malformed evidence blocks affected dimensions. Tax, FX, transaction-cost, execution, and rule outcome adapters remain source-owner follow-on work until core exposes owned scalar totals or certified outcome contracts. |
 | execution/OMS owner | No certified first-wave fill/order contract is assumed. Missing execution evidence emits `EXECUTION_EVIDENCE_BLOCKED`. |
 | `lotus-risk` | Supported adapters consume `RiskMetricsReport:v1`, drawdown response, and concentration response evidence from `lotus-risk`. They preserve request fingerprint, selected period where applicable, selected metric/measure, source supportability, issuer coverage posture where applicable, and source reason codes. Missing evidence still emits `RISK_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `RISK_SOURCE_UNAVAILABLE`. Historical attribution and rolling-risk outcome adapters remain source-owner follow-on work. |
-| `lotus-performance` | Supported adapters consume `WORKSPACE_SUMMARY_TWR_RETURN`, `WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, and `PERFORMANCE_CONTRIBUTION` evidence from `lotus-performance`. They perform only percentage-point to ratio unit conversion plus lineage/supportability wrapping. Missing evidence still emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `PERFORMANCE_SOURCE_UNAVAILABLE`. Attribution and broader benchmark-relative outcome adapters remain source-owner follow-on work. |
+| `lotus-performance` | Supported adapters consume `WORKSPACE_SUMMARY_TWR_RETURN`, `WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, `PERFORMANCE_CONTRIBUTION`, and `PERFORMANCE_ATTRIBUTION` evidence from `lotus-performance`. They perform only percentage-point to ratio unit conversion plus lineage/supportability wrapping. Missing evidence still emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `PERFORMANCE_SOURCE_UNAVAILABLE`. Broader benchmark-relative outcome analysis outside source-emitted attribution scalars remains source-owner follow-on work. |
 
 ## Degraded-State Mapping
 
@@ -69,6 +69,8 @@ in this slice and does not calculate source-owner truth locally.
 | `lotus-performance` workspace-summary TWR source | `READY` when the source response includes the selected period, basis, measure, calculation id, and numeric base return |
 | `lotus-performance` contribution source | `READY` when the source response includes the selected period, selected contribution measure, calculation id, source supportability, and numeric source-owned contribution value |
 | Degraded `lotus-performance` contribution source | `DEGRADED` or `BLOCKED` according to `calculation_supportability.state`; manage preserves source posture and does not promote errored or empty calculations to ready |
+| `lotus-performance` attribution source | `READY` when the source response includes the selected period, selected reconciliation, level-total, or currency-attribution measure, calculation id, calculation hash, attribution model, linking method, benchmark context where available, source supportability, and numeric source-owned attribution value |
+| Degraded `lotus-performance` attribution source | `DEGRADED` or `BLOCKED` according to `calculation_supportability.state`; manage preserves source posture and does not promote errored or empty attribution calculations to ready |
 | Unavailable `lotus-performance` workspace-summary source | `DEGRADED` with `PERFORMANCE_SOURCE_UNAVAILABLE` plus the source-supplied reason code |
 | `lotus-core` HoldingsAsOf cash total source | `READY` when the source response includes product identity, portfolio id, as-of date, selected cash total, and complete/ready data quality |
 | Degraded `lotus-core` HoldingsAsOf cash total source | `DEGRADED` when source data quality is incomplete, partial, stale, unavailable, or unknown |
@@ -199,6 +201,35 @@ Out of scope for this adapter:
 3. deriving performance attribution or benchmark-relative effects,
 4. fabricating missing supportability, calculation hashes, or as-of dates.
 
+## Performance Attribution Adapter Contract
+
+`realized_attribution_source_from_attribution_response` accepts a validated `lotus-performance`
+attribution response and emits a `DpmRealizedSourceSnapshot` for `PERFORMANCE`.
+
+Implemented behavior:
+
+1. source owner remains `lotus-performance`,
+2. source type is `PERFORMANCE_ATTRIBUTION`,
+3. default period/measure is `YTD` / `reconciliation_total_active_return`,
+4. selected reconciliation, level-total, and currency-attribution values are converted from
+   `lotus-performance` percentage-point units to RFC-0042 ratio units,
+5. `calculation_id`, `meta.calculation_hash`, selected period, selected attribution measure,
+   level dimension or currency selector, `input_mode`, attribution model, linking method,
+   benchmark context, `calculation_supportability.state`, and `calculation_supportability.reason`
+   are preserved as lineage/supportability evidence,
+6. stale/degraded attribution output remains degraded, unsupported output remains not supported,
+   and empty/error output blocks ready claims,
+7. malformed source payloads or missing ready attribution values raise
+   `PerformanceOutcomeSourceError` and cannot silently produce a ready outcome value.
+
+Out of scope for this adapter:
+
+1. computing attribution locally,
+2. summing group rows or currency rows locally,
+3. calculating active return, allocation, selection, interaction, residual, or currency effects,
+4. choosing an attribution model or benchmark in manage,
+5. fabricating missing benchmark context, supportability, calculation hashes, or as-of dates.
+
 ## Validation
 
 Commands:
@@ -217,7 +248,7 @@ Observed result:
 
 1. `6 passed`
 2. `17 passed`
-3. `19 passed`
+3. `26 passed`
 4. `20 passed`
 5. `24 passed`
 6. `18 passed`
@@ -227,7 +258,8 @@ Observed result:
 
 The WTBD-006 performance and risk adapters promote only implementation-backed source-integration
 capabilities inside manage: RFC-0042 can now mark `PERFORMANCE` ready when a certified
-`lotus-performance` workspace-summary TWR response or contribution response is supplied, and
+`lotus-performance` workspace-summary TWR, active return, MWR, contribution, or attribution
+response is supplied, and
 `RISK_REDUCTION` ready when a certified `lotus-risk` `RiskMetricsReport:v1`, drawdown, or
 concentration response is supplied. Issuer-specific concentration evidence can be degraded when the
 risk-owned issuer coverage posture is partial or unavailable. The WTBD-006 core cash adapter can

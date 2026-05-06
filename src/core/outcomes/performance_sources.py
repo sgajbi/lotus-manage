@@ -15,6 +15,20 @@ ContributionOutcomeMeasure = Literal[
     "summary_local_contribution",
     "summary_fx_contribution",
 ]
+AttributionOutcomeMeasure = Literal[
+    "reconciliation_total_active_return",
+    "reconciliation_sum_of_effects",
+    "reconciliation_residual",
+    "level_allocation_total",
+    "level_selection_total",
+    "level_interaction_total",
+    "level_total_effect",
+    "currency_local_allocation",
+    "currency_local_selection",
+    "currency_allocation",
+    "currency_selection",
+    "currency_total_effect",
+]
 
 
 class PerformanceOutcomeSourceError(ValueError):
@@ -201,6 +215,76 @@ def realized_contribution_source_from_contribution_response(
     )
 
 
+def realized_attribution_source_from_attribution_response(
+    response: dict[str, Any],
+    *,
+    period: str = "YTD",
+    measure: AttributionOutcomeMeasure = "reconciliation_total_active_return",
+    level_dimension: str | None = None,
+    currency: str | None = None,
+) -> DpmRealizedSourceSnapshot:
+    """Adapt lotus-performance attribution output without local attribution math."""
+
+    period_result = _attribution_period(response, period=period)
+    metadata = _performance_metadata(response)
+    supportability_state, supportability_reason = _performance_supportability(response)
+    value, selector_reason, selector_token = _attribution_value(
+        period_result=period_result,
+        measure=measure,
+        level_dimension=level_dimension,
+        currency=currency,
+    )
+    source_state, quality = _performance_source_posture(
+        supportability_state=supportability_state,
+        value=value,
+    )
+    if source_state == "READY" and value is None:
+        raise PerformanceOutcomeSourceError(
+            f"lotus-performance attribution response is missing a numeric attribution {measure} for {period}"
+        )
+
+    input_mode = _read_text(response.get("input_mode")) or "unknown"
+    model = _read_text(response.get("model")) or "unknown"
+    linking = _read_text(response.get("linking")) or "unknown"
+    benchmark = _read_mapping(response.get("benchmark_context"))
+    benchmark_id = _read_text(benchmark.get("benchmark_id"))
+    benchmark_source = _read_text(benchmark.get("return_source"))
+    source_id = f"{metadata['calculation_id']}:{period}:attribution:{measure}:{selector_token}"
+    reason_codes = [
+        _performance_primary_reason(source_state),
+        f"PERFORMANCE_SUPPORTABILITY_{_reason_token(supportability_state)}",
+        f"PERFORMANCE_REASON_{_reason_token(supportability_reason)}",
+        f"PERFORMANCE_PERIOD_{period}",
+        "PERFORMANCE_MEASURE_FAMILY_ATTRIBUTION",
+        f"PERFORMANCE_ATTRIBUTION_MEASURE_{measure.upper()}",
+        selector_reason,
+        f"PERFORMANCE_INPUT_MODE_{_reason_token(input_mode)}",
+        f"PERFORMANCE_ATTRIBUTION_MODEL_{_reason_token(model)}",
+        f"PERFORMANCE_ATTRIBUTION_LINKING_{_reason_token(linking)}",
+    ]
+    if benchmark_id is not None:
+        reason_codes.append(f"PERFORMANCE_BENCHMARK_{_reason_token(benchmark_id)}")
+    if benchmark_source is not None:
+        reason_codes.append(
+            f"PERFORMANCE_BENCHMARK_RETURN_SOURCE_{_reason_token(benchmark_source)}"
+        )
+
+    return DpmRealizedSourceSnapshot(
+        dimension="PERFORMANCE",
+        source_system="lotus-performance",
+        source_type="PERFORMANCE_ATTRIBUTION",
+        source_id=source_id,
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["calculation_hash"],
+        reason_codes=reason_codes,
+    )
+
+
 def unavailable_performance_source(
     *,
     source_id: str,
@@ -238,6 +322,10 @@ def _workspace_period(response: dict[str, Any], *, period: str) -> dict[str, Any
 
 
 def _contribution_period(response: dict[str, Any], *, period: str) -> dict[str, Any]:
+    return _read_mapping(_read_mapping(response.get("results_by_period")).get(period))
+
+
+def _attribution_period(response: dict[str, Any], *, period: str) -> dict[str, Any]:
     return _read_mapping(_read_mapping(response.get("results_by_period")).get(period))
 
 
@@ -291,6 +379,105 @@ def _contribution_value(
         value_by_measure,
         context=f"contribution {measure}",
     )
+
+
+def _attribution_value(
+    *,
+    period_result: dict[str, Any],
+    measure: AttributionOutcomeMeasure,
+    level_dimension: str | None,
+    currency: str | None,
+) -> tuple[Decimal | None, str, str]:
+    if measure.startswith("reconciliation_"):
+        reconciliation = _read_mapping(period_result.get("reconciliation"))
+        source_field = {
+            "reconciliation_total_active_return": "total_active_return",
+            "reconciliation_sum_of_effects": "sum_of_effects",
+            "reconciliation_residual": "residual",
+        }[measure]
+        value = reconciliation.get(source_field)
+        return (
+            _decimal_from_percentage_points(value, context=f"attribution {measure}")
+            if value is not None
+            else None,
+            "PERFORMANCE_ATTRIBUTION_SELECTOR_RECONCILIATION",
+            "reconciliation",
+        )
+
+    if measure.startswith("level_"):
+        level, dimension = _attribution_level(
+            period_result=period_result,
+            level_dimension=level_dimension,
+        )
+        source_field = {
+            "level_allocation_total": "allocation_total_pct",
+            "level_selection_total": "selection_total_pct",
+            "level_interaction_total": "interaction_total_pct",
+            "level_total_effect": "total_effect_pct",
+        }[measure]
+        value = level.get(source_field)
+        selector = _reason_token(dimension)
+        return (
+            _decimal_from_percentage_points(value, context=f"attribution {measure}")
+            if value is not None
+            else None,
+            f"PERFORMANCE_ATTRIBUTION_LEVEL_{selector}",
+            f"level:{selector.lower()}",
+        )
+
+    currency_result, currency_code = _attribution_currency(
+        period_result=period_result,
+        currency=currency,
+    )
+    effects = _read_mapping(currency_result.get("effects"))
+    source_field = {
+        "currency_local_allocation": "local_allocation",
+        "currency_local_selection": "local_selection",
+        "currency_allocation": "currency_allocation",
+        "currency_selection": "currency_selection",
+        "currency_total_effect": "total_effect",
+    }[measure]
+    value = effects.get(source_field)
+    selector = _reason_token(currency_code)
+    return (
+        _decimal_from_percentage_points(value, context=f"attribution {measure}")
+        if value is not None
+        else None,
+        f"PERFORMANCE_ATTRIBUTION_CURRENCY_{selector}",
+        f"currency:{selector.lower()}",
+    )
+
+
+def _attribution_level(
+    *,
+    period_result: dict[str, Any],
+    level_dimension: str | None,
+) -> tuple[dict[str, Any], str]:
+    levels = period_result.get("levels")
+    if not isinstance(levels, list):
+        return {}, level_dimension or "unknown"
+    for level in levels:
+        level_mapping = _read_mapping(level)
+        dimension = _read_text(level_mapping.get("dimension"))
+        if level_dimension is None or dimension == level_dimension:
+            return level_mapping, dimension or level_dimension or "unknown"
+    return {}, level_dimension or "unknown"
+
+
+def _attribution_currency(
+    *,
+    period_result: dict[str, Any],
+    currency: str | None,
+) -> tuple[dict[str, Any], str]:
+    currency_results = period_result.get("currency_attribution")
+    if not isinstance(currency_results, list):
+        return {}, currency or "unknown"
+    for currency_result in currency_results:
+        result_mapping = _read_mapping(currency_result)
+        currency_code = _read_text(result_mapping.get("currency"))
+        if currency is None or currency_code == currency:
+            return result_mapping, currency_code or currency or "unknown"
+    return {}, currency or "unknown"
 
 
 def _performance_source_posture(
