@@ -111,7 +111,8 @@ Current repository posture:
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
     `lotus-risk` `RiskMetricsReport:v1`, drawdown response max drawdown, concentration
-    response selected measures, and rolling metrics selected metric/statistic/window measures,
+    response selected measures, rolling metrics selected metric/statistic/window measures, and
+    historical attribution selected set/contributor measures,
     `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
     measures, and `lotus-core` `HoldingsAsOf:v1` cash totals, live
