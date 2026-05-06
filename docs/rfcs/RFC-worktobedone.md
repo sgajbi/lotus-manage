@@ -67,7 +67,7 @@ mesh/product promotion belong to downstream or platform/source owners.
 | --- | --- | --- | --- | --- |
 | RFC36-WTBD-001 | Gateway integration rebuilt against canonical `/api/v1` manage APIs | `lotus-gateway` | Completed and merged to `lotus-gateway` `main` in PR #191 (`a68181b`) | Endpoint cleanup intentionally accepted breaking stale Gateway assumptions. Gateway now consumes certified manage APIs without reintroducing aliases or monolithic context assumptions. |
 | RFC36-WTBD-002 | Workbench product surfaces over stateful manage execution | `lotus-workbench` through Gateway/BFF | Completed and merged to `lotus-workbench` `main` in PR #152 (`c83ea7e`) | Workbench now surfaces Gateway-provided manage rebalance action-register supportability without direct manage calls or locally invented source readiness. |
-| RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Proposed | RFC-0036 certified execution/source posture, not product dashboards over operations and supportability. |
+| RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Completed, merged, live-proven, and wiki-published through `lotus-gateway` PR #192/#193 and `lotus-workbench` PR #153 | RFC-0036 certified execution/source posture. This follow-up now promotes recent-run and supportability telemetry into the Gateway BFF and Workbench product surface without making Workbench call manage directly. |
 | RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-platform` with source producers and `lotus-manage` consumer declarations | Deferred until source-data lineage stabilizes | Current source products are live-proven; future stateful products need producer approval, declarations, trust telemetry, SLO/access/evidence policies, and certification. |
 | RFC36-WTBD-005 | Additional upstream source-product depth for stateful execution | `lotus-core` and future source owners | Deferred source enrichment | RFC-0036 consumes the certified RFC-087 products. Additional portfolio, market-data, cashflow, benchmark, restriction, or execution-depth sources require explicit retrieval design. |
 | RFC36-WTBD-006 | Downstream migration handling if production consumers of removed aliases are discovered | Owning consumer repo, likely `lotus-gateway` | Conditional | RFC-0036 removed stale aliases by design. Permanent compatibility code should not be added unless a real production dependency is proven. |
@@ -181,31 +181,75 @@ Target business outcome:
 Operations and PM users can monitor stateful DPM execution supportability, source readiness,
 recent runs, errors, and workflow posture at portfolio/book level.
 
-Why it cannot be done now:
+Closure status:
 
-RFC-0036 focused on source resolution, endpoint cleanup, execution envelopes, and capability truth.
-Dashboards require product composition and durable UX/reporting decisions across Gateway and
-Workbench.
+Completed on 2026-05-06 through the coordinated downstream implementation wave:
 
-Dependencies before implementation:
+1. `lotus-gateway` PR #192, `feat: expose DPM operations dashboard data`, merged to `main` at
+   `df428d62e0d54501696afcfd7014b378765e02a9`.
+2. `lotus-workbench` PR #153, `feat: render DPM operations dashboard`, merged to `main` at
+   `3cbc68895eb098e147d9b0f85a7ceaea5e883fb4`.
+3. `lotus-gateway` corrective PR #193,
+   `fix: map manage supportability into workbench snapshot`, merged to `main` at
+   `8afa4d3e9e58f2d60d9e10a9c7bb92fd8fe18ca9` after canonical evidence exposed that live
+   manage supportability came from `/api/v1/rebalance/supportability/summary`, not the rebalance
+   run list payload.
 
-1. Gateway/Workbench stateful integration complete,
-2. dashboard information architecture and supportability taxonomy defined,
-3. manage exposes any missing read models through certified APIs instead of UI-side aggregation,
-4. no-sensitive telemetry and bounded labels are preserved,
-5. canonical proof includes useful populated and degraded cases.
+What was delivered:
 
-Expected implementation wave:
+1. `lotus-gateway` now enriches the Workbench overview `rebalance_snapshot` with recent manage
+   rebalance runs from `/api/v1/rebalance/runs?portfolio_id=<portfolio>&limit=5`.
+2. `lotus-gateway` now fetches live manage action-register supportability from
+   `/api/v1/rebalance/supportability/summary` and maps it into the same Gateway-owned
+   Workbench BFF snapshot without requiring Workbench to call manage directly.
+3. Gateway parsing preserves bounded telemetry: rebalance run id, status, workflow status,
+   portfolio id, timestamps, source/error labels, and supportability state/count/freshness posture.
+4. `lotus-workbench` extends the rebalance status panel to show operations-facing recent-run
+   counts, issue counts, latest run rows, workflow posture, error/source labels, and an explicit
+   no-runs state.
+5. Product documentation, repository context, and repo-local/published wiki truth were updated in
+   the owning Gateway and Workbench repositories. This `lotus-manage` ledger records closure only;
+   no additional `lotus-manage` wiki source change is required for this slice.
 
-Implement after the command-center and stateful execution product paths are clear, likely alongside
-RFC-0038/RFC-0041 product realization.
+Validation evidence:
 
-Promotion proof:
+1. Gateway PR #192 local targeted proof passed with 3 tests, and `make check` passed with Ruff
+   lint, Ruff format check, monetary-float guard, mypy, Workbench contract smoke, and 423 tests.
+2. Gateway PR #193 local targeted proof passed with 2 tests; broader focused regression proof
+   passed with 54 tests across Workbench service unit, integration, and contract coverage; final
+   `make check` passed with Ruff lint, Ruff format check, monetary-float guard, mypy, Workbench
+   contract smoke, and 424 tests.
+3. Workbench PR #153 local targeted proof passed with 7 tests; `npm run typecheck` passed; final
+   `make check` passed with lint, typecheck, 156 test files / 707 tests, coverage, and production
+   build.
+4. GitHub CI was green before merge for Gateway PR #192, Workbench PR #153, and Gateway PR #193,
+   including Feature Lane checks, PR Merge Gate checks, Docker/parity gates where configured, and
+   queue auto-merge.
+5. `lotus-gateway` wiki publication completed for PR #192 at wiki commit `778e992` and for PR #193
+   at wiki commit `0085441`; post-publish `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-gateway`
+   reported zero drift. `lotus-workbench` wiki publication completed for PR #153 at wiki commit
+   `ff0b4ff`.
+6. Canonical front-office validation passed after rebuilding impacted images:
+   `powershell -ExecutionPolicy Bypass -File scripts/live/Start-LotusFrontOfficeCanonical.ps1 -BuildImages -LocalApps workbench -RunValidation -ScreenshotDirectory output/playwright/rfc36-wtbd003-dpm-operations-dashboard`
+   produced `live-validation-summary.json`, `SHOT-INDEX.md`, and
+   `dpm-outcome-review-live.png` for `PB_SG_GLOBAL_BAL_001`.
+7. A focused live browser/API assertion against
+   `http://workbench.dev.lotus/workbench/PB_SG_GLOBAL_BAL_001` and
+   `http://gateway.dev.lotus/api/v1/workbench/PB_SG_GLOBAL_BAL_001/overview` passed after PR #193:
+   the Workbench dashboard was visible, `recentRunCount` was 5, latest run
+   `rr_c09f73d0` had status `PENDING_REVIEW`, `supportabilityStatus` was `ready`,
+   `supportabilityRunCount` was 82, `consoleErrorCount` was 0, and `missing` was empty.
 
-1. manage read-model tests if new APIs are needed,
-2. Gateway/Workbench dashboard tests,
-3. live/canonical evidence,
-4. operations-facing wiki/runbook updates.
+Gold-pass assessment:
+
+This WTBD has reached the expected standard for its stated first-wave scope. The product path is
+merged to `main` in the owning Gateway and Workbench repositories, the UI remains Gateway/BFF-only,
+the Gateway fix was driven by live evidence rather than papering over a missing field, local tests
+and GitHub gates passed, canonical Workbench proof passed on the governed stack, and owning
+repo-local plus published wiki material reflects the implementation-backed capability. Richer book-
+level aggregation, operations drill-down pages, alerting, and report/AI materialization remain
+future product depth and should be tracked under later command-center/reporting WTBDs rather than
+reopening this first-wave operations dashboard slice.
 
 #### RFC36-WTBD-004 - Additional Stateful Source Products In Mesh Certification
 
