@@ -115,7 +115,9 @@ Current repository posture:
     historical attribution selected set/contributor measures,
     `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
-    measures, and `lotus-core` `HoldingsAsOf:v1` cash totals, live
+    measures, and `lotus-core` `HoldingsAsOf:v1` cash totals plus
+    `TransactionLedgerWindow:v1` explicit transaction-row trade-fee, withholding-tax,
+    realized-FX-P&L, and linked-cashflow measures, live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on

@@ -2290,7 +2290,7 @@ artifacts belong to report/render/archive services, and AI narrative execution b
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-gateway`, `lotus-workbench` | Implemented, merged, CI-proven, and wiki-published through `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 | Manage emits bounded report input only; downstream services now consume it to create deterministic outcome-review report artifacts, preserve archive posture, expose Gateway submission, and add the Workbench report request action without recomputing outcome truth. |
 | RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, Gateway, Workbench, with manage as evidence authority | Implemented, merged, CI-proven, and wiki-published through `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 | Manage emits AI evidence input only; `lotus-ai` now owns guarded workflow-pack narrative execution, Gateway composes the evidence/narrative BFF, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
-| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, drawdown response max drawdown, concentration response selected measures, rolling metric summaries, performance workspace-summary TWR, active return, MWR output, contribution selected measures, attribution selected measures, and core HoldingsAsOf cash totals now have manage adapters; richer risk/performance, tax, FX, cash movements, liquidity, and execution methodologies stay source-owner follow-on work. |
+| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, drawdown response max drawdown, concentration response selected measures, rolling metric summaries, historical attribution selected measures, performance workspace-summary TWR, active return, MWR output, contribution selected measures, attribution selected measures, core HoldingsAsOf cash totals, and core TransactionLedgerWindow explicit transaction-row measures now have manage adapters; aggregated risk/performance, tax, FX, cash movements, liquidity, and execution methodologies stay source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration and acknowledgements | Execution/OMS owner, `lotus-manage` consumer | Ownership not established | RFC-0042 can compare expected and realized evidence, but OMS integration needs a separate owner, controls, acknowledgements, and reconciliation contract. |
 | RFC42-WTBD-008 | PM quality scoring or behavioral analytics | Business owner, methodology owner, `lotus-ai` only if approved | Not supported | RFC-0042 intentionally avoids scoring PMs. Any future scoring requires business approval, auditable methodology, bias controls, and governance. |
 
@@ -2635,8 +2635,9 @@ Implementation-backed progress:
    `lotus-risk` `RiskMetricsReport:v1`, drawdown response evidence, concentration response
    selected-measure evidence, rolling metrics selected metric/statistic/window evidence, and
    historical attribution selected set/contributor evidence,
-3. `src/core/outcomes/core_sources.py` adds the first WTBD-006 `lotus-core` source-family adapter
-   for `HoldingsAsOf:v1` cash-total evidence,
+3. `src/core/outcomes/core_sources.py` adds WTBD-006 `lotus-core` source-family adapters for
+   `HoldingsAsOf:v1` cash-total evidence and `TransactionLedgerWindow:v1` explicit transaction-row
+   scalar evidence,
 4. the performance adapters consume source-owned `WORKSPACE_SUMMARY_TWR_RETURN`,
    `WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, and
    `PERFORMANCE_CONTRIBUTION`, and `PERFORMANCE_ATTRIBUTION` output and convert percentage-point
@@ -2649,8 +2650,10 @@ Implementation-backed progress:
    concentration, issuer-coverage, rolling metric, rolling statistic, rolling window, attribution
    type, attribution metric, grouping dimension, set-level measure, and explicit contributor values
    without calculating risk locally,
-6. the core cash adapter consumes source-owned `HOLDINGS_AS_OF_CASH_BALANCE` totals without
-   aggregating cash accounts or deriving tax/FX/transaction facts locally,
+6. the core adapters consume source-owned `HOLDINGS_AS_OF_CASH_BALANCE` totals and
+   `TRANSACTION_LEDGER_WINDOW` explicit transaction-row trade-fee, withholding-tax, realized-FX-P&L,
+   and linked-cashflow measures without aggregating cash accounts, aggregating transaction rows,
+   deriving tax, calculating FX, inferring execution quality, or converting currency locally,
 7. performance source lineage is preserved through calculation id, calculation hash, selected
    period, selected basis or MWR method where applicable, selected return, contribution, or
    attribution measure, attribution model, linking method, benchmark context where available,
@@ -2662,19 +2665,22 @@ Implementation-backed progress:
    source supportability reason, issuer coverage posture where applicable, benchmark/risk-free
    context where applicable, attribution quality flags and stateful active-risk support metadata,
    latest observation date, period end date, as-of date, source owner, source type, and reason codes,
-9. core cash source lineage is preserved through product identity, portfolio id, as-of date,
+9. core source lineage is preserved through product identity, portfolio id, as-of date,
    generated/evidence timestamp, data-quality posture, source fingerprint, source owner, source type,
-   and reason codes,
+   transaction id/type, selected transaction measure where applicable, selected source field, source
+   units, and reason codes,
 10. focused tests prove ready, missing, degraded/unavailable, permission-blocked, explicit metric,
    source supportability, source-owned active return, source-owned MWR return, source-owned
    absolute and relative max drawdown, relative-drawdown unavailable posture, rolling metric
    summaries, benchmark/risk-free rolling degraded posture, historical attribution set and
    contributor measures, historical attribution quality-flag and period-error posture, contribution
    selected measures, attribution reconciliation/level/currency selected measures, stale
-   contribution and attribution posture, errored contribution and attribution blocking posture, and
-   malformed payload behavior,
-11. no broader methodology is claimed yet: tax, FX, transaction-cost, execution, cash movements,
-   liquidity ladders, risk attribution outside source-emitted historical attribution scalars,
+   contribution and attribution posture, errored contribution and attribution blocking posture, core
+   cash totals, explicit transaction-row trade-fee, withholding-tax, realized-FX-P&L, linked-cashflow
+   measures, and malformed payload behavior,
+11. no broader methodology is claimed yet: aggregated tax, aggregated FX, aggregated
+   transaction-cost, execution, cash movements, liquidity ladders, risk attribution outside
+   source-emitted historical attribution scalars,
    broader benchmark-relative performance analysis outside source-emitted attribution scalars, and
    full review-window source contracts remain source-owner follow-on scope.
 
@@ -2685,7 +2691,7 @@ adapters are possible because `lotus-risk` publishes `RiskMetricsReport:v1`, dra
 output, concentration response output, rolling metrics response output, and historical attribution
 response output, `lotus-performance` publishes workspace-summary TWR, active return, MWR output,
 contribution output, and attribution output, and `lotus-core` publishes `HoldingsAsOf:v1` cash
-totals.
+totals plus `TransactionLedgerWindow:v1` explicit transaction-row scalar evidence.
 Remaining source-owner methods are surfaced as degraded, unsupported, unavailable, malformed,
 conflicting, or blocked states until their owning applications publish certified contracts.
 
@@ -2777,6 +2783,23 @@ Latest WTBD-006 risk-attribution tightening proof:
    applicable, stateful active-risk support metadata, quality-flag posture, period-error posture,
    period end date, as-of date, and source units, and performs no covariance, contribution,
    residual, grouping, top-contributor, or support-matrix calculation locally.
+
+Latest WTBD-006 core-transaction-ledger tightening proof:
+
+1. local critical review evidence:
+   `output/rfc0042-wtbd006-core-transaction-ledger-proof/20260506-085229/critical-review.json`,
+2. `tests/unit/core/test_core_realized_outcome_sources.py` passed with `15` tests,
+3. tests cover source-owned trade fee, withholding tax, realized FX P&L, linked cashflow amount,
+   ready tax-dimension snapshot assembly, degraded source-owner posture, missing transaction-row
+   guardrails, and missing selected source-value guardrails,
+4. repo-native `make check` passed with `928` unit tests, lint, format, mypy, OpenAPI quality,
+   API vocabulary, no-alias, domain-data-product, trust-telemetry, observability, and
+   monetary-float guardrails,
+5. manage preserves `lotus-core` product identity, portfolio id, as-of date, generated/evidence
+   timestamp, data-quality posture, source fingerprint, transaction id/type, selected measure,
+   selected source field, and source units, and performs no transaction aggregation, tax
+   calculation, FX calculation, cash movement aggregation, currency conversion, or
+   execution-quality inference locally.
 
 Latest WTBD-006 performance-contribution tightening proof:
 
