@@ -973,8 +973,8 @@ truth, while product realization and several richer source authorities belong ou
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0039 |
 | --- | --- | --- | --- | --- |
 | RFC39-WTBD-001 | Gateway construction-alternatives composition | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #190 | Gateway consumes manage alternatives without recomputing construction truth or choosing alternatives. Product support still requires Workbench implementation and canonical front-office proof. |
-| RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Downstream RFC direction created; implementation not supported yet | Workbench must consume Gateway/BFF only and must not run optimizer, selection, or comparison logic in browser code. |
-| RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | Manage backend proof does not equal a complete PM-facing product journey. |
+| RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #150 and PR #151 | Workbench consumes Gateway/BFF construction contracts only, sends governed DPM context, renders manage-owned alternatives and traces without browser optimization, and is proven by focused canonical Workbench live evidence. |
+| RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Richer lifecycle depth across proof packs, waves, reports, AI, approval staging, and demos remains RFC39-WTBD-010 / later command-center work. |
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` or dedicated client-governance/sustainability source, consumed by manage | Deferred with explicit degraded posture | No certified restriction and sustainability profile products exist. Full ESG support would be a false compliance claim. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | Future cost/execution source | Deferred with labelled local estimates only | No authoritative `TransactionCostCurve:v1` source exists. |
@@ -1029,8 +1029,10 @@ Validation and merge evidence:
 
 Remaining dependency:
 
-Workbench construction lab and canonical front-office proof remain in RFC39-WTBD-002 and
-RFC39-WTBD-003. No Workbench supported-feature claim is made by completing this Gateway slice.
+Workbench construction lab and canonical front-office proof were completed afterward through
+`lotus-workbench` PR #150 and PR #151. Gateway remains the composition boundary and does not
+convert construction support into order execution, proof-pack lifecycle, or AI/report lifecycle
+claims.
 
 #### RFC39-WTBD-002 - Workbench Construction Lab / Alternatives Comparison UX
 
@@ -1039,31 +1041,76 @@ Target business outcome:
 PMs can compare construction alternatives, inspect objective/constraint traces, understand degraded
 source posture, and select an alternative through a governed Workbench journey.
 
-Why it cannot be done now:
+Completion status:
 
-Workbench must consume Gateway/BFF only. Implementing before Gateway composition would either
-create direct manage calls or move construction logic into the browser.
+Complete for the current Workbench construction-lab scope on 2026-05-06. `lotus-workbench`
+PR #150 merged the Gateway-backed construction alternatives panel and PR #151 merged the
+follow-up live-proof hardening that remained on the feature branch after PR #150 auto-merged.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. RFC39-WTBD-001 complete and merged through `lotus-gateway` PR #190,
-2. Workbench BFF/client modules consume Gateway only,
-3. UI covers alternative list, comparison matrix, detail drawer, source supportability, selected
-   state, degraded methods, infeasible/fallback solver posture, and action gating,
-4. browser code does not optimize, select automatically, or recompute metrics,
-5. canonical front-office validation is available.
+1. `/workbench/{portfolioId}` renders a Construction Alternatives panel for the canonical DPM
+   workflow,
+2. Workbench uses the BFF/Gateway route family only:
+   `POST /api/v1/dpm/command-center/construction/alternative-sets/generate`,
+   `GET /api/v1/dpm/command-center/construction/alternative-sets/{alternative_set_id}`, and
+   `POST /api/v1/dpm/command-center/construction/alternative-sets/{alternative_set_id}/selections`,
+3. Workbench sends governed DPM source context instead of relying on page-level reporting dates:
+   `MANDATE_PB_SG_GLOBAL_BAL_001`, `MODEL_PB_SG_GLOBAL_BAL_DPM`, `booking_center_code=Singapore`,
+   and canonical construction source date `2026-04-10`,
+4. generated alternatives, method status, drift/turnover metrics, objective trace count,
+   constraint trace count, reason codes, correlation id, selected alternative state, and manage
+   authority are rendered from Gateway/manage truth,
+5. the panel keeps Gateway mediation visible after generation while showing `lotus-manage` as the
+   data authority,
+6. browser code does not optimize, auto-select, recompute construction metrics, infer source
+   supportability, or clone manage methodology,
+7. a focused live Playwright proof was added as `npm run live:validate:construction`,
+8. README and wiki validation material now document the live proof command and evidence path.
 
-Expected implementation wave:
+Validation and merge evidence:
 
-Implement in `lotus-workbench` after Gateway construction composition.
+1. `lotus-workbench` PR #150 merged to `main` as merge commit
+   `d96bc0eada11e8ecb5ac224cc04d9c9a155935ac`,
+2. follow-up `lotus-workbench` PR #151 merged to `main` as
+   `ac951d5` after the unmerged live-proof commit was found on the feature branch,
+3. PR #150 checks passed: Feature Lane, PR Merge Gate lint/typecheck/coverage/build, Playwright
+   smoke, Docker build, Docker parity, workflow lint, and queue checks,
+4. PR #151 checks passed: Feature Lane and PR Merge Gate including Docker parity, Playwright
+   smoke, Docker build, coverage/build, and workflow lint,
+5. local targeted tests passed:
+   `npx vitest run tests/unit/workbench-api.test.ts tests/unit/domain-product-discovery-client.test.tsx tests/unit/construction-alternatives-panel.test.tsx`
+   with 46 tests passed,
+6. local full Workbench gate passed before merge:
+   `make check` with lint, typecheck, coverage 155 files / 704 tests, and Next production build,
+7. focused live proof passed:
+   `npm run live:validate:construction` against canonical `PB_SG_GLOBAL_BAL_001`,
+8. live proof generated `output/rfc39-wtbd002-construction-lab/construction-live/construction-alternatives-live-summary.json`
+   with response status `200`, source service `lotus-manage`, authority `lotus-manage:RFC-0039`,
+   correlation `corr-workbench-construction-PB_SG_GLOBAL_BAL_001-2026-04-10`, three alternatives,
+   visible Gateway mediation, and no local optimizer/methodology claim,
+9. Workbench wiki was published from repo source after merge as `lotus-workbench.wiki` commit
+   `a908bab`, and `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-workbench` returned clean.
 
-Promotion proof:
+Quality improvements made during closure:
 
-1. Workbench unit/component/BFF tests,
-2. browser and accessibility validation,
-3. visual proof for populated and degraded alternatives,
-4. canonical front-office evidence,
-5. Workbench README/wiki/supported-features updates.
+1. fixed the Workbench construction request context after live proof exposed a real
+   `DPM_CORE_CONTEXT_INCOMPLETE` failure caused by missing mandate/model context and a mismatched
+   booking-center/source-date posture,
+2. aligned construction idempotency and correlation keys with the governed construction source date
+   rather than the page/reporting as-of date,
+3. made Gateway mediation persistent in the panel after successful generation,
+4. hardened a flaky domain-product discovery test by waiting on loaded catalog data instead of a
+   static page heading,
+5. added a repeatable live proof command so future verification is not a one-off manual browser
+   exercise.
+
+Remaining dependency:
+
+Richer construction lifecycle depth remains outside RFC39-WTBD-002: proof-pack linkage, wave
+orchestration, report/AI narrative lifecycle, approval staging, OMS handoff, and broader
+command-center product choreography stay tracked under RFC39-WTBD-010 and later RFC-0098
+command-center work.
 
 #### RFC39-WTBD-003 - Full Front-Office Construction-Lab Product Realization
 
@@ -1072,29 +1119,36 @@ Target business outcome:
 Construction alternatives become a complete front-office PM workflow across manage, Gateway, and
 Workbench, suitable for demos and real operating use.
 
-Why it cannot be done now:
+Completion status:
 
-Manage backend alternatives are complete, but the full business outcome requires Gateway
-composition, Workbench UX, canonical browser proof, and cross-repo product documentation.
+Complete for first-wave product realization on 2026-05-06. Manage owns construction authority,
+Gateway composes it, and Workbench renders a canonical PM-facing construction-lab path with live
+proof. This does not close the later lifecycle expansion tracked in RFC39-WTBD-010.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. RFC39-WTBD-001 complete and merged through `lotus-gateway` PR #190,
-2. RFC39-WTBD-002 complete,
-3. canonical front-office validation passes,
-4. supported-feature ledgers align across apps,
-5. screenshots and demos are tied to validated backend evidence.
+1. `lotus-manage` owns alternative generation, comparison metrics, source supportability, method
+   posture, and selection state,
+2. `lotus-gateway` PR #190 exposes Workbench-facing construction BFF routes without recomputing
+   construction truth,
+3. `lotus-workbench` PR #150/#151 renders the PM construction alternatives panel, generation
+   action, comparison table, reason codes, traces, and selection controls,
+4. README/wiki material in Gateway and Workbench describes the current implementation-backed
+   product path,
+5. canonical live proof shows a real `PB_SG_GLOBAL_BAL_001` construction alternative set generated
+   through the Workbench/Gateway/manage path.
 
-Expected implementation wave:
+Not included in this first wave:
 
-Treat as a cross-app product-realization closure after Gateway and Workbench implementations merge.
+1. proof-pack attachment for each construction choice,
+2. wave-orchestration promotion from selected alternative to rebalance wave,
+3. rendered report and archive lifecycle for construction decisions,
+4. governed AI narrative over construction choices,
+5. OMS or order-staging handoff,
+6. richer command-center drawers and demo choreography beyond the embedded Workbench panel.
 
-Promotion proof:
-
-1. canonical front-office evidence pack,
-2. API/BFF/browser/accessibility/visual checks,
-3. demo material and wiki pages backed by implementation,
-4. no unsupported Gateway/Workbench product claims.
+Those items require cross-RFC lifecycle work and remain tracked under RFC39-WTBD-010 or later
+RFC-0098 command-center realization.
 
 #### RFC39-WTBD-004 - ESG/Restriction-Aware Construction Support
 
