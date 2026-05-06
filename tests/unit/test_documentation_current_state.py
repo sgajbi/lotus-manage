@@ -761,6 +761,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
     assert "RFC Work To Be Done Ledger" in work_to_be_done
+    assert "## Mainline WTBD Control Snapshot" in work_to_be_done
+    assert "| Total WTBD items | 59 |" in work_to_be_done
+    assert "| Done on merged/published truth | 16 |" in work_to_be_done
+    assert "| Partial / in progress | 3 |" in work_to_be_done
+    assert "| Remaining / open | 40 |" in work_to_be_done
+    assert "RFC40-WTBD-001 - Gateway proof-pack composition" in work_to_be_done
+    assert "RFC41-WTBD-006 - Workbench wave command center" in work_to_be_done
     assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
     assert "RFC42-WTBD-001" in work_to_be_done
     assert "RFC42-WTBD-008" in work_to_be_done
@@ -781,3 +788,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "relative `--output-root`" in work_to_be_done
     assert "Workbench must consume Gateway/BFF only" in work_to_be_done
     assert "PM quality scoring" in work_to_be_done
+    assert "pending PR publication" not in work_to_be_done
+
+    assert "## Product Readiness At A Glance" in supported_features
+    assert "## WTBD Product-Readiness Roadmap" in supported_features
+    assert "flowchart LR" in supported_features
+    assert "developers, business users, operations, sales/pre-sales" in supported_features
+    assert "59 WTBD items: 16 done on merged/published truth" in supported_features
+    assert "RFC40-WTBD-002 - Workbench proof-pack review UX" in supported_features
+    assert "A WTBD is not complete until merged to `main`" in supported_features

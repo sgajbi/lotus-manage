@@ -27,12 +27,47 @@ Governance rules:
 
 Wiki decision for this ledger update:
 
-The existing `wiki/Supported-Features.md`, `wiki/RFC-Index.md`, and `wiki/Roadmap.md` already state
-the RFC-0036 through RFC-0041 supported boundaries and the major unpromoted capabilities. This
-ledger is a repo-local planning/control artifact for follow-up sequencing, so no additional wiki
-source change is required for this slice. If this ledger later becomes the public cross-RFC backlog
-used for product planning or client roadmap discussion, add a wiki page and sidebar link in the
-same PR.
+The WTBD ledger is now used as a product-readiness control surface, not only an engineering
+planning artifact. `wiki/Supported-Features.md` is updated in this slice with an
+implementation-backed DPM product-readiness view, integration diagram, and next-priority WTBD
+sequence suitable for developers, operations, business stakeholders, sales/pre-sales, and client
+demo preparation. The wiki remains careful not to promote unfinished WTBDs as supported features.
+
+## Mainline WTBD Control Snapshot
+
+Snapshot basis: `main` after RFC38-WTBD-003 merged and repo-local wiki source was published on
+2026-05-07.
+
+| Control | Count | Meaning |
+| --- | ---: | --- |
+| Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
+| Done on merged/published truth | 16 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
+| Remaining / open | 40 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+
+Partial / in-progress items:
+
+| ID | Current partial scope | Remaining gap |
+| --- | --- | --- |
+| RFC37-WTBD-001 | `lotus-manage` RFC-0042 backend authority and first-wave outcome product path are implemented. | Complete richer downstream/source-owner realization across all outcome learning loops. |
+| RFC40-WTBD-009 | First-wave regime scenario evidence exists through RFC-0039 selected alternatives. | Direct proof-pack scenario contribution, CIO approval, and richer source-owner proof-pack enrichment remain future work. |
+| RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow source-family adapters are implemented. | Aggregated risk/performance, tax, FX, cash movement, liquidity, and execution methodologies remain source-owner work. |
+
+Next bank-buyable product-readiness priorities:
+
+| Priority | WTBD | Why this is next | Promotion bar |
+| ---: | --- | --- | --- |
+| 1 | RFC40-WTBD-001 - Gateway proof-pack composition | Exposes manage-owned pre-trade evidence through the governed product API without reconstruction. | Gateway PR merged, route/OpenAPI tests green, no-reconstruction contract tests, wiki published. |
+| 2 | RFC40-WTBD-002 - Workbench proof-pack review UX | Turns pre-trade proof packs into a PM/CIO review surface suitable for demos and operating review. | Workbench BFF-only implementation, browser proof, screenshot evidence, accessible ready/degraded states, wiki published. |
+| 3 | RFC40-WTBD-003 - Full front-office proof-pack product realization | Converts backend proof-pack authority into an end-to-end product claim. | Priorities 1 and 2 merged, canonical front-office QA green, docs/wiki/client-demo material aligned. |
+| 4 | RFC41-WTBD-005 - Gateway wave composition | Starts converting explicit rebalance waves from backend authority into product APIs. | Gateway composition merged with supportability and no-reconstruction tests. |
+| 5 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
+
+Execution rule:
+
+Do not open a new WTBD implementation slice until the current slice has passed local validation,
+GitHub required checks, PR merge, wiki publication where needed, final `git fetch origin --prune`
+plus `git branch -r --no-merged origin/main`, and clean branch/status hygiene.
 
 ## RFC-0036 - DPM Stateful Core Sourcing And Endpoint Consolidation
 
@@ -710,7 +745,7 @@ products, and canonical seed automation belonged to downstream or source-owning 
 | --- | --- | --- | --- | --- |
 | RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
 | RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and originally recorded the canonical seed gap that RFC38-WTBD-003 later resolved for the populated governed portfolio. |
-| RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed locally, runtime-proven, pending PR publication | Platform canonical automation now refreshes the governed DPM mandate from core through manage, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified `ready`. Partial and empty command-center state automation remains future depth. |
+| RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 | Platform canonical automation now refreshes the governed DPM mandate from core through manage, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified `ready`. Partial and empty command-center state automation remains future depth. |
 | RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` or future relationship-book authority | Deferred with no support claim | RFC-0038 supports caller-supplied mandate IDs and persisted monitoring runs. No certified PM-book membership source exists yet. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
 | RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
@@ -853,8 +888,13 @@ for demo, QA, and regression proof.
 
 Closure status:
 
-Completed locally on 2026-05-07 through `lotus-platform` canonical automation and a small
-`lotus-workbench` validation-governance update. PR publication remains pending.
+Completed on 2026-05-07 through coordinated PRs:
+
+1. `lotus-platform` PR #304 merged to `main` as `cdbc489` and published
+   `lotus-platform.wiki` commit `fa3216a`,
+2. `lotus-workbench` PR #155 merged to `main` as `cad5302`,
+3. `lotus-manage` PR #113 merged to `main` as `7579a01` and published
+   `lotus-manage.wiki` commit `27b1071`.
 
 What was delivered:
 
