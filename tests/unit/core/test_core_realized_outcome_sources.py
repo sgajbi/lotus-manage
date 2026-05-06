@@ -3,8 +3,10 @@ import pytest
 from src.core.outcomes import (
     CoreOutcomeSourceError,
     assemble_realized_outcome_snapshot,
+    realized_cashflow_projection_source_from_cashflow_projection_response,
     realized_cash_source_from_cash_balances_response,
     realized_transaction_source_from_transaction_ledger_response,
+    unavailable_core_cashflow_projection_source,
     unavailable_core_cash_source,
 )
 from tests.unit.core.test_realized_outcome_sources import _window
@@ -107,6 +109,39 @@ def _transaction_ledger_response() -> dict[str, object]:
                 },
             },
         ],
+    }
+
+
+def _cashflow_projection_response() -> dict[str, object]:
+    return {
+        "product_name": "PortfolioCashflowProjection",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-05-06",
+        "range_start_date": "2026-05-06",
+        "range_end_date": "2026-05-16",
+        "include_projected": True,
+        "portfolio_currency": "USD",
+        "generated_at": "2026-05-06T02:00:00Z",
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-05-06T01:58:00Z",
+        "source_batch_fingerprint": (
+            "cashflow_projection:PB_SG_GLOBAL_BAL_001:2026-05-06:2026-05-16:include_projected=true"
+        ),
+        "points": [
+            {
+                "projection_date": "2026-05-06",
+                "net_cashflow": "0",
+                "projected_cumulative_cashflow": "0",
+            },
+            {
+                "projection_date": "2026-05-10",
+                "net_cashflow": "-25000.00",
+                "projected_cumulative_cashflow": "-25000.00",
+            },
+        ],
+        "total_net_cashflow": "-25000.00",
+        "projection_days": 10,
     }
 
 
@@ -316,6 +351,124 @@ def test_unavailable_core_cash_source_preserves_degraded_owner_posture() -> None
         "SOURCE_EVIDENCE_INCOMPLETE",
         "CORE_CASH_BALANCE_UNAVAILABLE",
     ]
+
+
+def test_cashflow_projection_adapter_wraps_source_total_without_forecasting() -> None:
+    source = realized_cashflow_projection_source_from_cashflow_projection_response(
+        _cashflow_projection_response()
+    )
+
+    assert source.dimension == "CASH_RESIDUAL"
+    assert source.source_system == "lotus-core"
+    assert source.source_type == "PORTFOLIO_CASHFLOW_PROJECTION"
+    assert source.source_id == (
+        "PortfolioCashflowProjection:v1:PB_SG_GLOBAL_BAL_001:2026-05-06:"
+        "cashflow_projection:total_net_cashflow:2026-05-06:2026-05-16:"
+        "include_projected=true:cashflow_projection:PB_SG_GLOBAL_BAL_001:"
+        "2026-05-06:2026-05-16:include_projected=true"
+    )
+    assert str(source.value) == "-25000.00"
+    assert source.unit == "USD"
+    assert source.observed_at == "2026-05-06T01:58:00Z"
+    assert source.as_of_date == "2026-05-06"
+    assert source.content_hash == (
+        "cashflow_projection:PB_SG_GLOBAL_BAL_001:2026-05-06:2026-05-16:include_projected=true"
+    )
+    assert source.reason_codes == [
+        "CORE_SOURCE_READY",
+        "CORE_PRODUCT_PORTFOLIOCASHFLOWPROJECTION",
+        "CORE_PRODUCT_VERSION_V1",
+        "CASHFLOW_PROJECTION_MEASURE_TOTAL_NET_CASHFLOW",
+        "CASHFLOW_PROJECTION_RANGE_2026-05-06_TO_2026-05-16",
+        "CASHFLOW_PROJECTION_INCLUDE_PROJECTED_TRUE",
+        "CORE_DATA_QUALITY_COMPLETE",
+    ]
+
+
+def test_cashflow_projection_source_can_make_rfc42_cash_dimension_ready() -> None:
+    source = realized_cashflow_projection_source_from_cashflow_projection_response(
+        _cashflow_projection_response()
+    )
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["CASH_RESIDUAL"],
+    )
+
+    cash = snapshot.realized_values["CASH_RESIDUAL"]
+    assert snapshot.supportability.state == "READY"
+    assert cash.value == source.value
+    assert cash.unit == "USD"
+    assert cash.source_refs[0].source_type == "PORTFOLIO_CASHFLOW_PROJECTION"
+
+
+def test_incomplete_cashflow_projection_preserves_degraded_core_posture() -> None:
+    response = _cashflow_projection_response()
+    response["data_quality_status"] = "INCOMPLETE"
+
+    source = realized_cashflow_projection_source_from_cashflow_projection_response(response)
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["CASH_RESIDUAL"],
+    )
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == "PARTIAL"
+    assert snapshot.supportability.state == "DEGRADED"
+    assert snapshot.realized_values["CASH_RESIDUAL"].supportability.reason_codes[:2] == [
+        "SOURCE_EVIDENCE_INCOMPLETE",
+        "CORE_SOURCE_DEGRADED",
+    ]
+
+
+def test_unavailable_core_cashflow_projection_preserves_degraded_owner_posture() -> None:
+    source = unavailable_core_cashflow_projection_source(
+        source_id="core-down:cashflow-projection",
+        reason_code="CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+        as_of_date="2026-05-06",
+    )
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["CASH_RESIDUAL"],
+    )
+
+    assert snapshot.supportability.state == "DEGRADED"
+    assert snapshot.realized_values["CASH_RESIDUAL"].value is None
+    assert snapshot.realized_values["CASH_RESIDUAL"].supportability.reason_codes[:2] == [
+        "SOURCE_EVIDENCE_INCOMPLETE",
+        "CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+    ]
+
+
+def test_cashflow_projection_adapter_rejects_missing_currency() -> None:
+    malformed = _cashflow_projection_response()
+    del malformed["portfolio_currency"]
+
+    with pytest.raises(CoreOutcomeSourceError, match="portfolio_currency"):
+        realized_cashflow_projection_source_from_cashflow_projection_response(malformed)
+
+
+def test_cashflow_projection_adapter_rejects_missing_source_total() -> None:
+    malformed = _cashflow_projection_response()
+    del malformed["total_net_cashflow"]
+
+    with pytest.raises(CoreOutcomeSourceError, match="total_net_cashflow"):
+        realized_cashflow_projection_source_from_cashflow_projection_response(malformed)
+
+
+def test_cashflow_projection_adapter_rejects_missing_projection_posture() -> None:
+    malformed = _cashflow_projection_response()
+    del malformed["include_projected"]
+
+    with pytest.raises(CoreOutcomeSourceError, match="include_projected"):
+        realized_cashflow_projection_source_from_cashflow_projection_response(malformed)
 
 
 def test_cash_adapter_rejects_local_aggregation_request() -> None:

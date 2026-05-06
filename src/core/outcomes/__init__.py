@@ -6,8 +6,10 @@ from src.core.outcomes.comparison import (
 )
 from src.core.outcomes.core_sources import (
     CoreOutcomeSourceError,
+    realized_cashflow_projection_source_from_cashflow_projection_response,
     realized_cash_source_from_cash_balances_response,
     realized_transaction_source_from_transaction_ledger_response,
+    unavailable_core_cashflow_projection_source,
     unavailable_core_cash_source,
 )
 from src.core.outcomes.models import (
@@ -106,6 +108,7 @@ __all__ = [
     "compare_outcome_dimension",
     "compare_outcome_dimensions",
     "realized_cash_source_from_cash_balances_response",
+    "realized_cashflow_projection_source_from_cashflow_projection_response",
     "realized_active_performance_source_from_workspace_summary",
     "realized_attribution_source_from_attribution_response",
     "realized_concentration_source_from_concentration_response",
@@ -117,6 +120,7 @@ __all__ = [
     "realized_rolling_risk_source_from_rolling_response",
     "realized_risk_source_from_risk_metrics_report",
     "realized_transaction_source_from_transaction_ledger_response",
+    "unavailable_core_cashflow_projection_source",
     "unavailable_core_cash_source",
     "unavailable_performance_source",
     "unavailable_risk_source",

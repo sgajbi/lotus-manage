@@ -29,9 +29,10 @@ Slice 5 adds the source-owner realized evidence boundary:
    metrics response, and historical attribution response output into RFC-0042 realized
    `RISK_REDUCTION` evidence without recalculating risk methodology locally.
 6. Follow-on WTBD-006 core adapters in `src/core/outcomes/core_sources.py` that wrap the
-   `lotus-core` `HoldingsAsOf:v1` cash total and explicit `TransactionLedgerWindow:v1`
-   transaction-row scalar evidence into RFC-0042 realized evidence without aggregating cash,
-   transaction, tax, or FX rows in manage.
+   `lotus-core` `HoldingsAsOf:v1` cash total, explicit `TransactionLedgerWindow:v1`
+   transaction-row scalar evidence, and `PortfolioCashflowProjection:v1` total net cashflow into
+   RFC-0042 realized evidence without aggregating cash, transaction, tax, FX, or projection rows in
+   manage.
 7. Unit tests covering ready source evidence, missing execution evidence, missing risk/performance
    contracts, stale source degradation, conflicting source values, malformed source blocking,
    performance source wrapping, degraded performance-source posture, malformed performance payload
@@ -47,7 +48,7 @@ in this slice and does not calculate source-owner truth locally.
 
 | Source Owner | RFC-0042 First-Wave Posture |
 | --- | --- |
-| `lotus-core` | Supported adapters consume `HoldingsAsOf:v1` cash total evidence for `CASH_RESIDUAL` and explicit `TransactionLedgerWindow:v1` transaction-row scalar evidence for `COST`, `TAX`, `FX_RESIDUAL`, and linked `CASH_RESIDUAL`. They preserve source product metadata, as-of date, generated/evidence timestamp, data-quality posture, source fingerprint, transaction id/type, selected measure, and source currency. Missing or malformed evidence blocks affected dimensions. Aggregated transaction-window totals, execution/fill quality, liquidity ladders, and rule outcome adapters remain source-owner follow-on work until owning contracts expose source-owned totals. |
+| `lotus-core` | Supported adapters consume `HoldingsAsOf:v1` cash total evidence for `CASH_RESIDUAL`, explicit `TransactionLedgerWindow:v1` transaction-row scalar evidence for `COST`, `TAX`, `FX_RESIDUAL`, and linked `CASH_RESIDUAL`, and `PortfolioCashflowProjection:v1` total net cashflow for source-owned projected cash residual evidence. They preserve source product metadata, as-of date, generated/evidence timestamp, data-quality posture, source fingerprint, transaction id/type where applicable, projection range/include-projected posture where applicable, selected measure, and source currency. Missing or malformed evidence blocks affected dimensions. Aggregated transaction-window totals, execution/fill quality, liquidity ladders, and rule outcome adapters remain source-owner follow-on work until owning contracts expose source-owned totals. |
 | execution/OMS owner | No certified first-wave fill/order contract is assumed. Missing execution evidence emits `EXECUTION_EVIDENCE_BLOCKED`. |
 | `lotus-risk` | Supported adapters consume `RiskMetricsReport:v1`, drawdown response, concentration response, rolling metrics response, and historical attribution response evidence from `lotus-risk`. They preserve request fingerprint, selected period where applicable, selected metric/measure/statistic/window, attribution type, grouping dimension, contributor group key where applicable, source supportability, benchmark/risk-free context, issuer coverage posture, attribution quality flags, stateful active-risk support metadata, and source reason codes. Missing evidence still emits `RISK_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `RISK_SOURCE_UNAVAILABLE`. |
 | `lotus-performance` | Supported adapters consume `WORKSPACE_SUMMARY_TWR_RETURN`, `WORKSPACE_SUMMARY_ACTIVE_RETURN`, `WORKSPACE_SUMMARY_MWR_RETURN`, `PERFORMANCE_CONTRIBUTION`, and `PERFORMANCE_ATTRIBUTION` evidence from `lotus-performance`. They perform only percentage-point to ratio unit conversion plus lineage/supportability wrapping. Missing evidence still emits `PERFORMANCE_OUTCOME_NOT_SUPPORTED`; unavailable evidence remains degraded as `PERFORMANCE_SOURCE_UNAVAILABLE`. Broader benchmark-relative outcome analysis outside source-emitted attribution scalars remains source-owner follow-on work. |
@@ -81,6 +82,8 @@ in this slice and does not calculate source-owner truth locally.
 | Unavailable `lotus-performance` workspace-summary source | `DEGRADED` with `PERFORMANCE_SOURCE_UNAVAILABLE` plus the source-supplied reason code |
 | `lotus-core` HoldingsAsOf cash total source | `READY` when the source response includes product identity, portfolio id, as-of date, selected cash total, and complete/ready data quality |
 | Degraded `lotus-core` HoldingsAsOf cash total source | `DEGRADED` when source data quality is incomplete, partial, stale, unavailable, or unknown |
+| `lotus-core` PortfolioCashflowProjection total net cashflow source | `READY` when the source response includes product identity, portfolio id, as-of date, projection range, include-projected posture, portfolio currency, total net cashflow, and complete/ready data quality |
+| Degraded `lotus-core` PortfolioCashflowProjection source | `DEGRADED` when source data quality is incomplete, partial, stale, unavailable, or unknown |
 | `lotus-core` transaction-ledger row source | `READY` when the source response includes product identity, portfolio id, as-of date, selected transaction id, selected scalar measure, source currency, complete/ready data quality, and source fingerprint |
 | Degraded `lotus-core` transaction-ledger row source | `DEGRADED` when source data quality is incomplete, partial, stale, unavailable, or unknown while preserving the selected source-owned transaction scalar |
 
@@ -108,6 +111,34 @@ Out of scope for this adapter:
 2. deriving tax, FX, transaction-cost, liquidity, execution, or rule outcomes from transaction rows,
 3. converting currencies locally,
 4. fabricating source fingerprints, evidence timestamps, or data-quality posture.
+
+## Core Cashflow Projection Adapter Contract
+
+`realized_cashflow_projection_source_from_cashflow_projection_response` accepts a validated
+`lotus-core` `PortfolioCashflowProjection:v1` response and emits a `DpmRealizedSourceSnapshot` for
+`CASH_RESIDUAL`.
+
+Implemented behavior:
+
+1. source owner remains `lotus-core`,
+2. source type is `PORTFOLIO_CASHFLOW_PROJECTION`,
+3. the only supported measure is the source-owned `total_net_cashflow`,
+4. the unit is the explicit source-owned `portfolio_currency`,
+5. `product_name`, `product_version`, `portfolio_id`, `as_of_date`, generated/evidence timestamp,
+   data-quality status, source batch fingerprint, projection range, include-projected posture, and
+   portfolio currency are preserved as lineage/supportability evidence,
+6. incomplete, partial, stale, unavailable, or unknown source data quality degrades the source
+   posture while preserving the source-owned value,
+7. missing total net cashflow, portfolio currency, projection range, or include-projected posture
+   raises `CoreOutcomeSourceError` and cannot silently produce a ready cash value.
+
+Out of scope for this adapter:
+
+1. forecasting cashflows locally,
+2. aggregating projection points locally,
+3. deriving liquidity ladder, MWR flow, tax, FX, execution, or rule outcomes from the projection,
+4. converting currencies locally,
+5. fabricating source fingerprints, evidence timestamps, data-quality posture, or currency.
 
 ## Core Transaction Ledger Adapter Contract
 
@@ -376,8 +407,10 @@ benchmark-dependent and risk-free-dependent evidence can be degraded when source
 unavailable or unaligned. Historical attribution evidence can be degraded when source quality flags
 are present and blocked when the selected period carries a source-owned error. The WTBD-006 core adapters can
 mark `CASH_RESIDUAL` ready when a certified `lotus-core` `HoldingsAsOf:v1` cash total or explicit
-linked transaction cashflow amount is supplied, and can mark `COST`, `TAX`, or `FX_RESIDUAL` ready
-for explicit transaction-row scalar evidence from `TransactionLedgerWindow:v1`.
+linked transaction cashflow amount is supplied, can mark projected/source-owned cash residual ready
+when a certified `PortfolioCashflowProjection:v1` total net cashflow is supplied, and can mark
+`COST`, `TAX`, or `FX_RESIDUAL` ready for explicit transaction-row scalar evidence from
+`TransactionLedgerWindow:v1`.
 They do not promote a full post-trade outcome-review product claim by themselves. Runtime support
 still requires durable persistence, APIs, OpenAPI certification, live evidence, documentation
 publication, and downstream realization where surfaced.
