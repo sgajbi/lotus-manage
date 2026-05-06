@@ -2290,7 +2290,7 @@ artifacts belong to report/render/archive services, and AI narrative execution b
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-gateway`, `lotus-workbench` | Implemented, merged, CI-proven, and wiki-published through `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 | Manage emits bounded report input only; downstream services now consume it to create deterministic outcome-review report artifacts, preserve archive posture, expose Gateway submission, and add the Workbench report request action without recomputing outcome truth. |
 | RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, Gateway, Workbench, with manage as evidence authority | Implemented, merged, CI-proven, and wiki-published through `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 | Manage emits AI evidence input only; `lotus-ai` now owns guarded workflow-pack narrative execution, Gateway composes the evidence/narrative BFF, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
-| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, drawdown response max drawdown, concentration response selected measures, performance workspace-summary TWR, active return, MWR output, contribution selected measures, and core HoldingsAsOf cash totals now have manage adapters; richer risk/performance, tax, FX, cash movements, liquidity, and execution methodologies stay source-owner follow-on work. |
+| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, drawdown response max drawdown, concentration response selected measures, rolling metric summaries, performance workspace-summary TWR, active return, MWR output, contribution selected measures, attribution selected measures, and core HoldingsAsOf cash totals now have manage adapters; richer risk/performance, tax, FX, cash movements, liquidity, and execution methodologies stay source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration and acknowledgements | Execution/OMS owner, `lotus-manage` consumer | Ownership not established | RFC-0042 can compare expected and realized evidence, but OMS integration needs a separate owner, controls, acknowledgements, and reconciliation contract. |
 | RFC42-WTBD-008 | PM quality scoring or behavioral analytics | Business owner, methodology owner, `lotus-ai` only if approved | Not supported | RFC-0042 intentionally avoids scoring PMs. Any future scoring requires business approval, auditable methodology, bias controls, and governance. |
 
@@ -2730,7 +2730,9 @@ Latest WTBD-006 risk-concentration tightening proof:
 3. tests cover source-owned HHI, top-position weight, issuer HHI, issuer partial-coverage degraded
    posture, issuer missing-coverage degraded posture, ready snapshot assembly, missing fingerprint,
    and missing ready-value guardrails,
-4. repo-native `make check` must pass before PR merge,
+4. repo-native `make check` passed with `889` unit tests, lint, format, mypy, OpenAPI quality,
+   API vocabulary, no-alias, domain-data-product, trust telemetry, observability, and
+   monetary-float guardrails before PR #96 merge,
 5. manage preserves `lotus-risk` request fingerprint, supportability truth, issuer coverage
    posture, and concentration source units, and performs no HHI, top-position, issuer, or coverage
    calculation locally.
@@ -2759,7 +2761,9 @@ Latest WTBD-006 performance-contribution tightening proof:
 3. tests cover source-owned total contribution, total portfolio return, summary FX contribution,
    ready snapshot assembly, stale/degraded source-owner posture, errored source blocking posture,
    and missing ready-value guardrails,
-4. repo-native `make check` must pass before PR merge,
+4. repo-native `make check` passed with `896` unit tests, lint, format, mypy, OpenAPI quality,
+   API vocabulary, no-alias, domain-data-product, trust telemetry, observability, and
+   monetary-float guardrails before PR #97 merge,
 5. manage preserves `lotus-performance` calculation id, calculation hash, supportability truth,
    input mode, selected contribution measure, and percentage-point to ratio unit conversion, and
    performs no position, daily, hierarchy, local/FX, benchmark-relative, or attribution calculation
