@@ -66,7 +66,7 @@ mesh/product promotion belong to downstream or platform/source owners.
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0036 |
 | --- | --- | --- | --- | --- |
 | RFC36-WTBD-001 | Gateway integration rebuilt against canonical `/api/v1` manage APIs | `lotus-gateway` | Completed and merged to `lotus-gateway` `main` in PR #191 (`a68181b`) | Endpoint cleanup intentionally accepted breaking stale Gateway assumptions. Gateway now consumes certified manage APIs without reintroducing aliases or monolithic context assumptions. |
-| RFC36-WTBD-002 | Workbench product surfaces over stateful manage execution | `lotus-workbench` through Gateway/BFF | Follow-on after Gateway | Workbench must not call manage directly and should only surface stateful behavior once Gateway composition is certified. |
+| RFC36-WTBD-002 | Workbench product surfaces over stateful manage execution | `lotus-workbench` through Gateway/BFF | Completed and merged to `lotus-workbench` `main` in PR #152 (`c83ea7e`) | Workbench now surfaces Gateway-provided manage rebalance action-register supportability without direct manage calls or locally invented source readiness. |
 | RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Proposed | RFC-0036 certified execution/source posture, not product dashboards over operations and supportability. |
 | RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-platform` with source producers and `lotus-manage` consumer declarations | Deferred until source-data lineage stabilizes | Current source products are live-proven; future stateful products need producer approval, declarations, trust telemetry, SLO/access/evidence policies, and certification. |
 | RFC36-WTBD-005 | Additional upstream source-product depth for stateful execution | `lotus-core` and future source owners | Deferred source enrichment | RFC-0036 consumes the certified RFC-087 products. Additional portfolio, market-data, cashflow, benchmark, restriction, or execution-depth sources require explicit retrieval design. |
@@ -127,29 +127,52 @@ Target business outcome:
 Workbench can present stateful DPM execution readiness and outcomes to users through Gateway-backed
 flows, while hiding the technical source-resolution complexity.
 
-Why it cannot be done now:
+Closure status:
 
-Workbench must consume Gateway/BFF only. RFC-0036 did not implement Gateway composition, so a
-Workbench product surface would either call manage directly or duplicate capability/source logic.
+Completed on 2026-05-06 through `lotus-workbench` PR #152,
+`feat: surface manage rebalance supportability`, merged to `main` at
+`c83ea7e136dd00cae1042cb9597fd2c42b634d56`.
 
-Dependencies satisfied:
+What was delivered:
 
-1. RFC36-WTBD-001 complete,
-2. Workbench BFF/client modules consume Gateway only,
-3. UI clearly distinguishes stateless and stateful availability,
-4. source-incomplete states are visible and not treated as generic failures,
-5. canonical browser proof covers stateful available and unavailable modes.
+1. Extended the Workbench overview `rebalance_snapshot` type so the UI can consume
+   Gateway-provided manage action-register supportability without a direct `lotus-manage` call.
+2. Rebuilt the `/workbench/{portfolioId}` rebalance status panel to render manage-owned status,
+   source support state, freshness, run count, operation count, workflow decision count,
+   last-run identity, and reason posture.
+3. Added explicit unknown/N/A handling when Gateway omits action-register supportability so
+   missing source context is not misrepresented as verified zero activity.
+4. Added focused unit coverage for ready, source-incomplete, and missing-supportability postures.
+5. Updated `lotus-workbench` repository context and repo-authored wiki source so product,
+   operator, and engineering material reflects the implementation-backed behavior.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-workbench` after Gateway integration is certified.
+1. Local targeted proof:
+   `npx vitest run tests/unit/rebalance-status.test.tsx` passed with 3 tests.
+2. Local type proof: `npm run typecheck` passed.
+3. Local repo gate: `make check` passed in `lotus-workbench`, including lint, typecheck,
+   156 test files / 707 tests with coverage, and production build.
+4. Live canonical proof:
+   `powershell -ExecutionPolicy Bypass -File scripts/live/Start-LotusFrontOfficeCanonical.ps1 -LocalApps workbench -RunValidation -ScreenshotDirectory output/playwright/rfc36-wtbd002-rebalance-status`
+   passed for `PB_SG_GLOBAL_BAL_001` after the governed seed completed.
+5. Targeted live browser assertion against
+   `http://workbench.dev.lotus/workbench/PB_SG_GLOBAL_BAL_001` proved the rebalance panel rendered
+   status, source support, freshness, evidence counts, and the explicit missing-supportability
+   message from the live Gateway payload.
+6. GitHub PR #152 checks passed before merge: Feature Lane lint/typecheck/test, Feature Lane
+   workflow lint, PR Merge Gate workflow lint, lint/typecheck/coverage/build, Playwright smoke,
+   Docker build validation, CI local Docker parity, and queue auto-merge.
+7. `lotus-workbench` wiki publication completed after merge; `Sync-RepoWikis.ps1 -CheckOnly
+   -Repository lotus-workbench` passed after publishing.
 
-Promotion proof:
+Gold-pass assessment:
 
-1. Workbench BFF/component/browser tests,
-2. accessibility and degraded-state proof,
-3. canonical front-office evidence,
-4. supported-feature updates that do not imply direct Workbench/manage coupling.
+This WTBD has reached the expected standard for its stated scope. The Workbench implementation is
+merged to `main`, the UI remains Gateway/BFF-only, source-incomplete and missing-supportability
+states are explicit, the behavior is protected by unit tests and full local/GitHub gates, canonical
+front-office evidence was captured, and repo-local plus published wiki material now reflects the
+implementation-backed product behavior.
 
 #### RFC36-WTBD-003 - Portfolio-Level DPM Operation Dashboards
 
