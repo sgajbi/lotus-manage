@@ -55,6 +55,19 @@ def _authority_context_payload() -> dict:
             "policy_id": "liquidity-policy.v1",
             "minimum_cash_weight": "0.03",
             "allowed_liquidity_tiers": ["L1", "L2", "L3"],
+            "cashflow_projection": {
+                "source_product_name": "PortfolioCashflowProjection",
+                "source_product_version": "v1",
+                "source_system": "lotus-core",
+                "total_net_cashflow": {"amount": "5000.00", "currency": "SGD"},
+                "projection_start": "2026-05-03",
+                "projection_end": "2026-06-03",
+                "include_projected": True,
+                "latest_evidence_timestamp": "2026-05-03T09:30:00Z",
+                "source_batch_fingerprint": ("cashflow-projection:PB_SG_GLOBAL_BAL_001:2026-05-03"),
+                "data_quality_status": "READY",
+                "reason_codes": ["CORE_CASHFLOW_PROJECTION_READY"],
+            },
             "reason_codes": ["LIQUIDITY_POLICY_READY"],
         },
         "currency_overlay_context": {
@@ -346,10 +359,61 @@ def test_authority_backed_methods_are_ready_with_required_evidence(monkeypatch) 
         "REGIME_SCENARIO_PACK_READY"
         in alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+    liquidity_reasons = alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"][
+        "reason_codes"
+    ]
+    assert "CORE_CASHFLOW_PROJECTION_READY" in liquidity_reasons
+    assert "CASHFLOW_PROJECTION_READY" in liquidity_reasons
     assert (
         "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"
         not in alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+
+
+def test_liquidity_aware_method_uses_core_cashflow_projection_for_policy_review() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["stateless_input"]["portfolio_snapshot"]["base_currency"] = "SGD"
+    payload["stateless_input"]["portfolio_snapshot"]["positions"] = [
+        {"instrument_id": "EQ_1", "quantity": "100"}
+    ]
+    payload["stateless_input"]["portfolio_snapshot"]["cash_balances"] = [
+        {"currency": "SGD", "amount": "20000"}
+    ]
+    payload["stateless_input"]["market_data_snapshot"]["prices"] = [
+        {"instrument_id": "EQ_1", "price": "100", "currency": "SGD"}
+    ]
+    payload["stateless_input"]["model_portfolio"]["targets"] = [
+        {"instrument_id": "EQ_1", "weight": "0.25"}
+    ]
+    payload["stateless_input"]["shelf_entries"] = [
+        {"instrument_id": "EQ_1", "status": "APPROVED", "liquidity_tier": "L1"}
+    ]
+    payload["methods"] = ["LIQUIDITY_AWARE"]
+    authority_context = _authority_context_payload()
+    authority_context["liquidity_context"]["minimum_cash_weight"] = "0.20"
+    authority_context["liquidity_context"]["cashflow_projection"]["total_net_cashflow"] = {
+        "amount": "-20000.00",
+        "currency": "SGD",
+    }
+    payload["authority_context"] = authority_context
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-liquidity-cashflow"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "LIQUIDITY_AWARE"
+    assert alternative["method_status"] == "PENDING_REVIEW"
+    assert "CORE_CASHFLOW_PROJECTION_READY" in reason_codes
+    assert "CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY" in reason_codes
 
 
 def test_regime_stress_aware_pending_review_when_scenario_loss_exceeds_policy() -> None:

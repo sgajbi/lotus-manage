@@ -69,11 +69,12 @@ RFC-0038 is now implementation-backed for the mandate digital-twin, health-score
 command-center backend foundation. RFC-0039 is implementation-backed for the manage-side
 construction-alternative foundation: first-wave and authority-backed generate/read/select APIs,
 do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained,
-risk-aware, liquidity-aware, currency-overlay, and regime-stress-aware methods. ESG/restriction-aware
-construction is explicitly deferred until source-backed restriction and sustainability profiles
-exist. Postgres persistence, live proof, and downstream Gateway/Workbench realization requirements
-are documented, but full product-surface support still requires Gateway and Workbench implementation
-and proof. RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
+risk-aware, liquidity-aware with optional `lotus-core` `PortfolioCashflowProjection:v1` projected
+cash-pressure evidence, currency-overlay, and regime-stress-aware methods. Client income-need
+planning and ESG/restriction-aware construction are explicitly deferred until source-backed owner
+products exist. Postgres persistence, live proof, and downstream Gateway/Workbench realization
+requirements are documented, but full product-surface support still requires Gateway and Workbench
+implementation and proof. RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
 JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, hashes, lineage, retention
 metadata, immutable persistence, certified APIs, source-backed mandate-context attachment from
 RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway

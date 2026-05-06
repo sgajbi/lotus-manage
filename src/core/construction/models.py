@@ -1,6 +1,6 @@
 """Domain models for RFC-0039 construction alternatives."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -159,6 +159,57 @@ class AuthoritativeRiskContext(BaseModel):
     )
 
 
+class AuthoritativeLiquidityCashflowProjection(BaseModel):
+    source_product_name: str = Field(
+        description="Source-owned cashflow projection data product name.",
+        examples=["PortfolioCashflowProjection"],
+    )
+    source_product_version: str = Field(
+        description="Source-owned cashflow projection data product version.",
+        examples=["v1"],
+    )
+    source_system: str = Field(
+        description="Authoritative source system that produced the cashflow projection.",
+        examples=["lotus-core"],
+    )
+    total_net_cashflow: Money = Field(
+        description="Source-owned total projected net cashflow over the projection window."
+    )
+    projection_start: date | None = Field(
+        default=None,
+        description="Inclusive projection-window start date when supplied by the source product.",
+        examples=["2026-05-03"],
+    )
+    projection_end: date | None = Field(
+        default=None,
+        description="Inclusive projection-window end date when supplied by the source product.",
+        examples=["2026-06-03"],
+    )
+    include_projected: bool = Field(
+        description=(
+            "Whether the source product included projected future rows in total_net_cashflow."
+        ),
+        examples=[True],
+    )
+    latest_evidence_timestamp: datetime | None = Field(
+        default=None,
+        description="Latest source evidence timestamp represented in the projection.",
+    )
+    source_batch_fingerprint: str | None = Field(
+        default=None,
+        description="Source-owned deterministic fingerprint for the projection batch.",
+        examples=["cashflow-projection:PB_SG_GLOBAL_BAL_001:2026-05-03"],
+    )
+    data_quality_status: ConstructionMethodStatus = Field(
+        default=ConstructionMethodStatus.READY,
+        description="Source-owner data quality posture for this projection.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Source-owner bounded reason codes for cashflow projection posture.",
+    )
+
+
 class AuthoritativeLiquidityContext(BaseModel):
     supportability_status: ConstructionMethodStatus = Field(
         description="Liquidity and settlement supportability status for the alternative."
@@ -171,6 +222,14 @@ class AuthoritativeLiquidityContext(BaseModel):
     allowed_liquidity_tiers: list[str] = Field(
         default_factory=list,
         description="Instrument liquidity tiers eligible for buy-side construction.",
+    )
+    cashflow_projection: AuthoritativeLiquidityCashflowProjection | None = Field(
+        default=None,
+        description=(
+            "Optional lotus-core PortfolioCashflowProjection:v1 evidence used to evaluate "
+            "future cash pressure against the liquidity policy. Absence preserves the "
+            "settlement/current-cash-only liquidity behavior."
+        ),
     )
     reason_codes: list[str] = Field(
         default_factory=list,

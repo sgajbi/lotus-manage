@@ -39,8 +39,10 @@ storage-layer constraint.
   generates and persists a comparable RFC-0039 construction alternative set with do-nothing,
   explainable heuristic, minimum-turnover, tax-aware, solver-constrained, risk-aware,
   liquidity-aware, currency-overlay, and regime-stress-aware alternatives with explicit
-  supportability and source-authority posture. ESG/restriction-aware construction is intentionally
-  deferred until source-backed restriction and sustainability profiles exist.
+  supportability and source-authority posture. Liquidity-aware alternatives can consume optional
+  `lotus-core` `PortfolioCashflowProjection:v1` evidence to flag projected cash-pressure policy
+  breaches. Client income-need planning and ESG/restriction-aware construction are intentionally
+  deferred until source-backed owner products exist.
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
   retrieves a previously generated alternative set without recomputation.
 - `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`

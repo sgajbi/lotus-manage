@@ -978,7 +978,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` or dedicated client-governance/sustainability source, consumed by manage | Deferred with explicit degraded posture | No certified restriction and sustainability profile products exist. Full ESG support would be a false compliance claim. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | Future cost/execution source | Deferred with labelled local estimates only | No authoritative `TransactionCostCurve:v1` source exists. |
-| RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` or cashflow source | Deferred source depth | Current `LIQUIDITY_AWARE` uses settlement, funding, cash balances, and minimum cash policy; it does not own income/cashflow forecasts. |
+| RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
 | RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
 | RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority | Deferred source depth beyond supplied context | `REGIME_STRESS_AWARE` accepts source-backed scenario context, but no certified scenario-pack endpoint exists. |
 | RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Proposed strategic extension | RFC-0039 selects alternatives; cross-RFC lifecycle needs RFC-0040 proof packs, RFC-0041 waves, report/AI owners, and product surfaces. |
@@ -1182,33 +1182,59 @@ Promotion proof:
 
 #### RFC39-WTBD-007 - Cashflow/Income-Need Aware Liquidity Construction
 
+Current implementation status:
+
+First-wave implementation is complete for source-backed cashflow projection liquidity posture.
+`lotus-core` now owns `PortfolioCashflowProjection:v1`, and `lotus-manage` `LIQUIDITY_AWARE`
+construction accepts that source product through `AuthoritativeLiquidityContext.cashflow_projection`.
+Manage uses the source-owned `total_net_cashflow`, currency, projection window, projected-row
+posture, source fingerprint, data-quality status, latest evidence timestamp, and bounded reason
+codes to evaluate projected cash pressure against the liquidity policy. If the projected net
+cashflow would reduce adjusted post-trade cash below the minimum cash weight, the method moves to
+`PENDING_REVIEW` with `CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY`. If the projection is stale,
+wrong-currency, lacks projected rows, or otherwise degraded by the source, the method degrades
+truthfully and preserves source reason codes.
+
 Target business outcome:
 
 Liquidity-aware alternatives can account for client income needs, expected cashflows, and future
 liquidity events rather than only current cash, settlement, and minimum cash policy.
 
-Why it cannot be done now:
+What remains deferred:
 
-No `PortfolioCashflowForecast:v1` or equivalent source exists. Manage must not fabricate cashflow
-needs.
+Client income-need planning and forecast methodology remain unsupported. `PortfolioCashflowProjection:v1`
+is a source-owned projection of portfolio cashflows; it is not a client income-need profile, spending
+plan, liability ladder, or wealth-planning forecast. Manage must not fabricate income needs or
+liability timing from current cash, transactions, or projection totals.
 
 Dependencies before implementation:
 
-1. cashflow forecast source product,
-2. income need and forecast horizon semantics,
-3. source freshness and confidence posture,
-4. manage liquidity objective tests,
-5. proof-pack and Workbench presentation alignment if surfaced.
+Completed first-wave dependencies:
+
+1. `lotus-core` certified `PortfolioCashflowProjection:v1`,
+2. source-owned currency, projection-window, projected-row, freshness, fingerprint, and reason-code
+   posture,
+3. manage liquidity objective tests for ready, degraded, currency-mismatch, no-projected-row, and
+   below-policy cash pressure cases.
+
+Remaining dependencies before full income-need support:
+
+1. client income-need or liability-planning source product,
+2. income need and forecast horizon semantics distinct from portfolio cashflow projection,
+3. confidence/freshness posture for client planning inputs,
+4. proof-pack and Workbench presentation alignment if surfaced as client income-need support.
 
 Expected implementation wave:
 
-Implement after cashflow source proof.
+The source-backed cashflow projection wave is implemented in manage after core source proof. The
+income-need planning wave must wait for an owning source product.
 
 Promotion proof:
 
-1. source-owner certification,
+1. source-owner certification for `PortfolioCashflowProjection:v1`,
 2. manage liquidity/cashflow tests,
-3. live evidence for ready and missing forecast cases,
+3. local and PR-gate evidence for ready, pending-review, degraded, and unsupported client-income
+   posture,
 4. supported-feature update.
 
 #### RFC39-WTBD-008 - Treasury-Depth Currency Overlay
