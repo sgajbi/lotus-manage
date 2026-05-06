@@ -46,6 +46,28 @@ class _ReadyRiskAuthorityClient:
             reason_codes=["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"],
         )
 
+    def regime_scenario_context(
+        self,
+        *,
+        result,
+        portfolio_id,
+        as_of_date,
+        correlation_id,
+        scenario_pack_id="CIO_REGIME_2026_Q2",
+        maximum_allowed_loss_pct="0.12",
+    ):
+        from src.core.construction.models import AuthoritativeRegimeStressContext
+        from src.core.construction.vocabulary import ConstructionMethodStatus
+
+        return AuthoritativeRegimeStressContext(
+            supportability_status=ConstructionMethodStatus.READY,
+            source_system="lotus-risk",
+            scenario_pack_id=scenario_pack_id,
+            worst_case_loss_pct="0.08",
+            maximum_allowed_loss_pct=maximum_allowed_loss_pct,
+            reason_codes=["REGIME_SCENARIO_PACK_READY"],
+        )
+
 
 def _authority_context_payload() -> dict:
     return {
@@ -438,6 +460,33 @@ def test_regime_stress_aware_pending_review_when_scenario_loss_exceeds_policy() 
     alternative = response.json()["alternatives"][0]
     assert alternative["method"] == "REGIME_STRESS_AWARE"
     assert alternative["method_status"] == "PENDING_REVIEW"
+
+
+def test_regime_stress_aware_resolves_lotus_risk_scenario_pack_when_configured() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["REGIME_STRESS_AWARE"]
+    app.dependency_overrides[get_risk_authority_client] = lambda: _ReadyRiskAuthorityClient()
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-regime-source-backed"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    authority_context = alternative["diagnostics"]["authority_context"]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "REGIME_STRESS_AWARE"
+    assert alternative["method_status"] == "READY"
+    assert authority_context["regime_stress_context"]["source_system"] == "lotus-risk"
+    assert authority_context["regime_stress_context"]["scenario_pack_id"] == "CIO_REGIME_2026_Q2"
+    assert "REGIME_SCENARIO_PACK_READY" in reason_codes
+    assert "REGIME_SCENARIO_PACK_UNAVAILABLE" not in reason_codes
 
 
 def test_solver_constrained_falls_back_when_solver_unavailable(monkeypatch) -> None:

@@ -980,7 +980,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | Future cost/execution source | Deferred with labelled local estimates only | No authoritative `TransactionCostCurve:v1` source exists. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
 | RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
-| RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority | Deferred source depth beyond supplied context | `REGIME_STRESS_AWARE` accepts source-backed scenario context, but no certified scenario-pack endpoint exists. |
+| RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; product UX remains downstream | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. Broader scenario contribution rows, approvals workflow, Gateway composition, and Workbench UX remain downstream/future depth. |
 | RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Proposed strategic extension | RFC-0039 selects alternatives; cross-RFC lifecycle needs RFC-0040 proof packs, RFC-0041 waves, report/AI owners, and product surfaces. |
 
 ### Detailed Follow-Up Items
@@ -1274,30 +1274,54 @@ Target business outcome:
 Regime-stress-aware alternatives can consume governed scenario packs from risk/CIO authority with
 explicit assumptions, approvals, applicability, and stress result lineage.
 
-Why it cannot be done now:
+Current implementation status:
 
-Current support accepts source-backed scenario authority context, but no certified scenario-pack API
-exists. Manage must not invent risk or CIO scenario methodology.
+First-wave implementation is complete for source-backed regime scenario evaluation.
+`lotus-risk` owns `RegimeScenarioPackEvaluation:v1` and exposes
+`POST /analytics/risk/regime-scenario-pack/evaluate`. `lotus-manage` consumes that source product
+through the bounded `LotusRiskAuthorityClient` when `DPM_RISK_BASE_URL` is configured and
+`REGIME_STRESS_AWARE` is requested without caller-supplied scenario context. Manage sends
+post-construction asset-class exposure weights, portfolio id, business as-of date, governed
+scenario pack id, and policy maximum loss threshold to `lotus-risk`; it uses only the returned
+supportability, source service, scenario pack id, worst-case loss, policy threshold, and reason
+codes to govern method posture. Excess loss remains `PENDING_REVIEW`; unavailable or invalid risk
+responses fail closed into degraded manage supportability rather than locally calculating stress
+methodology.
 
-Dependencies before implementation:
+What remains deferred:
 
-1. `RegimeScenarioPack:v1` or equivalent source product,
-2. scenario identity, effective period, shock assumptions, approvals, portfolio applicability, and
-   lineage,
-3. manage scenario adapter tests,
-4. risk/CIO methodology documentation,
-5. Gateway/Workbench posture if surfaced.
+Broader scenario-pack maturity remains future depth. The first-wave source product evaluates a
+governed pack against exposure weights; it does not yet expose per-security stress contribution,
+CIO approval workflow evidence, portfolio applicability exceptions beyond bounded reason codes, or
+Gateway/Workbench product surfaces.
+
+Completed first-wave dependencies:
+
+1. `lotus-risk` source product and API for `RegimeScenarioPackEvaluation:v1`,
+2. platform domain-data-product mirror for `RegimeScenarioPackEvaluation:v1`,
+3. manage risk-authority adapter tests for request shape, supportability, breach posture, invalid
+   responses, and retries,
+4. manage construction API tests proving automatic source-backed `REGIME_STRESS_AWARE` resolution,
+5. README, RFC source map, wiki, supported-features, and repository context alignment.
+
+Remaining dependencies before full product realization:
+
+1. Gateway construction-alternatives composition,
+2. Workbench construction lab UX,
+3. scenario contribution or CIO-approval source fields if future product claims require them,
+4. canonical browser proof after Gateway/Workbench support exists.
 
 Expected implementation wave:
 
-Implement after risk/CIO scenario authority exists.
+The source-product and manage-consumer wave is implemented. Product realization follows
+RFC39-WTBD-001 through RFC39-WTBD-003.
 
 Promotion proof:
 
-1. source-owner certification,
-2. manage scenario method tests,
-3. live proof with ready/degraded scenario posture,
-4. supported-feature update distinguishing supplied context from certified scenario support.
+1. source-owner certification in `lotus-risk`,
+2. platform mirror PR for `RegimeScenarioPackEvaluation:v1`,
+3. manage scenario method tests and proof,
+4. supported-feature update distinguishing backend support from downstream product support.
 
 #### RFC39-WTBD-010 - Construction Lifecycle Across Proof Packs, Waves, Reports, And AI
 
@@ -1406,7 +1430,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Deferred unless owning-service contracts are consumed | RFC-0040 preserves degraded sections where source-backed risk/performance context is missing. Manage must not clone analytics methodology. |
 | RFC40-WTBD-007 | Authoritative transaction-cost curve | Future cost/execution source, likely execution/platform domain | Deferred with no support claim | Manage may expose labelled estimated cost, but no authoritative `TransactionCostCurve:v1` source exists. |
 | RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
-| RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority | Deferred beyond supplied source-backed context | Regime/scenario context can be preserved when supplied, but no first-class risk/CIO scenario-pack endpoint is certified for proof-pack enrichment. |
+| RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority, consumed by `lotus-manage` construction evidence | Partially implemented through selected RFC-0039 alternatives | `RegimeScenarioPackEvaluation:v1` now supplies first-wave scenario-pack evaluation for `REGIME_STRESS_AWARE` alternatives. Proof packs can preserve that selected-alternative context, but richer scenario contribution, CIO approval, and direct proof-pack enrichment remain future source depth. |
 | RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, and outcome events | `lotus-manage` with downstream/source participants | Proposed strategic extension | RFC-0040 creates proof-pack-local timeline/lineage. Cross-RFC portfolio memory needs RFC-0041 wave links, RFC-0042 outcome events, and product-surface realization before support can be claimed. |
 
 ### Detailed Follow-Up Items
@@ -1695,29 +1719,41 @@ Target business outcome:
 Proof packs can cite governed CIO/risk scenario packs and regime stress context without relying on
 caller-supplied metadata alone.
 
-Why it cannot be done now:
+Current implementation status:
 
-RFC-0040 can preserve source-backed scenario context when supplied, but no first-class risk/CIO
-scenario-pack source is certified for proof-pack enrichment.
+First-wave scenario-pack authority exists through `lotus-risk`
+`RegimeScenarioPackEvaluation:v1`, and manage can consume it through RFC-0039
+`REGIME_STRESS_AWARE` alternatives. RFC-0040 proof packs preserve selected alternative diagnostics
+and scenario context when the selected construction alternative carries it.
 
-Dependencies before implementation:
+What remains deferred:
 
-1. scenario-pack owner assigned, likely `lotus-risk` or CIO authority,
-2. certified API for scenario identity, effective period, assumptions, approvals, lineage, and
-   applicable portfolio/mandate scope,
-3. manage adapter tests for supplied, certified, stale, missing, and inapplicable scenario packs,
+RFC-0040 does not yet call `lotus-risk` directly to enrich proof packs that lack selected
+construction scenario evidence. It also does not yet receive source-owned per-security scenario
+contribution rows, CIO approval workflow evidence, effective-period exception posture, or
+portfolio/mandate applicability evidence beyond the first-wave evaluation reason codes.
+
+Remaining dependencies before full proof-pack enrichment:
+
+1. scenario contribution and approval evidence from `lotus-risk` / CIO authority if product claims
+   require it,
+2. manage proof-pack adapter tests for direct enrichment when no selected alternative carries
+   scenario evidence,
+3. proof-pack section-state behavior for stale, missing, inapplicable, and contribution-partial
+   scenario evidence,
 4. Gateway/Workbench posture if displayed,
-5. methodology and business documentation for scenario meaning.
+5. methodology and business documentation for any richer scenario meaning.
 
 Expected implementation wave:
 
-Implement after the scenario-pack source exists. Keep supplied-context posture separate from
-source-certified scenario support.
+The first-wave source and selected-alternative preservation path is implemented. Direct proof-pack
+enrichment and richer scenario evidence should be handled only if a future proof-pack/product RFC
+requires those fields.
 
 Promotion proof:
 
 1. source-owner API and methodology tests,
-2. manage proof-pack scenario-section tests,
+2. manage proof-pack scenario-section tests if direct proof-pack enrichment is added,
 3. live proof with ready and degraded scenario posture,
 4. documentation and supported-feature updates that distinguish supplied from certified context.
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
+import re
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -49,6 +50,7 @@ from src.infrastructure.risk_authority import (
 )
 
 _MIN_TURNOVER_DEFAULT = Decimal("0.10")
+_DATE_PATTERN = re.compile(r"(\d{4})[-_](\d{2})[-_](\d{2})")
 
 
 def generate_construction_alternative_set(
@@ -210,6 +212,7 @@ def _build_alternatives(
                 result=result,
                 plan=plan,
                 authority_context=_authority_context_for_method(
+                    request=request,
                     method=method,
                     result=result,
                     authority_context=authority_context,
@@ -458,6 +461,7 @@ def _method_specific_reason_codes(
 
 def _authority_context_for_method(
     *,
+    request: RebalanceRequest,
     method: ConstructionMethod,
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
@@ -479,11 +483,26 @@ def _authority_context_for_method(
     currency_context = authority_context.currency_overlay_context
     if method == ConstructionMethod.CURRENCY_OVERLAY and currency_context is None:
         currency_context = _derive_currency_overlay_context(result=result)
+    regime_context = authority_context.regime_stress_context
+    if (
+        method == ConstructionMethod.REGIME_STRESS_AWARE
+        and regime_context is None
+        and risk_authority_client
+    ):
+        try:
+            regime_context = risk_authority_client.regime_scenario_context(
+                result=result,
+                portfolio_id=request.portfolio_snapshot.portfolio_id,
+                as_of_date=_construction_as_of_date(request=request),
+                correlation_id=correlation_id,
+            )
+        except LotusRiskAuthorityUnavailableError:
+            regime_context = None
     return ConstructionAuthorityContext(
         risk_context=risk_context,
         liquidity_context=liquidity_context,
         currency_overlay_context=currency_context,
-        regime_stress_context=authority_context.regime_stress_context,
+        regime_stress_context=regime_context,
     )
 
 
@@ -646,6 +665,26 @@ def _derive_currency_overlay_context(
         eligible_currencies=non_base_currencies,
         reason_codes=["CURRENCY_OVERLAY_POLICY_DERIVED_FROM_MANAGE_FX_RULES"],
     )
+
+
+def _construction_as_of_date(*, request: RebalanceRequest) -> date:
+    snapshot_id = getattr(request.market_data_snapshot, "snapshot_id", "")
+    for candidate in (
+        snapshot_id or "",
+        getattr(request.portfolio_snapshot, "snapshot_id", "") or "",
+    ):
+        match = _DATE_PATTERN.search(candidate)
+        if match is not None:
+            return date(
+                year=int(match.group(1)),
+                month=int(match.group(2)),
+                day=int(match.group(3)),
+            )
+        try:
+            return date.fromisoformat(candidate[:10])
+        except ValueError:
+            continue
+    return datetime.now(timezone.utc).date()
 
 
 def _currency_overlay_status(

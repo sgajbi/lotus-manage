@@ -1,3 +1,7 @@
+import json
+from datetime import date
+from decimal import Decimal
+
 import httpx
 import pytest
 
@@ -14,7 +18,12 @@ from tests.shared.factories import valid_api_payload
 def _result():
     from src.api.request_models import RebalanceRequest
 
-    request = RebalanceRequest.model_validate(valid_api_payload())
+    payload = valid_api_payload()
+    payload["model_portfolio"]["targets"] = [{"instrument_id": "EQ_1", "weight": "0.50"}]
+    payload["shelf_entries"] = [
+        {"instrument_id": "EQ_1", "status": "APPROVED", "asset_class": "EQUITY"}
+    ]
+    request = RebalanceRequest.model_validate(payload)
     return run_simulation(
         portfolio=request.portfolio_snapshot,
         market_data=request.market_data_snapshot,
@@ -60,6 +69,33 @@ def _risk_response(
     }
 
 
+def _regime_scenario_response(
+    *,
+    supportability: str = "ready",
+    worst_case_loss_pct: float = 0.0845,
+    maximum_allowed_loss_pct: float = 0.12,
+    reason_codes: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "scenario_pack_id": "CIO_REGIME_2026_Q2",
+        "portfolio_id": "pf_test",
+        "as_of_date": "2026-05-06",
+        "worst_case_loss_pct": worst_case_loss_pct,
+        "maximum_allowed_loss_pct": maximum_allowed_loss_pct,
+        "breach": worst_case_loss_pct > maximum_allowed_loss_pct,
+        "scenario_results": [],
+        "reason_codes": reason_codes or ["REGIME_SCENARIO_PACK_READY"],
+        "metadata": {
+            "product_name": "RegimeScenarioPackEvaluation",
+            "product_version": "v1",
+            "source_service": "lotus-risk",
+            "lineage_version": "risk-regime-scenario-pack-evaluation.v1",
+            "request_fingerprint": "sha256:test",
+            "calculation_supportability": supportability,
+        },
+    }
+
+
 def test_lotus_risk_authority_client_maps_concentration_supportability() -> None:
     captured: dict[str, object] = {}
 
@@ -87,6 +123,76 @@ def test_lotus_risk_authority_client_maps_concentration_supportability() -> None
     assert context.concentration_hhi_delta == 100
     assert context.concentration_breaches == 0
     assert context.reason_codes == ["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"]
+
+
+def test_lotus_risk_authority_client_maps_regime_scenario_pack_evaluation() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["headers"] = dict(request.headers)
+        captured["payload"] = json.loads(request.read().decode("utf-8"))
+        return httpx.Response(200, json=_regime_scenario_response())
+
+    client = LotusRiskAuthorityClient(
+        config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    context = client.regime_scenario_context(
+        result=_result(),
+        portfolio_id="pf_test",
+        as_of_date=date(2026, 5, 6),
+        correlation_id="corr-regime",
+    )
+
+    payload = captured["payload"]
+    assert captured["url"] == "http://risk.test/analytics/risk/regime-scenario-pack/evaluate"
+    assert captured["headers"]["x-correlation-id"] == "corr-regime"
+    assert payload["scenario_pack_id"] == "CIO_REGIME_2026_Q2"
+    assert payload["portfolio_id"] == "pf_test"
+    assert payload["as_of_date"] == "2026-05-06"
+    assert payload["maximum_allowed_loss_pct"] == 0.12
+    assert {"bucket": "EQUITY", "weight": 0.5} in payload["exposures"]
+    assert {"bucket": "CASH", "weight": 0.5} in payload["exposures"]
+    assert context.source_system == "lotus-risk"
+    assert context.supportability_status == ConstructionMethodStatus.READY
+    assert context.scenario_pack_id == "CIO_REGIME_2026_Q2"
+    assert context.worst_case_loss_pct == Decimal("0.0845")
+    assert context.reason_codes == ["REGIME_SCENARIO_PACK_READY"]
+
+
+def test_lotus_risk_authority_client_maps_regime_scenario_pending_review() -> None:
+    client = LotusRiskAuthorityClient(
+        config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(
+                    200,
+                    json=_regime_scenario_response(
+                        supportability="pending_review",
+                        worst_case_loss_pct=0.18,
+                        maximum_allowed_loss_pct=0.12,
+                        reason_codes=[
+                            "REGIME_SCENARIO_PACK_READY",
+                            "REGIME_SCENARIO_POLICY_THRESHOLD_BREACH",
+                        ],
+                    ),
+                )
+            )
+        ),
+    )
+
+    context = client.regime_scenario_context(
+        result=_result(),
+        portfolio_id="pf_test",
+        as_of_date=date(2026, 5, 6),
+        correlation_id=None,
+    )
+
+    assert context.supportability_status == ConstructionMethodStatus.PENDING_REVIEW
+    assert context.worst_case_loss_pct == Decimal("0.18")
+    assert "REGIME_SCENARIO_POLICY_THRESHOLD_BREACH" in context.reason_codes
 
 
 def test_lotus_risk_authority_client_fails_closed_on_unavailable_risk() -> None:

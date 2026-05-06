@@ -116,8 +116,10 @@ def test_construction_service_error_mapping_and_missing_set() -> None:
 
 
 def test_construction_service_supportability_helper_edges() -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
     result = _trade_result(max_turnover_pct=Decimal("0.01"))
     no_context = construction_service._authority_context_for_method(
+        request=request,
         method=ConstructionMethod.LIQUIDITY_AWARE,
         result=result,
         authority_context=ConstructionAuthorityContext(),
@@ -125,6 +127,7 @@ def test_construction_service_supportability_helper_edges() -> None:
         correlation_id="corr-helper",
     )
     risk_unavailable = construction_service._authority_context_for_method(
+        request=request,
         method=ConstructionMethod.RISK_AWARE,
         result=result,
         authority_context=ConstructionAuthorityContext(),
@@ -156,6 +159,15 @@ def test_construction_service_supportability_helper_edges() -> None:
     assert "LIQUIDITY_POLICY_CONTEXT_DERIVED" in construction_service._liquidity_reason_codes(
         result=result,
         context=None,
+    )
+
+
+def test_construction_as_of_date_uses_snapshot_identifier_date() -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    request.market_data_snapshot.snapshot_id = "md_2026_05_06"
+
+    assert (
+        construction_service._construction_as_of_date(request=request).isoformat() == "2026-05-06"
     )
 
 

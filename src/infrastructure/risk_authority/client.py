@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from typing import Any, Optional
 
 import httpx
 
-from src.core.construction.models import AuthoritativeRiskContext
+from src.core.construction.models import AuthoritativeRegimeStressContext, AuthoritativeRiskContext
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
 
@@ -19,11 +20,15 @@ class LotusRiskAuthorityUnavailableError(RuntimeError):
 class LotusRiskAuthorityConfig:
     base_url: str
     concentration_path: str = "/analytics/risk/concentration"
+    regime_scenario_pack_path: str = "/analytics/risk/regime-scenario-pack/evaluate"
     timeout_seconds: float = 2.0
     max_attempts: int = 2
 
     def concentration_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/{self.concentration_path.lstrip('/')}"
+
+    def regime_scenario_pack_url(self) -> str:
+        return f"{self.base_url.rstrip('/')}/{self.regime_scenario_pack_path.lstrip('/')}"
 
 
 class LotusRiskAuthorityClient:
@@ -69,6 +74,39 @@ class LotusRiskAuthorityClient:
                 client.close()
         return _risk_context_from_concentration_response(response_payload)
 
+    def regime_scenario_context(
+        self,
+        *,
+        result: RebalanceResult,
+        portfolio_id: str,
+        as_of_date: date,
+        correlation_id: str | None,
+        scenario_pack_id: str = "CIO_REGIME_2026_Q2",
+        maximum_allowed_loss_pct: Decimal = Decimal("0.12"),
+    ) -> AuthoritativeRegimeStressContext:
+        payload = _regime_scenario_payload(
+            result=result,
+            portfolio_id=portfolio_id,
+            as_of_date=as_of_date,
+            scenario_pack_id=scenario_pack_id,
+            maximum_allowed_loss_pct=maximum_allowed_loss_pct,
+        )
+        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        try:
+            response_payload = _post_with_retries(
+                client=client,
+                url=self._config.regime_scenario_pack_url(),
+                payload=payload,
+                headers=headers,
+                attempts=max(self._config.max_attempts, 1),
+                rejected_error="LOTUS_RISK_REGIME_SCENARIO_REJECTED",
+            )
+        finally:
+            if self._owns_client:
+                client.close()
+        return _regime_context_from_scenario_response(response_payload)
+
 
 def _post_with_retries(
     *,
@@ -77,6 +115,7 @@ def _post_with_retries(
     payload: dict[str, Any],
     headers: dict[str, str],
     attempts: int,
+    rejected_error: str = "LOTUS_RISK_CONCENTRATION_REJECTED",
 ) -> dict[str, Any]:
     last_error: Exception | None = None
     for attempt in range(attempts):
@@ -92,8 +131,11 @@ def _post_with_retries(
         if response.status_code >= 500:
             raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE")
         if response.status_code >= 400:
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_CONCENTRATION_REJECTED")
-        body = response.json()
+            raise LotusRiskAuthorityUnavailableError(rejected_error)
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
         if not isinstance(body, dict):
             raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE")
         return body
@@ -126,6 +168,30 @@ def _concentration_payload(*, result: RebalanceResult) -> dict[str, Any]:
             ],
             "top_n": 10,
         },
+    }
+
+
+def _regime_scenario_payload(
+    *,
+    result: RebalanceResult,
+    portfolio_id: str,
+    as_of_date: date,
+    scenario_pack_id: str,
+    maximum_allowed_loss_pct: Decimal,
+) -> dict[str, Any]:
+    return {
+        "scenario_pack_id": scenario_pack_id,
+        "portfolio_id": portfolio_id,
+        "as_of_date": as_of_date.isoformat(),
+        "maximum_allowed_loss_pct": float(maximum_allowed_loss_pct),
+        "exposures": [
+            {
+                "bucket": _scenario_bucket(allocation.key),
+                "weight": float(allocation.weight),
+            }
+            for allocation in result.after_simulated.allocation_by_asset_class
+            if allocation.weight > Decimal("0")
+        ],
     }
 
 
@@ -163,6 +229,27 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
     )
 
 
+def _regime_context_from_scenario_response(
+    body: dict[str, Any],
+) -> AuthoritativeRegimeStressContext:
+    try:
+        metadata = _dict_section(body, "metadata")
+        supportability = str(metadata.get("calculation_supportability", "degraded"))
+        reason_codes = body.get("reason_codes")
+        if not isinstance(reason_codes, list):
+            reason_codes = ["REGIME_SCENARIO_PACK_RESPONSE_REASON_CODES_MISSING"]
+        return AuthoritativeRegimeStressContext(
+            supportability_status=_scenario_status_from_supportability(supportability),
+            source_system=str(metadata.get("source_service") or "lotus-risk"),
+            scenario_pack_id=str(body["scenario_pack_id"]),
+            worst_case_loss_pct=Decimal(str(body["worst_case_loss_pct"])),
+            maximum_allowed_loss_pct=Decimal(str(body["maximum_allowed_loss_pct"])),
+            reason_codes=sorted({str(reason_code) for reason_code in reason_codes}),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
+
+
 def _risk_status_from_supportability(state: str) -> ConstructionMethodStatus:
     if state == "ready":
         return ConstructionMethodStatus.READY
@@ -171,6 +258,29 @@ def _risk_status_from_supportability(state: str) -> ConstructionMethodStatus:
     if state == "empty":
         return ConstructionMethodStatus.PENDING_REVIEW
     return ConstructionMethodStatus.BLOCKED
+
+
+def _scenario_status_from_supportability(state: str) -> ConstructionMethodStatus:
+    if state == "ready":
+        return ConstructionMethodStatus.READY
+    if state == "pending_review":
+        return ConstructionMethodStatus.PENDING_REVIEW
+    if state == "degraded":
+        return ConstructionMethodStatus.DEGRADED
+    return ConstructionMethodStatus.BLOCKED
+
+
+def _scenario_bucket(asset_class: str) -> str:
+    normalized = asset_class.strip().upper().replace("-", "_").replace(" ", "_")
+    if normalized in {"EQUITY", "EQUITIES", "STOCK", "STOCKS"}:
+        return "EQUITY"
+    if normalized in {"FIXED_INCOME", "FIXEDINCOME", "BOND", "BONDS"}:
+        return "FIXED_INCOME"
+    if normalized in {"ALTERNATIVE", "ALTERNATIVES", "HEDGE_FUND", "PRIVATE_MARKETS"}:
+        return "ALTERNATIVES"
+    if normalized in {"CASH", "MONEY_MARKET"}:
+        return "CASH"
+    return normalized
 
 
 def _dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:
