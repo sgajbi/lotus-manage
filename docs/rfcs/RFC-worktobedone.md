@@ -708,7 +708,7 @@ products, and canonical seed automation belong to downstream or source-owning ap
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0038 |
 | --- | --- | --- | --- | --- |
-| RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Downstream issue opened; implementation not supported yet | Manage contracts had to stabilize first. Gateway must compose manage mandate/health/monitoring truth without becoming mandate-health authority. |
+| RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
 | RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Downstream issue opened; implementation not supported yet | Workbench must consume Gateway/BFF only and must not reconstruct health scoring or source readiness in browser code. |
 | RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Downstream issue opened | Manage proof used canonical IDs, but durable cross-app seed automation for populated, partial, and empty command-center states belongs to platform/source owners. |
 | RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` or future relationship-book authority | Deferred with no support claim | RFC-0038 supports caller-supplied mandate IDs and persisted monitoring runs. No certified PM-book membership source exists yet. |
@@ -727,34 +727,50 @@ Gateway exposes a product-facing DPM command-center contract that composes manda
 health, monitoring runs, active exceptions, supportability, and drill-down links while preserving
 `lotus-manage` as the health and monitoring authority.
 
-Why it cannot be done now:
+Closure status:
 
-RFC-0038 had to first stabilize manage APIs, monitoring-run scoping, exception filtering, source
-readiness, and OpenAPI contracts. Gateway implementation before that proof would have created
-speculative composition or duplicated health logic.
+Completed on 2026-05-06 through `lotus-gateway` PR #194,
+`feat: expose DPM mandate command center`, merged to `main` at
+`ee2d80684e9219c1ff42f8660f4a0ff4e97abf08`.
 
-Dependencies before implementation:
+What was delivered:
 
-1. use `docs/architecture/dpm-command-center-gateway-workbench-handoff.md` and
-   `sgajbi/lotus-gateway#180` as execution inputs,
-2. typed Gateway client consumes manage mandate, health, monitoring, exception, and command-center
-   APIs,
-3. Gateway preserves manage supportability, reason codes, latest-run identity, and attention
-   counts,
-4. Gateway does not recompute health scores, source readiness, or exception taxonomy,
-5. Gateway OpenAPI and endpoint certification cover degraded, empty, partial, and populated states.
+1. Gateway now exposes a Workbench-facing RFC-0038 route family under
+   `/api/v1/dpm/command-center`, `/api/v1/dpm/command-center/monitoring/*`,
+   `/api/v1/dpm/command-center/exceptions*`, and
+   `/api/v1/dpm/command-center/mandates*`.
+2. `lotus-gateway` added typed `DpmClient` methods for manage command-center summary, monitoring
+   run/create/search/detail, exception search/resolution, mandate-by-portfolio, mandate detail,
+   mandate health, and mandate diff APIs.
+3. Gateway wraps manage responses in a product BFF envelope with upstream status, correlation id,
+   and manage-derived supportability while preserving the authoritative manage payload.
+4. Gateway does not discover PM-book membership, calculate mandate health, reconstruct health
+   dimensions, infer source readiness, merge exceptions across monitoring runs, or resolve
+   exceptions locally.
+5. Gateway repository context, RFC-0098, and repo-authored wiki source were updated. The
+   `lotus-gateway` wiki was published after merge at wiki commit `5901cd8` and check-only
+   verification reported zero drift.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-gateway` before Workbench DPM cockpit panels.
+1. Focused local proof passed:
+   `python -m pytest tests/contract/test_dpm_command_center_contract.py tests/unit/test_dpm_command_center_service.py tests/integration/test_dpm_command_center_router.py tests/unit/test_upstream_clients.py::test_dpm_client_rfc38_command_center_routes -q`
+   with 36 tests.
+2. Local repo gate `make check` passed in `lotus-gateway`, including Ruff lint, Ruff format check,
+   monetary-float guard, mypy, Workbench contract smoke, and 439 unit/contract tests.
+3. GitHub PR #194 checks passed before merge: Feature Lane lint/typecheck/unit, Feature Lane
+   workflow lint, PR Merge Gate workflow lint, lint/typecheck/unit, integration tests, coverage
+   gate, Docker build validation, CI local Docker parity, and queue auto-merge.
+4. `Sync-RepoWikis.ps1 -Publish -Repository lotus-gateway` published the changed API,
+   integrations, and supported-feature pages after merge; `Sync-RepoWikis.ps1 -CheckOnly
+   -Repository lotus-gateway` then reported diff count 0.
 
-Promotion proof:
+Gold-pass assessment:
 
-1. Gateway unit and contract tests,
-2. no-reconstruction tests for health dimensions and exception state,
-3. live Gateway proof against manage,
-4. OpenAPI quality and vocabulary validation,
-5. Gateway README/wiki/supported-features updates.
+This WTBD has reached the expected standard for the Gateway composition slice. The route family is
+merged to `main`, pinned by client/service/router/OpenAPI tests, documented in Gateway RFC/wiki
+truth, and published to the Gateway wiki. Full Workbench cockpit product support is not claimed
+here and remains RFC38-WTBD-002.
 
 #### RFC38-WTBD-002 - Workbench DPM Cockpit Panels
 
