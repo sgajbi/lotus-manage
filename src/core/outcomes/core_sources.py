@@ -3,7 +3,15 @@
 from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, TypedDict
 
+from src.core.outcomes.models import OutcomeDimension
 from src.core.outcomes.models import DpmRealizedSourceSnapshot
+
+TransactionLedgerOutcomeMeasure = Literal[
+    "trade_fee",
+    "withholding_tax_amount",
+    "realized_fx_pnl",
+    "cashflow_amount",
+]
 
 
 class CoreOutcomeSourceError(ValueError):
@@ -69,6 +77,61 @@ def realized_cash_source_from_cash_balances_response(
     )
 
 
+def realized_transaction_source_from_transaction_ledger_response(
+    response: dict[str, Any],
+    *,
+    transaction_id: str,
+    measure: TransactionLedgerOutcomeMeasure,
+) -> DpmRealizedSourceSnapshot:
+    """Adapt a lotus-core transaction row without aggregating ledger truth locally."""
+
+    metadata = _core_metadata(response)
+    portfolio_id = _read_required_text(response.get("portfolio_id"), "portfolio_id")
+    transaction = _find_transaction(response=response, transaction_id=transaction_id)
+    if not transaction:
+        raise CoreOutcomeSourceError(
+            f"lotus-core transaction ledger response is missing transaction_id {transaction_id}"
+        )
+
+    value, unit, value_reason = _transaction_measure_value(
+        response=response,
+        transaction=transaction,
+        measure=measure,
+    )
+    source_id = _source_id(
+        product_name=metadata["product_name"],
+        product_version=metadata["product_version"],
+        portfolio_id=portfolio_id,
+        as_of_date=metadata["as_of_date"],
+        basis=f"transaction:{transaction_id}:{measure}",
+        fingerprint=metadata["content_hash"],
+    )
+    return DpmRealizedSourceSnapshot(
+        dimension=_transaction_dimension(measure),
+        source_system="lotus-core",
+        source_type="TRANSACTION_LEDGER_WINDOW",
+        source_id=source_id,
+        value=value,
+        unit=unit,
+        source_state=_source_state(metadata["data_quality_status"]),
+        quality=_source_quality(metadata["data_quality_status"]),
+        observed_at=metadata["observed_at"],
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["content_hash"],
+        reason_codes=[
+            _primary_reason(metadata["data_quality_status"]),
+            f"CORE_PRODUCT_{metadata['product_name'].upper()}",
+            f"CORE_PRODUCT_VERSION_{metadata['product_version'].upper()}",
+            f"TRANSACTION_MEASURE_{measure.upper()}",
+            f"TRANSACTION_ID_{transaction_id}",
+            "TRANSACTION_TYPE_"
+            f"{(_read_text(transaction.get('transaction_type')) or 'UNKNOWN').upper()}",
+            value_reason,
+            f"CORE_DATA_QUALITY_{metadata['data_quality_status'].upper()}",
+        ],
+    )
+
+
 def unavailable_core_cash_source(
     *,
     source_id: str,
@@ -91,6 +154,118 @@ def unavailable_core_cash_source(
         content_hash=None,
         reason_codes=[reason_code],
     )
+
+
+def _find_transaction(
+    *,
+    response: dict[str, Any],
+    transaction_id: str,
+) -> dict[str, Any]:
+    transactions = response.get("transactions")
+    if not isinstance(transactions, list):
+        return {}
+    for transaction in transactions:
+        transaction_mapping = _read_mapping(transaction)
+        if _read_text(transaction_mapping.get("transaction_id")) == transaction_id:
+            return transaction_mapping
+    return {}
+
+
+def _transaction_measure_value(
+    *,
+    response: dict[str, Any],
+    transaction: dict[str, Any],
+    measure: TransactionLedgerOutcomeMeasure,
+) -> tuple[Decimal, str, str]:
+    if measure == "trade_fee":
+        return _transaction_money_value(
+            response=response,
+            transaction=transaction,
+            reporting_field="trade_fee_reporting_currency",
+            source_field="trade_fee",
+            source_currency_fields=("trade_currency", "currency"),
+            reason="TRANSACTION_VALUE_TRADE_FEE",
+        )
+    if measure == "withholding_tax_amount":
+        return _transaction_money_value(
+            response=response,
+            transaction=transaction,
+            reporting_field="withholding_tax_amount_reporting_currency",
+            source_field="withholding_tax_amount",
+            source_currency_fields=("currency", "trade_currency"),
+            reason="TRANSACTION_VALUE_WITHHOLDING_TAX",
+        )
+    if measure == "realized_fx_pnl":
+        value = transaction.get("realized_fx_pnl_base")
+        if value is not None:
+            return (
+                _decimal_value(value),
+                _read_text(transaction.get("currency")) or "base_currency",
+                "TRANSACTION_VALUE_REALIZED_FX_PNL_BASE",
+            )
+        local_value = transaction.get("realized_fx_pnl_local")
+        if local_value is not None:
+            return (
+                _decimal_value(local_value),
+                _read_text(transaction.get("trade_currency"))
+                or _read_text(transaction.get("currency"))
+                or "local_currency",
+                "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL",
+            )
+        raise CoreOutcomeSourceError(
+            "lotus-core transaction ledger response is missing realized_fx_pnl"
+        )
+
+    cashflow = _read_mapping(transaction.get("cashflow"))
+    cashflow_amount = cashflow.get("amount")
+    if cashflow_amount is None:
+        raise CoreOutcomeSourceError(
+            "lotus-core transaction ledger response is missing cashflow.amount"
+        )
+    return (
+        _decimal_value(cashflow_amount),
+        _read_text(cashflow.get("currency")) or "cashflow_currency",
+        "TRANSACTION_VALUE_CASHFLOW_AMOUNT",
+    )
+
+
+def _transaction_money_value(
+    *,
+    response: dict[str, Any],
+    transaction: dict[str, Any],
+    reporting_field: str,
+    source_field: str,
+    source_currency_fields: tuple[str, str],
+    reason: str,
+) -> tuple[Decimal, str, str]:
+    reporting_value = transaction.get(reporting_field)
+    reporting_currency = _read_text(response.get("reporting_currency"))
+    if reporting_value is not None and reporting_currency is not None:
+        return _decimal_value(reporting_value), reporting_currency, f"{reason}_REPORTING"
+
+    source_value = transaction.get(source_field)
+    if source_value is None:
+        raise CoreOutcomeSourceError(
+            f"lotus-core transaction ledger response is missing {source_field}"
+        )
+    first_currency_field, fallback_currency_field = source_currency_fields
+    return (
+        _decimal_value(source_value),
+        _read_text(transaction.get(first_currency_field))
+        or _read_text(transaction.get(fallback_currency_field))
+        or "transaction_currency",
+        f"{reason}_SOURCE",
+    )
+
+
+def _transaction_dimension(measure: TransactionLedgerOutcomeMeasure) -> OutcomeDimension:
+    dimension_by_measure: dict[TransactionLedgerOutcomeMeasure, OutcomeDimension] = {
+        "trade_fee": "COST",
+        "withholding_tax_amount": "TAX",
+        "realized_fx_pnl": "FX_RESIDUAL",
+        "cashflow_amount": "CASH_RESIDUAL",
+    }
+    return dimension_by_measure[measure]
 
 
 def _core_metadata(response: dict[str, Any]) -> _CoreSourceMetadata:

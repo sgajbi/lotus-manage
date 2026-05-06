@@ -135,13 +135,16 @@ do not compute volatility, drawdown paths, drawdown episodes, VaR, Sharpe, Sorti
 error, information ratio, rolling windows, rolling percentiles, attribution, HHI, issuer
 concentration, top-position concentration, or coverage ratios in manage.
 
-The WTBD-006 core cash follow-on adds the first source-owner adapter for `lotus-core`
-`HoldingsAsOf:v1` cash totals. `src/core/outcomes/core_sources.py` wraps
-`HOLDINGS_AS_OF_CASH_BALANCE` evidence into RFC-0042 `CASH_RESIDUAL` realized-source snapshots,
-preserving product identity, portfolio id, as-of date, generated/evidence timestamp, data-quality
-posture, and source fingerprint. The adapter consumes source-owned cash totals only; it does not
-aggregate cash-account rows, derive tax, FX, transaction-cost, execution, liquidity, or rule
-outcomes, or convert currencies in manage.
+The WTBD-006 core follow-on adds source-owner adapters for `lotus-core` `HoldingsAsOf:v1` cash
+totals and explicit `TransactionLedgerWindow:v1` transaction-row scalar evidence.
+`src/core/outcomes/core_sources.py` wraps `HOLDINGS_AS_OF_CASH_BALANCE` evidence into RFC-0042
+`CASH_RESIDUAL` realized-source snapshots and `TRANSACTION_LEDGER_WINDOW` evidence into explicit
+`COST`, `TAX`, `FX_RESIDUAL`, or linked `CASH_RESIDUAL` snapshots. The adapters preserve product
+identity, portfolio id, as-of date, generated/evidence timestamp, data-quality posture, source
+fingerprint, transaction id/type, selected measure, selected source field, and source currency.
+They consume source-owned totals or explicit transaction-row scalars only; they do not aggregate
+cash-account rows, aggregate transaction rows, derive realized tax, calculate FX residuals, infer
+execution quality, derive liquidity/rule outcomes, or convert currencies in manage.
 
 The WTBD-006 performance follow-on adds source-owner adapters for `lotus-performance`
 workspace-summary TWR, active return, money-weighted return, contribution, and attribution output.
@@ -297,12 +300,12 @@ can be claimed.
 | Selected construction alternative | `lotus-manage` RFC-0039 | Expected snapshot | Required | Consume existing selected-alternative record and method supportability. |
 | Proof-pack evidence | `lotus-manage` RFC-0040 | Expected snapshot, lineage, report/AI handoff | Required for proof-pack outcome claim | Link proof-pack id, hashes, Markdown/report/AI evidence refs. |
 | Wave item and internal handoff | `lotus-manage` RFC-0041 | Wave outcome review | Required for wave-linked reviews | Validate wave item, selection, approval/staging/handoff refs. |
-| Booked transactions | `lotus-core` | Turnover, cost, cash, tax, execution reconciliation | Source-owner required | Consume certified product if available; otherwise block affected dimensions. |
+| Booked transactions | `lotus-core` | Turnover, cost, cash, tax, execution reconciliation | `TransactionLedgerWindow:v1` explicit transaction-row scalar adapter implemented for trade fee, withholding tax, realized FX P&L, and linked cashflow amount; aggregated transaction-window totals remain source-owner follow-on. | Consume certified product if available; otherwise block affected dimensions. |
 | Fill/order/execution detail | `lotus-core` or future execution/OMS owner | `EXECUTION_QUALITY` | Blocked until certified | Do not infer partial fills or slippage from manage intent. |
 | Post-trade holdings and positions | `lotus-core` | Drift, rule, cash/security residuals | Source-owner required | Consume source product with as-of date and lineage. |
-| Cash movements | `lotus-core` | `CASH_OUTCOME` and MWR-related context | HoldingsAsOf cash totals are the first implemented adapter; cash movements, liquidity ladders, and MWR-related flow context remain source-owner follow-on work. | Consume source product; missing source blocks cash outcome. |
-| FX executions and currency exposures | `lotus-core` or treasury source owner | `FX_OUTCOME` | Source-owner required | Consume source product; no local treasury-depth reconstruction. |
-| Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Source-owner required | Consume source product; no manage-local tax-lot authority. |
+| Cash movements | `lotus-core` | `CASH_OUTCOME` and MWR-related context | HoldingsAsOf cash totals and explicit linked transaction cashflow amounts are implemented; cash-movement totals, liquidity ladders, and MWR-related flow context remain source-owner follow-on work. | Consume source product; missing source blocks cash outcome. |
+| FX executions and currency exposures | `lotus-core` or treasury source owner | `FX_OUTCOME` | Explicit transaction-row realized FX P&L adapter implemented; FX exposure totals and treasury-depth execution/currency-overlay evidence remain source-owner follow-on work. | Consume source product; no local treasury-depth reconstruction. |
+| Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Explicit transaction-row withholding tax adapter implemented; tax-lot allocation and realized tax totals remain source-owner follow-on work. | Consume source product; no manage-local tax-lot authority. |
 | Risk after execution | `lotus-risk` | `RISK_OUTCOME` | RiskMetricsReport selected metric output, drawdown response max-drawdown output, concentration response selected-measure output, rolling metrics selected metric/statistic/window output, and historical attribution selected set/contributor output have implemented adapters. | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
 | Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Workspace-summary TWR, active return, MWR, contribution, and attribution outputs have implemented adapters; broader benchmark-relative outcome contracts outside source-emitted attribution scalars remain source-owner follow-on work. | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
 | Report artifact | `lotus-report`, `lotus-render`, `lotus-archive` | Reports and archive | Downstream only | Manage emits `DpmOutcomeReportInput`; no artifact claim. |
@@ -321,9 +324,9 @@ can be claimed.
 | `PERFORMANCE_OUTCOME` | `lotus-performance` provides source-owned workspace-summary TWR, active return, MWR output, contribution output, and attribution output for the selected period/basis/measure, MWR method, contribution measure, attribution reconciliation/level/currency measure, model, linking method, and benchmark context where available; broader benchmark-relative evidence outside source-emitted attribution scalars requires future source-owner contracts. | `PERFORMANCE_OUTCOME_NOT_SUPPORTED` or `PERFORMANCE_SOURCE_UNAVAILABLE`. |
 | `TURNOVER_OUTCOME` | Booked transaction window is source-backed. | `TRANSACTION_SOURCE_INCOMPLETE`. |
 | `TRANSACTION_COST_OUTCOME` | Realized cost source is available and comparable to estimated cost basis. | `COST_SOURCE_INCOMPLETE`. |
-| `TAX_OUTCOME` | Realized tax/tax-lot evidence is source-backed. | `TAX_SOURCE_INCOMPLETE`. |
-| `FX_OUTCOME` | FX executions/currency exposures are source-backed. | `FX_SOURCE_INCOMPLETE`. |
-| `CASH_OUTCOME` | `lotus-core` provides source-owned HoldingsAsOf cash total evidence; cash movements, liquidity ladders, and MWR flow context require future source-owner contracts. | `CASH_SOURCE_INCOMPLETE`. |
+| `TAX_OUTCOME` | `lotus-core` provides explicit transaction-row withholding tax evidence; tax-lot allocation and realized tax totals require future source-owner contracts. | `TAX_SOURCE_INCOMPLETE`. |
+| `FX_OUTCOME` | `lotus-core` provides explicit transaction-row realized FX P&L evidence; FX execution/exposure totals require future source-owner contracts. | `FX_SOURCE_INCOMPLETE`. |
+| `CASH_OUTCOME` | `lotus-core` provides source-owned HoldingsAsOf cash total evidence and explicit linked transaction cashflow amounts; cash-movement totals, liquidity ladders, and MWR flow context require future source-owner contracts. | `CASH_SOURCE_INCOMPLETE`. |
 | `EXECUTION_QUALITY` | Fill/order/execution source exists with partial, cancelled, unfilled, slippage, and timing evidence. | `EXECUTION_EVIDENCE_BLOCKED`. |
 | `RULE_OUTCOME` | Rule source and post-trade state source both exist. | `RULE_SOURCE_INCOMPLETE`. |
 | `SOURCE_DATA_OUTCOME` | Manage can classify completeness and supportability of all requested source families. | Always available as a classification, but never converts blocked dimensions to ready. |

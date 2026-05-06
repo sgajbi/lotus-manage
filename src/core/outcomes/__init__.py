@@ -7,6 +7,7 @@ from src.core.outcomes.comparison import (
 from src.core.outcomes.core_sources import (
     CoreOutcomeSourceError,
     realized_cash_source_from_cash_balances_response,
+    realized_transaction_source_from_transaction_ledger_response,
     unavailable_core_cash_source,
 )
 from src.core.outcomes.models import (
@@ -115,6 +116,7 @@ __all__ = [
     "realized_performance_source_from_workspace_summary",
     "realized_rolling_risk_source_from_rolling_response",
     "realized_risk_source_from_risk_metrics_report",
+    "realized_transaction_source_from_transaction_ledger_response",
     "unavailable_core_cash_source",
     "unavailable_performance_source",
     "unavailable_risk_source",

@@ -1,0 +1,53 @@
+{
+  "rfc": "RFC-0042",
+  "wtbd_id": "RFC42-WTBD-006H",
+  "slice": "lotus-core TransactionLedgerWindow realized outcome source adapter",
+  "source_owner": "lotus-core",
+  "source_contracts": [
+    "TransactionLedgerWindow:v1",
+    "TRANSACTION_LEDGER_WINDOW"
+  ],
+  "status": "passed_full_repo_gate",
+  "implemented": [
+    "Source-owned trade_fee transaction-row scalar wraps into COST outcome evidence.",
+    "Source-owned withholding_tax_amount transaction-row scalar wraps into TAX outcome evidence.",
+    "Source-owned realized_fx_pnl transaction-row scalar wraps into FX_RESIDUAL outcome evidence.",
+    "Source-owned linked cashflow.amount transaction-row scalar wraps into CASH_RESIDUAL outcome evidence.",
+    "Adapter preserves lotus-core product identity, portfolio id, as-of date, generated/evidence timestamp, data-quality posture, source fingerprint, transaction id, transaction type, selected measure, selected source field, source units, reason codes, and content hash.",
+    "Adapter blocks missing transaction rows and missing selected source values instead of fabricating evidence.",
+    "Adapter carries degraded source-owner data-quality posture into the realized source snapshot."
+  ],
+  "explicitly_not_claimed": [
+    "No transaction-window aggregation.",
+    "No tax calculation.",
+    "No FX calculation.",
+    "No cash-movement aggregation.",
+    "No currency conversion.",
+    "No execution quality, fill quality, liquidity ladder, or rule-outcome inference."
+  ],
+  "focused_validation": [
+    {
+      "command": "python -m ruff format src\\core\\outcomes\\core_sources.py src\\core\\outcomes\\__init__.py tests\\unit\\core\\test_core_realized_outcome_sources.py",
+      "result": "passed"
+    },
+    {
+      "command": "python -m ruff check src\\core\\outcomes\\core_sources.py src\\core\\outcomes\\__init__.py tests\\unit\\core\\test_core_realized_outcome_sources.py",
+      "result": "passed"
+    },
+    {
+      "command": "python -m pytest tests\\unit\\core\\test_core_realized_outcome_sources.py -q",
+      "result": "15 passed"
+    },
+    {
+      "command": "make check",
+      "result": "passed: lint, format, monetary-float guard, no-alias guard, mypy, OpenAPI quality, API vocabulary, domain-data-product, trust-telemetry, observability, and 928 unit tests"
+    }
+  ],
+  "critical_review": {
+    "completeness": "Complete for explicit TransactionLedgerWindow row-level scalar evidence currently exposed by source-owned lotus-core contracts.",
+    "correctness": "The adapter selects only explicit source fields and maps them to RFC-0042 dimensions without recomputation.",
+    "testing_quality": "Focused tests exercise ready evidence, degraded source posture, ready TAX assembly, missing transaction row blocking, and missing selected value blocking.",
+    "code_quality": "Implementation reuses existing core source snapshot helpers and keeps transaction-specific selection logic isolated in small helpers.",
+    "production_readiness": "Full repository gate passed locally. Ready for wiki synchronization check, PR checks, merge, wiki publication, and post-merge validation."
+  }
+}
