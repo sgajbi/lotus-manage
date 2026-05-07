@@ -23,6 +23,11 @@ from src.core.proof_packs.models import (
     ProofPackSourceType,
     ProofPackStatus,
 )
+from src.core.proof_packs.source_analytics import (
+    ProofPackAnalyticsFamily,
+    ProofPackSourceAnalytics,
+    source_analytics_for_alternative,
+)
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
@@ -185,6 +190,9 @@ def _build_proof_pack(
         mandate_twin=mandate_twin,
         mandate_health=mandate_health,
     )
+    source_analytics = _source_analytics(selected_alternative)
+    for analytics in source_analytics.values():
+        source_hashes[analytics.source_hash_key] = analytics.content_hash
     portfolio_id = _resolve_portfolio_id(run=run, alternative_set=alternative_set)
     resolved_correlation_id = (
         correlation_id
@@ -209,6 +217,7 @@ def _build_proof_pack(
         mandate_twin=mandate_twin,
         mandate_health=mandate_health,
     )
+    source_refs.extend(analytics.source_ref for analytics in source_analytics.values())
 
     sections = [
         _build_section(
@@ -224,6 +233,7 @@ def _build_proof_pack(
             selection=selection,
             source_refs=source_refs,
             source_ref_count=len(source_refs),
+            source_analytics=source_analytics,
             reason=reason,
             mandate_id=mandate_id,
             mandate_twin=mandate_twin,
@@ -299,6 +309,7 @@ def _build_section(
     selection: ConstructionAlternativeSelection | None,
     source_refs: list[DpmProofPackSourceRef],
     source_ref_count: int,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
     reason: str | None,
     mandate_id: str | None,
     mandate_twin: DpmMandateDigitalTwin | None,
@@ -322,6 +333,7 @@ def _build_section(
         mandate_evidence_gap_codes=mandate_evidence_gap_codes,
         created_by=created_by,
         source_ref_count=source_ref_count,
+        source_analytics=source_analytics,
         workflow_decisions=workflow_decisions,
     )
     evidence_refs = []
@@ -371,6 +383,7 @@ def _section_payload(
     mandate_evidence_gap_codes: list[str],
     created_by: str,
     source_ref_count: int,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
     if section_type == "decision_summary":
@@ -507,6 +520,15 @@ def _section_payload(
             else ["DPM_SELECTED_METHOD_NOT_READY"],
         )
     if section_type == "risk_impact":
+        risk_context = source_analytics.get("risk")
+        if risk_context is not None:
+            return (
+                risk_context.state,
+                risk_context.summary,
+                risk_context.facts,
+                risk_context.metrics,
+                risk_context.reason_codes,
+            )
         return (
             "DEGRADED",
             "No risk-authoritative enrichment is attached to this first-wave proof pack.",
@@ -515,6 +537,15 @@ def _section_payload(
             ["DPM_RISK_AUTHORITY_CONTEXT_MISSING"],
         )
     if section_type == "performance_context":
+        performance_context = source_analytics.get("performance")
+        if performance_context is not None:
+            return (
+                performance_context.state,
+                performance_context.summary,
+                performance_context.facts,
+                performance_context.metrics,
+                performance_context.reason_codes,
+            )
         return (
             "DEGRADED",
             "No performance-authoritative benchmark context is attached.",
@@ -934,6 +965,23 @@ def _source_hashes(
     if mandate_health is not None:
         hashes["mandate_health"] = hash_canonical_payload(mandate_health.model_dump(mode="json"))
     return hashes
+
+
+def _source_analytics(
+    selected_alternative: ConstructionAlternative | None,
+) -> dict[str, ProofPackSourceAnalytics]:
+    families: tuple[ProofPackAnalyticsFamily, ...] = ("risk", "performance")
+    return {
+        family: analytics
+        for family in families
+        if (
+            analytics := source_analytics_for_alternative(
+                alternative=selected_alternative,
+                family=family,
+            )
+        )
+        is not None
+    }
 
 
 def _source_refs(

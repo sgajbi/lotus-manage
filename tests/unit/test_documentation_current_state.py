@@ -765,9 +765,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 26 |" in work_to_be_done
+    assert "| Done on merged/published truth | 27 |" in work_to_be_done
     assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 30 |" in work_to_be_done
+    assert "| Remaining / open | 29 |" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
@@ -804,6 +804,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-workbench` PR #166" in work_to_be_done
     assert "canonical-front-office-qa-20260507-210641.json" in work_to_be_done
     assert "packrun_dpm_pm_memo_air_b69bcfd16d7341b889b0037f884839fa" in work_to_be_done
+    assert "RFC40-WTBD-006 - Broader Risk And Performance Proof-Pack Enrichment" in (
+        work_to_be_done
+    )
+    assert "`risk_impact` and `performance_context` sections preserve" in work_to_be_done
+    assert "src/core/proof_packs/source_analytics.py" in work_to_be_done
+    assert "risk_context` / `performance_context` source" in work_to_be_done
+    assert "output/rfc0040-proof/20260507-230235/manifest.json" in work_to_be_done
+    assert "risk_source_state=READY" in work_to_be_done
+    assert "performance_source_state=DEGRADED" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
@@ -857,9 +866,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 26 done after this slice lands on merged/published truth" in (
+    assert "59 WTBD items: 27 done after this slice lands on merged/published truth" in (
         supported_features
     )
+    assert "source-owned risk/performance enrichment from selected construction alternatives" in (
+        supported_features
+    )
+    assert "src/core/proof_packs/source_analytics.py" in supported_features
+    assert "output/rfc0040-proof/20260507-230235/manifest.json" in supported_features
+    assert "output/rfc0040-proof/20260507-230235/critical-review.json" in supported_features
     assert "Explicit portfolio-list waves" in supported_features
     assert "`aggregate_metrics.source_analytics`" in supported_features
     assert "manage does not recalculate risk or performance" in supported_features

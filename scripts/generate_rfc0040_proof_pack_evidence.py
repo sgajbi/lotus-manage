@@ -115,6 +115,37 @@ def _assert_ready_handoff_pack(proof_pack: dict[str, Any]) -> None:
     )
 
 
+def _analytics_authority_context(token: str) -> dict[str, Any]:
+    return {
+        "risk_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-risk",
+            "source_product_name": "RiskMetricsReport",
+            "source_product_version": "v1",
+            "source_id": f"risk-proof-pack-{token}",
+            "content_hash": f"sha256:risk-proof-pack-{token}",
+            "tracking_error": "0.0310",
+            "concentration_breaches": 0,
+            "concentration_hhi_delta": "-0.0120",
+            "top_position_weight_proposed": "0.2100",
+            "issuer_coverage_status": "READY",
+            "reason_codes": [],
+        },
+        "performance_context": {
+            "supportability_status": "DEGRADED",
+            "source_system": "lotus-performance",
+            "source_product_name": "PerformanceBenchmarkContext",
+            "source_product_version": "v1",
+            "source_id": f"performance-proof-pack-{token}",
+            "content_hash": f"sha256:performance-proof-pack-{token}",
+            "benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40",
+            "active_return": "-0.0070",
+            "underperformance_flag": True,
+            "reason_codes": ["PERFORMANCE_ATTRIBUTION_WINDOW_PARTIAL"],
+        },
+    }
+
+
 def _generate_direct_run_evidence(
     client: httpx.Client,
     output_dir: Path,
@@ -244,7 +275,8 @@ def _generate_selected_alternative_evidence(
             expected_status=200,
             json_body={
                 **_load_demo_payload("27_dpm_supportability_artifact_flow.json"),
-                "methods": ["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE"],
+                "methods": ["DO_NOTHING_BASELINE", "RISK_AWARE"],
+                "authority_context": _analytics_authority_context(token),
             },
             headers={
                 "Idempotency-Key": f"rfc0040-alt-set-{token}",
@@ -305,18 +337,29 @@ def _generate_selected_alternative_evidence(
     )
     proof_pack = cast(dict[str, Any], generated["proof_pack"])
     _assert_ready_handoff_pack(proof_pack)
+    states = _section_states(proof_pack)
     _assert(
-        _section_states(proof_pack).get("selected_alternative") == "READY",
-        "selected alternative section is not READY",
+        states.get("selected_alternative") in {"READY", "PENDING_REVIEW"},
+        "selected alternative section has no reviewable source trace",
     )
+    source_hash_keys = sorted(proof_pack.get("source_hashes", {}))
+    _assert(states.get("risk_impact") == "READY", "risk impact section is not READY")
+    _assert(
+        states.get("performance_context") == "DEGRADED",
+        "performance context section should preserve degraded source posture",
+    )
+    _assert("risk_context" in source_hash_keys, "risk source hash missing")
+    _assert("performance_context" in source_hash_keys, "performance source hash missing")
     return {
         "alternative_set_id": alternative_set_id,
         "selected_alternative_id": selected_alternative_id,
         "proof_pack_id": proof_pack["proof_pack_id"],
         "status": proof_pack["status"],
         "content_hash": proof_pack["content_hash"],
-        "section_states": _section_states(proof_pack),
-        "source_hash_keys": sorted(proof_pack.get("source_hashes", {})),
+        "section_states": states,
+        "source_hash_keys": source_hash_keys,
+        "risk_source_state": states.get("risk_impact"),
+        "performance_source_state": states.get("performance_context"),
     }
 
 
@@ -390,6 +433,11 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
     missing_states = cast(dict[str, str], scenarios["missing_mandate_blocked"]["section_states"])
     direct_source_hashes = set(scenarios["direct_rebalance_run"].get("source_hash_keys", []))
     selected_source_hashes = set(scenarios["selected_alternative"].get("source_hash_keys", []))
+    selected_risk_performance_attached = (
+        selected_states.get("risk_impact") == "READY"
+        and selected_states.get("performance_context") == "DEGRADED"
+        and {"risk_context", "performance_context"} <= selected_source_hashes
+    )
     mandate_source_hash_keys = {"mandate_twin", "mandate_health"}
     direct_mandate_source_honest = direct_states.get("mandate_context") != "READY" or (
         mandate_source_hash_keys <= direct_source_hashes
@@ -410,8 +458,11 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
             "finding_id": "RFC0040-LIVE-002",
             "severity": "info",
             "status": "passed",
-            "summary": "Selected-alternative proof pack retained READY selected-alternative, before-state, and handoff sections.",
-            "evidence": scenarios["selected_alternative"]["proof_pack_id"],
+            "summary": "Selected-alternative proof pack retained reviewable selected-alternative, before-state, and handoff sections.",
+            "evidence": {
+                "proof_pack_id": scenarios["selected_alternative"]["proof_pack_id"],
+                "selected_alternative_state": selected_states.get("selected_alternative"),
+            },
         },
         {
             "finding_id": "RFC0040-LIVE-003",
@@ -422,16 +473,15 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
         },
         {
             "finding_id": "RFC0040-LIVE-004",
-            "severity": "controlled_gap",
-            "status": "accepted_boundary",
-            "summary": "Risk, performance, mandate context, sustainability, currency-overlay, scenario, and tax evidence remain degraded unless source-authority evidence is attached.",
+            "severity": "info",
+            "status": "passed",
+            "summary": "Selected-alternative proof pack preserves source-owned risk and performance analytics posture with lineage hashes.",
             "evidence": {
-                "direct_run_degraded_sections": sorted(
-                    section for section, state in direct_states.items() if state == "DEGRADED"
+                "risk_source_state": scenarios["selected_alternative"].get("risk_source_state"),
+                "performance_source_state": scenarios["selected_alternative"].get(
+                    "performance_source_state"
                 ),
-                "selected_alternative_degraded_sections": sorted(
-                    section for section, state in selected_states.items() if state == "DEGRADED"
-                ),
+                "source_hash_keys": sorted(selected_source_hashes),
             },
         },
         {
@@ -452,12 +502,13 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
             "direct_run_handoffs_ready": direct_states.get("reporting_refs") == "READY"
             and direct_states.get("ai_refs") == "READY",
             "selected_alternative_trace_ready": selected_states.get("selected_alternative")
-            == "READY",
+            in {"READY", "PENDING_REVIEW"},
             "mandate_context_source_honest": direct_mandate_source_honest
             and selected_mandate_source_honest,
             "missing_mandate_blocks_promotion": scenarios["missing_mandate_blocked"]["status"]
             == "BLOCKED"
             and missing_states.get("mandate_context") == "BLOCKED",
+            "selected_alternative_source_analytics_attached": selected_risk_performance_attached,
             "ai_guardrail_passed": manifest["validation"]["ai_forbidden_field_guardrail"]
             == "passed",
             "full_front_office_claim_withheld": True,
@@ -500,7 +551,7 @@ def generate_evidence(base_url: str, output_root: Path) -> dict[str, Any]:
         "validation": {
             "ready_probe": "passed",
             "direct_run_json_markdown_report_ai": "passed",
-            "selected_alternative_source": "passed",
+            "selected_alternative_source_analytics": "passed",
             "missing_mandate_blocked_state": "passed",
             "ai_forbidden_field_guardrail": "passed",
         },

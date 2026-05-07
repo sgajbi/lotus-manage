@@ -4,6 +4,9 @@ from decimal import Decimal
 import pytest
 
 from src.core.construction import (
+    AuthoritativePerformanceContext,
+    AuthoritativeRiskContext,
+    ConstructionAuthorityContext,
     ConstructionAlternativeSelection,
     build_alternative_set,
     build_rebalance_result_alternative,
@@ -311,6 +314,7 @@ def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
             mandate_evidence_gap_codes=[],
             created_by="pm_001",
             source_ref_count=0,
+            source_analytics={},
             workflow_decisions=[],
         )
 
@@ -381,6 +385,89 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
         "SELECTED_ALTERNATIVE",
         "PROOF_PACK_GENERATED",
     ]
+
+
+def test_selected_alternative_proof_pack_attaches_source_owned_risk_and_performance() -> None:
+    result = _ready_rebalance_result()
+    authority_context = ConstructionAuthorityContext(
+        risk_context=AuthoritativeRiskContext(
+            supportability_status="READY",
+            source_system="lotus-risk",
+            source_product_name="RiskMetricsReport",
+            source_product_version="v1",
+            source_id="risk-report:pf_proof_pack_1:2026-05-03",
+            content_hash="sha256:risk-report-proof",
+            tracking_error=Decimal("0.031"),
+            concentration_breaches=0,
+            concentration_hhi_delta=Decimal("-0.012"),
+            top_position_weight_proposed=Decimal("0.50"),
+            issuer_coverage_status="READY",
+        ),
+        performance_context=AuthoritativePerformanceContext(
+            supportability_status="DEGRADED",
+            source_system="lotus-performance",
+            source_product_name="PerformanceBenchmarkContext",
+            source_product_version="v1",
+            source_id="performance-context:pf_proof_pack_1:2026-05-03",
+            content_hash="sha256:performance-context-proof",
+            benchmark_id="BM_GLOBAL_BALANCED_USD",
+            active_return=Decimal("-0.007"),
+            underperformance_flag=True,
+            reason_codes=["PERFORMANCE_ATTRIBUTION_WINDOW_PARTIAL"],
+        ),
+    )
+    alternative = build_rebalance_result_alternative(result=result).model_copy(
+        update={
+            "diagnostics": {
+                "authority_context": authority_context.model_dump(
+                    mode="json",
+                    exclude_none=True,
+                )
+            }
+        }
+    )
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_analytics_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        run=_run_record(result=result),
+        created_by="pm_001",
+        reason="Use source-owned analytics for proof-pack review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    risk = _section(pack, "risk_impact")
+    performance = _section(pack, "performance_context")
+
+    assert risk.state == "READY"
+    assert risk.facts["source_system"] == "lotus-risk"
+    assert risk.metrics["tracking_error"] == "0.031"
+    assert risk.metrics["concentration_breaches"] == 0
+    assert risk.metrics["concentration_hhi_delta"] == "-0.012"
+    assert performance.state == "DEGRADED"
+    assert performance.facts["source_system"] == "lotus-performance"
+    assert performance.facts["benchmark_id"] == "BM_GLOBAL_BALANCED_USD"
+    assert performance.metrics["active_return"] == "-0.007"
+    assert performance.metrics["underperformance_flag"] is True
+    assert performance.reason_codes == ["PERFORMANCE_ATTRIBUTION_WINDOW_PARTIAL"]
+    assert pack.source_hashes["risk_context"] == "sha256:risk-report-proof"
+    assert pack.source_hashes["performance_context"] == "sha256:performance-context-proof"
+    assert any(
+        ref.source_system == "lotus-risk" and ref.source_type == "RiskMetricsReport"
+        for ref in pack.sections[0].source_refs
+    )
+    assert any(
+        ref.source_system == "lotus-performance"
+        and ref.source_type == "PerformanceBenchmarkContext"
+        for ref in pack.sections[0].source_refs
+    )
 
 
 def test_selected_alternative_builder_rejects_unknown_selection() -> None:
