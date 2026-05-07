@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 
 from src.core.outcomes import (
     RiskOutcomeSourceError,
@@ -9,6 +10,21 @@ from src.core.outcomes import (
     realized_rolling_risk_source_from_rolling_response,
     realized_risk_source_from_risk_metrics_report,
     unavailable_risk_source,
+)
+from src.core.outcomes.risk_sources import (
+    _concentration_source_posture,
+    _drawdown_source_posture,
+    _historical_attribution_contributor,
+    _historical_attribution_set,
+    _historical_attribution_source_posture,
+    _historical_attribution_value,
+    _metric_unit,
+    _primary_reason,
+    _risk_source_posture,
+    _rolling_context_reason,
+    _rolling_source_posture,
+    _rolling_window_result,
+    _decimal_value,
 )
 from tests.unit.core.test_realized_outcome_sources import _window
 
@@ -1200,3 +1216,139 @@ def test_historical_attribution_contributor_measure_requires_group_key() -> None
             _historical_attribution_response(),
             measure="contributor_component_contribution",
         )
+
+
+def test_risk_source_posture_helpers_preserve_authority_failure_semantics() -> None:
+    assert _risk_source_posture(supportability_state="unsupported", value=None) == (
+        "NOT_SUPPORTED",
+        "NOT_SUPPORTED",
+    )
+    assert _risk_source_posture(supportability_state="permission_blocked", value=None) == (
+        "BLOCKED",
+        "MISSING",
+    )
+    assert _risk_source_posture(supportability_state="stale", value=Decimal("1")) == (
+        "DEGRADED",
+        "STALE",
+    )
+    assert _primary_reason("NOT_SUPPORTED") == "RISK_SOURCE_NOT_SUPPORTED"
+    assert _primary_reason("BLOCKED") == "RISK_SOURCE_BLOCKED"
+    assert _metric_unit("SHARPE") == "ratio"
+
+
+def test_concentration_drawdown_and_rolling_posture_edges_are_source_safe() -> None:
+    assert _concentration_source_posture(
+        supportability_state="ready",
+        value=Decimal("0.7"),
+        measure="issuer_hhi_current",
+        issuer_coverage_status="partial",
+    ) == ("DEGRADED", "PARTIAL")
+    assert _concentration_source_posture(
+        supportability_state="ready",
+        value=None,
+        measure="top_issuer_weight_current",
+        issuer_coverage_status=None,
+    ) == ("DEGRADED", "UNAVAILABLE")
+    assert _drawdown_source_posture(
+        supportability_state="unsupported",
+        value=None,
+        measure_reason="RISK_DRAWDOWN_ABSOLUTE",
+    ) == ("NOT_SUPPORTED", "NOT_SUPPORTED")
+    assert _drawdown_source_posture(
+        supportability_state="permission_blocked",
+        value=None,
+        measure_reason="RISK_DRAWDOWN_RELATIVE",
+    ) == ("BLOCKED", "MISSING")
+    assert _drawdown_source_posture(
+        supportability_state="degraded",
+        value=None,
+        measure_reason="RISK_DRAWDOWN_RELATIVE",
+    ) == ("DEGRADED", "UNAVAILABLE")
+    assert _rolling_source_posture(
+        supportability_state="unsupported",
+        value=None,
+        context_reason="RISK_ROLLING_CONTEXT_NOT_REQUIRED",
+    ) == ("NOT_SUPPORTED", "NOT_SUPPORTED")
+    assert _rolling_source_posture(
+        supportability_state="degraded",
+        value=Decimal("1"),
+        context_reason="RISK_ROLLING_BENCHMARK_UNAVAILABLE",
+    ) == ("DEGRADED", "UNAVAILABLE")
+
+
+def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
+    assert _rolling_window_result(period_result={}, window_length=None) == ({}, "unknown")
+    assert _rolling_window_result(
+        period_result={"window_results": [{"window_length": 63, "value": "old"}]},
+        window_length=126,
+    ) == ({}, 126)
+    assert (
+        _rolling_context_reason(
+            period_result={"risk_free_context": {"reason": "unavailable"}},
+            metric="ROLLING_SHARPE",
+        )
+        == "RISK_ROLLING_RISK_FREE_UNAVAILABLE"
+    )
+    assert (
+        _historical_attribution_set(
+            period_result={},
+            attribution_type="FACTOR",
+            metric="ACTIVE_RISK",
+            grouping_dimension="SECTOR",
+        )
+        == {}
+    )
+    assert (
+        _historical_attribution_contributor(attribution_set={}, contributor_group_key="TECH") == {}
+    )
+    assert _historical_attribution_value(
+        attribution_set={"total_value": "0.15"},
+        measure="total_value",
+        contributor_group_key=None,
+    ) == (Decimal("0.15"), "RISK_ATTRIBUTION_SET_LEVEL")
+    assert _historical_attribution_value(
+        attribution_set={"contributors": [{"group_key": "TECH", "component_contribution": "0.07"}]},
+        measure="contributor_component_contribution",
+        contributor_group_key="TECH",
+    ) == (Decimal("0.07"), "RISK_ATTRIBUTION_CONTRIBUTOR_TECH")
+
+
+def test_historical_attribution_posture_and_decimal_errors_are_fail_closed() -> None:
+    assert _historical_attribution_source_posture(
+        supportability_state="unsupported",
+        value=None,
+        period_error=None,
+        quality_flags=[],
+    ) == ("NOT_SUPPORTED", "NOT_SUPPORTED")
+    assert _historical_attribution_source_posture(
+        supportability_state="permission_blocked",
+        value=None,
+        period_error=None,
+        quality_flags=[],
+    ) == ("BLOCKED", "MISSING")
+    assert _historical_attribution_source_posture(
+        supportability_state="ready",
+        value=Decimal("1"),
+        period_error="period unavailable",
+        quality_flags=[],
+    ) == ("BLOCKED", "MISSING")
+    assert _historical_attribution_source_posture(
+        supportability_state="stale",
+        value=Decimal("1"),
+        period_error=None,
+        quality_flags=[],
+    ) == ("DEGRADED", "STALE")
+    assert _historical_attribution_source_posture(
+        supportability_state="degraded",
+        value=None,
+        period_error=None,
+        quality_flags=[],
+    ) == ("DEGRADED", "UNAVAILABLE")
+    assert _historical_attribution_source_posture(
+        supportability_state="ready",
+        value=Decimal("1"),
+        period_error=None,
+        quality_flags=["ESTIMATED"],
+    ) == ("DEGRADED", "PARTIAL")
+    with pytest.raises(RiskOutcomeSourceError, match="non-numeric risk metric value"):
+        _decimal_value("not-a-number")

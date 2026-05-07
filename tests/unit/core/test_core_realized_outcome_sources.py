@@ -306,6 +306,27 @@ def test_incomplete_cash_source_preserves_degraded_core_posture() -> None:
     ]
 
 
+@pytest.mark.parametrize(
+    ("data_quality_status", "expected_quality"),
+    [
+        ("STALE", "STALE"),
+        ("ERROR", "UNAVAILABLE"),
+    ],
+)
+def test_cash_source_preserves_non_ready_core_quality_states(
+    data_quality_status: str,
+    expected_quality: str,
+) -> None:
+    response = _cash_balances_response()
+    response["data_quality_status"] = data_quality_status
+
+    source = realized_cash_source_from_cash_balances_response(response)
+
+    assert source.source_state == "DEGRADED"
+    assert source.quality == expected_quality
+    assert "CORE_SOURCE_DEGRADED" in source.reason_codes
+
+
 def test_incomplete_transaction_ledger_preserves_degraded_core_posture() -> None:
     response = _transaction_ledger_response()
     response["data_quality_status"] = "INCOMPLETE"
@@ -463,6 +484,14 @@ def test_cashflow_projection_adapter_rejects_missing_source_total() -> None:
         realized_cashflow_projection_source_from_cashflow_projection_response(malformed)
 
 
+def test_cashflow_projection_adapter_rejects_non_canonical_measure() -> None:
+    with pytest.raises(CoreOutcomeSourceError, match="total_net_cashflow"):
+        realized_cashflow_projection_source_from_cashflow_projection_response(
+            _cashflow_projection_response(),
+            measure="unsupported_measure",  # type: ignore[arg-type]
+        )
+
+
 def test_cashflow_projection_adapter_rejects_missing_projection_posture() -> None:
     malformed = _cashflow_projection_response()
     del malformed["include_projected"]
@@ -508,6 +537,88 @@ def test_transaction_adapter_rejects_missing_source_measure() -> None:
     txn["trade_fee_reporting_currency"] = None
 
     with pytest.raises(CoreOutcomeSourceError, match="trade_fee"):
+        realized_transaction_source_from_transaction_ledger_response(
+            malformed,
+            transaction_id="TXN-FX-001",
+            measure="trade_fee",
+        )
+
+
+def test_transaction_adapter_uses_source_trade_fee_when_reporting_value_is_absent() -> None:
+    response = _transaction_ledger_response()
+    del response["reporting_currency"]
+    transactions = response["transactions"]
+    assert isinstance(transactions, list)
+    txn = transactions[0]
+    assert isinstance(txn, dict)
+    txn["trade_fee_reporting_currency"] = None
+
+    source = realized_transaction_source_from_transaction_ledger_response(
+        response,
+        transaction_id="TXN-FX-001",
+        measure="trade_fee",
+    )
+
+    assert str(source.value) == "18.50"
+    assert source.unit == "USD"
+    assert "TRANSACTION_VALUE_TRADE_FEE_SOURCE" in source.reason_codes
+
+
+def test_transaction_adapter_uses_local_fx_pnl_when_base_value_is_absent() -> None:
+    response = _transaction_ledger_response()
+    transactions = response["transactions"]
+    assert isinstance(transactions, list)
+    txn = transactions[0]
+    assert isinstance(txn, dict)
+    txn["realized_fx_pnl_base"] = None
+
+    source = realized_transaction_source_from_transaction_ledger_response(
+        response,
+        transaction_id="TXN-FX-001",
+        measure="realized_fx_pnl",
+    )
+
+    assert str(source.value) == "1250.00"
+    assert source.unit == "USD"
+    assert "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL" in source.reason_codes
+
+
+def test_transaction_adapter_rejects_missing_fx_pnl_and_cashflow_amount() -> None:
+    missing_fx = _transaction_ledger_response()
+    transactions = missing_fx["transactions"]
+    assert isinstance(transactions, list)
+    fx_txn = transactions[0]
+    assert isinstance(fx_txn, dict)
+    fx_txn["realized_fx_pnl_base"] = None
+    fx_txn["realized_fx_pnl_local"] = None
+
+    with pytest.raises(CoreOutcomeSourceError, match="realized_fx_pnl"):
+        realized_transaction_source_from_transaction_ledger_response(
+            missing_fx,
+            transaction_id="TXN-FX-001",
+            measure="realized_fx_pnl",
+        )
+
+    missing_cashflow = _transaction_ledger_response()
+    transactions = missing_cashflow["transactions"]
+    assert isinstance(transactions, list)
+    cash_txn = transactions[1]
+    assert isinstance(cash_txn, dict)
+    cash_txn["cashflow"] = {}
+
+    with pytest.raises(CoreOutcomeSourceError, match="cashflow.amount"):
+        realized_transaction_source_from_transaction_ledger_response(
+            missing_cashflow,
+            transaction_id="TXN-INT-001",
+            measure="cashflow_amount",
+        )
+
+
+def test_transaction_adapter_treats_missing_transaction_list_as_source_gap() -> None:
+    malformed = _transaction_ledger_response()
+    malformed["transactions"] = None
+
+    with pytest.raises(CoreOutcomeSourceError, match="transaction_id TXN-FX-001"):
         realized_transaction_source_from_transaction_ledger_response(
             malformed,
             transaction_id="TXN-FX-001",

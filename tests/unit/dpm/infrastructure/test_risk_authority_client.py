@@ -11,6 +11,12 @@ from src.infrastructure.risk_authority import (
     LotusRiskAuthorityConfig,
     LotusRiskAuthorityUnavailableError,
 )
+from src.infrastructure.risk_authority.client import (
+    _post_with_retries,
+    _regime_context_from_scenario_response,
+    _scenario_bucket,
+    _scenario_status_from_supportability,
+)
 from src.core.rebalance.engine import run_simulation
 from tests.shared.factories import valid_api_payload
 
@@ -349,3 +355,100 @@ def test_lotus_risk_authority_client_closes_owned_client() -> None:
     client.close()
 
     assert owned_client.closed is True
+
+
+def test_lotus_risk_authority_client_closes_owned_runtime_client(monkeypatch) -> None:
+    closed = {"value": False}
+
+    class _OwnedClient:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        def post(self, *_args, **_kwargs):
+            return httpx.Response(200, json=_risk_response())
+
+        def close(self) -> None:
+            closed["value"] = True
+
+    monkeypatch.setattr(httpx, "Client", _OwnedClient)
+    client = LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
+
+    context = client.concentration_context(result=_result(), correlation_id=None)
+
+    assert context.supportability_status == ConstructionMethodStatus.READY
+    assert closed["value"] is True
+
+
+def test_lotus_risk_authority_client_closes_owned_regime_runtime_client(monkeypatch) -> None:
+    closed = {"value": False}
+
+    class _OwnedClient:
+        def __init__(self, *, timeout: float) -> None:
+            self.timeout = timeout
+
+        def post(self, *_args, **_kwargs):
+            return httpx.Response(200, json=_regime_scenario_response())
+
+        def close(self) -> None:
+            closed["value"] = True
+
+    monkeypatch.setattr(httpx, "Client", _OwnedClient)
+    client = LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url="http://risk.test"))
+
+    context = client.regime_scenario_context(
+        result=_result(),
+        portfolio_id="pf_test",
+        as_of_date=date(2026, 5, 6),
+        correlation_id=None,
+    )
+
+    assert context.supportability_status == ConstructionMethodStatus.READY
+    assert closed["value"] is True
+
+
+def test_lotus_risk_authority_post_helper_rejects_invalid_json_and_empty_attempt_plan() -> None:
+    invalid_json_client = httpx.Client(
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, content=b"{"))
+    )
+
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _post_with_retries(
+            client=invalid_json_client,
+            url="http://risk.test/invalid",
+            payload={},
+            headers={},
+            attempts=1,
+        )
+
+    idle_client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200)))
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_UNAVAILABLE"):
+        _post_with_retries(
+            client=idle_client,
+            url="http://risk.test/idle",
+            payload={},
+            headers={},
+            attempts=0,
+        )
+
+
+def test_lotus_risk_authority_regime_response_edges_are_fail_closed() -> None:
+    context = _regime_context_from_scenario_response(
+        {
+            **_regime_scenario_response(supportability="degraded"),
+            "reason_codes": "not-a-list",
+        }
+    )
+    assert context.supportability_status == ConstructionMethodStatus.DEGRADED
+    assert context.reason_codes == ["REGIME_SCENARIO_PACK_RESPONSE_REASON_CODES_MISSING"]
+    assert _scenario_status_from_supportability("blocked") == ConstructionMethodStatus.BLOCKED
+
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _regime_context_from_scenario_response({"metadata": {}})
+
+
+def test_lotus_risk_authority_scenario_bucket_aliases_are_stable() -> None:
+    assert _scenario_bucket("stocks") == "EQUITY"
+    assert _scenario_bucket("fixed income") == "FIXED_INCOME"
+    assert _scenario_bucket("private-markets") == "ALTERNATIVES"
+    assert _scenario_bucket("money market") == "CASH"
+    assert _scenario_bucket("commodities") == "COMMODITIES"

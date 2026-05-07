@@ -33,6 +33,7 @@ from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.core.waves import (
     DpmWaveAlreadyExistsError,
     DpmRebalanceWave,
@@ -191,6 +192,16 @@ class _PmBookResolver:
     def resolve_portfolio_manager_book_membership(self, **kwargs: object):
         self.calls.append(kwargs)
         return DpmCorePortfolioManagerBookMembershipResponse.model_validate(self.payload)
+
+
+class _UnavailablePmBookResolver:
+    def resolve_portfolio_manager_book_membership(self, **_kwargs: object):
+        raise DpmCoreResolverUnavailableError("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE")
+
+
+class _IncompletePmBookResolver:
+    def resolve_portfolio_manager_book_membership(self, **_kwargs: object):
+        raise DpmCoreResolverError("DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE")
 
 
 def _rebalance_request(portfolio_id: str = PORTFOLIO_ID) -> dict[str, object]:
@@ -493,6 +504,16 @@ def test_pm_book_wave_create_persists_resolved_source_owned_cohort(monkeypatch) 
     ("request_patch", "expected_status", "expected_code"),
     [
         (
+            {"as_of_date": "2026/05/03"},
+            422,
+            "INVALID_AS_OF_DATE",
+        ),
+        (
+            {"portfolio_types": [" "]},
+            422,
+            "PM_BOOK_REVIEW_PORTFOLIO_TYPES_REQUIRED",
+        ),
+        (
             {"portfolio_manager_id": None},
             422,
             "PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
@@ -531,6 +552,65 @@ def test_pm_book_wave_preview_reports_incomplete_source_dependency(monkeypatch) 
 
     assert response.status_code == 424
     assert response.json()["detail"]["code"] == "PM_BOOK_MEMBERSHIP_INCOMPLETE"
+
+
+@pytest.mark.parametrize(
+    ("resolver", "expected_status", "expected_code"),
+    [
+        (
+            _UnavailablePmBookResolver(),
+            503,
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
+        ),
+        (
+            _IncompletePmBookResolver(),
+            424,
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
+        ),
+        (
+            _PmBookResolver(_pm_book_membership_payload(members=[])),
+            424,
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+        ),
+    ],
+)
+def test_pm_book_wave_preview_maps_source_resolution_failures(
+    monkeypatch,
+    resolver,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=_pm_book_request())
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+
+
+def test_wave_preview_rejects_empty_source_owned_portfolio_set() -> None:
+    with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
+        wave_service.preview_wave(
+            trigger_type="PM_BOOK_REVIEW",
+            trigger_id="pm-book-empty",
+            rationale="Reject an empty source-owned PM-book cohort.",
+            as_of_date="2026-05-03",
+            actor_id="pm_001",
+            correlation_id="corr-empty",
+            portfolios=[],
+            mandate_repository=InMemoryDpmMandateRepository(),
+        )
+
+    assert exc_info.value.code == "AFFECTED_PORTFOLIO_SET_EMPTY"
+
+
+def test_wave_report_input_returns_not_found_for_unknown_wave() -> None:
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.get("/api/v1/rebalance/waves/dwv_missing/report-input")
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
 
 
 def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_refs() -> None:
