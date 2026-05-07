@@ -119,7 +119,7 @@ Current repository posture:
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
     linkage, approval-with-exceptions, staging, internal operations handoff evidence with
     `external_execution_claimed=false`, actor-attributed pre-execution cancellation,
-    repository-backed wave search/detail/item/proof-pack posture/supportability read models,
+    repository-backed wave search/detail/item/proof-pack posture/report-input/supportability read models,
     OpenAPI certification, and aggregate reconciliation under
     `output/rfc0041-wave-proof/20260504-231914`. The canonical proof used Postgres-backed manage
     repositories via `DPM_MANAGE_POSTGRES_DSN`. Automatic PM-book and CIO model-change cohort

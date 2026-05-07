@@ -89,6 +89,57 @@ flowchart LR
     Gateway -. downstream RFC-0098 .-> Workbench[lotus-workbench]
 ```
 
+## Rebalance wave surfaces
+
+- `POST /api/v1/rebalance/waves/preview`
+  builds a non-durable RFC-0041 explicit portfolio-list wave preview.
+- `POST /api/v1/rebalance/waves`
+  persists a durable wave with idempotency protection.
+- `GET /api/v1/rebalance/waves`
+  searches bounded durable wave pages.
+- `GET /api/v1/rebalance/waves/{wave_id}`
+  retrieves persisted wave detail with supportability and proof-pack posture.
+- `GET /api/v1/rebalance/waves/{wave_id}/items`
+  returns item-level source, selection, proof-pack, and handoff posture.
+- `POST /api/v1/rebalance/waves/{wave_id}/source-check`
+  classifies item readiness from manage-owned mandate and source-readiness evidence.
+- `POST /api/v1/rebalance/waves/{wave_id}/simulate`
+  delegates ready items to RFC-0039 construction alternatives.
+- `POST /api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select`
+  records actor-attributed construction selection for a wave item.
+- `POST /api/v1/rebalance/waves/{wave_id}/approve`
+  approves eligible selected or proof-pack-ready items.
+- `POST /api/v1/rebalance/waves/{wave_id}/stage`
+  stages approved items for internal operations handoff.
+- `POST /api/v1/rebalance/waves/{wave_id}/handoff`
+  creates append-only internal handoff evidence with `external_execution_claimed=false`.
+- `POST /api/v1/rebalance/waves/{wave_id}/cancel`
+  records pre-execution cancellation evidence.
+- `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
+  returns linked proof-pack and handoff posture for the persisted wave.
+- `GET /api/v1/rebalance/waves/{wave_id}/report-input`
+  returns deterministic `DpmWaveReportInput` for downstream report materialization without
+  requiring `lotus-report` to reconstruct wave state, proof-pack linkage, internal handoff refs, or
+  source hashes.
+- `GET /api/v1/rebalance/waves/{wave_id}/supportability`
+  returns product-safe operator diagnostics and bounded reason-code posture.
+
+These are manage-owned backend authority endpoints. Report materialization, rendering, archive
+lifecycle, AI memo generation, PM-book discovery, and external OMS execution remain downstream or
+source-owner responsibilities unless their owning repos have implemented and proven support.
+
+```mermaid
+flowchart LR
+    Wave[Persisted rebalance wave] --> Detail[Detail / items / proof posture]
+    Wave --> ReportInput[GET report-input]
+    Wave --> Support[GET supportability]
+    ReportInput -. downstream-owned .-> Report[lotus-report]
+    Report -.-> Render[lotus-render]
+    Report -.-> Archive[lotus-archive]
+    Detail -. downstream RFC-0098 .-> Gateway[lotus-gateway]
+    Gateway -.-> Workbench[lotus-workbench command center]
+```
+
 Default capability posture is intentionally conservative: inline bundle execution is enabled,
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.

@@ -85,7 +85,7 @@ risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no fu
 product UX support is claimed here. RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
-internal handoff evidence, retrieve/search/item/proof-pack/supportability read models, and
+internal handoff evidence, retrieve/search/item/proof-pack/report-input/supportability read models, and
 Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway and Workbench
 implementation, automatic PM-book/CIO cohort discovery, and full front-office support remain
 unpromoted. RFC-0042 is `DONE` for manage backend authority:
@@ -131,6 +131,7 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/waves/{wave_id}/approve`, `/api/v1/rebalance/waves/{wave_id}/stage`,
   `/api/v1/rebalance/waves/{wave_id}/handoff`, `/api/v1/rebalance/waves/{wave_id}/cancel`,
   `/api/v1/rebalance/waves/{wave_id}/proof-pack`,
+  `/api/v1/rebalance/waves/{wave_id}/report-input`,
   `/api/v1/rebalance/waves/{wave_id}/supportability`
 - integration capabilities
   `/api/v1/integration/capabilities`
