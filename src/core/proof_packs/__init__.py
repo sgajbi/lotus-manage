@@ -3,6 +3,8 @@ from src.core.proof_packs.builder import (
     ProofPackSourceValidationError,
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
+    proof_pack_id_for_rebalance_run,
+    proof_pack_id_for_selected_alternative,
 )
 from src.core.proof_packs.handoffs import (
     AI_EVIDENCE_REF_TYPE,
@@ -57,5 +59,7 @@ __all__ = [
     "build_proof_pack_from_run",
     "build_proof_pack_from_selected_alternative",
     "build_report_input",
+    "proof_pack_id_for_rebalance_run",
+    "proof_pack_id_for_selected_alternative",
     "render_proof_pack_markdown",
 ]
