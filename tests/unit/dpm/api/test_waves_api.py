@@ -812,6 +812,95 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
     )
 
 
+def test_wave_simulation_aggregates_source_owned_risk_and_performance_context() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    ready_twin = _twin()
+    mandate_repository.save_mandate_snapshot(ready_twin)
+    _save_ready_health(mandate_repository, ready_twin)
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        InMemoryConstructionRepository(),
+        InMemoryDpmProofPackRepository(),
+        _run_service(),
+    ) as client:
+        created = client.post(
+            "/api/v1/rebalance/waves",
+            json={**_request(), "portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            headers={"Idempotency-Key": "idem-wave-source-analytics-001"},
+        )
+        wave_id = created.json()["wave"]["wave_id"]
+        checked = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/source-check",
+            json={"actor_id": "pm_001"},
+        )
+        wave_item_id = checked.json()["wave"]["items"][0]["wave_item_id"]
+
+        simulated = client.post(
+            f"/api/v1/rebalance/waves/{wave_id}/simulate",
+            json={
+                "actor_id": "pm_001",
+                "methods": ["RISK_AWARE", "MIN_TURNOVER"],
+                "item_inputs": [
+                    {
+                        "wave_item_id": wave_item_id,
+                        "stateless_input": _rebalance_request(PORTFOLIO_ID),
+                        "authority_context": {
+                            "risk_context": {
+                                "supportability_status": "READY",
+                                "source_system": "lotus-risk",
+                                "source_product_name": "ConcentrationAnalysis",
+                                "source_product_version": "v1",
+                                "source_id": "risk-calc-001",
+                                "content_hash": "sha256:risk-calc-001",
+                                "concentration_breaches": 0,
+                                "concentration_hhi_delta": "125.50",
+                                "top_position_weight_proposed": "0.2100",
+                                "issuer_coverage_status": "complete",
+                                "reason_codes": ["LOTUS_RISK_CONCENTRATION_READY"],
+                            },
+                            "performance_context": {
+                                "supportability_status": "DEGRADED",
+                                "source_system": "lotus-performance",
+                                "source_product_name": "PerformanceBenchmarkContext",
+                                "source_product_version": "v1",
+                                "source_id": "perf-calc-001",
+                                "content_hash": "sha256:perf-calc-001",
+                                "benchmark_id": "BMK_GLOBAL_BALANCED",
+                                "active_return": "-0.0125",
+                                "underperformance_flag": True,
+                                "reason_codes": ["PERFORMANCE_CONTEXT_STALE"],
+                            },
+                        },
+                    }
+                ],
+            },
+        )
+
+    assert simulated.status_code == 200
+    aggregate = simulated.json()["wave"]["aggregate_metrics"]
+    analytics_by_family = {entry["source_family"]: entry for entry in aggregate["source_analytics"]}
+    risk = analytics_by_family["RISK"]
+    assert risk["supportability_state"] == "READY"
+    assert risk["ready_item_count"] == 1
+    assert risk["source_systems"] == ["lotus-risk"]
+    assert risk["source_refs"][0]["source_type"] == "ConcentrationAnalysis"
+    assert risk["source_refs"][0]["source_id"] == "risk-calc-001"
+    assert risk["source_measures"]["concentration_hhi_delta"] == ["125.50"]
+    assert "LOTUS_RISK_CONCENTRATION_READY" in risk["reason_codes"]
+
+    performance = analytics_by_family["PERFORMANCE"]
+    assert performance["supportability_state"] == "DEGRADED"
+    assert performance["degraded_item_count"] == 1
+    assert performance["source_systems"] == ["lotus-performance"]
+    assert performance["source_refs"][0]["source_type"] == "PerformanceBenchmarkContext"
+    assert performance["source_measures"]["active_return"] == ["-0.0125"]
+    assert performance["source_measures"]["underperformance_flag"] == ["True"]
+    assert "PERFORMANCE_CONTEXT_STALE" in performance["reason_codes"]
+
+
 def test_wave_simulation_preserves_blocked_items_and_degrades_missing_inputs() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     ready_twin = _twin()

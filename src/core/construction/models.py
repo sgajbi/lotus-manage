@@ -1,5 +1,7 @@
 """Domain models for RFC-0039 construction alternatives."""
 
+from __future__ import annotations
+
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Literal
@@ -133,6 +135,22 @@ class AuthoritativeRiskContext(BaseModel):
         description="Risk-service supportability status for the enrichment."
     )
     source_system: str = Field(description="Risk authority that produced the enrichment.")
+    source_product_name: str | None = Field(
+        default=None,
+        description="Source-owned risk product name when the authority exposes one.",
+    )
+    source_product_version: str | None = Field(
+        default=None,
+        description="Source-owned risk product version when available.",
+    )
+    source_id: str | None = Field(
+        default=None,
+        description="Source-owned risk evidence identifier or request fingerprint.",
+    )
+    content_hash: str | None = Field(
+        default=None,
+        description="Canonical source-owned evidence hash when available.",
+    )
     tracking_error: Decimal | None = Field(
         default=None,
         description="Risk-authoritative tracking error when provided.",
@@ -278,6 +296,10 @@ class ConstructionAuthorityContext(BaseModel):
         default=None,
         description="Optional lotus-risk authoritative concentration/risk context.",
     )
+    performance_context: "AuthoritativePerformanceContext | None" = Field(
+        default=None,
+        description="Optional lotus-performance authoritative benchmark/performance context.",
+    )
     liquidity_context: AuthoritativeLiquidityContext | None = Field(
         default=None,
         description="Optional liquidity and settlement authority context.",
@@ -297,6 +319,22 @@ class AuthoritativePerformanceContext(BaseModel):
         description="Performance-service supportability status for the enrichment."
     )
     source_system: str = Field(description="Performance authority that produced the enrichment.")
+    source_product_name: str | None = Field(
+        default=None,
+        description="Source-owned performance product name when the authority exposes one.",
+    )
+    source_product_version: str | None = Field(
+        default=None,
+        description="Source-owned performance product version when available.",
+    )
+    source_id: str | None = Field(
+        default=None,
+        description="Source-owned performance evidence identifier or calculation fingerprint.",
+    )
+    content_hash: str | None = Field(
+        default=None,
+        description="Canonical source-owned evidence hash when available.",
+    )
     benchmark_id: str | None = Field(
         default=None,
         description="Performance-authoritative benchmark identifier when provided.",

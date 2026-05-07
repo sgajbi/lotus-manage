@@ -765,9 +765,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 25 |" in work_to_be_done
+    assert "| Done on merged/published truth | 26 |" in work_to_be_done
     assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 31 |" in work_to_be_done
+    assert "| Remaining / open | 30 |" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
@@ -845,6 +845,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         work_to_be_done
     )
     assert "and `lotus-manage` PR #126" in work_to_be_done
+    assert "RFC41-WTBD-004 - Risk And Performance Aggregate Enrichment" in work_to_be_done
+    assert "`aggregate_metrics.source_analytics`" in work_to_be_done
+    assert "does not calculate risk or performance methodology locally" in work_to_be_done
+    assert "tests/unit/test_rfc0041_evidence_script.py" in work_to_be_done
     assert "not complete by mainline definition until merge and wiki publication" not in (
         work_to_be_done
     )
@@ -853,8 +857,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 25 done on merged/published truth" in supported_features
+    assert "59 WTBD items: 26 done after this slice lands on merged/published truth" in (
+        supported_features
+    )
     assert "Explicit portfolio-list waves" in supported_features
+    assert "`aggregate_metrics.source_analytics`" in supported_features
+    assert "manage does not recalculate risk or performance" in supported_features
     assert "governed rebalance-wave report materialization in report/render/archive" in (
         supported_features
     )
