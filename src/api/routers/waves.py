@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
@@ -16,6 +16,7 @@ from src.api.dependencies import (
 )
 from src.api.request_models import RebalanceRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
+from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
@@ -28,6 +29,7 @@ from src.core.waves import (
     DpmWaveRepository,
     DpmWaveSourceRef,
 )
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
@@ -180,6 +182,7 @@ class DpmWavePreviewRequest(BaseModel):
     as_of_date: str = Field(description="Business as-of date.", examples=["2026-05-03"])
     actor_id: str = Field(description="Human or service actor.", examples=["pm_001"])
     portfolios: list[DpmWavePortfolioInput] = Field(
+        default_factory=list,
         description="Explicit affected portfolios for the first supported RFC-0041 trigger.",
         examples=[
             [
@@ -198,6 +201,29 @@ class DpmWavePreviewRequest(BaseModel):
                 }
             ]
         ],
+    )
+    portfolio_manager_id: str | None = Field(
+        default=None,
+        description=(
+            "Required for `PM_BOOK_REVIEW`. Manage resolves the affected cohort from the "
+            "lotus-core `PortfolioManagerBookMembership:v1` source product."
+        ),
+        examples=["PM_SG_DPM_001"],
+    )
+    tenant_id: str | None = Field(
+        default=None,
+        description="Optional tenant selector forwarded to the PM-book source product.",
+        examples=["default"],
+    )
+    booking_center_code: str | None = Field(
+        default=None,
+        description="Optional booking-center filter for PM-book discovery.",
+        examples=["Singapore"],
+    )
+    portfolio_types: list[str] = Field(
+        default_factory=lambda: ["DISCRETIONARY"],
+        description="PM-book portfolio types eligible for automatic wave discovery.",
+        examples=[["DISCRETIONARY"]],
     )
 
 
@@ -489,17 +515,126 @@ def _wave_response(
     )
 
 
+def _portfolio_inputs_for_request(
+    *,
+    request: DpmWavePreviewRequest,
+    correlation_id: str,
+) -> list[dict[str, object]]:
+    if request.trigger_type == "EXPLICIT_PORTFOLIO_LIST":
+        return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
+    if request.trigger_type == "PM_BOOK_REVIEW":
+        return _resolve_pm_book_portfolios(request=request, correlation_id=correlation_id)
+    return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
+
+
+def _resolve_pm_book_portfolios(
+    *,
+    request: DpmWavePreviewRequest,
+    correlation_id: str,
+) -> list[dict[str, object]]:
+    if request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "PM_BOOK_REVIEW_REJECTS_CALLER_PORTFOLIOS",
+            "PM_BOOK_REVIEW resolves the affected portfolio set from lotus-core.",
+        )
+    portfolio_manager_id = (request.portfolio_manager_id or "").strip()
+    if not portfolio_manager_id:
+        raise wave_service.DpmWaveValidationError(
+            "PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
+            "PM_BOOK_REVIEW requires portfolio_manager_id.",
+        )
+    try:
+        as_of_date = date.fromisoformat(request.as_of_date)
+    except ValueError as exc:
+        raise wave_service.DpmWaveValidationError(
+            "INVALID_AS_OF_DATE",
+            "as_of_date must be an ISO date.",
+        ) from exc
+    portfolio_types = [value.strip().upper() for value in request.portfolio_types if value.strip()]
+    if not portfolio_types:
+        raise wave_service.DpmWaveValidationError(
+            "PM_BOOK_REVIEW_PORTFOLIO_TYPES_REQUIRED",
+            "PM_BOOK_REVIEW requires at least one portfolio type.",
+        )
+    try:
+        membership = build_core_resolver_client().resolve_portfolio_manager_book_membership(
+            portfolio_manager_id=portfolio_manager_id,
+            as_of_date=as_of_date,
+            tenant_id=request.tenant_id,
+            booking_center_code=request.booking_center_code,
+            portfolio_types=portfolio_types,
+            include_inactive=False,
+            correlation_id=correlation_id,
+        )
+    except DpmCoreResolverUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
+        ) from exc
+    except DpmCoreResolverError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
+        ) from exc
+    if membership.supportability.state != "READY":
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": membership.supportability.reason,
+                "message": "PM-book membership is not source-ready.",
+            },
+        )
+    if not membership.members:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+                "message": "PM-book membership returned no affected portfolios.",
+            },
+        )
+    source_id = (
+        membership.snapshot_id
+        or membership.source_batch_fingerprint
+        or f"pm_book:{membership.portfolio_manager_id}:{membership.as_of_date.isoformat()}"
+    )
+    book_ref = {
+        "source_system": "lotus-core",
+        "source_type": "PortfolioManagerBookMembership",
+        "source_id": source_id,
+        "source_version": membership.product_version,
+        "supportability_state": membership.supportability.state,
+        "content_hash": membership.source_batch_fingerprint,
+    }
+    return [
+        {
+            "portfolio_id": member.portfolio_id,
+            "source_refs": [
+                book_ref,
+                {
+                    "source_system": "lotus-core",
+                    "source_type": "PORTFOLIO_MANAGER_BOOK_MEMBER",
+                    "source_id": member.source_record_id or member.portfolio_id,
+                    "source_version": membership.as_of_date.isoformat(),
+                    "supportability_state": "READY",
+                },
+            ],
+        }
+        for member in membership.members
+    ]
+
+
 @router.post(
     "/preview",
     response_model=DpmWaveResponse,
     status_code=status.HTTP_200_OK,
     summary="Preview an affected-portfolio rebalance wave",
     description=(
-        "Builds a non-durable RFC-0041 affected-portfolio wave preview for the first supported "
-        "trigger, `EXPLICIT_PORTFOLIO_LIST`. The endpoint preserves source refs from the request "
-        "or existing mandate digital twins and blocks items whose affected-portfolio evidence is "
-        "missing. It does not perform PM-book discovery, CIO impact discovery, source readiness, "
-        "simulation, approval, staging, or operations handoff."
+        "Builds a non-durable RFC-0041 affected-portfolio wave preview. "
+        "`EXPLICIT_PORTFOLIO_LIST` preserves source refs from the request or existing mandate "
+        "digital twins. `PM_BOOK_REVIEW` resolves the cohort from the lotus-core "
+        "`PortfolioManagerBookMembership:v1` source product. Unsupported trigger types remain "
+        "blocked; the endpoint does not perform CIO impact discovery, simulation, approval, "
+        "staging, or operations handoff."
     ),
     responses={
         200: {
@@ -531,15 +666,17 @@ def preview_wave(
     ] = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmWaveResponse:
+    correlation_id = x_correlation_id or f"corr_wave_preview_{request.trigger_id}"
     try:
+        portfolios = _portfolio_inputs_for_request(request=request, correlation_id=correlation_id)
         wave = wave_service.preview_wave(
             trigger_type=request.trigger_type,
             trigger_id=request.trigger_id,
             rationale=request.rationale,
             as_of_date=request.as_of_date,
             actor_id=request.actor_id,
-            correlation_id=x_correlation_id or f"corr_wave_preview_{request.trigger_id}",
-            portfolios=[portfolio.model_dump(mode="json") for portfolio in request.portfolios],
+            correlation_id=correlation_id,
+            portfolios=portfolios,
             mandate_repository=mandate_repository,
         )
     except wave_service.DpmWaveValidationError as exc:
@@ -556,9 +693,11 @@ def preview_wave(
     status_code=status.HTTP_201_CREATED,
     summary="Create a durable affected-portfolio rebalance wave",
     description=(
-        "Creates a durable RFC-0041 rebalance wave for `EXPLICIT_PORTFOLIO_LIST` requests. "
-        "Required header: `Idempotency-Key`. Unsupported trigger types are rejected and missing "
-        "affected-portfolio source evidence produces blocked items, not false readiness."
+        "Creates a durable RFC-0041 rebalance wave. `EXPLICIT_PORTFOLIO_LIST` uses caller-supplied "
+        "affected portfolios, while `PM_BOOK_REVIEW` resolves the cohort from lotus-core "
+        "`PortfolioManagerBookMembership:v1` before persistence. Required header: "
+        "`Idempotency-Key`. Unsupported trigger types are rejected and missing source evidence "
+        "produces blocked items, not false readiness."
     ),
     responses={
         201: {
@@ -611,15 +750,17 @@ def create_wave(
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
+    correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
     try:
+        portfolios = _portfolio_inputs_for_request(request=request, correlation_id=correlation_id)
         wave, replayed = wave_service.create_wave(
             trigger_type=request.trigger_type,
             trigger_id=request.trigger_id,
             rationale=request.rationale,
             as_of_date=request.as_of_date,
             actor_id=request.actor_id,
-            correlation_id=x_correlation_id or f"corr_wave_create_{request.trigger_id}",
-            portfolios=[portfolio.model_dump(mode="json") for portfolio in request.portfolios],
+            correlation_id=correlation_id,
+            portfolios=portfolios,
             idempotency_key=idempotency_key,
             mandate_repository=mandate_repository,
             wave_repository=wave_repository,

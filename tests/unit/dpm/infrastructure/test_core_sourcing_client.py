@@ -155,6 +155,41 @@ def _mandate_binding_payload() -> dict:
     }
 
 
+def _pm_book_membership_payload() -> dict:
+    return {
+        "product_name": "PortfolioManagerBookMembership",
+        "product_version": "v1",
+        "tenant_id": "default",
+        "as_of_date": "2026-05-03",
+        "portfolio_manager_id": "PM_SG_DPM_001",
+        "booking_center_code": "Singapore",
+        "members": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "client_id": "CIF_SG_000184",
+                "booking_center_code": "Singapore",
+                "portfolio_type": "DISCRETIONARY",
+                "status": "ACTIVE",
+                "open_date": "2024-01-15",
+                "close_date": None,
+                "base_currency": "USD",
+                "source_record_id": "pm-book:001",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "PM_BOOK_MEMBERSHIP_READY",
+            "returned_portfolio_count": 1,
+            "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+        },
+        "lineage": {"source_system": "relationship_book", "contract_version": "rfc_041_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+        "source_batch_fingerprint": "sha256:pm-book",
+        "snapshot_id": "pm-book-snapshot-20260503",
+    }
+
+
 def _instrument_eligibility_payload() -> dict:
     return {
         "product_name": "InstrumentEligibilityProfile",
@@ -505,6 +540,44 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
     assert response.supportability.state == "READY"
     assert response.policy_pack_id == "POLICY_DPM_SG_BALANCED_V1"
     assert response.rebalance_bands.default_band == Decimal("0.0250000000")
+
+
+def test_core_resolver_fetches_portfolio_manager_book_membership_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_pm_book_membership_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_portfolio_manager_book_membership(
+        portfolio_manager_id="PM_SG_DPM_001",
+        as_of_date=date(2026, 5, 3),
+        tenant_id="default",
+        booking_center_code="Singapore",
+        portfolio_types=["DISCRETIONARY"],
+        include_inactive=False,
+        correlation_id="corr-pm-book-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolio-manager-books/PM_SG_DPM_001/memberships"
+    )
+    assert seen["correlation_id"] == "corr-pm-book-001"
+    assert b'"as_of_date":"2026-05-03"' in seen["payload"]
+    assert b'"tenant_id":"default"' in seen["payload"]
+    assert b'"booking_center_code":"Singapore"' in seen["payload"]
+    assert b'"portfolio_types":["DISCRETIONARY"]' in seen["payload"]
+    assert b'"include_inactive":false' in seen["payload"]
+    assert response.product_name == "PortfolioManagerBookMembership"
+    assert response.supportability.state == "READY"
+    assert response.members[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
 
 
 def test_core_resolver_fetches_instrument_eligibility_from_dedicated_source_product():

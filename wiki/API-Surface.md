@@ -124,9 +124,11 @@ flowchart LR
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
   returns product-safe operator diagnostics and bounded reason-code posture.
 
-These are manage-owned backend authority endpoints. Report materialization, rendering, archive
-lifecycle, AI memo generation, PM-book discovery, and external OMS execution remain downstream or
-source-owner responsibilities unless their owning repos have implemented and proven support.
+These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
+`PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. Report materialization,
+rendering, archive lifecycle, AI memo generation, CIO/risk-event cohort discovery, and external OMS
+execution remain downstream or source-owner responsibilities unless their owning repos have
+implemented and proven support.
 
 ```mermaid
 flowchart LR

@@ -747,7 +747,7 @@ products, and canonical seed automation belonged to downstream or source-owning 
 | RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
 | RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and originally recorded the canonical seed gap that RFC38-WTBD-003 later resolved for the populated governed portfolio. |
 | RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 | Platform canonical automation now refreshes the governed DPM mandate from core through manage, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified `ready`. Partial and empty command-center state automation remains future depth. |
-| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` or future relationship-book authority | Deferred with no support claim | RFC-0038 supports caller-supplied mandate IDs and persisted monitoring runs. No certified PM-book membership source exists yet. |
+| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` source authority consumed later by monitoring/command-center selectors | Deferred for monitoring/command-center selectors | `PortfolioManagerBookMembership:v1` now exists for RFC-0041 wave discovery, but RFC-0038 monitoring and command-center selectors still support caller-supplied mandate IDs and persisted monitoring runs only. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
 | RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
 | RFC38-WTBD-007 | Broader risk and performance health enrichment | `lotus-risk`, `lotus-performance` | Deferred unless owning-service contracts are consumed | Manage health cannot clone risk or performance methodology. Risk/performance attention must come from certified owners. |
@@ -949,24 +949,26 @@ Target business outcome:
 The DPM command center can populate by PM book or portfolio-manager cohort without requiring
 callers to supply every mandate or portfolio id manually.
 
-Why it cannot be done now:
+Current status:
 
-No certified PM-book or portfolio-manager book authority exists. RFC-0038 therefore supports
-caller-supplied mandate IDs and persisted monitoring runs while making book discovery gaps explicit.
+`PortfolioManagerBookMembership:v1` now exists in `lotus-core` and is consumed by RFC-0041
+`PM_BOOK_REVIEW` wave discovery. RFC-0038 monitoring and command-center selectors still support
+caller-supplied mandate IDs and persisted monitoring runs only. Promoting PM-book command-center
+population needs a separate manage monitoring/command-center selector slice with partial, empty,
+stale, and permission-denied semantics.
 
 Dependencies before implementation:
 
-1. PM-book or relationship-book source owner assigned,
-2. certified API exposes book identity, mandate/portfolio membership, as-of date, freshness,
-   permissions, lineage, and empty/partial semantics,
-3. manage consumer contract and degraded-state behavior,
+1. monitoring/command-center consumer contract for lotus-core `PortfolioManagerBookMembership:v1`,
+2. degraded-state behavior for empty, partial, stale, and permission-denied books,
 4. Gateway and Workbench product-state expectations updated,
 5. live proof covers populated, partial, empty, stale, and permission-denied books.
 
 Expected implementation wave:
 
-Implement after source product proof. This may align with RFC-0041 PM-book discovery work but must
-also support monitoring-run and command-center semantics.
+Implement after the RFC-0041 wave consumer branch is merged and validated. Reuse the source-owned
+book membership product, but keep monitoring-run and command-center semantics explicitly separate
+from wave creation.
 
 Promotion proof:
 
@@ -2202,7 +2204,7 @@ downstream product-surface implementation, or owning-service materialization out
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0041 |
 | --- | --- | --- | --- | --- |
-| RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` or future relationship-book authority | Deferred with no support claim | No certified PM-book membership or portfolio-manager book source product was available to `lotus-manage`. Implementing this locally would fabricate source authority. |
+| RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` source authority consumed by `lotus-manage` | Implemented on current governed branch; not complete by mainline definition until merge and wiki publication | `lotus-core` now owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it for `PM_BOOK_REVIEW` wave preview/create without caller-supplied portfolio fabrication. |
 | RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` or CIO model-event authority | Deferred with no support claim | Model targets and mandate bindings exist, but no certified source product returns all portfolios affected by a model-change event with lineage and reconciliation proof. |
 | RFC41-WTBD-003 | Tactical house-view, risk-event, and implicit bulk-campaign cohorts | CIO/risk/campaign source owners, with likely `lotus-risk` involvement for risk events | Deferred with no support claim | No governed scenario, risk-event, or campaign cohort authority exists for manage to consume. |
 | RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Deferred unless owning-service contracts are consumed | RFC-0041 aggregate impact must not be calculated from manage-local approximations. Risk and performance figures need owning-service certified contracts. |
@@ -2223,35 +2225,32 @@ Portfolio managers can start a rebalance wave for their governed book without ma
 every portfolio id, and the resulting cohort is source-backed, permission-aware, fresh, and
 reconcilable.
 
-Why it cannot be done now:
+Implementation status:
 
-`lotus-manage` has no certified PM-book or portfolio-manager cohort source. RFC-0041 found core
-portfolio and mandate source products, but not an authority that can answer "which portfolios are
-in this PM's book for this as-of date and caller context?" A manage-local query would create a
-shadow book model and break domain ownership.
+`lotus-core` source ownership is merged through PR #339 with `PortfolioManagerBookMembership:v1`.
+`lotus-manage` now consumes that source product for `PM_BOOK_REVIEW` wave preview/create. Callers
+supply the portfolio manager selector, as-of date, tenant/booking-center filters, and eligible
+portfolio types; manage rejects caller-supplied portfolios for this trigger and builds wave items
+only from lotus-core membership evidence. Explicit portfolio-list waves remain supported.
 
-Dependencies before implementation:
+Support boundary:
 
-1. owning repository declares the PM-book or relationship-book authority,
-2. certified API exposes book identity, portfolio membership, as-of date, freshness, permissions,
-   source refs, and lineage,
-3. OpenAPI examples and field descriptions are complete,
-4. manage consumer declaration is added if the source is a governed domain data product,
-5. mixed live proof covers included, excluded, stale, permission-denied, and empty-book cases.
-
-Expected implementation wave:
-
-Implement after the source product is live-proven. Add a manage slice that enables
-`PM_BOOK_REVIEW` from a certified source ref, keeps explicit supplied manifests supported, and
-preserves `NOT_SUPPORTED_TRIGGER` for missing or uncertified discovery.
+1. supported: `PM_BOOK_REVIEW` backed by lotus-core `PortfolioManagerBookMembership:v1`,
+2. supported: explicit source refs on each resolved item plus trigger-level PM-book snapshot refs,
+3. supported: source dependency failures return blocked dependency posture instead of fabricating
+   a cohort,
+4. unsupported: CIO model-change, tactical house-view, risk-event, campaign, permission-denied,
+   and stale-book cohort semantics until owning source products exist,
+5. unsupported: external OMS execution and AI memo generation.
 
 Promotion proof:
 
-1. source-owner PR and live proof,
-2. manage integration tests for discovery success and degraded/blocked states,
-3. OpenAPI certification for the promoted trigger path,
-4. live evidence with at least one mixed-readiness book,
-5. README/wiki/supported-features update stating exactly which PM-book path is supported.
+1. source-owner foundation merged and wiki-published in `lotus-core` PR #339,
+2. manage focused tests prove source-product client, PM-book preview/create, invalid selector, and
+   incomplete dependency handling,
+3. README/wiki/supported-features updated to state the exact promoted trigger path,
+4. final definition of done still requires this manage branch to be merged to `main`, wiki
+   check-only to pass before merge, wiki publication after merge, and post-merge validation.
 
 #### RFC41-WTBD-002 - Automatic CIO Model-Change Affected-Mandate Discovery
 
@@ -2449,9 +2448,9 @@ Promotion proof:
 5. Repo-local wiki source was published after merge for `lotus-manage` (`ed3569b`) and
    `lotus-workbench` (`212f486`). Gateway and Platform required no additional wiki publication for
    this closure slice.
-6. Final closure keeps unsupported scope explicit: automatic PM-book/CIO/risk-event cohort
-   discovery, owning-service risk/performance aggregate enrichment, AI memo generation from wave
-   evidence, and external OMS execution remain separate WTBDs.
+6. Final closure keeps unsupported scope explicit: CIO/risk-event cohort discovery,
+   owning-service risk/performance aggregate enrichment, AI memo generation from wave evidence, and
+   external OMS execution remain separate WTBDs.
 
 #### RFC41-WTBD-007 - Full Front-Office Command-Center Product Support
 

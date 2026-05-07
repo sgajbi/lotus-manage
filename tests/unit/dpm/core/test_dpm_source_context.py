@@ -432,6 +432,39 @@ def test_core_instrument_eligibility_rejects_missing_supportability():
         build_shelf_entries_from_core_eligibility(response)
 
 
+def test_core_instrument_eligibility_rejects_ready_response_without_found_records():
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(
+        _core_eligibility_payload(
+            eligibility=[
+                {
+                    "security_id": "UNKNOWN_SEC",
+                    "found": False,
+                    "eligibility_status": "UNKNOWN",
+                    "product_shelf_status": "SUSPENDED",
+                    "buy_allowed": False,
+                    "sell_allowed": False,
+                    "restriction_reason_codes": ["ELIGIBILITY_PROFILE_MISSING"],
+                    "settlement_days": None,
+                    "settlement_calendar_id": None,
+                    "quality_status": "MISSING",
+                }
+            ],
+            supportability={
+                "state": "READY",
+                "reason": "INSTRUMENT_ELIGIBILITY_READY",
+                "requested_count": 1,
+                "found_count": 0,
+                "missing_security_ids": [],
+            },
+        )
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError, match="DPM_CORE_INSTRUMENT_ELIGIBILITY_EMPTY"
+    ):
+        build_shelf_entries_from_core_eligibility(response)
+
+
 def _core_tax_lot_payload(**overrides: object) -> dict:
     payload = {
         "product_name": "PortfolioTaxLotWindow",
@@ -527,6 +560,31 @@ def test_core_tax_lots_attach_to_portfolio_snapshot_for_tax_aware_engine():
     assert enriched.positions[0].lots[0].unit_cost.amount == Decimal("150.0000000000")
     assert enriched.positions[0].lots[0].unit_cost.currency == "USD"
     assert enriched.positions[0].lots[1].purchase_date == "2026-03-28"
+
+
+def test_core_tax_lots_skip_closed_or_depleted_lots_without_blocking_snapshot():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [
+                {
+                    "instrument_id": "EQ_US_AAPL",
+                    "quantity": "100.0000000000",
+                }
+            ],
+        }
+    )
+    lot_payload = _core_tax_lot_payload()
+    lot_payload["lots"][0]["tax_lot_status"] = "CLOSED"
+    lot_payload["lots"][1]["open_quantity"] = "0.0000000000"
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(lot_payload)
+
+    enriched = build_portfolio_snapshot_with_core_tax_lots(
+        portfolio_snapshot=portfolio,
+        response=response,
+    )
+
+    assert enriched.positions[0].lots == []
 
 
 def test_core_tax_lots_reject_partial_or_wrong_portfolio_context():
@@ -729,6 +787,16 @@ def test_missing_source_families_block_stateful_request_and_batch_transforms():
         build_rebalance_request_from_core_context(context=context, options_override={})
 
     with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_CONTEXT_INCOMPLETE"):
+        build_batch_rebalance_request_from_core_context(
+            context=context,
+            scenarios={"baseline": SimulationScenario(options={})},
+        )
+
+
+def test_incomplete_core_context_blocks_batch_transform_with_source_reason():
+    context = _core_context(supportability_state="INCOMPLETE")
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_CONTEXT_READY"):
         build_batch_rebalance_request_from_core_context(
             context=context,
             scenarios={"baseline": SimulationScenario(options={})},

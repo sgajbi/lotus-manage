@@ -1668,8 +1668,9 @@ Functional coverage:
 - supportability returns wave posture, issue counts, source owners, bounded reason codes,
   remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
   trace details,
-- no PM-book discovery, CIO model-change cohort discovery, Gateway composition, or Workbench
-  product claim in these slices.
+- PM-book discovery is supported only through source-owned `PM_BOOK_REVIEW`; CIO model-change
+  cohort discovery, Gateway composition, and Workbench product claims remain bounded to their
+  owning slices.
 
 Non-functional posture:
 
@@ -1694,8 +1695,9 @@ Non-functional posture:
   supportability source evidence, or handoff refs.
 - Report input is a bounded handoff contract only. It does not create report jobs, render PDFs,
   create archive records, generate AI prompts, or claim external execution.
-- The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
-  `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 10.
+- `PM_BOOK_REVIEW` calls lotus-core `PortfolioManagerBookMembership:v1` during preview/create.
+  Other wave commands and read models do not call `lotus-risk`, `lotus-performance`,
+  `lotus-report`, `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 10.
 
 Upstream integration posture:
 
@@ -1705,8 +1707,9 @@ caller-supplied affected-portfolio source refs, caller-supplied RFC-0039 constru
 ready items, RFC-0040 proof-pack outputs generated from selected alternatives, and manage-owned
 workflow decisions captured through actor-attributed approval/staging/handoff commands.
 Supportability diagnostics are derived from persisted wave state and bounded item diagnostics.
-Automatic PM-book or CIO model-change cohort discovery remains deferred until the owning app exposes
-a certified source product.
+PM-book wave discovery is source-backed through lotus-core `PortfolioManagerBookMembership:v1`.
+CIO model-change cohort discovery remains deferred until the owning app exposes a certified source
+product.
 
 Downstream consumers:
 

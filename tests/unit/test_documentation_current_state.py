@@ -374,7 +374,8 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "Manage backend implementation is `DONE` for explicit portfolio-list waves" in roadmap
     assert "| Explicit portfolio-list rebalance waves |" in supported_features
     assert "Supported as RFC-0041 `DONE` manage backend authority" in supported_features
-    assert "Automatic PM-book/CIO/risk-event cohort discovery" in supported_features
+    assert "PM-book wave discovery is source-backed through lotus-core" in supported_features
+    assert "CIO/risk-event cohort discovery" in supported_features
     assert (
         "Gateway command-center composition and Workbench first-wave wave command-center UX are "
         "implementation-backed" in supported_features
@@ -840,6 +841,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Workbench must consume Gateway/BFF only" in work_to_be_done
     assert "PM quality scoring" in work_to_be_done
     assert "pending PR publication" not in work_to_be_done
+    assert "not complete by mainline definition until merge and wiki publication" in work_to_be_done
 
     assert "## Product Readiness At A Glance" in supported_features
     assert "## WTBD Product-Readiness Roadmap" in supported_features

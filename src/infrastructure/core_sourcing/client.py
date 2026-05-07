@@ -11,6 +11,7 @@ from src.core.dpm_source_context import (
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioManagerBookMembershipResponse,
     DpmCorePortfolioTaxLotWindowResponse,
     DpmCorePolicyContext,
     DpmCoreSourceLineage,
@@ -44,6 +45,9 @@ class DpmCoreResolverConfig:
         "/integration/model-portfolios/{model_portfolio_id}/targets"
     )
     mandate_binding_path_template: str = "/integration/portfolios/{portfolio_id}/mandate-binding"
+    portfolio_manager_book_memberships_path_template: str = (
+        "/integration/portfolio-manager-books/{portfolio_manager_id}/memberships"
+    )
     instrument_eligibility_path_template: str = "/integration/instruments/eligibility-bulk"
     portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
     market_data_coverage_path_template: str = "/integration/market-data/coverage"
@@ -74,6 +78,14 @@ class DpmCoreResolverConfig:
             raise DpmCoreResolverUnavailableError("DPM_CORE_MANDATE_BINDING_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_portfolio_manager_book_memberships_url(self, portfolio_manager_id: str) -> str:
+        path_template = self.portfolio_manager_book_memberships_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_manager_id=portfolio_manager_id).lstrip("/")
         return f"{base}/{path}"
 
     def resolve_instrument_eligibility_url(self) -> str:
@@ -342,6 +354,34 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_MANDATE_BINDING_INCOMPLETE",
         )
         return DpmCoreMandateBindingResponse.model_validate(response)
+
+    def resolve_portfolio_manager_book_membership(
+        self,
+        *,
+        portfolio_manager_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        booking_center_code: Optional[str] = None,
+        portfolio_types: Optional[list[str]] = None,
+        include_inactive: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCorePortfolioManagerBookMembershipResponse:
+        url = self._config.resolve_portfolio_manager_book_memberships_url(portfolio_manager_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "booking_center_code": booking_center_code,
+            "portfolio_types": portfolio_types,
+            "include_inactive": include_inactive,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
+            incomplete_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
+        )
+        return DpmCorePortfolioManagerBookMembershipResponse.model_validate(response)
 
     def resolve_instrument_eligibility(
         self,
