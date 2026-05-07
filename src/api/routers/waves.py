@@ -22,7 +22,12 @@ from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
-from src.core.waves import DpmRebalanceWave, DpmWaveRepository, DpmWaveSourceRef
+from src.core.waves import (
+    DpmRebalanceWave,
+    DpmWaveReportInput,
+    DpmWaveRepository,
+    DpmWaveSourceRef,
+)
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
@@ -1244,6 +1249,39 @@ def get_wave_proof_pack_posture(
             detail={"code": exc.code, "message": exc.message},
         ) from exc
     return DpmWaveProofPackPostureResponse.model_validate(payload)
+
+
+@router.get(
+    "/{wave_id}/report-input",
+    response_model=DpmWaveReportInput,
+    status_code=status.HTTP_200_OK,
+    summary="Get wave report input",
+    description=(
+        "Returns deterministic `DpmWaveReportInput` for a persisted RFC-0041 rebalance wave. "
+        "`lotus-report`, `lotus-render`, and `lotus-archive` can use this payload to materialize "
+        "and govern wave evidence without reconstructing wave state, proof-pack linkage, internal "
+        "handoff refs, source hashes, or supportability posture. `lotus-manage` does not generate "
+        "rendered reports, archive records, or external execution claims."
+    ),
+    responses={
+        200: {"description": "Generated wave report-input payload."},
+        404: {"description": "Wave not found."},
+    },
+)
+def get_wave_report_input(
+    wave_id: str,
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+) -> DpmWaveReportInput:
+    try:
+        return wave_service.get_report_input(
+            wave_id=wave_id,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveLookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
 
 
 @router.get(

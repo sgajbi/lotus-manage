@@ -1587,7 +1587,7 @@ python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, and supportability
+## Certified endpoint family: rebalance wave preview, creation, source-check, simulation, selection, approval, staging, handoff, read models, report input, and supportability
 
 Routes:
 
@@ -1604,6 +1604,7 @@ Routes:
 - `POST /api/v1/rebalance/waves/{wave_id}/handoff`
 - `POST /api/v1/rebalance/waves/{wave_id}/cancel`
 - `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
+- `GET /api/v1/rebalance/waves/{wave_id}/report-input`
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
 
 Purpose:
@@ -1619,8 +1620,8 @@ simulation through RFC-0039 and item-level alternative selection with RFC-0040 p
 Slice 7 adds manage-owned approval, staging, internal operations handoff, and cancellation evidence
 without external execution claims. Slice 8 adds product-safe operator supportability diagnostics and
 bounded wave supportability telemetry. Slice 10 closes the read-side proof surface with
-repository-backed wave search, detail, item-list, and proof-pack posture APIs, then proves the full
-flow live against Postgres-backed manage repositories.
+repository-backed wave search, detail, item-list, proof-pack posture, and deterministic report-input
+APIs, then proves the full flow live against Postgres-backed manage repositories.
 
 Functional coverage:
 
@@ -1660,6 +1661,10 @@ Functional coverage:
   operations without UI-side recomputation,
 - proof-pack posture returns linked proof-pack refs, degraded proof-pack counts, handoff refs, and
   the external-execution boundary,
+- report input returns deterministic `DpmWaveReportInput` with wave identity, aggregate metrics,
+  supportability, proof-pack posture, item rows, event rows, handoff refs, source refs,
+  redaction policy, wave/content hashes, and `external_execution_claimed=false` for downstream
+  report generation,
 - supportability returns wave posture, issue counts, source owners, bounded reason codes,
   remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
   trace details,
@@ -1687,6 +1692,8 @@ Non-functional posture:
   allowlisted `surface`, `supportability_state`, and `reason` labels.
 - Read models are repository-backed and do not regenerate construction alternatives, proof packs,
   supportability source evidence, or handoff refs.
+- Report input is a bounded handoff contract only. It does not create report jobs, render PDFs,
+  create archive records, generate AI prompts, or claim external execution.
 - The endpoints do not call `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-report`,
   `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 10.
 
@@ -1706,7 +1713,12 @@ Downstream consumers:
 - `lotus-gateway` and `lotus-workbench` have RFC-0098 wave-realization addenda, but must wait for
   implementation and canonical browser proof before advertising this as a full front-office product
   flow.
-- Operators and API consumers may use these endpoints as manage backend preview/create contracts.
+- `lotus-report` consumes `GET /api/v1/rebalance/waves/{wave_id}/report-input` as the
+  source-of-truth handoff for rebalance-wave report materialization. `lotus-report`,
+  `lotus-render`, and `lotus-archive` own job orchestration, rendering, archive records, and
+  document lifecycle.
+- Operators and API consumers may use these endpoints as manage backend preview/create/read
+  contracts.
 
 Evidence commands:
 

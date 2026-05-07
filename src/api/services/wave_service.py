@@ -24,12 +24,14 @@ from src.core.waves import (
     DpmWaveIdempotencyConflictError,
     DpmWaveInvalidTransitionError,
     DpmWaveRepository,
+    DpmWaveReportInput,
     DpmWaveSourceRef,
     DpmWaveVersionConflictError,
     DpmWaveTrigger,
     WaveItemState,
     WaveState,
     apply_wave_transition,
+    build_wave_report_input,
 )
 from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
@@ -734,6 +736,21 @@ def proof_pack_posture(
 ) -> dict[str, object]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
     return proof_pack_posture_for_wave(wave=wave)
+
+
+def get_report_input(
+    *,
+    wave_id: str,
+    wave_repository: DpmWaveRepository,
+) -> DpmWaveReportInput:
+    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
+    supportability = wave_supportability_payload(wave)
+    proof_pack_posture_payload = proof_pack_posture_for_wave(wave=wave)
+    return build_wave_report_input(
+        wave=wave,
+        supportability=supportability,
+        proof_pack_posture=proof_pack_posture_payload,
+    )
 
 
 def proof_pack_posture_for_wave(*, wave: DpmRebalanceWave) -> dict[str, object]:

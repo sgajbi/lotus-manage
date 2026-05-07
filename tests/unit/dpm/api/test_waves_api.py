@@ -2010,6 +2010,7 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         detail = client.get("/api/v1/rebalance/waves/dwv_read_001")
         items = client.get("/api/v1/rebalance/waves/dwv_read_001/items")
         proof_pack = client.get("/api/v1/rebalance/waves/dwv_read_001/proof-pack")
+        report_input = client.get("/api/v1/rebalance/waves/dwv_read_001/report-input")
         missing = client.get("/api/v1/rebalance/waves/dwv_missing")
 
     assert search.status_code == 200
@@ -2036,6 +2037,22 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert proof_payload["external_execution_claimed"] is False
     assert proof_payload["handoff_refs"][0]["handoff_ref_id"] == "dwh_read_001"
 
+    assert report_input.status_code == 200
+    report_payload = report_input.json()
+    assert report_payload["contract_version"] == "1.0"
+    assert report_payload["wave_id"] == "dwv_read_001"
+    assert report_payload["wave_state"] == "HANDOFF_READY"
+    assert report_payload["report_title"] == "Rebalance Wave Evidence - dwv_read_001"
+    assert report_payload["aggregate_metrics"]["state_counts"] == {"HANDOFF_READY": 1}
+    assert report_payload["supportability"]["supportability_state"] == "ready"
+    assert report_payload["proof_pack_posture"]["ready_proof_pack_count"] == 1
+    assert report_payload["items"][0]["proof_pack_id"] == "dpp_read_ready"
+    assert report_payload["handoff_refs"][0]["handoff_ref_id"] == "dwh_read_001"
+    assert report_payload["external_execution_claimed"] is False
+    assert report_payload["evidence_ref"]["ref_type"] == "DPM_WAVE_REPORT_INPUT"
+    assert report_payload["evidence_ref"]["content_hash"] == report_payload["content_hash"]
+    assert report_payload["content_hash"].startswith("sha256:")
+
     assert missing.status_code == 404
     assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
 
@@ -2061,6 +2078,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     detail = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}"]["get"]
     items = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/items"]["get"]
     proof_pack = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/proof-pack"]["get"]
+    report_input = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/report-input"]["get"]
     source_check = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/source-check"]["post"]
     approve = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/approve"]["post"]
     stage = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/stage"]["post"]
@@ -2073,6 +2091,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert detail["tags"] == ["lotus-manage Rebalance Waves"]
     assert items["tags"] == ["lotus-manage Rebalance Waves"]
     assert proof_pack["tags"] == ["lotus-manage Rebalance Waves"]
+    assert report_input["tags"] == ["lotus-manage Rebalance Waves"]
     assert source_check["tags"] == ["lotus-manage Rebalance Waves"]
     assert approve["tags"] == ["lotus-manage Rebalance Waves"]
     assert stage["tags"] == ["lotus-manage Rebalance Waves"]
@@ -2091,6 +2110,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "does not regenerate downstream" in detail["description"]
     assert "without UI-side recomputation" in items["description"]
     assert "does not rebuild proof packs" in proof_pack["description"]
+    assert "does not generate rendered reports" in report_input["description"]
     assert "404" in source_check["responses"]
     assert "409" in source_check["responses"]
     assert "422" in source_check["responses"]

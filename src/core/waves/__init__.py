@@ -12,6 +12,14 @@ from src.core.waves.models import (
     WaveState,
     WaveTriggerType,
 )
+from src.core.waves.handoffs import (
+    DpmWaveReportEvidenceRef,
+    DpmWaveReportEvent,
+    DpmWaveReportInput,
+    DpmWaveReportItem,
+    WAVE_REPORT_INPUT_REF_TYPE,
+    build_wave_report_input,
+)
 from src.core.waves.repository import (
     DpmWaveAlreadyExistsError,
     DpmWaveIdempotencyConflictError,
@@ -37,13 +45,19 @@ __all__ = [
     "DpmWaveIdempotencyConflictError",
     "DpmWaveInvalidTransitionError",
     "DpmWaveNotFoundError",
+    "DpmWaveReportEvidenceRef",
+    "DpmWaveReportEvent",
+    "DpmWaveReportInput",
+    "DpmWaveReportItem",
     "DpmWaveRepository",
     "DpmWaveSourceRef",
     "DpmWaveVersionConflictError",
+    "WAVE_REPORT_INPUT_REF_TYPE",
     "WaveItemState",
     "WaveState",
     "WaveTriggerType",
     "apply_wave_transition",
+    "build_wave_report_input",
     "classify_wave_item_source_readiness",
     "validate_wave_transition",
 ]
