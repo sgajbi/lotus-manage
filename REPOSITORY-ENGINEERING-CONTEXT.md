@@ -105,10 +105,15 @@ Current repository posture:
     validates the first-wave full product path with `dpm.proof_pack` classified `ready` for
     `dpp_c09f73d0`. RFC40-WTBD-004 proof-pack report materialization is now implemented in the
     owning report/render/archive repositories through `lotus-render` PR #11, `lotus-report` PR #90,
-    and `lotus-archive` PR #23. `lotus-manage` remains evidence and report-input authority only;
-    it does not generate, render, archive, retain, or retrieve documents. AI memo generation, richer
-    source-owner enrichment, transaction-cost authority, client restrictions, sustainability
-    profiles, and cross-RFC portfolio memory remain downstream WTBD work in the owning repositories.
+    and `lotus-archive` PR #23. RFC40-WTBD-005 governed PM memo support is now implemented in
+    the owning AI/Gateway/Workbench repositories through `lotus-ai` PR #61, `lotus-gateway`
+    PR #198, and `lotus-workbench` PR #166, then live-proven by rebuilt canonical front-office QA
+    `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-210641.json`.
+    `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
+    archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
+    approve trades, or issue recommendations. Richer source-owner enrichment, transaction-cost
+    authority, client restrictions, sustainability profiles, and cross-RFC portfolio memory remain
+    downstream WTBD work in the owning repositories.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
