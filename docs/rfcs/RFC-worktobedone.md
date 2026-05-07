@@ -35,15 +35,15 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: `main` after RFC40-WTBD-003 was merged, canonically proven, and repo-local wiki
-source was prepared for publication on 2026-05-07.
+Snapshot basis: `main` after RFC41-WTBD-005 Gateway wave composition was merged, CI-proven, and
+Gateway repo-local wiki source was published on 2026-05-07.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 19 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 20 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 37 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 36 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -57,11 +57,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC41-WTBD-005 - Gateway wave composition | Starts converting explicit rebalance waves from backend authority into product APIs. | Gateway composition merged with supportability and no-reconstruction tests. |
-| 2 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
-| 3 | RFC40-WTBD-004 - Report materialization from proof-pack report input | Makes proof-pack evidence consumable by report/render/archive owning services. | Report materialization, archive refs, supportability, and wiki/demo proof are implementation-backed in owning repos. |
-| 4 | RFC40-WTBD-005 - Governed AI PM memo generation from proof-pack evidence | Turns bounded proof-pack AI evidence input into governed narrative support without browser prompt construction. | `lotus-ai`, Gateway, and Workbench implementation with guardrails, provenance, unavailable fallback, and wiki/demo proof. |
-| 5 | RFC41-WTBD-008 - Report materialization from wave/proof-pack evidence | Extends document evidence from individual proof packs into wave operating evidence. | Report/render/archive implementation preserves wave and proof-pack lineage, hashes, supportability, and archive refs. |
+| 1 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves now that Gateway composition is merged and wiki-published. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
+| 2 | RFC40-WTBD-004 - Report materialization from proof-pack report input | Makes proof-pack evidence consumable by report/render/archive owning services. | Report materialization, archive refs, supportability, and wiki/demo proof are implementation-backed in owning repos. |
+| 3 | RFC40-WTBD-005 - Governed AI PM memo generation from proof-pack evidence | Turns bounded proof-pack AI evidence input into governed narrative support without browser prompt construction. | `lotus-ai`, Gateway, and Workbench implementation with guardrails, provenance, unavailable fallback, and wiki/demo proof. |
+| 4 | RFC41-WTBD-008 - Report materialization from wave/proof-pack evidence | Extends document evidence from individual proof packs into wave operating evidence. | Report/render/archive implementation preserves wave and proof-pack lineage, hashes, supportability, and archive refs. |
+| 5 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
 
 Execution rule:
 
@@ -2184,7 +2184,7 @@ downstream product-surface implementation, or owning-service materialization out
 | RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` or CIO model-event authority | Deferred with no support claim | Model targets and mandate bindings exist, but no certified source product returns all portfolios affected by a model-change event with lineage and reconciliation proof. |
 | RFC41-WTBD-003 | Tactical house-view, risk-event, and implicit bulk-campaign cohorts | CIO/risk/campaign source owners, with likely `lotus-risk` involvement for risk events | Deferred with no support claim | No governed scenario, risk-event, or campaign cohort authority exists for manage to consume. |
 | RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Deferred unless owning-service contracts are consumed | RFC-0041 aggregate impact must not be calculated from manage-local approximations. Risk and performance figures need owning-service certified contracts. |
-| RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Downstream RFC direction created; implementation not supported yet | Manage contracts had to stabilize first. Gateway must compose manage truth without becoming wave authority or reconstructing state. |
+| RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196 | Completed after manage contracts stabilized. Gateway composes manage truth without becoming wave authority or reconstructing state. |
 | RFC41-WTBD-006 | Workbench wave command center | `lotus-workbench` | Downstream RFC direction created; implementation not supported yet | Workbench must consume Gateway/BFF routes only and needs Gateway implementation plus browser, accessibility, visual, and canonical runtime proof. |
 | RFC41-WTBD-007 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | The full product outcome requires both downstream implementations and canonical front-office evidence, not manage backend proof alone. |
 | RFC41-WTBD-008 | Report materialization from wave/proof-pack evidence | `lotus-report`, `lotus-render`, `lotus-archive` | Deferred to owning services | Manage exposes proof-pack and handoff posture. It does not generate governed report output or archive records. |
@@ -2344,33 +2344,42 @@ Target business outcome:
 Workbench receives a stable command-center wave contract from Gateway, while manage remains the
 wave authority.
 
-Why it cannot be done now:
+Completion result:
 
-RFC-0041's manage contracts had to be implemented and proven before Gateway could safely build a
-composition layer. Slice 9 created/tightened downstream RFC direction but did not implement
-Gateway behavior.
+Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196. The Gateway
+merge commit is `c29d895f08b7316dd363d77559623eabfc3137e8`; the Gateway wiki publication commit is
+`fc427a9`. Gateway now exposes implementation-backed `/api/v1/dpm/command-center/waves*` routes
+for preview, durable create, search, detail, item list, source-check, simulation, item selection,
+approval, staging, internal handoff, cancellation, proof-pack posture, and supportability.
 
-Dependencies before implementation:
+Implemented controls:
 
-1. Gateway RFC-0098 wave addendum is used as the execution guide,
-2. typed manage client covers preview, create, source-check, simulate, select, approve, stage,
-   handoff, cancel, detail, item, proof-pack, and supportability routes,
-3. Gateway preserves manage `wave_id`, state, item states, reason codes, aggregate metrics,
-   proof-pack refs, and supportability,
-4. risk/performance/report/archive/AI posture is composed only from owning services,
-5. no aliases or duplicated state-machine logic are introduced.
-
-Expected implementation wave:
-
-Implement in `lotus-gateway` before Workbench wave-command-center implementation.
+1. Gateway RFC-0098 wave addendum was used as the execution guide.
+2. Typed Gateway manage client methods cover preview, create, search, detail, items,
+   source-check, simulate, select, approve, stage, handoff, cancel, proof-pack posture, and
+   supportability routes.
+3. Gateway preserves manage `wave_id`, lifecycle state, item states, reason codes, aggregate
+   metrics, selected alternative refs, proof-pack refs, handoff refs, supportability issues, and
+   `external_execution_claimed=false`.
+4. Gateway does not calculate affected portfolios, classify source readiness, generate
+   alternatives, select alternatives, approve items, stage items, create handoff evidence, rebuild
+   proof packs, cancel external orders, or claim external execution.
+5. Risk/performance/report/archive/AI posture remains composed only from owning services and is not
+   claimed by this Gateway slice.
 
 Promotion proof:
 
-1. Gateway unit and contract tests,
-2. no-reconstruction tests proving Gateway does not recompute manage truth,
-3. OpenAPI certification and examples,
-4. live Gateway proof against manage,
-5. Gateway wiki, README, supported-features, and endpoint-certification updates.
+1. Local focused Gateway proof: `python -m pytest tests/unit/test_dpm_wave_service.py
+   tests/integration/test_dpm_wave_router.py tests/contract/test_dpm_wave_contract.py
+   tests/unit/test_upstream_clients.py tests/unit/test_rfc0098_documentation.py -q` passed with
+   122 tests.
+2. Local Gateway `make ci` passed with 168 integration tests, 640-test coverage gate at 88.07%,
+   and `pip-audit` with no known vulnerabilities.
+3. GitHub PR #196 checks passed: Feature Lane lint/typecheck/unit and workflow lint; PR Merge Gate
+   lint/typecheck/unit, workflow lint, integration tests, coverage gate, Docker build, Docker
+   parity, and queue auto-merge.
+4. Gateway repo-local wiki source was published after merge and `Sync-RepoWikis.ps1 -CheckOnly
+   -Repository lotus-gateway` reported diff count 0.
 
 #### RFC41-WTBD-006 - Workbench Wave Command Center
 
@@ -2546,14 +2555,13 @@ Promotion proof:
 
 Recommended order:
 
-1. implement Gateway wave composition,
-2. implement Workbench wave command center,
-3. prove full front-office command-center product support,
-4. implement source-owned PM-book and CIO model-change cohort products,
-5. promote manage automatic discovery triggers from certified source products,
-6. add risk/performance aggregate enrichment from owning analytics services,
-7. implement report materialization and AI memo generation in their owning apps,
-8. evaluate external execution only after the execution owner and RFC-0042 post-trade feedback
+1. implement Workbench wave command center,
+2. prove full front-office command-center product support,
+3. implement source-owned PM-book and CIO model-change cohort products,
+4. promote manage automatic discovery triggers from certified source products,
+5. add risk/performance aggregate enrichment from owning analytics services,
+6. implement report materialization and AI memo generation in their owning apps,
+7. evaluate external execution only after the execution owner and RFC-0042 post-trade feedback
    boundary are clear.
 
 Rationale:

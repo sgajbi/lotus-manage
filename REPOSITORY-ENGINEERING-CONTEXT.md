@@ -56,10 +56,10 @@ Current repository posture:
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
 11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
-    RFC-0038, RFC-0039, RFC-0040, and the manage-owned explicit portfolio-list wave scope of
-    RFC-0041 are now implementation-backed. Remaining roadmap scope stays target-state planning
-    material until implementation-backed support, live proof, and supported-feature promotion are
-    completed.
+    RFC-0038, RFC-0039, RFC-0040, the manage-owned explicit portfolio-list wave scope of
+    RFC-0041, and Gateway RFC-0098 wave composition are now implementation-backed. Remaining
+    roadmap scope stays target-state planning material until implementation-backed support, live
+    proof, and supported-feature promotion are completed.
 12. RFC-0038 has delivered the first implementation-backed DPM operating-system foundation with a
     source-mapped `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine,
     derived monitoring-exception taxonomy, repository contract, in-memory and PostgreSQL
