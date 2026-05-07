@@ -56,8 +56,10 @@ def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> No
         "ai_refs": "READY",
         "selected_alternative": "READY",
         "mandate_context": "DEGRADED",
-        "risk_impact": "DEGRADED",
+        "risk_impact": "READY",
+        "performance_context": "DEGRADED",
     }
+    direct_states = {**ready_states, "risk_impact": "DEGRADED"}
     review = build_critical_review(
         {
             "output_dir": "output/rfc0040-proof/test",
@@ -65,13 +67,20 @@ def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> No
             "scenarios": {
                 "direct_rebalance_run": {
                     "proof_pack_id": "dpp_direct",
-                    "section_states": ready_states,
+                    "section_states": direct_states,
                     "source_hash_keys": ["rebalance_run"],
                 },
                 "selected_alternative": {
                     "proof_pack_id": "dpp_selected",
                     "section_states": ready_states,
-                    "source_hash_keys": ["alternative_set", "selected_alternative"],
+                    "source_hash_keys": [
+                        "alternative_set",
+                        "selected_alternative",
+                        "risk_context",
+                        "performance_context",
+                    ],
+                    "risk_source_state": "READY",
+                    "performance_source_state": "DEGRADED",
                 },
                 "missing_mandate_blocked": {
                     "proof_pack_id": "dpp_blocked",
@@ -87,6 +96,7 @@ def test_rfc0040_evidence_script_builds_machine_readable_critical_review() -> No
     assert review["checks"]["selected_alternative_trace_ready"] is True
     assert review["checks"]["mandate_context_source_honest"] is True
     assert review["checks"]["missing_mandate_blocks_promotion"] is True
+    assert review["checks"]["selected_alternative_source_analytics_attached"] is True
     assert review["checks"]["full_front_office_claim_withheld"] is True
     assert {finding["status"] for finding in review["findings"]} == {
         "passed",

@@ -110,11 +110,16 @@ Current repository posture:
     the owning AI/Gateway/Workbench repositories through `lotus-ai` PR #61, `lotus-gateway`
     PR #198, and `lotus-workbench` PR #166, then live-proven by rebuilt canonical front-office QA
     `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-210641.json`.
+    RFC40-WTBD-006 manage proof-pack enrichment is implemented for selected construction
+    alternatives: `risk_impact` and `performance_context` sections preserve source-owned
+    `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` supportability, lineage refs,
+    content hashes, reason codes, and bounded source-emitted measures without manage-local
+    risk/performance methodology.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
-    approve trades, or issue recommendations. Richer source-owner enrichment, transaction-cost
-    authority, client restrictions, sustainability profiles, and cross-RFC portfolio memory remain
-    downstream WTBD work in the owning repositories.
+    approve trades, or issue recommendations. Richer attribution/contribution/scenario source
+    depth, transaction-cost authority, client restrictions, sustainability profiles, and cross-RFC
+    portfolio memory remain downstream WTBD work in the owning repositories.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack

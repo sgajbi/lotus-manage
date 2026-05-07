@@ -35,15 +35,15 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: this RFC41-WTBD-004 slice after source-owned wave risk/performance aggregate
+Snapshot basis: this RFC40-WTBD-006 slice after source-owned proof-pack risk/performance
 enrichment was implemented locally and prepared for PR merge/publication.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 26 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed, after this slice lands. |
+| Done on merged/published truth | 27 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed, after this slice lands. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 30 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 29 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -57,11 +57,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
-| 2 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
-| 3 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
-| 4 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
-| 5 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
+| 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 2 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
+| 3 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
+| 4 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
+| 5 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
 
 Execution rule:
 
@@ -1693,7 +1693,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Completed, merged, CI-proven, live-proven, and wiki-ready through `lotus-gateway` PR #195, `lotus-workbench` PR #156, `lotus-workbench` PR #164, `lotus-manage` PR #117, and platform canonical QA | The first-wave product path now generates and replays proof-pack evidence through Gateway/BFF, renders Workbench proof-pack review over live manage truth, and passes governed canonical front-office QA with `dpm.proof_pack` classified `ready`. Governed AI memo generation, richer source-owner enrichment, transaction-cost authority, client restrictions, sustainability profiles, and cross-RFC portfolio memory remain separate WTBDs. |
 | RFC40-WTBD-004 | Report materialization from `DpmProofPackReportInput` | `lotus-report`, `lotus-render`, `lotus-archive` | Completed, merged, CI-proven, and wiki-published through `lotus-render` PR #11, `lotus-report` PR #90, and `lotus-archive` PR #23 | Manage produces deterministic report input; `lotus-report` consumes it without reconstructing proof-pack evidence, `lotus-render` renders the governed `proof-pack` template, and `lotus-archive` governs the resulting `proof_pack` artifact lifecycle with retention, legal hold, retrieval, purge, and access audit. |
 | RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, consumed through Gateway/Workbench | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-ai` PR #61, `lotus-gateway` PR #198, `lotus-workbench` PR #166, and rebuilt platform canonical QA | Manage produces bounded AI evidence with guardrails; `lotus-ai` owns review-gated `dpm_pm_memo.pack@v1` execution, Gateway composes the handoff, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
-| RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Deferred unless owning-service contracts are consumed | RFC-0040 preserves degraded sections where source-backed risk/performance context is missing. Manage must not clone analytics methodology. |
+| RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Completed in this slice for manage proof-pack authority | RFC-0040 selected-alternative proof packs now preserve source-owned risk and performance context from construction authority metadata, including supportability state, source refs, source hashes, reason codes, and bounded source-emitted measures. Manage still does not calculate risk or performance methodology locally. |
 | RFC40-WTBD-007 | Authoritative transaction-cost curve | Future cost/execution source, likely execution/platform domain | Deferred with no support claim | Manage may expose labelled estimated cost, but no authoritative `TransactionCostCurve:v1` source exists. |
 | RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
 | RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority, consumed by `lotus-manage` construction evidence | Partially implemented through selected RFC-0039 alternatives | `RegimeScenarioPackEvaluation:v1` now supplies first-wave scenario-pack evaluation for `REGIME_STRESS_AWARE` alternatives. Proof packs can preserve that selected-alternative context, but richer scenario contribution, CIO approval, and direct proof-pack enrichment remain future source depth. |
@@ -1959,31 +1959,50 @@ Target business outcome:
 Proof packs include source-backed risk and performance context beyond the first manage-backed
 evidence, with clear degraded states when analytics are missing, stale, or partial.
 
-Why it cannot be done now:
+Current implementation-backed status:
 
-Risk and performance analytics are not manage-owned methodology. RFC-0040 can carry degraded
-sections and consume source-backed context, but it must not clone risk or performance calculations.
+Completed in this slice for `lotus-manage` proof-pack authority. Selected-alternative proof packs
+now consume source-owned risk and performance authority context already attached to the selected
+RFC-0039 construction alternative. The `risk_impact` and `performance_context` sections preserve
+the source owner's supportability state, lineage refs, content hashes, reason codes, and bounded
+source-emitted measures such as tracking error, concentration posture, benchmark identity, active
+return, and underperformance flag. Direct run proof packs and selected alternatives without source
+analytics continue to degrade those sections truthfully.
 
-Dependencies before implementation:
+Implemented controls:
 
-1. `lotus-risk` proof-pack-compatible risk enrichment contract,
-2. `lotus-performance` benchmark/return/attention context contract,
-3. source refs, as-of semantics, benchmark identity, freshness, and supportability states,
-4. manage adapter tests for ready/degraded/stale/partial analytics,
-5. Gateway posture if analytics are surfaced in the product UI.
+1. `src/core/proof_packs/source_analytics.py` isolates risk/performance extraction from the
+   proof-pack builder and validates attached contexts against the existing
+   `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` models,
+2. `src/core/proof_packs/builder.py` uses that module to populate `risk_impact` and
+   `performance_context` sections, source refs, and `risk_context` / `performance_context` source
+   hashes without adding manage-local analytics methodology,
+3. report and AI handoff adapters inherit the enriched sections and sanitized metrics from the
+   immutable proof pack without reconstructing analytics,
+4. `scripts/generate_rfc0040_proof_pack_evidence.py` now proves a mixed-readiness selected
+   alternative where risk is `READY` and performance remains `DEGRADED`,
+5. tests pin ready/degraded section states, source hash keys, source refs, JSON-safe source
+   measures, AI/report handoff preservation, and evidence-script critical-review checks.
 
-Expected implementation wave:
+Proof:
 
-Implement after risk/performance contracts exist. Manage should consume and attach owning-service
-lineage, not calculate the analytics.
+1. targeted proof-pack/evidence tests:
+   `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py tests/unit/dpm/proof_packs/test_proof_pack_handoffs.py tests/unit/dpm/proof_packs/test_proof_pack_markdown.py tests/unit/test_rfc0040_evidence_script.py -q`,
+2. live proof is generated by
+   `python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0.1:8001`;
+   this slice records `output/rfc0040-proof/20260507-230235/manifest.json` with selected
+   proof-pack `risk_source_state=READY`, `performance_source_state=DEGRADED`, `risk_context` and
+   `performance_context` source hashes, and `critical-review.json` passed,
+3. full repository proof remains `make check` before PR publication.
 
-Promotion proof:
+Remaining bounded gaps:
 
-1. owning-service API certification,
-2. manage adapter and proof-pack section tests,
-3. live mixed-readiness proof,
-4. OpenAPI and endpoint-certification updates,
-5. supported-feature updates naming exactly which analytics are supported.
+1. Gateway and Workbench may choose to surface the enriched risk/performance posture, but manage
+   closure does not claim downstream rendering,
+2. richer attribution, contribution, stress, and scenario methodology remains source-owner work in
+   `lotus-risk` and `lotus-performance`,
+3. transaction-cost authority, client restriction profiles, sustainability preferences, and
+   portfolio memory remain separate WTBDs.
 
 #### RFC40-WTBD-007 - Authoritative Transaction-Cost Curve
 
