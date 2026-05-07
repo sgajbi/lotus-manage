@@ -763,9 +763,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 18 |" in work_to_be_done
+    assert "| Done on merged/published truth | 19 |" in work_to_be_done
     assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 38 |" in work_to_be_done
+    assert "| Remaining / open | 37 |" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
@@ -777,6 +777,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "`lotus-workbench` merge commit `8acf276`" in work_to_be_done
     assert "`lotus-workbench` wiki publication commit `1b4b095`" in work_to_be_done
+    assert "RFC40-WTBD-003 - Full Front-Office Proof-Pack Product Realization" in work_to_be_done
+    assert (
+        "Completed for the first-wave full front-office proof-pack product path" in work_to_be_done
+    )
+    assert (
+        "`lotus-manage` PR #117 made proof-pack generation replay deterministic source identities"
+        in (work_to_be_done)
+    )
+    assert "canonical-front-office-qa-20260507-124405.json" in work_to_be_done
+    assert "`dpm.proof_pack` as `ready` with proof pack `dpp_c09f73d0`" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench wave command center" in work_to_be_done
     assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
     assert "RFC42-WTBD-001" in work_to_be_done
@@ -804,11 +814,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 18 done on merged/published truth" in supported_features
-    assert "RFC40-WTBD-003 - Full proof-pack product realization" in supported_features
+    assert "59 WTBD items: 19 done on merged/published truth" in supported_features
+    assert "RFC41-WTBD-005 - Gateway wave composition" in supported_features
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
     assert (
         "Workbench proof-pack review UX is implementation-backed through `lotus-workbench` PR #156"
+        in (supported_features)
+    )
+    assert "Full first-wave canonical product realization is live-proven" in supported_features
+    assert (
+        "First-wave full proof-pack product realization is supported for the canonical portfolio"
         in (supported_features)
     )
     assert "A WTBD is not complete until merged to `main`" in supported_features

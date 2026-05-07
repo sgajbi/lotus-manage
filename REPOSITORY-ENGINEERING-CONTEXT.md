@@ -98,9 +98,13 @@ Current repository posture:
     is merged and wiki-published through `lotus-workbench` PR #156, consumes Gateway/BFF proof-pack
     routes only, and renders proof-pack identity, supportability, sections, source hashes,
     Markdown/report/AI posture, and action eligibility without reconstructing proof-pack evidence
-    in the browser. Report materialization, AI memo generation, richer source-owner enrichment, and
-    full front-office product-outcome support remain downstream work in the owning repositories;
-    therefore no full product UX support claim is made here.
+    in the browser. `lotus-manage` PR #117 made deterministic proof-pack source identities
+    replay-safe across idempotency keys, and governed platform proof
+    `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-124405.json`
+    validates the first-wave full product path with `dpm.proof_pack` classified `ready` for
+    `dpp_c09f73d0`. Report materialization, AI memo generation, richer source-owner enrichment,
+    transaction-cost authority, client restrictions, sustainability profiles, and cross-RFC
+    portfolio memory remain downstream WTBD work in the owning repositories.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
