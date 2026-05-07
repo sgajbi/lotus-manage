@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-06T03:22:28.088378+00:00",
+  "generatedAt": "2026-05-07T06:56:50.702625+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -56200,6 +56200,126 @@
             "attributeRef": "#/attributeCatalog/lotus.durable"
           },
           {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
+          },
+          {
             "name": "idempotent_replay",
             "location": "body",
             "required": false,
@@ -56909,6 +57029,126 @@
             "type": "boolean",
             "semanticId": "lotus.durable",
             "attributeRef": "#/attributeCatalog/lotus.durable"
+          },
+          {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
           },
           {
             "name": "idempotent_replay",
@@ -58883,6 +59123,126 @@
             "attributeRef": "#/attributeCatalog/lotus.durable"
           },
           {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
+          },
+          {
             "name": "idempotent_replay",
             "location": "body",
             "required": false,
@@ -60146,6 +60506,126 @@
             "attributeRef": "#/attributeCatalog/lotus.durable"
           },
           {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
+          },
+          {
             "name": "idempotent_replay",
             "location": "body",
             "required": false,
@@ -60785,6 +61265,126 @@
             "attributeRef": "#/attributeCatalog/lotus.durable"
           },
           {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
+          },
+          {
             "name": "idempotent_replay",
             "location": "body",
             "required": false,
@@ -61398,6 +61998,126 @@
             "type": "boolean",
             "semanticId": "lotus.durable",
             "attributeRef": "#/attributeCatalog/lotus.durable"
+          },
+          {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
           },
           {
             "name": "idempotent_replay",
@@ -62015,6 +62735,126 @@
             "attributeRef": "#/attributeCatalog/lotus.durable"
           },
           {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
+          },
+          {
             "name": "idempotent_replay",
             "location": "body",
             "required": false,
@@ -62630,6 +63470,126 @@
             "attributeRef": "#/attributeCatalog/lotus.durable"
           },
           {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
+          },
+          {
             "name": "idempotent_replay",
             "location": "body",
             "required": false,
@@ -63243,6 +64203,126 @@
             "type": "boolean",
             "semanticId": "lotus.durable",
             "attributeRef": "#/attributeCatalog/lotus.durable"
+          },
+          {
+            "name": "supportability",
+            "location": "body",
+            "required": true,
+            "type": "DpmWaveSupportabilityResponse",
+            "semanticId": "lotus.supportability",
+            "attributeRef": "#/attributeCatalog/lotus.supportability"
+          },
+          {
+            "name": "supportability.wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "supportability.wave_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_state",
+            "attributeRef": "#/attributeCatalog/lotus.wave_state"
+          },
+          {
+            "name": "supportability.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "supportability.reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "supportability.item_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.item_count",
+            "attributeRef": "#/attributeCatalog/lotus.item_count"
+          },
+          {
+            "name": "supportability.issue_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.issue_counts",
+            "attributeRef": "#/attributeCatalog/lotus.issue_counts"
+          },
+          {
+            "name": "supportability.issues",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.issues",
+            "attributeRef": "#/attributeCatalog/lotus.issues"
+          },
+          {
+            "name": "supportability.issues[].support_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_ref",
+            "attributeRef": "#/attributeCatalog/lotus.support_ref"
+          },
+          {
+            "name": "supportability.issues[].item_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.item_state",
+            "attributeRef": "#/attributeCatalog/lotus.item_state"
+          },
+          {
+            "name": "supportability.issues[].severity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.severity",
+            "attributeRef": "#/attributeCatalog/lotus.severity"
+          },
+          {
+            "name": "supportability.issues[].source_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_owner",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner"
+          },
+          {
+            "name": "supportability.issues[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "supportability.issues[].remediation_route",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.remediation_route",
+            "attributeRef": "#/attributeCatalog/lotus.remediation_route"
+          },
+          {
+            "name": "supportability.operator_actions",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operator_actions",
+            "attributeRef": "#/attributeCatalog/lotus.operator_actions"
           },
           {
             "name": "idempotent_replay",

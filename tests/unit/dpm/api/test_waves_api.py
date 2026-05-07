@@ -313,6 +313,9 @@ def test_wave_preview_returns_source_backed_and_blocked_items_without_persistenc
     assert response.status_code == 200
     payload = response.json()
     assert payload["durable"] is False
+    assert payload["supportability"]["supportability_state"] == "blocked"
+    assert payload["supportability"]["reason"] == "wave_blocked_items"
+    assert payload["supportability"]["issue_counts"] == {"critical": 1, "warning": 0, "info": 1}
     assert payload["wave"]["state"] == "PREVIEWED"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {
         "CANDIDATE": 1,
@@ -344,6 +347,8 @@ def test_wave_create_persists_and_replays_by_idempotency_key() -> None:
     first_payload = first.json()
     second_payload = second.json()
     assert first_payload["durable"] is True
+    assert first_payload["supportability"]["supportability_state"] == "blocked"
+    assert first_payload["supportability"]["reason"] == "wave_blocked_items"
     assert first_payload["idempotent_replay"] is False
     assert second_payload["idempotent_replay"] is True
     assert second_payload["wave"]["wave_id"] == first_payload["wave"]["wave_id"]

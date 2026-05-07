@@ -201,6 +201,13 @@ class DpmWaveResponse(BaseModel):
     durable: bool = Field(
         description="Whether this response was durably persisted.", examples=[False]
     )
+    supportability: "DpmWaveSupportabilityResponse" = Field(
+        description=(
+            "Product-safe wave supportability derived by lotus-manage from item states. "
+            "Gateway and Workbench must preserve this authority-owned posture instead of "
+            "reconstructing readiness."
+        )
+    )
     idempotent_replay: bool = Field(
         default=False,
         description="True when create returned an already persisted wave for the idempotency key.",
@@ -461,6 +468,22 @@ router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Wave
 logger = logging.getLogger(__name__)
 
 
+def _wave_response(
+    *,
+    wave: DpmRebalanceWave,
+    durable: bool,
+    idempotent_replay: bool = False,
+) -> DpmWaveResponse:
+    return DpmWaveResponse(
+        wave=wave,
+        durable=durable,
+        supportability=DpmWaveSupportabilityResponse.model_validate(
+            wave_service.wave_supportability_payload(wave)
+        ),
+        idempotent_replay=idempotent_replay,
+    )
+
+
 @router.post(
     "/preview",
     response_model=DpmWaveResponse,
@@ -519,7 +542,7 @@ def preview_wave(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    return DpmWaveResponse(wave=wave, durable=False)
+    return _wave_response(wave=wave, durable=False)
 
 
 @router.post(
@@ -606,7 +629,7 @@ def create_wave(
             status_code=status_code,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.get(
@@ -870,7 +893,7 @@ def source_check_wave(
             status_code=status_code,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.post(
@@ -930,7 +953,7 @@ def simulate_wave(
         ) from exc
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.post(
@@ -991,7 +1014,7 @@ def select_wave_item_alternative(
         ) from exc
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
-    return DpmWaveResponse(wave=wave, durable=True)
+    return _wave_response(wave=wave, durable=True)
 
 
 @router.post(
@@ -1040,7 +1063,7 @@ def approve_wave(
         ) from exc
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.post(
@@ -1089,7 +1112,7 @@ def stage_wave(
         ) from exc
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.post(
@@ -1137,7 +1160,7 @@ def handoff_wave(
         ) from exc
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.post(
@@ -1188,7 +1211,7 @@ def cancel_wave(
         ) from exc
     except wave_service.DpmWaveValidationError as exc:
         raise _wave_validation_http_exception(exc) from exc
-    return DpmWaveResponse(wave=wave, durable=True, idempotent_replay=replayed)
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
 @router.get(
