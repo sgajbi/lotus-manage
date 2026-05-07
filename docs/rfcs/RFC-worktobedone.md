@@ -41,9 +41,9 @@ Snapshot basis: `main` after RFC38-WTBD-003 merged and repo-local wiki source wa
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 16 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 17 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 40 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 39 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -57,11 +57,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC40-WTBD-001 - Gateway proof-pack composition | Exposes manage-owned pre-trade evidence through the governed product API without reconstruction. | Gateway PR merged, route/OpenAPI tests green, no-reconstruction contract tests, wiki published. |
-| 2 | RFC40-WTBD-002 - Workbench proof-pack review UX | Turns pre-trade proof packs into a PM/CIO review surface suitable for demos and operating review. | Workbench BFF-only implementation, browser proof, screenshot evidence, accessible ready/degraded states, wiki published. |
-| 3 | RFC40-WTBD-003 - Full front-office proof-pack product realization | Converts backend proof-pack authority into an end-to-end product claim. | Priorities 1 and 2 merged, canonical front-office QA green, docs/wiki/client-demo material aligned. |
-| 4 | RFC41-WTBD-005 - Gateway wave composition | Starts converting explicit rebalance waves from backend authority into product APIs. | Gateway composition merged with supportability and no-reconstruction tests. |
-| 5 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
+| 1 | RFC40-WTBD-002 - Workbench proof-pack review UX | Turns pre-trade proof packs into a PM/CIO review surface suitable for demos and operating review. | Workbench BFF-only implementation, browser proof, screenshot evidence, accessible ready/degraded states, wiki published. |
+| 2 | RFC40-WTBD-003 - Full front-office proof-pack product realization | Converts backend proof-pack authority into an end-to-end product claim. | Gateway and Workbench proof-pack slices merged, canonical front-office QA green, docs/wiki/client-demo material aligned. |
+| 3 | RFC41-WTBD-005 - Gateway wave composition | Starts converting explicit rebalance waves from backend authority into product APIs. | Gateway composition merged with supportability and no-reconstruction tests. |
+| 4 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
+| 5 | RFC40-WTBD-004 - Report materialization from proof-pack report input | Makes proof-pack evidence consumable by report/render/archive owning services. | Report materialization, archive refs, supportability, and wiki/demo proof are implementation-backed in owning repos. |
 
 Execution rule:
 
@@ -1686,7 +1686,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0040 |
 | --- | --- | --- | --- | --- |
-| RFC40-WTBD-001 | Gateway proof-pack composition | `lotus-gateway` | Downstream RFC direction aligned; implementation not supported yet | Gateway must consume stable manage proof-pack APIs without reconstructing sections, hashes, report refs, or AI refs. Manage implementation and proof had to stabilize first. |
+| RFC40-WTBD-001 | Gateway proof-pack composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195 | Gateway consumes stable manage proof-pack generate/read/Markdown/report-input/AI-evidence APIs without reconstructing sections, hashes, report refs, or AI refs. Workbench UX and full canonical product proof remain separate WTBDs. |
 | RFC40-WTBD-002 | Workbench proof-pack review UX | `lotus-workbench` | Downstream RFC direction aligned; implementation not supported yet | Workbench must consume Gateway/BFF only. Implementing before Gateway composition would force direct manage calls or speculative UI state. |
 | RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | Manage backend proof is necessary but not sufficient. Canonical front-office QA exposed a downstream Gateway risk-drawdown `partial` boundary tracked in `sgajbi/lotus-gateway#182`. |
 | RFC40-WTBD-004 | Report materialization from `DpmProofPackReportInput` | `lotus-report`, `lotus-render`, `lotus-archive` | Deferred to owning services | Manage produces deterministic report input; it does not generate, render, archive, retain, or retrieve report documents. |
@@ -1707,35 +1707,43 @@ Gateway exposes a Workbench-facing proof-pack contract that preserves manage-own
 adding experience-layer posture for entitlements, availability, report status, AI status, archive
 status, and command-center context.
 
-Why it cannot be done now:
+Current implementation-backed status:
 
-RFC-0040 stabilized the manage proof-pack artifact, hashes, refs, and API shape. Gateway
-composition before that proof would have required speculative contracts or duplicated proof-pack
-logic. Slice 8 corrected the downstream RFC ownership language, but it did not implement runtime
-Gateway composition.
+Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195. Gateway now
+exposes `/api/v1/dpm/command-center/proof-packs*` routes for generate, read, deterministic
+Markdown, report-input, and AI-evidence-input access. The implementation preserves manage-owned
+`proof_pack_id`, section states, reason codes, source refs, content/source hashes, report refs, and
+AI refs in a Gateway envelope without reconstructing proof-pack evidence.
 
-Dependencies before implementation:
+Implementation evidence:
 
-1. Gateway RFC-0098 proof-pack addendum is used as execution guide,
-2. typed manage client consumes proof-pack generate/read/Markdown/report-input/AI-evidence routes,
-3. Gateway preserves manage `proof_pack_id`, section states, reason codes, source refs, hashes,
-   report refs, and AI refs,
-4. Gateway composes report/archive/AI posture only from owning services,
-5. Gateway does not calculate proof-pack section state or modify persisted evidence.
+1. `lotus-gateway` merge commit `f706853`,
+2. `src/app/routers/dpm_proof_packs.py`,
+3. `src/app/services/dpm_proof_pack_service.py`,
+4. `src/app/contracts/dpm_proof_packs.py`,
+5. `src/app/clients/dpm_client.py`,
+6. `tests/unit/test_dpm_proof_pack_service.py`,
+7. `tests/integration/test_dpm_proof_pack_router.py`,
+8. `tests/contract/test_dpm_proof_pack_contract.py`,
+9. `tests/unit/test_upstream_clients.py`,
+10. `lotus-gateway` wiki publication commit `7b97aac`.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-gateway` before Workbench proof-pack UX. This should be a Gateway-owned RFC
-implementation slice with OpenAPI certification, no-reconstruction tests, and live Gateway proof
-against manage.
+1. `make check` passed in `lotus-gateway` with lint, format, monetary-float guard, mypy, and `452`
+   unit/contract tests,
+2. `make test-integration` passed in `lotus-gateway` with `164` integration tests,
+3. focused proof-pack and upstream-client checks passed with `110` tests,
+4. GitHub Feature Lane and PR Merge Gate passed for `lotus-gateway` PR #195, including coverage,
+   integration, Docker build, and Docker parity checks,
+5. `Sync-RepoWikis.ps1 -Publish -Repository lotus-gateway` published repo-authored wiki source,
+   and post-publish check-only reported zero drift.
 
-Promotion proof:
+Remaining governed follow-up:
 
-1. Gateway unit, contract, and OpenAPI tests,
-2. no-reconstruction tests for section states, hashes, refs, and reason codes,
-3. degraded/unavailable manage posture tests,
-4. live Gateway proof against manage proof-pack APIs,
-5. Gateway README/wiki/supported-features/endpoint-certification updates.
+Workbench review UX, full canonical front-office proof, report materialization, archive lifecycle,
+AI memo generation, and richer source-owner enrichment remain governed by RFC40-WTBD-002 through
+RFC40-WTBD-010. This item is a Gateway composition support claim only.
 
 #### RFC40-WTBD-002 - Workbench Proof-Pack Review UX
 
