@@ -48,17 +48,17 @@ Current first-wave product posture:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it
-tracks 59 WTBD items: 24 done on merged/published truth, 3 partial or in progress, and 32 remaining
+tracks 59 WTBD items: 25 done on merged/published truth, 3 partial or in progress, and 31 remaining
 or open. The next execution wave should focus on product surfaces that materially improve
 bank-buyable demo and operating value without inventing unsupported source truth.
 
 | Priority | WTBD | Business value | Required proof before support claim |
 | ---: | --- | --- | --- |
-| 1 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
-| 2 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
-| 3 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
-| 4 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
-| 5 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
+| 1 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list and source-owned PM-book wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
+| 2 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
+| 3 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 4 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
+| 5 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
 
 Roadmap boundaries:
 
