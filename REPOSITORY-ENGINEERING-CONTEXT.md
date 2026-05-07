@@ -93,13 +93,14 @@ Current repository posture:
     health evidence when available, certified `/api/v1/rebalance/proof-packs/*` APIs, and
     canonical Postgres-backed live proof under `output/rfc0040-proof/20260503-135112`,
     post-merge audit rerun `output/rfc0040-proof/20260503-142438`, and mandate-context hardening
-    rerun `output/rfc0040-proof/20260503-145818`. `lotus-gateway` and `lotus-workbench` RFC-0098
-    documents have been aligned to consume manage truth without reconstruction. Gateway
-    composition, Workbench proof-pack review UX, report materialization, AI memo generation, and
+    rerun `output/rfc0040-proof/20260503-145818`. Gateway proof-pack composition is merged and
+    wiki-published through `lotus-gateway` PR #195. The first-wave Workbench proof-pack review UX
+    is merged and wiki-published through `lotus-workbench` PR #156, consumes Gateway/BFF proof-pack
+    routes only, and renders proof-pack identity, supportability, sections, source hashes,
+    Markdown/report/AI posture, and action eligibility without reconstructing proof-pack evidence
+    in the browser. Report materialization, AI memo generation, richer source-owner enrichment, and
     full front-office product-outcome support remain downstream work in the owning repositories;
-    the post-merge canonical front-office QA run exposed a downstream risk-drawdown `partial`
-    boundary tracked as `sgajbi/lotus-gateway#182`, and therefore no full product UX support claim
-    is made here.
+    therefore no full product UX support claim is made here.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack

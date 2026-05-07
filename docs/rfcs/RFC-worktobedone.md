@@ -35,15 +35,15 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: `main` after RFC38-WTBD-003 merged and repo-local wiki source was published on
+Snapshot basis: `main` after RFC40-WTBD-002 merged and repo-local wiki source was published on
 2026-05-07.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 17 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 18 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 39 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 38 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -57,11 +57,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC40-WTBD-002 - Workbench proof-pack review UX | Turns pre-trade proof packs into a PM/CIO review surface suitable for demos and operating review. | Workbench BFF-only implementation, browser proof, screenshot evidence, accessible ready/degraded states, wiki published. |
-| 2 | RFC40-WTBD-003 - Full front-office proof-pack product realization | Converts backend proof-pack authority into an end-to-end product claim. | Gateway and Workbench proof-pack slices merged, canonical front-office QA green, docs/wiki/client-demo material aligned. |
-| 3 | RFC41-WTBD-005 - Gateway wave composition | Starts converting explicit rebalance waves from backend authority into product APIs. | Gateway composition merged with supportability and no-reconstruction tests. |
-| 4 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
-| 5 | RFC40-WTBD-004 - Report materialization from proof-pack report input | Makes proof-pack evidence consumable by report/render/archive owning services. | Report materialization, archive refs, supportability, and wiki/demo proof are implementation-backed in owning repos. |
+| 1 | RFC40-WTBD-003 - Full front-office proof-pack product realization | Converts backend proof-pack authority into an end-to-end product claim. | Gateway and Workbench proof-pack slices merged, canonical front-office QA green, docs/wiki/client-demo material aligned. |
+| 2 | RFC41-WTBD-005 - Gateway wave composition | Starts converting explicit rebalance waves from backend authority into product APIs. | Gateway composition merged with supportability and no-reconstruction tests. |
+| 3 | RFC41-WTBD-006 - Workbench wave command center | Gives PMs an implementation-backed operating cockpit for explicit portfolio-list waves. | Workbench UX merged, canonical browser proof captured, wiki material useful for business, operations, and demos. |
+| 4 | RFC40-WTBD-004 - Report materialization from proof-pack report input | Makes proof-pack evidence consumable by report/render/archive owning services. | Report materialization, archive refs, supportability, and wiki/demo proof are implementation-backed in owning repos. |
+| 5 | RFC40-WTBD-005 - Governed AI PM memo generation from proof-pack evidence | Turns bounded proof-pack AI evidence input into governed narrative support without browser prompt construction. | `lotus-ai`, Gateway, and Workbench implementation with guardrails, provenance, unavailable fallback, and wiki/demo proof. |
 
 Execution rule:
 
@@ -1687,7 +1687,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0040 |
 | --- | --- | --- | --- | --- |
 | RFC40-WTBD-001 | Gateway proof-pack composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195 | Gateway consumes stable manage proof-pack generate/read/Markdown/report-input/AI-evidence APIs without reconstructing sections, hashes, report refs, or AI refs. Workbench UX and full canonical product proof remain separate WTBDs. |
-| RFC40-WTBD-002 | Workbench proof-pack review UX | `lotus-workbench` | Downstream RFC direction aligned; implementation not supported yet | Workbench must consume Gateway/BFF only. Implementing before Gateway composition would force direct manage calls or speculative UI state. |
+| RFC40-WTBD-002 | Workbench proof-pack review UX | `lotus-workbench` | Completed, merged, CI-proven, and wiki-published through `lotus-workbench` PR #156 | Workbench now consumes Gateway/BFF proof-pack contracts only, renders proof-pack identity, supportability, sections, source hashes, Markdown/report/AI posture, and action eligibility without reconstructing sections, hashes, report input, or AI evidence. |
 | RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | Manage backend proof is necessary but not sufficient. Canonical front-office QA exposed a downstream Gateway risk-drawdown `partial` boundary tracked in `sgajbi/lotus-gateway#182`. |
 | RFC40-WTBD-004 | Report materialization from `DpmProofPackReportInput` | `lotus-report`, `lotus-render`, `lotus-archive` | Deferred to owning services | Manage produces deterministic report input; it does not generate, render, archive, retain, or retrieve report documents. |
 | RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, later consumed through Gateway/Workbench | Deferred to RFC-0043 / AI owner | Manage produces bounded AI evidence with guardrails; it must not generate AI narrative, prompts, recommendations, or autonomous decisioning. |
@@ -1753,33 +1753,51 @@ Portfolio managers, reviewers, operations, and client-facing teams can inspect p
 Workbench with section readiness, evidence drawers, Markdown preview, report/AI posture, lineage,
 hashes, and action eligibility backed by Gateway truth.
 
-Why it cannot be done now:
+Current implementation-backed status:
 
-Workbench must consume Gateway/BFF contracts only. Without Gateway proof-pack composition,
-Workbench would either call manage directly or recreate proof-pack posture in browser code. Both
-would violate the governed front-office architecture.
+Completed, merged, CI-proven, and wiki-published through `lotus-workbench` PR #156. Workbench now
+embeds a `Proof-Pack Evidence` panel in `/workbench/{portfolioId}` and uses Gateway/BFF routes under
+`/api/v1/dpm/command-center/proof-packs*` for proof-pack generation, detail, Markdown, report-input,
+and AI-evidence-input actions. The server prefetch path uses the Gateway server target, while client
+actions use the client BFF target. The panel preserves Gateway and manage truth for proof-pack
+identity, mandate/run/alternative lineage, supportability, section state counts, source hashes,
+Markdown availability, report-input availability, and AI-evidence availability without rebuilding
+proof-pack sections, recomputing hashes, or constructing report/AI payloads in browser code.
 
-Dependencies before implementation:
+Implementation evidence:
 
-1. RFC40-WTBD-001 complete,
-2. Workbench BFF/client modules consume Gateway only,
-3. UX covers section matrix, degraded/blocked/pending-review states, evidence detail, lineage,
-   Markdown preview, report/AI readiness, and supportability,
-4. no browser-side fact generation, hashing, report input generation, or AI evidence generation,
-5. canonical front-office validation path is available for proof.
+1. `lotus-workbench` merge commit `8acf276`,
+2. `src/features/workbench/api.ts` proof-pack Gateway/BFF wrappers,
+3. `src/features/workbench/proof-pack-view-model.ts`,
+4. `src/features/workbench/components/proof-pack-panel.tsx`,
+5. `src/app/workbench/[portfolioId]/page.tsx`,
+6. `scripts/live/validate-canonical-workbench-live.mjs`,
+7. `scripts/live/validation/browser-workflows.mjs`,
+8. `tests/unit/proof-pack-view-model.test.ts`,
+9. `tests/unit/proof-pack-panel.test.tsx`,
+10. `tests/unit/workbench-api.test.ts`,
+11. `tests/integration/workbench-page.test.tsx`,
+12. `lotus-workbench` wiki publication commit `1b4b095`.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement in `lotus-workbench` after Gateway composition. Use the canonical front-office runtime
-when producing demo-ready screenshots or proof.
+1. focused Workbench proof-pack, API, metrics, and page tests passed with `70` tests,
+2. RFC-0098 documentation regression passed in `lotus-workbench`,
+3. `npm run typecheck`, `npm run lint`, and `make check` passed locally in `lotus-workbench`,
+   including `725` tests, coverage, and production Next build,
+4. GitHub Feature Lane and PR Merge Gate passed for `lotus-workbench` PR #156, including lint,
+   typecheck, tests, coverage/build, Playwright smoke, Docker build, and Docker parity,
+5. `Sync-RepoWikis.ps1 -Publish -Repository lotus-workbench` published repo-authored wiki source,
+   and post-publish check-only reported zero drift.
 
-Promotion proof:
+Remaining governed follow-up:
 
-1. Workbench component and BFF contract tests,
-2. browser validation for ready/degraded/blocked proof packs,
-3. accessibility and responsive layout checks,
-4. canonical front-office evidence with backend validation passed,
-5. Workbench README/wiki/supported-features updates.
+This closes the Workbench review UX slice only. RFC40-WTBD-003 remains the full product-realization
+slice and requires canonical front-office proof across the complete Gateway/Workbench proof-pack
+path, audience-ready documentation, and explicit treatment of report/AI downstream posture. Report
+materialization, AI memo generation, richer source-owner enrichment, transaction-cost authority,
+client restriction/sustainability profiles, and cross-RFC portfolio memory remain governed by
+RFC40-WTBD-004 through RFC40-WTBD-010.
 
 #### RFC40-WTBD-003 - Full Front-Office Proof-Pack Product Realization
 
