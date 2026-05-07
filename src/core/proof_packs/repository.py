@@ -38,6 +38,17 @@ class DpmProofPackRepository(Protocol):
     ) -> DpmPreTradeProofPack | None:
         """Return the proof pack associated with an idempotency key."""
 
+    def list_proof_packs(
+        self,
+        *,
+        portfolio_id: str | None = None,
+        mandate_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPreTradeProofPack]:
+        """Return a bounded page of proof packs matching optional search filters."""
+
     def get_retention_metadata(
         self,
         *,

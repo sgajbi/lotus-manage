@@ -67,6 +67,29 @@ class InMemoryDpmProofPackRepository(DpmProofPackRepository):
             row = self._proof_packs.get(proof_pack_id)
             return deepcopy(row) if row is not None else None
 
+    def list_proof_packs(
+        self,
+        *,
+        portfolio_id: str | None = None,
+        mandate_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPreTradeProofPack]:
+        with self._lock:
+            proof_packs = [
+                proof_pack
+                for proof_pack in self._proof_packs.values()
+                if (portfolio_id is None or proof_pack.portfolio_id == portfolio_id)
+                and (mandate_id is None or proof_pack.mandate_id == mandate_id)
+                and (status is None or proof_pack.status == status)
+            ]
+            proof_packs.sort(
+                key=lambda proof_pack: (proof_pack.created_at, proof_pack.proof_pack_id),
+                reverse=True,
+            )
+            return deepcopy(proof_packs[offset : offset + limit])
+
     def get_retention_metadata(
         self,
         *,

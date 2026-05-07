@@ -148,6 +148,40 @@ class PostgresDpmProofPackRepository:
             return None
         return load_model_json(DpmPreTradeProofPack, _payload(row))
 
+    def list_proof_packs(
+        self,
+        *,
+        portfolio_id: str | None = None,
+        mandate_id: str | None = None,
+        status: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPreTradeProofPack]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        for column, value in (
+            ("portfolio_id", portfolio_id),
+            ("mandate_id", mandate_id),
+            ("status", status),
+        ):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                args.append(value)
+        where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT payload_json
+                FROM dpm_pre_trade_proof_packs
+                {where_clause}
+                ORDER BY created_at DESC, proof_pack_id DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(args),
+            ).fetchall()
+        return [load_model_json(DpmPreTradeProofPack, _payload(row)) for row in rows]
+
     def get_retention_metadata(
         self,
         *,

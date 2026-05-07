@@ -114,12 +114,19 @@ Current repository posture:
     alternatives: `risk_impact` and `performance_context` sections preserve source-owned
     `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` supportability, lineage refs,
     content hashes, reason codes, and bounded source-emitted measures without manage-local
-    risk/performance methodology.
+    risk/performance methodology. RFC40-WTBD-010 now has a manage backend portfolio-memory
+    foundation through `/api/v1/rebalance/portfolio-memory/{portfolio_id}` and
+    `src/core/portfolio_memory/`: it composes persisted proof packs, proof-pack-local decision
+    timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events
+    into a deterministic, source-backed, hashable timeline without reconstructing risk,
+    performance, execution, tax, cash, FX, or source-owner methodology. Gateway/Workbench timeline
+    realization, mandate-monitoring exception nodes, canonical browser proof, and cross-app
+    retention/audit policy remain downstream WTBD scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source
     depth, transaction-cost authority, client restrictions, sustainability profiles, and cross-RFC
-    portfolio memory remain downstream WTBD work in the owning repositories.
+    portfolio memory product realization remain downstream WTBD work in the owning repositories.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
@@ -180,6 +187,9 @@ Primary areas:
    RFC-0042 outcome-review authority lives in `src/core/outcomes/`; outcome persistence lives in
    `src/infrastructure/outcomes/`; API orchestration lives in
    `src/api/services/outcome_review_service.py` and `src/api/routers/outcome_reviews.py`.
+   RFC-0040/RFC-0041/RFC-0042 portfolio-memory read-model primitives live in
+   `src/core/portfolio_memory/`; API orchestration lives in
+   `src/api/routers/portfolio_memory.py`.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.
 3. `docs/`

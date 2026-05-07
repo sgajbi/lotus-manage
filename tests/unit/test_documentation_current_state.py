@@ -319,6 +319,9 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "source-backed mandate-context attachment" in supported_features
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
     assert "Pre-Trade Proof Pack Flow" in supported_features
+    assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in supported_features
+    assert "src/core/portfolio_memory/" in supported_features
+    assert "Gateway/Workbench timeline realization" in supported_features
     assert "output/rfc0040-proof/20260503-145818" in supported_features
     assert "critical-review.json" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features
@@ -758,7 +761,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in wiki_index
     assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
     assert "Execution/OMS integration, PM quality scoring" in supported_features
-    assert "handoff, and outcome events" not in supported_features
+    assert (
+        "full Gateway/Workbench timeline product realization remain downstream"
+        in supported_features
+    )
     assert "Supported as RFC-0042 full product experience" not in supported_features
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
@@ -766,8 +772,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 27 |" in work_to_be_done
-    assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 29 |" in work_to_be_done
+    assert "| Partial / in progress | 4 |" in work_to_be_done
+    assert "| Remaining / open | 28 |" in work_to_be_done
+    assert "RFC40-WTBD-010 manage portfolio-memory foundation" in work_to_be_done
+    assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
