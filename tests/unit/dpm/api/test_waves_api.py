@@ -15,6 +15,7 @@ from src.api.dependencies import (
 )
 from src.api.main import app
 from src.api.request_models import RebalanceRequest
+from src.api.routers import waves as waves_router
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service, proof_pack_service, wave_service
 from src.core.mandates import (
@@ -25,6 +26,7 @@ from src.core.mandates import (
     DpmSourceProductLineage,
     calculate_mandate_health,
 )
+from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
@@ -120,6 +122,75 @@ def _request() -> dict[str, object]:
             {"portfolio_id": "PB_SG_UNSOURCED_002"},
         ],
     }
+
+
+def _pm_book_request() -> dict[str, object]:
+    return {
+        "trigger_type": "PM_BOOK_REVIEW",
+        "trigger_id": "pm-book-review-20260503",
+        "rationale": "Review discretionary portfolios in the Singapore DPM book.",
+        "as_of_date": "2026-05-03",
+        "actor_id": "pm_001",
+        "portfolio_manager_id": "PM_SG_DPM_001",
+        "tenant_id": "default",
+        "booking_center_code": "Singapore",
+        "portfolio_types": ["DISCRETIONARY"],
+    }
+
+
+def _pm_book_membership_payload(
+    *,
+    supportability_state: str = "READY",
+    members: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    return {
+        "product_name": "PortfolioManagerBookMembership",
+        "product_version": "v1",
+        "tenant_id": "default",
+        "as_of_date": "2026-05-03",
+        "portfolio_manager_id": "PM_SG_DPM_001",
+        "booking_center_code": "Singapore",
+        "members": members
+        if members is not None
+        else [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "client_id": "CIF_SG_000184",
+                "booking_center_code": "Singapore",
+                "portfolio_type": "DISCRETIONARY",
+                "status": "ACTIVE",
+                "open_date": "2024-01-15",
+                "close_date": None,
+                "base_currency": "USD",
+                "source_record_id": "pm-book:001",
+            }
+        ],
+        "supportability": {
+            "state": supportability_state,
+            "reason": (
+                "PM_BOOK_MEMBERSHIP_READY"
+                if supportability_state == "READY"
+                else "PM_BOOK_MEMBERSHIP_INCOMPLETE"
+            ),
+            "returned_portfolio_count": 0 if members == [] else 1,
+            "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+        },
+        "lineage": {"source_system": "relationship_book", "contract_version": "rfc_041_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+        "source_batch_fingerprint": "sha256:pm-book",
+        "snapshot_id": "pm-book-snapshot-20260503",
+    }
+
+
+class _PmBookResolver:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+        self.calls: list[dict[str, object]] = []
+
+    def resolve_portfolio_manager_book_membership(self, **kwargs: object):
+        self.calls.append(kwargs)
+        return DpmCorePortfolioManagerBookMembershipResponse.model_validate(self.payload)
 
 
 def _rebalance_request(portfolio_id: str = PORTFOLIO_ID) -> dict[str, object]:
@@ -353,6 +424,113 @@ def test_wave_create_persists_and_replays_by_idempotency_key() -> None:
     assert second_payload["idempotent_replay"] is True
     assert second_payload["wave"]["wave_id"] == first_payload["wave"]["wave_id"]
     assert wave_repository.get_wave(wave_id=first_payload["wave"]["wave_id"]) is not None
+
+
+def test_pm_book_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_pm_book_request(),
+            headers={"X-Correlation-Id": "corr-pm-book-preview"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["durable"] is False
+    assert payload["wave"]["trigger"]["trigger_type"] == "PM_BOOK_REVIEW"
+    assert payload["wave"]["trigger"]["source_refs"][0]["source_type"] == (
+        "PortfolioManagerBookMembership"
+    )
+    item = payload["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert item["mandate_id"] == MANDATE_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "PortfolioManagerBookMembership",
+        "PORTFOLIO_MANAGER_BOOK_MEMBER",
+        "MANDATE_DIGITAL_TWIN",
+    }
+    assert resolver.calls == [
+        {
+            "portfolio_manager_id": "PM_SG_DPM_001",
+            "as_of_date": date(2026, 5, 3),
+            "tenant_id": "default",
+            "booking_center_code": "Singapore",
+            "portfolio_types": ["DISCRETIONARY"],
+            "include_inactive": False,
+            "correlation_id": "corr-pm-book-preview",
+        }
+    ]
+
+
+def test_pm_book_wave_create_persists_resolved_source_owned_cohort(monkeypatch) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, wave_repository) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves",
+            json=_pm_book_request(),
+            headers={"Idempotency-Key": "idem-pm-book-wave"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["durable"] is True
+    assert payload["wave"]["trigger"]["trigger_type"] == "PM_BOOK_REVIEW"
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+@pytest.mark.parametrize(
+    ("request_patch", "expected_status", "expected_code"),
+    [
+        (
+            {"portfolio_manager_id": None},
+            422,
+            "PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
+        ),
+        (
+            {"portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            422,
+            "PM_BOOK_REVIEW_REJECTS_CALLER_PORTFOLIOS",
+        ),
+    ],
+)
+def test_pm_book_wave_preview_rejects_invalid_selector(
+    monkeypatch,
+    request_patch: dict[str, object],
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+    request = {**_pm_book_request(), **request_patch}
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+    assert resolver.calls == []
+
+
+def test_pm_book_wave_preview_reports_incomplete_source_dependency(monkeypatch) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload(supportability_state="INCOMPLETE"))
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=_pm_book_request())
+
+    assert response.status_code == 424
+    assert response.json()["detail"]["code"] == "PM_BOOK_MEMBERSHIP_INCOMPLETE"
 
 
 def test_wave_source_check_classifies_mixed_items_and_attaches_authoritative_refs() -> None:

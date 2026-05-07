@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-07T13:54:49.331236+00:00",
+  "generatedAt": "2026-05-07T15:59:23.824331+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.action",
@@ -5405,6 +5405,22 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.portfolio_types",
+      "canonicalTerm": "portfolio_types",
+      "preferredName": "portfolio_types",
+      "description": "PM-book portfolio types eligible for automatic wave discovery.",
+      "example": [
+        "sample_portfolio_types_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -55609,7 +55625,7 @@
           {
             "name": "portfolios",
             "location": "body",
-            "required": true,
+            "required": false,
             "type": "array",
             "semanticId": "lotus.portfolios",
             "attributeRef": "#/attributeCatalog/lotus.portfolios"
@@ -55685,6 +55701,38 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_manager_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
+            "name": "booking_center_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.booking_center_code",
+            "attributeRef": "#/attributeCatalog/lotus.booking_center_code"
+          },
+          {
+            "name": "portfolio_types",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_types"
           }
         ]
       },
@@ -56440,7 +56488,7 @@
           {
             "name": "portfolios",
             "location": "body",
-            "required": true,
+            "required": false,
             "type": "array",
             "semanticId": "lotus.portfolios",
             "attributeRef": "#/attributeCatalog/lotus.portfolios"
@@ -56516,6 +56564,38 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_manager_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "tenant_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tenant_id",
+            "attributeRef": "#/attributeCatalog/lotus.tenant_id"
+          },
+          {
+            "name": "booking_center_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.booking_center_code",
+            "attributeRef": "#/attributeCatalog/lotus.booking_center_code"
+          },
+          {
+            "name": "portfolio_types",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_types"
           }
         ]
       },

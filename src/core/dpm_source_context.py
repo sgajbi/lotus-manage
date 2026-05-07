@@ -226,6 +226,75 @@ class DpmCoreMandateBindingResponse(BaseModel):
     )
 
 
+class DpmCorePortfolioManagerBookMember(BaseModel):
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    booking_center_code: str = Field(description="Portfolio booking center.")
+    portfolio_type: str = Field(description="Portfolio type used for book filtering.")
+    status: str = Field(description="Portfolio lifecycle status in the PM book.")
+    open_date: Optional[date] = Field(default=None, description="Portfolio open date.")
+    close_date: Optional[date] = Field(default=None, description="Portfolio close date.")
+    base_currency: Optional[str] = Field(default=None, description="Portfolio base currency.")
+    source_record_id: Optional[str] = Field(
+        default=None,
+        description="Core source record identifier for replay and audit.",
+    )
+
+
+class DpmCorePortfolioManagerBookSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for PM-book membership consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    returned_portfolio_count: int = Field(
+        description="Number of portfolio memberships returned by lotus-core."
+    )
+    filters_applied: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Core-applied filters used to resolve the book membership.",
+    )
+
+
+class DpmCorePortfolioManagerBookMembershipResponse(BaseModel):
+    product_name: Literal["PortfolioManagerBookMembership"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    as_of_date: date = Field(description="As-of date used to resolve the PM book.")
+    tenant_id: Optional[str] = Field(default=None, description="Optional tenant selector.")
+    portfolio_manager_id: str = Field(description="Portfolio manager identifier.")
+    booking_center_code: Optional[str] = Field(
+        default=None,
+        description="Optional booking-center filter.",
+    )
+    members: list[DpmCorePortfolioManagerBookMember] = Field(
+        description="Resolved PM-book portfolio memberships from lotus-core."
+    )
+    supportability: DpmCorePortfolioManagerBookSupportability = Field(
+        description="Completeness and readiness posture for PM-book membership."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+    source_batch_fingerprint: Optional[str] = Field(
+        default=None,
+        description="Core source-batch fingerprint for replay and evidence tie-out.",
+    )
+    snapshot_id: Optional[str] = Field(
+        default=None,
+        description="Core snapshot identifier for the resolved PM-book membership.",
+    )
+
+
 class DpmCoreInstrumentEligibilityRecord(BaseModel):
     security_id: str = Field(description="Core-governed security identifier.")
     found: bool = Field(description="Whether lotus-core found an effective eligibility profile.")

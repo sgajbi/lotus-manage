@@ -91,8 +91,9 @@ evidence, and supported-feature promotion.
   evidence, pre-execution cancellation, product-safe supportability diagnostics, bounded wave
   supportability telemetry,
   repository-backed search/detail/item/proof-pack/supportability read models, OpenAPI
-  certification, aggregate reconciliation, hardening review, and downstream Gateway/Workbench
-  RFC-0098 wave realization addenda are complete for explicit portfolio-list waves. PM-book/CIO automatic cohort
+  certification, aggregate reconciliation, hardening review, downstream Gateway/Workbench
+  RFC-0098 wave realization addenda, and source-owned `PM_BOOK_REVIEW` wave discovery through
+  lotus-core `PortfolioManagerBookMembership:v1` are complete. CIO automatic cohort
   discovery is deferred until source-owning products are proven. Full Gateway/Workbench product
   support remains proposed until downstream implementation and canonical front-office proof are
   complete.

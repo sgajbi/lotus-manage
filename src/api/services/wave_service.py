@@ -5,6 +5,7 @@ import json
 import uuid
 from collections import Counter
 from datetime import datetime, timezone
+from typing import cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service, proof_pack_service
@@ -28,6 +29,7 @@ from src.core.waves import (
     DpmWaveSourceRef,
     DpmWaveVersionConflictError,
     DpmWaveTrigger,
+    WaveTriggerType,
     WaveItemState,
     WaveState,
     apply_wave_transition,
@@ -36,7 +38,7 @@ from src.core.waves import (
 from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
 
-SUPPORTED_CREATE_TRIGGER_TYPES = {"EXPLICIT_PORTFOLIO_LIST"}
+SUPPORTED_CREATE_TRIGGER_TYPES = {"EXPLICIT_PORTFOLIO_LIST", "PM_BOOK_REVIEW"}
 
 
 class DpmWaveValidationError(ValueError):
@@ -64,7 +66,8 @@ def preview_wave(
     portfolios: list[dict[str, object]],
     mandate_repository: DpmMandateRepository,
 ) -> DpmRebalanceWave:
-    _validate_trigger(trigger_type)
+    _validate_trigger(trigger_type, portfolios=portfolios)
+    validated_trigger_type = cast(WaveTriggerType, trigger_type)
     items = [
         _build_item(
             index=index,
@@ -77,7 +80,7 @@ def preview_wave(
         wave_id=f"dwv_preview_{uuid.uuid4().hex[:12]}",
         state="DRAFT",
         trigger=DpmWaveTrigger(
-            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_type=validated_trigger_type,
             trigger_id=trigger_id,
             rationale=rationale,
             source_refs=_trigger_source_refs(portfolios),
@@ -1381,11 +1384,16 @@ def _event(
     )
 
 
-def _validate_trigger(trigger_type: str) -> None:
+def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:
     if trigger_type not in SUPPORTED_CREATE_TRIGGER_TYPES:
         raise DpmWaveValidationError(
             "NOT_SUPPORTED_TRIGGER",
             f"Trigger type {trigger_type} is not supported for RFC-0041 Slice 4.",
+        )
+    if not portfolios:
+        raise DpmWaveValidationError(
+            "AFFECTED_PORTFOLIO_SET_EMPTY",
+            f"Trigger type {trigger_type} requires at least one source-backed portfolio.",
         )
 
 

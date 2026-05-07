@@ -91,9 +91,11 @@ internal handoff evidence, retrieve/search/item/proof-pack/report-input/supporta
 Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway composition,
 Workbench first-wave command-center UX, and wave report materialization in `lotus-report`,
 `lotus-render`, and `lotus-archive` are implementation-backed, merged, validated, and
-wiki-published. Automatic PM-book/CIO/risk-event cohort discovery, owning-service risk/performance
-aggregate enrichment, AI memo generation from wave evidence, and external OMS execution remain
-unpromoted. RFC-0042 is `DONE` for manage backend authority:
+wiki-published. PM-book cohort discovery is implemented for `PM_BOOK_REVIEW` through the
+source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO/risk-event cohort
+discovery, owning-service risk/performance aggregate enrichment, AI memo generation from wave
+evidence, and external OMS execution remain unpromoted. RFC-0042 is `DONE` for manage backend
+authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
 and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
