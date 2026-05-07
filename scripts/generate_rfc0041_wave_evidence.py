@@ -152,6 +152,36 @@ def _rebalance_request(token: str) -> dict[str, Any]:
     }
 
 
+def _analytics_authority_context(token: str) -> dict[str, Any]:
+    return {
+        "risk_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-risk",
+            "source_product_name": "ConcentrationAnalysis",
+            "source_product_version": "v1",
+            "source_id": f"risk-rfc0041-{token}",
+            "content_hash": f"sha256:risk-rfc0041-{token}",
+            "concentration_breaches": 0,
+            "concentration_hhi_delta": "125.50",
+            "top_position_weight_proposed": "0.2100",
+            "issuer_coverage_status": "complete",
+            "reason_codes": ["LOTUS_RISK_CONCENTRATION_READY"],
+        },
+        "performance_context": {
+            "supportability_status": "DEGRADED",
+            "source_system": "lotus-performance",
+            "source_product_name": "PerformanceBenchmarkContext",
+            "source_product_version": "v1",
+            "source_id": f"performance-rfc0041-{token}",
+            "content_hash": f"sha256:performance-rfc0041-{token}",
+            "benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40",
+            "active_return": "-0.0125",
+            "underperformance_flag": True,
+            "reason_codes": ["PERFORMANCE_CONTEXT_STALE"],
+        },
+    }
+
+
 def _state_counts(wave_response: dict[str, Any]) -> dict[str, int]:
     return cast(dict[str, int], wave_response["wave"]["aggregate_metrics"]["state_counts"])
 
@@ -272,11 +302,12 @@ def _generate_wave_lifecycle(
             expected_status=200,
             json_body={
                 "actor_id": "rfc0041_evidence",
-                "methods": ["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE", "MIN_TURNOVER"],
+                "methods": ["RISK_AWARE", "MIN_TURNOVER"],
                 "item_inputs": [
                     {
                         "wave_item_id": ready_item["wave_item_id"],
                         "stateless_input": _rebalance_request(token),
+                        "authority_context": _analytics_authority_context(token),
                     }
                 ],
             },
@@ -285,6 +316,16 @@ def _generate_wave_lifecycle(
     )
     manifest_files.append(_write_json(output_dir, "05-wave-simulate.json", simulated))
     _assert(_state_counts(simulated).get("SIMULATED") == 1, "ready item was not simulated")
+    source_analytics = simulated["wave"]["aggregate_metrics"]["source_analytics"]
+    families = {entry["source_family"]: entry for entry in source_analytics}
+    _assert(
+        families["RISK"]["supportability_state"] == "READY",
+        "risk source analytics was not ready",
+    )
+    _assert(
+        families["PERFORMANCE"]["supportability_state"] == "DEGRADED",
+        "performance source analytics degraded posture was not preserved",
+    )
     simulated_item = _selected_ready_item(simulated)
     alternative_set_id = str(simulated_item["alternative_set_id"])
 
@@ -495,6 +536,7 @@ def _generate_wave_lifecycle(
         "final_wave_state": handoff["wave"]["state"],
         "cancel_wave_state": cancelled["wave"]["state"],
         "final_item_state_counts": handoff["wave"]["aggregate_metrics"]["state_counts"],
+        "source_analytics": handoff["wave"]["aggregate_metrics"]["source_analytics"],
         "supportability_state": supportability["supportability_state"],
         "supportability_reason": supportability["reason"],
         "proof_pack_linked_item_count": proof_posture["linked_item_count"],
@@ -550,6 +592,8 @@ def _openapi_certification(client: httpx.Client) -> dict[str, Any]:
 
 def _aggregate_reconciliation(lifecycle: dict[str, Any]) -> dict[str, Any]:
     counts = cast(dict[str, int], lifecycle["final_item_state_counts"])
+    source_analytics = cast(list[dict[str, Any]], lifecycle["source_analytics"])
+    source_families = {entry["source_family"]: entry for entry in source_analytics}
     item_total = sum(counts.values())
     ready_total = counts.get("HANDOFF_READY", 0)
     blocked_total = counts.get("SOURCE_BLOCKED", 0) + counts.get("SIMULATION_BLOCKED", 0)
@@ -558,9 +602,16 @@ def _aggregate_reconciliation(lifecycle: dict[str, Any]) -> dict[str, Any]:
         "item_total": item_total,
         "ready_total": ready_total,
         "blocked_total": blocked_total,
+        "source_analytics_families": sorted(source_families),
+        "risk_source_state": source_families.get("RISK", {}).get("supportability_state"),
+        "performance_source_state": source_families.get("PERFORMANCE", {}).get(
+            "supportability_state"
+        ),
         "passed": item_total == 4
         and ready_total == 1
         and blocked_total == 1
+        and source_families.get("RISK", {}).get("supportability_state") == "READY"
+        and source_families.get("PERFORMANCE", {}).get("supportability_state") == "DEGRADED"
         and lifecycle["external_execution_claimed"] is False,
     }
 
@@ -573,6 +624,10 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
         "wave_reached_handoff_ready": lifecycle["final_wave_state"] == "HANDOFF_READY",
         "blocked_exceptions_remain_visible": lifecycle["supportability_state"] == "blocked",
         "proof_pack_linkage_present": lifecycle["proof_pack_linked_item_count"] == 1,
+        "source_owned_analytics_aggregated": (
+            reconciliation["risk_source_state"] == "READY"
+            and reconciliation["performance_source_state"] == "DEGRADED"
+        ),
         "handoff_no_external_execution_claim": lifecycle["external_execution_claimed"] is False,
         "cancel_transition_proven": lifecycle["cancel_wave_state"] == "CANCELLED",
         "openapi_certification_passed": openapi["passed"] is True,
@@ -603,19 +658,26 @@ def build_critical_review(manifest: dict[str, Any]) -> dict[str, Any]:
         {
             "finding_id": "RFC0041-LIVE-004",
             "severity": "info",
+            "status": "passed" if checks["source_owned_analytics_aggregated"] else "failed",
+            "summary": "Wave aggregate metrics preserve source-owned risk and performance analytics supportability without recalculating analytics in manage.",
+            "evidence": reconciliation["source_analytics_families"],
+        },
+        {
+            "finding_id": "RFC0041-LIVE-005",
+            "severity": "info",
             "status": "passed" if checks["handoff_no_external_execution_claim"] else "failed",
             "summary": "Operations handoff evidence is internal-only and carries no external execution claim.",
             "evidence": {"handoff_ref_count": lifecycle["handoff_ref_count"]},
         },
         {
-            "finding_id": "RFC0041-LIVE-005",
+            "finding_id": "RFC0041-LIVE-006",
             "severity": "info",
             "status": "passed" if checks["cancel_transition_proven"] else "failed",
             "summary": "A separate durable wave was cancelled before downstream work and preserved the no-external-execution boundary.",
             "evidence": lifecycle["cancel_wave_id"],
         },
         {
-            "finding_id": "RFC0041-LIVE-006",
+            "finding_id": "RFC0041-LIVE-007",
             "severity": "controlled_gap",
             "status": "accepted_boundary",
             "summary": "Gateway and Workbench realization are planned through downstream RFC-0098 addenda; manage live proof does not claim UI product support.",

@@ -312,6 +312,7 @@ def _apply_supportability(
         risk_context=(
             authority_context.risk_context if method == ConstructionMethod.RISK_AWARE else None
         ),
+        performance_context=authority_context.performance_context,
         performance_required=False,
         liquidity_context=(
             authority_context.liquidity_context
@@ -500,6 +501,7 @@ def _authority_context_for_method(
             regime_context = None
     return ConstructionAuthorityContext(
         risk_context=risk_context,
+        performance_context=authority_context.performance_context,
         liquidity_context=liquidity_context,
         currency_overlay_context=currency_context,
         regime_stress_context=regime_context,

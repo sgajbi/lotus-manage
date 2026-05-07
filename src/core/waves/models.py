@@ -150,6 +150,59 @@ class DpmRebalanceWaveItem(BaseModel):
     )
 
 
+class DpmWaveSourceAnalyticsSummary(BaseModel):
+    source_family: Literal["RISK", "PERFORMANCE"] = Field(
+        description="Owning analytics source family represented by this aggregate.",
+        examples=["RISK"],
+    )
+    supportability_state: str = Field(
+        description="Worst source-owned supportability posture represented by the aggregate.",
+        examples=["READY"],
+    )
+    item_count: int = Field(
+        description="Wave items with source-owned analytics evidence for this family.",
+        examples=[2],
+    )
+    ready_item_count: int = Field(
+        description="Items with READY source-owned analytics evidence.",
+        examples=[1],
+    )
+    degraded_item_count: int = Field(
+        description="Items with DEGRADED source-owned analytics evidence.",
+        examples=[1],
+    )
+    blocked_item_count: int = Field(
+        description="Items with BLOCKED source-owned analytics evidence.",
+        examples=[0],
+    )
+    pending_review_item_count: int = Field(
+        description="Items with PENDING_REVIEW source-owned analytics evidence.",
+        examples=[0],
+    )
+    source_systems: list[str] = Field(
+        default_factory=list,
+        description="Owning source systems represented in this aggregate.",
+        examples=[["lotus-risk"]],
+    )
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Source refs for source-owned analytics evidence.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Bounded source-owner reason codes represented by this aggregate.",
+        examples=[["LOTUS_RISK_CONCENTRATION_READY"]],
+    )
+    source_measures: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description=(
+            "Source-emitted scalar values grouped by measure name. Manage records values for "
+            "lineage and cockpit display; it does not recalculate risk or performance."
+        ),
+        examples=[{"concentration_hhi_delta": ["125.50"]}],
+    )
+
+
 class DpmWaveAggregateMetrics(BaseModel):
     item_count: int = Field(description="Total item count in the wave.", examples=[2])
     state_counts: dict[str, int] = Field(
@@ -171,6 +224,13 @@ class DpmWaveAggregateMetrics(BaseModel):
     source_degraded_item_count: int = Field(
         description="Items with degraded source posture.",
         examples=[0],
+    )
+    source_analytics: list[DpmWaveSourceAnalyticsSummary] = Field(
+        default_factory=list,
+        description=(
+            "Risk and performance source-owner aggregate evidence derived from item analytics "
+            "lineage. Empty means no source-owned analytics evidence was supplied or resolved."
+        ),
     )
 
 

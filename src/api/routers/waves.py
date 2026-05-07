@@ -12,12 +12,14 @@ from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
     get_proof_pack_repository,
+    get_risk_authority_client,
     get_wave_repository,
 )
 from src.api.request_models import RebalanceRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
+from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -30,6 +32,7 @@ from src.core.waves import (
     DpmWaveSourceRef,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
@@ -316,6 +319,15 @@ class DpmWaveSimulationItemInput(BaseModel):
             "Complete RFC-0039 stateless construction input for this ready item. "
             "Wave simulation does not synthesize holdings, market data, or shelf data."
         )
+    )
+    authority_context: ConstructionAuthorityContext | None = Field(
+        default=None,
+        description=(
+            "Optional source-backed risk/performance authority context for this item. "
+            "Risk context may also be resolved from lotus-risk when `DPM_RISK_BASE_URL` is "
+            "configured and `RISK_AWARE` is requested; performance context must be supplied "
+            "from lotus-performance until a dedicated manage performance client is promoted."
+        ),
     )
 
 
@@ -1072,15 +1084,20 @@ def simulate_wave(
         ),
     ] = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    item_inputs: dict[str, RebalanceRequest] = {}
+    item_inputs: dict[str, RebalanceRequest | wave_service.DpmWaveSimulationInput] = {}
     for item_input in request.item_inputs:
+        simulation_input = wave_service.DpmWaveSimulationInput(
+            stateless_input=item_input.stateless_input,
+            authority_context=item_input.authority_context,
+        )
         if item_input.wave_item_id:
-            item_inputs[item_input.wave_item_id] = item_input.stateless_input
+            item_inputs[item_input.wave_item_id] = simulation_input
         if item_input.portfolio_id:
-            item_inputs[item_input.portfolio_id] = item_input.stateless_input
+            item_inputs[item_input.portfolio_id] = simulation_input
     try:
         wave, replayed = wave_service.simulate_wave(
             wave_id=wave_id,
@@ -1091,6 +1108,7 @@ def simulate_wave(
             construction_repository=construction_repository,
             run_service=run_service,
             wave_repository=wave_repository,
+            risk_authority_client=risk_authority_client,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise HTTPException(

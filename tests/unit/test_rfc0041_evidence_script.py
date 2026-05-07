@@ -9,6 +9,20 @@ from scripts.generate_rfc0041_wave_evidence import (
 )
 
 
+SOURCE_ANALYTICS = [
+    {
+        "source_family": "RISK",
+        "supportability_state": "READY",
+        "source_refs": [{"source_system": "lotus-risk"}],
+    },
+    {
+        "source_family": "PERFORMANCE",
+        "supportability_state": "DEGRADED",
+        "source_refs": [{"source_system": "lotus-performance"}],
+    },
+]
+
+
 def test_rfc0041_evidence_script_hashes_stable_json() -> None:
     first = _stable_json({"b": 2, "a": 1})
     second = _stable_json({"a": 1, "b": 2})
@@ -28,6 +42,7 @@ def test_rfc0041_aggregate_reconciliation_requires_exceptions_and_no_execution_c
                 "REVIEW_REQUIRED": 1,
                 "SOURCE_BLOCKED": 1,
             },
+            "source_analytics": SOURCE_ANALYTICS,
             "external_execution_claimed": False,
         }
     )
@@ -40,6 +55,7 @@ def test_rfc0041_aggregate_reconciliation_requires_exceptions_and_no_execution_c
     failed = _aggregate_reconciliation(
         {
             "final_item_state_counts": {"HANDOFF_READY": 1, "SOURCE_BLOCKED": 1},
+            "source_analytics": SOURCE_ANALYTICS,
             "external_execution_claimed": True,
         }
     )
@@ -61,6 +77,7 @@ def test_rfc0041_critical_review_is_machine_readable_and_markdown_renderable() -
                 "REVIEW_REQUIRED": 1,
                 "SOURCE_BLOCKED": 1,
             },
+            "source_analytics": SOURCE_ANALYTICS,
             "supportability_state": "blocked",
             "supportability_reason": "wave_blocked_items",
             "proof_pack_linked_item_count": 1,
@@ -68,7 +85,12 @@ def test_rfc0041_critical_review_is_machine_readable_and_markdown_renderable() -
             "external_execution_claimed": False,
         },
         "openapi_certification": {"passed": True, "missing": [], "weak": []},
-        "aggregate_reconciliation": {"passed": True},
+        "aggregate_reconciliation": {
+            "passed": True,
+            "risk_source_state": "READY",
+            "performance_source_state": "DEGRADED",
+            "source_analytics_families": ["PERFORMANCE", "RISK"],
+        },
     }
 
     review = build_critical_review(manifest)

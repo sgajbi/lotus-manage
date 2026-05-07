@@ -35,15 +35,15 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: `main` after RFC41-WTBD-001 source-owned PM-book wave discovery was merged to
-`lotus-manage`, CI-proven, and repo-local wiki source was published on 2026-05-07.
+Snapshot basis: this RFC41-WTBD-004 slice after source-owned wave risk/performance aggregate
+enrichment was implemented locally and prepared for PR merge/publication.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 25 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 26 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed, after this slice lands. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 31 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 30 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -57,11 +57,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list and source-owned PM-book wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
-| 2 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
-| 3 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
-| 4 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
-| 5 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
+| 1 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
+| 2 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 3 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
+| 4 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
+| 5 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
 
 Execution rule:
 
@@ -2206,7 +2206,7 @@ downstream product-surface implementation, or owning-service materialization out
 | RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` source authority consumed by `lotus-manage` | Completed, merged, CI-proven, and wiki-published through `lotus-core` PR #339 and `lotus-manage` PR #126 | `lotus-core` now owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it for `PM_BOOK_REVIEW` wave preview/create without caller-supplied portfolio fabrication. |
 | RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` or CIO model-event authority | Deferred with no support claim | Model targets and mandate bindings exist, but no certified source product returns all portfolios affected by a model-change event with lineage and reconciliation proof. |
 | RFC41-WTBD-003 | Tactical house-view, risk-event, and implicit bulk-campaign cohorts | CIO/risk/campaign source owners, with likely `lotus-risk` involvement for risk events | Deferred with no support claim | No governed scenario, risk-event, or campaign cohort authority exists for manage to consume. |
-| RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Deferred unless owning-service contracts are consumed | RFC-0041 aggregate impact must not be calculated from manage-local approximations. Risk and performance figures need owning-service certified contracts. |
+| RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Completed in this slice for manage aggregate authority | RFC-0041 aggregate impact is carried from source-owned risk/performance authority context into wave aggregate metrics with supportability, lineage refs, source reason codes, and source-emitted scalar values. Manage does not calculate risk or performance methodology locally. |
 | RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196 | Completed after manage contracts stabilized. Gateway composes manage truth without becoming wave authority or reconstructing state. |
 | RFC41-WTBD-006 | Workbench wave command center | `lotus-workbench` with `lotus-gateway`, `lotus-platform`, and `lotus-manage` support | Completed, merged, CI-proven, live-proven, and wiki-published through Manage PR #120, Gateway PR #197, Platform PR #306, and Workbench PR #165 | Workbench now consumes Gateway/BFF routes only and provides the PM operating cockpit over explicit portfolio-list waves. |
 | RFC41-WTBD-007 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | The full product outcome requires both downstream implementations and canonical front-office evidence, not manage backend proof alone. |
@@ -2334,31 +2334,63 @@ Target business outcome:
 Wave previews and simulations can show governed risk and performance impact using authoritative
 analytics rather than manage-local estimates.
 
-Why it cannot be done now:
+Completion result:
 
-Risk and performance impact are not manage-owned calculations. RFC-0041 can preserve posture and
-supportability, but it must not fabricate risk or performance figures from construction inputs.
+Implemented in this slice for manage backend wave aggregate authority. Wave simulation item input
+can now carry source-backed `ConstructionAuthorityContext` evidence for `lotus-risk` and
+`lotus-performance`; `RISK_AWARE` wave simulation can also use the existing configured
+`DPM_RISK_BASE_URL` lotus-risk concentration authority path. `DpmWaveAggregateMetrics` now exposes
+`source_analytics` entries for `RISK` and `PERFORMANCE` with supportability state, represented item
+counts, source systems, source refs, bounded source-owner reason codes, and source-emitted scalar
+values. Manage stores and aggregates those values for command-center lineage and display; it does
+not recalculate risk or performance methodology.
 
-Dependencies before implementation:
+Implemented controls:
 
-1. `lotus-risk` exposes certified wave-compatible risk impact contracts,
-2. `lotus-performance` exposes certified wave-compatible performance impact contracts,
-3. request identity, as-of date, benchmark, and method semantics align with manage wave items,
-4. unavailable, degraded, stale, and partial analytics states are contractually represented,
-5. Gateway composition preserves owning-service supportability rather than flattening it.
+1. `ConstructionAuthorityContext` now includes optional performance authority context alongside
+   risk, liquidity, currency-overlay, and regime-stress context.
+2. `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` carry optional source product,
+   source version, source id, and content hash fields so wave aggregates can expose lineage without
+   raw upstream payloads.
+3. Wave simulation accepts per-item authority context and passes it into RFC-0039 construction
+   generation.
+4. Wave item diagnostics store bounded `source_analytics` evidence derived from construction
+   authority context and enrichment supportability.
+5. Wave aggregate metrics reconcile source-owned analytics across items without summing or
+   recomputing risk/performance values.
+6. The RFC-0041 live-evidence script now requires both risk and performance source analytics in its
+   aggregate reconciliation and critical-review checks.
 
-Expected implementation wave:
+Proof:
 
-Implement after risk/performance contracts exist. The manage slice should consume owning-service
-results, attach lineage/supportability to wave aggregates, and keep unsupported states explicit.
+1. `tests/unit/dpm/api/test_waves_api.py` proves wave simulation aggregates source-owned risk and
+   performance context, preserves a `READY` risk state and `DEGRADED` performance state, attaches
+   source refs, carries source reason codes, and exposes only source-emitted scalar values.
+2. `tests/unit/test_rfc0041_evidence_script.py` proves the live-evidence critical review now fails
+   if source-owned analytics are missing from aggregate reconciliation.
+3. `scripts/generate_rfc0041_wave_evidence.py` now drives the live proof through `RISK_AWARE` and
+   `MIN_TURNOVER` with source-backed risk/performance authority context and records analytics
+   posture under `output/rfc0041-wave-proof/<timestamp>/`.
+4. Targeted local proof for this slice:
+   `python -m pytest tests/unit/test_rfc0041_evidence_script.py tests/unit/dpm/api/test_waves_api.py -q`
+   passed with `45 passed`.
+5. Broader targeted proof:
+   `python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/infrastructure/test_risk_authority_client.py tests/unit/dpm/construction/test_enrichment.py -q`
+   passed with `74 passed`.
+6. Live manage proof:
+   `python scripts/generate_rfc0041_wave_evidence.py --base-url http://127.0.0.1:8001`
+   passed against canonical manage runtime and wrote
+   `output/rfc0041-wave-proof/20260507-224144/manifest.json`; aggregate reconciliation passed with
+   `risk_source_state=READY`, `performance_source_state=DEGRADED`, and critical review
+   `passed`.
 
-Promotion proof:
+Remaining downstream/product realization:
 
-1. risk/performance owner tests and OpenAPI certification,
-2. manage integration tests covering successful and degraded analytics,
-3. aggregate reconciliation evidence,
-4. live proof with mixed analytics availability,
-5. endpoint certification and supported-feature updates.
+1. Gateway must compose `aggregate_metrics.source_analytics` into its wave command-center contract.
+2. Workbench must render the risk/performance analytics posture and degraded states in the wave
+   command center without flattening source supportability.
+3. A future `lotus-performance` dedicated manage client may replace caller-supplied performance
+   authority context when a wave-specific performance-impact product is promoted.
 
 #### RFC41-WTBD-005 - Gateway Wave Composition
 
@@ -2450,9 +2482,9 @@ Promotion proof:
 5. Repo-local wiki source was published after merge for `lotus-manage` (`ed3569b`) and
    `lotus-workbench` (`212f486`). Gateway and Platform required no additional wiki publication for
    this closure slice.
-6. Final closure keeps unsupported scope explicit: CIO/risk-event cohort discovery,
-   owning-service risk/performance aggregate enrichment, AI memo generation from wave evidence, and
-   external OMS execution remain separate WTBDs.
+6. Final closure keeps unsupported scope explicit: CIO/risk-event cohort discovery, AI memo
+   generation from wave evidence, downstream rendering of the source-owned risk/performance
+   analytics posture, and external OMS execution remain separate WTBDs.
 
 #### RFC41-WTBD-007 - Full Front-Office Command-Center Product Support
 

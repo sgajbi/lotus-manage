@@ -123,15 +123,20 @@ Current repository posture:
     repository-backed wave search/detail/item/proof-pack posture/report-input/supportability read models,
     OpenAPI certification, and aggregate reconciliation under
     `output/rfc0041-wave-proof/20260504-231914`. The canonical proof used Postgres-backed manage
-    repositories via `DPM_MANAGE_POSTGRES_DSN`. Wave report materialization is now implemented in
+    repositories via `DPM_MANAGE_POSTGRES_DSN`. Source-owned wave risk/performance aggregate
+    enrichment is implemented for manage aggregate authority: wave simulation accepts per-item
+    `ConstructionAuthorityContext`, `RISK_AWARE` can consume configured lotus-risk concentration
+    authority, and `aggregate_metrics.source_analytics` preserves source-family, supportability,
+    lineage refs, reason codes, and source-emitted scalar values without manage-local risk or
+    performance methodology. Wave report materialization is now implemented in
     owning repositories through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render`
     PR #12, and `lotus-archive` PR #24: manage remains deterministic wave report-input authority,
     while report/render/archive own job materialization, the `rebalance-wave` template, generated
     artifact metadata, retention posture, and archive lifecycle. PM-book discovery is implemented
     for `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`; CIO/risk-event
-    cohort discovery, owning-service risk/performance aggregate enrichment, wave AI memo
-    generation, and external OMS execution remain unpromoted until source products and owning
-    downstream implementations are live-proven.
+    cohort discovery, wave AI memo generation, Gateway/Workbench rendering of wave
+    risk/performance analytics posture, and external OMS execution remain unpromoted until source
+    products and owning downstream implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,

@@ -198,6 +198,7 @@ def _regime_scenario_payload(
 def _risk_context_from_concentration_response(body: dict[str, Any]) -> AuthoritativeRiskContext:
     metadata = _dict_section(body, "metadata")
     supportability = _dict_section(metadata, "calculation_supportability")
+    request_fingerprint = str(metadata.get("request_fingerprint") or "")
     risk_proxy = _dict_section(body, "risk_proxy")
     single_position = _dict_section(body, "single_position_concentration")
     issuer = _dict_section(body, "issuer_concentration")
@@ -219,6 +220,10 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
     return AuthoritativeRiskContext(
         supportability_status=_risk_status_from_supportability(state),
         source_system=str(body.get("source_service") or "lotus-risk"),
+        source_product_name="ConcentrationAnalysis",
+        source_product_version=str(metadata.get("methodology_version") or "v1"),
+        source_id=request_fingerprint or None,
+        content_hash=request_fingerprint or None,
         concentration_breaches=breaches,
         concentration_hhi_delta=Decimal(str(risk_proxy.get("hhi_delta", "0"))),
         top_position_weight_proposed=Decimal(
