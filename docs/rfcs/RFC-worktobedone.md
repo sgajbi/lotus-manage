@@ -35,16 +35,16 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: `main` after RFC40-WTBD-004 proof-pack report materialization was merged across
-`lotus-render`, `lotus-report`, and `lotus-archive`, CI-proven, and repo-local wiki source was
-published on 2026-05-07.
+Snapshot basis: `main` after RFC40-WTBD-005 governed proof-pack AI PM memo support was merged
+across `lotus-ai`, `lotus-gateway`, and `lotus-workbench`, CI-proven, live-proven through
+rebuilt canonical front-office QA, and repo-local wiki source was published on 2026-05-07.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 22 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 23 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 34 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 33 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -58,11 +58,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC40-WTBD-005 - Governed AI PM memo generation from proof-pack evidence | Turns bounded proof-pack AI evidence input into governed narrative support without browser prompt construction. | `lotus-ai`, Gateway, and Workbench implementation with guardrails, provenance, unavailable fallback, and wiki/demo proof. |
-| 2 | RFC41-WTBD-008 - Report materialization from wave/proof-pack evidence | Extends document evidence from individual proof packs into wave operating evidence. | Report/render/archive implementation preserves wave and proof-pack lineage, hashes, supportability, and archive refs. |
-| 3 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
-| 4 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
-| 5 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
+| 1 | RFC41-WTBD-008 - Report materialization from wave/proof-pack evidence | Extends document evidence from individual proof packs into wave operating evidence. | Report/render/archive implementation preserves wave and proof-pack lineage, hashes, supportability, and archive refs. |
+| 2 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
+| 3 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
+| 4 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
+| 5 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
 
 Execution rule:
 
@@ -1691,7 +1691,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | RFC40-WTBD-002 | Workbench proof-pack review UX | `lotus-workbench` | Completed, merged, CI-proven, and wiki-published through `lotus-workbench` PR #156 | Workbench now consumes Gateway/BFF proof-pack contracts only, renders proof-pack identity, supportability, sections, source hashes, Markdown/report/AI posture, and action eligibility without reconstructing sections, hashes, report input, or AI evidence. |
 | RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Completed, merged, CI-proven, live-proven, and wiki-ready through `lotus-gateway` PR #195, `lotus-workbench` PR #156, `lotus-workbench` PR #164, `lotus-manage` PR #117, and platform canonical QA | The first-wave product path now generates and replays proof-pack evidence through Gateway/BFF, renders Workbench proof-pack review over live manage truth, and passes governed canonical front-office QA with `dpm.proof_pack` classified `ready`. Governed AI memo generation, richer source-owner enrichment, transaction-cost authority, client restrictions, sustainability profiles, and cross-RFC portfolio memory remain separate WTBDs. |
 | RFC40-WTBD-004 | Report materialization from `DpmProofPackReportInput` | `lotus-report`, `lotus-render`, `lotus-archive` | Completed, merged, CI-proven, and wiki-published through `lotus-render` PR #11, `lotus-report` PR #90, and `lotus-archive` PR #23 | Manage produces deterministic report input; `lotus-report` consumes it without reconstructing proof-pack evidence, `lotus-render` renders the governed `proof-pack` template, and `lotus-archive` governs the resulting `proof_pack` artifact lifecycle with retention, legal hold, retrieval, purge, and access audit. |
-| RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, later consumed through Gateway/Workbench | Deferred to RFC-0043 / AI owner | Manage produces bounded AI evidence with guardrails; it must not generate AI narrative, prompts, recommendations, or autonomous decisioning. |
+| RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, consumed through Gateway/Workbench | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-ai` PR #61, `lotus-gateway` PR #198, `lotus-workbench` PR #166, and rebuilt platform canonical QA | Manage produces bounded AI evidence with guardrails; `lotus-ai` owns review-gated `dpm_pm_memo.pack@v1` execution, Gateway composes the handoff, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
 | RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Deferred unless owning-service contracts are consumed | RFC-0040 preserves degraded sections where source-backed risk/performance context is missing. Manage must not clone analytics methodology. |
 | RFC40-WTBD-007 | Authoritative transaction-cost curve | Future cost/execution source, likely execution/platform domain | Deferred with no support claim | Manage may expose labelled estimated cost, but no authoritative `TransactionCostCurve:v1` source exists. |
 | RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
@@ -1903,8 +1903,8 @@ Implementation-backed proof:
 Remaining boundaries:
 
 Gateway/Workbench report request UX for pre-trade proof-pack reports is not promoted by this WTBD
-unless a separate product-surface slice exposes it. Governed AI PM memo generation remains
-RFC40-WTBD-005.
+unless a separate product-surface slice exposes it. Governed AI PM memo generation is now closed
+separately by RFC40-WTBD-005.
 
 #### RFC40-WTBD-005 - AI PM Memo Generation From `DpmProofPackAiEvidenceInput`
 
@@ -1913,31 +1913,43 @@ Target business outcome:
 PMs can request governed AI assistance over proof-pack evidence while preserving provenance,
 guardrails, forbidden-field protections, and unsupported-action blocking.
 
-Why it cannot be done now:
+Closure basis:
 
-RFC-0040 correctly stopped at bounded AI evidence input. AI prompts, memos, model invocation,
-guardrail evaluation, and provenance belong to `lotus-ai` and RFC-0043, not manage.
+Completed on 2026-05-07 across the owning repositories:
 
-Dependencies before implementation:
+1. `lotus-ai` PR #61 merged as `942d618a41ae7375fc790995974f8e16db4e2a8b`, adding the
+   review-gated `dpm_pm_memo.pack@v1` workflow-pack execution path for manage-owned
+   `DpmProofPackAiEvidenceInput`,
+2. `lotus-gateway` PR #198 merged as `dc891266ad1dd567f4a0b0d1729d1c60db6cce7a`, adding
+   `POST /api/v1/dpm/command-center/proof-packs/{proof_pack_id}/ai-pm-memo` without
+   reconstructing proof-pack evidence or generating PM memos locally,
+3. `lotus-workbench` PR #166 merged as `243855743380a24e9f7622a1ed7839a50e5604f5`, adding the
+   governed proof-pack panel action and live validation for the Gateway memo handoff without
+   browser prompt construction,
+4. wiki source was synchronized for `lotus-ai`, `lotus-gateway`, and `lotus-workbench`, with
+   `lotus-gateway` wiki publication commit `4d5b9d1` and `lotus-workbench` wiki publication
+   commit `5d8d763`,
+5. rebuilt platform canonical QA passed at
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-210641.json`.
 
-1. RFC-0043 or `lotus-ai` workflow-pack contract,
-2. prompt/model provenance and evidence-hash lineage,
-3. forbidden-field and forbidden-action guardrails enforced in AI service,
-4. unavailable, blocked, redacted, and human-review states,
-5. Gateway/Workbench consumption rules if surfaced.
+Runtime proof:
 
-Expected implementation wave:
+The rebuilt canonical QA run validated the canonical proof pack `dpp_c09f73d0`, classified
+`dpm.proof_pack` as `ready`, and called
+`POST /api/v1/dpm/command-center/proof-packs/dpp_c09f73d0/ai-pm-memo` through Gateway with HTTP
+200. The live Workbench summary recorded `lotus-ai` as source service and workflow-pack run
+`packrun_dpm_pm_memo_air_b69bcfd16d7341b889b0037f884839fa` in `AWAITING_REVIEW` /
+`ACTION_REQUIRED` posture.
 
-Implement in `lotus-ai` after RFC-0043 is tightened or executed. Manage remains the evidence
-source and should not become an AI generation surface.
+Supported boundaries:
 
-Promotion proof:
-
-1. AI guardrail/eval tests,
-2. provenance and evidence-hash proof,
-3. unavailable/blocked-state tests,
-4. Gateway/Workbench integration proof if exposed,
-5. supported-feature language that does not imply autonomous trading or approval authority.
+1. `lotus-manage` remains evidence authority only and does not construct AI prompts, generate
+   memos, score PMs, approve trades, or issue recommendations,
+2. `lotus-gateway` reads manage-owned AI evidence input and invokes `lotus-ai` as the composition
+   owner without rebuilding proof-pack sections, hashes, or report refs,
+3. `lotus-workbench` exposes a bounded request action and renders workflow-pack posture only,
+4. the supported state is review-gated narrative assistance, not autonomous investment advice,
+   client contact, order approval, or execution.
 
 #### RFC40-WTBD-006 - Broader Risk And Performance Proof-Pack Enrichment
 
