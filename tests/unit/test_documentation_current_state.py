@@ -764,9 +764,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 21 |" in work_to_be_done
+    assert "| Done on merged/published truth | 22 |" in work_to_be_done
     assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 35 |" in work_to_be_done
+    assert "| Remaining / open | 34 |" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
@@ -788,6 +788,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "canonical-front-office-qa-20260507-124405.json" in work_to_be_done
     assert "`dpm.proof_pack` as `ready` with proof pack `dpp_c09f73d0`" in work_to_be_done
+    assert "RFC40-WTBD-004 - Report Materialization From `DpmProofPackReportInput`" in (
+        work_to_be_done
+    )
+    assert "Completed on 2026-05-07 across the owning repositories" in work_to_be_done
+    assert "`lotus-render` PR #11" in work_to_be_done
+    assert "`lotus-report` PR #90" in work_to_be_done
+    assert "`lotus-archive` PR #23" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
@@ -820,7 +827,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 21 done on merged/published truth" in supported_features
+    assert "59 WTBD items: 22 done on merged/published truth" in supported_features
     assert "Explicit portfolio-list waves" in supported_features
     assert "Gateway wave composition and first-wave Workbench wave command center support" in (
         supported_features
@@ -834,5 +841,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert (
         "First-wave full proof-pack product realization is supported for the canonical portfolio"
         in (supported_features)
+    )
+    assert "report/render/archive proof-pack materialization in owning services" in (
+        supported_features
     )
     assert "A WTBD is not complete until merged to `main`" in supported_features
