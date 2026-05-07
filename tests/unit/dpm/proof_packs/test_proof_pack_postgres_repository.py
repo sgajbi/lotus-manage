@@ -52,6 +52,11 @@ class _FakeConnection:
             return _FakeCursor(self.proof_packs_by_id.get(str(params[0])))
         if "SELECT payload_json FROM dpm_pre_trade_proof_packs WHERE idempotency_key" in normalized:
             return _FakeCursor(self.proof_packs_by_idempotency.get(str(params[0])))
+        if normalized.startswith("SELECT payload_json FROM dpm_pre_trade_proof_packs WHERE"):
+            rows = list(self.proof_packs_by_id.values())
+            if "portfolio_id = %s" in normalized:
+                rows = [row for row in rows if row["portfolio_id"] == params[0]]
+            return _FakeCursor(rows=rows)
         if normalized.startswith("SELECT proof_pack_id, retention_policy, retention_expires_at"):
             return _FakeCursor(self.proof_packs_by_id.get(str(params[0])))
         if normalized.startswith("INSERT INTO dpm_pre_trade_proof_pack_refs"):
@@ -66,6 +71,9 @@ class _FakeConnection:
             return _FakeCursor()
         row = {
             "proof_pack_id": proof_pack_id,
+            "portfolio_id": str(params[1]),
+            "mandate_id": params[2],
+            "status": str(params[4]),
             "content_hash": str(params[5]),
             "idempotency_key": params[6],
             "retention_policy": params[7],
@@ -129,6 +137,7 @@ def test_postgres_proof_pack_repository_round_trips_pack_retention_and_refs(
         repository.get_proof_pack_by_idempotency(idempotency_key="idem-proof-pack-postgres")
         == proof_pack
     )
+    assert repository.list_proof_packs(portfolio_id=proof_pack.portfolio_id) == [proof_pack]
     assert (
         repository.get_retention_metadata(proof_pack_id=proof_pack.proof_pack_id).retention_policy
         == RETENTION_POLICY_PRE_TRADE_PROOF_PACK

@@ -35,15 +35,15 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: this RFC40-WTBD-006 slice after source-owned proof-pack risk/performance
-enrichment was implemented locally and prepared for PR merge/publication.
+Snapshot basis: this RFC40-WTBD-010 manage portfolio-memory foundation slice after the
+source-backed manage read model was implemented locally and prepared for PR merge/publication.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
 | Done on merged/published truth | 27 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed, after this slice lands. |
-| Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 29 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
+| Remaining / open | 28 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -51,13 +51,14 @@ Partial / in-progress items:
 | --- | --- | --- |
 | RFC37-WTBD-001 | `lotus-manage` RFC-0042 backend authority and first-wave outcome product path are implemented. | Complete richer downstream/source-owner realization across all outcome learning loops. |
 | RFC40-WTBD-009 | First-wave regime scenario evidence exists through RFC-0039 selected alternatives. | Direct proof-pack scenario contribution, CIO approval, and richer source-owner proof-pack enrichment remain future work. |
+| RFC40-WTBD-010 | `lotus-manage` now exposes `/api/v1/rebalance/portfolio-memory/{portfolio_id}` as a deterministic source-backed read model over persisted proof packs, proof-pack timelines, rebalance waves, internal handoffs, and outcome-review events. | Gateway/Workbench product realization, canonical browser proof, mandate-monitoring exception timeline nodes, and any cross-app retention/audit policy still need owning-app implementation before full support can be claimed. |
 | RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow source-family adapters are implemented. | Aggregated risk/performance, tax, FX, cash movement, liquidity, and execution methodologies remain source-owner work. |
 
 Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. Manage backend foundation is now implemented; downstream product realization is next. | Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
 | 2 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
 | 3 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
 | 4 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
@@ -1697,7 +1698,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | RFC40-WTBD-007 | Authoritative transaction-cost curve | Future cost/execution source, likely execution/platform domain | Deferred with no support claim | Manage may expose labelled estimated cost, but no authoritative `TransactionCostCurve:v1` source exists. |
 | RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
 | RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority, consumed by `lotus-manage` construction evidence | Partially implemented through selected RFC-0039 alternatives | `RegimeScenarioPackEvaluation:v1` now supplies first-wave scenario-pack evaluation for `REGIME_STRESS_AWARE` alternatives. Proof packs can preserve that selected-alternative context, but richer scenario contribution, CIO approval, and direct proof-pack enrichment remain future source depth. |
-| RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, and outcome events | `lotus-manage` with downstream/source participants | Proposed strategic extension | RFC-0040 creates proof-pack-local timeline/lineage. Cross-RFC portfolio memory needs RFC-0041 wave links, RFC-0042 outcome events, and product-surface realization before support can be claimed. |
+| RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, and outcome events | `lotus-manage` with downstream/source participants | Partially implemented in this slice for manage backend authority | Manage now exposes a deterministic source-backed portfolio-memory read model over persisted proof packs, proof-pack-local timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events. Full product support still needs Gateway/Workbench realization, canonical browser proof, mandate-monitoring exception nodes, and cross-app retention/audit policy. |
 
 ### Detailed Follow-Up Items
 
@@ -2124,27 +2125,39 @@ Lotus can show a durable portfolio-management memory across mandate health, moni
 construction alternatives, proof packs, rebalance waves, approvals, operations handoff, and
 post-trade outcomes.
 
-Why it cannot be done now:
+Current implementation-backed scope:
 
-RFC-0040 builds proof-pack-local lineage and decision timeline, but the cross-RFC memory requires
-RFC-0041 wave linkage, RFC-0042 outcome feedback, downstream product surfaces, and careful
-event-retention semantics. Promoting it from proof-pack evidence alone would overstate the current
-system.
+This slice adds the manage-owned portfolio-memory foundation without inventing source truth:
 
-Dependencies before implementation:
+1. `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}` returns a deterministic event timeline
+   for one portfolio,
+2. source events are composed from persisted RFC-0040 proof packs, proof-pack-local decision
+   timelines, RFC-0041 rebalance wave events, internal operations handoff refs, and RFC-0042
+   outcome-review events,
+3. proof-pack persistence now supports bounded portfolio/mandate/status search in both in-memory
+   and PostgreSQL repository implementations,
+4. event nodes preserve source systems, source types, source ids, content hashes, reason codes,
+   supportability state, and bounded metadata,
+5. the read model does not compute risk, performance, execution, tax, cash, FX, or source-owner
+   methodology locally.
 
-1. RFC-0041 wave events consumed as source-backed timeline nodes,
-2. RFC-0042 post-trade outcome events defined and implemented,
-3. event identity, retention, redaction, and audit policy across apps,
-4. Gateway/Workbench timeline views consume authoritative events only,
-5. report/AI consumers use timeline evidence without reconstructing facts.
+Remaining dependencies before full support claim:
 
-Expected implementation wave:
+1. Gateway composition over the manage portfolio-memory endpoint,
+2. Workbench timeline/product surface that consumes Gateway/BFF only,
+3. canonical browser proof with demo-ready portfolio-memory screenshots,
+4. mandate-monitoring exception and mandate-health event nodes when their retention semantics are
+   ready for portfolio-memory promotion,
+5. cross-app event identity, retention, redaction, and audit policy,
+6. report/AI consumers use timeline evidence without reconstructing facts.
 
-Treat this as a later cross-RFC portfolio-memory slice after RFC-0042 is implemented and downstream
-product surfaces exist.
+Implementation proof:
 
-Promotion proof:
+1. `tests/unit/dpm/api/test_portfolio_memory_api.py`,
+2. `tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+3. `tests/unit/dpm/proof_packs/test_proof_pack_postgres_repository.py`.
+
+Promotion proof still required:
 
 1. event contract and retention tests,
 2. manage/Gateway/Workbench integration tests,
@@ -2163,16 +2176,17 @@ Recommended order:
 5. implement AI PM memo generation in `lotus-ai` under RFC-0043 controls,
 6. add broader risk/performance enrichment from owning analytics services,
 7. add transaction-cost, sustainability/restriction, and scenario-pack source products,
-8. revisit decision timeline and portfolio memory after RFC-0041 and RFC-0042 event sources are
-   fully available.
+8. implement Gateway and Workbench portfolio-memory product realization over the new manage
+   read model.
 
 Rationale:
 
 Gateway and Workbench can realize the already-supported manage proof-pack backend before broader
 source enrichment exists. Report and AI should follow their owning-service controls. Risk,
 performance, cost, sustainability, restriction, and scenario enrichment should be promoted only
-after source authorities are certified. Portfolio memory should wait until wave and post-trade
-outcome events exist.
+after source authorities are certified. Portfolio memory now has a manage-owned read model because
+wave and post-trade outcome events exist. Full product support should wait until Gateway/Workbench
+realization and canonical browser proof are merged and published.
 
 ### RFC-0040 Promotion Checklist For Any Future Item
 

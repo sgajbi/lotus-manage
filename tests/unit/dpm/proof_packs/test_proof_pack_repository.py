@@ -91,10 +91,12 @@ def test_in_memory_repository_round_trips_immutable_proof_pack_and_retention() -
     by_idempotency = repository.get_proof_pack_by_idempotency(
         idempotency_key="idem-proof-pack-repository"
     )
+    listed = repository.list_proof_packs(portfolio_id="pf_repo_1")
     retention = repository.get_retention_metadata(proof_pack_id=proof_pack.proof_pack_id)
 
     assert by_id == proof_pack
     assert by_idempotency == proof_pack
+    assert listed == [proof_pack]
     assert by_id is not proof_pack
     assert retention is not None
     assert retention.retention_policy == "DPM_PRE_TRADE_PROOF_PACK_7Y"

@@ -42,6 +42,7 @@ from src.api.routers.integration_capabilities import (
 )
 from src.api.routers.mandates import router as mandates_router
 from src.api.routers.monitoring import router as monitoring_router
+from src.api.routers.portfolio_memory import router as portfolio_memory_router
 from src.api.routers.proof_packs import router as proof_pack_router
 from src.api.routers.outcome_reviews import (
     router as outcome_reviews_router,
@@ -201,6 +202,7 @@ app.include_router(waves_router, prefix="/api/v1")
 app.include_router(outcome_reviews_router, prefix="/api/v1")
 app.include_router(outcome_review_run_lookup_router, prefix="/api/v1")
 app.include_router(outcome_review_wave_lookup_router, prefix="/api/v1")
+app.include_router(portfolio_memory_router, prefix="/api/v1")
 
 
 @app.get(
