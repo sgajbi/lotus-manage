@@ -642,13 +642,17 @@ def cancel_wave(
     return cancelled, False
 
 
+def wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
+    return _wave_supportability_payload(wave)
+
+
 def wave_supportability(
     *,
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return _wave_supportability_payload(wave)
+    return wave_supportability_payload(wave)
 
 
 def search_waves(

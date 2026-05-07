@@ -1628,6 +1628,9 @@ Functional coverage:
 - source-backed candidate selection from caller-supplied source refs,
 - source-backed candidate enrichment from an existing RFC-0038 mandate digital twin,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
+- preview, create, and workflow mutation responses include a manage-owned product-safe
+  `supportability` envelope derived from current item states, so Gateway and Workbench can
+  preserve source authority instead of reconstructing readiness,
 - unsupported trigger rejection with `NOT_SUPPORTED_TRIGGER`,
 - durable create with idempotent replay,
 - durable source-check from `CREATED` to `SOURCE_CHECKED`,
