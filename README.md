@@ -79,15 +79,20 @@ RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: du
 JSON, deterministic Markdown, report-input handoff, AI-evidence handoff, hashes, lineage, retention
 metadata, immutable persistence, certified APIs, source-backed mandate-context attachment from
 RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway
-composition, Workbench review UX, report materialization, and AI memo generation remain downstream
-work in their owning apps; the post-merge gold-pass audit also records a canonical front-office
-risk-drawdown `partial` boundary tracked as `sgajbi/lotus-gateway#182`, so no full proof-pack
-product UX support is claimed here. RFC-0041 is implementation-backed and closed as `DONE`
+composition and Workbench review UX are implemented in their owning apps; report materialization is
+implemented in `lotus-render`, `lotus-report`, and `lotus-archive`; and governed AI PM memo support
+is implemented in `lotus-ai`, `lotus-gateway`, and `lotus-workbench`. The post-merge gold-pass audit
+also records a canonical front-office risk-drawdown `partial` boundary tracked as
+`sgajbi/lotus-gateway#182`, so no unsupported proof-pack source enrichment is claimed here.
+RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
 internal handoff evidence, retrieve/search/item/proof-pack/report-input/supportability read models, and
-Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway and Workbench
-implementation, automatic PM-book/CIO cohort discovery, and full front-office support remain
+Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway composition,
+Workbench first-wave command-center UX, and wave report materialization in `lotus-report`,
+`lotus-render`, and `lotus-archive` are implementation-backed, merged, validated, and
+wiki-published. Automatic PM-book/CIO/risk-event cohort discovery, owning-service risk/performance
+aggregate enrichment, AI memo generation from wave evidence, and external OMS execution remain
 unpromoted. RFC-0042 is `DONE` for manage backend authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
