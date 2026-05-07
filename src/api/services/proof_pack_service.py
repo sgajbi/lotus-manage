@@ -15,6 +15,8 @@ from src.core.proof_packs import (
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
     build_report_input,
+    proof_pack_id_for_rebalance_run,
+    proof_pack_id_for_selected_alternative,
 )
 from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
 from src.core.proof_packs.models import (
@@ -57,6 +59,11 @@ def generate_proof_pack_from_run(
         )
         if existing is not None:
             return existing
+    existing = proof_pack_repository.get_proof_pack(
+        proof_pack_id=proof_pack_id_for_rebalance_run(rebalance_run_id=rebalance_run_id)
+    )
+    if existing is not None:
+        return existing
     run = run_service.get_run_record(rebalance_run_id=rebalance_run_id)
     mandate_twin, mandate_health, mandate_evidence_gap_codes = _resolve_mandate_evidence(
         mandate_id=mandate_id,
@@ -104,6 +111,14 @@ def generate_proof_pack_from_selected_alternative(
         )
         if existing is not None:
             return existing
+    existing = proof_pack_repository.get_proof_pack(
+        proof_pack_id=proof_pack_id_for_selected_alternative(
+            alternative_set_id=alternative_set_id,
+            selected_alternative_id=selected_alternative_id,
+        )
+    )
+    if existing is not None:
+        return existing
     alternative_set = construction_repository.get_alternative_set(
         alternative_set_id=alternative_set_id
     )

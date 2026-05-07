@@ -60,6 +60,17 @@ _SECTION_TITLES: dict[ProofPackSectionType, str] = {
     "ai_refs": "AI Evidence References",
 }
 
+
+def proof_pack_id_for_rebalance_run(*, rebalance_run_id: str) -> str:
+    return rebalance_run_id.replace("rr_", "dpp_", 1)
+
+
+def proof_pack_id_for_selected_alternative(
+    *, alternative_set_id: str, selected_alternative_id: str
+) -> str:
+    return f"dpp_{alternative_set_id}_{selected_alternative_id}"
+
+
 _SECTION_ORDER: list[ProofPackSectionType] = list(_SECTION_TITLES)
 
 
@@ -1047,11 +1058,14 @@ def _proof_pack_id(
     selected_alternative: ConstructionAlternative | None,
 ) -> str:
     if source_type == "REBALANCE_RUN" and run is not None:
-        return run.rebalance_run_id.replace("rr_", "dpp_", 1)
+        return proof_pack_id_for_rebalance_run(rebalance_run_id=run.rebalance_run_id)
     if (
         source_type == "SELECTED_ALTERNATIVE"
         and alternative_set is not None
         and selected_alternative is not None
     ):
-        return f"dpp_{alternative_set.alternative_set_id}_{selected_alternative.alternative_id}"
+        return proof_pack_id_for_selected_alternative(
+            alternative_set_id=alternative_set.alternative_set_id,
+            selected_alternative_id=selected_alternative.alternative_id,
+        )
     raise ProofPackSourceValidationError("DPM_PROOF_PACK_SOURCE_MISSING")

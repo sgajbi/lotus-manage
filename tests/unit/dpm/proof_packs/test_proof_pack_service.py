@@ -27,9 +27,9 @@ CREATED_AT = datetime(2026, 5, 3, 9, 30, tzinfo=timezone.utc)
 
 
 class _RunService:
-    def __init__(self, *, missing: bool = False) -> None:
+    def __init__(self, *, missing: bool = False, run=None) -> None:
         self.missing = missing
-        self.run = _run_record()
+        self.run = run or _run_record()
 
     def get_run_record(self, *, rebalance_run_id: str):
         if self.missing:
@@ -112,6 +112,70 @@ def test_selected_alternative_service_replays_idempotent_existing_pack() -> None
         mandate_id="mandate_service",
         idempotency_key="idem-service-proof",
         construction_repository=repository,
+        run_service=_RunService(missing=True),
+        mandate_repository=_mandate_repository(),
+        proof_pack_repository=proof_repository,
+    )
+
+    assert replay == first
+
+
+def test_run_service_replays_existing_pack_by_source_identity() -> None:
+    proof_repository = InMemoryDpmProofPackRepository()
+    run = _run_record()
+
+    first = proof_pack_service.generate_proof_pack_from_run(
+        rebalance_run_id=run.rebalance_run_id,
+        actor_id="pm_service",
+        reason="Initial proof.",
+        correlation_id="corr-service-proof",
+        mandate_id=None,
+        idempotency_key="idem-service-proof",
+        run_service=_RunService(run=run),
+        mandate_repository=None,
+        proof_pack_repository=proof_repository,
+    )
+    replay = proof_pack_service.generate_proof_pack_from_run(
+        rebalance_run_id=run.rebalance_run_id,
+        actor_id="pm_service",
+        reason="Changed proof reason should replay existing immutable source proof.",
+        correlation_id="corr-service-proof-replay",
+        mandate_id=None,
+        idempotency_key="different-idem-service-proof",
+        run_service=_RunService(missing=True),
+        mandate_repository=None,
+        proof_pack_repository=proof_repository,
+    )
+
+    assert replay == first
+
+
+def test_selected_alternative_service_replays_existing_pack_by_source_identity() -> None:
+    repository, alternative_set_id, selected_alternative_id = _construction_repository()
+    proof_repository = InMemoryDpmProofPackRepository()
+
+    first = proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        actor_id="pm_service",
+        reason="Initial proof.",
+        correlation_id="corr-service-proof",
+        mandate_id="mandate_service",
+        idempotency_key="idem-service-proof",
+        construction_repository=repository,
+        run_service=_RunService(),
+        mandate_repository=_mandate_repository(),
+        proof_pack_repository=proof_repository,
+    )
+    replay = proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        actor_id="pm_service",
+        reason="Changed proof reason should replay existing immutable source proof.",
+        correlation_id="corr-service-proof-replay",
+        mandate_id="mandate_service",
+        idempotency_key="different-idem-service-proof",
+        construction_repository=InMemoryConstructionRepository(),
         run_service=_RunService(missing=True),
         mandate_repository=_mandate_repository(),
         proof_pack_repository=proof_repository,
