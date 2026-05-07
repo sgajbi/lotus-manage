@@ -764,9 +764,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 23 |" in work_to_be_done
+    assert "| Done on merged/published truth | 24 |" in work_to_be_done
     assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 33 |" in work_to_be_done
+    assert "| Remaining / open | 32 |" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
@@ -809,6 +809,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "`c29d895f08b7316dd363d77559623eabfc3137e8`" in work_to_be_done
     assert "`fc427a9`" in work_to_be_done
+    assert "RFC41-WTBD-008 - Report Materialization From Wave / Proof-Pack Evidence" in (
+        work_to_be_done
+    )
+    assert "Status: Completed on merged, validated, and wiki-published owning-repo truth." in (
+        work_to_be_done
+    )
+    assert "`lotus-manage` PR #124" in work_to_be_done
+    assert "`lotus-report` PR #91" in work_to_be_done
+    assert "`lotus-render` PR #12" in work_to_be_done
+    assert "`lotus-archive` PR #24" in work_to_be_done
     assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
     assert "RFC42-WTBD-001" in work_to_be_done
     assert "RFC42-WTBD-008" in work_to_be_done
@@ -835,11 +845,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 23 done on merged/published truth" in supported_features
+    assert "59 WTBD items: 24 done on merged/published truth" in supported_features
     assert "Explicit portfolio-list waves" in supported_features
-    assert "Gateway wave composition and first-wave Workbench wave command center support" in (
+    assert "governed rebalance-wave report materialization in report/render/archive" in (
         supported_features
     )
+    assert "AI memo generation from wave evidence" in supported_features
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
     assert (
         "Workbench proof-pack review UX is implementation-backed through `lotus-workbench` PR #156"

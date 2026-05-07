@@ -122,9 +122,14 @@ Current repository posture:
     repository-backed wave search/detail/item/proof-pack posture/report-input/supportability read models,
     OpenAPI certification, and aggregate reconciliation under
     `output/rfc0041-wave-proof/20260504-231914`. The canonical proof used Postgres-backed manage
-    repositories via `DPM_MANAGE_POSTGRES_DSN`. Automatic PM-book and CIO model-change cohort
-    discovery, Gateway composition, Workbench UX, and full front-office product support remain
-    unpromoted until owning source products and downstream implementations are live-proven.
+    repositories via `DPM_MANAGE_POSTGRES_DSN`. Wave report materialization is now implemented in
+    owning repositories through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render`
+    PR #12, and `lotus-archive` PR #24: manage remains deterministic wave report-input authority,
+    while report/render/archive own job materialization, the `rebalance-wave` template, generated
+    artifact metadata, retention posture, and archive lifecycle. Automatic PM-book/CIO/risk-event
+    cohort discovery, owning-service risk/performance aggregate enrichment, wave AI memo generation,
+    and external OMS execution remain unpromoted until source products and owning downstream
+    implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,

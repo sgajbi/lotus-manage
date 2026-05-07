@@ -35,16 +35,16 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: `main` after RFC40-WTBD-005 governed proof-pack AI PM memo support was merged
-across `lotus-ai`, `lotus-gateway`, and `lotus-workbench`, CI-proven, live-proven through
-rebuilt canonical front-office QA, and repo-local wiki source was published on 2026-05-07.
+Snapshot basis: `main` after RFC41-WTBD-008 wave report materialization was merged across
+`lotus-manage`, `lotus-report`, `lotus-render`, and `lotus-archive`, CI-proven, and repo-local
+wiki source was published on 2026-05-07.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 23 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 24 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 33 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 32 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -58,11 +58,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC41-WTBD-008 - Report materialization from wave/proof-pack evidence | Extends document evidence from individual proof packs into wave operating evidence. | Report/render/archive implementation preserves wave and proof-pack lineage, hashes, supportability, and archive refs. |
-| 2 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
-| 3 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
-| 4 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
-| 5 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 1 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
+| 2 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
+| 3 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
+| 4 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 5 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
 
 Execution rule:
 
@@ -2209,7 +2209,7 @@ downstream product-surface implementation, or owning-service materialization out
 | RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196 | Completed after manage contracts stabilized. Gateway composes manage truth without becoming wave authority or reconstructing state. |
 | RFC41-WTBD-006 | Workbench wave command center | `lotus-workbench` with `lotus-gateway`, `lotus-platform`, and `lotus-manage` support | Completed, merged, CI-proven, live-proven, and wiki-published through Manage PR #120, Gateway PR #197, Platform PR #306, and Workbench PR #165 | Workbench now consumes Gateway/BFF routes only and provides the PM operating cockpit over explicit portfolio-list waves. |
 | RFC41-WTBD-007 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | The full product outcome requires both downstream implementations and canonical front-office evidence, not manage backend proof alone. |
-| RFC41-WTBD-008 | Report materialization from wave/proof-pack evidence | `lotus-report`, `lotus-render`, `lotus-archive` | Deferred to owning services | Manage exposes proof-pack and handoff posture. It does not generate governed report output or archive records. |
+| RFC41-WTBD-008 | Report materialization from wave/proof-pack evidence | `lotus-manage`, `lotus-report`, `lotus-render`, `lotus-archive` | Completed, merged, CI-proven, and wiki-published through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render` PR #12, and `lotus-archive` PR #24 | Manage exposes deterministic wave report input while report/render/archive own generated report, template, and archive lifecycle. |
 | RFC41-WTBD-009 | AI PM memo generation from wave evidence | `lotus-ai`, governed by RFC-0043 direction | Deferred to owning service | Manage can expose bounded evidence posture but must not generate AI narrative or prompts locally. |
 | RFC41-WTBD-010 | External execution integration | Future execution/OMS owner or governed operations integration | Out of RFC-0041 scope | RFC-0041 intentionally stops at internal operations handoff evidence and preserves `external_execution_claimed=false`. |
 
@@ -2450,8 +2450,8 @@ Promotion proof:
    `lotus-workbench` (`212f486`). Gateway and Platform required no additional wiki publication for
    this closure slice.
 6. Final closure keeps unsupported scope explicit: automatic PM-book/CIO/risk-event cohort
-   discovery, owning-service risk/performance aggregate enrichment, report materialization, AI memo
-   generation, and external OMS execution remain separate WTBDs.
+   discovery, owning-service risk/performance aggregate enrichment, AI memo generation from wave
+   evidence, and external OMS execution remain separate WTBDs.
 
 #### RFC41-WTBD-007 - Full Front-Office Command-Center Product Support
 
@@ -2489,36 +2489,45 @@ Promotion proof:
 
 #### RFC41-WTBD-008 - Report Materialization From Wave / Proof-Pack Evidence
 
+Status: Completed on merged, validated, and wiki-published owning-repo truth.
+
 Target business outcome:
 
 Wave and proof-pack evidence can be materialized into governed reports and archived artifacts.
 
-Why it cannot be done now:
+Implemented scope:
 
-`lotus-manage` owns wave state and proof-pack linkage, not report rendering or archive lifecycle.
-RFC-0040 and RFC-0041 provide report-input posture, but generated output belongs to
-`lotus-report`, `lotus-render`, and `lotus-archive`.
-
-Dependencies before implementation:
-
-1. report service contract for consuming wave/proof-pack input,
-2. render/archive lifecycle contracts for generated artifacts,
-3. retention, legal hold, access audit, and redaction rules,
-4. Gateway/Workbench posture for report availability,
-5. live proof that generated artifacts reconcile to manage evidence.
-
-Expected implementation wave:
-
-Implement through a reporting RFC after report service ownership and document output scope are
-clear.
+1. `lotus-manage` PR #124 added deterministic `DpmWaveReportInput` generation and
+   `GET /api/v1/rebalance/waves/{wave_id}/report-input`, preserving wave identity, proof-pack
+   lineage, supportability posture, selected-item evidence, hashes, actors, and handoff refs without
+   generating rendered documents locally.
+2. `lotus-report` PR #91 added `POST /reports/rebalance-waves`, wave snapshot lineage capture,
+   report-job ledger persistence, and a render package that consumes manage wave report input rather
+   than reconstructing wave state.
+3. `lotus-render` PR #12 added the `rebalance-wave` v1 Typst template and manifest so generated
+   wave reports use a governed template family with registry validation.
+4. `lotus-archive` PR #24 added `rebalance_wave` as a governed generated-report type and validated
+   archive lifecycle metadata, retention, hash, and retrieval behavior for wave reports.
 
 Promotion proof:
 
-1. report/render/archive tests,
-2. deterministic artifact evidence,
-3. archive retrieval and retention proof,
-4. Gateway/Workbench posture tests if surfaced,
-5. supported-feature updates in owning apps.
+1. `lotus-manage` PR #124 merged to `main` with Feature Lane and PR Merge Gate checks green; local
+   `make check` passed with 931 tests passed, 13 skipped, and API vocabulary regenerated.
+2. `lotus-report` PR #91 merged to `main` after coverage hardening; CI Feature Lane and PR Merge
+   Gate checks passed, including coverage, Docker, unit, integration, and e2e gates.
+3. `lotus-render` PR #12 merged to `main`; local `make check` passed with 82 tests and template
+   registry validation, and CI passed.
+4. `lotus-archive` PR #24 merged to `main`; local `make check` passed with lint, typecheck,
+   OpenAPI, migration, and 74 tests, and CI passed.
+5. Repo-local wiki source was published after merge for `lotus-manage`, `lotus-report`,
+   `lotus-render`, and `lotus-archive`; post-publication wiki check-only drift is clean.
+
+Remaining boundary:
+
+This closure does not make `lotus-manage` a report renderer, archive authority, or document
+retention service. It remains the source of wave evidence and deterministic report input. Gateway
+and Workbench may surface report availability in a later product slice, but must consume the
+owning report/archive posture rather than inferring availability in the browser or BFF.
 
 #### RFC41-WTBD-009 - AI PM Memo Generation From Wave Evidence
 
