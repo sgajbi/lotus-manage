@@ -374,11 +374,12 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "Manage backend implementation is `DONE` for explicit portfolio-list waves" in roadmap
     assert "| Explicit portfolio-list rebalance waves |" in supported_features
     assert "Supported as RFC-0041 `DONE` manage backend authority" in supported_features
-    assert "Automatic PM-book/CIO cohort discovery" in supported_features
+    assert "Automatic PM-book/CIO/risk-event cohort discovery" in supported_features
     assert (
-        "full front-office product support are not supported by `lotus-manage`"
-        in supported_features
+        "Gateway command-center composition and Workbench first-wave wave command-center UX are "
+        "implementation-backed" in supported_features
     )
+    assert "external OMS execution remain unsupported future WTBDs" in supported_features
 
     assert "## Slice 0 Result" in source_map
     assert "## Slice 1 Platform Result" in source_map
@@ -763,9 +764,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 20 |" in work_to_be_done
+    assert "| Done on merged/published truth | 21 |" in work_to_be_done
     assert "| Partial / in progress | 3 |" in work_to_be_done
-    assert "| Remaining / open | 36 |" in work_to_be_done
+    assert "| Remaining / open | 35 |" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
         work_to_be_done
@@ -787,7 +788,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "canonical-front-office-qa-20260507-124405.json" in work_to_be_done
     assert "`dpm.proof_pack` as `ready` with proof pack `dpp_c09f73d0`" in work_to_be_done
-    assert "RFC41-WTBD-006 - Workbench wave command center" in work_to_be_done
+    assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
     )
@@ -819,9 +820,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 20 done on merged/published truth" in supported_features
-    assert "RFC41-WTBD-006 - Workbench wave command center" in supported_features
-    assert "Gateway wave composition is implementation-backed and wiki-published" in (
+    assert "59 WTBD items: 21 done on merged/published truth" in supported_features
+    assert "Explicit portfolio-list waves" in supported_features
+    assert "Gateway wave composition and first-wave Workbench wave command center support" in (
         supported_features
     )
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
