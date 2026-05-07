@@ -35,16 +35,15 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: `main` after RFC41-WTBD-008 wave report materialization was merged across
-`lotus-manage`, `lotus-report`, `lotus-render`, and `lotus-archive`, CI-proven, and repo-local
-wiki source was published on 2026-05-07.
+Snapshot basis: `main` after RFC41-WTBD-001 source-owned PM-book wave discovery was merged to
+`lotus-manage`, CI-proven, and repo-local wiki source was published on 2026-05-07.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 24 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 25 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 3 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 32 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 31 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -58,11 +57,11 @@ Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC41-WTBD-001 - Automatic PM-book / portfolio-manager cohort discovery | Replaces explicit portfolio-list operations with source-owned PM-book cohort selection when a certified owner exists. | Source-owned cohort product merged, consumed by manage, and proven without manage-local source fabrication. |
-| 2 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
-| 3 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
-| 4 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
-| 5 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
+| 1 | RFC41-WTBD-004 - Risk and performance aggregate enrichment for waves | Adds owning-service risk and performance impact to the explicit-list and source-owned PM-book wave cockpit without manage-local approximations. | `lotus-risk` and `lotus-performance` contracts are consumed with supportability, lineage, degraded states, and live proof. |
+| 2 | RFC40-WTBD-006 - Broader risk and performance proof-pack enrichment | Adds richer source-owned proof-pack analytics without manage-local methodology cloning. | `lotus-risk` and `lotus-performance` proof-pack enrichment contracts are consumed with degraded states, lineage, tests, and wiki/demo proof. |
+| 3 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, and outcome evidence into portfolio memory without inventing source truth. | Manage/Gateway/Workbench event lineage is merged, source-owned, queryable, and live-proven with wiki/demo proof. |
+| 4 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. | `lotus-ai` owns memo generation from bounded wave evidence, with Gateway/Workbench posture, guardrails, provenance, tests, and live proof. |
+| 5 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
 
 Execution rule:
 
@@ -2204,7 +2203,7 @@ downstream product-surface implementation, or owning-service materialization out
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0041 |
 | --- | --- | --- | --- | --- |
-| RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` source authority consumed by `lotus-manage` | Implemented on current governed branch; not complete by mainline definition until merge and wiki publication | `lotus-core` now owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it for `PM_BOOK_REVIEW` wave preview/create without caller-supplied portfolio fabrication. |
+| RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` source authority consumed by `lotus-manage` | Completed, merged, CI-proven, and wiki-published through `lotus-core` PR #339 and `lotus-manage` PR #126 | `lotus-core` now owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it for `PM_BOOK_REVIEW` wave preview/create without caller-supplied portfolio fabrication. |
 | RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` or CIO model-event authority | Deferred with no support claim | Model targets and mandate bindings exist, but no certified source product returns all portfolios affected by a model-change event with lineage and reconciliation proof. |
 | RFC41-WTBD-003 | Tactical house-view, risk-event, and implicit bulk-campaign cohorts | CIO/risk/campaign source owners, with likely `lotus-risk` involvement for risk events | Deferred with no support claim | No governed scenario, risk-event, or campaign cohort authority exists for manage to consume. |
 | RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Deferred unless owning-service contracts are consumed | RFC-0041 aggregate impact must not be calculated from manage-local approximations. Risk and performance figures need owning-service certified contracts. |
@@ -2246,11 +2245,14 @@ Support boundary:
 Promotion proof:
 
 1. source-owner foundation merged and wiki-published in `lotus-core` PR #339,
-2. manage focused tests prove source-product client, PM-book preview/create, invalid selector, and
-   incomplete dependency handling,
-3. README/wiki/supported-features updated to state the exact promoted trigger path,
-4. final definition of done still requires this manage branch to be merged to `main`, wiki
-   check-only to pass before merge, wiki publication after merge, and post-merge validation.
+2. manage implementation merged in PR #126 and CI-proven by Feature Lane and PR Merge Gate,
+3. manage focused tests prove source-product client, PM-book preview/create, invalid selector,
+   unavailable/incomplete/empty dependency handling, and source-owned empty-cohort validation,
+4. full local coverage proof passed with `make check-all`: 1173 tests passed and coverage reached
+   99.02%,
+5. repo-local wiki source was published after merge and `Sync-RepoWikis.ps1 -CheckOnly
+   -Repository lotus-manage` returned diff count 0,
+6. README/wiki/supported-features state the exact promoted trigger path.
 
 #### RFC41-WTBD-002 - Automatic CIO Model-Change Affected-Mandate Discovery
 
