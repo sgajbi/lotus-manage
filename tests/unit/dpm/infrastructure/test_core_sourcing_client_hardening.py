@@ -30,6 +30,11 @@ from src.infrastructure.core_sourcing.client import (
             "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
         ),
         (
+            "cio_model_change_affected_cohort_path_template",
+            "resolve_cio_model_change_affected_cohort_url",
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
+        ),
+        (
             "instrument_eligibility_path_template",
             "resolve_instrument_eligibility_url",
             "DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE",
@@ -59,6 +64,7 @@ def test_core_resolver_config_rejects_blank_source_product_paths(
             "resolve_model_portfolio_targets_url",
             "resolve_mandate_binding_url",
             "resolve_portfolio_manager_book_memberships_url",
+            "resolve_cio_model_change_affected_cohort_url",
             "resolve_portfolio_tax_lots_url",
         }:
             method("identifier")

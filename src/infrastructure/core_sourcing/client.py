@@ -6,6 +6,7 @@ from typing import Any, Optional
 import httpx
 
 from src.core.dpm_source_context import (
+    DpmCoreCioModelChangeAffectedCohortResponse,
     DpmCoreExecutionContext,
     DpmCoreInstrumentEligibilityBulkResponse,
     DpmCoreMandateBindingResponse,
@@ -48,6 +49,9 @@ class DpmCoreResolverConfig:
     portfolio_manager_book_memberships_path_template: str = (
         "/integration/portfolio-manager-books/{portfolio_manager_id}/memberships"
     )
+    cio_model_change_affected_cohort_path_template: str = (
+        "/integration/model-portfolios/{model_portfolio_id}/affected-mandates"
+    )
     instrument_eligibility_path_template: str = "/integration/instruments/eligibility-bulk"
     portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
     market_data_coverage_path_template: str = "/integration/market-data/coverage"
@@ -86,6 +90,14 @@ class DpmCoreResolverConfig:
             raise DpmCoreResolverUnavailableError("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_manager_id=portfolio_manager_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_cio_model_change_affected_cohort_url(self, model_portfolio_id: str) -> str:
+        path_template = self.cio_model_change_affected_cohort_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(model_portfolio_id=model_portfolio_id).lstrip("/")
         return f"{base}/{path}"
 
     def resolve_instrument_eligibility_url(self) -> str:
@@ -382,6 +394,32 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
         )
         return DpmCorePortfolioManagerBookMembershipResponse.model_validate(response)
+
+    def resolve_cio_model_change_affected_cohort(
+        self,
+        *,
+        model_portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        booking_center_code: Optional[str] = None,
+        include_inactive_mandates: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCoreCioModelChangeAffectedCohortResponse:
+        url = self._config.resolve_cio_model_change_affected_cohort_url(model_portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "booking_center_code": booking_center_code,
+            "include_inactive_mandates": include_inactive_mandates,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
+            incomplete_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
+        )
+        return DpmCoreCioModelChangeAffectedCohortResponse.model_validate(response)
 
     def resolve_instrument_eligibility(
         self,

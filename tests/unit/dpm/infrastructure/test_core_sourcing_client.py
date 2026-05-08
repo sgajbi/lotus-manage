@@ -190,6 +190,50 @@ def _pm_book_membership_payload() -> dict:
     }
 
 
+def _cio_model_change_cohort_payload() -> dict:
+    return {
+        "product_name": "CioModelChangeAffectedCohort",
+        "product_version": "v1",
+        "tenant_id": "default",
+        "as_of_date": "2026-05-03",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "model_portfolio_version": "2026.05",
+        "model_change_event_id": "cio_model_change:MODEL_PB_SG_GLOBAL_BAL_DPM:2026.05",
+        "approval_state": "approved",
+        "approved_at": "2026-05-01T08:00:00Z",
+        "effective_from": "2026-05-01",
+        "effective_to": None,
+        "affected_mandates": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+                "client_id": "CIF_SG_000184",
+                "booking_center_code": "Singapore",
+                "jurisdiction_code": "SG",
+                "discretionary_authority_status": "active",
+                "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+                "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+                "risk_profile": "balanced",
+                "effective_from": "2026-05-01",
+                "effective_to": None,
+                "binding_version": 3,
+                "source_record_id": "mandate-binding-001",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "CIO_MODEL_CHANGE_COHORT_READY",
+            "returned_mandate_count": 1,
+            "filters_applied": ["model_portfolio_id", "as_of_date"],
+        },
+        "lineage": {"source_system": "cio_model_admin", "contract_version": "rfc_041_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+        "source_batch_fingerprint": "sha256:cio-model-change",
+        "snapshot_id": "cio-model-change-snapshot-20260503",
+    }
+
+
 def _instrument_eligibility_payload() -> dict:
     return {
         "product_name": "InstrumentEligibilityProfile",
@@ -578,6 +622,43 @@ def test_core_resolver_fetches_portfolio_manager_book_membership_source_product(
     assert response.product_name == "PortfolioManagerBookMembership"
     assert response.supportability.state == "READY"
     assert response.members[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
+
+
+def test_core_resolver_fetches_cio_model_change_affected_cohort_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_cio_model_change_cohort_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_cio_model_change_affected_cohort(
+        model_portfolio_id="MODEL_PB_SG_GLOBAL_BAL_DPM",
+        as_of_date=date(2026, 5, 3),
+        tenant_id="default",
+        booking_center_code="Singapore",
+        include_inactive_mandates=False,
+        correlation_id="corr-cio-model-change-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/model-portfolios/"
+        "MODEL_PB_SG_GLOBAL_BAL_DPM/affected-mandates"
+    )
+    assert seen["correlation_id"] == "corr-cio-model-change-001"
+    assert b'"as_of_date":"2026-05-03"' in seen["payload"]
+    assert b'"tenant_id":"default"' in seen["payload"]
+    assert b'"booking_center_code":"Singapore"' in seen["payload"]
+    assert b'"include_inactive_mandates":false' in seen["payload"]
+    assert response.product_name == "CioModelChangeAffectedCohort"
+    assert response.supportability.state == "READY"
+    assert response.affected_mandates[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
 
 
 def test_core_resolver_fetches_instrument_eligibility_from_dedicated_source_product():
