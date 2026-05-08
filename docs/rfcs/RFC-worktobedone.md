@@ -35,20 +35,21 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: this RFC41-WTBD-009 owner-side AI memo slice after the manage read model, Gateway
+Snapshot basis: this RFC41-WTBD-009 product-realization slice after the manage read model, Gateway
 composition, Workbench panel, platform registry contract, canonical browser proof, Workbench wiki
 publication, manage-owned mandate health/monitoring exception timeline nodes, manage-owned event
 identity, retention, redaction, access, and audit policy, the `lotus-report` report-side
 portfolio-memory consumer seam, manage-owned `portfolio_memory_context` emission in proof-pack,
 rebalance-wave, and outcome-review report inputs, the `lotus-ai` bounded portfolio-memory consumer
-seam, and `lotus-ai` PR #63 wave PM memo workflow pack were implemented or merged in their owning
-repos.
+seam, `lotus-ai` PR #63 wave PM memo workflow pack, `lotus-gateway` PR #201 guardrail handoff,
+and `lotus-workbench` PR #168 AI memo product proof were implemented, merged, validated, and
+published where wiki truth changed.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 27 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
-| Partial / in progress | 5 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
+| Done on merged/published truth | 28 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
 | Remaining / open | 27 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
@@ -58,18 +59,17 @@ Partial / in-progress items:
 | RFC37-WTBD-001 | `lotus-manage` RFC-0042 backend authority and first-wave outcome product path are implemented. | Complete richer downstream/source-owner realization across all outcome learning loops. |
 | RFC40-WTBD-009 | First-wave regime scenario evidence exists through RFC-0039 selected alternatives. | Direct proof-pack scenario contribution, CIO approval, and richer source-owner proof-pack enrichment remain future work. |
 | RFC40-WTBD-010 | `lotus-manage` exposes `/api/v1/rebalance/portfolio-memory/{portfolio_id}` as a deterministic source-backed read model over mandate health snapshots, monitoring exceptions, proof packs, proof-pack timelines, rebalance waves, internal handoffs, and outcome-review events; `lotus-gateway` composes it for the command center; and `lotus-workbench` renders the first-wave portfolio-memory timeline with canonical browser proof. Manage now also emits stable event identity plus retention, redaction, access, and audit policy in the API contract. `lotus-report` PR #92 adds the report-side consumer seam for bounded `portfolio_memory_context` lineage in proof-pack, wave, and outcome report jobs. Manage report-input APIs now attach bounded portfolio-memory context for proof-pack, rebalance-wave, and outcome-review reports without folding that context into recursive report-input hashes. `lotus-ai` PR #62 adds bounded DPM PM memo and outcome-review narrative consumers that validate portfolio identity, capped event refs, `NO_RAW_PAYLOADS`, source content hash, and no-reconstruction source-authority policy before exposing compact lineage summaries. | Future report, AI, OMS, PM-scoring, and client-communication source-event families still need owning-app implementation before the broader portfolio-memory WTBD can be closed. |
-| RFC41-WTBD-009 | `lotus-ai` PR #63 implements `dpm_wave_pm_memo.pack@v1` over Manage-owned `DpmWaveReportInput`, with forbidden-field/action/requested-output guardrails, review-required deterministic stub output, queue policy, workflow registry/supportability entries, runtime execution validation, tests, CI proof, and wiki publication commit `6bed940`. | Gateway/Workbench must consume the AI-owned workflow without constructing prompts locally, expose request/posture states, prove unavailable and guardrail-blocked paths, and provide canonical product/live evidence before the WTBD can be promoted to done. |
 | RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow source-family adapters are implemented. | Aggregated risk/performance, tax, FX, cash movement, liquidity, and execution methodologies remain source-owner work. |
 
 Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC41-WTBD-009 - AI PM memo generation from wave evidence | Gives PMs a governed memo workflow over wave evidence without manage-local prompt or narrative generation. `lotus-ai` now owns the first-wave workflow pack and guardrails. | Gateway/Workbench consume the AI workflow, expose posture without bypassing controls, and provide canonical product/live proof. |
-| 2 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
-| 3 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
-| 4 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
-| 5 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
+| 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
+| 2 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
+| 3 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
+| 4 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
+| 5 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 
 Execution rule:
 
@@ -2300,7 +2300,7 @@ downstream product-surface implementation, or owning-service materialization out
 | RFC41-WTBD-006 | Workbench wave command center | `lotus-workbench` with `lotus-gateway`, `lotus-platform`, and `lotus-manage` support | Completed, merged, CI-proven, live-proven, and wiki-published through Manage PR #120, Gateway PR #197, Platform PR #306, and Workbench PR #165 | Workbench now consumes Gateway/BFF routes only and provides the PM operating cockpit over explicit portfolio-list waves. |
 | RFC41-WTBD-007 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | The full product outcome requires both downstream implementations and canonical front-office evidence, not manage backend proof alone. |
 | RFC41-WTBD-008 | Report materialization from wave/proof-pack evidence | `lotus-manage`, `lotus-report`, `lotus-render`, `lotus-archive` | Completed, merged, CI-proven, and wiki-published through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render` PR #12, and `lotus-archive` PR #24 | Manage exposes deterministic wave report input while report/render/archive own generated report, template, and archive lifecycle. |
-| RFC41-WTBD-009 | AI PM memo generation from wave evidence | `lotus-ai`, governed by RFC-0043 direction; Gateway/Workbench product consumption remains downstream | Partially implemented through `lotus-ai` PR #63 | `lotus-ai` now owns `dpm_wave_pm_memo.pack@v1` for bounded `DpmWaveReportInput` memo assistance. Manage still must not generate AI narrative or prompts locally; Gateway/Workbench product realization and canonical proof remain open. |
+| RFC41-WTBD-009 | AI PM memo generation from wave evidence | `lotus-ai`, governed by RFC-0043 direction; `lotus-gateway` and `lotus-workbench` as product consumers | Completed, merged, CI-proven, live-proven, and wiki-published where changed through `lotus-ai` PR #63, `lotus-gateway` PR #201, and `lotus-workbench` PR #168 | `lotus-ai` owns `dpm_wave_pm_memo.pack@v1` for bounded `DpmWaveReportInput` memo assistance. Gateway preserves Manage evidence identity and AI guardrails, while Workbench exposes report-input and AI memo request posture without constructing prompts or memo content locally. |
 | RFC41-WTBD-010 | External execution integration | Future execution/OMS owner or governed operations integration | Out of RFC-0041 scope | RFC-0041 intentionally stops at internal operations handoff evidence and preserves `external_execution_claimed=false`. |
 
 ### Detailed Follow-Up Items
@@ -2667,7 +2667,15 @@ external execution claims, preserves provenance and supportability posture, and 
 review-required support-only memo payload. Manage remains evidence authority only and must not
 create prompts, memos, recommendations, or AI-side workflow state locally.
 
-Dependencies before implementation:
+`lotus-gateway` PR #201 and `lotus-workbench` PR #168 complete the product consumption path.
+Gateway requests the AI workflow using Manage-owned wave report input and passes both
+`blocked_actions` and `forbidden_actions` supportability controls to `lotus-ai`. Workbench exposes
+the governed report-input and AI memo actions from the DPM wave command-center panel, records
+observability for `dpm.waves.report-input` and `dpm.waves.ai-pm-memo`, and canonical live
+validation proves the full path against the populated front-office runtime before screenshots are
+accepted as demo evidence.
+
+Implemented dependencies:
 
 1. RFC-0043 or `lotus-ai` workflow-pack contract defines the memo workflow,
 2. forbidden fields and forbidden actions are enforced,
@@ -2675,12 +2683,13 @@ Dependencies before implementation:
 4. Gateway/Workbench UI exposes AI posture without bypassing AI service controls,
 5. AI unavailable and guardrail-blocked states are tested.
 
-Remaining implementation wave:
+Closure posture:
 
-Consume the AI-owned workflow through Gateway/Workbench after the AI contract is stable. The
-product path must preserve Manage wave evidence identity, call `lotus-ai` rather than constructing
-prompts locally, expose review-required/unavailable/guardrail-blocked states, and produce canonical
-front-office proof before this WTBD is done.
+This WTBD is complete for the first-wave governed product path. Manage remains wave evidence and
+report-input authority; Gateway remains the BFF/product API composition layer; Workbench remains
+the PM-facing product surface; and `lotus-ai` remains the only memo workflow owner. The closure does
+not claim autonomous recommendations, external execution, direct browser-side prompt generation,
+or future CIO/risk-event cohort discovery.
 
 Promotion proof:
 
@@ -2690,9 +2699,20 @@ Promotion proof:
 4. AI guardrail and provenance tests,
 5. prompt/input-output evidence with sensitive-field protections,
 6. unavailable and blocked-state proof,
-7. Gateway/Workbench integration tests when surfaced,
-8. canonical Workbench/front-office live proof,
-9. supported-feature entries that do not imply autonomous execution authority.
+7. `lotus-gateway` PR #201 merge commit `6171df567010067edcb9fefc7acec92f68f5fde7`,
+8. Gateway focused post-merge proof:
+   `python -m pytest tests/unit/test_dpm_wave_service.py tests/integration/test_dpm_wave_router.py tests/contract/test_dpm_wave_contract.py -q`, 17 passed,
+9. `lotus-workbench` PR #168 merge commit `ed0727a2f3571ec1dcbbab57fe79dc89b81086d9`,
+10. `lotus-workbench` wiki publication commit `31ce0bd`,
+11. Workbench focused post-merge proof:
+    `npm test -- --run tests/unit/dpm-wave-command-center-view-model.test.ts tests/unit/live-canonical-validation-script.test.ts tests/unit/live-validation-browser-workflows.test.ts`, 16 passed,
+12. Workbench RFC documentation proof:
+    `python -m pytest tests/unit/test_rfc0098_documentation.py -q`, 1 passed,
+13. Canonical live product proof:
+    `npm run live:validate:ui`, passed with evidence under
+    `lotus-workbench/output/playwright/live-canonical/` including the DPM wave command-center
+    report-input and AI memo path,
+14. supported-feature entries that do not imply autonomous execution authority.
 
 #### RFC41-WTBD-010 - External Execution Integration
 
