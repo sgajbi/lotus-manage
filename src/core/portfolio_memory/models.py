@@ -7,6 +7,8 @@ from pydantic import BaseModel, Field
 PortfolioMemoryEventType = Literal[
     "PROOF_PACK_CREATED",
     "PROOF_PACK_TIMELINE_EVENT",
+    "MANDATE_HEALTH_SNAPSHOT",
+    "MANDATE_MONITORING_EXCEPTION",
     "WAVE_CREATED",
     "WAVE_EVENT",
     "WAVE_HANDOFF_READY",
