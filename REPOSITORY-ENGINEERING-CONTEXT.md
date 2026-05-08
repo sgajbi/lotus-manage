@@ -129,9 +129,12 @@ Current repository posture:
     `portfolio_memory_context` consumer for proof-pack, rebalance-wave, and outcome-review report
     jobs without reconstructing portfolio-memory events. Manage report-input APIs now attach that
     bounded context to proof-pack, rebalance-wave, and outcome-review report inputs while keeping
-    portfolio-memory hashes separate from recursive report-input evidence hashes. AI timeline
-    consumers and future report, AI, OMS, PM-scoring, and client-communication source-event
-    families remain downstream WTBD scope.
+    portfolio-memory hashes separate from recursive report-input evidence hashes. `lotus-ai` PR #62
+    adds bounded DPM PM memo and outcome-review narrative consumers that validate portfolio
+    identity, capped event refs, source content hash, `NO_RAW_PAYLOADS`, and no-reconstruction
+    source-authority policy before exposing compact portfolio-memory lineage summaries. Future
+    report, AI, OMS, PM-scoring, and client-communication source-event families remain downstream
+    WTBD scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source
