@@ -35,21 +35,23 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: the RFC40-WTBD-007 transaction-cost authority slice after the source-owner
-`lotus-core` product and `lotus-manage` consumer proof are merged, validated, and wiki-published.
+Snapshot basis: the RFC39-WTBD-006 cost-aware alternatives slice after the source-owner
+`lotus-core` transaction-cost product, `lotus-manage` proof-pack consumer, and `lotus-manage`
+`COST_AWARE` construction method are merged, validated, and wiki-published.
 The canonical DPM command-center seed still proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
 ready/degraded/blocked source-readiness states for downstream consumers. RFC40-WTBD-007 adds
-source-owned observed transaction-cost evidence through `TransactionCostCurve:v1`; it does not
-promote predictive execution-cost quotes, dedicated min-cost optimization, or broader execution
-methodology.
+source-owned observed transaction-cost evidence through `TransactionCostCurve:v1`; RFC39-WTBD-006
+adds a bounded `COST_AWARE` construction method that applies observed cost bps to candidate trade
+notionals for comparison evidence. It does not promote predictive execution-cost quotes, market
+impact modelling, venue routing, or broader execution methodology.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 32 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 33 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 23 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 22 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -66,7 +68,7 @@ Next bank-buyable product-readiness priorities:
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
 | 2 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
-| 3 | RFC39-WTBD-006 - Cost-aware alternatives | Uses source-owned cost curves in optimization and comparison methods beyond proof-pack evidence preservation. | Manage implements and proves cost-aware/min-cost alternative behavior from `TransactionCostCurve:v1` without treating observed cost evidence as a predictive quote. |
+| 3 | RFC40-WTBD-008 - Sustainability preferences and client restriction profiles | Removes an important private-banking suitability gap from proof packs without fabricating client restrictions or ESG preferences. | A source owner publishes client restriction and sustainability products; manage consumes them with degraded-state tests, proof-pack preservation, and product-surface documentation. |
 
 Execution rule:
 
@@ -1198,7 +1200,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Richer lifecycle depth across proof packs, waves, reports, AI, approval staging, and demos remains RFC39-WTBD-010 / later command-center work. |
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` or dedicated client-governance/sustainability source, consumed by manage | Deferred with explicit degraded posture | No certified restriction and sustainability profile products exist. Full ESG support would be a false compliance claim. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
-| RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage`; future optimization depth in manage | Partially unblocked by `TransactionCostCurve:v1` source and proof-pack consumption | Source-owned observed cost evidence now exists for proof packs, but dedicated min-cost/cost-aware construction behavior still needs implementation and proof before RFC-0039 support promotion. |
+| RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
 | RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
 | RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; product UX remains downstream | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. Broader scenario contribution rows, approvals workflow, Gateway composition, and Workbench UX remain downstream/future depth. |
@@ -1442,32 +1444,52 @@ Promotion proof:
 
 Target business outcome:
 
-PMs can compare alternatives using source-backed spread, commission, and market-impact estimates
-rather than local labelled diagnostics.
+PMs can compare alternatives using source-owned observed transaction-cost evidence rather than
+unlabelled local diagnostics, while preserving a clear boundary between observed booked-fee history
+and predictive execution quotes.
 
-Why it cannot be done now:
+Current implementation status:
 
-No authoritative cost curve or execution-cost source exists. RFC-0039 allows only clearly labelled
-estimated cost diagnostics.
+Completed for source-owned observed-cost comparison methods. `lotus-core` owns
+`TransactionCostCurve:v1`, `lotus-manage` stateful construction consumes it, and the
+`COST_AWARE` construction method applies source-owned observed average cost bps to candidate
+security-trade notionals. The method adds an `ESTIMATED_COST` objective term, a transaction-cost
+constraint trace, method reason codes, and an `estimated_transaction_cost` comparison metric only
+when the source curve covers the candidate trades. Missing, degraded, or inapplicable cost evidence
+keeps the method `DEGRADED` with explicit reason codes.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. `TransactionCostCurve:v1` or equivalent owner,
-2. instrument/venue/currency applicability and freshness semantics,
-3. manage cost-aware objective and constraint tests,
-4. degraded behavior for stale/missing/inapplicable curves,
-5. documentation distinguishing estimates from authoritative costs.
+1. `COST_AWARE` is a source-aware construction method and is not part of the default stateless
+   first-wave method set.
+2. `COST_AWARE` requires `TRANSACTION_COST` source-family supportability.
+3. Ready source curves produce a bounded comparison estimate by applying observed average bps to
+   candidate trade notionals.
+4. Missing source curves produce a degraded method with `TRANSACTION_COST_CURVE_UNAVAILABLE` and
+   `AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE`.
+5. Missing traded-security coverage produces degraded posture instead of silently treating uncovered
+   securities as zero-cost.
+6. The method does not claim predictive spread, market impact, venue routing, execution timing, or
+   order-placement cost optimization.
 
-Expected implementation wave:
+Production boundary:
 
-Implement after the cost/execution source is certified.
+This WTBD is complete for source-owned observed-cost construction comparison. It is not a
+predictive transaction-cost model, market-impact model, venue-routing service, or external OMS
+execution methodology. Those remain future execution/source-owner work and must not be presented as
+supported functionality from this slice.
 
-Promotion proof:
+Implementation proof:
 
-1. source-owner tests,
-2. manage method tests and live proof,
-3. OpenAPI/supportability updates,
-4. supported-feature promotion only for source-backed cost contexts.
+1. `src/core/construction/vocabulary.py` adds `COST_AWARE` and `TRANSACTION_COST` method-family
+   linkage.
+2. `src/core/construction/method_registry.py` declares the cost-aware method support gate.
+3. `src/api/services/construction_service.py` computes source-observed cost comparison metrics and
+   degraded-state reason codes.
+4. `tests/unit/dpm/api/test_construction_api.py` proves ready and degraded cost-aware behavior.
+5. `tests/unit/dpm/construction/test_method_registry.py` and
+   `tests/unit/dpm/construction/test_vocabulary.py` preserve method registry and source-family
+   governance.
 
 #### RFC39-WTBD-007 - Cashflow/Income-Need Aware Liquidity Construction
 

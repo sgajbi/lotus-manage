@@ -85,6 +85,7 @@ class ConstructionAlternativeSetGenerateRequest(BaseModel):
                     "DO_NOTHING_BASELINE",
                     "HEURISTIC_EXPLAINABLE",
                     "MIN_TURNOVER",
+                    "COST_AWARE",
                     "TAX_AWARE",
                 ],
             }
@@ -115,19 +116,29 @@ class ConstructionAlternativeSetGenerateRequest(BaseModel):
         default=None,
         description=(
             "Optional RFC-0039 construction methods to generate. Omit for the default first-wave "
-            "set, or include second-wave methods when the caller needs solver, risk, ESG, "
+            "set, or include second-wave methods when the caller needs solver, cost, risk, ESG, "
             "currency, liquidity, or regime-aware alternatives with explicit supportability."
         ),
-        examples=[["DO_NOTHING_BASELINE", "HEURISTIC_EXPLAINABLE", "MIN_TURNOVER", "TAX_AWARE"]],
+        examples=[
+            [
+                "DO_NOTHING_BASELINE",
+                "HEURISTIC_EXPLAINABLE",
+                "MIN_TURNOVER",
+                "COST_AWARE",
+                "TAX_AWARE",
+            ]
+        ],
     )
     authority_context: ConstructionAuthorityContext | None = Field(
         default=None,
         description=(
             "Optional source-backed authority context for advanced RFC-0039 methods. "
             "`RISK_AWARE` may also resolve lotus-risk concentration authority when "
-            "`DPM_RISK_BASE_URL` is configured. `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, "
-            "and `REGIME_STRESS_AWARE` require source-backed policy/scenario context to be "
-            "certified READY; otherwise they degrade or block with explicit reason codes."
+            "`DPM_RISK_BASE_URL` is configured. `COST_AWARE` consumes source-owned "
+            "`TransactionCostCurve:v1` observed cost evidence for comparison only. "
+            "`LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` require "
+            "source-backed policy/scenario context to be certified READY; otherwise they "
+            "degrade or block with explicit reason codes."
         ),
     )
 

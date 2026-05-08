@@ -112,6 +112,41 @@ def _authority_context_payload() -> dict:
     }
 
 
+def _transaction_cost_authority_context_payload() -> dict:
+    return {
+        "transaction_cost_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-core",
+            "source_product_name": "TransactionCostCurve",
+            "source_product_version": "v1",
+            "source_id": "transaction-cost-scope-001",
+            "content_hash": "sha256:transaction-cost-curve",
+            "as_of_date": "2026-05-03",
+            "window_start_date": "2026-02-02",
+            "window_end_date": "2026-05-03",
+            "returned_curve_point_count": 1,
+            "missing_security_ids": [],
+            "curve_points": [
+                {
+                    "security_id": "EQ_1",
+                    "transaction_type": "BUY",
+                    "currency": "SGD",
+                    "observation_count": 3,
+                    "total_notional": "30000.0000",
+                    "total_cost": "15.0000",
+                    "average_cost_bps": "5.0000",
+                    "min_cost_bps": "4.5000",
+                    "max_cost_bps": "5.5000",
+                    "first_observed_date": "2026-04-01",
+                    "last_observed_date": "2026-05-03",
+                    "sample_transaction_ids": ["TXN-1", "TXN-2"],
+                }
+            ],
+            "reason_codes": ["TRANSACTION_COST_CURVE_READY"],
+        }
+    }
+
+
 def _stateful_input_payload() -> dict[str, object]:
     return {
         "portfolio_id": "PB_SG_GLOBAL_BAL_001",
@@ -297,6 +332,73 @@ def test_generate_construction_alternative_set_surfaces_pending_review_for_turno
         "TURNOVER_BUDGET_DROPPED_INTENTS"
         in min_turnover["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+
+
+def test_cost_aware_method_applies_source_owned_cost_curve_to_candidate_notional() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["stateless_input"]["model_portfolio"]["targets"] = [
+        {"instrument_id": "EQ_1", "weight": "1.0"}
+    ]
+    payload["methods"] = ["COST_AWARE"]
+    payload["authority_context"] = _transaction_cost_authority_context_payload()
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-cost-aware"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    assert alternative["method"] == "COST_AWARE"
+    assert alternative["method_status"] == "READY"
+    assert alternative["comparison_metrics"]["estimated_transaction_cost"] == {
+        "amount": "2.5000",
+        "currency": "SGD",
+    }
+    assert any(term["term"] == "ESTIMATED_COST" for term in alternative["objective_trace"])
+    cost_trace = next(
+        trace
+        for trace in alternative["constraint_trace"]
+        if trace["constraint"] == "ESTIMATED_COST"
+    )
+    assert cost_trace["source_family"] == "TRANSACTION_COST"
+    assert "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS" in cost_trace["reason_codes"]
+    assert (
+        "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE"
+        not in alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    )
+
+
+def test_cost_aware_method_degrades_without_source_owned_cost_curve() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["stateless_input"]["model_portfolio"]["targets"] = [
+        {"instrument_id": "EQ_1", "weight": "1.0"}
+    ]
+    payload["methods"] = ["COST_AWARE"]
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-cost-aware-degraded"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "COST_AWARE"
+    assert alternative["method_status"] == "DEGRADED"
+    assert alternative["comparison_metrics"]["estimated_transaction_cost"] is None
+    assert "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE" in reason_codes
+    assert "TRANSACTION_COST_CURVE_UNAVAILABLE" in reason_codes
 
 
 def test_generate_construction_alternative_set_surfaces_blocked_method_status() -> None:

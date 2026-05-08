@@ -24,6 +24,9 @@ def test_first_wave_registry_matches_rfc0039_order_and_required_sources() -> Non
     ]
     tax_definition = METHOD_REGISTRY[ConstructionMethod.TAX_AWARE]
     assert ConstructionSourceFamily.TAX_LOTS in tax_definition.required_source_families
+    cost_definition = METHOD_REGISTRY[ConstructionMethod.COST_AWARE]
+    assert cost_definition.first_wave is False
+    assert ConstructionSourceFamily.TRANSACTION_COST in cost_definition.required_source_families
 
 
 def test_solver_method_falls_back_explicitly_when_solver_unavailable() -> None:

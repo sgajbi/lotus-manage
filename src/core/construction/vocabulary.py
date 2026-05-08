@@ -14,6 +14,7 @@ class ConstructionMethod(StrEnum):
     DO_NOTHING_BASELINE = "DO_NOTHING_BASELINE"
     HEURISTIC_EXPLAINABLE = "HEURISTIC_EXPLAINABLE"
     MIN_TURNOVER = "MIN_TURNOVER"
+    COST_AWARE = "COST_AWARE"
     TAX_AWARE = "TAX_AWARE"
     LIQUIDITY_AWARE = "LIQUIDITY_AWARE"
     SOLVER_CONSTRAINED = "SOLVER_CONSTRAINED"
@@ -76,6 +77,7 @@ FIRST_WAVE_CONSTRUCTION_METHODS: tuple[ConstructionMethod, ...] = (
 SOURCE_AWARE_CONSTRUCTION_METHODS: frozenset[ConstructionMethod] = frozenset(
     {
         ConstructionMethod.TAX_AWARE,
+        ConstructionMethod.COST_AWARE,
         ConstructionMethod.LIQUIDITY_AWARE,
         ConstructionMethod.RISK_AWARE,
         ConstructionMethod.ESG_AWARE,

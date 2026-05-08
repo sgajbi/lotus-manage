@@ -125,7 +125,11 @@ Current repository posture:
     construction alternatives, and preserve supportability, source refs, content hashes, reason
     codes, evidence windows, missing securities, bounded curve points, and represented observation
     counts in the proof-pack `turnover_and_cost` section. Local estimated construction cost remains
-    labelled separately; manage does not claim predictive execution quotes or min-cost
+    labelled separately. RFC39-WTBD-006 is now implemented for source-owned observed-cost
+    construction comparison: the `COST_AWARE` method applies `TransactionCostCurve:v1` observed
+    average bps to candidate trade notionals, emits `ESTIMATED_COST` objective/constraint traces,
+    and degrades when the curve is missing or does not cover traded securities. Manage does not
+    claim predictive execution quotes, market-impact modelling, venue routing, or true min-cost
     optimization from observed booked-fee evidence. RFC40-WTBD-010 now has a manage backend portfolio-memory
     foundation through `/api/v1/rebalance/portfolio-memory/{portfolio_id}` and
     `src/core/portfolio_memory/`: it composes persisted mandate health snapshots, monitoring

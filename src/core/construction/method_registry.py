@@ -58,6 +58,25 @@ METHOD_REGISTRY: dict[ConstructionMethod, ConstructionMethodDefinition] = {
         fallback_method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
         support_promotion_gate="Turnover, trade count, drift reduction, and dropped-intent proof.",
     ),
+    ConstructionMethod.COST_AWARE: ConstructionMethodDefinition(
+        method=ConstructionMethod.COST_AWARE,
+        display_name="Cost Aware",
+        first_wave=False,
+        requires_solver=False,
+        required_source_families=[
+            ConstructionSourceFamily.PORTFOLIO_STATE,
+            ConstructionSourceFamily.MODEL_TARGETS,
+            ConstructionSourceFamily.MANDATE_BINDING,
+            ConstructionSourceFamily.INSTRUMENT_ELIGIBILITY,
+            ConstructionSourceFamily.MARKET_DATA,
+            ConstructionSourceFamily.TRANSACTION_COST,
+        ],
+        fallback_method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+        support_promotion_gate=(
+            "Source-owned observed transaction-cost curve evidence applied to candidate "
+            "trade notionals without predictive quote claims."
+        ),
+    ),
     ConstructionMethod.TAX_AWARE: ConstructionMethodDefinition(
         method=ConstructionMethod.TAX_AWARE,
         display_name="Tax Aware",
