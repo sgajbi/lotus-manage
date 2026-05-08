@@ -35,19 +35,19 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: this command-center seed-posture hardening slice after the RFC38-WTBD-003
-canonical DPM command-center seed learned to prove populated source-readiness `degraded`,
+Snapshot basis: the merged and wiki-published RFC38-WTBD-003 command-center seed-posture
+hardening slice. The canonical DPM command-center seed now proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
-ready/degraded/blocked source-readiness states for downstream consumers. This strengthens an already closed populated-seed WTBD;
-it does not close the unrelated RFC41-WTBD-003 tactical house-view, risk-event, and campaign-cohort
-source-owner gap.
+ready/degraded/blocked source-readiness states for downstream consumers. Degraded and blocked
+canonical fixtures remain source-owner follow-up, so this closure does not close the unrelated
+RFC41-WTBD-003 tactical house-view, risk-event, and campaign-cohort source-owner gap.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 30 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 31 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 25 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 24 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -63,9 +63,8 @@ Next bank-buyable product-readiness priorities:
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
-| 2 | RFC38-WTBD-003 hardening - DPM command-center seed postures | Extends the already closed populated DPM command-center canonical seed into explicit populated ready, selector-driven partial, and empty automation checks while preserving degraded and blocked as source-owner fixture follow-up. | Platform seed evidence records `posture_checks`; Workbench and Gateway preserve explicit non-ready command-center supportability without promoting unsupported fixtures as demo-ready screenshots. |
-| 3 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
-| 4 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
+| 2 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
+| 3 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 
 Execution rule:
 
@@ -749,7 +748,7 @@ products, and canonical seed automation belonged to downstream or source-owning 
 | RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
 | RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and originally recorded the canonical seed gap that RFC38-WTBD-003 later resolved for the populated governed portfolio. |
 | RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed, merged, CI-proven, live-proven, wiki-published, and hardened locally for populated ready/partial/empty seed posture checks | Platform canonical automation refreshes the governed DPM mandate from core through manage, runs one monitoring pass for command-center evidence, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified from Manage supportability. The current hardening adds platform seed `posture_checks` for populated source-ready `ready`, selector-driven `partial`, and empty-date `empty` command-center states. Degraded and blocked canonical fixtures remain source-owner follow-up rather than demo-ready claims. |
-| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` source authority consumed by `lotus-manage`, surfaced through `lotus-gateway` and `lotus-workbench` | Completed in this slice for populated source-owned PM-book monitoring cohorts | Manage monitoring run-once can now resolve PM-book cohorts from `PortfolioManagerBookMembership:v1` when callers omit mandate IDs. Workbench command-center monitoring uses that source-owned path by default. Populated degraded/partial/empty seed-posture checks are now covered by RFC38-WTBD-003 hardening; degraded/blocked fixtures remain source-owner follow-up, not a blocker for populated PM-book monitoring support. |
+| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` source authority consumed by `lotus-manage`, surfaced through `lotus-gateway` and `lotus-workbench` | Completed in this slice for populated source-owned PM-book monitoring cohorts | Manage monitoring run-once can now resolve PM-book cohorts from `PortfolioManagerBookMembership:v1` when callers omit mandate IDs. Workbench command-center monitoring uses that source-owned path by default. Populated ready/partial/empty seed-posture checks are now covered by RFC38-WTBD-003 hardening; degraded/blocked fixtures remain source-owner follow-up, not a blocker for populated PM-book monitoring support. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
 | RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
 | RFC38-WTBD-007 | Broader risk and performance health enrichment | `lotus-risk`, `lotus-performance` | Deferred unless owning-service contracts are consumed | Manage health cannot clone risk or performance methodology. Risk/performance attention must come from certified owners. |
