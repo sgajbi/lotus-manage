@@ -28,8 +28,10 @@ def test_method_statuses_are_bounded_and_do_not_add_ready_with_warnings() -> Non
 
 def test_source_aware_methods_require_source_supportability_posture() -> None:
     assert ConstructionMethod.TAX_AWARE in SOURCE_AWARE_CONSTRUCTION_METHODS
+    assert ConstructionMethod.COST_AWARE in SOURCE_AWARE_CONSTRUCTION_METHODS
     assert ConstructionMethod.DO_NOTHING_BASELINE not in SOURCE_AWARE_CONSTRUCTION_METHODS
     assert ConstructionSourceFamily.TAX_LOTS.value == "TAX_LOTS"
+    assert ConstructionSourceFamily.TRANSACTION_COST.value == "TRANSACTION_COST"
     assert ConstructionSourceFamily.RISK_ENRICHMENT.value == "RISK_ENRICHMENT"
 
 

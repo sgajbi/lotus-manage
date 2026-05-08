@@ -780,9 +780,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 32 |" in work_to_be_done
+    assert "| Done on merged/published truth | 33 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 23 |" in work_to_be_done
+    assert "| Remaining / open | 22 |" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
     assert "source-owned populated PM-book monitoring path" in work_to_be_done
     assert "RFC38-WTBD-003 hardening" in work_to_be_done
@@ -840,7 +840,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC40-WTBD-007 - Authoritative Transaction-Cost Curve" in work_to_be_done
     assert "`TransactionCostCurve:v1`" in work_to_be_done
     assert "AuthoritativeTransactionCostContext" in work_to_be_done
-    assert "predictive execution quotes or min-cost optimization" in work_to_be_done
+    assert "RFC39-WTBD-006 - Authoritative Transaction-Cost And Cost-Aware Alternatives" in (
+        work_to_be_done
+    )
+    assert "`COST_AWARE` construction method" in work_to_be_done
+    assert "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS" not in work_to_be_done
+    assert "market-impact modelling, venue routing" in work_to_be_done
     assert "lotus-gateway` PR #199" in work_to_be_done
     assert "lotus-workbench` PR #167" in work_to_be_done
     assert "lotus-platform` PR #307" in work_to_be_done
@@ -915,7 +920,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 32 done on merged/published truth, 4 partial" in (supported_features)
+    assert "59 WTBD items: 33 done on merged/published truth, 4 partial" in (supported_features)
     assert "PM-book-backed monitoring cohort resolution" in supported_features
     assert "PortfolioManagerBookMembership:v1" in supported_features
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
@@ -924,6 +929,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "source-owned observed transaction-cost evidence from `lotus-core`" in (
         supported_features
     )
+    assert "cost-aware comparison from `lotus-core` `TransactionCostCurve:v1`" in (
+        supported_features
+    )
+    assert "`COST_AWARE` applies source-owned observed average cost bps" in supported_features
     assert "Local estimated construction cost remains labelled separately" in supported_features
     assert "src/core/proof_packs/source_analytics.py" in supported_features
     assert "output/rfc0040-proof/20260507-230235/manifest.json" in supported_features

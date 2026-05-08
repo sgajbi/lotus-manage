@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-08T14:17:08.970972+00:00",
+  "generatedAt": "2026-05-08T14:36:27.650947+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -614,7 +614,7 @@
       "semanticId": "lotus.authority_context",
       "canonicalTerm": "authority_context",
       "preferredName": "authority_context",
-      "description": "Optional source-backed authority context for advanced RFC-0039 methods. `RISK_AWARE` may also resolve lotus-risk concentration authority when `DPM_RISK_BASE_URL` is configured. `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` require source-backed policy/scenario context to be certified READY; otherwise they degrade or block with explicit reason codes.",
+      "description": "Optional source-backed authority context for advanced RFC-0039 methods. `RISK_AWARE` may also resolve lotus-risk concentration authority when `DPM_RISK_BASE_URL` is configured. `COST_AWARE` consumes source-owned `TransactionCostCurve:v1` observed cost evidence for comparison only. `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` require source-backed policy/scenario context to be certified READY; otherwise they degrade or block with explicit reason codes.",
       "example": "authority_context_example",
       "type": "object",
       "locations": [
@@ -4710,7 +4710,7 @@
       "semanticId": "lotus.methods",
       "canonicalTerm": "methods",
       "preferredName": "methods",
-      "description": "Optional RFC-0039 construction methods to generate. Omit for the default first-wave set, or include second-wave methods when the caller needs solver, risk, ESG, currency, liquidity, or regime-aware alternatives with explicit supportability.",
+      "description": "Optional RFC-0039 construction methods to generate. Omit for the default first-wave set, or include second-wave methods when the caller needs solver, cost, risk, ESG, currency, liquidity, or regime-aware alternatives with explicit supportability.",
       "example": "methods_example",
       "type": "object",
       "locations": [
