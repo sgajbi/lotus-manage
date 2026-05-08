@@ -127,10 +127,11 @@ Current repository posture:
     Manage now emits stable event identity plus retention, redaction, access, and audit policy in
     the portfolio-memory API contract. `lotus-report` PR #92 adds the report-side bounded
     `portfolio_memory_context` consumer for proof-pack, rebalance-wave, and outcome-review report
-    jobs without reconstructing portfolio-memory events. Manage still needs to attach that context
-    to report inputs before the report path is end-to-end. AI timeline consumers and future report,
-    AI, OMS, PM-scoring, and client-communication source-event families remain downstream WTBD
-    scope.
+    jobs without reconstructing portfolio-memory events. Manage report-input APIs now attach that
+    bounded context to proof-pack, rebalance-wave, and outcome-review report inputs while keeping
+    portfolio-memory hashes separate from recursive report-input evidence hashes. AI timeline
+    consumers and future report, AI, OMS, PM-scoring, and client-communication source-event
+    families remain downstream WTBD scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source

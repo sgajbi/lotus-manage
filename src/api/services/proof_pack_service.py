@@ -19,6 +19,9 @@ from src.core.proof_packs import (
     proof_pack_id_for_selected_alternative,
 )
 from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
+from src.api.services.portfolio_memory_context_service import (
+    build_report_portfolio_memory_context,
+)
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackEvidenceRef,
@@ -28,7 +31,10 @@ from src.core.proof_packs.repository import (
     DpmProofPackConflictError,
     DpmProofPackRepository,
 )
+from src.core.outcomes.repository import DpmOutcomeReviewRepository
+from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
+from src.core.waves.repository import DpmWaveRepository
 
 PROOF_PACK_RETENTION_DAYS = 365 * 7
 
@@ -237,12 +243,23 @@ def get_report_input(
     *,
     proof_pack_id: str,
     proof_pack_repository: DpmProofPackRepository,
+    wave_repository: DpmWaveRepository | None = None,
+    outcome_review_repository: DpmOutcomeReviewRepository | None = None,
+    mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmProofPackReportInput:
+    proof_pack = get_proof_pack(
+        proof_pack_id=proof_pack_id,
+        proof_pack_repository=proof_pack_repository,
+    )
     return build_report_input(
-        get_proof_pack(
-            proof_pack_id=proof_pack_id,
+        proof_pack,
+        portfolio_memory_context=_portfolio_memory_context_for_report(
+            portfolio_id=proof_pack.portfolio_id,
             proof_pack_repository=proof_pack_repository,
-        )
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
+        ),
     )
 
 
@@ -256,6 +273,25 @@ def get_ai_evidence_input(
             proof_pack_id=proof_pack_id,
             proof_pack_repository=proof_pack_repository,
         )
+    )
+
+
+def _portfolio_memory_context_for_report(
+    *,
+    portfolio_id: str,
+    proof_pack_repository: DpmProofPackRepository,
+    wave_repository: DpmWaveRepository | None,
+    outcome_review_repository: DpmOutcomeReviewRepository | None,
+    mandate_repository: DpmMandateRepository | None,
+) -> DpmPortfolioMemoryReportContext | None:
+    if wave_repository is None or outcome_review_repository is None:
+        return None
+    return build_report_portfolio_memory_context(
+        portfolio_id=portfolio_id,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
     )
 
 

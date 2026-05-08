@@ -9,7 +9,9 @@ from pydantic import BaseModel, Field
 from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
+    get_outcome_review_repository,
     get_proof_pack_repository,
+    get_wave_repository,
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import proof_pack_service
@@ -19,7 +21,9 @@ from src.core.proof_packs import render_proof_pack_markdown
 from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
 from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.waves.repository import DpmWaveRepository
 
 
 PROOF_PACK_EXAMPLE = {
@@ -296,11 +300,17 @@ def get_proof_pack_report_input(
         Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmProofPackReportInput:
     try:
         return proof_pack_service.get_report_input(
             proof_pack_id=proof_pack_id,
             proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
         )
     except Exception as exc:
         http_exc = proof_pack_service.to_api_http_exception(exc)

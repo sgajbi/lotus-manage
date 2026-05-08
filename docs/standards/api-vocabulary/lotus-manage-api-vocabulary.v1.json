@@ -8,13 +8,13 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-08T02:50:02.021657+00:00",
+  "generatedAt": "2026-05-08T03:29:59.334744+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
       "canonicalTerm": "access_classification",
       "preferredName": "access_classification",
-      "description": "Audience and access classification for the event projection.",
+      "description": "Audience and access classification.",
       "example": "sample_access_classification",
       "type": "string",
       "locations": [
@@ -600,7 +600,7 @@
       "semanticId": "lotus.audit_policy",
       "canonicalTerm": "audit_policy",
       "preferredName": "audit_policy",
-      "description": "Audit policy for downstream portfolio-memory consumers.",
+      "description": "Audit policy for downstream consumers.",
       "example": "sample_audit_policy",
       "type": "string",
       "locations": [
@@ -2380,7 +2380,7 @@
       "semanticId": "lotus.event_count",
       "canonicalTerm": "event_count",
       "preferredName": "event_count",
-      "description": "Returned event count.",
+      "description": "Total event count in the source memory projection.",
       "example": 10,
       "type": "integer",
       "locations": [
@@ -2408,7 +2408,7 @@
       "semanticId": "lotus.event_identity",
       "canonicalTerm": "event_identity",
       "preferredName": "event_identity",
-      "description": "Stable cross-app event identity derived from source system, source type, source id, and source content hash posture.",
+      "description": "Stable source-backed portfolio-memory event identity.",
       "example": "sample_event_identity",
       "type": "string",
       "locations": [
@@ -2416,6 +2416,22 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.event_refs",
+      "canonicalTerm": "event_refs",
+      "preferredName": "event_refs",
+      "description": "Bounded event refs for report lineage.",
+      "example": [
+        "event_refs_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -3127,7 +3143,7 @@
       "semanticId": "lotus.governance_policy",
       "canonicalTerm": "governance_policy",
       "preferredName": "governance_policy",
-      "description": "Portfolio-memory event identity, retention, redaction, access, and audit policy.",
+      "description": "Portfolio-memory retention, redaction, access, audit, and source policy.",
       "example": {
         "sample_key": "sample_value"
       },
@@ -5509,6 +5525,20 @@
       ]
     },
     {
+      "semanticId": "lotus.portfolio_memory_context",
+      "canonicalTerm": "portfolio_memory_context",
+      "preferredName": "portfolio_memory_context",
+      "description": "Optional Manage-owned portfolio-memory lineage context for downstream reports. This context carries its own content hash and is excluded from the proof-pack report-input evidence hash to avoid recursive report-input lineage.",
+      "example": "portfolio_memory_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.portfolio_snapshot",
       "canonicalTerm": "portfolio_snapshot",
       "preferredName": "portfolio_snapshot",
@@ -6701,7 +6731,7 @@
       "semanticId": "lotus.retention_policy",
       "canonicalTerm": "retention_policy",
       "preferredName": "retention_policy",
-      "description": "Retention policy applied to the wave.",
+      "description": "Retention policy for the event projection.",
       "example": "sample_retention_policy",
       "type": "string",
       "locations": [
@@ -7806,7 +7836,7 @@
       "semanticId": "lotus.source_systems",
       "canonicalTerm": "source_systems",
       "preferredName": "source_systems",
-      "description": "Owning source systems represented in this aggregate.",
+      "description": "Source systems represented by the memory view.",
       "example": [
         "sample_source_systems_item"
       ],
@@ -55567,6 +55597,158 @@
             "attributeRef": "#/attributeCatalog/lotus.source_hashes"
           },
           {
+            "name": "portfolio_memory_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_memory_context",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_memory_context"
+          },
+          {
+            "name": "portfolio_memory_context.portfolio_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "portfolio_memory_context.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "portfolio_memory_context.event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_count",
+            "attributeRef": "#/attributeCatalog/lotus.event_count"
+          },
+          {
+            "name": "portfolio_memory_context.source_systems",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_systems",
+            "attributeRef": "#/attributeCatalog/lotus.source_systems"
+          },
+          {
+            "name": "portfolio_memory_context.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "portfolio_memory_context.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.governance_policy",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.governance_policy",
+            "attributeRef": "#/attributeCatalog/lotus.governance_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.event_refs",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_identity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_identity",
+            "attributeRef": "#/attributeCatalog/lotus.event_identity"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_type",
+            "attributeRef": "#/attributeCatalog/lotus.event_type"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].retention_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.retention_policy",
+            "attributeRef": "#/attributeCatalog/lotus.retention_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].redaction_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.redaction_policy",
+            "attributeRef": "#/attributeCatalog/lotus.redaction_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].audit_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.audit_policy",
+            "attributeRef": "#/attributeCatalog/lotus.audit_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].access_classification",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_classification",
+            "attributeRef": "#/attributeCatalog/lotus.access_classification"
+          },
+          {
             "name": "redaction_policy",
             "location": "body",
             "required": true,
@@ -67744,6 +67926,158 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_memory_context",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_memory_context"
+          },
+          {
+            "name": "portfolio_memory_context.portfolio_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "portfolio_memory_context.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "portfolio_memory_context.event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_count",
+            "attributeRef": "#/attributeCatalog/lotus.event_count"
+          },
+          {
+            "name": "portfolio_memory_context.source_systems",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_systems",
+            "attributeRef": "#/attributeCatalog/lotus.source_systems"
+          },
+          {
+            "name": "portfolio_memory_context.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "portfolio_memory_context.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.governance_policy",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.governance_policy",
+            "attributeRef": "#/attributeCatalog/lotus.governance_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.event_refs",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_identity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_identity",
+            "attributeRef": "#/attributeCatalog/lotus.event_identity"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_type",
+            "attributeRef": "#/attributeCatalog/lotus.event_type"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].retention_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.retention_policy",
+            "attributeRef": "#/attributeCatalog/lotus.retention_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].redaction_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.redaction_policy",
+            "attributeRef": "#/attributeCatalog/lotus.redaction_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].audit_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.audit_policy",
+            "attributeRef": "#/attributeCatalog/lotus.audit_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].access_classification",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_classification",
+            "attributeRef": "#/attributeCatalog/lotus.access_classification"
+          },
+          {
             "name": "redaction_policy",
             "location": "body",
             "required": true,
@@ -73958,6 +74292,158 @@
             "type": "object",
             "semanticId": "lotus.section_hashes",
             "attributeRef": "#/attributeCatalog/lotus.section_hashes"
+          },
+          {
+            "name": "portfolio_memory_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_memory_context",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_memory_context"
+          },
+          {
+            "name": "portfolio_memory_context.portfolio_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "portfolio_memory_context.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "portfolio_memory_context.event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_count",
+            "attributeRef": "#/attributeCatalog/lotus.event_count"
+          },
+          {
+            "name": "portfolio_memory_context.source_systems",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_systems",
+            "attributeRef": "#/attributeCatalog/lotus.source_systems"
+          },
+          {
+            "name": "portfolio_memory_context.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "portfolio_memory_context.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.governance_policy",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.governance_policy",
+            "attributeRef": "#/attributeCatalog/lotus.governance_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.event_refs",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_identity",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_identity",
+            "attributeRef": "#/attributeCatalog/lotus.event_identity"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_type",
+            "attributeRef": "#/attributeCatalog/lotus.event_type"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].retention_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.retention_policy",
+            "attributeRef": "#/attributeCatalog/lotus.retention_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].redaction_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.redaction_policy",
+            "attributeRef": "#/attributeCatalog/lotus.redaction_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].audit_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.audit_policy",
+            "attributeRef": "#/attributeCatalog/lotus.audit_policy"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].access_classification",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_classification",
+            "attributeRef": "#/attributeCatalog/lotus.access_classification"
           },
           {
             "name": "redaction_policy",

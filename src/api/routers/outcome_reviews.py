@@ -7,7 +7,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
-from src.api.dependencies import get_outcome_review_repository
+from src.api.dependencies import (
+    get_mandate_repository,
+    get_outcome_review_repository,
+    get_proof_pack_repository,
+    get_wave_repository,
+)
 from src.api.observability import record_outcome_review_supportability
 from src.api.services.outcome_review_service import (
     DpmOutcomeDimensionConfig,
@@ -34,6 +39,9 @@ from src.core.outcomes import (
     OutcomeReviewState,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
+from src.core.mandate_repository import DpmMandateRepository
+from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.waves.repository import DpmWaveRepository
 
 logger = logging.getLogger("lotus-manage.outcome_reviews")
 OUTCOME_CREATE_SURFACE = "rebalance/outcome-reviews/create"
@@ -479,9 +487,18 @@ def _metric_reason(state: str) -> str:
 def get_outcome_review_report_input_endpoint(
     outcome_review_id: str,
     repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmOutcomeReportInput:
     try:
-        return get_report_input(outcome_review_id=outcome_review_id, repository=repository)
+        return get_report_input(
+            outcome_review_id=outcome_review_id,
+            repository=repository,
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            mandate_repository=mandate_repository,
+        )
     except DpmOutcomeReviewNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"

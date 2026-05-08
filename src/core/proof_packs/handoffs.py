@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.proof_packs.markdown import render_proof_pack_markdown
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
@@ -66,6 +67,14 @@ class DpmProofPackReportInput(BaseModel):
     sections: list[DpmProofPackReportSection] = Field(description="Report section payloads.")
     markdown_summary: str = Field(description="Deterministic Markdown summary.")
     source_hashes: dict[str, str] = Field(description="Proof-pack source hashes.")
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = Field(
+        default=None,
+        description=(
+            "Optional Manage-owned portfolio-memory lineage context for downstream reports. "
+            "This context carries its own content hash and is excluded from the proof-pack "
+            "report-input evidence hash to avoid recursive report-input lineage."
+        ),
+    )
     redaction_policy: str = Field(description="Redaction policy applied to report input.")
     evidence_ref: DpmProofPackEvidenceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical report-input hash.")
@@ -102,7 +111,11 @@ class DpmProofPackAiEvidenceInput(BaseModel):
     content_hash: str = Field(description="Canonical AI-evidence input hash.")
 
 
-def build_report_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackReportInput:
+def build_report_input(
+    proof_pack: DpmPreTradeProofPack,
+    *,
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = None,
+) -> DpmProofPackReportInput:
     payload = DpmProofPackReportInput(
         contract_version=HANDOFF_CONTRACT_VERSION,
         proof_pack_id=proof_pack.proof_pack_id,
@@ -139,6 +152,7 @@ def build_report_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackReportIn
         ],
         markdown_summary=render_proof_pack_markdown(proof_pack),
         source_hashes=proof_pack.source_hashes,
+        portfolio_memory_context=portfolio_memory_context,
         redaction_policy="NO_RAW_PAYLOADS",
         evidence_ref=_placeholder_ref(
             ref_type=REPORT_INPUT_REF_TYPE,
@@ -146,7 +160,9 @@ def build_report_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackReportIn
         ),
         content_hash="",
     ).model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    payload["content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"content_hash", "portfolio_memory_context"})
+    )
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmProofPackReportInput.model_validate(payload)
 

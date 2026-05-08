@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import pytest
 
 from src.core.models import EngineOptions, RebalanceResult
+from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.proof_packs import (
     assert_no_ai_forbidden_fields,
     build_ai_evidence_input,
@@ -90,6 +91,47 @@ def test_report_input_is_deterministic_and_contains_render_ready_context() -> No
     assert first.markdown_summary.startswith("# Pre-Trade Proof Pack")
     assert len(first.sections) == len(proof_pack.sections)
     assert first.redaction_policy == "NO_RAW_PAYLOADS"
+
+
+def test_report_input_carries_portfolio_memory_without_changing_evidence_hash() -> None:
+    proof_pack = _proof_pack()
+    without_context = build_report_input(proof_pack)
+    memory_context = DpmPortfolioMemoryReportContext.model_validate(
+        {
+            "portfolio_id": proof_pack.portfolio_id,
+            "supportability_state": "READY",
+            "event_count": 1,
+            "source_systems": ["lotus-manage"],
+            "reason_codes": ["proof_pack_ready"],
+            "content_hash": "sha256:portfolio-memory",
+            "governance_policy": {
+                "retention_policy": "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y",
+                "redaction_policy": "NO_RAW_PAYLOADS",
+                "audit_policy": "AUDIT_READ_AND_EXPORT",
+                "access_classification": "CLIENT_CONFIDENTIAL_INTERNAL",
+            },
+            "event_refs": [
+                {
+                    "event_identity": "lotus-manage:DPM_PRE_TRADE_PROOF_PACK:dpp_001:sha256:proof-pack",
+                    "event_type": "PROOF_PACK_CREATED",
+                    "source_system": "lotus-manage",
+                    "source_type": "DPM_PRE_TRADE_PROOF_PACK",
+                    "source_id": proof_pack.proof_pack_id,
+                    "content_hash": proof_pack.content_hash,
+                    "retention_policy": "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y",
+                    "redaction_policy": "NO_RAW_PAYLOADS",
+                    "audit_policy": "AUDIT_READ_AND_EXPORT",
+                    "access_classification": "CLIENT_CONFIDENTIAL_INTERNAL",
+                }
+            ],
+        }
+    )
+
+    with_context = build_report_input(proof_pack, portfolio_memory_context=memory_context)
+
+    assert with_context.portfolio_memory_context == memory_context
+    assert with_context.content_hash == without_context.content_hash
+    assert with_context.evidence_ref.content_hash == without_context.evidence_ref.content_hash
 
 
 def test_ai_evidence_input_is_bounded_and_removes_forbidden_fields() -> None:
