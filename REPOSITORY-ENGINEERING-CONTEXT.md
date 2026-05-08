@@ -159,10 +159,13 @@ Current repository posture:
     PR #12, and `lotus-archive` PR #24: manage remains deterministic wave report-input authority,
     while report/render/archive own job materialization, the `rebalance-wave` template, generated
     artifact metadata, retention posture, and archive lifecycle. PM-book discovery is implemented
-    for `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`; CIO/risk-event
-    cohort discovery, wave AI memo generation, Gateway/Workbench rendering of wave
-    risk/performance analytics posture, and external OMS execution remain unpromoted until source
-    products and owning downstream implementations are live-proven.
+    for `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`; `lotus-ai` PR #63
+    implements the owner-side `dpm_wave_pm_memo.pack@v1` workflow over Manage-owned
+    `DpmWaveReportInput` with forbidden-field/action/output guardrails and review-required
+    support-only output. Gateway/Workbench rendering of the wave AI memo path, CIO/risk-event
+    cohort discovery, Gateway/Workbench rendering of wave risk/performance analytics posture, and
+    external OMS execution remain unpromoted until source products and owning downstream
+    implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,

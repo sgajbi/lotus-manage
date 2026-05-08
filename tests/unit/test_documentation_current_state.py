@@ -777,9 +777,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 27 |" in work_to_be_done
-    assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 28 |" in work_to_be_done
-    assert "RFC40-WTBD-010 portfolio-memory context slice" in work_to_be_done
+    assert "| Partial / in progress | 5 |" in work_to_be_done
+    assert "| Remaining / open | 27 |" in work_to_be_done
+    assert "RFC41-WTBD-009 owner-side AI memo slice" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -856,6 +856,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-report` PR #91" in work_to_be_done
     assert "`lotus-render` PR #12" in work_to_be_done
     assert "`lotus-archive` PR #24" in work_to_be_done
+    assert "RFC41-WTBD-009 - AI PM Memo Generation From Wave Evidence" in work_to_be_done
+    assert "`lotus-ai` PR #63" in work_to_be_done
+    assert "`dpm_wave_pm_memo.pack@v1`" in work_to_be_done
+    assert "review-required support-only memo payload" in work_to_be_done
+    assert "Gateway/Workbench must consume the AI-owned workflow" in work_to_be_done
     assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
     assert "RFC42-WTBD-001" in work_to_be_done
     assert "RFC42-WTBD-008" in work_to_be_done
@@ -893,7 +898,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 27 done on merged/published truth" in (supported_features)
+    assert "59 WTBD items: 27 done on merged/published truth, 5 partial" in (supported_features)
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
         supported_features
     )
@@ -907,6 +912,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "AI memo generation from wave evidence" in supported_features
+    assert "`lotus-ai` PR #63 implements owner-side `dpm_wave_pm_memo.pack@v1`" in (
+        supported_features
+    )
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
     assert (
         "Supported as a manage backend foundation and first-wave Gateway/Workbench product path"
