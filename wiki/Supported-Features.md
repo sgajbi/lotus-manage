@@ -49,16 +49,15 @@ Current first-wave product posture:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it
-tracks 59 WTBD items: 30 done on merged/published truth, 4 partial or in progress, and 25 remaining
+tracks 59 WTBD items: 31 done on merged/published truth, 4 partial or in progress, and 24 remaining
 or open. The next execution wave should focus on product surfaces that materially improve
 bank-buyable demo and operating value without inventing unsupported source truth.
 
 | Priority | WTBD | Business value | Required proof before support claim |
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` now has the bounded context consumer seam; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
-| 2 | RFC38-WTBD-003 hardening - DPM command-center seed postures | Extends the already closed populated DPM command-center canonical seed into explicit populated ready, selector-driven partial, and empty automation checks while preserving degraded and blocked as source-owner fixture follow-up. | Platform seed evidence records `posture_checks`; Workbench and Gateway preserve explicit non-ready command-center supportability without promoting unsupported fixtures as demo-ready screenshots. |
-| 3 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
-| 4 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
+| 2 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
+| 3 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 
 Roadmap boundaries:
 
