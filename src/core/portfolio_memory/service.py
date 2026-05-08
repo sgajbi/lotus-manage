@@ -4,6 +4,12 @@ from datetime import datetime, timezone
 from typing import Iterable
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.mandate_repository import DpmMandateRepository
+from src.core.mandates import (
+    DpmMandateHealthSnapshot,
+    DpmMonitoringException,
+    DpmSourceProductLineage,
+)
 from src.core.outcomes.models import DpmOutcomeEvent, DpmOutcomeSourceRef, DpmPostTradeOutcomeReview
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
@@ -34,6 +40,7 @@ def build_portfolio_memory(
     proof_pack_repository: DpmProofPackRepository,
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
+    mandate_repository: DpmMandateRepository | None = None,
     limit: int = 100,
     generated_at: datetime | None = None,
 ) -> DpmPortfolioMemory:
@@ -44,6 +51,15 @@ def build_portfolio_memory(
     proof_packs = proof_pack_repository.list_proof_packs(portfolio_id=portfolio_id, limit=limit)
     for proof_pack in proof_packs:
         events.extend(_proof_pack_events(proof_pack))
+
+    if mandate_repository is not None:
+        events.extend(
+            _mandate_events(
+                portfolio_id=portfolio_id,
+                mandate_repository=mandate_repository,
+                limit=limit,
+            )
+        )
 
     for wave in _waves_for_portfolio(
         portfolio_id=portfolio_id,
@@ -90,6 +106,138 @@ def build_portfolio_memory(
     payload = memory.model_dump(mode="json")
     payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
     return DpmPortfolioMemory.model_validate(payload)
+
+
+def _mandate_events(
+    *,
+    portfolio_id: str,
+    mandate_repository: DpmMandateRepository,
+    limit: int,
+) -> list[DpmPortfolioMemoryEvent]:
+    twin = mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
+    events: list[DpmPortfolioMemoryEvent] = []
+    if twin is not None:
+        health_snapshot = mandate_repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
+        if health_snapshot is not None:
+            events.append(
+                _mandate_health_event(
+                    health_snapshot=health_snapshot,
+                    source_lineage=twin.source_lineage,
+                )
+            )
+
+    exceptions, _cursor = mandate_repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
+        mandate_id=twin.mandate_id if twin is not None else None,
+        portfolio_id=portfolio_id,
+        state=None,
+        limit=limit,
+        cursor=None,
+    )
+    events.extend(_mandate_exception_event(exception) for exception in exceptions)
+    return events
+
+
+def _mandate_health_event(
+    *,
+    health_snapshot: DpmMandateHealthSnapshot,
+    source_lineage: list[DpmSourceProductLineage],
+) -> DpmPortfolioMemoryEvent:
+    reason_codes = sorted(
+        {reason.reason_code for reason in health_snapshot.top_reasons if reason.reason_code}
+        | {score.reason_code for score in health_snapshot.dimension_scores if score.reason_code}
+    )
+    return DpmPortfolioMemoryEvent(
+        event_id=f"memory:mandate:{health_snapshot.mandate_id}:health:{health_snapshot.health_snapshot_id}",
+        event_type="MANDATE_HEALTH_SNAPSHOT",
+        event_time=health_snapshot.calculated_at.isoformat(),
+        actor="lotus-manage",
+        source_system="lotus-manage",
+        source_type="DPM_MANDATE_HEALTH_SNAPSHOT",
+        source_id=health_snapshot.health_snapshot_id,
+        status=health_snapshot.health_state.value,
+        supportability_state=_state(health_snapshot.health_state.value),
+        summary=(
+            f"Mandate health snapshot {health_snapshot.health_snapshot_id} calculated as "
+            f"{health_snapshot.health_state.value}."
+        ),
+        reason_codes=reason_codes,
+        source_refs=[_from_source_product_lineage(ref) for ref in source_lineage],
+        artifact_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="DPM_MANDATE_HEALTH_EVIDENCE_REF",
+                source_id=evidence_ref,
+            )
+            for evidence_ref in health_snapshot.evidence_refs
+        ],
+        content_hash=hash_canonical_payload(health_snapshot.model_dump(mode="json")),
+        metadata={
+            "mandate_id": health_snapshot.mandate_id,
+            "as_of_date": health_snapshot.as_of_date.isoformat(),
+            "health_score": health_snapshot.health_score,
+            "recommended_action": health_snapshot.recommended_action.value,
+            "source_readiness_state": health_snapshot.source_readiness_state,
+            "dimension_count": len(health_snapshot.dimension_scores),
+        },
+    )
+
+
+def _mandate_exception_event(
+    exception: DpmMonitoringException,
+) -> DpmPortfolioMemoryEvent:
+    reason_codes = sorted(
+        {
+            exception.reason_code,
+            exception.dimension.value,
+            exception.severity.value,
+        }
+    )
+    return DpmPortfolioMemoryEvent(
+        event_id=f"memory:mandate:{exception.mandate_id}:exception:{exception.exception_id}",
+        event_type="MANDATE_MONITORING_EXCEPTION",
+        event_time=exception.detected_at.isoformat(),
+        actor="lotus-manage",
+        source_system="lotus-manage",
+        source_type="DPM_MONITORING_EXCEPTION",
+        source_id=exception.exception_id,
+        status=exception.state,
+        supportability_state=_monitoring_exception_state(exception),
+        summary=(
+            f"Mandate monitoring exception {exception.exception_id} is {exception.state} "
+            f"for {exception.dimension.value}."
+        ),
+        reason_codes=reason_codes,
+        source_refs=[_from_source_product_lineage(ref) for ref in exception.source_lineage],
+        artifact_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="DPM_MONITORING_RUN",
+                source_id=exception.monitoring_run_id,
+            )
+        ]
+        if exception.monitoring_run_id is not None
+        else [],
+        content_hash=hash_canonical_payload(exception.model_dump(mode="json")),
+        metadata={
+            "mandate_id": exception.mandate_id,
+            "monitoring_run_id": exception.monitoring_run_id,
+            "as_of_date": exception.as_of_date.isoformat(),
+            "dimension": exception.dimension.value,
+            "severity": exception.severity.value,
+            "recommended_action": exception.recommended_action.value,
+            "measured_value": str(exception.measured_value)
+            if exception.measured_value is not None
+            else None,
+            "threshold_value": str(exception.threshold_value)
+            if exception.threshold_value is not None
+            else None,
+            "resolved_at": exception.resolved_at.isoformat()
+            if exception.resolved_at is not None
+            else None,
+            "resolution_reason": exception.resolution_reason,
+        },
+    )
 
 
 def _proof_pack_events(proof_pack: DpmPreTradeProofPack) -> list[DpmPortfolioMemoryEvent]:
@@ -423,6 +571,28 @@ def _from_outcome_source_ref(ref: DpmOutcomeSourceRef) -> DpmPortfolioMemorySour
         source_version=ref.source_version,
         content_hash=ref.content_hash,
     )
+
+
+def _from_source_product_lineage(ref: DpmSourceProductLineage) -> DpmPortfolioMemorySourceRef:
+    return DpmPortfolioMemorySourceRef(
+        source_system=ref.source_system,
+        source_type=ref.product_name,
+        source_id=ref.source_record_id or ref.product_name,
+        source_version=ref.product_version,
+        supportability_state=ref.data_quality_status,
+    )
+
+
+def _monitoring_exception_state(
+    exception: DpmMonitoringException,
+) -> PortfolioMemorySupportabilityState:
+    if exception.state == "RESOLVED":
+        return "READY"
+    if exception.severity.value == "CRITICAL":
+        return "BLOCKED"
+    if exception.severity.value == "WARNING":
+        return "DEGRADED"
+    return "PENDING_REVIEW"
 
 
 def _wave_event_metadata(event: DpmRebalanceWaveEvent) -> dict[str, object]:

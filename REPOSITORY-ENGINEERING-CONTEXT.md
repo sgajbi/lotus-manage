@@ -116,15 +116,16 @@ Current repository posture:
     content hashes, reason codes, and bounded source-emitted measures without manage-local
     risk/performance methodology. RFC40-WTBD-010 now has a manage backend portfolio-memory
     foundation through `/api/v1/rebalance/portfolio-memory/{portfolio_id}` and
-    `src/core/portfolio_memory/`: it composes persisted proof packs, proof-pack-local decision
-    timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events
-    into a deterministic, source-backed, hashable timeline without reconstructing risk,
-    performance, execution, tax, cash, FX, or source-owner methodology. First-wave
+    `src/core/portfolio_memory/`: it composes persisted mandate health snapshots, monitoring
+    exceptions, proof packs, proof-pack-local decision timeline events, RFC-0041 wave events,
+    internal handoff refs, and RFC-0042 outcome-review events into a deterministic, source-backed,
+    hashable timeline without reconstructing mandate health, risk, performance, execution, tax,
+    cash, FX, or source-owner methodology. First-wave
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
     PR #199, `lotus-workbench` PR #167, `lotus-platform` PR #307, and canonical Workbench evidence
     `lotus-workbench/output/playwright/live-canonical/dpm-portfolio-memory-live.png`.
-    Mandate-monitoring exception nodes, cross-app event identity/retention/redaction/audit policy,
-    and report/AI timeline consumers remain downstream WTBD scope.
+    Cross-app event identity/retention/redaction/audit policy and report/AI timeline consumers
+    remain downstream WTBD scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source
