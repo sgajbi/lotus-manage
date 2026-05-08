@@ -4,8 +4,12 @@ from decimal import Decimal
 import pytest
 
 from src.core.construction import (
+    AuthoritativeClientRestrictionContext,
+    AuthoritativeClientRestrictionRule,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    AuthoritativeSustainabilityPreference,
+    AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
     ConstructionAuthorityContext,
@@ -26,6 +30,10 @@ from src.core.proof_packs import (
     build_proof_pack_from_selected_alternative,
 )
 from src.core.proof_packs import builder as builder_module
+from src.core.proof_packs.source_analytics import (
+    ProofPackAnalyticsFamily,
+    source_analytics_for_alternative,
+)
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
 from tests.shared.factories import (
@@ -546,6 +554,218 @@ def test_selected_alternative_proof_pack_distinguishes_estimated_and_source_owne
         ref.source_system == "lotus-core" and ref.source_type == "TransactionCostCurve"
         for ref in pack.sections[0].source_refs
     )
+
+
+def test_selected_alternative_proof_pack_preserves_restriction_and_sustainability_sources() -> None:
+    result = _ready_rebalance_result()
+    authority_context = ConstructionAuthorityContext(
+        client_restriction_context=AuthoritativeClientRestrictionContext(
+            supportability_status="READY",
+            source_system="lotus-core",
+            source_product_name="ClientRestrictionProfile",
+            source_product_version="v1",
+            source_id="sha256:client-restrictions",
+            content_hash="sha256:client-restrictions",
+            portfolio_id="pf_proof_pack_1",
+            client_id="client_001",
+            mandate_id="mandate_001",
+            as_of_date="2026-05-03",
+            restriction_count=1,
+            reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+            restrictions=[
+                AuthoritativeClientRestrictionRule(
+                    restriction_scope="instrument",
+                    restriction_code="NO_PRIVATE_CREDIT_BUY",
+                    restriction_status="active",
+                    restriction_source="client_mandate",
+                    applies_to_buy=True,
+                    applies_to_sell=False,
+                    instrument_ids=["PRIVATE_CREDIT_FUND"],
+                    effective_from="2026-01-01",
+                    restriction_version=1,
+                    source_record_id="client-restriction:1",
+                )
+            ],
+        ),
+        sustainability_preference_context=AuthoritativeSustainabilityPreferenceContext(
+            supportability_status="PENDING_REVIEW",
+            source_system="lotus-core",
+            source_product_name="SustainabilityPreferenceProfile",
+            source_product_version="v1",
+            source_id="sha256:sustainability-preferences",
+            content_hash="sha256:sustainability-preferences",
+            portfolio_id="pf_proof_pack_1",
+            client_id="client_001",
+            mandate_id="mandate_001",
+            as_of_date="2026-05-03",
+            preference_count=1,
+            reason_codes=["SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED"],
+            preferences=[
+                AuthoritativeSustainabilityPreference(
+                    preference_framework="LOTUS_SUSTAINABILITY_V1",
+                    preference_code="MIN_SUSTAINABLE_ALLOCATION",
+                    preference_status="active",
+                    preference_source="client_mandate",
+                    minimum_allocation=Decimal("0.20"),
+                    applies_to_asset_classes=["Equity"],
+                    exclusion_codes=["THERMAL_COAL"],
+                    positive_tilt_codes=["LOW_CARBON_TRANSITION"],
+                    effective_from="2026-01-01",
+                    preference_version=1,
+                    source_record_id="sustainability:1",
+                )
+            ],
+        ),
+    )
+    alternative = build_rebalance_result_alternative(result=result).model_copy(
+        update={
+            "diagnostics": {
+                "authority_context": authority_context.model_dump(
+                    mode="json",
+                    exclude_none=True,
+                )
+            }
+        }
+    )
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_client_esg_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        run=_run_record(result=result),
+        created_by="pm_001",
+        reason="Use source-owned restriction and sustainability evidence for proof-pack review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    restrictions = _section(pack, "eligibility_and_restrictions")
+    sustainability = _section(pack, "sustainability_controls")
+
+    assert restrictions.state == "READY"
+    assert restrictions.facts["source_product_name"] == "ClientRestrictionProfile"
+    assert restrictions.metrics["restriction_count"] == 1
+    assert restrictions.facts["restrictions"][0]["restriction_code"] == "NO_PRIVATE_CREDIT_BUY"
+    assert sustainability.state == "PENDING_REVIEW"
+    assert sustainability.facts["source_product_name"] == "SustainabilityPreferenceProfile"
+    assert sustainability.metrics["preference_count"] == 1
+    assert "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED" in sustainability.reason_codes
+    assert pack.source_hashes["client_restriction_context"] == "sha256:client-restrictions"
+    assert pack.source_hashes["sustainability_preference_context"] == (
+        "sha256:sustainability-preferences"
+    )
+    assert any(
+        ref.source_system == "lotus-core" and ref.source_type == "ClientRestrictionProfile"
+        for ref in pack.sections[0].source_refs
+    )
+    assert any(
+        ref.source_system == "lotus-core" and ref.source_type == "SustainabilityPreferenceProfile"
+        for ref in pack.sections[0].source_refs
+    )
+
+
+def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
+    result = _ready_rebalance_result()
+    authority_context = ConstructionAuthorityContext(
+        risk_context=AuthoritativeRiskContext(
+            supportability_status="DEGRADED",
+            source_system="lotus-risk",
+        ),
+        performance_context=AuthoritativePerformanceContext(
+            supportability_status="DEGRADED",
+            source_system="lotus-performance",
+        ),
+        transaction_cost_context=AuthoritativeTransactionCostContext(
+            supportability_status="DEGRADED",
+            source_system="lotus-core",
+            as_of_date="2026-05-03",
+            window_start_date="2026-04-03",
+            window_end_date="2026-05-03",
+            returned_curve_point_count=0,
+        ),
+        client_restriction_context=AuthoritativeClientRestrictionContext(
+            supportability_status="BLOCKED",
+            source_system="lotus-core",
+            portfolio_id="pf_proof_pack_1",
+            client_id="client_001",
+            mandate_id="mandate_001",
+            as_of_date="2026-05-03",
+            restriction_count=0,
+        ),
+        sustainability_preference_context=AuthoritativeSustainabilityPreferenceContext(
+            supportability_status="PENDING_REVIEW",
+            source_system="lotus-core",
+            portfolio_id="pf_proof_pack_1",
+            client_id="client_001",
+            mandate_id="mandate_001",
+            as_of_date="2026-05-03",
+            preference_count=0,
+        ),
+    )
+    alternative = build_rebalance_result_alternative(result=result).model_copy(
+        update={
+            "diagnostics": {
+                "authority_context": authority_context.model_dump(
+                    mode="json",
+                    exclude_none=True,
+                )
+            }
+        }
+    )
+
+    risk = source_analytics_for_alternative(alternative=alternative, family="risk")
+    performance = source_analytics_for_alternative(alternative=alternative, family="performance")
+    transaction_cost = source_analytics_for_alternative(
+        alternative=alternative,
+        family="transaction_cost",
+    )
+    restriction = source_analytics_for_alternative(
+        alternative=alternative,
+        family="client_restriction",
+    )
+    sustainability = source_analytics_for_alternative(
+        alternative=alternative,
+        family="sustainability_preference",
+    )
+
+    assert risk is not None
+    assert risk.reason_codes == ["DPM_RISK_AUTHORITY_CONTEXT_DEGRADED"]
+    assert performance is not None
+    assert performance.reason_codes == ["DPM_PERFORMANCE_CONTEXT_DEGRADED"]
+    assert transaction_cost is not None
+    assert transaction_cost.reason_codes == ["DPM_TRANSACTION_COST_CONTEXT_DEGRADED"]
+    assert restriction is not None
+    assert restriction.state == "BLOCKED"
+    assert restriction.reason_codes == ["DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED"]
+    assert sustainability is not None
+    assert sustainability.state == "PENDING_REVIEW"
+    assert sustainability.reason_codes == ["DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED"]
+
+
+@pytest.mark.parametrize(
+    "family",
+    [
+        "risk",
+        "performance",
+        "transaction_cost",
+        "client_restriction",
+        "sustainability_preference",
+    ],
+)
+def test_source_analytics_rejects_malformed_authority_contexts(
+    family: ProofPackAnalyticsFamily,
+) -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result).model_copy(
+        update={"diagnostics": {"authority_context": {f"{family}_context": {"bad": "shape"}}}}
+    )
+
+    assert source_analytics_for_alternative(alternative=alternative, family=family) is None
 
 
 def test_selected_alternative_builder_rejects_unknown_selection() -> None:

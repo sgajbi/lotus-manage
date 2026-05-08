@@ -554,12 +554,21 @@ def _section_payload(
             ["DPM_PERFORMANCE_CONTEXT_MISSING"],
         )
     if section_type == "sustainability_controls":
+        sustainability_context = source_analytics.get("sustainability_preference")
+        if sustainability_context is not None:
+            return (
+                sustainability_context.state,
+                sustainability_context.summary,
+                sustainability_context.facts,
+                sustainability_context.metrics,
+                sustainability_context.reason_codes,
+            )
         return (
             "DEGRADED",
-            "Sustainability authority is not implemented for this proof pack.",
+            "Sustainability preference authority context is not attached.",
             {},
             {},
-            ["DPM_SUSTAINABILITY_CONTEXT_MISSING"],
+            ["DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING"],
         )
     if section_type == "reporting_refs":
         return (
@@ -726,7 +735,27 @@ def _section_payload(
             ["DPM_SCENARIO_CONTEXT_MISSING"],
         )
     if section_type == "eligibility_and_restrictions":
+        restriction_context = source_analytics.get("client_restriction")
         excluded = result.universe.excluded
+        if restriction_context is not None:
+            reason_codes = list(restriction_context.reason_codes)
+            if excluded:
+                reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
+            return (
+                _lowest_section_state(
+                    [
+                        restriction_context.state,
+                        "PENDING_REVIEW" if excluded else "READY",
+                    ]
+                ),
+                "Eligibility evidence and source-owned client restriction profile are attached.",
+                {
+                    **restriction_context.facts,
+                    "excluded": [item.model_dump(mode="json") for item in excluded],
+                },
+                {**restriction_context.metrics, "excluded_count": len(excluded)},
+                sorted(set(reason_codes)),
+            )
         return (
             "READY" if not excluded else "PENDING_REVIEW",
             "Eligibility and restriction evidence captured from source run universe.",
@@ -996,7 +1025,13 @@ def _source_hashes(
 def _source_analytics(
     selected_alternative: ConstructionAlternative | None,
 ) -> dict[str, ProofPackSourceAnalytics]:
-    families: tuple[ProofPackAnalyticsFamily, ...] = ("risk", "performance", "transaction_cost")
+    families: tuple[ProofPackAnalyticsFamily, ...] = (
+        "risk",
+        "performance",
+        "transaction_cost",
+        "client_restriction",
+        "sustainability_preference",
+    )
     return {
         family: analytics
         for family in families

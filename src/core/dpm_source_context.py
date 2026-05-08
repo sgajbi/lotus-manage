@@ -736,6 +736,97 @@ class DpmCoreTransactionCostCurveResponse(BaseModel):
     )
 
 
+class DpmCoreClientRestrictionEntry(BaseModel):
+    restriction_scope: str = Field(description="Source-owned restriction scope.")
+    restriction_code: str = Field(description="Bounded restriction code.")
+    restriction_status: str = Field(description="Restriction lifecycle status.")
+    restriction_source: str = Field(description="Source channel that captured the restriction.")
+    applies_to_buy: bool = Field(description="Whether the restriction applies to buy actions.")
+    applies_to_sell: bool = Field(description="Whether the restriction applies to sell actions.")
+    instrument_ids: list[str] = Field(default_factory=list)
+    asset_classes: list[str] = Field(default_factory=list)
+    issuer_ids: list[str] = Field(default_factory=list)
+    country_codes: list[str] = Field(default_factory=list)
+    effective_from: date = Field(description="Restriction effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None, description="Restriction effective end date."
+    )
+    restriction_version: int = Field(description="Selected restriction version.")
+    source_record_id: Optional[str] = Field(default=None, description="Source record identifier.")
+
+
+class DpmCoreClientRestrictionSupportability(BaseModel):
+    state: Literal["READY", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for restriction-profile consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    restriction_count: int = Field(description="Number of effective restrictions returned.")
+    missing_data_families: list[str] = Field(default_factory=list)
+
+
+class DpmCoreClientRestrictionProfileResponse(BaseModel):
+    product_name: Literal["ClientRestrictionProfile"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    mandate_id: Optional[str] = Field(default=None, description="Optional mandate identifier.")
+    as_of_date: date = Field(description="Business date used to resolve the profile.")
+    restrictions: list[DpmCoreClientRestrictionEntry] = Field(default_factory=list)
+    supportability: DpmCoreClientRestrictionSupportability = Field(
+        description="Completeness and readiness posture for restriction evidence."
+    )
+    lineage: dict[str, str] = Field(default_factory=dict)
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(default=None)
+
+
+class DpmCoreSustainabilityPreferenceEntry(BaseModel):
+    preference_framework: str = Field(description="Source-owned sustainability framework.")
+    preference_code: str = Field(description="Bounded sustainability preference code.")
+    preference_status: str = Field(description="Preference lifecycle status.")
+    preference_source: str = Field(description="Source channel that captured the preference.")
+    minimum_allocation: Optional[Decimal] = Field(default=None)
+    maximum_allocation: Optional[Decimal] = Field(default=None)
+    applies_to_asset_classes: list[str] = Field(default_factory=list)
+    exclusion_codes: list[str] = Field(default_factory=list)
+    positive_tilt_codes: list[str] = Field(default_factory=list)
+    effective_from: date = Field(description="Preference effective start date.")
+    effective_to: Optional[date] = Field(default=None, description="Preference effective end date.")
+    preference_version: int = Field(description="Selected preference version.")
+    source_record_id: Optional[str] = Field(default=None, description="Source record identifier.")
+
+
+class DpmCoreSustainabilityPreferenceSupportability(BaseModel):
+    state: Literal["READY", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for sustainability-preference consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    preference_count: int = Field(description="Number of effective preferences returned.")
+    missing_data_families: list[str] = Field(default_factory=list)
+
+
+class DpmCoreSustainabilityPreferenceProfileResponse(BaseModel):
+    product_name: Literal["SustainabilityPreferenceProfile"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    mandate_id: Optional[str] = Field(default=None, description="Optional mandate identifier.")
+    as_of_date: date = Field(description="Business date used to resolve the profile.")
+    preferences: list[DpmCoreSustainabilityPreferenceEntry] = Field(default_factory=list)
+    supportability: DpmCoreSustainabilityPreferenceSupportability = Field(
+        description="Completeness and readiness posture for sustainability evidence."
+    )
+    lineage: dict[str, str] = Field(default_factory=dict)
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(default=None)
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -761,6 +852,23 @@ class DpmCoreExecutionContext(BaseModel):
             "Optional source-owned observed transaction-cost evidence from "
             "TransactionCostCurve:v1. Absence preserves labelled local cost estimates only."
         ),
+    )
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = Field(
+        default=None,
+        description=(
+            "Optional source-owned client restriction evidence from "
+            "ClientRestrictionProfile:v1. Absence keeps ESG/restriction-aware construction "
+            "truthfully degraded."
+        ),
+    )
+    sustainability_preference_profile: Optional[DpmCoreSustainabilityPreferenceProfileResponse] = (
+        Field(
+            default=None,
+            description=(
+                "Optional source-owned sustainability preference evidence from "
+                "SustainabilityPreferenceProfile:v1."
+            ),
+        )
     )
 
 

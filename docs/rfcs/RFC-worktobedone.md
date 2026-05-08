@@ -35,23 +35,28 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: the RFC39-WTBD-006 cost-aware alternatives slice after the source-owner
-`lotus-core` transaction-cost product, `lotus-manage` proof-pack consumer, and `lotus-manage`
-`COST_AWARE` construction method are merged, validated, and wiki-published.
+Snapshot basis: the RFC39-WTBD-004 / RFC40-WTBD-008 source-backed restriction and sustainability
+slice after the source-owner `lotus-core` `ClientRestrictionProfile:v1` and
+`SustainabilityPreferenceProfile:v1` products and the `lotus-manage` consumer are merged,
+validated, and wiki-published.
 The canonical DPM command-center seed still proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
 ready/degraded/blocked source-readiness states for downstream consumers. RFC40-WTBD-007 adds
 source-owned observed transaction-cost evidence through `TransactionCostCurve:v1`; RFC39-WTBD-006
 adds a bounded `COST_AWARE` construction method that applies observed cost bps to candidate trade
-notionals for comparison evidence. It does not promote predictive execution-cost quotes, market
-impact modelling, venue routing, or broader execution methodology.
+notionals for comparison evidence; and RFC39-WTBD-004/RFC40-WTBD-008 add source-backed
+restriction/sustainability profile consumption. Manage can block candidate trades that violate hard
+client restrictions and preserve sustainability preference evidence in construction alternatives
+and proof packs, while sustainability classification evidence gaps remain pending review. It does
+not promote predictive execution-cost quotes, market impact modelling, venue routing, broader
+execution methodology, or unsupported ESG approval.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 33 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 35 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 22 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 20 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -68,7 +73,7 @@ Next bank-buyable product-readiness priorities:
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
 | 2 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
-| 3 | RFC40-WTBD-008 - Sustainability preferences and client restriction profiles | Removes an important private-banking suitability gap from proof packs without fabricating client restrictions or ESG preferences. | A source owner publishes client restriction and sustainability products; manage consumes them with degraded-state tests, proof-pack preservation, and product-surface documentation. |
+| 3 | RFC41-WTBD-003 - Tactical house-view, risk-event, and implicit campaign cohorts | Moves the rebalance wave operating model toward bank operating workflows without inventing source-owned cohorts. | Source owners publish governed cohort discovery products; manage consumes them with fail-closed dependency handling, proof-pack/wave preservation, and downstream product evidence. |
 
 Execution rule:
 
@@ -1173,8 +1178,7 @@ RFC-0039 delivered the implementation-backed `lotus-manage` backend foundation f
 alternative generation, comparison, retrieval, persistence, and actor-attributed selection. The
 supported manage backend methods are `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`,
 `MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `RISK_AWARE`, `LIQUIDITY_AWARE`,
-`CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE`. `ESG_AWARE` remains deliberately degraded with
-`ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`.
+`CURRENCY_OVERLAY`, `REGIME_STRESS_AWARE`, and source-backed `ESG_AWARE`.
 
 Closure evidence:
 
@@ -1198,7 +1202,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-001 | Gateway construction-alternatives composition | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #190 | Gateway consumes manage alternatives without recomputing construction truth or choosing alternatives. Product support still requires Workbench implementation and canonical front-office proof. |
 | RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #150 and PR #151 | Workbench consumes Gateway/BFF construction contracts only, sends governed DPM context, renders manage-owned alternatives and traces without browser optimization, and is proven by focused canonical Workbench live evidence. |
 | RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Richer lifecycle depth across proof packs, waves, reports, AI, approval staging, and demos remains RFC39-WTBD-010 / later command-center work. |
-| RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` or dedicated client-governance/sustainability source, consumed by manage | Deferred with explicit degraded posture | No certified restriction and sustainability profile products exist. Full ESG support would be a false compliance claim. |
+| RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` source authority consumed by manage | Completed for source-backed restriction and sustainability profile consumption | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing. Manage degrades when profiles are missing, blocks candidate trades that violate hard client restrictions, preserves sustainability preferences and source lineage, and keeps classification evidence gaps in `PENDING_REVIEW` rather than claiming automatic ESG approval. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
@@ -1380,32 +1384,43 @@ Target business outcome:
 Construction alternatives can enforce client restrictions, sustainability preferences, product
 eligibility, and ESG exclusions from source-backed profiles.
 
-Why it cannot be done now:
+Current implementation-backed status:
 
-No certified `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` exists. RFC-0039
-therefore keeps `ESG_AWARE` degraded and prevents client/sales material from claiming full ESG or
-restriction-aware construction.
+Completed for manage backend consumption. `lotus-core` publishes source-backed
+`ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1`; `lotus-manage` resolves
+both through the stateful core-sourcing client and attaches them to
+`ConstructionAuthorityContext`.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. restriction and sustainability source products,
-2. source-owner permission, effective-date, expiry, jurisdiction, client/mandate binding, and
-   lineage semantics,
-3. manage method eligibility and constraint tests,
-4. proof-pack and health semantics aligned with RFC-0038/RFC-0040,
-5. Workbench presentation rules if surfaced.
+1. `ESG_AWARE` no longer relies on a blanket deferred method status when the source profiles are
+   available,
+2. missing client restriction or sustainability profiles degrade explicitly with source-specific
+   reason codes,
+3. hard client restriction rules block candidate buy/sell intents that match restricted
+   instruments, issuers, asset classes, sectors, or regions,
+4. sustainability min/max allocation preferences can move the method to `PENDING_REVIEW`,
+5. exclusion and positive-tilt sustainability preferences require separate security-level
+   classification evidence and therefore remain `PENDING_REVIEW` instead of unsupported ESG
+   approval,
+6. construction traces include client restriction and sustainability preference source terms,
+7. selected-alternative proof packs preserve source refs, hashes, reason codes, restriction rules,
+   and sustainability preferences without recomputing client-governance or ESG methodology.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement only after source authorities exist. Coordinate with RFC-0038 health enrichment and
-RFC-0040 proof-pack enrichment.
+1. core-sourcing client tests prove both source-product calls, selector payloads, and attached
+   profile state,
+2. construction API tests prove source-ready ESG-aware generation and hard-restriction blocking,
+3. proof-pack builder tests prove restriction and sustainability source preservation,
+4. README, RFC, context, and wiki updates avoid unsupported ESG approval or greenwashing claims.
 
-Promotion proof:
+Remaining boundary:
 
-1. source-owner certification,
-2. manage construction tests for ready/degraded/blocked profile states,
-3. live evidence with compliant and blocked portfolios,
-4. README/wiki/supported-feature updates that avoid unsupported ESG claims.
+Gateway/Workbench product presentation for this new profile surface and richer security-level ESG
+classification source evidence remain separate downstream/source-owner work. Manage does not infer
+issuer sustainability classifications, claim regulatory suitability completion, execute orders, or
+turn preferences into automatic client approval.
 
 #### RFC39-WTBD-005 - Broader Risk/Performance Alternative Enrichment
 
@@ -1740,7 +1755,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, consumed through Gateway/Workbench | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-ai` PR #61, `lotus-gateway` PR #198, `lotus-workbench` PR #166, and rebuilt platform canonical QA | Manage produces bounded AI evidence with guardrails; `lotus-ai` owns review-gated `dpm_pm_memo.pack@v1` execution, Gateway composes the handoff, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
 | RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Completed in this slice for manage proof-pack authority | RFC-0040 selected-alternative proof packs now preserve source-owned risk and performance context from construction authority metadata, including supportability state, source refs, source hashes, reason codes, and bounded source-emitted measures. Manage still does not calculate risk or performance methodology locally. |
 | RFC40-WTBD-007 | Authoritative transaction-cost curve | `lotus-core` source authority consumed by `lotus-manage` | Completed for proof-pack evidence authority | `lotus-core` publishes `TransactionCostCurve:v1` observed booked-fee evidence and `lotus-manage` consumes it through stateful core sourcing, attaches `AuthoritativeTransactionCostContext` to selected construction alternatives, and preserves source-owned supportability, source refs, content hashes, reason codes, evidence windows, missing securities, and bounded curve points in `turnover_and_cost` proof-pack evidence. Manage still labels local construction estimates separately and does not claim predictive execution quotes or min-cost optimization. |
-| RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
+| RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` source authority consumed by `lotus-manage` | Completed for manage proof-pack evidence authority | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing, attached to selected construction alternatives, and preserved in proof-pack `eligibility_and_restrictions` and `sustainability_controls` sections with source refs, content hashes, reason codes, and review/block posture. Security-level sustainability classification remains a pending-review boundary when source evidence is absent. |
 | RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority, consumed by `lotus-manage` construction evidence | Partially implemented through selected RFC-0039 alternatives | `RegimeScenarioPackEvaluation:v1` now supplies first-wave scenario-pack evaluation for `REGIME_STRESS_AWARE` alternatives. Proof packs can preserve that selected-alternative context, but richer scenario contribution, CIO approval, and direct proof-pack enrichment remain future source depth. |
 | RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, and outcome events | `lotus-manage` with downstream/source participants | Partially implemented: manage backend authority plus first-wave Gateway/Workbench product realization are merged, live-proven, and wiki-published; mandate health, monitoring-exception, event identity, retention, redaction, access, and audit policy are implemented in manage; `lotus-report` PR #92 implements the report-side bounded context consumer; `lotus-ai` PR #62 implements bounded DPM memo/narrative consumers | Manage exposes a deterministic source-backed portfolio-memory read model over persisted mandate health snapshots, monitoring exceptions, proof packs, proof-pack-local timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events. Gateway composes that read model and Workbench renders the first-wave timeline panel with canonical browser proof. `lotus-report` can carry Manage-owned `portfolio_memory_context` into proof-pack, wave, and outcome report snapshot/render lineage without reconstruction. `lotus-ai` validates that same context for DPM PM memo and outcome-review narrative packs without reconstructing timeline facts. Full WTBD closure still needs future report, AI, OMS, PM-scoring, and client-communication source-event families from their owners. |
 
@@ -2105,33 +2120,42 @@ Target business outcome:
 Proof packs can explain client restrictions, sustainability preferences, and ESG/restriction
 controls from source-backed client governance profiles.
 
-Why it cannot be done now:
+Current implementation-backed status:
 
-No source-backed client restriction or sustainability preference profile is available to manage.
-Promoting ESG/restriction-ready proof packs without that source would create a false compliance
-claim.
+Completed for manage proof-pack evidence authority. Proof packs can now cite source-backed client
+restriction and sustainability preference profiles when the selected construction alternative
+carries those profiles through the stateful core-sourcing path.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` or equivalent source
-   products,
-2. source-owner OpenAPI certification and permission model,
-3. effective date, expiry, jurisdiction, client/mandate binding, and lineage semantics,
-4. manage section-state tests for ready/degraded/blocked/pending-review posture,
-5. Workbench presentation rules if surfaced.
+1. `AuthoritativeClientRestrictionContext` and
+   `AuthoritativeSustainabilityPreferenceContext` carry source system, product name/version,
+   source id, source ref, content hash, supportability status, as-of/effective dates, reason codes,
+   and bounded profile entries,
+2. the core-sourcing client resolves `ClientRestrictionProfile:v1` and
+   `SustainabilityPreferenceProfile:v1` with the same selector payload and correlation posture as
+   other DPM source products,
+3. `ESG_AWARE` alternatives emit client restriction and sustainability constraint traces and use
+   source profile supportability to derive ready/degraded/blocked/pending-review posture,
+4. selected-alternative proof packs preserve restriction and sustainability source analytics in
+   `eligibility_and_restrictions` and `sustainability_controls`,
+5. missing source profiles remain degraded, hard restriction violations remain blocked, and
+   sustainability classification evidence gaps remain pending review.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement only after the source authority exists. This may align with future core/client-governance
-or sustainability RFCs.
+1. `tests/unit/dpm/infrastructure/test_core_sourcing_client.py`,
+2. `tests/unit/dpm/api/test_construction_api.py`,
+3. `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+4. docs/wiki/context updates naming the exact source products and avoiding unsupported ESG approval
+   claims.
 
-Promotion proof:
+Remaining boundary:
 
-1. source-owner tests and live proof,
-2. manage proof-pack section tests,
-3. no unsupported ESG/restriction wording in README/wiki,
-4. canonical evidence with at least one missing or partial profile case,
-5. supported-feature entry that names the exact profile products consumed.
+Full front-office presentation of restriction/sustainability profile detail requires Gateway and
+Workbench product-surface work. Security-level sustainability classification and regulatory
+suitability methodology remain source-owner responsibilities; manage only preserves the source
+profiles and blocks or flags the construction evidence it can justify.
 
 #### RFC40-WTBD-009 - Scenario-Pack Authority Beyond Supplied Context
 

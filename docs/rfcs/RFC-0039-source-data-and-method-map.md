@@ -40,10 +40,11 @@ risk, performance, ESG, tax, market-data, or portfolio-source truth.
 | `CURRENCY_OVERLAY` | Govern non-base currency exposure using FX readiness and currency policy context. | Core/market-data FX spot plus manage currency-overlay policy context until treasury hedge products exist. | Missing FX blocks; eligible-currency and hedge-ratio policy context are explicit; no non-base exposure degrades truthfully. |
 | `REGIME_STRESS_AWARE` | Compare construction against source-backed scenario-pack loss tolerance. | `lotus-risk` `RegimeScenarioPackEvaluation:v1` / CIO scenario pack authority context. | Scenario pack id, source system, worst-case loss, policy loss threshold, and reason codes are present; excess loss is pending review. |
 
-`ESG_AWARE` and broader restriction-aware construction remain explicitly deferred until
-`ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` or equivalent source-backed
-products exist. The method must degrade with `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`; it must
-not infer sustainability suitability from shelf labels alone.
+`ESG_AWARE` and broader restriction-aware construction consume `ClientRestrictionProfile:v1` and
+`SustainabilityPreferenceProfile:v1` when stateful core sourcing is enabled. The method degrades
+when either profile is missing, blocks candidate trades that violate hard client restrictions, and
+keeps sustainability allocation or classification gaps in pending review. It must not infer
+sustainability suitability from shelf labels alone or claim automatic ESG approval.
 
 ## Current Engine Capability Baseline
 

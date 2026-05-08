@@ -147,6 +147,76 @@ def _transaction_cost_authority_context_payload() -> dict:
     }
 
 
+def _esg_authority_context_payload() -> dict:
+    return {
+        "client_restriction_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-core",
+            "source_product_name": "ClientRestrictionProfile",
+            "source_product_version": "v1",
+            "source_id": "sha256:client-restrictions",
+            "content_hash": "sha256:client-restrictions",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "restriction_count": 1,
+            "missing_data_families": [],
+            "restrictions": [
+                {
+                    "restriction_scope": "instrument",
+                    "restriction_code": "NO_PRIVATE_CREDIT_BUY",
+                    "restriction_status": "active",
+                    "restriction_source": "client_mandate",
+                    "applies_to_buy": True,
+                    "applies_to_sell": False,
+                    "instrument_ids": ["PRIVATE_CREDIT_FUND"],
+                    "asset_classes": [],
+                    "issuer_ids": [],
+                    "country_codes": [],
+                    "effective_from": "2026-01-01",
+                    "effective_to": None,
+                    "restriction_version": 1,
+                    "source_record_id": "client-restriction:1",
+                }
+            ],
+            "reason_codes": ["CLIENT_RESTRICTION_PROFILE_READY"],
+        },
+        "sustainability_preference_context": {
+            "supportability_status": "READY",
+            "source_system": "lotus-core",
+            "source_product_name": "SustainabilityPreferenceProfile",
+            "source_product_version": "v1",
+            "source_id": "sha256:sustainability-preferences",
+            "content_hash": "sha256:sustainability-preferences",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "preference_count": 1,
+            "missing_data_families": [],
+            "preferences": [
+                {
+                    "preference_framework": "LOTUS_SUSTAINABILITY_V1",
+                    "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
+                    "preference_status": "active",
+                    "preference_source": "client_mandate",
+                    "minimum_allocation": "0.2000000000",
+                    "maximum_allocation": None,
+                    "applies_to_asset_classes": ["Equity"],
+                    "exclusion_codes": [],
+                    "positive_tilt_codes": [],
+                    "effective_from": "2026-01-01",
+                    "effective_to": None,
+                    "preference_version": 1,
+                    "source_record_id": "sustainability:1",
+                }
+            ],
+            "reason_codes": ["SUSTAINABILITY_PREFERENCE_PROFILE_READY"],
+        },
+    }
+
+
 def _stateful_input_payload() -> dict[str, object]:
     return {
         "portfolio_id": "PB_SG_GLOBAL_BAL_001",
@@ -463,10 +533,9 @@ def test_advanced_methods_degrade_truthfully_when_authority_is_absent() -> None:
         "RISK_AUTHORITY_NOT_CONNECTED"
         in (alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
     )
-    assert (
-        "ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED"
-        in (alternatives["ESG_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"])
-    )
+    esg_reasons = alternatives["ESG_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert "CLIENT_RESTRICTION_PROFILE_UNAVAILABLE" in esg_reasons
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE" in esg_reasons
     assert (
         "REGIME_SCENARIO_PACK_UNAVAILABLE"
         in (
@@ -719,10 +788,69 @@ def test_esg_aware_degrades_when_profile_source_is_missing() -> None:
     alternative = response.json()["alternatives"][0]
     assert alternative["method"] == "ESG_AWARE"
     assert alternative["method_status"] == "DEGRADED"
-    assert (
-        "ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED"
-        in (alternative["diagnostics"]["enrichment_summary"]["reason_codes"])
-    )
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert "CLIENT_RESTRICTION_PROFILE_UNAVAILABLE" in reason_codes
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE" in reason_codes
+
+
+def test_esg_aware_uses_source_profiles_when_available() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["ESG_AWARE"]
+    payload["stateless_input"]["shelf_entries"][0]["asset_class"] = "Equity"
+    payload["authority_context"] = _esg_authority_context_payload()
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-esg-source-backed"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "ESG_AWARE"
+    assert alternative["method_status"] == "READY"
+    assert "CLIENT_RESTRICTION_PROFILE_APPLIED" in reason_codes
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED" in reason_codes
+    constraints = {trace["constraint"]: trace for trace in alternative["constraint_trace"]}
+    assert constraints["CLIENT_RESTRICTION"]["status"] == "READY"
+    assert constraints["SUSTAINABILITY_PREFERENCE"]["status"] == "READY"
+
+
+def test_esg_aware_blocks_restricted_candidate_buy() -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["stateless_input"]["portfolio_snapshot"]["positions"] = []
+    payload["stateless_input"]["model_portfolio"]["targets"] = [
+        {"instrument_id": "PRIVATE_CREDIT_FUND", "weight": "0.50"}
+    ]
+    payload["stateless_input"]["market_data_snapshot"]["prices"] = [
+        {"instrument_id": "PRIVATE_CREDIT_FUND", "price": "100", "currency": "SGD"}
+    ]
+    payload["stateless_input"]["shelf_entries"] = [
+        {"instrument_id": "PRIVATE_CREDIT_FUND", "status": "APPROVED", "asset_class": "Credit"}
+    ]
+    payload["methods"] = ["ESG_AWARE"]
+    payload["authority_context"] = _esg_authority_context_payload()
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-esg-restricted-buy"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    alternative = response.json()["alternatives"][0]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method_status"] == "BLOCKED"
+    assert "CLIENT_RESTRICTION_VIOLATION_NO_PRIVATE_CREDIT_BUY" in reason_codes
 
 
 def test_generate_construction_alternative_set_preserves_degraded_stateful_source(

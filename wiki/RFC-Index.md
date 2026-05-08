@@ -73,7 +73,7 @@ evidence, and supported-feature promotion.
   tax/turnover/liquidity/cost/FX enrichment posture, `lotus-risk` concentration authority
   integration for risk-aware construction, regime-stress authority context, certified manage backend
   APIs for generating, retrieving, and selecting persisted construction alternative sets,
-  Postgres-backed canonical manage proof, explicit ESG/restriction deferral, and
+  Postgres-backed canonical manage proof, source-backed ESG/restriction profile consumption, and
   construction-specific Gateway/Workbench realization requirements. Full product-surface support is
   not claimed until Gateway and Workbench implement and live-prove the downstream journey.
 - RFC-0040

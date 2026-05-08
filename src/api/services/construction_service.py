@@ -18,9 +18,13 @@ from src.core.construction.alternative_engine import (
 from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction.method_registry import classify_solver_failure, resolve_method_plan
 from src.core.construction.models import (
+    AuthoritativeClientRestrictionContext,
+    AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeLiquidityContext,
     AuthoritativeRegimeStressContext,
+    AuthoritativeSustainabilityPreference,
+    AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
     ConstructionAlternative,
@@ -47,7 +51,7 @@ from src.core.construction.vocabulary import (
 )
 from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
-from src.core.models import Money, SecurityTradeIntent
+from src.core.models import Money, SecurityTradeIntent, ShelfEntry
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
@@ -339,6 +343,13 @@ def _apply_supportability(
             result=result,
             context=authority_context.transaction_cost_context,
         )
+    if method == ConstructionMethod.ESG_AWARE:
+        alternative = _with_esg_restriction_constraints(
+            request=request,
+            alternative=alternative,
+            result=result,
+            authority_context=authority_context,
+        )
     method_reason_codes = _method_specific_reason_codes(
         request=request,
         method=method,
@@ -408,7 +419,11 @@ def _method_specific_status(
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus:
     if method == ConstructionMethod.ESG_AWARE:
-        return ConstructionMethodStatus.DEGRADED
+        return _esg_restriction_status(
+            request=request,
+            result=result,
+            authority_context=authority_context,
+        )
     if method == ConstructionMethod.REGIME_STRESS_AWARE:
         return _regime_stress_status(authority_context.regime_stress_context)
     if method == ConstructionMethod.CURRENCY_OVERLAY and not result.diagnostics.missing_fx_pairs:
@@ -466,7 +481,13 @@ def _method_specific_reason_codes(
             )
         )
     if method == ConstructionMethod.ESG_AWARE:
-        reason_codes.append("ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED")
+        reason_codes.extend(
+            _esg_restriction_reason_codes(
+                request=request,
+                result=result,
+                authority_context=authority_context,
+            )
+        )
     if method == ConstructionMethod.CURRENCY_OVERLAY:
         missing_pairs = _missing_currency_overlay_pairs(request=request)
         if result.diagnostics.missing_fx_pairs or missing_pairs:
@@ -539,6 +560,8 @@ def _authority_context_for_method(
         liquidity_context=liquidity_context,
         currency_overlay_context=currency_context,
         regime_stress_context=regime_context,
+        client_restriction_context=authority_context.client_restriction_context,
+        sustainability_preference_context=authority_context.sustainability_preference_context,
     )
 
 
@@ -547,50 +570,115 @@ def _authority_context_with_source_products(
     authority_context: ConstructionAuthorityContext,
     source_context: DpmResolvedSourceContext | None,
 ) -> ConstructionAuthorityContext:
-    if authority_context.transaction_cost_context is not None or source_context is None:
+    if source_context is None:
         return authority_context
-    curve = source_context.context.transaction_cost_curve
-    if curve is None:
-        return authority_context
-    curve_payload = curve.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(curve_payload)
-    source_id = (
-        curve.source_batch_fingerprint
-        or curve.lineage.get("source_batch_fingerprint")
-        or curve.page.request_scope_fingerprint
-    )
-    context = AuthoritativeTransactionCostContext(
-        supportability_status=_source_status_to_method_status(curve.supportability.state),
-        source_system="lotus-core",
-        source_product_name=curve.product_name,
-        source_product_version=curve.product_version,
-        source_id=source_id,
-        content_hash=source_hash,
-        as_of_date=curve.as_of_date,
-        window_start_date=curve.window.start_date,
-        window_end_date=curve.window.end_date,
-        returned_curve_point_count=curve.supportability.returned_curve_point_count,
-        missing_security_ids=curve.supportability.missing_security_ids,
-        curve_points=[
-            AuthoritativeTransactionCostPoint(
-                security_id=point.security_id,
-                transaction_type=point.transaction_type,
-                currency=point.currency,
-                observation_count=point.observation_count,
-                total_notional=point.total_notional,
-                total_cost=point.total_cost,
-                average_cost_bps=point.average_cost_bps,
-                min_cost_bps=point.min_cost_bps,
-                max_cost_bps=point.max_cost_bps,
-                first_observed_date=point.first_observed_date,
-                last_observed_date=point.last_observed_date,
-                sample_transaction_ids=point.sample_transaction_ids[:5],
+    context_updates: dict[str, object] = {}
+    if authority_context.transaction_cost_context is None:
+        curve = source_context.context.transaction_cost_curve
+        if curve is not None:
+            curve_payload = curve.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(curve_payload)
+            source_id = (
+                curve.source_batch_fingerprint
+                or curve.lineage.get("source_batch_fingerprint")
+                or curve.page.request_scope_fingerprint
             )
-            for point in curve.curve_points[:10]
-        ],
-        reason_codes=[curve.supportability.reason],
-    )
-    return authority_context.model_copy(update={"transaction_cost_context": context})
+            context_updates["transaction_cost_context"] = AuthoritativeTransactionCostContext(
+                supportability_status=_source_status_to_method_status(curve.supportability.state),
+                source_system="lotus-core",
+                source_product_name=curve.product_name,
+                source_product_version=curve.product_version,
+                source_id=source_id,
+                content_hash=source_hash,
+                as_of_date=curve.as_of_date,
+                window_start_date=curve.window.start_date,
+                window_end_date=curve.window.end_date,
+                returned_curve_point_count=curve.supportability.returned_curve_point_count,
+                missing_security_ids=curve.supportability.missing_security_ids,
+                curve_points=[
+                    AuthoritativeTransactionCostPoint(
+                        security_id=point.security_id,
+                        transaction_type=point.transaction_type,
+                        currency=point.currency,
+                        observation_count=point.observation_count,
+                        total_notional=point.total_notional,
+                        total_cost=point.total_cost,
+                        average_cost_bps=point.average_cost_bps,
+                        min_cost_bps=point.min_cost_bps,
+                        max_cost_bps=point.max_cost_bps,
+                        first_observed_date=point.first_observed_date,
+                        last_observed_date=point.last_observed_date,
+                        sample_transaction_ids=point.sample_transaction_ids[:5],
+                    )
+                    for point in curve.curve_points[:10]
+                ],
+                reason_codes=[curve.supportability.reason],
+            )
+    if authority_context.client_restriction_context is None:
+        restriction_profile = source_context.context.client_restriction_profile
+        if restriction_profile is not None:
+            payload = restriction_profile.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            context_updates["client_restriction_context"] = AuthoritativeClientRestrictionContext(
+                supportability_status=_source_status_to_method_status(
+                    restriction_profile.supportability.state
+                ),
+                source_system="lotus-core",
+                source_product_name=restriction_profile.product_name,
+                source_product_version=restriction_profile.product_version,
+                source_id=restriction_profile.source_batch_fingerprint
+                or restriction_profile.lineage.get("source_batch_fingerprint")
+                or source_hash,
+                content_hash=source_hash,
+                portfolio_id=restriction_profile.portfolio_id,
+                client_id=restriction_profile.client_id,
+                mandate_id=restriction_profile.mandate_id,
+                as_of_date=restriction_profile.as_of_date,
+                restriction_count=restriction_profile.supportability.restriction_count,
+                missing_data_families=restriction_profile.supportability.missing_data_families,
+                restrictions=[
+                    AuthoritativeClientRestrictionRule.model_validate(
+                        rule.model_dump(mode="python")
+                    )
+                    for rule in restriction_profile.restrictions
+                ],
+                reason_codes=[restriction_profile.supportability.reason],
+            )
+    if authority_context.sustainability_preference_context is None:
+        sustainability_profile = source_context.context.sustainability_preference_profile
+        if sustainability_profile is not None:
+            payload = sustainability_profile.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            context_updates["sustainability_preference_context"] = (
+                AuthoritativeSustainabilityPreferenceContext(
+                    supportability_status=_source_status_to_method_status(
+                        sustainability_profile.supportability.state
+                    ),
+                    source_system="lotus-core",
+                    source_product_name=sustainability_profile.product_name,
+                    source_product_version=sustainability_profile.product_version,
+                    source_id=sustainability_profile.source_batch_fingerprint
+                    or sustainability_profile.lineage.get("source_batch_fingerprint")
+                    or source_hash,
+                    content_hash=source_hash,
+                    portfolio_id=sustainability_profile.portfolio_id,
+                    client_id=sustainability_profile.client_id,
+                    mandate_id=sustainability_profile.mandate_id,
+                    as_of_date=sustainability_profile.as_of_date,
+                    preference_count=sustainability_profile.supportability.preference_count,
+                    missing_data_families=sustainability_profile.supportability.missing_data_families,
+                    preferences=[
+                        AuthoritativeSustainabilityPreference.model_validate(
+                            preference.model_dump(mode="python")
+                        )
+                        for preference in sustainability_profile.preferences
+                    ],
+                    reason_codes=[sustainability_profile.supportability.reason],
+                )
+            )
+    if not context_updates:
+        return authority_context
+    return authority_context.model_copy(update=context_updates)
 
 
 def _source_status_to_method_status(status: str) -> ConstructionMethodStatus:
@@ -712,6 +800,263 @@ def _transaction_cost_reason_codes(
     else:
         reason_codes.append("TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS")
     return sorted(set(reason_codes))
+
+
+def _with_esg_restriction_constraints(
+    *,
+    request: RebalanceRequest,
+    alternative: ConstructionAlternative,
+    result: RebalanceResult,
+    authority_context: ConstructionAuthorityContext,
+) -> ConstructionAlternative:
+    return alternative.model_copy(
+        update={
+            "constraint_trace": [
+                *alternative.constraint_trace,
+                ConstructionConstraintTrace(
+                    constraint=ConstructionTraceTerm.CLIENT_RESTRICTION,
+                    status=_client_restriction_status(
+                        request=request,
+                        result=result,
+                        context=authority_context.client_restriction_context,
+                    ),
+                    source_family=ConstructionSourceFamily.ESG_PROFILE,
+                    reason_codes=_client_restriction_reason_codes(
+                        request=request,
+                        result=result,
+                        context=authority_context.client_restriction_context,
+                    ),
+                    description=(
+                        "Source-owned ClientRestrictionProfile:v1 evidence is applied to "
+                        "candidate buy/sell intents when available."
+                    ),
+                ),
+                ConstructionConstraintTrace(
+                    constraint=ConstructionTraceTerm.SUSTAINABILITY_PREFERENCE,
+                    status=_sustainability_preference_status(
+                        result=result,
+                        context=authority_context.sustainability_preference_context,
+                    ),
+                    source_family=ConstructionSourceFamily.ESG_PROFILE,
+                    reason_codes=_sustainability_preference_reason_codes(
+                        result=result,
+                        context=authority_context.sustainability_preference_context,
+                    ),
+                    description=(
+                        "Source-owned SustainabilityPreferenceProfile:v1 evidence is attached; "
+                        "classification-dependent controls remain pending review when the "
+                        "source profile alone is insufficient."
+                    ),
+                ),
+            ]
+        }
+    )
+
+
+def _esg_restriction_status(
+    *,
+    request: RebalanceRequest,
+    result: RebalanceResult,
+    authority_context: ConstructionAuthorityContext,
+) -> ConstructionMethodStatus:
+    return _lowest_status(
+        [
+            _client_restriction_status(
+                request=request,
+                result=result,
+                context=authority_context.client_restriction_context,
+            ),
+            _sustainability_preference_status(
+                result=result,
+                context=authority_context.sustainability_preference_context,
+            ),
+        ]
+    )
+
+
+def _esg_restriction_reason_codes(
+    *,
+    request: RebalanceRequest,
+    result: RebalanceResult,
+    authority_context: ConstructionAuthorityContext,
+) -> list[str]:
+    return sorted(
+        set(
+            _client_restriction_reason_codes(
+                request=request,
+                result=result,
+                context=authority_context.client_restriction_context,
+            )
+            + _sustainability_preference_reason_codes(
+                result=result,
+                context=authority_context.sustainability_preference_context,
+            )
+        )
+    )
+
+
+def _client_restriction_status(
+    *,
+    request: RebalanceRequest,
+    result: RebalanceResult,
+    context: AuthoritativeClientRestrictionContext | None,
+) -> ConstructionMethodStatus:
+    if context is None:
+        return ConstructionMethodStatus.DEGRADED
+    status = context.supportability_status
+    if _violated_client_restrictions(request=request, result=result, context=context):
+        return ConstructionMethodStatus.BLOCKED
+    return status
+
+
+def _client_restriction_reason_codes(
+    *,
+    request: RebalanceRequest,
+    result: RebalanceResult,
+    context: AuthoritativeClientRestrictionContext | None,
+) -> list[str]:
+    if context is None:
+        return ["CLIENT_RESTRICTION_PROFILE_UNAVAILABLE"]
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY:
+        reason_codes.append(f"CLIENT_RESTRICTION_PROFILE_{context.supportability_status}")
+    reason_codes.extend(f"MISSING_{family.upper()}" for family in context.missing_data_families)
+    violations = _violated_client_restrictions(request=request, result=result, context=context)
+    if violations:
+        reason_codes.extend(
+            f"CLIENT_RESTRICTION_VIOLATION_{restriction.restriction_code}"
+            for _, restriction in violations
+        )
+    else:
+        reason_codes.append("CLIENT_RESTRICTION_PROFILE_APPLIED")
+    return sorted(set(reason_codes))
+
+
+def _violated_client_restrictions(
+    *,
+    request: RebalanceRequest,
+    result: RebalanceResult,
+    context: AuthoritativeClientRestrictionContext,
+) -> list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]]:
+    shelf_by_instrument = {entry.instrument_id: entry for entry in request.shelf_entries}
+    violations: list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]] = []
+    for intent in result.intents:
+        if not isinstance(intent, SecurityTradeIntent):
+            continue
+        for restriction in context.restrictions:
+            if restriction.restriction_status.lower() != "active":
+                continue
+            if intent.side == "BUY" and not restriction.applies_to_buy:
+                continue
+            if intent.side == "SELL" and not restriction.applies_to_sell:
+                continue
+            if _restriction_matches_intent(
+                intent=intent,
+                shelf=shelf_by_instrument.get(intent.instrument_id),
+                restriction=restriction,
+            ):
+                violations.append((intent, restriction))
+    return violations
+
+
+def _restriction_matches_intent(
+    *,
+    intent: SecurityTradeIntent,
+    shelf: ShelfEntry | None,
+    restriction: AuthoritativeClientRestrictionRule,
+) -> bool:
+    scoped_values = (
+        restriction.instrument_ids
+        or restriction.asset_classes
+        or restriction.issuer_ids
+        or restriction.country_codes
+    )
+    if not scoped_values:
+        return True
+    if intent.instrument_id in restriction.instrument_ids:
+        return True
+    if shelf is None:
+        return False
+    if shelf.asset_class in restriction.asset_classes:
+        return True
+    if shelf.issuer_id and shelf.issuer_id in restriction.issuer_ids:
+        return True
+    country_of_risk = shelf.attributes.get("country_of_risk") or shelf.attributes.get("country")
+    return bool(country_of_risk and country_of_risk in restriction.country_codes)
+
+
+def _sustainability_preference_status(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeSustainabilityPreferenceContext | None,
+) -> ConstructionMethodStatus:
+    if context is None:
+        return ConstructionMethodStatus.DEGRADED
+    status = context.supportability_status
+    if _sustainability_allocation_breaches(result=result, context=context):
+        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+    if _sustainability_classification_review_required(context=context):
+        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+    return status
+
+
+def _sustainability_preference_reason_codes(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeSustainabilityPreferenceContext | None,
+) -> list[str]:
+    if context is None:
+        return ["SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE"]
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY:
+        reason_codes.append(f"SUSTAINABILITY_PREFERENCE_PROFILE_{context.supportability_status}")
+    reason_codes.extend(f"MISSING_{family.upper()}" for family in context.missing_data_families)
+    breaches = _sustainability_allocation_breaches(result=result, context=context)
+    reason_codes.extend(
+        f"SUSTAINABILITY_ALLOCATION_REVIEW_{preference.preference_code}" for preference in breaches
+    )
+    if _sustainability_classification_review_required(context=context):
+        reason_codes.append("SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED")
+    if not breaches and not _sustainability_classification_review_required(context=context):
+        reason_codes.append("SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED")
+    return sorted(set(reason_codes))
+
+
+def _sustainability_allocation_breaches(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeSustainabilityPreferenceContext,
+) -> list[AuthoritativeSustainabilityPreference]:
+    weight_by_asset_class = {
+        allocation.key.lower(): allocation.weight
+        for allocation in result.after_simulated.allocation_by_asset_class
+    }
+    breaches: list[AuthoritativeSustainabilityPreference] = []
+    for preference in context.preferences:
+        if preference.preference_status.lower() != "active":
+            continue
+        if not preference.applies_to_asset_classes:
+            continue
+        weight = sum(
+            weight_by_asset_class.get(asset_class.lower(), Decimal("0"))
+            for asset_class in preference.applies_to_asset_classes
+        )
+        if preference.minimum_allocation is not None and weight < preference.minimum_allocation:
+            breaches.append(preference)
+        if preference.maximum_allocation is not None and weight > preference.maximum_allocation:
+            breaches.append(preference)
+    return breaches
+
+
+def _sustainability_classification_review_required(
+    *,
+    context: AuthoritativeSustainabilityPreferenceContext,
+) -> bool:
+    return any(
+        preference.preference_status.lower() == "active"
+        and (preference.exclusion_codes or preference.positive_tilt_codes)
+        for preference in context.preferences
+    )
 
 
 def _with_method_reason_codes(

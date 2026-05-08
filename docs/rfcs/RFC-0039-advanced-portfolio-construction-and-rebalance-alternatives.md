@@ -379,9 +379,11 @@ Purpose:
 
 Current support posture:
 
-`ESG_AWARE` is intentionally deferred in this RFC implementation. It returns degraded
-supportability with `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED` until restriction and
-sustainability source products are available.
+`ESG_AWARE` is supported at the manage backend layer when stateful core sourcing provides
+`ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1`. It degrades when profiles
+are missing, blocks candidate trades that violate hard client restrictions, and keeps sustainability
+allocation or classification evidence gaps in `PENDING_REVIEW`. It does not infer security-level
+ESG classifications or claim regulatory suitability approval.
 
 #### CURRENCY_OVERLAY
 
@@ -1184,15 +1186,18 @@ Evidence:
 
 Decision:
 
-`ESG_AWARE` and broader restriction-aware construction are explicitly deferred. The method remains
-in vocabulary for roadmap continuity, but it must not be promoted as full enterprise support until
-restriction, sustainability, product eligibility, and client-preference authorities are clear.
+`ESG_AWARE` and broader restriction-aware construction are promoted only to the source-backed
+manage backend boundary. The method consumes core-owned restriction and sustainability profiles,
+but it must not be promoted as full enterprise/client suitability support until downstream product
+surfaces and security-level classification authorities are proven.
 
 Current behavior:
 
-1. `ESG_AWARE` returns degraded supportability,
-2. diagnostics include `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`,
-3. no client or sales material may claim full ESG/restriction-aware construction yet.
+1. `ESG_AWARE` returns degraded supportability when either source profile is missing,
+2. diagnostics include source-specific restriction and sustainability reason codes,
+3. candidate trades that violate hard client restrictions are blocked,
+4. sustainability allocation or classification evidence gaps remain pending review,
+5. no client or sales material may claim automatic ESG approval or completed suitability review.
 
 ### Slice 16: Gateway and Workbench Realization RFC Slice
 
@@ -1387,10 +1392,10 @@ RFC-0039 is complete only when:
 | What was truly completed | Manage-side RFC-0039 construction alternatives: source-data/method map, construction domain package, method registry, enrichment posture, risk/performance seams, API governance, generate/read/select APIs, in-memory and PostgreSQL repository foundation, migration `0005_construction_alternatives.sql`, idempotency replay/conflict handling, actor-attributed selection, first-wave and authority-backed live validator probes, optional `PortfolioCashflowProjection:v1` projected cash-pressure support for liquidity-aware construction, downstream realization handoff, and wiki/README/context updates. |
 | Quality improvements made | Construction logic is isolated in `src/core/construction/`, API orchestration is separated in `src/api/services/construction_service.py`, persistence is behind `ConstructionRepository`, Postgres path has fast contract tests, OpenAPI and API vocabulary are refreshed, and the canonical startup helper now falls back correctly when the repo venv lacks the Postgres driver. |
 | Debt removed | Stale proof using an already-aligned portfolio was rejected and replaced with drifted-portfolio proof; construction API vocabulary drift was eliminated; missing Postgres repository unit coverage was closed; `Start-CanonicalManage.ps1` no longer aborts before its intended global-Python fallback. |
-| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `RISK_AWARE`, `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` are implemented and proven at the manage backend layer. Canonical live proof `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json` shows all five mandatory authority-backed methods at `READY`; WTBD-007 proof adds source-backed cashflow projection pending-review/degraded coverage for `LIQUIDITY_AWARE`. `ESG_AWARE` is deliberately deferred and degrades with `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED`; it is not claimed as a ready construction method. |
+| Construction methods proven | `DO_NOTHING_BASELINE`, `HEURISTIC_EXPLAINABLE`, `MIN_TURNOVER`, `TAX_AWARE`, `SOLVER_CONSTRAINED`, `RISK_AWARE`, `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, `REGIME_STRESS_AWARE`, and source-backed `ESG_AWARE` are implemented and proven at the manage backend layer. Canonical live proof `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json` shows the first authority-backed methods at `READY`; WTBD-007 proof adds source-backed cashflow projection pending-review/degraded coverage for `LIQUIDITY_AWARE`; WTBD-004 proof adds client restriction blocking plus sustainability pending-review/degraded coverage for `ESG_AWARE`. |
 | Objective/constraint trace proof | Pure construction tests and API/live proof validate objective terms, constraint trace propagation, comparison metrics, method status, authority context, and bounded reason codes for first-wave and authority-backed alternatives. |
 | Solver/fallback proof | RFC-0039 includes method-registry solver posture and fallback modeling plus authority-backed proof for `SOLVER_CONSTRAINED`. Unit tests prove explicit fallback to heuristic when solver dependencies are unavailable. |
-| Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; risk-aware construction consumes `lotus-risk` concentration authority; liquidity diagnostics carry settlement policy plus optional `lotus-core` cashflow projection evidence; currency and regime-stress diagnostics carry source-backed authority context; ESG and client income-need planning remain explicitly deferred until source products exist. |
+| Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; risk-aware construction consumes `lotus-risk` concentration authority; liquidity diagnostics carry settlement policy plus optional `lotus-core` cashflow projection evidence; currency and regime-stress diagnostics carry source-backed authority context; ESG/restriction-aware construction consumes `lotus-core` client restriction and sustainability profiles with explicit degraded/blocked/pending-review posture; client income-need planning remains explicitly deferred until source products exist. |
 | API certification result | `make check` passed with Ruff, format, monetary-float guard, no-alias guard, mypy, OpenAPI quality, API vocabulary, domain-data product, trust telemetry, observability contract, and 683 unit tests. Canonical live validation passed 11/11 on `http://127.0.0.1:8021` with Postgres-backed evidence in `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json`. |
 | Data mesh and observability result | Existing mesh product, trust telemetry, and observability contract gates passed through `make check`; construction proof preserves source supportability without moving core, risk, or performance authority into manage. |
 | Gateway/Workbench realization RFC result | Manage handoff document created; Gateway and Workbench RFC material captures construction-specific composition and construction-lab requirements. No downstream implementation or support claim is made yet. |

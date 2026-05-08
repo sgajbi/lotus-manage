@@ -39,50 +39,51 @@ def test_repo_native_domain_data_product_validation_passes_when_platform_is_avai
     assert validate_repo_native_contracts() == []
 
 
-def test_manage_consumer_declaration_tracks_current_portfolio_snapshot_input() -> None:
+def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     payload = _load_consumer_declaration()
     dependencies = payload["dependencies"]
+    by_name = {dependency["product_name"]: dependency for dependency in dependencies}
 
     assert payload["consumer_repository"] == "lotus-manage"
-    assert dependencies == [
-        {
-            "product_name": "PortfolioStateSnapshot",
-            "producer_repository": "lotus-core",
-            "required_product_version": "v1",
-            "required_trust_metadata": [
-                "generated_at",
-                "as_of_date",
-                "reconciliation_status",
-                "data_quality_status",
-                "correlation_id",
-            ],
-            "migration_posture": {"status": "current"},
-            "consumption_mode": "caller_supplied_contract_payload",
-            "business_purpose": (
-                "Run discretionary rebalance simulation and what-if analysis from a governed "
-                "portfolio-state snapshot supplied through the current management request contract."
-            ),
-            "validation_lanes": ["feature", "pr-merge"],
-            "failure_posture": "fail_closed",
-        }
-    ]
+    assert set(by_name) == {
+        "PortfolioStateSnapshot",
+        "ClientRestrictionProfile",
+        "SustainabilityPreferenceProfile",
+    }
+    assert (
+        by_name["PortfolioStateSnapshot"]["consumption_mode"] == "caller_supplied_contract_payload"
+    )
+    assert by_name["PortfolioStateSnapshot"]["failure_posture"] == "fail_closed"
+    assert by_name["ClientRestrictionProfile"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["ClientRestrictionProfile"]["failure_posture"] == "degrade_or_block"
+    assert (
+        by_name["SustainabilityPreferenceProfile"]["consumption_mode"] == "stateful_core_sourcing"
+    )
+    assert (
+        by_name["SustainabilityPreferenceProfile"]["failure_posture"] == "degrade_or_pending_review"
+    )
 
     request_models = REQUEST_MODELS_PATH.read_text(encoding="utf-8")
     assert "portfolio_snapshot: PortfolioSnapshot" in request_models
 
 
-def test_manage_declaration_does_not_claim_live_source_data_api_reads() -> None:
+def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profiles() -> None:
     payload = _load_consumer_declaration()
-    consumption_modes = {dependency["consumption_mode"] for dependency in payload["dependencies"]}
+    dependencies = payload["dependencies"]
+    live_dependencies = {
+        dependency["product_name"]
+        for dependency in dependencies
+        if dependency["consumption_mode"] == "stateful_core_sourcing"
+    }
     upstream_family_map = UPSTREAM_FAMILY_MAP_PATH.read_text(encoding="utf-8")
 
-    assert consumption_modes == {"caller_supplied_contract_payload"}
+    assert live_dependencies == {"ClientRestrictionProfile", "SustainabilityPreferenceProfile"}
     assert "modeled, feature-gated outbound resolver seam" in upstream_family_map
     assert (
         "RFC-087 rebaselines that seam to composed DPM source-data products" in upstream_family_map
     )
     assert "does not declare a promoted live" in upstream_family_map
-    assert "API-read dependency" in upstream_family_map
+    assert "execution-context product API-read dependency" in upstream_family_map
 
 
 def test_manage_declaration_keeps_unapproved_market_data_on_the_watchlist() -> None:
@@ -134,4 +135,4 @@ def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() 
 
     assert "DpmExecutionContext" not in dependency_names
     assert "DpmCoreExecutionContext" not in dependency_names
-    assert "sgajbi/lotus-core#330" in readme
+    assert "New core products should be added here only after source-owner approval" in readme

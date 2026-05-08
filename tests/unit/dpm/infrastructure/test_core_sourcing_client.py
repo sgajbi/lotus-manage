@@ -430,6 +430,83 @@ def _transaction_cost_curve_payload() -> dict:
     }
 
 
+def _client_restriction_profile_payload() -> dict:
+    return {
+        "product_name": "ClientRestrictionProfile",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "restrictions": [
+            {
+                "restriction_scope": "instrument",
+                "restriction_code": "NO_PRIVATE_CREDIT_BUY",
+                "restriction_status": "active",
+                "restriction_source": "client_mandate",
+                "applies_to_buy": True,
+                "applies_to_sell": False,
+                "instrument_ids": ["PRIVATE_CREDIT_FUND"],
+                "asset_classes": [],
+                "issuer_ids": [],
+                "country_codes": [],
+                "effective_from": "2026-01-01",
+                "effective_to": None,
+                "restriction_version": 1,
+                "source_record_id": "client-restriction:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "CLIENT_RESTRICTION_PROFILE_READY",
+            "restriction_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "rfc_040_client_restriction_profile_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:client-restrictions",
+    }
+
+
+def _sustainability_preference_profile_payload() -> dict:
+    return {
+        "product_name": "SustainabilityPreferenceProfile",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "preferences": [
+            {
+                "preference_framework": "LOTUS_SUSTAINABILITY_V1",
+                "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
+                "preference_status": "active",
+                "preference_source": "client_mandate",
+                "minimum_allocation": "0.2000000000",
+                "maximum_allocation": None,
+                "applies_to_asset_classes": ["Equity"],
+                "exclusion_codes": [],
+                "positive_tilt_codes": [],
+                "effective_from": "2026-01-01",
+                "effective_to": None,
+                "preference_version": 1,
+                "source_record_id": "sustainability:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+            "preference_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "rfc_040_sustainability_preference_profile_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:sustainability-preferences",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -457,6 +534,10 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_market_data_coverage_payload())
     if path.endswith("/transaction-cost-curve"):
         return httpx.Response(200, json=_transaction_cost_curve_payload())
+    if path.endswith("/client-restriction-profile"):
+        return httpx.Response(200, json=_client_restriction_profile_payload())
+    if path.endswith("/sustainability-preference-profile"):
+        return httpx.Response(200, json=_sustainability_preference_profile_payload())
     return httpx.Response(404, json={"detail": "unexpected path"})
 
 
@@ -493,17 +574,26 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots",
         "https://core.example.test/integration/market-data/coverage",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/transaction-cost-curve",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
     ]
     assert {correlation_id for _, correlation_id, _ in seen} == {"corr-core-001"}
     assert b'"sections":["positions_baseline","portfolio_totals"]' in seen[2][2]
     assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
     assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
+    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[7][2]
+    assert b'"include_inactive_restrictions":false' in seen[7][2]
+    assert b'"include_inactive_preferences":false' in seen[8][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
     assert context.transaction_cost_curve is not None
     assert context.transaction_cost_curve.supportability.state == "READY"
+    assert context.client_restriction_profile is not None
+    assert context.client_restriction_profile.supportability.state == "READY"
+    assert context.sustainability_preference_profile is not None
+    assert context.sustainability_preference_profile.supportability.state == "READY"
 
 
 def test_core_resolver_retries_transient_unavailable_response():

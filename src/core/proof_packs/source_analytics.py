@@ -9,15 +9,23 @@ from pydantic import ValidationError
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import (
+    AuthoritativeClientRestrictionContext,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
     ConstructionAlternative,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.proof_packs.models import DpmProofPackSourceRef, ProofPackSectionState
 
-ProofPackAnalyticsFamily = Literal["risk", "performance", "transaction_cost"]
+ProofPackAnalyticsFamily = Literal[
+    "risk",
+    "performance",
+    "transaction_cost",
+    "client_restriction",
+    "sustainability_preference",
+]
 
 
 @dataclass(frozen=True)
@@ -50,7 +58,11 @@ def source_analytics_for_alternative(
         return _risk_source_analytics(source_context)
     if family == "performance":
         return _performance_source_analytics(source_context)
-    return _transaction_cost_source_analytics(source_context)
+    if family == "transaction_cost":
+        return _transaction_cost_source_analytics(source_context)
+    if family == "client_restriction":
+        return _client_restriction_source_analytics(source_context)
+    return _sustainability_preference_source_analytics(source_context)
 
 
 def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAnalytics | None:
@@ -192,6 +204,101 @@ def _transaction_cost_source_analytics(
         reason_codes=reason_codes,
         source_ref=source_ref,
         source_hash_key="transaction_cost_context",
+        content_hash=context.content_hash or content_hash,
+    )
+
+
+def _client_restriction_source_analytics(
+    source_context: dict[str, Any],
+) -> ProofPackSourceAnalytics | None:
+    try:
+        context = AuthoritativeClientRestrictionContext.model_validate(source_context)
+    except ValidationError:
+        return None
+    payload = context.model_dump(mode="json", exclude_none=True)
+    content_hash = hash_canonical_payload(payload)
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
+        reason_codes.append("DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED")
+    source_ref = _source_ref(
+        family="client_restriction",
+        source_system=context.source_system,
+        source_type=context.source_product_name,
+        source_id=context.source_id or content_hash,
+        supportability_state=str(context.supportability_status),
+        content_hash=context.content_hash or content_hash,
+    )
+    return ProofPackSourceAnalytics(
+        family="client_restriction",
+        state=_section_state(context.supportability_status),
+        summary="Client restriction evidence is attached from source-owned ClientRestrictionProfile:v1.",
+        facts={
+            "source_system": context.source_system,
+            "source_product_name": context.source_product_name,
+            "source_product_version": context.source_product_version,
+            "source_id": context.source_id,
+            "portfolio_id": context.portfolio_id,
+            "client_id": context.client_id,
+            "mandate_id": context.mandate_id,
+            "as_of_date": context.as_of_date.isoformat(),
+            "missing_data_families": context.missing_data_families,
+            "restrictions": [
+                restriction.model_dump(mode="json") for restriction in context.restrictions[:20]
+            ],
+        },
+        metrics={"restriction_count": context.restriction_count},
+        reason_codes=reason_codes,
+        source_ref=source_ref,
+        source_hash_key="client_restriction_context",
+        content_hash=context.content_hash or content_hash,
+    )
+
+
+def _sustainability_preference_source_analytics(
+    source_context: dict[str, Any],
+) -> ProofPackSourceAnalytics | None:
+    try:
+        context = AuthoritativeSustainabilityPreferenceContext.model_validate(source_context)
+    except ValidationError:
+        return None
+    payload = context.model_dump(mode="json", exclude_none=True)
+    content_hash = hash_canonical_payload(payload)
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
+        reason_codes.append("DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED")
+    source_ref = _source_ref(
+        family="sustainability_preference",
+        source_system=context.source_system,
+        source_type=context.source_product_name,
+        source_id=context.source_id or content_hash,
+        supportability_state=str(context.supportability_status),
+        content_hash=context.content_hash or content_hash,
+    )
+    return ProofPackSourceAnalytics(
+        family="sustainability_preference",
+        state=_section_state(context.supportability_status),
+        summary=(
+            "Sustainability preference evidence is attached from source-owned "
+            "SustainabilityPreferenceProfile:v1."
+        ),
+        facts={
+            "source_system": context.source_system,
+            "source_product_name": context.source_product_name,
+            "source_product_version": context.source_product_version,
+            "source_id": context.source_id,
+            "portfolio_id": context.portfolio_id,
+            "client_id": context.client_id,
+            "mandate_id": context.mandate_id,
+            "as_of_date": context.as_of_date.isoformat(),
+            "missing_data_families": context.missing_data_families,
+            "preferences": [
+                preference.model_dump(mode="json") for preference in context.preferences[:20]
+            ],
+        },
+        metrics={"preference_count": context.preference_count},
+        reason_codes=reason_codes,
+        source_ref=source_ref,
+        source_hash_key="sustainability_preference_context",
         content_hash=context.content_hash or content_hash,
     )
 
