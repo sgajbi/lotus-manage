@@ -8,8 +8,22 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-07T23:28:33.424081+00:00",
+  "generatedAt": "2026-05-08T02:50:02.021657+00:00",
   "attributeCatalog": [
+    {
+      "semanticId": "lotus.access_classification",
+      "canonicalTerm": "access_classification",
+      "preferredName": "access_classification",
+      "description": "Audience and access classification for the event projection.",
+      "example": "sample_access_classification",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
     {
       "semanticId": "lotus.action",
       "canonicalTerm": "action",
@@ -580,6 +594,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.audit_policy",
+      "canonicalTerm": "audit_policy",
+      "preferredName": "audit_policy",
+      "description": "Audit policy for downstream portfolio-memory consumers.",
+      "example": "sample_audit_policy",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -2377,6 +2405,20 @@
       ]
     },
     {
+      "semanticId": "lotus.event_identity",
+      "canonicalTerm": "event_identity",
+      "preferredName": "event_identity",
+      "description": "Stable cross-app event identity derived from source system, source type, source id, and source content hash posture.",
+      "example": "sample_event_identity",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.event_time",
       "canonicalTerm": "event_time",
       "preferredName": "event_time",
@@ -3079,6 +3121,22 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.governance_policy",
+      "canonicalTerm": "governance_policy",
+      "preferredName": "governance_policy",
+      "description": "Portfolio-memory event identity, retention, redaction, access, and audit policy.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -76770,6 +76828,14 @@
             "attributeRef": "#/attributeCatalog/lotus.reason_codes"
           },
           {
+            "name": "governance_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_policy",
+            "attributeRef": "#/attributeCatalog/lotus.governance_policy"
+          },
+          {
             "name": "events",
             "location": "body",
             "required": true,
@@ -76784,6 +76850,14 @@
             "type": "string",
             "semanticId": "lotus.event_id",
             "attributeRef": "#/attributeCatalog/lotus.event_id"
+          },
+          {
+            "name": "events[].event_identity",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.event_identity",
+            "attributeRef": "#/attributeCatalog/lotus.event_identity"
           },
           {
             "name": "events[].event_type",
@@ -76984,6 +77058,38 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "events[].retention_policy",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.retention_policy",
+            "attributeRef": "#/attributeCatalog/lotus.retention_policy"
+          },
+          {
+            "name": "events[].redaction_policy",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.redaction_policy",
+            "attributeRef": "#/attributeCatalog/lotus.redaction_policy"
+          },
+          {
+            "name": "events[].audit_policy",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.audit_policy",
+            "attributeRef": "#/attributeCatalog/lotus.audit_policy"
+          },
+          {
+            "name": "events[].access_classification",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.access_classification",
+            "attributeRef": "#/attributeCatalog/lotus.access_classification"
           },
           {
             "name": "events[].metadata",

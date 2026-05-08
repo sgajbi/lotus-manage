@@ -764,7 +764,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Execution/OMS integration, PM quality scoring" in supported_features
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
     assert "mandate health, monitoring exception, proof-pack" in supported_features
-    assert "Cross-app event identity/retention/redaction/audit policy" in supported_features
+    assert "stable event identity plus retention, redaction, access, and audit policy" in (
+        supported_features
+    )
+    assert "Report/AI timeline consumers and future source-event families remain downstream" in (
+        supported_features
+    )
     assert "Supported as RFC-0042 full product experience" not in supported_features
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
@@ -774,7 +779,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "| Done on merged/published truth | 27 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
     assert "| Remaining / open | 28 |" in work_to_be_done
-    assert "RFC40-WTBD-010 mandate-memory event slice" in work_to_be_done
+    assert "RFC40-WTBD-010 portfolio-memory policy slice" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -827,7 +832,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "dpm-portfolio-memory-live.png" in work_to_be_done
     assert "MANDATE_HEALTH_SNAPSHOT" in work_to_be_done
     assert "MANDATE_MONITORING_EXCEPTION" in work_to_be_done
-    assert "cross-app event identity/retention/redaction/audit policy" in work_to_be_done
+    assert "manage-owned event identity, retention, redaction, access, and audit policy" in (
+        work_to_be_done
+    )
+    assert "Report/AI timeline consumers and future report, AI, OMS" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done

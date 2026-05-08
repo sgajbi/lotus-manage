@@ -16,6 +16,12 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
+    PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
+    PORTFOLIO_MEMORY_AUDIT_POLICY,
+    PORTFOLIO_MEMORY_EVENT_IDENTITY_SCHEME,
+    PORTFOLIO_MEMORY_REDACTION_POLICY,
+    PORTFOLIO_MEMORY_RETENTION_POLICY,
+    PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY,
     PortfolioMemorySupportabilityState,
 )
 from src.core.proof_packs.models import (
@@ -99,6 +105,7 @@ def build_portfolio_memory(
         event_type_counts=event_type_counts,
         source_systems=source_systems,
         reason_codes=reason_codes,
+        governance_policy=_portfolio_memory_governance_policy(),
         events=events,
         content_hash="",
         generated_at=generated_at.isoformat(),
@@ -106,6 +113,17 @@ def build_portfolio_memory(
     payload = memory.model_dump(mode="json")
     payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
     return DpmPortfolioMemory.model_validate(payload)
+
+
+def _portfolio_memory_governance_policy() -> dict[str, str]:
+    return {
+        "event_identity_scheme": PORTFOLIO_MEMORY_EVENT_IDENTITY_SCHEME,
+        "retention_policy": PORTFOLIO_MEMORY_RETENTION_POLICY,
+        "redaction_policy": PORTFOLIO_MEMORY_REDACTION_POLICY,
+        "audit_policy": PORTFOLIO_MEMORY_AUDIT_POLICY,
+        "access_classification": PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
+        "source_authority_policy": PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY,
+    }
 
 
 def _mandate_events(

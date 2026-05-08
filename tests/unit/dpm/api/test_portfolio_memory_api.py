@@ -243,6 +243,19 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.portfolio_id == PORTFOLIO_ID
     assert memory.event_count >= 6
     assert memory.content_hash.startswith("sha256:")
+    assert memory.governance_policy == {
+        "event_identity_scheme": (
+            "source_system:source_type:source_id:content_hash_or_content_hash_unavailable"
+        ),
+        "retention_policy": "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y",
+        "redaction_policy": "NO_RAW_PAYLOADS",
+        "audit_policy": "AUDIT_READ_AND_EXPORT",
+        "access_classification": "CLIENT_CONFIDENTIAL_INTERNAL",
+        "source_authority_policy": (
+            "portfolio memory projects source-owned facts; consumers must not reconstruct risk, "
+            "performance, mandate-health, execution, tax, cash, FX, report, or AI truth"
+        ),
+    }
     assert memory.event_type_counts["PROOF_PACK_CREATED"] == 1
     assert memory.event_type_counts["MANDATE_HEALTH_SNAPSHOT"] == 1
     assert memory.event_type_counts["MANDATE_MONITORING_EXCEPTION"] == 1
@@ -268,6 +281,16 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         key=lambda event: (event.event_time, event.event_id),
         reverse=True,
     )
+    assert all(event.event_identity for event in memory.events)
+    assert all(
+        event.retention_policy == "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y"
+        for event in memory.events
+    )
+    assert all(event.redaction_policy == "NO_RAW_PAYLOADS" for event in memory.events)
+    assert all(event.audit_policy == "AUDIT_READ_AND_EXPORT" for event in memory.events)
+    assert all(
+        event.access_classification == "CLIENT_CONFIDENTIAL_INTERNAL" for event in memory.events
+    )
     assert not any(
         event.metadata.get("external_execution_claimed") is True for event in memory.events
     )
@@ -289,8 +312,13 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     payload = response.json()
     assert payload["portfolio_id"] == PORTFOLIO_ID
     assert payload["event_count"] >= 6
+    assert payload["governance_policy"]["retention_policy"] == (
+        "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y"
+    )
     assert payload["event_type_counts"]["WAVE_EVENT"] == 1
     assert payload["event_type_counts"]["MANDATE_MONITORING_EXCEPTION"] == 1
+    assert all(event["event_identity"] for event in payload["events"])
+    assert all(event["redaction_policy"] == "NO_RAW_PAYLOADS" for event in payload["events"])
     assert any(event["event_type"] == "OUTCOME_REVIEW_EVENT" for event in payload["events"])
     assert openapi.status_code == 200
     assert "/api/v1/rebalance/portfolio-memory/{portfolio_id}" in openapi.json()["paths"]

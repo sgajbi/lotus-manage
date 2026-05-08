@@ -2,7 +2,7 @@
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 PortfolioMemoryEventType = Literal[
     "PROOF_PACK_CREATED",
@@ -23,6 +23,18 @@ PortfolioMemorySupportabilityState = Literal[
     "BLOCKED",
     "EMPTY",
 ]
+
+PORTFOLIO_MEMORY_EVENT_IDENTITY_SCHEME = (
+    "source_system:source_type:source_id:content_hash_or_content_hash_unavailable"
+)
+PORTFOLIO_MEMORY_RETENTION_POLICY = "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y"
+PORTFOLIO_MEMORY_REDACTION_POLICY = "NO_RAW_PAYLOADS"
+PORTFOLIO_MEMORY_AUDIT_POLICY = "AUDIT_READ_AND_EXPORT"
+PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION = "CLIENT_CONFIDENTIAL_INTERNAL"
+PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY = (
+    "portfolio memory projects source-owned facts; consumers must not reconstruct risk, "
+    "performance, mandate-health, execution, tax, cash, FX, report, or AI truth"
+)
 
 
 class DpmPortfolioMemorySourceRef(BaseModel):
@@ -45,6 +57,13 @@ class DpmPortfolioMemorySourceRef(BaseModel):
 
 class DpmPortfolioMemoryEvent(BaseModel):
     event_id: str = Field(description="Stable portfolio-memory event identifier.")
+    event_identity: str = Field(
+        default="",
+        description=(
+            "Stable cross-app event identity derived from source system, source type, source id, "
+            "and source content hash posture."
+        ),
+    )
     event_type: PortfolioMemoryEventType = Field(description="Portfolio-memory event type.")
     event_time: str = Field(description="UTC event timestamp.")
     actor: str = Field(description="Actor or service responsible for the event.")
@@ -72,10 +91,35 @@ class DpmPortfolioMemoryEvent(BaseModel):
         default=None,
         description="Canonical source content hash when available.",
     )
+    retention_policy: str = Field(
+        default=PORTFOLIO_MEMORY_RETENTION_POLICY,
+        description="Retention policy for the portfolio-memory event projection.",
+    )
+    redaction_policy: str = Field(
+        default=PORTFOLIO_MEMORY_REDACTION_POLICY,
+        description="Redaction policy for timeline event metadata and source refs.",
+    )
+    audit_policy: str = Field(
+        default=PORTFOLIO_MEMORY_AUDIT_POLICY,
+        description="Audit policy for downstream portfolio-memory consumers.",
+    )
+    access_classification: str = Field(
+        default=PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
+        description="Audience and access classification for the event projection.",
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Bounded metadata without raw source payloads.",
     )
+
+    @model_validator(mode="after")
+    def populate_event_identity(self) -> "DpmPortfolioMemoryEvent":
+        if not self.event_identity:
+            hash_part = self.content_hash or "content_hash_unavailable"
+            self.event_identity = (
+                f"{self.source_system}:{self.source_type}:{self.source_id}:{hash_part}"
+            )
+        return self
 
 
 class DpmPortfolioMemory(BaseModel):
@@ -87,6 +131,10 @@ class DpmPortfolioMemory(BaseModel):
     event_type_counts: dict[str, int] = Field(description="Returned event count by event type.")
     source_systems: list[str] = Field(description="Source systems represented by returned events.")
     reason_codes: list[str] = Field(description="Bounded aggregate reason codes.")
+    governance_policy: dict[str, str] = Field(
+        default_factory=dict,
+        description="Portfolio-memory event identity, retention, redaction, access, and audit policy.",
+    )
     events: list[DpmPortfolioMemoryEvent] = Field(
         description="Ordered source-backed portfolio-memory events."
     )
