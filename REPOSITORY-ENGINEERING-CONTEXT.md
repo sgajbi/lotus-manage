@@ -124,8 +124,9 @@ Current repository posture:
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
     PR #199, `lotus-workbench` PR #167, `lotus-platform` PR #307, and canonical Workbench evidence
     `lotus-workbench/output/playwright/live-canonical/dpm-portfolio-memory-live.png`.
-    Cross-app event identity/retention/redaction/audit policy and report/AI timeline consumers
-    remain downstream WTBD scope.
+    Manage now emits stable event identity plus retention, redaction, access, and audit policy in
+    the portfolio-memory API contract. Report/AI timeline consumers and future report, AI, OMS,
+    PM-scoring, and client-communication source-event families remain downstream WTBD scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source

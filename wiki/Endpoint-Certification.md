@@ -1849,18 +1849,22 @@ Route:
 Purpose:
 
 RFC40-WTBD-010 manage-owned backend foundation for source-backed portfolio memory. The endpoint
-returns one deterministic, hashable portfolio timeline across persisted proof packs,
-proof-pack-local decision timeline events, RFC-0041 rebalance wave events, internal operations
-handoff refs, and RFC-0042 outcome-review events. It is an event-lineage read model for PM,
-operations, audit, Gateway, and future Workbench consumers; it is not a risk/performance,
-execution, tax, cash, FX, or order-routing calculation surface.
+returns one deterministic, hashable portfolio timeline across persisted mandate health snapshots,
+monitoring exceptions, proof packs, proof-pack-local decision timeline events, RFC-0041 rebalance
+wave events, internal operations handoff refs, and RFC-0042 outcome-review events. It is an
+event-lineage read model for PM, operations, audit, Gateway, Workbench, and future report/AI
+consumers; it is not a risk/performance, execution, tax, cash, FX, or order-routing calculation
+surface.
 
 Functional behavior:
 
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
-  artifact refs, content hashes, and bounded metadata,
+  artifact refs, content hashes, stable event identity, and bounded metadata,
+- publishes aggregate and event-level retention, redaction, access, and audit policy:
+  `DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y`, `NO_RAW_PAYLOADS`,
+  `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1873,18 +1877,21 @@ Non-functional posture:
 - Does not expose raw upstream payloads.
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
-- Portfolio-memory truth is partial until Gateway/Workbench timeline realization, canonical browser
-  proof, mandate-monitoring exception nodes, and cross-app retention/audit policy are implemented.
+- Portfolio-memory truth is partial only for report/AI consumers and future report, AI, OMS,
+  PM-scoring, and client-communication source-event families that are not yet implemented in their
+  owning apps.
 
 ```mermaid
 flowchart LR
     Proof[Proof packs] --> Memory[Portfolio memory API]
+    Mandates[Mandate health and exceptions] --> Memory
     Timeline[Proof-pack timeline] --> Memory
     Waves[Wave events] --> Memory
     Handoff[Internal handoff refs] --> Memory
     Outcomes[Outcome-review events] --> Memory
-    Memory --> Gateway[Gateway composition - future slice]
-    Gateway --> Workbench[Workbench timeline - future slice]
+    Memory --> Gateway[Gateway composition]
+    Gateway --> Workbench[Workbench portfolio-memory timeline]
+    Memory -. lineage only .-> ReportAI[Future report/AI consumers]
 ```
 
 Upstream integration posture:
@@ -1895,8 +1902,8 @@ already present in proof-pack, wave, or outcome-review records.
 
 Downstream consumers:
 
-- Gateway should compose this endpoint without reconstructing events.
-- Workbench should consume the Gateway/BFF product route only.
+- Gateway composes this endpoint without reconstructing events.
+- Workbench consumes the Gateway/BFF product route only.
 - Report and AI consumers may use portfolio-memory evidence only as bounded lineage; they must not
   infer missing source-owner facts.
 
