@@ -7,24 +7,31 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 
 from src.api.dependencies import get_mandate_repository
+from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services.mandate_service import (
     DpmMandateNotFoundError,
+    DpmMandateSourceIncompleteError,
     DpmMonitoringRunNotFoundError,
     get_command_center_summary,
     get_monitoring_run,
     list_monitoring_exceptions,
     list_monitoring_runs,
+    mandate_ids_from_pm_book_membership,
     resolve_monitoring_exception,
     run_mandate_monitoring_once,
 )
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmCommandCenterSummary, DpmMonitoringException, DpmMonitoringRun
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 
 
 class DpmMonitoringRunOnceRequest(BaseModel):
     mandate_ids: list[str] = Field(
-        min_length=1,
-        description="Mandate ids to evaluate in this bounded monitoring run.",
+        default_factory=list,
+        description=(
+            "Explicit mandate ids to evaluate. Leave empty only when resolving a source-owned "
+            "PM-book cohort from lotus-core."
+        ),
         examples=[["MANDATE_PB_SG_GLOBAL_BAL_001"]],
     )
     as_of_date: date = Field(
@@ -38,8 +45,27 @@ class DpmMonitoringRunOnceRequest(BaseModel):
     )
     portfolio_manager_id: Optional[str] = Field(
         default=None,
-        description="Optional portfolio-manager filter captured for audit.",
-        examples=["PM_SG_001"],
+        description=(
+            "Portfolio-manager selector captured for audit. When `mandate_ids` is empty, Manage "
+            "uses this selector to resolve the cohort from lotus-core "
+            "`PortfolioManagerBookMembership:v1`."
+        ),
+        examples=["PM_SG_DPM_001"],
+    )
+    book_id: Optional[str] = Field(
+        default=None,
+        description="Optional PM book id captured for command-center filtering.",
+        examples=["BOOK_SG_BALANCED_DPM"],
+    )
+    booking_center_code: Optional[str] = Field(
+        default=None,
+        description="Optional booking-center filter forwarded to lotus-core PM-book membership.",
+        examples=["Singapore"],
+    )
+    portfolio_types: list[str] = Field(
+        default_factory=lambda: ["DISCRETIONARY"],
+        description="Portfolio types eligible for source-owned PM-book monitoring.",
+        examples=[["DISCRETIONARY"]],
     )
     requested_by: Optional[str] = Field(
         default=None,
@@ -158,17 +184,100 @@ async def run_once(
     request: DpmMonitoringRunOnceRequest,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringRun:
+    mandate_ids = list(request.mandate_ids)
+    source_filters: dict[str, str] = {}
+    if not mandate_ids:
+        if not request.portfolio_manager_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail={
+                    "code": "DPM_MONITORING_SELECTOR_REQUIRED",
+                    "message": "Provide mandate_ids or portfolio_manager_id for PM-book discovery.",
+                },
+            )
+        portfolio_types = [
+            portfolio_type.strip().upper()
+            for portfolio_type in request.portfolio_types
+            if portfolio_type.strip()
+        ]
+        if not portfolio_types:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail={
+                    "code": "DPM_MONITORING_PM_BOOK_PORTFOLIO_TYPES_REQUIRED",
+                    "message": "PM-book monitoring requires at least one portfolio type.",
+                },
+            )
+        try:
+            membership = build_core_resolver_client().resolve_portfolio_manager_book_membership(
+                portfolio_manager_id=request.portfolio_manager_id,
+                as_of_date=request.as_of_date,
+                tenant_id=request.tenant_id,
+                booking_center_code=request.booking_center_code,
+                portfolio_types=portfolio_types,
+                include_inactive=False,
+                correlation_id=None,
+            )
+        except DpmCoreResolverUnavailableError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
+            ) from exc
+        except DpmCoreResolverError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_424_FAILED_DEPENDENCY,
+                detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
+            ) from exc
+        if membership.supportability.state != "READY":
+            raise HTTPException(
+                status_code=status.HTTP_424_FAILED_DEPENDENCY,
+                detail={
+                    "code": membership.supportability.reason,
+                    "message": "PM-book membership is not source-ready for monitoring.",
+                },
+            )
+        if not membership.members:
+            raise HTTPException(
+                status_code=status.HTTP_424_FAILED_DEPENDENCY,
+                detail={
+                    "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+                    "message": "PM-book membership returned no mandates to monitor.",
+                },
+            )
+        try:
+            mandate_ids = mandate_ids_from_pm_book_membership(
+                repository=repository,
+                membership=membership,
+            )
+        except DpmMandateSourceIncompleteError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_424_FAILED_DEPENDENCY,
+                detail={"code": str(exc) or "DPM_PM_BOOK_MANDATE_SNAPSHOT_MISSING"},
+            ) from exc
+        source_filters = {
+            "source_product": membership.product_name,
+            "source_product_version": membership.product_version,
+            "source_supportability_state": membership.supportability.state,
+        }
+        if membership.snapshot_id:
+            source_filters["source_snapshot_id"] = membership.snapshot_id
+        if membership.source_batch_fingerprint:
+            source_filters["source_content_hash"] = membership.source_batch_fingerprint
+
     try:
         return run_mandate_monitoring_once(
             repository=repository,
-            mandate_ids=request.mandate_ids,
+            mandate_ids=mandate_ids,
             as_of_date=request.as_of_date,
             filters={
                 key: value
                 for key, value in {
                     "tenant_id": request.tenant_id,
                     "portfolio_manager_id": request.portfolio_manager_id,
+                    "book_id": request.book_id,
+                    "booking_center_code": request.booking_center_code,
                     "requested_by": request.requested_by,
+                    **source_filters,
                 }.items()
                 if value is not None
             },

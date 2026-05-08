@@ -35,18 +35,17 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: this RFC41-WTBD-002 source-cohort slice after `lotus-core` added
-`CioModelChangeAffectedCohort:v1` and `lotus-manage` consumed it for `CIO_MODEL_CHANGE`
-preview/create without caller-supplied portfolio fabrication. This updates the prior
-RFC41-WTBD-009 product-realization snapshot that had already merged and published the bounded
-portfolio-memory, report, AI memo, Gateway, and Workbench product path.
+Snapshot basis: this RFC38-WTBD-004 PM-book command-center selector slice after `lotus-manage`
+consumed `lotus-core` `PortfolioManagerBookMembership:v1` for monitoring run-once cohorts and
+`lotus-workbench` stopped sending a single mandate fallback from the command-center monitoring
+action. This updates the prior RFC41-WTBD-002 source-cohort snapshot.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 29 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 30 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 26 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 25 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -749,7 +748,7 @@ products, and canonical seed automation belonged to downstream or source-owning 
 | RFC38-WTBD-001 | Gateway DPM command-center composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #194 | Gateway now composes RFC-0038 mandate command-center, monitoring, exception, and mandate drill-down truth from manage without becoming mandate-health authority. |
 | RFC38-WTBD-002 | Workbench DPM cockpit panels | `lotus-workbench` | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #154 | Workbench consumes Gateway/BFF command-center contracts only, renders manage-owned supportability/source readiness/health truth without recomputation, and originally recorded the canonical seed gap that RFC38-WTBD-003 later resolved for the populated governed portfolio. |
 | RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 | Platform canonical automation now refreshes the governed DPM mandate from core through manage, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified `ready`. Partial and empty command-center state automation remains future depth. |
-| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` source authority consumed later by monitoring/command-center selectors | Deferred for monitoring/command-center selectors | `PortfolioManagerBookMembership:v1` now exists for RFC-0041 wave discovery, but RFC-0038 monitoring and command-center selectors still support caller-supplied mandate IDs and persisted monitoring runs only. |
+| RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` source authority consumed by `lotus-manage`, surfaced through `lotus-gateway` and `lotus-workbench` | Completed in this slice for populated source-owned PM-book monitoring cohorts | Manage monitoring run-once can now resolve PM-book cohorts from `PortfolioManagerBookMembership:v1` when callers omit mandate IDs. Workbench command-center monitoring uses that source-owned path by default. Partial/empty canonical seed automation remains RFC41-WTBD-003 future depth, not a blocker for populated PM-book monitoring support. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
 | RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
 | RFC38-WTBD-007 | Broader risk and performance health enrichment | `lotus-risk`, `lotus-performance` | Deferred unless owning-service contracts are consumed | Manage health cannot clone risk or performance methodology. Risk/performance attention must come from certified owners. |
@@ -953,31 +952,48 @@ callers to supply every mandate or portfolio id manually.
 
 Current status:
 
-`PortfolioManagerBookMembership:v1` now exists in `lotus-core` and is consumed by RFC-0041
-`PM_BOOK_REVIEW` wave discovery. RFC-0038 monitoring and command-center selectors still support
-caller-supplied mandate IDs and persisted monitoring runs only. Promoting PM-book command-center
-population needs a separate manage monitoring/command-center selector slice with partial, empty,
-stale, and permission-denied semantics.
+Completed in this slice for populated, source-owned PM-book monitoring cohorts.
+`PortfolioManagerBookMembership:v1` already exists in `lotus-core`; `lotus-manage` now consumes it
+directly when `/api/v1/dpm/monitoring/run-once` receives no explicit `mandate_ids` and has a
+`portfolio_manager_id` selector. The command-center run records the PM, book, tenant, booking
+center, core product, core product version, supportability state, snapshot id, and source content
+hash in the monitoring-run filters so command-center reads can tie the populated cohort back to
+source authority.
 
-Dependencies before implementation:
+What was delivered:
 
-1. monitoring/command-center consumer contract for lotus-core `PortfolioManagerBookMembership:v1`,
-2. degraded-state behavior for empty, partial, stale, and permission-denied books,
-4. Gateway and Workbench product-state expectations updated,
-5. live proof covers populated, partial, empty, stale, and permission-denied books.
+1. Manage preserves the existing explicit mandate-id path for backward-compatible bounded runs.
+2. Manage requires either explicit `mandate_ids` or `portfolio_manager_id`, and rejects missing
+   selectors with `DPM_MONITORING_SELECTOR_REQUIRED`.
+3. Manage resolves source-owned PM-book members through `lotus-core`
+   `PortfolioManagerBookMembership:v1` with tenant, booking-center, as-of date, eligible portfolio
+   type, and `include_inactive=false` filters.
+4. Manage maps source unavailability to dependency errors instead of fabricating a cohort.
+5. Manage blocks non-ready PM-book membership, empty PM-book membership, and PM-book members whose
+   refreshed RFC-0038 mandate twin is not present.
+6. Workbench command-center monitoring no longer sends a single mandate fallback; the embedded
+   command-center action lets Gateway/Manage resolve the PM-book cohort from source truth.
+7. Gateway remains a pass-through product BFF for the monitoring body and does not become PM-book
+   authority.
 
-Expected implementation wave:
+Validation evidence:
 
-Implement after the RFC-0041 wave consumer branch is merged and validated. Reuse the source-owned
-book membership product, but keep monitoring-run and command-center semantics explicitly separate
-from wave creation.
+1. Manage focused proof:
+   `python -m pytest tests/unit/dpm/api/test_monitoring_api.py -q`.
+2. Manage static proof:
+   `python -m ruff check src/api/routers/monitoring.py src/api/services/mandate_service.py tests/unit/dpm/api/test_monitoring_api.py`.
+3. Workbench focused proof:
+   `npm test -- --run tests/unit/workbench-api.test.ts tests/unit/dpm-command-center-panel.test.tsx`.
+4. Documentation and API-governance proof are required before merge through the docs current-state
+   tests, API vocabulary/no-alias gate, wiki check-only, and PR CI.
 
-Promotion proof:
+Remaining governed follow-up:
 
-1. source-owner OpenAPI/tests/live proof,
-2. manage monitoring and command-center integration tests,
-3. Gateway/Workbench integration proof if surfaced,
-4. supported-feature language that names the exact supported book source.
+This WTBD closes the source-owned populated PM-book monitoring path. It does not claim additional
+canonical seed fixtures for empty, partial, degraded, blocked, or permission-denied books. Those
+demo/regression postures remain in RFC41-WTBD-003 because they require platform-owned seed
+fixtures, Workbench browser assertions, and screenshot/evidence registration beyond the populated
+command-center path.
 
 #### RFC38-WTBD-005 - Mandate Objective, Benchmark, Review Cadence, And Model-Change Sources
 

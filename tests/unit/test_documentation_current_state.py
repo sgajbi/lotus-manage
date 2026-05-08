@@ -780,10 +780,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 29 |" in work_to_be_done
+    assert "| Done on merged/published truth | 30 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 26 |" in work_to_be_done
-    assert "RFC41-WTBD-002 source-cohort slice" in work_to_be_done
+    assert "| Remaining / open | 25 |" in work_to_be_done
+    assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
+    assert "source-owned populated PM-book monitoring path" in work_to_be_done
+    assert "RFC38-WTBD-004 PM-book command-center selector slice" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -904,7 +906,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 29 done on merged/published truth, 4 partial" in (supported_features)
+    assert "59 WTBD items: 30 done on merged/published truth, 4 partial" in (supported_features)
+    assert "PM-book-backed monitoring cohort resolution" in supported_features
+    assert "PortfolioManagerBookMembership:v1" in supported_features
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
         supported_features
     )

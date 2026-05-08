@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-08T08:19:31.118711+00:00",
+  "generatedAt": "2026-05-08T08:58:28.340117+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5585,7 +5585,7 @@
       "semanticId": "lotus.portfolio_types",
       "canonicalTerm": "portfolio_types",
       "preferredName": "portfolio_types",
-      "description": "PM-book portfolio types eligible for automatic wave discovery.",
+      "description": "Portfolio types eligible for source-owned PM-book monitoring.",
       "example": [
         "sample_portfolio_types_item"
       ],
@@ -49655,7 +49655,7 @@
           {
             "name": "mandate_ids",
             "location": "body",
-            "required": true,
+            "required": false,
             "type": "array",
             "semanticId": "lotus.mandate_ids",
             "attributeRef": "#/attributeCatalog/lotus.mandate_ids"
@@ -49683,6 +49683,30 @@
             "type": "object",
             "semanticId": "lotus.portfolio_manager_id",
             "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "book_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.book_id",
+            "attributeRef": "#/attributeCatalog/lotus.book_id"
+          },
+          {
+            "name": "booking_center_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.booking_center_code",
+            "attributeRef": "#/attributeCatalog/lotus.booking_center_code"
+          },
+          {
+            "name": "portfolio_types",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_types"
           },
           {
             "name": "requested_by",
