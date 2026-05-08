@@ -352,6 +352,15 @@ def test_repository_serialization_round_trip_preserves_domain_types() -> None:
     assert reloaded.dimension_scores[0].dimension in set(MandateHealthDimension)
 
 
+def test_postgres_payload_loader_accepts_psycopg_jsonb_dicts() -> None:
+    run = _monitoring_run(run_id="dmr_jsonb_dict")
+    payload = run.model_dump(mode="json")
+
+    reloaded = mandate_postgres._payload({"payload_json": payload})  # noqa: SLF001
+
+    assert load_model_json(type(run), reloaded) == run
+
+
 class _FakeResult:
     def __init__(
         self,

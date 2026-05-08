@@ -108,7 +108,7 @@ class PostgresDpmMandateRepository:
         """
         with closing(self._connect()) as connection:
             rows = connection.execute(query, (mandate_id,)).fetchall()
-        return [load_model_json(DpmMandateDigitalTwin, str(row["payload_json"])) for row in rows]
+        return [load_model_json(DpmMandateDigitalTwin, _payload(row)) for row in rows]
 
     def save_health_snapshot(self, snapshot: DpmMandateHealthSnapshot) -> None:
         query = """
@@ -173,7 +173,7 @@ class PostgresDpmMandateRepository:
             row = connection.execute(query, (mandate_id,)).fetchone()
         if row is None:
             return None
-        return load_model_json(DpmMandateHealthSnapshot, str(row["payload_json"]))
+        return load_model_json(DpmMandateHealthSnapshot, _payload(row))
 
     def save_monitoring_exception(self, exception: DpmMonitoringException) -> None:
         query = """
@@ -292,7 +292,7 @@ class PostgresDpmMandateRepository:
             row = connection.execute(query, (monitoring_run_id,)).fetchone()
         if row is None:
             return None
-        return load_model_json(DpmMonitoringRun, str(row["payload_json"]))
+        return load_model_json(DpmMonitoringRun, _payload(row))
 
     def list_monitoring_runs(
         self,
@@ -330,7 +330,7 @@ class PostgresDpmMandateRepository:
         args.append(limit + 1)
         with closing(self._connect()) as connection:
             rows = connection.execute(query, tuple(args)).fetchall()
-        runs = [load_model_json(DpmMonitoringRun, str(row["payload_json"])) for row in rows]
+        runs = [load_model_json(DpmMonitoringRun, _payload(row)) for row in rows]
         page = runs[:limit]
         next_cursor = page[-1].monitoring_run_id if len(runs) > limit else None
         return page, next_cursor
@@ -383,9 +383,7 @@ class PostgresDpmMandateRepository:
         args.append(limit + 1)
         with closing(self._connect()) as connection:
             rows = connection.execute(query, tuple(args)).fetchall()
-        exceptions = [
-            load_model_json(DpmMonitoringException, str(row["payload_json"])) for row in rows
-        ]
+        exceptions = [load_model_json(DpmMonitoringException, _payload(row)) for row in rows]
         page = exceptions[:limit]
         next_cursor = page[-1].exception_id if len(exceptions) > limit else None
         return page, next_cursor
@@ -402,7 +400,7 @@ class PostgresDpmMandateRepository:
             row = connection.execute(query, (exception_id,)).fetchone()
         if row is None:
             return None
-        current = load_model_json(DpmMonitoringException, str(row["payload_json"]))
+        current = load_model_json(DpmMonitoringException, _payload(row))
         resolved = current.model_copy(
             update={
                 "state": "RESOLVED",
@@ -446,7 +444,16 @@ class PostgresDpmMandateRepository:
 def _to_twin(row: Any) -> Optional[DpmMandateDigitalTwin]:
     if row is None:
         return None
-    return load_model_json(DpmMandateDigitalTwin, str(row["payload_json"]))
+    return load_model_json(DpmMandateDigitalTwin, _payload(row))
+
+
+def _payload(row: Any) -> str | dict[str, Any]:
+    payload = row["payload_json"]
+    if isinstance(payload, dict):
+        return payload
+    if not isinstance(payload, str):
+        return json.dumps(payload, default=str)
+    return payload
 
 
 def _import_psycopg() -> tuple[Any, Any]:

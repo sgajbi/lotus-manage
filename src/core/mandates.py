@@ -340,9 +340,20 @@ class DpmCommandCenterRecommendedAction(BaseModel):
 
 
 class DpmCommandCenterSupportability(BaseModel):
+    state: Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"] = Field(
+        description=(
+            "Bounded command-center supportability state derived from command-center "
+            "completeness and source-readiness evidence."
+        ),
+        examples=["READY"],
+    )
     data_completeness_state: Literal["COMPLETE", "PARTIAL", "EMPTY"] = Field(
         description="Whether command-center data is complete, partial, or empty for the query.",
         examples=["PARTIAL"],
+    )
+    reason: str = Field(
+        description="Bounded reason explaining the supportability state.",
+        examples=["COMMAND_CENTER_READY"],
     )
     generated_at: datetime = Field(
         description="UTC timestamp when the command-center response was generated.",

@@ -424,6 +424,11 @@ def get_command_center_summary(
         completeness = "EMPTY"
     elif partial_reasons:
         completeness = "PARTIAL"
+    supportability_state, supportability_reason = _command_center_supportability_state(
+        latest_run=latest_run,
+        completeness=completeness,
+        partial_reasons=partial_reasons,
+    )
 
     return DpmCommandCenterSummary(
         tenant_id=tenant_id,
@@ -442,12 +447,33 @@ def get_command_center_summary(
         recommended_actions=_recommended_actions(active_exceptions),
         latest_monitoring_run=latest_run,
         supportability=DpmCommandCenterSupportability(
+            state=supportability_state,
             data_completeness_state=completeness,
+            reason=supportability_reason,
             generated_at=datetime.now(timezone.utc),
             source_run_id=latest_run.monitoring_run_id if latest_run else None,
             partial_readiness_reasons=partial_reasons,
         ),
     )
+
+
+def _command_center_supportability_state(
+    *,
+    latest_run: Optional[DpmMonitoringRun],
+    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"],
+    partial_reasons: list[str],
+) -> tuple[Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"], str]:
+    if latest_run is None or completeness == "EMPTY":
+        return "EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
+
+    source_states = {state.upper() for state in latest_run.source_readiness_summary}
+    if source_states.intersection({"INCOMPLETE", "UNAVAILABLE", "BLOCKED"}):
+        return "BLOCKED", "COMMAND_CENTER_SOURCE_READINESS_BLOCKED"
+    if source_states.intersection({"DEGRADED", "STALE"}):
+        return "DEGRADED", "COMMAND_CENTER_SOURCE_READINESS_DEGRADED"
+    if completeness == "PARTIAL" or partial_reasons:
+        return "PARTIAL", partial_reasons[0] if partial_reasons else "COMMAND_CENTER_PARTIAL"
+    return "READY", "COMMAND_CENTER_READY"
 
 
 def _run_matches_command_center_filters(
