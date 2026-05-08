@@ -88,8 +88,12 @@ Current repository posture:
     regime-stress-aware through `lotus-risk` `RegimeScenarioPackEvaluation:v1` when
     `DPM_RISK_BASE_URL` is configured. Client income-need planning is not supported by cashflow
     projection totals and remains deferred until an owning source product exists.
-    ESG/restriction-aware construction is explicitly deferred until restriction and sustainability
-    source products exist. Gateway and Workbench are not yet integrated with this surface; paired
+    ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
+    `SustainabilityPreferenceProfile:v1` through the stateful core-sourcing path when source gates
+    are enabled. Client restriction profile violations block matching candidate trades, source
+    profile gaps degrade explicitly, and sustainability allocation/classification gaps remain
+    pending-review rather than unsupported ESG claims. Gateway and Workbench are not yet integrated
+    with this surface; paired
     realization RFCs have been created and must be implemented/proven downstream before a full
     front-office product outcome is claimed.
 14. RFC-0040 has delivered the implementation-backed manage pre-trade proof-pack backend

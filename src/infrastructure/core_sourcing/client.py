@@ -6,6 +6,7 @@ from typing import Any, Optional
 import httpx
 
 from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
     DpmCoreCioModelChangeAffectedCohortResponse,
     DpmCoreExecutionContext,
     DpmCoreInstrumentEligibilityBulkResponse,
@@ -17,6 +18,7 @@ from src.core.dpm_source_context import (
     DpmCorePolicyContext,
     DpmCoreSourceLineage,
     DpmCoreSupportability,
+    DpmCoreSustainabilityPreferenceProfileResponse,
     DpmCoreTransactionCostCurveResponse,
     DpmStatefulInput,
     build_market_data_snapshot_from_core_coverage,
@@ -59,6 +61,12 @@ class DpmCoreResolverConfig:
     portfolio_snapshot_path_template: str = "/integration/portfolios/{portfolio_id}/core-snapshot"
     transaction_cost_curve_path_template: str = (
         "/integration/portfolios/{portfolio_id}/transaction-cost-curve"
+    )
+    client_restriction_profile_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/client-restriction-profile"
+    )
+    sustainability_preference_profile_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/sustainability-preference-profile"
     )
     timeout_seconds: float = 2.0
     max_attempts: int = 2
@@ -140,6 +148,22 @@ class DpmCoreResolverConfig:
         path_template = self.transaction_cost_curve_path_template.strip()
         if not path_template:
             raise DpmCoreResolverUnavailableError("DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_client_restriction_profile_url(self, portfolio_id: str) -> str:
+        path_template = self.client_restriction_profile_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_sustainability_preference_profile_url(self, portfolio_id: str) -> str:
+        path_template = self.sustainability_preference_profile_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
@@ -271,6 +295,20 @@ class DpmCoreResolverClient:
             tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
+        client_restriction_profile = self._try_resolve_client_restriction_profile(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            correlation_id=correlation_id,
+        )
+        sustainability_preference_profile = self._try_resolve_sustainability_preference_profile(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            correlation_id=correlation_id,
+        )
         policy_context = build_policy_context_from_core_mandate(
             mandate,
             tenant_id=stateful_input.tenant_id,
@@ -310,6 +348,8 @@ class DpmCoreResolverClient:
                 degraded_source_families=[],
             ),
             transaction_cost_curve=transaction_cost_curve,
+            client_restriction_profile=client_restriction_profile,
+            sustainability_preference_profile=sustainability_preference_profile,
         )
 
     def resolve_portfolio_snapshot(
@@ -566,6 +606,58 @@ class DpmCoreResolverClient:
         )
         return DpmCoreTransactionCostCurveResponse.model_validate(response)
 
+    def resolve_client_restriction_profile(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        include_inactive_restrictions: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCoreClientRestrictionProfileResponse:
+        url = self._config.resolve_client_restriction_profile_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "include_inactive_restrictions": include_inactive_restrictions,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE",
+            incomplete_code="DPM_CORE_CLIENT_RESTRICTIONS_INCOMPLETE",
+        )
+        return DpmCoreClientRestrictionProfileResponse.model_validate(response)
+
+    def resolve_sustainability_preference_profile(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        include_inactive_preferences: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCoreSustainabilityPreferenceProfileResponse:
+        url = self._config.resolve_sustainability_preference_profile_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "include_inactive_preferences": include_inactive_preferences,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SUSTAINABILITY_PREFERENCES_INCOMPLETE",
+        )
+        return DpmCoreSustainabilityPreferenceProfileResponse.model_validate(response)
+
     def _try_resolve_transaction_cost_curve(
         self,
         *,
@@ -587,6 +679,48 @@ class DpmCoreResolverClient:
                 transaction_types=["BUY", "SELL"],
                 min_observation_count=1,
                 tenant_id=tenant_id,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_client_restriction_profile(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreClientRestrictionProfileResponse | None:
+        try:
+            return self.resolve_client_restriction_profile(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                include_inactive_restrictions=False,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_sustainability_preference_profile(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreSustainabilityPreferenceProfileResponse | None:
+        try:
+            return self.resolve_sustainability_preference_profile(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                include_inactive_preferences=False,
                 correlation_id=correlation_id,
             )
         except DpmCoreResolverError:

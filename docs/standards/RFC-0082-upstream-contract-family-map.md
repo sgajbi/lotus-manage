@@ -15,10 +15,11 @@ composition.
 2. No current `lotus-manage` integration requires or justifies gRPC.
 3. The current codebase contains a modeled, feature-gated outbound resolver seam to `lotus-core`.
    RFC-087 rebaselines that seam to composed DPM source-data products rather than a monolithic
-   execution-context route, and `lotus-manage` does not declare a promoted live API-read dependency
-   while the complete product set remains unavailable. Dedicated client methods currently exist for
-   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`, and
-   `InstrumentEligibilityProfile:v1`.
+   execution-context route. `lotus-manage` still does not declare a promoted live
+   execution-context product API-read dependency while the complete product set remains unavailable.
+   Dedicated client methods currently exist for `DpmModelPortfolioTarget:v1`,
+   `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`,
+   `ClientRestrictionProfile:v1`, and `SustainabilityPreferenceProfile:v1`.
 4. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
    options through request contracts. When those inputs are core-referenced, `lotus-core` remains the
    source-data authority.

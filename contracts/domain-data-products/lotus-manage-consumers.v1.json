@@ -25,6 +25,66 @@
         "pr-merge"
       ],
       "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "ClientRestrictionProfile",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "tenant_id",
+        "generated_at",
+        "as_of_date",
+        "restatement_version",
+        "reconciliation_status",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "policy_version",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Block discretionary construction alternatives that violate hard client restrictions while preserving source lineage and degraded-state reason codes for proof-pack review.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_block"
+    },
+    {
+      "product_name": "SustainabilityPreferenceProfile",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "tenant_id",
+        "generated_at",
+        "as_of_date",
+        "restatement_version",
+        "reconciliation_status",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "policy_version",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-backed sustainability preferences in construction alternatives and proof packs, including allocation review posture, without inferring unsupported ESG classifications.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
     }
   ]
 }

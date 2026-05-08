@@ -137,8 +137,21 @@ invent client income needs, liability ladders, or planning forecasts. Currency-o
 uses FX readiness and bounded policy context. Regime-stress-aware construction consumes `lotus-risk`
 `RegimeScenarioPackEvaluation:v1` through the bounded risk-authority client when `DPM_RISK_BASE_URL`
 is configured, and still accepts caller-supplied source-backed scenario-pack authority context.
-ESG/restriction-aware construction is intentionally deferred until restriction and sustainability
-source products are available.
+ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
+`SustainabilityPreferenceProfile:v1` through the same stateful core-sourcing path. Manage can block
+candidate trades that violate hard client restrictions and can flag sustainability allocation or
+classification evidence gaps for review. It does not infer unsupported ESG classifications or
+convert sustainability preferences into automatic compliance approval.
+
+```mermaid
+flowchart LR
+    Core[lotus-core source products] --> Manage[lotus-manage construction authority]
+    Manage --> Restriction[Hard restriction checks]
+    Manage --> Sustainability[Sustainability preference checks]
+    Restriction -->|violation| Blocked[BLOCKED alternative]
+    Sustainability -->|allocation or classification gap| Review[PENDING_REVIEW alternative]
+    Manage --> ProofPack[Proof-pack source analytics]
+```
 
 Removed or stale consumers should not call unversioned `/rebalance/*` routes, removed
 `/api/v1/platform/capabilities`, or proposal/advisory-era DPM endpoints.

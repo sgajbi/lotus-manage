@@ -299,9 +299,10 @@ Functional behavior:
   method-specific source-authority context. `SOLVER_CONSTRAINED`, `RISK_AWARE`,
   `LIQUIDITY_AWARE`, `CURRENCY_OVERLAY`, and `REGIME_STRESS_AWARE` must not report `READY` when
   required authority evidence is absent.
-- `ESG_AWARE` is explicitly deferred and degrades with
-  `ESG_RESTRICTION_AWARE_CONSTRUCTION_DEFERRED` until restriction and sustainability source
-  products exist.
+- `ESG_AWARE` consumes stateful `ClientRestrictionProfile:v1` and
+  `SustainabilityPreferenceProfile:v1` when available. Missing profiles degrade explicitly; hard
+  client-restriction violations block matching candidate trades; sustainability allocation or
+  classification evidence gaps remain `PENDING_REVIEW` rather than unsupported ESG approval.
 - Do-nothing baseline keeps trade count and turnover at zero so "take no action" is visible as a
   governed comparator.
 - Minimum-turnover applies a stricter turnover posture and surfaces pending-review behavior when

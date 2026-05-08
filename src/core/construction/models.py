@@ -238,6 +238,77 @@ class AuthoritativeTransactionCostContext(BaseModel):
     )
 
 
+class AuthoritativeClientRestrictionRule(BaseModel):
+    restriction_scope: str = Field(description="Source-owned restriction scope.")
+    restriction_code: str = Field(description="Bounded source-owned restriction code.")
+    restriction_status: str = Field(description="Source-owned restriction lifecycle status.")
+    restriction_source: str = Field(description="Source channel that captured the restriction.")
+    applies_to_buy: bool = Field(description="Whether the restriction applies to buy actions.")
+    applies_to_sell: bool = Field(description="Whether the restriction applies to sell actions.")
+    instrument_ids: list[str] = Field(default_factory=list)
+    asset_classes: list[str] = Field(default_factory=list)
+    issuer_ids: list[str] = Field(default_factory=list)
+    country_codes: list[str] = Field(default_factory=list)
+    effective_from: date = Field(description="Restriction effective start date.")
+    effective_to: date | None = Field(default=None, description="Restriction effective end date.")
+    restriction_version: int = Field(description="Selected restriction profile version.")
+    source_record_id: str | None = Field(default=None, description="Source record id for replay.")
+
+
+class AuthoritativeClientRestrictionContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Source-owner supportability status for client restriction evidence."
+    )
+    source_system: str = Field(description="Source system that owns restriction evidence.")
+    source_product_name: str = Field(default="ClientRestrictionProfile")
+    source_product_version: str = Field(default="v1")
+    source_id: str | None = Field(default=None)
+    content_hash: str | None = Field(default=None)
+    portfolio_id: str = Field(description="Portfolio identifier used to resolve the profile.")
+    client_id: str = Field(description="Client identifier bound to the profile.")
+    mandate_id: str | None = Field(default=None)
+    as_of_date: date = Field(description="Business date used to resolve the profile.")
+    restriction_count: int = Field(ge=0)
+    missing_data_families: list[str] = Field(default_factory=list)
+    restrictions: list[AuthoritativeClientRestrictionRule] = Field(default_factory=list)
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+class AuthoritativeSustainabilityPreference(BaseModel):
+    preference_framework: str = Field(description="Source-owned sustainability framework.")
+    preference_code: str = Field(description="Bounded sustainability preference code.")
+    preference_status: str = Field(description="Source-owned preference lifecycle status.")
+    preference_source: str = Field(description="Source channel that captured the preference.")
+    minimum_allocation: Decimal | None = Field(default=None)
+    maximum_allocation: Decimal | None = Field(default=None)
+    applies_to_asset_classes: list[str] = Field(default_factory=list)
+    exclusion_codes: list[str] = Field(default_factory=list)
+    positive_tilt_codes: list[str] = Field(default_factory=list)
+    effective_from: date = Field(description="Preference effective start date.")
+    effective_to: date | None = Field(default=None, description="Preference effective end date.")
+    preference_version: int = Field(description="Selected preference profile version.")
+    source_record_id: str | None = Field(default=None, description="Source record id for replay.")
+
+
+class AuthoritativeSustainabilityPreferenceContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Source-owner supportability status for sustainability preference evidence."
+    )
+    source_system: str = Field(description="Source system that owns sustainability preferences.")
+    source_product_name: str = Field(default="SustainabilityPreferenceProfile")
+    source_product_version: str = Field(default="v1")
+    source_id: str | None = Field(default=None)
+    content_hash: str | None = Field(default=None)
+    portfolio_id: str = Field(description="Portfolio identifier used to resolve the profile.")
+    client_id: str = Field(description="Client identifier bound to the profile.")
+    mandate_id: str | None = Field(default=None)
+    as_of_date: date = Field(description="Business date used to resolve the profile.")
+    preference_count: int = Field(ge=0)
+    missing_data_families: list[str] = Field(default_factory=list)
+    preferences: list[AuthoritativeSustainabilityPreference] = Field(default_factory=list)
+    reason_codes: list[str] = Field(default_factory=list)
+
+
 class AuthoritativeLiquidityCashflowProjection(BaseModel):
     source_product_name: str = Field(
         description="Source-owned cashflow projection data product name.",
@@ -364,6 +435,17 @@ class ConstructionAuthorityContext(BaseModel):
     transaction_cost_context: AuthoritativeTransactionCostContext | None = Field(
         default=None,
         description="Optional lotus-core TransactionCostCurve:v1 observed transaction-cost context.",
+    )
+    client_restriction_context: AuthoritativeClientRestrictionContext | None = Field(
+        default=None,
+        description="Optional lotus-core ClientRestrictionProfile:v1 restriction context.",
+    )
+    sustainability_preference_context: AuthoritativeSustainabilityPreferenceContext | None = Field(
+        default=None,
+        description=(
+            "Optional lotus-core SustainabilityPreferenceProfile:v1 sustainability preference "
+            "context."
+        ),
     )
     liquidity_context: AuthoritativeLiquidityContext | None = Field(
         default=None,

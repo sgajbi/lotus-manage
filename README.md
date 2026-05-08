@@ -71,8 +71,12 @@ construction-alternative foundation: first-wave and authority-backed generate/re
 do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained,
 risk-aware, liquidity-aware with optional `lotus-core` `PortfolioCashflowProjection:v1` projected
 cash-pressure evidence, currency-overlay, and regime-stress-aware construction through `lotus-risk`
-`RegimeScenarioPackEvaluation:v1`. Client income-need planning and ESG/restriction-aware
-construction are explicitly deferred until source-backed owner products exist. Postgres
+`RegimeScenarioPackEvaluation:v1`. ESG/restriction-aware construction now consumes `lotus-core`
+`ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` when stateful core sourcing
+is enabled: hard client restrictions can block candidate trades, sustainability allocation
+preferences can trigger pending review, and profile source lineage is preserved for proof packs.
+Security-level sustainability classification evidence remains an explicit pending-review boundary;
+client income-need planning is still deferred until an owning source product exists. Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.
 RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
