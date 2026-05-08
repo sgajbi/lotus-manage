@@ -69,9 +69,10 @@ Current repository posture:
     Local manage proof, local canonical manage plus live `lotus-core` proof, supported-feature
     promotion, and wiki publication have passed. Gateway composition, Workbench cockpit panels, and
     populated platform canonical seed automation are now implementation-backed and live-proven in
-    their owning repositories. PM-book wave discovery is now implemented through lotus-core
-    `PortfolioManagerBookMembership:v1`; partial/empty command-center seed fixtures remain
-    governed downstream follow-up.
+    their owning repositories. PM-book wave discovery and command-center monitoring cohorts now
+    consume lotus-core `PortfolioManagerBookMembership:v1`; Workbench triggers the PM-book-backed
+    command-center monitoring path through Gateway without inferring membership locally.
+    Partial/empty command-center seed fixtures remain governed downstream follow-up.
 13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
     bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
     risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,
@@ -159,7 +160,8 @@ Current repository posture:
     PR #12, and `lotus-archive` PR #24: manage remains deterministic wave report-input authority,
     while report/render/archive own job materialization, the `rebalance-wave` template, generated
     artifact metadata, retention posture, and archive lifecycle. PM-book discovery is implemented
-    for `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`; `lotus-ai` PR #63
+    for `PM_BOOK_REVIEW` and for RFC-0038 command-center monitoring cohorts through lotus-core
+    `PortfolioManagerBookMembership:v1`; `lotus-ai` PR #63
     implements the owner-side `dpm_wave_pm_memo.pack@v1` workflow over Manage-owned
     `DpmWaveReportInput` with forbidden-field/action/output guardrails and review-required
     support-only output. `lotus-gateway` PR #201 and `lotus-workbench` PR #168 complete the

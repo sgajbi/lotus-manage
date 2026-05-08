@@ -16,6 +16,7 @@ from src.core.mandates import (
     MandateRecommendedAction,
     MonitoringSeverity,
 )
+from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 
 
@@ -47,6 +48,55 @@ def _twin() -> DpmMandateDigitalTwin:
 def _client(repository: InMemoryDpmMandateRepository) -> TestClient:
     app.dependency_overrides[get_mandate_repository] = lambda: repository
     return TestClient(app)
+
+
+def _pm_book_membership_payload(
+    *,
+    members: list[dict[str, object]] | None = None,
+    supportability_state: str = "READY",
+) -> dict[str, object]:
+    return {
+        "product_name": "PortfolioManagerBookMembership",
+        "product_version": "v1",
+        "as_of_date": "2026-05-03",
+        "tenant_id": "default",
+        "portfolio_manager_id": "PM_SG_DPM_001",
+        "booking_center_code": "Singapore",
+        "members": members
+        if members is not None
+        else [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "client_id": "CLIENT_PB_SG_001",
+                "booking_center_code": "Singapore",
+                "portfolio_type": "DISCRETIONARY",
+                "status": "ACTIVE",
+                "base_currency": "USD",
+                "source_record_id": "pm-book-member-001",
+            }
+        ],
+        "supportability": {
+            "state": supportability_state,
+            "reason": "PM_BOOK_MEMBERSHIP_READY"
+            if supportability_state == "READY"
+            else "PM_BOOK_MEMBERSHIP_INCOMPLETE",
+            "returned_portfolio_count": 1 if members is None else len(members),
+            "filters_applied": {"portfolio_types": ["DISCRETIONARY"]},
+        },
+        "lineage": {"source": "portfolio_master"},
+        "source_batch_fingerprint": "sha256:pm-book-membership",
+        "snapshot_id": "pm-book-snapshot-20260503",
+    }
+
+
+class _PmBookResolver:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+        self.requests: list[dict[str, object]] = []
+
+    def resolve_portfolio_manager_book_membership(self, **kwargs: object):
+        self.requests.append(kwargs)
+        return DpmCorePortfolioManagerBookMembershipResponse.model_validate(self.payload)
 
 
 def teardown_function() -> None:
@@ -85,6 +135,139 @@ def test_monitoring_run_once_persists_run_health_and_exception_queue() -> None:
     assert exceptions_response.status_code == 200
     assert exceptions_response.json()["items"]
     assert exceptions_response.json()["items"][0]["monitoring_run_id"] == run_id
+
+
+def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
+    repository = InMemoryDpmMandateRepository()
+    repository.save_mandate_snapshot(_twin())
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: resolver,
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+                "book_id": "BOOK_SG_BALANCED_DPM",
+                "booking_center_code": "Singapore",
+                "portfolio_types": ["DISCRETIONARY"],
+                "requested_by": "ops_sg_001",
+            },
+        )
+        command_center = client.get(
+            "/api/v1/dpm/command-center"
+            "?tenant_id=default"
+            "&portfolio_manager_id=PM_SG_DPM_001"
+            "&book_id=BOOK_SG_BALANCED_DPM"
+            "&as_of_date=2026-05-03"
+        )
+
+    payload = response.json()
+    assert response.status_code == 200
+    assert payload["mandate_ids"] == [MANDATE_ID]
+    assert payload["filters"]["source_product"] == "PortfolioManagerBookMembership"
+    assert payload["filters"]["source_snapshot_id"] == "pm-book-snapshot-20260503"
+    assert resolver.requests == [
+        {
+            "portfolio_manager_id": "PM_SG_DPM_001",
+            "as_of_date": date(2026, 5, 3),
+            "tenant_id": "default",
+            "booking_center_code": "Singapore",
+            "portfolio_types": ["DISCRETIONARY"],
+            "include_inactive": False,
+            "correlation_id": None,
+        }
+    ]
+    assert command_center.status_code == 200
+    assert command_center.json()["evaluated_mandates"] == 1
+    assert command_center.json()["supportability"]["data_completeness_state"] == "COMPLETE"
+
+
+def test_monitoring_run_once_requires_explicit_or_pm_book_selector() -> None:
+    with _client(InMemoryDpmMandateRepository()) as client:
+        response = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={"mandate_ids": [], "as_of_date": "2026-05-03"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == "DPM_MONITORING_SELECTOR_REQUIRED"
+
+
+def test_monitoring_run_once_blocks_pm_book_without_refreshed_mandate(monkeypatch) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: resolver,
+    )
+
+    with _client(InMemoryDpmMandateRepository()) as client:
+        response = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"]["code"] == "DPM_PM_BOOK_MANDATE_SNAPSHOT_MISSING"
+
+
+def test_monitoring_run_once_blocks_empty_pm_book_membership(monkeypatch) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload(members=[]))
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: resolver,
+    )
+
+    with _client(InMemoryDpmMandateRepository()) as client:
+        response = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"]["code"] == "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY"
+
+
+def test_monitoring_run_once_blocks_non_ready_pm_book_membership(monkeypatch) -> None:
+    resolver = _PmBookResolver(_pm_book_membership_payload(supportability_state="INCOMPLETE"))
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: resolver,
+    )
+
+    with _client(InMemoryDpmMandateRepository()) as client:
+        response = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+            },
+        )
+
+    assert response.status_code == 424
+    assert response.json()["detail"]["code"] == "PM_BOOK_MEMBERSHIP_INCOMPLETE"
+    assert (
+        response.json()["detail"]["message"]
+        == "PM-book membership is not source-ready for monitoring."
+    )
 
 
 def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -> None:
