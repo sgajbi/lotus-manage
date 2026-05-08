@@ -27,7 +27,10 @@ from src.core.mandates import (
     DpmSourceProductLineage,
     calculate_mandate_health,
 )
-from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
+from src.core.dpm_source_context import (
+    DpmCoreCioModelChangeAffectedCohortResponse,
+    DpmCorePortfolioManagerBookMembershipResponse,
+)
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
@@ -141,6 +144,19 @@ def _pm_book_request() -> dict[str, object]:
     }
 
 
+def _cio_model_change_request() -> dict[str, object]:
+    return {
+        "trigger_type": "CIO_MODEL_CHANGE",
+        "trigger_id": "cio-model-change-20260503",
+        "rationale": "Review affected mandates after CIO model change approval.",
+        "as_of_date": "2026-05-03",
+        "actor_id": "cio_001",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "tenant_id": "default",
+        "booking_center_code": "Singapore",
+    }
+
+
 def _pm_book_membership_payload(
     *,
     supportability_state: str = "READY",
@@ -186,6 +202,63 @@ def _pm_book_membership_payload(
     }
 
 
+def _cio_model_change_cohort_payload(
+    *,
+    supportability_state: str = "READY",
+    affected_mandates: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    return {
+        "product_name": "CioModelChangeAffectedCohort",
+        "product_version": "v1",
+        "tenant_id": "default",
+        "as_of_date": "2026-05-03",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "model_portfolio_version": "2026.05",
+        "model_change_event_id": "cio_model_change:MODEL_PB_SG_GLOBAL_BAL_DPM:2026.05",
+        "approval_state": "approved",
+        "approved_at": "2026-05-01T08:00:00Z",
+        "effective_from": "2026-05-01",
+        "effective_to": None,
+        "affected_mandates": affected_mandates
+        if affected_mandates is not None
+        else [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "mandate_id": MANDATE_ID,
+                "client_id": "CIF_SG_000184",
+                "booking_center_code": "Singapore",
+                "jurisdiction_code": "SG",
+                "discretionary_authority_status": "active",
+                "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+                "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+                "risk_profile": "balanced",
+                "effective_from": "2026-05-01",
+                "effective_to": None,
+                "binding_version": 3,
+                "source_record_id": "mandate-binding-001",
+            }
+        ],
+        "supportability": {
+            "state": supportability_state,
+            "reason": (
+                "CIO_MODEL_CHANGE_COHORT_READY"
+                if supportability_state == "READY"
+                else "CIO_MODEL_CHANGE_COHORT_INCOMPLETE"
+            ),
+            "returned_mandate_count": 0 if affected_mandates == [] else 1,
+            "filters_applied": ["model_portfolio_id", "as_of_date"],
+        },
+        "lineage": {
+            "source_system": "cio_model_admin",
+            "contract_version": "rfc_041_cio_model_change_cohort_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+        "source_batch_fingerprint": "sha256:cio-model-change",
+        "snapshot_id": "cio-model-change-snapshot-20260503",
+    }
+
+
 class _PmBookResolver:
     def __init__(self, payload: dict[str, object]) -> None:
         self.payload = payload
@@ -204,6 +277,26 @@ class _UnavailablePmBookResolver:
 class _IncompletePmBookResolver:
     def resolve_portfolio_manager_book_membership(self, **_kwargs: object):
         raise DpmCoreResolverError("DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE")
+
+
+class _CioModelChangeResolver:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+        self.calls: list[dict[str, object]] = []
+
+    def resolve_cio_model_change_affected_cohort(self, **kwargs: object):
+        self.calls.append(kwargs)
+        return DpmCoreCioModelChangeAffectedCohortResponse.model_validate(self.payload)
+
+
+class _UnavailableCioModelChangeResolver:
+    def resolve_cio_model_change_affected_cohort(self, **_kwargs: object):
+        raise DpmCoreResolverUnavailableError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE")
+
+
+class _IncompleteCioModelChangeResolver:
+    def resolve_cio_model_change_affected_cohort(self, **_kwargs: object):
+        raise DpmCoreResolverError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE")
 
 
 def _rebalance_request(portfolio_id: str = PORTFOLIO_ID) -> dict[str, object]:
@@ -591,6 +684,157 @@ def test_pm_book_wave_preview_maps_source_resolution_failures(
 
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post("/api/v1/rebalance/waves/preview", json=_pm_book_request())
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+
+
+def test_cio_model_change_wave_preview_resolves_source_owned_cohort(monkeypatch) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    resolver = _CioModelChangeResolver(_cio_model_change_cohort_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_cio_model_change_request(),
+            headers={"X-Correlation-Id": "corr-cio-model-change-preview"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["durable"] is False
+    assert payload["wave"]["trigger"]["trigger_type"] == "CIO_MODEL_CHANGE"
+    assert payload["wave"]["trigger"]["source_refs"][0]["source_type"] == (
+        "CioModelChangeAffectedCohort"
+    )
+    item = payload["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert item["mandate_id"] == MANDATE_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "CioModelChangeAffectedCohort",
+        "CIO_MODEL_CHANGE_EVENT",
+        "CIO_MODEL_CHANGE_AFFECTED_MANDATE",
+        "MANDATE_DIGITAL_TWIN",
+    }
+    assert resolver.calls == [
+        {
+            "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+            "as_of_date": date(2026, 5, 3),
+            "tenant_id": "default",
+            "booking_center_code": "Singapore",
+            "include_inactive_mandates": False,
+            "correlation_id": "corr-cio-model-change-preview",
+        }
+    ]
+
+
+def test_cio_model_change_wave_create_persists_resolved_source_owned_cohort(monkeypatch) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    resolver = _CioModelChangeResolver(_cio_model_change_cohort_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, wave_repository) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves",
+            json=_cio_model_change_request(),
+            headers={"Idempotency-Key": "idem-cio-model-change-wave"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["durable"] is True
+    assert payload["wave"]["trigger"]["trigger_type"] == "CIO_MODEL_CHANGE"
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+@pytest.mark.parametrize(
+    ("request_patch", "expected_status", "expected_code"),
+    [
+        (
+            {"as_of_date": "2026/05/03"},
+            422,
+            "INVALID_AS_OF_DATE",
+        ),
+        (
+            {"model_portfolio_id": None},
+            422,
+            "CIO_MODEL_CHANGE_MODEL_PORTFOLIO_REQUIRED",
+        ),
+        (
+            {"portfolios": [{"portfolio_id": PORTFOLIO_ID}]},
+            422,
+            "CIO_MODEL_CHANGE_REJECTS_CALLER_PORTFOLIOS",
+        ),
+    ],
+)
+def test_cio_model_change_wave_preview_rejects_invalid_selector(
+    monkeypatch,
+    request_patch: dict[str, object],
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    resolver = _CioModelChangeResolver(_cio_model_change_cohort_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+    request = {**_cio_model_change_request(), **request_patch}
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+    assert resolver.calls == []
+
+
+def test_cio_model_change_wave_preview_reports_incomplete_source_dependency(
+    monkeypatch,
+) -> None:
+    resolver = _CioModelChangeResolver(
+        _cio_model_change_cohort_payload(supportability_state="INCOMPLETE")
+    )
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=_cio_model_change_request())
+
+    assert response.status_code == 424
+    assert response.json()["detail"]["code"] == "CIO_MODEL_CHANGE_COHORT_INCOMPLETE"
+
+
+@pytest.mark.parametrize(
+    ("resolver", "expected_status", "expected_code"),
+    [
+        (
+            _UnavailableCioModelChangeResolver(),
+            503,
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
+        ),
+        (
+            _IncompleteCioModelChangeResolver(),
+            424,
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
+        ),
+        (
+            _CioModelChangeResolver(_cio_model_change_cohort_payload(affected_mandates=[])),
+            424,
+            "DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
+        ),
+    ],
+)
+def test_cio_model_change_wave_preview_maps_source_resolution_failures(
+    monkeypatch,
+    resolver,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=_cio_model_change_request())
 
     assert response.status_code == expected_status
     assert response.json()["detail"]["code"] == expected_code
@@ -2421,7 +2665,7 @@ def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post(
             "/api/v1/rebalance/waves/preview",
-            json={**_request(), "trigger_type": "CIO_MODEL_CHANGE"},
+            json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
         )
 
     assert response.status_code == 422

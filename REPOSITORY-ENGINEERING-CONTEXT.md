@@ -165,7 +165,9 @@ Current repository posture:
     support-only output. `lotus-gateway` PR #201 and `lotus-workbench` PR #168 complete the
     first-wave AI memo product path: Gateway preserves Manage wave evidence identity and passes AI
     forbidden-action guardrails, while Workbench exposes report-input and AI memo request posture
-    without constructing prompts or memo content locally. CIO/risk-event cohort discovery,
+    without constructing prompts or memo content locally. CIO model-change discovery is now
+    implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`;
+    risk-event cohort discovery,
     Gateway/Workbench rendering of wave risk/performance analytics posture, and external OMS
     execution remain unpromoted until source products and owning downstream implementations are
     live-proven.

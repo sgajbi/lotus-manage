@@ -47,7 +47,11 @@ from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
 
-SUPPORTED_CREATE_TRIGGER_TYPES = {"EXPLICIT_PORTFOLIO_LIST", "PM_BOOK_REVIEW"}
+SUPPORTED_CREATE_TRIGGER_TYPES = {
+    "EXPLICIT_PORTFOLIO_LIST",
+    "PM_BOOK_REVIEW",
+    "CIO_MODEL_CHANGE",
+}
 
 
 class DpmWaveValidationError(ValueError):

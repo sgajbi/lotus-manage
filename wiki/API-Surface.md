@@ -125,10 +125,12 @@ flowchart LR
   returns product-safe operator diagnostics and bounded reason-code posture.
 
 These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
-`PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. Report materialization,
-rendering, archive lifecycle, AI memo generation, CIO/risk-event cohort discovery, and external OMS
-execution remain downstream or source-owner responsibilities unless their owning repos have
-implemented and proven support.
+`PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. CIO model-change
+affected-mandate discovery is supported for `CIO_MODEL_CHANGE` through lotus-core
+`CioModelChangeAffectedCohort:v1`. Report materialization, rendering, archive lifecycle, AI memo
+generation, risk-event/tactical/campaign cohort discovery, and external OMS execution remain
+downstream or source-owner responsibilities unless their owning repos have implemented and proven
+support.
 
 ```mermaid
 flowchart LR

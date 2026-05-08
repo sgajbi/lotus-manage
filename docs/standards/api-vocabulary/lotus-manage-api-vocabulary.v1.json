@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-08T03:29:59.334744+00:00",
+  "generatedAt": "2026-05-08T08:19:31.118711+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -56247,6 +56247,14 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
           },
           {
+            "name": "model_portfolio_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.model_portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.model_portfolio_id"
+          },
+          {
             "name": "tenant_id",
             "location": "body",
             "required": false,
@@ -57252,6 +57260,14 @@
             "type": "object",
             "semanticId": "lotus.portfolio_manager_id",
             "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "model_portfolio_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.model_portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.model_portfolio_id"
           },
           {
             "name": "tenant_id",

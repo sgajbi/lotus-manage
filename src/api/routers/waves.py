@@ -215,6 +215,14 @@ class DpmWavePreviewRequest(BaseModel):
         ),
         examples=["PM_SG_DPM_001"],
     )
+    model_portfolio_id: str | None = Field(
+        default=None,
+        description=(
+            "Required for `CIO_MODEL_CHANGE`. Manage resolves the affected cohort from the "
+            "lotus-core `CioModelChangeAffectedCohort:v1` source product."
+        ),
+        examples=["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+    )
     tenant_id: str | None = Field(
         default=None,
         description="Optional tenant selector forwarded to the PM-book source product.",
@@ -538,6 +546,11 @@ def _portfolio_inputs_for_request(
         return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
     if request.trigger_type == "PM_BOOK_REVIEW":
         return _resolve_pm_book_portfolios(request=request, correlation_id=correlation_id)
+    if request.trigger_type == "CIO_MODEL_CHANGE":
+        return _resolve_cio_model_change_portfolios(
+            request=request,
+            correlation_id=correlation_id,
+        )
     return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
 
 
@@ -634,6 +647,103 @@ def _resolve_pm_book_portfolios(
             ],
         }
         for member in membership.members
+    ]
+
+
+def _resolve_cio_model_change_portfolios(
+    *,
+    request: DpmWavePreviewRequest,
+    correlation_id: str,
+) -> list[dict[str, object]]:
+    if request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "CIO_MODEL_CHANGE_REJECTS_CALLER_PORTFOLIOS",
+            "CIO_MODEL_CHANGE resolves the affected portfolio set from lotus-core.",
+        )
+    model_portfolio_id = (request.model_portfolio_id or "").strip()
+    if not model_portfolio_id:
+        raise wave_service.DpmWaveValidationError(
+            "CIO_MODEL_CHANGE_MODEL_PORTFOLIO_REQUIRED",
+            "CIO_MODEL_CHANGE requires model_portfolio_id.",
+        )
+    try:
+        as_of_date = date.fromisoformat(request.as_of_date)
+    except ValueError as exc:
+        raise wave_service.DpmWaveValidationError(
+            "INVALID_AS_OF_DATE",
+            "as_of_date must be an ISO date.",
+        ) from exc
+    try:
+        cohort = build_core_resolver_client().resolve_cio_model_change_affected_cohort(
+            model_portfolio_id=model_portfolio_id,
+            as_of_date=as_of_date,
+            tenant_id=request.tenant_id,
+            booking_center_code=request.booking_center_code,
+            include_inactive_mandates=False,
+            correlation_id=correlation_id,
+        )
+    except DpmCoreResolverUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": str(exc) or "DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE"},
+        ) from exc
+    except DpmCoreResolverError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={"code": str(exc) or "DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE"},
+        ) from exc
+    if cohort.supportability.state != "READY":
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": cohort.supportability.reason,
+                "message": "CIO model-change affected cohort is not source-ready.",
+            },
+        )
+    if not cohort.affected_mandates:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
+                "message": "CIO model-change affected cohort returned no portfolios.",
+            },
+        )
+    source_id = (
+        cohort.snapshot_id or cohort.source_batch_fingerprint or cohort.model_change_event_id
+    )
+    cohort_ref = {
+        "source_system": "lotus-core",
+        "source_type": "CioModelChangeAffectedCohort",
+        "source_id": source_id,
+        "source_version": cohort.product_version,
+        "supportability_state": cohort.supportability.state,
+        "content_hash": cohort.source_batch_fingerprint,
+    }
+    event_ref = {
+        "source_system": "lotus-core",
+        "source_type": "CIO_MODEL_CHANGE_EVENT",
+        "source_id": cohort.model_change_event_id,
+        "source_version": cohort.model_portfolio_version,
+        "supportability_state": cohort.supportability.state,
+        "content_hash": cohort.source_batch_fingerprint,
+    }
+    return [
+        {
+            "portfolio_id": mandate.portfolio_id,
+            "mandate_id": mandate.mandate_id,
+            "source_refs": [
+                cohort_ref,
+                event_ref,
+                {
+                    "source_system": "lotus-core",
+                    "source_type": "CIO_MODEL_CHANGE_AFFECTED_MANDATE",
+                    "source_id": mandate.source_record_id or mandate.mandate_id,
+                    "source_version": str(mandate.binding_version),
+                    "supportability_state": "READY",
+                },
+            ],
+        }
+        for mandate in cohort.affected_mandates
     ]
 
 

@@ -35,22 +35,18 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: this RFC41-WTBD-009 product-realization slice after the manage read model, Gateway
-composition, Workbench panel, platform registry contract, canonical browser proof, Workbench wiki
-publication, manage-owned mandate health/monitoring exception timeline nodes, manage-owned event
-identity, retention, redaction, access, and audit policy, the `lotus-report` report-side
-portfolio-memory consumer seam, manage-owned `portfolio_memory_context` emission in proof-pack,
-rebalance-wave, and outcome-review report inputs, the `lotus-ai` bounded portfolio-memory consumer
-seam, `lotus-ai` PR #63 wave PM memo workflow pack, `lotus-gateway` PR #201 guardrail handoff,
-and `lotus-workbench` PR #168 AI memo product proof were implemented, merged, validated, and
-published where wiki truth changed.
+Snapshot basis: this RFC41-WTBD-002 source-cohort slice after `lotus-core` added
+`CioModelChangeAffectedCohort:v1` and `lotus-manage` consumed it for `CIO_MODEL_CHANGE`
+preview/create without caller-supplied portfolio fabrication. This updates the prior
+RFC41-WTBD-009 product-realization snapshot that had already merged and published the bounded
+portfolio-memory, report, AI memo, Gateway, and Workbench product path.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 28 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 29 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 27 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 26 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -66,10 +62,9 @@ Next bank-buyable product-readiness priorities:
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
-| 2 | RFC41-WTBD-002 - Automatic CIO model-change affected-mandate discovery | Lets CIO-approved model changes create source-owned affected-mandate waves without manual portfolio lists. | CIO/model authority owns an affected-cohort source product with approval lineage, reconciliation, degraded states, and live proof. |
-| 3 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
-| 4 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
-| 5 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
+| 2 | RFC41-WTBD-003 - Additional command-center seed postures | Extends the DPM command-center canonical seed beyond populated `ready` proof into partial, empty, degraded, and blocked states. | Platform/Workbench canonical validation proves those states with screenshots, contracts, and supportability evidence. |
+| 3 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
+| 4 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 
 Execution rule:
 
@@ -2293,7 +2288,7 @@ downstream product-surface implementation, or owning-service materialization out
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0041 |
 | --- | --- | --- | --- | --- |
 | RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` source authority consumed by `lotus-manage` | Completed, merged, CI-proven, and wiki-published through `lotus-core` PR #339 and `lotus-manage` PR #126 | `lotus-core` now owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it for `PM_BOOK_REVIEW` wave preview/create without caller-supplied portfolio fabrication. |
-| RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` or CIO model-event authority | Deferred with no support claim | Model targets and mandate bindings exist, but no certified source product returns all portfolios affected by a model-change event with lineage and reconciliation proof. |
+| RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` source authority consumed by `lotus-manage` | Completed in this slice for source-owned affected-cohort waves | `lotus-core` now owns `CioModelChangeAffectedCohort:v1`; `lotus-manage` consumes it for `CIO_MODEL_CHANGE` preview/create without caller-supplied portfolio fabrication. |
 | RFC41-WTBD-003 | Tactical house-view, risk-event, and implicit bulk-campaign cohorts | CIO/risk/campaign source owners, with likely `lotus-risk` involvement for risk events | Deferred with no support claim | No governed scenario, risk-event, or campaign cohort authority exists for manage to consume. |
 | RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Completed in this slice for manage aggregate authority | RFC-0041 aggregate impact is carried from source-owned risk/performance authority context into wave aggregate metrics with supportability, lineage refs, source reason codes, and source-emitted scalar values. Manage does not calculate risk or performance methodology locally. |
 | RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196 | Completed after manage contracts stabilized. Gateway composes manage truth without becoming wave authority or reconstructing state. |
@@ -2327,9 +2322,10 @@ Support boundary:
 2. supported: explicit source refs on each resolved item plus trigger-level PM-book snapshot refs,
 3. supported: source dependency failures return blocked dependency posture instead of fabricating
    a cohort,
-4. unsupported: CIO model-change, tactical house-view, risk-event, campaign, permission-denied,
-   and stale-book cohort semantics until owning source products exist,
-5. unsupported: external OMS execution and AI memo generation.
+4. supported: `CIO_MODEL_CHANGE` backed by lotus-core `CioModelChangeAffectedCohort:v1`,
+5. unsupported: tactical house-view, risk-event, campaign, permission-denied, and stale-book
+   cohort semantics until owning source products exist,
+6. unsupported: external OMS execution.
 
 Promotion proof:
 
@@ -2350,35 +2346,40 @@ Target business outcome:
 A CIO model change can produce a governed wave over the affected mandates without manually
 supplying every portfolio id, with clear explanation of why each mandate is in scope.
 
-Why it cannot be done now:
+Implementation status:
 
-RFC-0041 could consume model targets and mandate bindings, but no source authority exists for the
-model-change event itself and its affected portfolio or mandate cohort. Inferring the cohort inside
-manage from model id alone would be brittle and would hide missing event lineage.
+`lotus-core` source ownership is implemented in this slice with
+`CioModelChangeAffectedCohort:v1`. The source product resolves the approved model definition for
+the requested as-of date, emits a deterministic `model_change_event_id`, and returns effective
+active discretionary mandate bindings with source lineage, snapshot identity, supportability, and
+data-quality posture. `lotus-manage` consumes that product for `CIO_MODEL_CHANGE` wave preview and
+create. Callers supply `model_portfolio_id`, as-of date, optional tenant, and booking-center
+filters; manage rejects caller-supplied portfolios for this trigger and builds wave items only from
+lotus-core affected-mandate evidence.
 
-Dependencies before implementation:
+Support boundary:
 
-1. source-owned model-change event product with event id, model id/version, approval state, effective
-   date, affected mandate or portfolio ids, exclusion rationale, freshness, and lineage,
-2. certified affected-cohort API with explicit reconciliation semantics,
-3. clear ownership for CIO approval metadata and model-version lifecycle,
-4. manage consumer contract and permission checks,
-5. live proof reconciling source cohort to manage wave items.
-
-Expected implementation wave:
-
-Implement after the model-change source product exists. Promote `CIO_MODEL_CHANGE` only for
-certified event-backed cohorts; keep supplied affected-portfolio manifests as the first-wave
-fallback posture.
+1. supported: `CIO_MODEL_CHANGE` backed by lotus-core `CioModelChangeAffectedCohort:v1`,
+2. supported: trigger-level source refs for the cohort snapshot and model-change event,
+3. supported: item-level source refs for affected mandate binding rows and existing mandate digital
+   twin refs,
+4. supported: unavailable, incomplete, empty, invalid-selector, and caller-supplied-portfolio
+   failures return explicit dependency or validation posture,
+5. unsupported: tactical house-view, risk-event, campaign, permission-denied, stale-cohort,
+   external OMS execution, and downstream Gateway/Workbench product rendering until owning slices
+   implement and prove those paths.
 
 Promotion proof:
 
-1. source-owner tests and OpenAPI certification,
-2. manage tests for source-ready, degraded, blocked, stale, and partial-cohort cases,
-3. proof-pack linkage showing model-change event lineage,
-4. live evidence proving automatic cohort discovery and reconciliation,
-5. supported-features update that distinguishes automatic event-backed cohorts from supplied
-   manifests.
+1. source-owner route, service, repository, source-catalog, security-profile, route-registry, and
+   domain-product tests pass in `lotus-core`,
+2. manage source-client and wave API tests prove source-ready preview/create, invalid selector,
+   unavailable/incomplete/empty dependency handling, and caller-supplied portfolio rejection,
+3. source refs show the model-change event id, cohort snapshot, affected mandate binding, and
+   mandate digital-twin lineage,
+4. supported-features and wiki truth distinguish source-owned automatic model-change cohorts from
+   tactical house-view, risk-event, campaign, and external execution gaps,
+5. live Gateway/Workbench product rendering remains a future downstream support claim.
 
 #### RFC41-WTBD-003 - Tactical House-View, Risk-Event, And Implicit Campaign Cohorts
 

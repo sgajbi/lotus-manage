@@ -429,14 +429,18 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "GET /api/v1/rebalance/waves/{wave_id}/proof-pack" in source_map
     assert "POST /api/v1/rebalance/waves/{wave_id}/cancel" in source_map
     assert "## Slice 11 Hardening Review Result" in source_map
-    assert "book/PM filters remain deferred" in source_map
+    assert "Source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohort discovery" in source_map
     assert "tests/unit/dpm/waves/test_source_readiness.py" in source_map
     assert "## Slice 12 Final Closure Result" in source_map
     assert "Skills/context/guidance decision is `no change needed`" in source_map
     assert "| `EXPLICIT_PORTFOLIO_LIST` | Supported first |" in source_map
-    assert "| `PM_BOOK_REVIEW` | Deferred, except supplied manifest posture |" in source_map
-    assert "| `CIO_MODEL_CHANGE` | Deferred for automatic discovery" in source_map
-    assert "`portfolio_manager_id`" not in rfc
+    assert "| `PM_BOOK_REVIEW` | Supported for source-owned PM-book discovery |" in source_map
+    assert (
+        "| `CIO_MODEL_CHANGE` | Supported for source-owned model-change affected-mandate discovery |"
+        in source_map
+    )
+    assert "`portfolio_manager_id`" in rfc
+    assert "`CioModelChangeAffectedCohort:v1`" in rfc
     assert "`dpm_cio_model_change_impacts`" not in rfc
     assert "## Post-Closure Audit Result - 2026-05-05" in source_map
     assert "output/rfc0041-wave-proof/<timestamp>/" in source_map
@@ -776,10 +780,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 28 |" in work_to_be_done
+    assert "| Done on merged/published truth | 29 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 27 |" in work_to_be_done
-    assert "RFC41-WTBD-009 product-realization slice" in work_to_be_done
+    assert "| Remaining / open | 26 |" in work_to_be_done
+    assert "RFC41-WTBD-002 source-cohort slice" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -900,7 +904,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 28 done on merged/published truth, 4 partial" in (supported_features)
+    assert "59 WTBD items: 29 done on merged/published truth, 4 partial" in (supported_features)
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
         supported_features
     )

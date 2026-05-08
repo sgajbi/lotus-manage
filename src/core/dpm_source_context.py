@@ -295,6 +295,95 @@ class DpmCorePortfolioManagerBookMembershipResponse(BaseModel):
     )
 
 
+class DpmCoreCioModelChangeAffectedMandate(BaseModel):
+    portfolio_id: str = Field(description="Core-governed affected portfolio identifier.")
+    mandate_id: str = Field(description="Core-governed affected mandate identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    booking_center_code: str = Field(description="Mandate booking center.")
+    jurisdiction_code: str = Field(description="Mandate jurisdiction.")
+    discretionary_authority_status: str = Field(
+        description="Discretionary authority status selected by lotus-core."
+    )
+    model_portfolio_id: str = Field(description="Approved model portfolio identifier.")
+    policy_pack_id: Optional[str] = Field(
+        default=None,
+        description="Policy pack associated with the mandate binding.",
+    )
+    risk_profile: str = Field(description="Mandate risk profile.")
+    effective_from: date = Field(description="Mandate binding effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None,
+        description="Mandate binding effective end date.",
+    )
+    binding_version: int = Field(description="Selected mandate binding version.")
+    source_record_id: Optional[str] = Field(
+        default=None,
+        description="Core source record identifier for replay and audit.",
+    )
+
+
+class DpmCoreCioModelChangeSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for CIO model-change cohort consumption."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    returned_mandate_count: int = Field(
+        description="Number of affected mandates returned by lotus-core."
+    )
+    filters_applied: list[str] = Field(
+        default_factory=list,
+        description="Core-applied filters used to resolve the affected cohort.",
+    )
+
+
+class DpmCoreCioModelChangeAffectedCohortResponse(BaseModel):
+    product_name: Literal["CioModelChangeAffectedCohort"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    as_of_date: date = Field(description="As-of date used to resolve the cohort.")
+    tenant_id: Optional[str] = Field(default=None, description="Optional tenant selector.")
+    model_portfolio_id: str = Field(description="Approved model portfolio identifier.")
+    model_portfolio_version: str = Field(description="Approved model portfolio version.")
+    model_change_event_id: str = Field(description="Core source-owned model-change event id.")
+    approval_state: str = Field(description="Selected model definition approval state.")
+    approved_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp when the selected model version was approved.",
+    )
+    effective_from: date = Field(description="Selected model version effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None,
+        description="Selected model version effective end date.",
+    )
+    affected_mandates: list[DpmCoreCioModelChangeAffectedMandate] = Field(
+        description="Resolved affected mandates from lotus-core."
+    )
+    supportability: DpmCoreCioModelChangeSupportability = Field(
+        description="Completeness and readiness posture for CIO model-change discovery."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+    source_batch_fingerprint: Optional[str] = Field(
+        default=None,
+        description="Core source-batch fingerprint for replay and evidence tie-out.",
+    )
+    snapshot_id: Optional[str] = Field(
+        default=None,
+        description="Core snapshot identifier for the resolved affected cohort.",
+    )
+
+
 class DpmCoreInstrumentEligibilityRecord(BaseModel):
     security_id: str = Field(description="Core-governed security identifier.")
     found: bool = Field(description="Whether lotus-core found an effective eligibility profile.")

@@ -227,10 +227,16 @@ Every trigger must record:
 11. `source_refs`
 12. `correlation_id`
 
-First implementation supports only `EXPLICIT_PORTFOLIO_LIST`. `PM_BOOK_REVIEW`,
-`CIO_MODEL_CHANGE`, and other trigger types remain unsupported until an owning source product or
-approved manifest governance is implemented and proven. Unsupported trigger types must be rejected
-or returned as `NOT_SUPPORTED`; they must not appear as supported features.
+First implementation supported only `EXPLICIT_PORTFOLIO_LIST`. Later source-owner slices promoted
+`PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1` and `CIO_MODEL_CHANGE`
+through lotus-core `CioModelChangeAffectedCohort:v1`. Other trigger types remain unsupported until
+an owning source product or approved manifest governance is implemented and proven. Unsupported
+trigger types must be rejected or returned as `NOT_SUPPORTED`; they must not appear as supported
+features.
+
+Promoted source-owned trigger selectors are intentionally narrow: `PM_BOOK_REVIEW` requires
+`portfolio_manager_id`, while `CIO_MODEL_CHANGE` requires `model_portfolio_id`. Both reject
+caller-supplied portfolio lists so cohort authority remains in the owning source product.
 
 ---
 
@@ -861,7 +867,7 @@ Every wave endpoint must satisfy:
 | --- | --- | --- |
 | Wave preview | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented and live-proven with source-backed candidates and blocked caller-only portfolio evidence. |
 | Durable rebalance wave aggregate | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented with persistence, state machine, events, retention policy, repository parity, idempotency, and live retrieval proof. |
-| CIO model-change impact | Deferred with no support claim | Promote only after model-change source evidence and affected-mandate analysis are implemented in the owning source product and proven. |
+| CIO model-change impact | Supported for source-owned affected-cohort discovery | Implemented through lotus-core `CioModelChangeAffectedCohort:v1` and manage `CIO_MODEL_CHANGE` preview/create. Downstream Gateway/Workbench rendering remains a separate support claim. |
 | Wave source check | Supported | Implemented with item-level readiness, source refs, blocked/degraded/review reasons, and mixed-readiness proof. |
 | Wave simulation | Supported for source-ready items | Implemented through RFC-0039 alternatives for ready items while blocked, degraded, and review-required items remain visible. |
 | Alternative selection | Supported | Implemented with actor/rationale selection, proof-pack generation option, durable reload, and optimistic-lock tests. |
@@ -954,4 +960,4 @@ RFC-0041 is complete only when:
 | Documentation/wiki result | README, RFC index, repository context, source-map, supported-features, endpoint certification wiki, RFC index wiki, and roadmap wiki are aligned to implementation truth. Wiki publication is required after the Slice 12 PR merges. |
 | Skills/context/guidance decision | `no change needed`; current Lotus skills and agent context were sufficient and no new reusable execution rule emerged from final closure. |
 | Tests and evidence | Local gates passed: focused hardening tests, OpenAPI certification/docs tests, OpenAPI quality gate, API vocabulary validation, `make check`, and full coverage gate at 99.17%. GitHub PR gates must pass before merge. |
-| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves. Full front-office command-center product support, automatic PM-book discovery, and automatic CIO model-change cohort discovery remain explicitly deferred and unpromoted. |
+| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves plus source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohort discovery. Tactical house-view, risk-event, campaign discovery, external OMS execution, and downstream UI product rendering remain separate support claims. |
