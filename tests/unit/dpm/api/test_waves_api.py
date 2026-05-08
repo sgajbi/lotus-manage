@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
+    get_outcome_review_repository,
     get_proof_pack_repository,
     get_wave_repository,
 )
@@ -30,6 +31,7 @@ from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipRes
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
+from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
@@ -227,14 +229,19 @@ def _client(
     wave_repository: InMemoryDpmWaveRepository,
     construction_repository: InMemoryConstructionRepository | None = None,
     proof_pack_repository: InMemoryDpmProofPackRepository | None = None,
+    outcome_review_repository: InMemoryDpmOutcomeReviewRepository | None = None,
     run_service: DpmRunSupportService | None = None,
 ) -> TestClient:
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_proof_pack_repository] = lambda: (
+        proof_pack_repository or InMemoryDpmProofPackRepository()
+    )
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        outcome_review_repository or InMemoryDpmOutcomeReviewRepository()
+    )
     if construction_repository is not None:
         app.dependency_overrides[get_construction_repository] = lambda: construction_repository
-    if proof_pack_repository is not None:
-        app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
     if run_service is not None:
         app.dependency_overrides[get_dpm_run_support_service] = lambda: run_service
     app.openapi_schema = None
@@ -2399,6 +2406,12 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert report_payload["evidence_ref"]["ref_type"] == "DPM_WAVE_REPORT_INPUT"
     assert report_payload["evidence_ref"]["content_hash"] == report_payload["content_hash"]
     assert report_payload["content_hash"].startswith("sha256:")
+    assert report_payload["portfolio_memory_context"]["portfolio_id"] == PORTFOLIO_ID
+    assert report_payload["portfolio_memory_context"]["event_count"] >= 1
+    assert any(
+        event["event_type"] == "WAVE_CREATED"
+        for event in report_payload["portfolio_memory_context"]["event_refs"]
+    )
 
     assert missing.status_code == 404
     assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"

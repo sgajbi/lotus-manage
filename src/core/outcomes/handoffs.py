@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.outcomes.models import (
     DpmOutcomeDimensionResult,
     DpmOutcomeSourceRef,
@@ -78,6 +79,14 @@ class DpmOutcomeReportInput(BaseModel):
     section_hashes: dict[str, str] = Field(
         description="Proof-pack section hashes carried by the review."
     )
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = Field(
+        default=None,
+        description=(
+            "Optional Manage-owned portfolio-memory lineage context for downstream reports. "
+            "This context carries its own content hash and is excluded from the outcome "
+            "report-input evidence hash to avoid recursive report-input lineage."
+        ),
+    )
     redaction_policy: str = Field(description="Redaction policy applied to report input.")
     evidence_ref: DpmOutcomeSourceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical report-input hash.")
@@ -118,7 +127,11 @@ class DpmOutcomeAiEvidenceInput(BaseModel):
     content_hash: str = Field(description="Canonical AI-evidence input hash.")
 
 
-def build_report_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeReportInput:
+def build_report_input(
+    review: DpmPostTradeOutcomeReview,
+    *,
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = None,
+) -> DpmOutcomeReportInput:
     payload = DpmOutcomeReportInput(
         contract_version=HANDOFF_CONTRACT_VERSION,
         outcome_review_id=review.outcome_review_id,
@@ -146,6 +159,7 @@ def build_report_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeReportInp
         source_lineage=review.source_lineage,
         source_hashes=review.source_hashes,
         section_hashes=review.section_hashes,
+        portfolio_memory_context=portfolio_memory_context,
         redaction_policy="NO_RAW_PAYLOADS",
         evidence_ref=_handoff_ref(
             ref_type=OUTCOME_REPORT_INPUT_REF_TYPE,
@@ -153,7 +167,9 @@ def build_report_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeReportInp
         ),
         content_hash="",
     ).model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    payload["content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"content_hash", "portfolio_memory_context"})
+    )
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmOutcomeReportInput.model_validate(payload)
 

@@ -1,8 +1,16 @@
 from fastapi.testclient import TestClient
 
-from src.api.dependencies import get_outcome_review_repository
+from src.api.dependencies import (
+    get_mandate_repository,
+    get_outcome_review_repository,
+    get_proof_pack_repository,
+    get_wave_repository,
+)
 from src.api.main import app
+from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
+from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
+from src.infrastructure.waves import InMemoryDpmWaveRepository
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
@@ -32,9 +40,16 @@ def _refresh_payload() -> dict:
     }
 
 
+def _override_repositories(repository: InMemoryDpmOutcomeReviewRepository) -> None:
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    app.dependency_overrides[get_proof_pack_repository] = lambda: InMemoryDpmProofPackRepository()
+    app.dependency_overrides[get_wave_repository] = lambda: InMemoryDpmWaveRepository()
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+
+
 def test_outcome_review_api_preview_create_lookup_supportability_and_events() -> None:
     repository = InMemoryDpmOutcomeReviewRepository()
-    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    _override_repositories(repository)
     try:
         with TestClient(app) as client:
             preview = client.post(
@@ -96,6 +111,13 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert report_input["outcome_review_content_hash"] == outcome_review["content_hash"]
             assert report_input["content_hash"].startswith("sha256:")
             assert report_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_REPORT_INPUT"
+            assert report_input["portfolio_memory_context"]["portfolio_id"] == (
+                "PB_SG_GLOBAL_BAL_001"
+            )
+            assert any(
+                event["event_type"] == "OUTCOME_REVIEW_CREATED"
+                for event in report_input["portfolio_memory_context"]["event_refs"]
+            )
 
             ai = client.get(
                 f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"
@@ -180,7 +202,7 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
 
 def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() -> None:
     repository = InMemoryDpmOutcomeReviewRepository()
-    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    _override_repositories(repository)
     try:
         with TestClient(app) as client:
             created = client.post(

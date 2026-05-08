@@ -6,7 +6,9 @@ from src.api.dependencies import (
     get_construction_repository,
     get_db_session,
     get_mandate_repository,
+    get_outcome_review_repository,
     get_proof_pack_repository,
+    get_wave_repository,
 )
 from src.api.main import app
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
@@ -19,7 +21,9 @@ from src.core.mandates import (
 )
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
+from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
+from src.infrastructure.waves import InMemoryDpmWaveRepository
 from tests.shared.factories import valid_api_payload
 
 
@@ -33,10 +37,14 @@ def override_dependencies():
     construction_repository = InMemoryConstructionRepository()
     mandate_repository = InMemoryDpmMandateRepository()
     proof_pack_repository = InMemoryDpmProofPackRepository()
+    wave_repository = InMemoryDpmWaveRepository()
+    outcome_review_repository = InMemoryDpmOutcomeReviewRepository()
     app.dependency_overrides[get_db_session] = override_get_db_session
     app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
+    app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_review_repository
     _seed_mandate_evidence(mandate_repository)
     DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
@@ -187,6 +195,18 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert report_input["proof_pack_content_hash"] == proof_pack["content_hash"]
     assert report_input["content_hash"].startswith("sha256:")
     assert report_input["evidence_ref"]["ref_type"] == "DPM_PROOF_PACK_REPORT_INPUT"
+    assert (
+        report_input["evidence_ref"]["content_hash"]
+        == fetched_proof_pack["report_input_ref"]["content_hash"]
+    )
+    assert report_input["portfolio_memory_context"]["portfolio_id"] == "pf_1"
+    assert report_input["portfolio_memory_context"]["content_hash"].startswith("sha256:")
+    assert report_input["portfolio_memory_context"]["governance_policy"]["audit_policy"] == (
+        "AUDIT_READ_AND_EXPORT"
+    )
+    assert {
+        event["event_type"] for event in report_input["portfolio_memory_context"]["event_refs"]
+    } >= {"PROOF_PACK_CREATED", "MANDATE_HEALTH_SNAPSHOT"}
 
     ai = client.get(
         f"/api/v1/rebalance/proof-packs/{proof_pack['proof_pack_id']}/ai-evidence-input"

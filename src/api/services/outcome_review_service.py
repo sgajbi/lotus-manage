@@ -24,6 +24,13 @@ from src.core.outcomes import (
     build_report_input,
     compare_outcome_dimensions,
 )
+from src.api.services.portfolio_memory_context_service import (
+    build_report_portfolio_memory_context,
+)
+from src.core.mandate_repository import DpmMandateRepository
+from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
+from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.waves.repository import DpmWaveRepository
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
 
 OUTCOME_REVIEW_RETENTION_DAYS = 365 * 7
@@ -168,9 +175,20 @@ def get_report_input(
     *,
     outcome_review_id: str,
     repository: DpmOutcomeReviewRepository,
+    proof_pack_repository: DpmProofPackRepository | None = None,
+    wave_repository: DpmWaveRepository | None = None,
+    mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmOutcomeReportInput:
+    review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
     return build_report_input(
-        get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
+        review,
+        portfolio_memory_context=_portfolio_memory_context_for_report(
+            review=review,
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=repository,
+            mandate_repository=mandate_repository,
+        ),
     )
 
 
@@ -181,6 +199,25 @@ def get_ai_evidence_input(
 ) -> DpmOutcomeAiEvidenceInput:
     return build_ai_evidence_input(
         get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
+    )
+
+
+def _portfolio_memory_context_for_report(
+    *,
+    review: DpmPostTradeOutcomeReview,
+    proof_pack_repository: DpmProofPackRepository | None,
+    wave_repository: DpmWaveRepository | None,
+    outcome_review_repository: DpmOutcomeReviewRepository,
+    mandate_repository: DpmMandateRepository | None,
+) -> DpmPortfolioMemoryReportContext | None:
+    if proof_pack_repository is None or wave_repository is None:
+        return None
+    return build_report_portfolio_memory_context(
+        portfolio_id=review.portfolio_id,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
     )
 
 

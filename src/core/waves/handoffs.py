@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.waves.models import (
     DpmRebalanceWave,
     DpmRebalanceWaveEvent,
@@ -76,6 +77,14 @@ class DpmWaveReportInput(BaseModel):
     events: list[DpmWaveReportEvent] = Field(description="Report-safe event timeline.")
     handoff_refs: list[DpmWaveHandoffRef] = Field(description="Internal operations handoff refs.")
     source_refs: list[DpmWaveSourceRef] = Field(description="Deduplicated source refs.")
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = Field(
+        default=None,
+        description=(
+            "Optional Manage-owned portfolio-memory lineage context for downstream reports. "
+            "This context carries its own content hash and is excluded from the wave report-input "
+            "evidence hash to avoid recursive report-input lineage."
+        ),
+    )
     redaction_policy: str = Field(description="Redaction policy applied to report input.")
     external_execution_claimed: bool = Field(
         description="Always false until an external OMS/execution owner is implemented."
@@ -89,6 +98,7 @@ def build_wave_report_input(
     wave: DpmRebalanceWave,
     supportability: dict[str, Any],
     proof_pack_posture: dict[str, Any],
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = None,
 ) -> DpmWaveReportInput:
     wave_payload = wave.model_dump(mode="json")
     wave_content_hash = hash_canonical_payload(wave_payload)
@@ -117,6 +127,7 @@ def build_wave_report_input(
         events=[_report_event(event) for event in wave.events],
         handoff_refs=wave.handoff_refs,
         source_refs=_dedupe_source_refs(wave),
+        portfolio_memory_context=portfolio_memory_context,
         redaction_policy="NO_RAW_PAYLOADS",
         external_execution_claimed=bool(proof_pack_posture.get("external_execution_claimed")),
         evidence_ref=DpmWaveReportEvidenceRef(
@@ -127,7 +138,9 @@ def build_wave_report_input(
         ),
         content_hash="",
     ).model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    payload["content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"content_hash", "portfolio_memory_context"})
+    )
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmWaveReportInput.model_validate(payload)
 

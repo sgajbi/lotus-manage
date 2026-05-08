@@ -764,7 +764,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Execution/OMS integration, PM quality scoring" in supported_features
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
     assert "mandate health, monitoring exception, proof-pack" in supported_features
-    assert "stable event identity plus retention, redaction, access, and audit policy" in (
+    assert "stable event identity plus retention, redaction, access, audit policy" in (
         supported_features
     )
     assert "`lotus-report` now has the bounded context consumer seam" in supported_features
@@ -778,7 +778,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "| Done on merged/published truth | 27 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
     assert "| Remaining / open | 28 |" in work_to_be_done
-    assert "RFC40-WTBD-010 report-memory truth slice" in work_to_be_done
+    assert "RFC40-WTBD-010 manage report-input memory-context slice" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -835,7 +835,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         work_to_be_done
     )
     assert "`lotus-report` PR #92" in work_to_be_done
-    assert "Manage attaches portfolio-memory context to report inputs" in work_to_be_done
+    assert "Manage report-input APIs now attach bounded portfolio-memory context" in work_to_be_done
+    assert "tests/unit/core/test_outcome_handoffs.py" in work_to_be_done
     assert "AI consumers use timeline evidence without reconstructing facts" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (

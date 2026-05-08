@@ -5,9 +5,17 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
 )
+from src.core.portfolio_memory.handoffs import (
+    DpmPortfolioMemoryReportContext,
+    DpmPortfolioMemoryReportEventRef,
+    build_portfolio_memory_report_context,
+)
 
 __all__ = [
     "DpmPortfolioMemory",
     "DpmPortfolioMemoryEvent",
+    "DpmPortfolioMemoryReportContext",
+    "DpmPortfolioMemoryReportEventRef",
     "DpmPortfolioMemorySourceRef",
+    "build_portfolio_memory_report_context",
 ]

@@ -11,6 +11,7 @@ from src.api.observability import record_wave_supportability
 from src.api.dependencies import (
     get_construction_repository,
     get_mandate_repository,
+    get_outcome_review_repository,
     get_proof_pack_repository,
     get_risk_authority_client,
     get_wave_repository,
@@ -24,6 +25,7 @@ from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
@@ -1430,11 +1432,17 @@ def get_wave_proof_pack_posture(
 def get_wave_report_input(
     wave_id: str,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmWaveReportInput:
     try:
         return wave_service.get_report_input(
             wave_id=wave_id,
             wave_repository=wave_repository,
+            proof_pack_repository=proof_pack_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
         raise HTTPException(
