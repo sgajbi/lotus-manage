@@ -123,50 +123,107 @@ def _stateful_input_payload() -> dict[str, object]:
     }
 
 
-def _core_execution_context(*, supportability_state: str = "DEGRADED") -> DpmCoreExecutionContext:
-    return DpmCoreExecutionContext.model_validate(
-        {
-            "portfolio_snapshot": {
-                "snapshot_id": "core-pf-snap-001",
-                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
-                "base_currency": "SGD",
-                "positions": [{"instrument_id": "EQ_1", "quantity": "50"}],
-                "cash_balances": [{"currency": "SGD", "amount": "5000"}],
-            },
-            "market_data_snapshot": {
-                "snapshot_id": "core-md-snap-001",
-                "prices": [{"instrument_id": "EQ_1", "price": "100", "currency": "SGD"}],
-                "fx_rates": [],
-            },
-            "model_portfolio": {"targets": [{"instrument_id": "EQ_1", "weight": "0.50"}]},
-            "shelf_entries": [{"instrument_id": "EQ_1", "status": "APPROVED"}],
-            "policy_context": {
-                "recommended_policy_pack_id": "dpm_standard_v1",
-                "tenant_id": "tenant_001",
-                "booking_center_code": "SG",
-                "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
-            },
-            "source_lineage": {
-                "portfolio_snapshot_id": "core-pf-snap-001",
-                "market_data_snapshot_id": "core-md-snap-001",
-                "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
-                "model_portfolio_version": "2026-05-03",
-                "shelf_version": "shelf_sg_v1",
-                "integration_policy_version": "dpm-core-context.v1",
-                "source_lineage_bundle_id": "lineage-bundle-001",
+def _core_execution_context(
+    *,
+    supportability_state: str = "DEGRADED",
+    include_transaction_cost_curve: bool = False,
+) -> DpmCoreExecutionContext:
+    payload = {
+        "portfolio_snapshot": {
+            "snapshot_id": "core-pf-snap-001",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "base_currency": "SGD",
+            "positions": [{"instrument_id": "EQ_1", "quantity": "50"}],
+            "cash_balances": [{"currency": "SGD", "amount": "5000"}],
+        },
+        "market_data_snapshot": {
+            "snapshot_id": "core-md-snap-001",
+            "prices": [{"instrument_id": "EQ_1", "price": "100", "currency": "SGD"}],
+            "fx_rates": [],
+        },
+        "model_portfolio": {"targets": [{"instrument_id": "EQ_1", "weight": "0.50"}]},
+        "shelf_entries": [{"instrument_id": "EQ_1", "status": "APPROVED"}],
+        "policy_context": {
+            "recommended_policy_pack_id": "dpm_standard_v1",
+            "tenant_id": "tenant_001",
+            "booking_center_code": "SG",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        },
+        "source_lineage": {
+            "portfolio_snapshot_id": "core-pf-snap-001",
+            "market_data_snapshot_id": "core-md-snap-001",
+            "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+            "model_portfolio_version": "2026-05-03",
+            "shelf_version": "shelf_sg_v1",
+            "integration_policy_version": "dpm-core-context.v1",
+            "source_lineage_bundle_id": "lineage-bundle-001",
+        },
+        "supportability": {
+            "state": supportability_state,
+            "reason": "DPM_CORE_CONTEXT_DEGRADED",
+            "freshness_bucket": "same_day",
+        },
+    }
+    if include_transaction_cost_curve:
+        payload["transaction_cost_curve"] = {
+            "product_name": "TransactionCostCurve",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "window": {"start_date": "2026-02-02", "end_date": "2026-05-03"},
+            "curve_points": [
+                {
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "security_id": "EQ_1",
+                    "transaction_type": "BUY",
+                    "currency": "SGD",
+                    "observation_count": 2,
+                    "total_notional": "10000.0000000000",
+                    "total_cost": "5.0000000000",
+                    "average_cost_bps": "5.0000",
+                    "min_cost_bps": "4.5000",
+                    "max_cost_bps": "5.5000",
+                    "first_observed_date": "2026-04-01",
+                    "last_observed_date": "2026-05-03",
+                    "sample_transaction_ids": ["TXN-EQ1-001", "TXN-EQ1-002"],
+                }
+            ],
+            "page": {
+                "page_size": 250,
+                "sort_key": "security_id:asc,transaction_type:asc,currency:asc",
+                "returned_component_count": 1,
+                "request_scope_fingerprint": "transaction-cost-scope-001",
+                "next_page_token": None,
             },
             "supportability": {
-                "state": supportability_state,
-                "reason": "DPM_CORE_CONTEXT_DEGRADED",
-                "freshness_bucket": "same_day",
+                "state": "READY",
+                "reason": "TRANSACTION_COST_CURVE_READY",
+                "requested_security_count": 1,
+                "returned_curve_point_count": 1,
+                "missing_security_ids": [],
             },
+            "lineage": {
+                "source_system": "transactions",
+                "contract_version": "rfc_040_wtbd_007_v1",
+            },
+            "data_quality_status": "COMPLETE",
+            "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+            "source_batch_fingerprint": "sha256:transaction-cost-curve",
         }
-    )
+    return DpmCoreExecutionContext.model_validate(payload)
 
 
 class _FakeCoreResolver:
     def resolve_execution_context(self, *, stateful_input, correlation_id):
         return _core_execution_context(supportability_state="DEGRADED")
+
+
+class _TransactionCostCoreResolver:
+    def resolve_execution_context(self, *, stateful_input, correlation_id):
+        return _core_execution_context(
+            supportability_state="READY",
+            include_transaction_cost_curve=True,
+        )
 
 
 def test_generate_construction_alternative_set_first_wave_and_replay() -> None:
@@ -593,6 +650,44 @@ def test_generate_construction_alternative_set_preserves_degraded_stateful_sourc
     body = response.json()
     assert body["input_mode"] == "stateful"
     assert body["source_supportability_state"] == "DEGRADED"
+
+
+def test_stateful_construction_attaches_core_transaction_cost_curve(monkeypatch) -> None:
+    repository = InMemoryConstructionRepository()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: _TransactionCostCoreResolver(),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+            },
+            headers={"Idempotency-Key": "idem-construction-stateful-cost-curve"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    body = response.json()
+    alternative = next(
+        item for item in body["alternatives"] if item["method"] == "HEURISTIC_EXPLAINABLE"
+    )
+    cost_context = alternative["diagnostics"]["authority_context"]["transaction_cost_context"]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert body["input_mode"] == "stateful"
+    assert body["source_supportability_state"] == "READY"
+    assert cost_context["source_system"] == "lotus-core"
+    assert cost_context["source_product_name"] == "TransactionCostCurve"
+    assert cost_context["returned_curve_point_count"] == 1
+    assert cost_context["curve_points"][0]["average_cost_bps"] == "5.0000"
+    assert "TRANSACTION_COST_CURVE_READY" in reason_codes
+    assert "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE" not in reason_codes
 
 
 def test_generate_construction_alternative_set_idempotency_conflict() -> None:

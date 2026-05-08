@@ -6,6 +6,8 @@ import pytest
 from src.core.construction import (
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    AuthoritativeTransactionCostContext,
+    AuthoritativeTransactionCostPoint,
     ConstructionAuthorityContext,
     ConstructionAlternativeSelection,
     build_alternative_set,
@@ -466,6 +468,82 @@ def test_selected_alternative_proof_pack_attaches_source_owned_risk_and_performa
     assert any(
         ref.source_system == "lotus-performance"
         and ref.source_type == "PerformanceBenchmarkContext"
+        for ref in pack.sections[0].source_refs
+    )
+
+
+def test_selected_alternative_proof_pack_distinguishes_estimated_and_source_owned_cost() -> None:
+    result = _ready_rebalance_result()
+    authority_context = ConstructionAuthorityContext(
+        transaction_cost_context=AuthoritativeTransactionCostContext(
+            supportability_status="READY",
+            source_system="lotus-core",
+            source_product_name="TransactionCostCurve",
+            source_product_version="v1",
+            source_id="transaction-cost-scope-001",
+            content_hash="sha256:transaction-cost-curve-proof",
+            as_of_date="2026-05-03",
+            window_start_date="2026-02-02",
+            window_end_date="2026-05-03",
+            returned_curve_point_count=1,
+            reason_codes=["TRANSACTION_COST_CURVE_READY"],
+            curve_points=[
+                AuthoritativeTransactionCostPoint(
+                    security_id="EQ_B",
+                    transaction_type="BUY",
+                    currency="USD",
+                    observation_count=3,
+                    total_notional=Decimal("30000"),
+                    total_cost=Decimal("15"),
+                    average_cost_bps=Decimal("5.0000"),
+                    min_cost_bps=Decimal("4.5000"),
+                    max_cost_bps=Decimal("5.5000"),
+                    first_observed_date="2026-04-01",
+                    last_observed_date="2026-05-03",
+                    sample_transaction_ids=["TXN-1", "TXN-2"],
+                )
+            ],
+        )
+    )
+    alternative = build_rebalance_result_alternative(result=result).model_copy(
+        update={
+            "diagnostics": {
+                "authority_context": authority_context.model_dump(
+                    mode="json",
+                    exclude_none=True,
+                )
+            }
+        }
+    )
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_transaction_cost_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        run=_run_record(result=result),
+        created_by="pm_001",
+        reason="Use source-owned cost evidence for proof-pack review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    turnover = _section(pack, "turnover_and_cost")
+
+    assert turnover.state == "READY"
+    assert turnover.metrics["estimated_transaction_cost"] is None
+    assert turnover.metrics["returned_curve_point_count"] == 1
+    assert turnover.metrics["represented_observation_count"] == 3
+    assert turnover.facts["source_product_name"] == "TransactionCostCurve"
+    assert turnover.facts["curve_points"][0]["average_cost_bps"] == "5.0000"
+    assert "TRANSACTION_COST_CURVE_READY" in turnover.reason_codes
+    assert pack.source_hashes["transaction_cost_context"] == "sha256:transaction-cost-curve-proof"
+    assert any(
+        ref.source_system == "lotus-core" and ref.source_type == "TransactionCostCurve"
         for ref in pack.sections[0].source_refs
     )
 

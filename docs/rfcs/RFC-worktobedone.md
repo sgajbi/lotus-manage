@@ -35,19 +35,21 @@ demo preparation. The wiki remains careful not to promote unfinished WTBDs as su
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: the merged and wiki-published RFC38-WTBD-003 command-center seed-posture
-hardening slice. The canonical DPM command-center seed now proves populated source-ready `ready`,
+Snapshot basis: the RFC40-WTBD-007 transaction-cost authority slice after the source-owner
+`lotus-core` product and `lotus-manage` consumer proof are merged, validated, and wiki-published.
+The canonical DPM command-center seed still proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
-ready/degraded/blocked source-readiness states for downstream consumers. Degraded and blocked
-canonical fixtures remain source-owner follow-up, so this closure does not close the unrelated
-RFC41-WTBD-003 tactical house-view, risk-event, and campaign-cohort source-owner gap.
+ready/degraded/blocked source-readiness states for downstream consumers. RFC40-WTBD-007 adds
+source-owned observed transaction-cost evidence through `TransactionCostCurve:v1`; it does not
+promote predictive execution-cost quotes, dedicated min-cost optimization, or broader execution
+methodology.
 
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 31 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 32 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 24 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 23 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -63,8 +65,8 @@ Next bank-buyable product-readiness priorities:
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the report-side bounded context consumer; and `lotus-ai` has bounded DPM memo/narrative consumers. | Future source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
-| 2 | RFC40-WTBD-007 - Authoritative transaction-cost curve | Distinguishes estimated manage cost from source-owned transaction-cost evidence. | A source owner publishes `TransactionCostCurve:v1` or equivalent with lineage, applicability, tests, live proof, and supported-feature promotion. |
-| 3 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
+| 2 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
+| 3 | RFC39-WTBD-006 - Cost-aware alternatives | Uses source-owned cost curves in optimization and comparison methods beyond proof-pack evidence preservation. | Manage implements and proves cost-aware/min-cost alternative behavior from `TransactionCostCurve:v1` without treating observed cost evidence as a predictive quote. |
 
 Execution rule:
 
@@ -1196,7 +1198,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Richer lifecycle depth across proof packs, waves, reports, AI, approval staging, and demos remains RFC39-WTBD-010 / later command-center work. |
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` or dedicated client-governance/sustainability source, consumed by manage | Deferred with explicit degraded posture | No certified restriction and sustainability profile products exist. Full ESG support would be a false compliance claim. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
-| RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | Future cost/execution source | Deferred with labelled local estimates only | No authoritative `TransactionCostCurve:v1` source exists. |
+| RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage`; future optimization depth in manage | Partially unblocked by `TransactionCostCurve:v1` source and proof-pack consumption | Source-owned observed cost evidence now exists for proof packs, but dedicated min-cost/cost-aware construction behavior still needs implementation and proof before RFC-0039 support promotion. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
 | RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
 | RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; product UX remains downstream | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. Broader scenario contribution rows, approvals workflow, Gateway composition, and Workbench UX remain downstream/future depth. |
@@ -1711,11 +1713,11 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | --- | --- | --- | --- | --- |
 | RFC40-WTBD-001 | Gateway proof-pack composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195 | Gateway consumes stable manage proof-pack generate/read/Markdown/report-input/AI-evidence APIs without reconstructing sections, hashes, report refs, or AI refs. Workbench UX and full canonical product proof remain separate WTBDs. |
 | RFC40-WTBD-002 | Workbench proof-pack review UX | `lotus-workbench` | Completed, merged, CI-proven, and wiki-published through `lotus-workbench` PR #156 | Workbench now consumes Gateway/BFF proof-pack contracts only, renders proof-pack identity, supportability, sections, source hashes, Markdown/report/AI posture, and action eligibility without reconstructing sections, hashes, report input, or AI evidence. |
-| RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Completed, merged, CI-proven, live-proven, and wiki-ready through `lotus-gateway` PR #195, `lotus-workbench` PR #156, `lotus-workbench` PR #164, `lotus-manage` PR #117, and platform canonical QA | The first-wave product path now generates and replays proof-pack evidence through Gateway/BFF, renders Workbench proof-pack review over live manage truth, and passes governed canonical front-office QA with `dpm.proof_pack` classified `ready`. Governed AI memo generation, richer source-owner enrichment, transaction-cost authority, client restrictions, sustainability profiles, and cross-RFC portfolio memory remain separate WTBDs. |
+| RFC40-WTBD-003 | Full front-office proof-pack product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Completed, merged, CI-proven, live-proven, and wiki-ready through `lotus-gateway` PR #195, `lotus-workbench` PR #156, `lotus-workbench` PR #164, `lotus-manage` PR #117, and platform canonical QA | The first-wave product path now generates and replays proof-pack evidence through Gateway/BFF, renders Workbench proof-pack review over live manage truth, and passes governed canonical front-office QA with `dpm.proof_pack` classified `ready`. Governed AI memo generation, richer source-owner enrichment, client restrictions, sustainability profiles, and cross-RFC portfolio memory remain separate WTBDs. |
 | RFC40-WTBD-004 | Report materialization from `DpmProofPackReportInput` | `lotus-report`, `lotus-render`, `lotus-archive` | Completed, merged, CI-proven, and wiki-published through `lotus-render` PR #11, `lotus-report` PR #90, and `lotus-archive` PR #23 | Manage produces deterministic report input; `lotus-report` consumes it without reconstructing proof-pack evidence, `lotus-render` renders the governed `proof-pack` template, and `lotus-archive` governs the resulting `proof_pack` artifact lifecycle with retention, legal hold, retrieval, purge, and access audit. |
 | RFC40-WTBD-005 | AI PM memo generation from `DpmProofPackAiEvidenceInput` | `lotus-ai`, consumed through Gateway/Workbench | Completed, merged, CI-proven, live-proven, and wiki-published through `lotus-ai` PR #61, `lotus-gateway` PR #198, `lotus-workbench` PR #166, and rebuilt platform canonical QA | Manage produces bounded AI evidence with guardrails; `lotus-ai` owns review-gated `dpm_pm_memo.pack@v1` execution, Gateway composes the handoff, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
 | RFC40-WTBD-006 | Broader risk and performance proof-pack enrichment | `lotus-risk`, `lotus-performance`, consumed by manage/Gateway | Completed in this slice for manage proof-pack authority | RFC-0040 selected-alternative proof packs now preserve source-owned risk and performance context from construction authority metadata, including supportability state, source refs, source hashes, reason codes, and bounded source-emitted measures. Manage still does not calculate risk or performance methodology locally. |
-| RFC40-WTBD-007 | Authoritative transaction-cost curve | Future cost/execution source, likely execution/platform domain | Deferred with no support claim | Manage may expose labelled estimated cost, but no authoritative `TransactionCostCurve:v1` source exists. |
+| RFC40-WTBD-007 | Authoritative transaction-cost curve | `lotus-core` source authority consumed by `lotus-manage` | Completed for proof-pack evidence authority | `lotus-core` publishes `TransactionCostCurve:v1` observed booked-fee evidence and `lotus-manage` consumes it through stateful core sourcing, attaches `AuthoritativeTransactionCostContext` to selected construction alternatives, and preserves source-owned supportability, source refs, content hashes, reason codes, evidence windows, missing securities, and bounded curve points in `turnover_and_cost` proof-pack evidence. Manage still labels local construction estimates separately and does not claim predictive execution quotes or min-cost optimization. |
 | RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` or dedicated client-governance source | Deferred with no support claim | No source-backed `ClientRestrictionProfile:v1` or `SustainabilityPreferenceProfile:v1` is available for proof-pack-ready claims. |
 | RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority, consumed by `lotus-manage` construction evidence | Partially implemented through selected RFC-0039 alternatives | `RegimeScenarioPackEvaluation:v1` now supplies first-wave scenario-pack evaluation for `REGIME_STRESS_AWARE` alternatives. Proof packs can preserve that selected-alternative context, but richer scenario contribution, CIO approval, and direct proof-pack enrichment remain future source depth. |
 | RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, and outcome events | `lotus-manage` with downstream/source participants | Partially implemented: manage backend authority plus first-wave Gateway/Workbench product realization are merged, live-proven, and wiki-published; mandate health, monitoring-exception, event identity, retention, redaction, access, and audit policy are implemented in manage; `lotus-report` PR #92 implements the report-side bounded context consumer; `lotus-ai` PR #62 implements bounded DPM memo/narrative consumers | Manage exposes a deterministic source-backed portfolio-memory read model over persisted mandate health snapshots, monitoring exceptions, proof packs, proof-pack-local timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events. Gateway composes that read model and Workbench renders the first-wave timeline panel with canonical browser proof. `lotus-report` can carry Manage-owned `portfolio_memory_context` into proof-pack, wave, and outcome report snapshot/render lineage without reconstruction. `lotus-ai` validates that same context for DPM PM memo and outcome-review narrative packs without reconstructing timeline facts. Full WTBD closure still needs future report, AI, OMS, PM-scoring, and client-communication source-event families from their owners. |
@@ -2032,30 +2034,47 @@ Target business outcome:
 Proof packs can distinguish labelled estimates from source-backed transaction-cost evidence and
 show cost supportability clearly.
 
-Why it cannot be done now:
+Implementation-backed status:
 
-No authoritative transaction-cost source exists. RFC-0040 can preserve labelled estimated cost from
-manage diagnostics, but it cannot promote authoritative transaction-cost support.
+Completed for RFC-0040 proof-pack evidence authority. `lotus-core` now owns
+`TransactionCostCurve:v1` as observed booked-fee transaction-cost evidence, and `lotus-manage`
+consumes that source product through the stateful core-sourcing path. Manage converts the response
+into `AuthoritativeTransactionCostContext`, attaches it to construction alternatives, and preserves
+the source-owned evidence in the proof-pack `turnover_and_cost` section without blending it into
+local construction estimates.
 
-Dependencies before implementation:
+Implemented boundary:
 
-1. source owner assigned for `TransactionCostCurve:v1` or equivalent,
-2. curve identity, venue/asset/currency applicability, as-of timestamp, freshness, and lineage,
-3. manage adapter rules for missing/stale/inapplicable curves,
-4. tests for estimate versus authoritative-cost labeling,
-5. documentation warning against unsupported cost precision.
+1. source owner: `lotus-core`,
+2. source product: `TransactionCostCurve:v1`,
+3. route: `/integration/portfolios/{portfolio_id}/transaction-cost-curve`,
+4. consumer: `lotus-manage` stateful core-sourcing client,
+5. evidence shape: supportability state, reason code, as-of date, transaction-date window,
+   missing securities, request fingerprint/source id, source content hash, bounded curve points,
+   represented observation count, observed average/min/max bps, total notional, total cost, and
+   sample source transaction ids,
+6. proof-pack behavior: `turnover_and_cost` carries local estimated cost separately from
+   source-owned observed cost evidence.
 
-Expected implementation wave:
+Production boundary:
 
-Implement after the cost/execution source is established and certified.
+This WTBD does not claim predictive transaction-cost quotes, market-impact modeling, venue
+selection, spread forecasts, execution-price estimation, or min-cost portfolio construction. Those
+remain RFC39-WTBD-006 / broader execution-methodology work. `TransactionCostCurve:v1` is observed
+booked-fee evidence suitable for audit, supportability, and proof-pack review.
 
-Promotion proof:
+Implementation evidence:
 
-1. source-owner contract tests,
-2. manage proof-pack cost-section tests,
-3. live evidence for ready and degraded cost posture,
-4. OpenAPI/supportability documentation updates,
-5. supported-feature promotion only for source-backed cost contexts.
+1. `lotus-core` source-owner implementation and tests for `TransactionCostCurve:v1`,
+2. `src/infrastructure/core_sourcing/client.py`,
+3. `src/core/dpm_source_context.py`,
+4. `src/core/construction/models.py`,
+5. `src/api/services/construction_service.py`,
+6. `src/core/proof_packs/source_analytics.py`,
+7. `src/core/proof_packs/builder.py`,
+8. `tests/unit/dpm/infrastructure/test_core_sourcing_client.py`,
+9. `tests/unit/dpm/api/test_construction_api.py`,
+10. `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
 
 #### RFC40-WTBD-008 - Sustainability Preferences And Client Restriction Profiles
 

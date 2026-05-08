@@ -639,6 +639,103 @@ class DpmCoreMarketDataCoverageWindowResponse(BaseModel):
     )
 
 
+class DpmCoreIntegrationWindow(BaseModel):
+    start_date: date = Field(description="Inclusive source evidence window start date.")
+    end_date: date = Field(description="Inclusive source evidence window end date.")
+
+
+class DpmCoreTransactionCostCurvePoint(BaseModel):
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    security_id: str = Field(description="Security identifier represented by the cost point.")
+    transaction_type: str = Field(description="Observed transaction type.")
+    currency: str = Field(description="Currency of observed notional and cost values.")
+    observation_count: int = Field(description="Number of observed transactions represented.")
+    total_notional: Decimal = Field(description="Total absolute observed notional.")
+    total_cost: Decimal = Field(description="Total observed booked cost.")
+    average_cost_bps: Decimal = Field(
+        description="Observed average cost in basis points; not a predictive execution quote."
+    )
+    min_cost_bps: Decimal = Field(description="Minimum observed transaction cost in bps.")
+    max_cost_bps: Decimal = Field(description="Maximum observed transaction cost in bps.")
+    first_observed_date: date = Field(description="Earliest represented transaction date.")
+    last_observed_date: date = Field(description="Latest represented transaction date.")
+    sample_transaction_ids: list[str] = Field(
+        default_factory=list,
+        description="Bounded deterministic sample of source transaction identifiers.",
+    )
+    source_lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Point-level source lineage from lotus-core.",
+    )
+
+
+class DpmCoreTransactionCostCurvePageMetadata(BaseModel):
+    page_size: int = Field(description="Maximum cost-curve points requested.")
+    sort_key: str = Field(description="Deterministic sort key applied by lotus-core.")
+    returned_component_count: int = Field(description="Number of curve points returned.")
+    request_scope_fingerprint: str = Field(
+        description="Core fingerprint of request selectors and paging scope."
+    )
+    next_page_token: Optional[str] = Field(
+        default=None,
+        description="Opaque continuation token when more points are available.",
+    )
+
+
+class DpmCoreTransactionCostCurveSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Core readiness state for transaction-cost evidence."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    requested_security_count: Optional[int] = Field(
+        default=None,
+        description="Number of securities explicitly requested from core.",
+    )
+    returned_curve_point_count: int = Field(
+        description="Number of qualifying observed cost-curve points returned."
+    )
+    missing_security_ids: list[str] = Field(
+        default_factory=list,
+        description="Requested securities without qualifying cost evidence.",
+    )
+
+
+class DpmCoreTransactionCostCurveResponse(BaseModel):
+    product_name: Literal["TransactionCostCurve"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    as_of_date: date = Field(description="As-of date used for the curve.")
+    window: DpmCoreIntegrationWindow = Field(description="Observed transaction-date window.")
+    curve_points: list[DpmCoreTransactionCostCurvePoint] = Field(
+        default_factory=list,
+        description="Observed transaction-cost curve points from lotus-core.",
+    )
+    page: DpmCoreTransactionCostCurvePageMetadata = Field(
+        description="Core pagination metadata for the cost-curve response."
+    )
+    supportability: DpmCoreTransactionCostCurveSupportability = Field(
+        description="Completeness and readiness posture for cost-curve evidence."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core product-level lineage metadata.",
+    )
+    data_quality_status: Optional[str] = Field(
+        default=None,
+        description="Core runtime data quality status.",
+    )
+    latest_evidence_timestamp: Optional[datetime] = Field(
+        default=None,
+        description="Latest evidence timestamp returned by lotus-core.",
+    )
+    source_batch_fingerprint: Optional[str] = Field(
+        default=None,
+        description="Core source-batch fingerprint for replay and evidence tie-out.",
+    )
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -657,6 +754,13 @@ class DpmCoreExecutionContext(BaseModel):
     source_lineage: DpmCoreSourceLineage = Field(description="Core source-lineage identifiers.")
     supportability: DpmCoreSupportability = Field(
         description="Completeness and freshness posture for the context."
+    )
+    transaction_cost_curve: Optional[DpmCoreTransactionCostCurveResponse] = Field(
+        default=None,
+        description=(
+            "Optional source-owned observed transaction-cost evidence from "
+            "TransactionCostCurve:v1. Absence preserves labelled local cost estimates only."
+        ),
     )
 
 

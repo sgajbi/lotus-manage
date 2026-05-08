@@ -21,6 +21,8 @@ from src.core.construction.models import (
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeLiquidityContext,
     AuthoritativeRegimeStressContext,
+    AuthoritativeTransactionCostContext,
+    AuthoritativeTransactionCostPoint,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
@@ -87,13 +89,17 @@ def generate_construction_alternative_set(
         request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
         run_service=run_service,
     )
+    resolved_authority_context = _authority_context_with_source_products(
+        authority_context=authority_context or ConstructionAuthorityContext(),
+        source_context=source_context,
+    )
     alternatives = _build_alternatives(
         request=request,
         method_set=method_set,
         base_result=base_result,
         correlation_id=correlation_id,
         request_hash=request_hash,
-        authority_context=authority_context or ConstructionAuthorityContext(),
+        authority_context=resolved_authority_context,
         risk_authority_client=risk_authority_client,
         run_service=run_service,
     )
@@ -314,6 +320,7 @@ def _apply_supportability(
         ),
         performance_context=authority_context.performance_context,
         performance_required=False,
+        transaction_cost_context=authority_context.transaction_cost_context,
         liquidity_context=(
             authority_context.liquidity_context
             if method == ConstructionMethod.LIQUIDITY_AWARE
@@ -502,10 +509,70 @@ def _authority_context_for_method(
     return ConstructionAuthorityContext(
         risk_context=risk_context,
         performance_context=authority_context.performance_context,
+        transaction_cost_context=authority_context.transaction_cost_context,
         liquidity_context=liquidity_context,
         currency_overlay_context=currency_context,
         regime_stress_context=regime_context,
     )
+
+
+def _authority_context_with_source_products(
+    *,
+    authority_context: ConstructionAuthorityContext,
+    source_context: DpmResolvedSourceContext | None,
+) -> ConstructionAuthorityContext:
+    if authority_context.transaction_cost_context is not None or source_context is None:
+        return authority_context
+    curve = source_context.context.transaction_cost_curve
+    if curve is None:
+        return authority_context
+    curve_payload = curve.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(curve_payload)
+    source_id = (
+        curve.source_batch_fingerprint
+        or curve.lineage.get("source_batch_fingerprint")
+        or curve.page.request_scope_fingerprint
+    )
+    context = AuthoritativeTransactionCostContext(
+        supportability_status=_source_status_to_method_status(curve.supportability.state),
+        source_system="lotus-core",
+        source_product_name=curve.product_name,
+        source_product_version=curve.product_version,
+        source_id=source_id,
+        content_hash=source_hash,
+        as_of_date=curve.as_of_date,
+        window_start_date=curve.window.start_date,
+        window_end_date=curve.window.end_date,
+        returned_curve_point_count=curve.supportability.returned_curve_point_count,
+        missing_security_ids=curve.supportability.missing_security_ids,
+        curve_points=[
+            AuthoritativeTransactionCostPoint(
+                security_id=point.security_id,
+                transaction_type=point.transaction_type,
+                currency=point.currency,
+                observation_count=point.observation_count,
+                total_notional=point.total_notional,
+                total_cost=point.total_cost,
+                average_cost_bps=point.average_cost_bps,
+                min_cost_bps=point.min_cost_bps,
+                max_cost_bps=point.max_cost_bps,
+                first_observed_date=point.first_observed_date,
+                last_observed_date=point.last_observed_date,
+                sample_transaction_ids=point.sample_transaction_ids[:5],
+            )
+            for point in curve.curve_points[:10]
+        ],
+        reason_codes=[curve.supportability.reason],
+    )
+    return authority_context.model_copy(update={"transaction_cost_context": context})
+
+
+def _source_status_to_method_status(status: str) -> ConstructionMethodStatus:
+    if status == "READY":
+        return ConstructionMethodStatus.READY
+    if status == "DEGRADED":
+        return ConstructionMethodStatus.DEGRADED
+    return ConstructionMethodStatus.BLOCKED
 
 
 def _with_method_reason_codes(

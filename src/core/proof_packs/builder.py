@@ -653,18 +653,33 @@ def _section_payload(
             [],
         )
     if section_type == "turnover_and_cost":
+        transaction_cost_context = source_analytics.get("transaction_cost")
         metrics = (
             selected_alternative.comparison_metrics.model_dump(mode="json")
             if selected_alternative
             else {}
         )
-        turnover_state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
+        facts: dict[str, Any] = {}
+        reason_codes = [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"]
+        state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
+        summary = "Turnover and cost evidence captured when construction metrics are available."
+        if transaction_cost_context is not None:
+            facts = transaction_cost_context.facts
+            metrics = {**metrics, **transaction_cost_context.metrics}
+            reason_codes.extend(transaction_cost_context.reason_codes)
+            state = _lowest_section_state([state, transaction_cost_context.state])
+            summary = (
+                "Turnover metrics and source-owned observed transaction-cost evidence are attached."
+            )
+        elif metrics:
+            reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
+            state = "DEGRADED"
         return (
-            turnover_state,
-            "Turnover and cost evidence captured when construction metrics are available.",
-            {},
+            state,
+            summary,
+            facts,
             metrics,
-            [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"],
+            sorted(set(reason_codes)),
         )
     if section_type == "liquidity_and_cash":
         breaches = result.diagnostics.cash_ladder_breaches
@@ -943,6 +958,17 @@ def _aggregate_status(counts: dict[str, int]) -> ProofPackStatus:
     return "READY"
 
 
+def _lowest_section_state(states: list[ProofPackSectionState]) -> ProofPackSectionState:
+    state_order = {
+        "BLOCKED": 0,
+        "DEGRADED": 1,
+        "PENDING_REVIEW": 2,
+        "READY": 3,
+        "NOT_APPLICABLE": 4,
+    }
+    return min(states, key=lambda item: state_order[item])
+
+
 def _source_hashes(
     *,
     run: DpmRunRecord | None,
@@ -970,7 +996,7 @@ def _source_hashes(
 def _source_analytics(
     selected_alternative: ConstructionAlternative | None,
 ) -> dict[str, ProofPackSourceAnalytics]:
-    families: tuple[ProofPackAnalyticsFamily, ...] = ("risk", "performance")
+    families: tuple[ProofPackAnalyticsFamily, ...] = ("risk", "performance", "transaction_cost")
     return {
         family: analytics
         for family in families
