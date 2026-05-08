@@ -321,7 +321,8 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "Pre-Trade Proof Pack Flow" in supported_features
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in supported_features
     assert "src/core/portfolio_memory/" in supported_features
-    assert "Gateway/Workbench timeline realization" in supported_features
+    assert "first-wave Gateway/Workbench product path" in supported_features
+    assert "Gateway PR #199 exposes the command-center composition" in supported_features
     assert "output/rfc0040-proof/20260503-145818" in supported_features
     assert "critical-review.json" in supported_features
     assert "| Pre-trade proof pack | Supported |" not in supported_features
@@ -761,9 +762,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in wiki_index
     assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
     assert "Execution/OMS integration, PM quality scoring" in supported_features
-    assert (
-        "full Gateway/Workbench timeline product realization remain downstream"
-        in supported_features
+    assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
+    assert "Mandate-monitoring exception nodes, cross-app event identity/retention" in (
+        supported_features
     )
     assert "Supported as RFC-0042 full product experience" not in supported_features
 
@@ -774,7 +775,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "| Done on merged/published truth | 27 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
     assert "| Remaining / open | 28 |" in work_to_be_done
-    assert "RFC40-WTBD-010 manage portfolio-memory foundation" in work_to_be_done
+    assert "RFC40-WTBD-010 portfolio-memory product-realization truth slice" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -821,6 +822,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0040-proof/20260507-230235/manifest.json" in work_to_be_done
     assert "risk_source_state=READY" in work_to_be_done
     assert "performance_source_state=DEGRADED" in work_to_be_done
+    assert "lotus-gateway` PR #199" in work_to_be_done
+    assert "lotus-workbench` PR #167" in work_to_be_done
+    assert "lotus-platform` PR #307" in work_to_be_done
+    assert "dpm-portfolio-memory-live.png" in work_to_be_done
+    assert "cross-app event identity/retention/redaction/audit policy" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
@@ -874,9 +880,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 27 done after this slice lands on merged/published truth" in (
-        supported_features
-    )
+    assert "59 WTBD items: 27 done on merged/published truth" in (supported_features)
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
         supported_features
     )
@@ -891,6 +895,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "AI memo generation from wave evidence" in supported_features
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
+    assert (
+        "Supported as a manage backend foundation and first-wave Gateway/Workbench product path"
+        in (supported_features)
+    )
+    assert "canonical live validation captured `dpm-portfolio-memory-live.png`" in (
+        supported_features
+    )
     assert (
         "Workbench proof-pack review UX is implementation-backed through `lotus-workbench` PR #156"
         in (supported_features)
