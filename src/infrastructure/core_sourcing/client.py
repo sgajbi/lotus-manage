@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any, Optional
 
@@ -17,6 +17,7 @@ from src.core.dpm_source_context import (
     DpmCorePolicyContext,
     DpmCoreSourceLineage,
     DpmCoreSupportability,
+    DpmCoreTransactionCostCurveResponse,
     DpmStatefulInput,
     build_market_data_snapshot_from_core_coverage,
     build_model_portfolio_from_core_targets,
@@ -56,6 +57,9 @@ class DpmCoreResolverConfig:
     portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
     market_data_coverage_path_template: str = "/integration/market-data/coverage"
     portfolio_snapshot_path_template: str = "/integration/portfolios/{portfolio_id}/core-snapshot"
+    transaction_cost_curve_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/transaction-cost-curve"
+    )
     timeout_seconds: float = 2.0
     max_attempts: int = 2
 
@@ -128,6 +132,14 @@ class DpmCoreResolverConfig:
         path_template = self.portfolio_snapshot_path_template.strip()
         if not path_template:
             raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_transaction_cost_curve_url(self, portfolio_id: str) -> str:
+        path_template = self.transaction_cost_curve_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
@@ -252,6 +264,13 @@ class DpmCoreResolverClient:
             tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
+        transaction_cost_curve = self._try_resolve_transaction_cost_curve(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            security_ids=requested_instrument_ids,
+            tenant_id=stateful_input.tenant_id,
+            correlation_id=correlation_id,
+        )
         policy_context = build_policy_context_from_core_mandate(
             mandate,
             tenant_id=stateful_input.tenant_id,
@@ -290,6 +309,7 @@ class DpmCoreResolverClient:
                 missing_source_families=[],
                 degraded_source_families=[],
             ),
+            transaction_cost_curve=transaction_cost_curve,
         )
 
     def resolve_portfolio_snapshot(
@@ -508,6 +528,69 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_MARKET_DATA_COVERAGE_INCOMPLETE",
         )
         return DpmCoreMarketDataCoverageWindowResponse.model_validate(response)
+
+    def resolve_transaction_cost_curve(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        window_start_date: date,
+        window_end_date: date,
+        security_ids: Optional[list[str]] = None,
+        transaction_types: Optional[list[str]] = None,
+        min_observation_count: int = 1,
+        page_size: int = 250,
+        page_token: Optional[str] = None,
+        tenant_id: Optional[str] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCoreTransactionCostCurveResponse:
+        url = self._config.resolve_transaction_cost_curve_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "window": {
+                "start_date": window_start_date.isoformat(),
+                "end_date": window_end_date.isoformat(),
+            },
+            "security_ids": security_ids,
+            "transaction_types": transaction_types,
+            "min_observation_count": min_observation_count,
+            "page": {"page_size": page_size, "page_token": page_token},
+            "tenant_id": tenant_id,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_TRANSACTION_COST_CURVE_INCOMPLETE",
+        )
+        return DpmCoreTransactionCostCurveResponse.model_validate(response)
+
+    def _try_resolve_transaction_cost_curve(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        security_ids: list[str],
+        tenant_id: Optional[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreTransactionCostCurveResponse | None:
+        if not security_ids:
+            return None
+        try:
+            return self.resolve_transaction_cost_curve(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                window_start_date=as_of_date - timedelta(days=90),
+                window_end_date=as_of_date,
+                security_ids=security_ids,
+                transaction_types=["BUY", "SELL"],
+                min_observation_count=1,
+                tenant_id=tenant_id,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
 
 
 def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-08T09:36:19.638645+00:00",
+  "generatedAt": "2026-05-08T14:17:08.970972+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -636,6 +636,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.average_cost_bps",
+      "canonicalTerm": "average_cost_bps",
+      "preferredName": "average_cost_bps",
+      "description": "Observed average cost in basis points; not a predictive execution quote.",
+      "example": "average_cost_bps_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -1583,6 +1597,22 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.curve_points",
+      "canonicalTerm": "curve_points",
+      "preferredName": "curve_points",
+      "description": "Bounded observed cost-curve points from the source owner.",
+      "example": [
+        "curve_points_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -2862,6 +2892,20 @@
       ]
     },
     {
+      "semanticId": "lotus.first_observed_date",
+      "canonicalTerm": "first_observed_date",
+      "preferredName": "first_observed_date",
+      "description": "Earliest represented transaction date.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.forbidden_actions",
       "canonicalTerm": "forbidden_actions",
       "preferredName": "forbidden_actions",
@@ -4010,6 +4054,20 @@
       ]
     },
     {
+      "semanticId": "lotus.last_observed_date",
+      "canonicalTerm": "last_observed_date",
+      "preferredName": "last_observed_date",
+      "description": "Latest represented transaction date.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.last_review_date",
       "canonicalTerm": "last_review_date",
       "preferredName": "last_review_date",
@@ -4463,6 +4521,20 @@
       ]
     },
     {
+      "semanticId": "lotus.max_cost_bps",
+      "canonicalTerm": "max_cost_bps",
+      "preferredName": "max_cost_bps",
+      "description": "Maximum observed transaction cost in bps.",
+      "example": "max_cost_bps_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.max_overdraft_by_ccy",
       "canonicalTerm": "max_overdraft_by_ccy",
       "preferredName": "max_overdraft_by_ccy",
@@ -4679,6 +4751,20 @@
       ]
     },
     {
+      "semanticId": "lotus.min_cost_bps",
+      "canonicalTerm": "min_cost_bps",
+      "preferredName": "min_cost_bps",
+      "description": "Minimum observed transaction cost in bps.",
+      "example": "min_cost_bps_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.min_notional",
       "canonicalTerm": "min_notional",
       "preferredName": "min_notional",
@@ -4741,6 +4827,22 @@
       "description": "Missing FX pairs required for generated funding or valuation.",
       "example": [
         "sample_missing_fx_pairs_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.missing_security_ids",
+      "canonicalTerm": "missing_security_ids",
+      "preferredName": "missing_security_ids",
+      "description": "Requested securities without qualifying cost evidence.",
+      "example": [
+        "sample_missing_security_ids_item"
       ],
       "type": "array",
       "locations": [
@@ -5013,6 +5115,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.observation_count",
+      "canonicalTerm": "observation_count",
+      "preferredName": "observation_count",
+      "description": "Number of source transactions represented.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -6756,6 +6872,20 @@
       ]
     },
     {
+      "semanticId": "lotus.returned_curve_point_count",
+      "canonicalTerm": "returned_curve_point_count",
+      "preferredName": "returned_curve_point_count",
+      "description": "Number of observed cost-curve points returned by the source owner.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.review_frequency",
       "canonicalTerm": "review_frequency",
       "preferredName": "review_frequency",
@@ -6995,6 +7125,22 @@
       ]
     },
     {
+      "semanticId": "lotus.sample_transaction_ids",
+      "canonicalTerm": "sample_transaction_ids",
+      "preferredName": "sample_transaction_ids",
+      "description": "Bounded sample of source transaction identifiers.",
+      "example": [
+        "sample_sample_transaction_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.scenario_pack_id",
       "canonicalTerm": "scenario_pack_id",
       "preferredName": "scenario_pack_id",
@@ -7127,6 +7273,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.security_id",
+      "canonicalTerm": "security_id",
+      "preferredName": "security_id",
+      "description": "Security represented by the observed cost point.",
+      "example": "SECURITY_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -8681,6 +8841,20 @@
       ]
     },
     {
+      "semanticId": "lotus.total_cost",
+      "canonicalTerm": "total_cost",
+      "preferredName": "total_cost",
+      "description": "Total observed booked cost.",
+      "example": "total_cost_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.total_mandates",
       "canonicalTerm": "total_mandates",
       "preferredName": "total_mandates",
@@ -8708,6 +8882,20 @@
       ],
       "observedTypes": [
         "Money-Input"
+      ]
+    },
+    {
+      "semanticId": "lotus.total_notional",
+      "canonicalTerm": "total_notional",
+      "preferredName": "total_notional",
+      "description": "Total absolute observed notional.",
+      "example": "total_notional_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -8784,6 +8972,34 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.transaction_cost_context",
+      "canonicalTerm": "transaction_cost_context",
+      "preferredName": "transaction_cost_context",
+      "description": "Optional lotus-core TransactionCostCurve:v1 observed transaction-cost context.",
+      "example": "transaction_cost_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.transaction_type",
+      "canonicalTerm": "transaction_type",
+      "preferredName": "transaction_type",
+      "description": "Observed transaction type.",
+      "example": "sample_transaction_type",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -9238,6 +9454,34 @@
         "string",
         "object",
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.window_end_date",
+      "canonicalTerm": "window_end_date",
+      "preferredName": "window_end_date",
+      "description": "Inclusive evidence-window end date.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.window_start_date",
+      "canonicalTerm": "window_start_date",
+      "preferredName": "window_start_date",
+      "description": "Inclusive evidence-window start date.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -51552,6 +51796,214 @@
             "attributeRef": "#/attributeCatalog/lotus.reason_codes"
           },
           {
+            "name": "authority_context.transaction_cost_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.transaction_cost_context",
+            "attributeRef": "#/attributeCatalog/lotus.transaction_cost_context"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.window_start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_start_date",
+            "attributeRef": "#/attributeCatalog/lotus.window_start_date"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.window_end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_end_date",
+            "attributeRef": "#/attributeCatalog/lotus.window_end_date"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.returned_curve_point_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.returned_curve_point_count",
+            "attributeRef": "#/attributeCatalog/lotus.returned_curve_point_count"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.missing_security_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.missing_security_ids",
+            "attributeRef": "#/attributeCatalog/lotus.missing_security_ids"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.curve_points",
+            "attributeRef": "#/attributeCatalog/lotus.curve_points"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].security_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.security_id",
+            "attributeRef": "#/attributeCatalog/lotus.security_id"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].transaction_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.transaction_type",
+            "attributeRef": "#/attributeCatalog/lotus.transaction_type"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].observation_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.observation_count",
+            "attributeRef": "#/attributeCatalog/lotus.observation_count"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].total_notional",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.total_notional",
+            "attributeRef": "#/attributeCatalog/lotus.total_notional"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].total_cost",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.total_cost",
+            "attributeRef": "#/attributeCatalog/lotus.total_cost"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].average_cost_bps",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.average_cost_bps",
+            "attributeRef": "#/attributeCatalog/lotus.average_cost_bps"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].min_cost_bps",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.min_cost_bps",
+            "attributeRef": "#/attributeCatalog/lotus.min_cost_bps"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].max_cost_bps",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.max_cost_bps",
+            "attributeRef": "#/attributeCatalog/lotus.max_cost_bps"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].first_observed_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.first_observed_date",
+            "attributeRef": "#/attributeCatalog/lotus.first_observed_date"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].last_observed_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.last_observed_date",
+            "attributeRef": "#/attributeCatalog/lotus.last_observed_date"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.curve_points[].sample_transaction_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.sample_transaction_ids",
+            "attributeRef": "#/attributeCatalog/lotus.sample_transaction_ids"
+          },
+          {
+            "name": "authority_context.transaction_cost_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
             "name": "authority_context.liquidity_context",
             "location": "body",
             "required": false,
@@ -61714,6 +62166,214 @@
           },
           {
             "name": "item_inputs[].authority_context.performance_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.transaction_cost_context",
+            "attributeRef": "#/attributeCatalog/lotus.transaction_cost_context"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.window_start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_start_date",
+            "attributeRef": "#/attributeCatalog/lotus.window_start_date"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.window_end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_end_date",
+            "attributeRef": "#/attributeCatalog/lotus.window_end_date"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.returned_curve_point_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.returned_curve_point_count",
+            "attributeRef": "#/attributeCatalog/lotus.returned_curve_point_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.missing_security_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.missing_security_ids",
+            "attributeRef": "#/attributeCatalog/lotus.missing_security_ids"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.curve_points",
+            "attributeRef": "#/attributeCatalog/lotus.curve_points"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].security_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.security_id",
+            "attributeRef": "#/attributeCatalog/lotus.security_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].transaction_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.transaction_type",
+            "attributeRef": "#/attributeCatalog/lotus.transaction_type"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].currency",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.currency",
+            "attributeRef": "#/attributeCatalog/lotus.currency"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].observation_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.observation_count",
+            "attributeRef": "#/attributeCatalog/lotus.observation_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].total_notional",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.total_notional",
+            "attributeRef": "#/attributeCatalog/lotus.total_notional"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].total_cost",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.total_cost",
+            "attributeRef": "#/attributeCatalog/lotus.total_cost"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].average_cost_bps",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.average_cost_bps",
+            "attributeRef": "#/attributeCatalog/lotus.average_cost_bps"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].min_cost_bps",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.min_cost_bps",
+            "attributeRef": "#/attributeCatalog/lotus.min_cost_bps"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].max_cost_bps",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.max_cost_bps",
+            "attributeRef": "#/attributeCatalog/lotus.max_cost_bps"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].first_observed_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.first_observed_date",
+            "attributeRef": "#/attributeCatalog/lotus.first_observed_date"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].last_observed_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.last_observed_date",
+            "attributeRef": "#/attributeCatalog/lotus.last_observed_date"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.curve_points[].sample_transaction_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.sample_transaction_ids",
+            "attributeRef": "#/attributeCatalog/lotus.sample_transaction_ids"
+          },
+          {
+            "name": "item_inputs[].authority_context.transaction_cost_context.reason_codes",
             "location": "body",
             "required": false,
             "type": "array",

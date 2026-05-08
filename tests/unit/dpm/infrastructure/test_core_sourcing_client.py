@@ -378,6 +378,58 @@ def _market_data_coverage_payload() -> dict:
     }
 
 
+def _transaction_cost_curve_payload() -> dict:
+    return {
+        "product_name": "TransactionCostCurve",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "window": {"start_date": "2026-01-10", "end_date": "2026-04-10"},
+        "curve_points": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "security_id": "EQ_US_AAPL",
+                "transaction_type": "BUY",
+                "currency": "USD",
+                "observation_count": 2,
+                "total_notional": "25000.0000000000",
+                "total_cost": "12.5000000000",
+                "average_cost_bps": "5.0000",
+                "min_cost_bps": "4.5000",
+                "max_cost_bps": "5.5000",
+                "first_observed_date": "2026-03-25",
+                "last_observed_date": "2026-04-10",
+                "sample_transaction_ids": ["TXN-BUY-AAPL-001", "TXN-BUY-AAPL-002"],
+                "source_lineage": {
+                    "source_system": "transactions",
+                    "contract_version": "rfc_040_wtbd_007_v1",
+                },
+            }
+        ],
+        "page": {
+            "page_size": 250,
+            "sort_key": "security_id:asc,transaction_type:asc,currency:asc",
+            "returned_component_count": 1,
+            "request_scope_fingerprint": "transaction-cost-scope-001",
+            "next_page_token": None,
+        },
+        "supportability": {
+            "state": "READY",
+            "reason": "TRANSACTION_COST_CURVE_READY",
+            "requested_security_count": 1,
+            "returned_curve_point_count": 1,
+            "missing_security_ids": [],
+        },
+        "lineage": {
+            "source_system": "transactions",
+            "contract_version": "rfc_040_wtbd_007_v1",
+        },
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:transaction-cost-curve",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -403,6 +455,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_portfolio_tax_lots_payload())
     if path.endswith("/coverage"):
         return httpx.Response(200, json=_market_data_coverage_payload())
+    if path.endswith("/transaction-cost-curve"):
+        return httpx.Response(200, json=_transaction_cost_curve_payload())
     return httpx.Response(404, json={"detail": "unexpected path"})
 
 
@@ -438,14 +492,18 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/instruments/eligibility-bulk",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots",
         "https://core.example.test/integration/market-data/coverage",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/transaction-cost-curve",
     ]
     assert {correlation_id for _, correlation_id, _ in seen} == {"corr-core-001"}
     assert b'"sections":["positions_baseline","portfolio_totals"]' in seen[2][2]
     assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
+    assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
+    assert context.transaction_cost_curve is not None
+    assert context.transaction_cost_curve.supportability.state == "READY"
 
 
 def test_core_resolver_retries_transient_unavailable_response():
@@ -770,6 +828,48 @@ def test_core_resolver_fetches_market_data_coverage_from_dedicated_source_produc
     assert response.product_name == "MarketDataCoverageWindow"
     assert response.supportability.state == "READY"
     assert response.fx_coverage[0].rate == Decimal("1.3521000000")
+
+
+def test_core_resolver_fetches_transaction_cost_curve_from_dedicated_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_transaction_cost_curve_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_transaction_cost_curve(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        window_start_date=date(2026, 1, 10),
+        window_end_date=date(2026, 4, 10),
+        security_ids=["EQ_US_AAPL"],
+        transaction_types=["BUY", "SELL"],
+        min_observation_count=1,
+        page_size=250,
+        page_token=None,
+        tenant_id="tenant_sg_pb",
+        correlation_id="corr-transaction-cost-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolios/"
+        "PB_SG_GLOBAL_BAL_001/transaction-cost-curve"
+    )
+    assert seen["correlation_id"] == "corr-transaction-cost-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"window":{"start_date":"2026-01-10","end_date":"2026-04-10"}' in seen["payload"]
+    assert b'"security_ids":["EQ_US_AAPL"]' in seen["payload"]
+    assert b'"transaction_types":["BUY","SELL"]' in seen["payload"]
+    assert response.product_name == "TransactionCostCurve"
+    assert response.supportability.state == "READY"
+    assert response.curve_points[0].average_cost_bps == Decimal("5.0000")
 
 
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():

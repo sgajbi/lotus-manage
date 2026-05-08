@@ -49,6 +49,11 @@ from src.infrastructure.core_sourcing.client import (
             "resolve_market_data_coverage_url",
             "DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE",
         ),
+        (
+            "transaction_cost_curve_path_template",
+            "resolve_transaction_cost_curve_url",
+            "DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE",
+        ),
     ],
 )
 def test_core_resolver_config_rejects_blank_source_product_paths(
@@ -66,6 +71,7 @@ def test_core_resolver_config_rejects_blank_source_product_paths(
             "resolve_portfolio_manager_book_memberships_url",
             "resolve_cio_model_change_affected_cohort_url",
             "resolve_portfolio_tax_lots_url",
+            "resolve_transaction_cost_curve_url",
         }:
             method("identifier")
         else:

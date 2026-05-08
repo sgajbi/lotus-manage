@@ -54,7 +54,9 @@ Current repository posture:
     `InstrumentEligibilityProfile:v1` through `/integration/instruments/eligibility-bulk`, and
     `PortfolioTaxLotWindow:v1` through `/integration/portfolios/{portfolio_id}/tax-lots`,
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
-    `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`.
+    `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`,
+    and `TransactionCostCurve:v1` through
+    `/integration/portfolios/{portfolio_id}/transaction-cost-curve`.
 11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
     RFC-0038, RFC-0039, RFC-0040, the manage-owned explicit portfolio-list wave scope of
     RFC-0041, Gateway RFC-0098 wave composition, and the first-wave Workbench wave command center
@@ -117,7 +119,14 @@ Current repository posture:
     alternatives: `risk_impact` and `performance_context` sections preserve source-owned
     `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` supportability, lineage refs,
     content hashes, reason codes, and bounded source-emitted measures without manage-local
-    risk/performance methodology. RFC40-WTBD-010 now has a manage backend portfolio-memory
+    risk/performance methodology. RFC40-WTBD-007 manage proof-pack enrichment is implemented for
+    source-owned observed transaction-cost evidence: stateful core sourcing can consume
+    `lotus-core` `TransactionCostCurve:v1`, attach `AuthoritativeTransactionCostContext` to
+    construction alternatives, and preserve supportability, source refs, content hashes, reason
+    codes, evidence windows, missing securities, bounded curve points, and represented observation
+    counts in the proof-pack `turnover_and_cost` section. Local estimated construction cost remains
+    labelled separately; manage does not claim predictive execution quotes or min-cost
+    optimization from observed booked-fee evidence. RFC40-WTBD-010 now has a manage backend portfolio-memory
     foundation through `/api/v1/rebalance/portfolio-memory/{portfolio_id}` and
     `src/core/portfolio_memory/`: it composes persisted mandate health snapshots, monitoring
     exceptions, proof packs, proof-pack-local decision timeline events, RFC-0041 wave events,
@@ -141,9 +150,9 @@ Current repository posture:
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source
-    depth, transaction-cost authority, client restrictions, sustainability profiles, and broader
-    cross-RFC portfolio-memory source-event completion remain downstream WTBD work in the owning
-    repositories.
+    depth, client restrictions, sustainability profiles, predictive execution methodology, min-cost
+    optimization, and broader cross-RFC portfolio-memory source-event completion remain downstream
+    WTBD work in the owning repositories.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack

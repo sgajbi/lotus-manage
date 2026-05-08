@@ -133,6 +133,10 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
                 "DPM_CORE_PM_BOOK_MEMBERSHIPS_PATH_TEMPLATE",
                 "/integration/portfolio-manager-books/{portfolio_manager_id}/memberships",
             ),
+            transaction_cost_curve_path_template=os.getenv(
+                "DPM_CORE_TRANSACTION_COST_CURVE_PATH_TEMPLATE",
+                "/integration/portfolios/{portfolio_id}/transaction-cost-curve",
+            ),
             timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
             max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),
         )

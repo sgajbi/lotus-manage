@@ -7,6 +7,7 @@ from src.core.construction.models import (
     AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    AuthoritativeTransactionCostContext,
     ConstructionEnrichmentSummary,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -42,6 +43,7 @@ def summarize_enrichment_posture(
     result: RebalanceResult,
     tax_required: bool,
     authoritative_cost_available: bool = False,
+    transaction_cost_context: AuthoritativeTransactionCostContext | None = None,
     risk_required: bool = True,
     risk_context: AuthoritativeRiskContext | None = None,
     performance_required: bool = True,
@@ -81,10 +83,15 @@ def summarize_enrichment_posture(
             ]
         )
 
-    cost_status = ConstructionMethodStatus.READY
-    if not authoritative_cost_available:
+    cost_context_status = (
+        transaction_cost_context.supportability_status if transaction_cost_context else None
+    )
+    cost_status = cost_context_status or ConstructionMethodStatus.READY
+    if not authoritative_cost_available and transaction_cost_context is None:
         cost_status = ConstructionMethodStatus.DEGRADED
         reason_codes.append("AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE")
+    elif transaction_cost_context is not None:
+        reason_codes.extend(transaction_cost_context.reason_codes)
 
     turnover_status = ConstructionMethodStatus.READY
     if result.diagnostics.dropped_intents:

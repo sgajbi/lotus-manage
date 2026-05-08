@@ -177,6 +177,67 @@ class AuthoritativeRiskContext(BaseModel):
     )
 
 
+class AuthoritativeTransactionCostPoint(BaseModel):
+    security_id: str = Field(description="Security represented by the observed cost point.")
+    transaction_type: str = Field(description="Observed transaction type.")
+    currency: str = Field(description="Currency of observed notional and cost values.")
+    observation_count: int = Field(description="Number of source transactions represented.")
+    total_notional: Decimal = Field(description="Total absolute observed notional.")
+    total_cost: Decimal = Field(description="Total observed booked cost.")
+    average_cost_bps: Decimal = Field(
+        description="Observed average cost in basis points; not a predictive execution quote."
+    )
+    min_cost_bps: Decimal = Field(description="Minimum observed transaction cost in bps.")
+    max_cost_bps: Decimal = Field(description="Maximum observed transaction cost in bps.")
+    first_observed_date: date = Field(description="Earliest represented transaction date.")
+    last_observed_date: date = Field(description="Latest represented transaction date.")
+    sample_transaction_ids: list[str] = Field(
+        default_factory=list,
+        description="Bounded sample of source transaction identifiers.",
+    )
+
+
+class AuthoritativeTransactionCostContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="Source-owner supportability status for observed transaction-cost evidence."
+    )
+    source_system: str = Field(description="Source system that owns the cost evidence.")
+    source_product_name: str = Field(
+        default="TransactionCostCurve",
+        description="Source-owned transaction-cost product name.",
+    )
+    source_product_version: str = Field(
+        default="v1",
+        description="Source-owned transaction-cost product version.",
+    )
+    source_id: str | None = Field(
+        default=None,
+        description="Source-owned evidence identifier or request fingerprint.",
+    )
+    content_hash: str | None = Field(
+        default=None,
+        description="Canonical source-owned evidence hash when available.",
+    )
+    as_of_date: date = Field(description="Business date used to resolve the source product.")
+    window_start_date: date = Field(description="Inclusive evidence-window start date.")
+    window_end_date: date = Field(description="Inclusive evidence-window end date.")
+    returned_curve_point_count: int = Field(
+        description="Number of observed cost-curve points returned by the source owner."
+    )
+    missing_security_ids: list[str] = Field(
+        default_factory=list,
+        description="Requested securities without qualifying cost evidence.",
+    )
+    curve_points: list[AuthoritativeTransactionCostPoint] = Field(
+        default_factory=list,
+        description="Bounded observed cost-curve points from the source owner.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Source-owner bounded reason codes.",
+    )
+
+
 class AuthoritativeLiquidityCashflowProjection(BaseModel):
     source_product_name: str = Field(
         description="Source-owned cashflow projection data product name.",
@@ -299,6 +360,10 @@ class ConstructionAuthorityContext(BaseModel):
     performance_context: "AuthoritativePerformanceContext | None" = Field(
         default=None,
         description="Optional lotus-performance authoritative benchmark/performance context.",
+    )
+    transaction_cost_context: AuthoritativeTransactionCostContext | None = Field(
+        default=None,
+        description="Optional lotus-core TransactionCostCurve:v1 observed transaction-cost context.",
     )
     liquidity_context: AuthoritativeLiquidityContext | None = Field(
         default=None,

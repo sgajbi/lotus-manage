@@ -11,12 +11,13 @@ from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import (
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    AuthoritativeTransactionCostContext,
     ConstructionAlternative,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.proof_packs.models import DpmProofPackSourceRef, ProofPackSectionState
 
-ProofPackAnalyticsFamily = Literal["risk", "performance"]
+ProofPackAnalyticsFamily = Literal["risk", "performance", "transaction_cost"]
 
 
 @dataclass(frozen=True)
@@ -47,7 +48,9 @@ def source_analytics_for_alternative(
         return None
     if family == "risk":
         return _risk_source_analytics(source_context)
-    return _performance_source_analytics(source_context)
+    if family == "performance":
+        return _performance_source_analytics(source_context)
+    return _transaction_cost_source_analytics(source_context)
 
 
 def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAnalytics | None:
@@ -138,6 +141,57 @@ def _performance_source_analytics(
         reason_codes=reason_codes,
         source_ref=source_ref,
         source_hash_key="performance_context",
+        content_hash=context.content_hash or content_hash,
+    )
+
+
+def _transaction_cost_source_analytics(
+    source_context: dict[str, Any],
+) -> ProofPackSourceAnalytics | None:
+    try:
+        context = AuthoritativeTransactionCostContext.model_validate(source_context)
+    except ValidationError:
+        return None
+    payload = context.model_dump(mode="json", exclude_none=True)
+    content_hash = hash_canonical_payload(payload)
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
+        reason_codes.append("DPM_TRANSACTION_COST_CONTEXT_DEGRADED")
+    source_ref = _source_ref(
+        family="transaction_cost",
+        source_system=context.source_system,
+        source_type=context.source_product_name,
+        source_id=context.source_id or content_hash,
+        supportability_state=str(context.supportability_status),
+        content_hash=context.content_hash or content_hash,
+    )
+    return ProofPackSourceAnalytics(
+        family="transaction_cost",
+        state=_section_state(context.supportability_status),
+        summary=(
+            "Observed transaction-cost evidence is attached from source-owned "
+            "TransactionCostCurve:v1."
+        ),
+        facts={
+            "source_system": context.source_system,
+            "source_product_name": context.source_product_name,
+            "source_product_version": context.source_product_version,
+            "source_id": context.source_id,
+            "as_of_date": context.as_of_date.isoformat(),
+            "window_start_date": context.window_start_date.isoformat(),
+            "window_end_date": context.window_end_date.isoformat(),
+            "missing_security_ids": context.missing_security_ids,
+            "curve_points": [point.model_dump(mode="json") for point in context.curve_points[:10]],
+        },
+        metrics={
+            "returned_curve_point_count": context.returned_curve_point_count,
+            "represented_observation_count": sum(
+                point.observation_count for point in context.curve_points
+            ),
+        },
+        reason_codes=reason_codes,
+        source_ref=source_ref,
+        source_hash_key="transaction_cost_context",
         content_hash=context.content_hash or content_hash,
     )
 
