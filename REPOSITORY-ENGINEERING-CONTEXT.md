@@ -162,10 +162,13 @@ Current repository posture:
     for `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`; `lotus-ai` PR #63
     implements the owner-side `dpm_wave_pm_memo.pack@v1` workflow over Manage-owned
     `DpmWaveReportInput` with forbidden-field/action/output guardrails and review-required
-    support-only output. Gateway/Workbench rendering of the wave AI memo path, CIO/risk-event
-    cohort discovery, Gateway/Workbench rendering of wave risk/performance analytics posture, and
-    external OMS execution remain unpromoted until source products and owning downstream
-    implementations are live-proven.
+    support-only output. `lotus-gateway` PR #201 and `lotus-workbench` PR #168 complete the
+    first-wave AI memo product path: Gateway preserves Manage wave evidence identity and passes AI
+    forbidden-action guardrails, while Workbench exposes report-input and AI memo request posture
+    without constructing prompts or memo content locally. CIO/risk-event cohort discovery,
+    Gateway/Workbench rendering of wave risk/performance analytics posture, and external OMS
+    execution remain unpromoted until source products and owning downstream implementations are
+    live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
