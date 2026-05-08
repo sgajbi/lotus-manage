@@ -172,8 +172,9 @@ async def read_command_center(
     summary="Run discretionary mandate monitoring once",
     description=(
         "Use this endpoint to evaluate a bounded set of existing mandate digital twins and persist "
-        "a monitoring run, health snapshots, and derived exceptions. It does not discover the PM "
-        "book from core yet; callers must provide mandate ids that have already been refreshed."
+        "a monitoring run, health snapshots, and derived exceptions. Callers may provide explicit "
+        "mandate ids or omit them and provide a portfolio-manager selector so Manage resolves the "
+        "PM-book cohort from lotus-core `PortfolioManagerBookMembership:v1`."
     ),
     responses={
         200: {"description": "Monitoring run completed and persisted."},

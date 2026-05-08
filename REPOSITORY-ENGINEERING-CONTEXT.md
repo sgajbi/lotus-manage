@@ -71,8 +71,10 @@ Current repository posture:
     populated platform canonical seed automation are now implementation-backed and live-proven in
     their owning repositories. PM-book wave discovery and command-center monitoring cohorts now
     consume lotus-core `PortfolioManagerBookMembership:v1`; Workbench triggers the PM-book-backed
-    command-center monitoring path through Gateway without inferring membership locally.
-    Partial/empty command-center seed fixtures remain governed downstream follow-up.
+    command-center monitoring path through Gateway without inferring membership locally. The
+    command-center supportability contract now publishes a bounded `state` over ready, partial,
+    empty, degraded, and blocked source-readiness posture so Gateway, Workbench, and platform seed
+    automation can distinguish completeness from source health without local inference.
 13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
     bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
     risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,

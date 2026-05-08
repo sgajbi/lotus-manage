@@ -11,6 +11,7 @@ from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
     DpmMandateReviewPolicy,
+    DpmMonitoringRun,
     DpmMonitoringException,
     MandateHealthDimension,
     MandateRecommendedAction,
@@ -186,6 +187,8 @@ def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
     ]
     assert command_center.status_code == 200
     assert command_center.json()["evaluated_mandates"] == 1
+    assert command_center.json()["supportability"]["state"] == "READY"
+    assert command_center.json()["supportability"]["reason"] == "COMMAND_CENTER_READY"
     assert command_center.json()["supportability"]["data_completeness_state"] == "COMPLETE"
 
 
@@ -366,6 +369,7 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
     assert limited_command_center.json()["active_exception_count"] == 1
     assert limited_command_center.json()["supportability"]["source_run_id"] == run_id
     assert partial_book.status_code == 200
+    assert partial_book.json()["supportability"]["state"] == "PARTIAL"
     assert partial_book.json()["supportability"]["data_completeness_state"] == "PARTIAL"
     assert (
         "PM_BOOK_DISCOVERY_NOT_YET_SOURCED"
@@ -376,11 +380,71 @@ def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -
         in partial_book.json()["supportability"]["partial_readiness_reasons"]
     )
     assert empty_book.status_code == 200
+    assert empty_book.json()["supportability"]["state"] == "EMPTY"
     assert empty_book.json()["supportability"]["data_completeness_state"] == "EMPTY"
     assert (
         "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
         in empty_book.json()["supportability"]["partial_readiness_reasons"]
     )
+
+
+def test_command_center_exposes_degraded_and_blocked_source_readiness_states() -> None:
+    repository = InMemoryDpmMandateRepository()
+    common = {
+        "as_of_date": date(2026, 5, 3),
+        "requested_at": datetime(2026, 5, 3, 8, 30, tzinfo=timezone.utc),
+        "completed_at": datetime(2026, 5, 3, 8, 31, tzinfo=timezone.utc),
+        "status": "SUCCEEDED",
+        "mandate_ids": [MANDATE_ID],
+        "filters": {
+            "tenant_id": "default",
+            "portfolio_manager_id": "PM_SG_DPM_001",
+        },
+        "total_mandates": 1,
+        "health_distribution": {"PENDING_REVIEW": 1},
+        "exception_count": 0,
+        "failure_reason": None,
+    }
+    repository.save_monitoring_run(
+        DpmMonitoringRun(
+            monitoring_run_id="dmr_degraded",
+            source_readiness_summary={"DEGRADED": 1},
+            **common,
+        )
+    )
+    repository.save_monitoring_run(
+        DpmMonitoringRun(
+            monitoring_run_id="dmr_blocked",
+            source_readiness_summary={"UNAVAILABLE": 1},
+            **{
+                **common,
+                "as_of_date": date(2026, 5, 4),
+            },
+        )
+    )
+
+    with _client(repository) as client:
+        degraded = client.get(
+            "/api/v1/dpm/command-center"
+            "?tenant_id=default"
+            "&portfolio_manager_id=PM_SG_DPM_001"
+            "&as_of_date=2026-05-03"
+        )
+        blocked = client.get(
+            "/api/v1/dpm/command-center"
+            "?tenant_id=default"
+            "&portfolio_manager_id=PM_SG_DPM_001"
+            "&as_of_date=2026-05-04"
+        )
+
+    assert degraded.status_code == 200
+    assert degraded.json()["supportability"]["state"] == "DEGRADED"
+    assert degraded.json()["supportability"]["reason"] == (
+        "COMMAND_CENTER_SOURCE_READINESS_DEGRADED"
+    )
+    assert blocked.status_code == 200
+    assert blocked.json()["supportability"]["state"] == "BLOCKED"
+    assert blocked.json()["supportability"]["reason"] == ("COMMAND_CENTER_SOURCE_READINESS_BLOCKED")
 
 
 def test_monitoring_run_and_exception_error_paths_and_resolution() -> None:
