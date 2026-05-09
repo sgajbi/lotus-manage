@@ -922,6 +922,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Latest WTBD-006 performance MWR source-truth proof" in work_to_be_done
     assert "Latest WTBD-006 performance contribution source-truth proof" in work_to_be_done
     assert "Latest WTBD-006 performance attribution source-truth proof" in work_to_be_done
+    assert "Latest WTBD-006 core realized-outcome source-boundary proof" in work_to_be_done
+    assert "lotus-core` PR #343" in work_to_be_done
+    assert "`25cbff191d681a6518dfc7072dc2a8c9cf2fd7f0`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `a9d1f68`" in work_to_be_done
+    assert "tests/unit/docs/test_source_data_product_boundaries.py" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
     assert "stateful lotus-core portfolio/position timeseries normalization" in work_to_be_done
     assert (
@@ -947,6 +952,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "contribution methodology truth" in supported_features
     assert "attribution methodology truth" in supported_features
+    assert "current core source-boundary slice" in supported_features
+    assert "transaction-ledger row measures" in supported_features
+    assert "cashflow projection totals" in supported_features
     assert "benchmark context" in supported_features
     assert "PM-book-backed monitoring cohort resolution" in supported_features
     assert "PortfolioManagerBookMembership:v1" in supported_features
