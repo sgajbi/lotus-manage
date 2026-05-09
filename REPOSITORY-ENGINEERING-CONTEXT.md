@@ -153,9 +153,15 @@ Current repository posture:
     (`ffa881e3266c09a4d48044b50df5bb2db43bd489`, wiki `105b716`) for
     `RollingRiskMetricsReport:v1`; they pin date alignment, pp-to-decimal conversion, `ddof=1`,
     annualized decimal tracking-error output, dimensionless information-ratio output,
-    warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error flagging while
-    still leaving aggregated tax, FX, cash movement, liquidity, execution, and broader methodology
-    depth to future source-owner work. First-wave
+    warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error flagging.
+    It also includes the merged and wiki-published `lotus-core`
+    `PortfolioCashflowProjection:v1` methodology slice from PR #344
+    (`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`, wiki `231bd75`), which pins booked-only
+    versus projected mode behavior, latest-cashflow-row selection, settlement-dated external
+    `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity, portfolio-base-currency
+    output, and explicit non-claims for liquidity ladders, tax methodology, performance returns,
+    market impact, and OMS execution forecasting while still leaving aggregated tax, FX,
+    liquidity-ladder, execution, and broader methodology depth to future source-owner work. First-wave
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
     PR #199, `lotus-workbench` PR #167, `lotus-platform` PR #307, and canonical Workbench evidence
     `lotus-workbench/output/playwright/live-canonical/dpm-portfolio-memory-live.png`.
