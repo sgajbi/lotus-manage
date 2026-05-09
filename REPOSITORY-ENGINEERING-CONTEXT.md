@@ -161,7 +161,13 @@ Current repository posture:
     `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity, portfolio-base-currency
     output, and explicit non-claims for liquidity ladders, tax methodology, performance returns,
     market impact, and OMS execution forecasting while still leaving aggregated tax, FX,
-    liquidity-ladder, execution, and broader methodology depth to future source-owner work. First-wave
+    liquidity-ladder, execution, and broader methodology depth to future source-owner work. It
+    also includes the merged and wiki-published `lotus-core` `TransactionCostCurve:v1` methodology
+    slice from PR #345 (`83d791d0e599f06a2c0caab6eaba647f717d4658`, wiki `154ae27`), which pins
+    observed booked-fee grouping by `(security_id, transaction_type, currency)`, fee-field
+    precedence, zero-fee and zero-notional exclusion, notional-weighted average bps, min/max bps,
+    deterministic paging, supportability states, and explicit non-claims for predictive execution
+    quotes, market impact, venue routing, best execution, and OMS acknowledgement. First-wave
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
     PR #199, `lotus-workbench` PR #167, `lotus-platform` PR #307, and canonical Workbench evidence
     `lotus-workbench/output/playwright/live-canonical/dpm-portfolio-memory-live.png`.

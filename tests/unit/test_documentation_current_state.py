@@ -979,6 +979,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-core.wiki` commit `231bd75`" in work_to_be_done
     assert "PortfolioCashflowProjection:v1` methodology" in work_to_be_done
     assert "same-day booked/projected additivity" in work_to_be_done
+    assert "Latest WTBD-006 core transaction-cost-curve methodology proof" in work_to_be_done
+    assert "`lotus-core` PR #345" in work_to_be_done
+    assert "`83d791d0e599f06a2c0caab6eaba647f717d4658`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `154ae27`" in work_to_be_done
+    assert "`TransactionCostCurve:v1` methodology" in work_to_be_done
+    assert "observed booked-fee aggregation" in work_to_be_done
+    assert "notional-weighted average bps" in work_to_be_done
+    assert "best execution" in work_to_be_done
     assert "OpenAPI quality, API vocabulary" in work_to_be_done
     assert "tests/unit/docs/test_source_data_product_boundaries.py" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
@@ -1011,6 +1019,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "current core slices" in supported_features
     assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
         supported_features
+    )
+    assert "`TransactionCostCurve:v1` methodology truth through `lotus-core` PR #345" in (
+        supported_features
+    )
+    assert (
+        "source-owned observed transaction-cost evidence from `TransactionCostCurve:v1` with merged source-owner methodology proof"
+        in (supported_features)
     )
     assert "transaction-ledger row measures" in supported_features
     assert "cashflow projection totals" in supported_features
