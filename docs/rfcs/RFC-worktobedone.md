@@ -3492,6 +3492,26 @@ Latest WTBD-006 core-cashflow-projection tightening proof:
    cashflow aggregation, liquidity-ladder calculation, currency conversion, or execution-quality
    inference locally.
 
+Latest WTBD-006 core realized-outcome source-boundary proof:
+
+1. `lotus-core` PR #343 was merged to `main` as
+   `25cbff191d681a6518dfc7072dc2a8c9cf2fd7f0` and the repo-local wiki was published to
+   `lotus-core.wiki` commit `a9d1f68`,
+2. `docs/architecture/RFC-0083-source-data-product-catalog.md` now records the source/non-source
+   boundary for `HoldingsAsOf:v1`, `TransactionLedgerWindow:v1`,
+   `PortfolioCashflowProjection:v1`, `PortfolioTaxLotWindow:v1`, and
+   `TransactionCostCurve:v1`,
+3. `wiki/Mesh-Data-Products.md` now gives business, developer, operations, and sales/client-demo
+   guidance plus a Mermaid source-boundary diagram for core realized outcome evidence,
+4. local source-owner proof passed with `8` focused tests:
+   `python -m pytest tests/unit/docs/test_source_data_product_boundaries.py tests/unit/test_domain_data_product_contracts.py -q`,
+5. GitHub PR Merge Gate passed workflow lint, lint/typecheck/contracts/security, unit,
+   unit-db, integration-lite, transaction contract tests, coverage, docker build, docker smoke,
+   E2E smoke, latency, and fast load gates,
+6. this does not close RFC42-WTBD-006: aggregated tax, aggregated FX, cash movement methodology
+   beyond source-emitted totals, liquidity ladders, execution methodology, and any client tax or
+   OMS acknowledgement claims remain future source-owner work.
+
 Latest WTBD-006 performance-contribution tightening proof:
 
 1. local critical review evidence:
