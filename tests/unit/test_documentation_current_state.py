@@ -940,7 +940,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "MWR and contribution methodology truth for stateful lotus-core source resolution"
         in supported_features
     )
-    assert "contribution methodology truth for stateful lotus-core source resolution" in supported_features
+    assert (
+        "contribution methodology truth for stateful lotus-core source resolution"
+        in supported_features
+    )
     assert "PM-book-backed monitoring cohort resolution" in supported_features
     assert "PortfolioManagerBookMembership:v1" in supported_features
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
