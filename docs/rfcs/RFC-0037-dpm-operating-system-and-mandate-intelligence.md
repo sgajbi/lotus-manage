@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED |
+| **Status** | STRATEGIC PARENT ROADMAP - CHILD CAPABILITIES PARTIALLY IMPLEMENTED |
 | **Created** | 2026-05-03 |
 | **Depends On** | RFC-0001 through RFC-0013, RFC-0016 through RFC-0025, RFC-0028, RFC-0036, lotus-core RFC-0087 |
 | **Doc Location** | `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md` |
@@ -33,6 +33,16 @@ The target product proposition:
 
 This RFC is deliberately ambitious. It defines a multi-slice roadmap to make `lotus-manage` the
 "crown jewel" of Lotus by turning the existing rebalance engine into a full DPM operating platform.
+
+Post-closure child work has implemented a substantial first-wave DPM product path across the RFC
+family. RFC-0038, RFC-0039, RFC-0040, RFC-0041, and RFC-0042 now carry implementation-backed
+backend authority and bounded Gateway/Workbench product realization for the canonical
+front-office stack; report/render/archive and AI realization exist for the supported proof-pack,
+wave, and outcome-review handoff paths; and `lotus-platform` owns the canonical DPM sales/demo
+story through implementation-backed documentation and wiki truth. RFC-0037 remains a strategic
+parent, not a single closed implementation. RFC-0043 governed PM copilot, richer source-owner
+methodology depth, external OMS execution, PM scoring, client communication, and broader portfolio
+memory are still future or partial scope.
 
 ---
 
@@ -1536,21 +1546,21 @@ updates.
 
 | Feature | Owning RFC | Initial support state | Promotion rule |
 | --- | --- | --- | --- |
-| Mandate digital twin | RFC-0038 | Proposed | Promote only after core sourcing, persistence, APIs, and live evidence are complete. |
-| Mandate health score | RFC-0038 | Proposed | Promote only after decomposed scoring, reason codes, tests, and command-center evidence exist. |
-| DPM command center | RFC-0038 | Proposed | Promote only after bounded portfolio-manager book summary APIs and gateway handoff are certified. |
-| CIO house-view propagation | RFC-0041 | Proposed | Promote only after model-change impact and wave preview are source-backed and audited. |
-| Advanced construction lab | RFC-0039 | Proposed | Promote only after alternatives are persisted, comparable, explainable, and solver posture is certified. |
-| Rebalance alternatives | RFC-0039 | Proposed | Promote only after selection, infeasibility, and fallback evidence are actor-attributed. |
-| Tax/liquidity/risk/ESG construction | RFC-0039 | Proposed | Promote only after each dimension has source supportability and degraded-state tests. |
-| Currency overlay and hedge governance | RFC-0039 | Proposed | Promote only after exposure, hedge-ratio, FX funding, and settlement evidence are complete. |
-| Regime and stress simulator | RFC-0039/RFC-0040 | Proposed | Promote only after scenario packs are sourced from risk-authoritative evidence. |
-| Pre-trade proof pack | RFC-0040 | Proposed | Promote only after durable JSON/Markdown/report/AI evidence artifacts are certified. |
-| Decision timeline and portfolio memory | RFC-0040 | Proposed | Promote only after mandate, exception, alternative, approval, wave, handoff, and outcome events link. |
-| Rebalance wave orchestration | RFC-0041 | Proposed | Promote only after multi-portfolio partial-readiness behavior is live-proven. |
-| Post-trade outcome feedback | RFC-0042 | Proposed | Promote only after expected-versus-realized review is linked to core, risk, and performance evidence. |
+| Mandate digital twin | RFC-0038 | Supported first wave | Core/manage-backed refresh/read/version/diff and bounded Gateway/Workbench command-center realization are implementation-backed; richer source depth remains owner scope. |
+| Mandate health score | RFC-0038 | Supported first wave | Decomposed scoring, reason codes, tests, monitoring integration, and command-center evidence are implementation-backed; additional source dimensions remain owner scope. |
+| DPM command center | RFC-0038 | Supported first wave | Bounded command-center summary APIs, PM-book-backed monitoring, Gateway composition, Workbench cockpit, and populated canonical proof are implementation-backed. |
+| CIO house-view propagation | RFC-0041 | Supported first wave for CIO model-change waves | `CIO_MODEL_CHANGE` affected-cohort discovery is source-backed and audited; tactical house-view, risk-event, and campaign cohorts remain future source-owner products. |
+| Advanced construction lab | RFC-0039 | Supported first wave | Alternatives are persisted, comparable, explainable, and source-posture-aware with Gateway/Workbench first-wave product proof; proof-pack/wave/report/AI lifecycle stays in owning RFCs. |
+| Rebalance alternatives | RFC-0039 | Supported first wave | Generation, read, selection, comparison, and degraded-source posture are implementation-backed; external execution and autonomous choice remain unsupported. |
+| Tax/liquidity/risk/ESG construction | RFC-0039 | Supported source-backed subsets | Implemented only where source products exist for tax lots, cashflow, risk, client restrictions, sustainability, and related posture; unsupported dimensions remain explicit. |
+| Currency overlay and hedge governance | RFC-0039 | Supported bounded construction posture | Currency-aware alternatives exist, but full hedge governance, FX funding, and execution/settlement workflows remain future source-owner scope. |
+| Regime and stress simulator | RFC-0039/RFC-0040 | Supported bounded construction posture | `RegimeScenarioPackEvaluation:v1` can feed construction alternatives; direct proof-pack scenario contribution and richer CIO approval remain future depth. |
+| Pre-trade proof pack | RFC-0040 | Supported first wave | Durable JSON/Markdown/report/AI evidence artifacts, Gateway composition, Workbench review UX, report materialization, AI memo, and canonical proof are implementation-backed. |
+| Decision timeline and portfolio memory | RFC-0040 | Partial first-wave support | Manage/Gateway/Workbench portfolio-memory read model and report/AI bounded context consumers are implementation-backed; OMS, PM-scoring, and client-communication event families remain future scope. |
+| Rebalance wave orchestration | RFC-0041 | Supported first wave | Explicit-list, PM-book, and CIO model-change waves plus Gateway/Workbench command center, report materialization, and AI memo handoff are implementation-backed; OMS and richer cohorts remain future. |
+| Post-trade outcome feedback | RFC-0042 | Supported first wave | Manage outcome-review authority, Gateway composition, Workbench UX, report/archive materialization, and governed AI narrative request path are implementation-backed; OMS, PM scoring, and richer source methodology remain future. |
 | Governed PM copilot | RFC-0043 | Proposed | Promote only after `lotus-ai` workflow-pack guardrails and AI-unavailable fallbacks are proven. |
-| DPM sales/demo story | RFC-0037 plus wiki | Proposed | Promote only after implementation-backed demos are captured from the canonical stack. |
+| DPM sales/demo story | RFC-0037 plus wiki | Supported canonical story | `lotus-platform` PR #310 and wiki publication commit `884bec3` provide the implementation-backed canonical DPM demo story for `PB_SG_GLOBAL_BAL_001`. |
 
 ### 19.2 Mandatory Delivery Slices
 
@@ -1723,3 +1733,31 @@ Feature-expansion rule:
    boundaries, supportability, observability, and tests that make the complexity operationally
    manageable,
 5. final review must explicitly state how enterprise posture improved versus the pre-RFC baseline.
+
+---
+
+## 20. Post-Closure WTBD Integration Audit
+
+The 2026-05-09 WTBD audit moved completed RFC37 child-roadmap truth into this strategic parent RFC
+without marking the full parent roadmap done.
+
+| WTBD | Integrated result | Current boundary |
+| --- | --- | --- |
+| RFC37-WTBD-001 | RFC-0042 now supports manage-owned outcome-review authority plus bounded Gateway/Workbench, report/archive, and AI narrative first-wave realization. | Source-owner methodology depth, external OMS execution, PM scoring, and client communication remain future scope. |
+| RFC37-WTBD-006 | `lotus-platform` PR #310, merge `42e0ecff3597257ac3ea63b0c59b425603eeb291`, and wiki publication commit `884bec3` provide the canonical DPM demo story for `PB_SG_GLOBAL_BAL_001`. | Demo material must keep unsupported OMS, PM-scoring, client-communication, autonomous AI, and unimplemented degraded/blocked seed fixtures out of supported claims. |
+
+Gold-pass assessment:
+
+1. Truly completed: RFC37-WTBD-006 is complete as a governed canonical sales/demo story, and
+   RFC37-WTBD-001 is complete for the RFC-0042 bounded first-wave outcome-review product path.
+2. Quality improvements made: RFC-0037 now distinguishes implemented child capabilities from the
+   remaining parent-roadmap ambition instead of leaving the supported-features ledger entirely in
+   proposed state.
+3. Debt removed: stale parent-roadmap wording that understated RFC-0042 and the canonical demo story
+   was retired while preserving explicit unsupported boundaries.
+4. Testing and evidence proven: proof is anchored in RFC-0042 manage/live/canonical evidence,
+   `lotus-platform` PR #310, platform wiki publication commit `884bec3`, and the documentation
+   regression that guards RFC/WTBD/wiki truth.
+5. Expected-standard decision: the completed child-roadmap items have reached the expected standard
+   once this RFC/WTBD truth is merged to `main`, wiki posture is explicitly checked, and final
+   branch hygiene confirms no stranded governance truth.

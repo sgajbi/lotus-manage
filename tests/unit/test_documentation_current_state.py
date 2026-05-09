@@ -153,6 +153,44 @@ def test_rfc0036_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     )
 
 
+def test_rfc0037_completed_child_truth_is_integrated_into_parent_rfc() -> None:
+    rfc = (
+        ROOT / "docs" / "rfcs" / "RFC-0037-dpm-operating-system-and-mandate-intelligence.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_rfc_terms = [
+        "STRATEGIC PARENT ROADMAP - CHILD CAPABILITIES PARTIALLY IMPLEMENTED",
+        "Post-Closure WTBD Integration Audit",
+        "RFC37-WTBD-001",
+        "RFC37-WTBD-006",
+        "bounded first-wave outcome-review product path",
+        "`lotus-platform` PR #310",
+        "`884bec3`",
+        "DPM sales/demo story | RFC-0037 plus wiki | Supported canonical story",
+    ]
+    missing_rfc_terms = [term for term in required_rfc_terms if term not in rfc]
+
+    assert missing_rfc_terms == []
+
+    required_wtbd_terms = [
+        "RFC37 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
+        "RFC37-WTBD-006 is complete as an implementation-backed canonical sales/demo",
+        "RFC37-WTBD-001 is complete for the bounded RFC-0042 first-wave outcome-review product",
+        "`42e0ecff3597257ac3ea63b0c59b425603eeb291`",
+        "`884bec3`",
+    ]
+    missing_wtbd_terms = [term for term in required_wtbd_terms if term not in wtbd]
+
+    assert missing_wtbd_terms == []
+
+    assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in supported_features
+    assert "Canonical DPM demo story" in supported_features
+    assert "Post-trade outcome feedback | RFC-0042 | Proposed" not in rfc
+    assert "DPM sales/demo story | RFC-0037 plus wiki | Proposed" not in rfc
+
+
 def test_rfc0038_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     rfc = (
         ROOT / "docs" / "rfcs" / "RFC-0038-mandate-digital-twin-health-and-command-center.md"
