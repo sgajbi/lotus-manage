@@ -234,6 +234,74 @@ Audience use:
 4. Engineers can trace the product path from source products through manage construction,
    Gateway composition, Workbench rendering, and live evidence artifacts.
 
+## RFC-0040 Pre-Trade Proof-Pack Product Path
+
+RFC-0040 is the governed evidence layer for discretionary portfolio actions. Manage owns immutable
+proof-pack truth; Gateway composes it; Workbench renders the review experience; report/render/archive
+own generated documents; and `lotus-ai` owns review-gated PM memo execution from bounded evidence.
+
+```mermaid
+flowchart LR
+    ManageProof[lotus-manage proof-pack authority]
+    GatewayProof[lotus-gateway proof-pack BFF]
+    WorkbenchReview[lotus-workbench proof-pack review]
+    ReportInput[DpmProofPackReportInput]
+    ReportRenderArchive[lotus-report + lotus-render + lotus-archive]
+    AiEvidence[DpmProofPackAiEvidenceInput]
+    LotusAi[lotus-ai PM memo workflow]
+    PortfolioMemory[portfolio-memory lineage consumers]
+    Evidence[Canonical QA and proof artifacts]
+
+    ManageProof --> GatewayProof
+    GatewayProof --> WorkbenchReview
+    ManageProof --> ReportInput
+    ReportInput --> ReportRenderArchive
+    ManageProof --> AiEvidence
+    GatewayProof --> LotusAi
+    WorkbenchReview --> LotusAi
+    ManageProof --> PortfolioMemory
+    WorkbenchReview --> Evidence
+```
+
+Current functional behavior:
+
+1. Manage generates immutable pre-trade proof packs from direct rebalance runs and selected
+   construction alternatives, including section state, hashes, lineage, retention metadata,
+   deterministic Markdown, report input, and AI evidence input.
+2. Gateway exposes Workbench-facing proof-pack routes without reconstructing proof-pack sections,
+   hashes, report input, AI evidence, or source readiness.
+3. Workbench renders proof-pack identity, section posture, source hashes, Markdown/report/AI
+   availability, action eligibility, and canonical proof-pack review from Gateway truth.
+4. Report/render/archive materialize governed proof-pack documents from
+   `DpmProofPackReportInput` while preserving manage evidence authority.
+5. `lotus-ai` owns review-gated PM memo workflow execution from bounded
+   `DpmProofPackAiEvidenceInput`; Workbench exposes only governed request/status posture.
+6. Portfolio-memory consumers preserve proof-pack, report, and AI lineage without reconstructing
+   source events or exposing raw payloads.
+
+Non-functional controls:
+
+| Control area | Current implementation-backed posture |
+| --- | --- |
+| Evidence authority | Manage owns proof-pack JSON, hashes, section states, Markdown, report input, AI evidence input, and source context. |
+| Composition boundary | Gateway and Workbench consume proof-pack truth and do not synthesize facts, hashes, report payloads, AI payloads, or PM recommendations. |
+| Document lifecycle | Report, render, and archive own generated report creation, template rendering, retention, legal hold, retrieval, purge, and access audit. |
+| AI safety | AI receives bounded evidence with forbidden-action and forbidden-field controls; output is review-gated narrative assistance, not autonomous advice. |
+| Data mesh posture | Source-owner risk, performance, transaction cost, restriction, sustainability, scenario, and portfolio-memory context is preserved with supportability, source refs, content hashes, and reason codes where available. |
+| Demo readiness | Canonical proof classifies `dpm.proof_pack` as ready for `PB_SG_GLOBAL_BAL_001`; the 2026-05-09 audit passed canonical QA in `canonical-front-office-qa-20260509-225912.json` with screenshots under `wtbd-rfc40-audit-20260509`. |
+
+Audience use:
+
+1. PMs and CIO reviewers can use the proof pack as the evidence artifact explaining a proposed
+   discretionary action before approval or execution.
+2. Operations and compliance teams can trace section readiness, degraded evidence, source refs,
+   hashes, report lineage, AI workflow posture, and audit controls.
+3. Sales and pre-sales teams can demo proof-pack review, governed report materialization, and
+   review-gated AI assistance while avoiding unsupported claims about autonomous advice, external
+   OMS execution, PM scoring, or client communication.
+4. Engineers can follow the path from manage proof-pack authority through Gateway, Workbench,
+   report/render/archive, AI, portfolio-memory consumers, and canonical QA evidence.
+
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it

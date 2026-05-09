@@ -419,7 +419,7 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "DONE (MANAGE BACKEND COMPLETE" in index
     assert "MANAGE BACKEND COMPLETE" in rfc
     assert "MANAGE BACKEND COMPLETE" in index
-    assert "POST-MERGE GOLD-PASS AUDIT AND SLICE 12 MANDATE-CONTEXT HARDENING COMPLETE" in rfc
+    assert "FIRST-WAVE PRODUCT PATH LIVE-PROVEN" in rfc
     assert "POST-MERGE GOLD-PASS AUDIT AND MANDATE-CONTEXT HARDENING COMPLETE" in index
     assert "PR/CI/WIKI PUBLICATION PENDING" not in rfc
     assert "requires normal wiki publication after this audit PR merges" not in rfc
@@ -431,7 +431,6 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "DPM_MANDATE_TWIN_EVIDENCE_MISSING" in slice12
     assert "DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH" in slice12
     assert "Gold-Pass Assessment Template" not in rfc
-    assert "Full front-office proof-pack product realization remains explicitly gated" in rfc
     assert "b2c3734" in rfc
     assert "b63981b" in rfc
     assert "risk drawdown returned `partial`" in rfc
@@ -446,6 +445,57 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
     assert "Gateway PR #199 exposes the command-center composition" in supported_features
     assert "output/rfc0040-proof/20260503-145818" in supported_features
     assert "critical-review.json" in supported_features
+
+
+def test_rfc0040_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
+    rfc = (
+        ROOT / "docs" / "rfcs" / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_rfc_terms = [
+        "FIRST-WAVE PRODUCT PATH LIVE-PROVEN",
+        "Post-Closure WTBD Integration Audit",
+        "RFC40-WTBD-001",
+        "lotus-gateway` PR #195",
+        "lotus-workbench` PR #156/#164",
+        "lotus-report` PR #90/#92/#93",
+        "lotus-ai` PR #61/#62/#64",
+        "canonical-front-office-qa-20260509-225912.json",
+        "wtbd-rfc40-audit-20260509",
+        "external OMS execution",
+    ]
+    missing_rfc_terms = [term for term in required_rfc_terms if term not in rfc]
+
+    assert missing_rfc_terms == []
+
+    required_wtbd_terms = [
+        "RFC40 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
+        "wiki-published through `lotus-gateway` PR #195",
+        "DpmProofPackReportInput",
+        "DpmProofPackAiEvidenceInput",
+        "portfolio-memory consumers",
+        "canonical-front-office-qa-20260509-225912.json",
+        "wtbd-rfc40-audit-20260509",
+    ]
+    missing_wtbd_terms = [term for term in required_wtbd_terms if term not in wtbd]
+
+    assert missing_wtbd_terms == []
+
+    required_wiki_terms = [
+        "RFC-0040 Pre-Trade Proof-Pack Product Path",
+        "lotus-report + lotus-render + lotus-archive",
+        "DpmProofPackReportInput",
+        "DpmProofPackAiEvidenceInput",
+        "review-gated PM memo",
+        "canonical-front-office-qa-20260509-225912.json",
+        "wtbd-rfc40-audit-20260509",
+    ]
+    missing_wiki_terms = [term for term in required_wiki_terms if term not in supported_features]
+
+    assert missing_wiki_terms == []
+    assert "Full front-office proof-pack product realization remains explicitly gated" not in rfc
     assert "| Pre-trade proof pack | Supported |" not in supported_features
 
 
