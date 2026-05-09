@@ -773,7 +773,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "`lotus-report` now has the bounded context consumer seam" in supported_features
     assert "`lotus-ai` has bounded DPM memo/narrative consumers" in supported_features
-    assert "Future source-event families remain downstream" in supported_features
+    assert "Remaining source-event families stay downstream" in supported_features
     assert "Supported as RFC-0042 full product experience" not in supported_features
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
@@ -866,6 +866,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         work_to_be_done
     )
     assert "`lotus-report` PR #92" in work_to_be_done
+    assert "`lotus-report` PR #93" in work_to_be_done
+    assert "GET /reports/jobs/{job_id}/portfolio-memory-events" in work_to_be_done
     assert "Manage report-input APIs now attach bounded portfolio-memory context" in work_to_be_done
     assert "tests/unit/core/test_outcome_handoffs.py" in work_to_be_done
     assert "`lotus-ai` PR #62 adds bounded portfolio-memory consumers" in work_to_be_done
