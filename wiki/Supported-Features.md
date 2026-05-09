@@ -47,6 +47,128 @@ Current first-wave product posture:
 | Post-trade outcome feedback | Manage backend, Gateway/Workbench first-wave product path, rendered reports, archive lifecycle, and governed AI narrative request path are implemented in owning repos. | First-wave product path is implementation-backed; remaining source-owner methodology depth and OMS/PM-scoring work are not supported claims. |
 | Canonical DPM demo story | Platform owns the governed cross-app canonical DPM demo story for `PB_SG_GLOBAL_BAL_001`, with deep docs, wiki landing page, diagrams, audience-specific talk track, canonical contract links, Workbench panel registry links, platform QA command, and explicit unsupported-claim boundaries. | `lotus-platform` PR #310 and wiki publication commit `884bec3` make the demo story implementation-backed and publishable for business users, operations, engineering, sales/pre-sales, and client demos. It does not claim external OMS execution, PM scoring, client-communication lineage, autonomous AI decisioning, or local Workbench recomputation. |
 
+## RFC-0036 Stateful Execution Product Path
+
+RFC-0036 is no longer only a backend cleanup record. The certified manage API surface now has a
+completed first-wave downstream product path through Gateway and Workbench for canonical stateful
+DPM execution supportability and operations visibility.
+
+```mermaid
+flowchart LR
+    CoreProducts[lotus-core RFC-087 source products]
+    ManageStateful[lotus-manage stateful DPM execution and supportability]
+    GatewayBff[lotus-gateway Workbench overview BFF]
+    WorkbenchStatus[lotus-workbench rebalance status panel]
+    WorkbenchOps[lotus-workbench DPM operations dashboard]
+    Evidence[Canonical front-office QA evidence]
+
+    CoreProducts --> ManageStateful
+    ManageStateful -->|/api/v1/rebalance/runs| GatewayBff
+    ManageStateful -->|/api/v1/rebalance/supportability/summary| GatewayBff
+    GatewayBff --> WorkbenchStatus
+    GatewayBff --> WorkbenchOps
+    WorkbenchStatus --> Evidence
+    WorkbenchOps --> Evidence
+```
+
+Current functional behavior:
+
+1. Gateway reads manage only through canonical `/api/v1` contracts and preserves manage-owned
+   source supportability.
+2. Workbench displays source support state, freshness, run count, operation count, workflow
+   decision count, last-run identity, and reason posture on `/workbench/{portfolioId}`.
+3. The operations dashboard displays recent manage rebalance runs, issue count, workflow posture,
+   run status, timestamp, and explicit no-runs posture.
+4. Missing supportability is rendered as unknown/N/A instead of false readiness or false zero
+   activity.
+
+Non-functional controls:
+
+| Control area | Current implementation-backed posture |
+| --- | --- |
+| Contract governance | Gateway tests prove manage consumption remains on `/api/v1` route families and rejects retired aliases. |
+| Source ownership | Workbench does not calculate manage supportability, source readiness, freshness, or run posture locally. |
+| Observability | UI and Gateway evidence use bounded supportability and state labels rather than portfolio-sensitive metric labels. |
+| Operational diagnosis | PM and operations users can distinguish ready, action-required, stale, no-runs, and unknown-supportability states. |
+| Demo readiness | Canonical proof uses governed `PB_SG_GLOBAL_BAL_001` evidence and must be captured through the front-office runtime before screenshots are treated as demo-ready. |
+
+Audience use:
+
+1. Business and sales users can describe this as a discretionary portfolio management operating
+   surface that shows whether stateful execution evidence is ready for review.
+2. Operations users can use the same panel to spot source-readiness gaps, failed runs, stale
+   supportability, and missing upstream evidence.
+3. Engineering users can trace the feature from Workbench to Gateway to the manage `/api/v1`
+   contracts and RFC-087 core source products.
+4. Client demos should claim first-wave supportability and operations visibility only; richer
+   book-level aggregation, alerting, external OMS execution, and additional source-product depth
+   remain future work.
+
+## RFC-0038 DPM Command Center Product Path
+
+RFC-0038 now has a complete first-wave product path for mandate health and command-center
+visibility. The backend authority, Gateway composition, Workbench cockpit, canonical seed
+automation, and PM-book cohort discovery are implementation-backed for the governed populated
+portfolio.
+
+```mermaid
+flowchart LR
+    CoreBook[lotus-core PortfolioManagerBookMembership:v1]
+    CoreMandate[lotus-core mandate, model, eligibility, tax-lot, and market-data products]
+    ManageTwin[lotus-manage mandate digital twin]
+    ManageHealth[lotus-manage mandate health and monitoring]
+    ManageCommand[lotus-manage command-center summary]
+    GatewayCommand[lotus-gateway DPM command-center BFF]
+    WorkbenchCockpit[lotus-workbench DPM command-center cockpit]
+    PlatformSeed[lotus-platform canonical command-center seed]
+    EvidencePack[Canonical QA summary and screenshots]
+
+    CoreBook --> ManageHealth
+    CoreMandate --> ManageTwin
+    ManageTwin --> ManageHealth
+    ManageHealth --> ManageCommand
+    ManageCommand --> GatewayCommand
+    GatewayCommand --> WorkbenchCockpit
+    PlatformSeed --> ManageTwin
+    PlatformSeed --> GatewayCommand
+    WorkbenchCockpit --> EvidencePack
+```
+
+Current functional behavior:
+
+1. Manage owns mandate digital twins, mandate health scores, monitoring runs, active exceptions,
+   and the command-center summary.
+2. PM-book monitoring can resolve the populated cohort from lotus-core
+   `PortfolioManagerBookMembership:v1` instead of relying on caller-supplied mandate lists.
+3. Gateway exposes the command-center route family without recalculating mandate health or
+   becoming source authority.
+4. Workbench renders health distribution, attention queue, active exceptions, mandate health
+   dimensions, source-readiness posture, and monitoring action state through the Gateway/BFF only.
+5. Platform seed automation verifies ready, partial, and empty command-center postures before the
+   screenshot pack is treated as demo-ready evidence.
+
+Non-functional controls:
+
+| Control area | Current implementation-backed posture |
+| --- | --- |
+| Source authority | Core owns PM-book membership and source products; manage owns mandate health interpretation; Gateway and Workbench do not reconstruct either layer. |
+| Failure behavior | Missing selector, unavailable PM-book source, incomplete supportability, empty membership, and missing refreshed mandate twins fail closed with bounded error or non-ready posture. |
+| Observability | Command-center and monitoring surfaces use bounded supportability, reason, and state vocabulary instead of sensitive portfolio, mandate, run, or exception labels. |
+| Auditability | Monitoring filters retain PM, book, tenant, booking center, source product, source version, supportability, snapshot id, and source content hash. |
+| Demo readiness | `canonical-front-office-qa-20260509-214551.json` proves command-center seed status `ok`; `dpm-command-center-live.png` is demo-ready for the populated canonical portfolio. |
+
+Audience use:
+
+1. Business users can describe the cockpit as the daily discretionary mandate control surface for
+   source readiness, health, and exception triage.
+2. Operations teams can use it to separate ready mandates from partial source selectors, empty
+   filters, stale source posture, and active exception queues.
+3. Sales and pre-sales teams can show populated command-center evidence for
+   `PB_SG_GLOBAL_BAL_001` while avoiding claims about degraded/blocked fixtures that are still
+   source-owner follow-up.
+4. Engineers can trace the flow from core source products through manage health and monitoring,
+   Gateway BFF composition, Workbench rendering, and platform QA evidence.
+
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it

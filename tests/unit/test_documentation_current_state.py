@@ -112,6 +112,77 @@ def test_architecture_review_control_docs_stay_present() -> None:
     assert missing_findings == []
 
 
+def test_rfc0036_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
+    rfc = (
+        ROOT / "docs" / "rfcs" / "RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    assert "## Post-Closure WTBD Integration Audit" in rfc
+    assert (
+        "RFC36-WTBD-001 - Gateway integration rebuilt against canonical `/api/v1` manage APIs"
+        in rfc
+    )
+    assert "RFC36-WTBD-002 - Workbench product surfaces over stateful manage execution" in rfc
+    assert (
+        "RFC36-WTBD-003 - Portfolio-level DPM operation dashboards over stateful executions" in rfc
+    )
+    assert "canonical-front-office-qa-20260509-214551.json" in rfc
+    assert "wtbd-rfc36-audit-20260509-214550" in rfc
+    assert "truthfully_degraded" in rfc
+    assert "Expected-standard decision" in rfc
+    assert "Completed: rebuild `lotus-gateway` integration" in rfc
+    assert "Remaining: promote stateful DPM source-data products" in rfc
+
+    assert "RFC36 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in wtbd
+    assert "Their implementation truth has been incorporated into RFC-0036" in wtbd
+    assert "canonical-front-office-qa-20260509-214551.json" in wtbd
+    assert "wtbd-rfc36-audit-20260509-214550" in wtbd
+    assert (
+        "The completed RFC36 WTBDs have genuinely reached the expected first-wave standard" in wtbd
+    )
+
+    assert "## RFC-0036 Stateful Execution Product Path" in supported_features
+    assert "lotus-gateway Workbench overview BFF" in supported_features
+    assert "Missing supportability is rendered as unknown/N/A" in supported_features
+    assert "| Contract governance |" in supported_features
+    assert (
+        "Client demos should claim first-wave supportability and operations visibility only"
+        in supported_features
+    )
+
+
+def test_rfc0038_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
+    rfc = (
+        ROOT / "docs" / "rfcs" / "RFC-0038-mandate-digital-twin-health-and-command-center.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    assert "## 17. Post-Closure WTBD Integration Audit" in rfc
+    assert "RFC38-WTBD-001 - Gateway DPM command-center composition" in rfc
+    assert "RFC38-WTBD-002 - Workbench DPM cockpit panels" in rfc
+    assert "RFC38-WTBD-003 - Platform canonical seed automation" in rfc
+    assert "RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts" in rfc
+    assert "canonical-front-office-qa-20260509-214551.json" in rfc
+    assert "dpm-command-center-seed-20260509-220332.json" in rfc
+    assert "supportabilityState=READY" in rfc
+    assert "Expected-standard decision" in rfc
+
+    assert "RFC38 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in wtbd
+    assert "Their implementation truth has been incorporated into RFC-0038" in wtbd
+    assert "dpm-command-center-live.png" in wtbd
+    assert (
+        "populated ready, selector-driven partial, and empty-date command-center postures" in wtbd
+    )
+
+    assert "## RFC-0038 DPM Command Center Product Path" in supported_features
+    assert "lotus-core PortfolioManagerBookMembership:v1" in supported_features
+    assert "| Failure behavior |" in supported_features
+    assert "daily discretionary mandate control surface" in supported_features
+
+
 def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:
     sidebar = (ROOT / "wiki" / "_Sidebar.md").read_text(encoding="utf-8")
     missing: list[str] = []

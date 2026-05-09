@@ -93,6 +93,12 @@ supportability, certified the implemented APIs, proved live `manage.dev.lotus` p
 `core-control.dev.lotus` / `core-query.dev.lotus`, published wiki truth, and kept stateful
 capability publication behind explicit runtime gates.
 
+2026-05-09 gold-pass audit update: completed RFC36-WTBD-001 through RFC36-WTBD-003 have been moved
+back into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md` as
+implemented follow-on truth. This WTBD ledger remains the control register, closure evidence
+index, and sequencing view; RFC-0036 is now the durable narrative for the completed Gateway,
+Workbench, and operations-dashboard product realization.
+
 Closure evidence:
 
 | Evidence | Location |
@@ -297,6 +303,63 @@ repo-local plus published wiki material reflects the implementation-backed capab
 level aggregation, operations drill-down pages, alerting, and report/AI materialization remain
 future product depth and should be tracked under later command-center/reporting WTBDs rather than
 reopening this first-wave operations dashboard slice.
+
+### RFC36 Gold-Pass Audit And RFC Reintegration - 2026-05-09
+
+Current decision:
+
+RFC36-WTBD-001, RFC36-WTBD-002, and RFC36-WTBD-003 remain complete after slice-by-slice audit.
+Their implementation truth has been incorporated into RFC-0036 so completed work is not stranded
+only in this WTBD ledger.
+
+What was truly completed:
+
+1. Gateway integration was rebuilt and guarded against stale manage aliases through canonical
+   `/api/v1` route tests.
+2. Workbench renders stateful DPM supportability and rebalance status only through Gateway/BFF
+   data.
+3. Portfolio-level DPM operations dashboard visibility is available for source supportability,
+   freshness, recent runs, run issues, workflow posture, no-runs posture, and missing-supportability
+   posture.
+
+Quality improvements made:
+
+1. Current targeted Gateway, Workbench, and documentation tests were rerun during this audit before
+   claiming completion.
+2. Completed WTBD truth was moved into RFC-0036, reducing durable-truth fragmentation.
+3. Wiki source was enriched with current-state feature behavior, integration flow, audience-specific
+   usage, and non-functional controls for the RFC36 product path.
+
+Debt removed:
+
+1. ledger-only closure truth for the completed downstream RFC36 follow-ons,
+2. ambiguous follow-on status inside RFC-0036,
+3. outdated impression that Gateway integration, Workbench realization, or the operations dashboard
+   remained merely future considerations.
+
+Testing and evidence:
+
+1. `lotus-gateway` targeted proof passed: 23 selected tests in
+   `tests/unit/test_upstream_clients.py`.
+2. `lotus-workbench` targeted proof passed: 3 tests in
+   `tests/unit/rebalance-status.test.tsx`.
+3. `lotus-manage` documentation current-state proof passed: 14 tests in
+   `tests/unit/test_documentation_current_state.py`.
+4. Canonical front-office QA was rerun through the governed platform wrapper against
+   `PB_SG_GLOBAL_BAL_001`; the generated summary is retained at
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-214551.json` and the
+   screenshot evidence is retained under
+   `lotus-platform/output/front-office-qa/wtbd-rfc36-audit-20260509-214550`.
+5. Evidence review confirmed the DPM command-center, proof-pack, outcome-review, portfolio-memory,
+   and wave command-center panels are demo-ready. It also confirmed `performance.evidence` remains
+   truthfully degraded under RFC-0079 ownership and manage action-register supportability remains
+   stale; those are follow-on source-supportability truths, not hidden completion claims.
+
+Expected-standard decision:
+
+The completed RFC36 WTBDs have genuinely reached the expected first-wave standard. No code change
+was required by this audit; the remaining action was documentation closure so RFC, WTBD, and wiki
+truth align with merged implementation and live validation evidence.
 
 #### RFC36-WTBD-004 - Additional Stateful Source Products In Mesh Certification
 
@@ -1017,6 +1080,65 @@ seed hardening now proves populated ready, selector-driven partial, and empty pl
 postures. It still does not claim degraded, blocked, or permission-denied PM-book fixtures because those require
 source-owner fixture support, Workbench browser assertions, and screenshot/evidence registration
 beyond the populated command-center path.
+
+### RFC38 Gold-Pass Audit And RFC Reintegration - 2026-05-09
+
+Current decision:
+
+RFC38-WTBD-001, RFC38-WTBD-002, RFC38-WTBD-003, and RFC38-WTBD-004 remain complete after
+slice-by-slice audit. Their implementation truth has been incorporated into RFC-0038 so the
+completed command-center product path is not stranded only in this WTBD ledger.
+
+What was truly completed:
+
+1. Gateway composes the manage-owned DPM command-center route family without becoming mandate,
+   source-readiness, or monitoring authority.
+2. Workbench renders the DPM command-center cockpit through Gateway/BFF only, including health
+   distribution, attention queue, active exceptions, mandate-health dimensions, and monitoring
+   action posture.
+3. Platform canonical seed automation proves the populated command-center path and records
+   ready, partial, and empty seed posture checks.
+4. Manage PM-book monitoring can resolve populated cohorts from lotus-core
+   `PortfolioManagerBookMembership:v1` instead of requiring caller-supplied mandate lists.
+
+Quality improvements made:
+
+1. RFC-0038 now reflects completed Gateway, Workbench, platform seed, and PM-book follow-ons
+   instead of pointing to stale downstream issue links.
+2. Wiki source now contains an audience-aware command-center flow diagram, current feature
+   behavior, non-functional controls, and demo boundaries.
+3. The documentation regression guard now pins RFC38 WTBD reintegration, exact canonical evidence
+   artifacts, and wiki command-center material.
+
+Debt removed:
+
+1. stale RFC wording that treated merged downstream command-center work as open,
+2. ambiguity between backend-only RFC closure and full first-wave product realization,
+3. screenshot-only proof risk by tying demo readiness to machine-readable seed and panel evidence.
+
+Testing and evidence:
+
+1. `lotus-manage` RFC38 focused proof passed: 61 tests across mandate health, mandates API,
+   monitoring API, and mandate repository supportability tests.
+2. `lotus-manage` PM-book core-sourcing proof passed: 1 selected PM-book test in
+   `tests/unit/dpm/infrastructure/test_core_sourcing_client.py`.
+3. Ruff static proof passed for command-center routers/services, core-sourcing client, and related
+   tests.
+4. Canonical front-office QA passed at
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-214551.json` with
+   DPM command-center seed status `ok`.
+5. Screenshot evidence is retained at
+   `lotus-platform/output/front-office-qa/wtbd-rfc36-audit-20260509-214550/dpm-command-center-live.png`.
+6. Seed evidence is retained at
+   `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260509-220332.json` and proves
+   populated ready, selector-driven partial, and empty-date command-center postures.
+
+Expected-standard decision:
+
+The completed RFC38 WTBDs have genuinely reached the expected first-wave standard for backend
+authority, Gateway composition, Workbench command-center product realization, platform seed
+automation, and PM-book cohort discovery. Remaining source-product, degraded-fixture,
+permission-denied fixture, and richer health-enrichment work stays separate WTBD scope.
 
 #### RFC38-WTBD-005 - Mandate Objective, Benchmark, Review Cadence, And Model-Change Sources
 
