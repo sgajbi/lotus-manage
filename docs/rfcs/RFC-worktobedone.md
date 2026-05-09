@@ -54,9 +54,9 @@ execution methodology, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 35 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 36 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 4 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 20 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 19 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -451,7 +451,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Proposed / downstream addenda exist for several features | Backend child RFCs do not equal product-surface support. Gateway and Workbench must implement and prove the full experience. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive` | Proposed downstream work | RFC-0040 provides proof-pack input; generated documents and archive lifecycle belong to report/render/archive. |
-| RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Proposed | RFC-0037 requires demo-ready story only after backend APIs, Gateway, Workbench, seeds, browser proof, and docs are aligned. |
+| RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
 | RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, and AI events | Cross-app, with manage as workflow/evidence participant | Proposed strategic extension | Manage outcome-review events now exist from RFC-0042, but full portfolio memory still needs downstream product surfaces and report/AI event sources. |
 
 ### Detailed Follow-Up Items
@@ -641,30 +641,42 @@ Target business outcome:
 Sales, pre-sales, marketing, client demos, operations, and engineering can show the crown-jewel DPM
 story using real canonical stack evidence rather than screenshots disconnected from backend truth.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-Several product surfaces and source-product depths remain unimplemented. Demo material must wait
-until canonical API, calculation, panel, and browser validation pass.
+Completed on merged, validated, and wiki-published platform truth through `lotus-platform` PR #310.
+The platform now provides `docs/demo/canonical-dpm-demo-story.md` and
+`wiki/Canonical-DPM-Demo-Story.md` as the governed cross-app demo story for
+`PB_SG_GLOBAL_BAL_001`. The material is tied to the canonical demo-data contract, invariants
+contract, Workbench panel registry, platform canonical front-office QA wrapper, and owning-app
+implementation evidence. It includes audience-specific guidance for business users, operations,
+engineering, sales/pre-sales, and client demos; diagrams for integration and demo flow; current
+functional and non-functional capability matrices; and explicit no-claim boundaries for external
+OMS execution, PM quality scoring, client-communication source-event lineage, autonomous AI
+decisioning, local Workbench recomputation, and unimplemented degraded/blocked command-center seed
+fixtures.
 
-Dependencies before implementation:
+Implementation proof:
 
-1. canonical seed automation,
-2. Gateway and Workbench product surfaces,
-3. backend live evidence for promoted features,
-4. wiki pages with diagrams and audience-aware explanations,
-5. demo screenshots labeled and tied to validated evidence.
+1. `lotus-platform` PR #310,
+2. `lotus-platform` merge commit `42e0ecff3597257ac3ea63b0c59b425603eeb291`,
+3. `lotus-platform` wiki publication commit `884bec3`,
+4. focused platform proof:
+   `python -m pytest tests/unit/test_canonical_dpm_demo_story.py tests/unit/test_front_office_runtime_automation_contract.py tests/unit/test_rfc_0076_canonical_demo_data_contract.py tests/unit/test_rfc_0077_panel_registry_contract.py -q`,
+5. GitHub Feature Lane and PR Merge Gate checks passed for PR #310.
 
-Expected implementation wave:
+Ongoing operating rule:
 
-Build progressively as each product surface becomes implementation-backed, then package a
-cross-app demo/pitch evidence set.
+Extend the canonical demo story as new product surfaces become implementation-backed, but do not
+claim unsupported source-owner features before their owning repositories merge proof and publish
+wiki truth.
 
-Promotion proof:
+Future enrichment rules:
 
-1. canonical front-office QA evidence,
-2. screenshots after validation only,
-3. wiki/demo pages linked to implementation evidence,
-4. no unsupported feature claims.
+1. screenshots remain demo-ready only after canonical API, calculation, panel, and browser
+   validation pass,
+2. new demo claims must link to implementation evidence in owning repositories,
+3. external OMS execution, PM scoring, client-communication event lineage, and richer
+   source-owner methodology depth remain out of the demo story until separately implemented.
 
 #### RFC37-WTBD-007 - Portfolio Memory Across The DPM Lifecycle
 
@@ -707,7 +719,7 @@ Recommended order:
 3. complete Gateway/Workbench realization for RFC-0038 through RFC-0043,
 4. add source-product depth in owning apps as specific product claims require it,
 5. implement report/render/archive evidence materialization,
-6. package canonical sales/demo story,
+6. extend the canonical sales/demo story as new supported surfaces land,
 7. close portfolio-memory as a cross-RFC product capability.
 
 ### RFC-0037 Promotion Checklist For Any Future Item

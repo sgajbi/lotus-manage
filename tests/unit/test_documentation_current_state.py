@@ -784,9 +784,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 35 |" in work_to_be_done
+    assert "| Done on merged/published truth | 36 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 20 |" in work_to_be_done
+    assert "| Remaining / open | 19 |" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
     assert "source-owned populated PM-book monitoring path" in work_to_be_done
     assert "RFC38-WTBD-003 hardening" in work_to_be_done
@@ -905,6 +905,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`dpm_wave_pm_memo.pack@v1`" in work_to_be_done
     assert "review-required support-only memo payload" in work_to_be_done
     assert "This WTBD is complete for the first-wave governed product path" in work_to_be_done
+    assert "RFC37-WTBD-006" in work_to_be_done
+    assert "`lotus-platform` PR #310" in work_to_be_done
+    assert "`lotus-platform` wiki publication commit `884bec3`" in work_to_be_done
+    assert "Canonical-DPM-Demo-Story.md" in work_to_be_done
+    assert "external OMS execution" in work_to_be_done
+    assert "PM quality scoring" in work_to_be_done
+    assert "client-communication source-event lineage" in work_to_be_done
     assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
     assert "RFC42-WTBD-001" in work_to_be_done
     assert "RFC42-WTBD-008" in work_to_be_done
@@ -957,7 +964,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 35 done on merged/published truth, 4 partial" in (supported_features)
+    assert "59 WTBD items: 36 done on merged/published truth, 4 partial" in (supported_features)
+    assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
+    assert "Canonical DPM demo story" in supported_features
     assert (
         "MWR methodology truth, contribution methodology truth, and attribution methodology truth"
         in supported_features

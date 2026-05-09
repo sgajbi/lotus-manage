@@ -63,6 +63,12 @@ Current repository posture:
     are now implementation-backed, CI-proven, live-proven, and wiki-published in their owning
     repositories. Remaining roadmap scope stays target-state planning material until
     implementation-backed support, live proof, and supported-feature promotion are completed.
+    RFC37-WTBD-006 is complete on merged, validated, and wiki-published platform truth through
+    `lotus-platform` PR #310. The governed canonical DPM demo story now lives in
+    `lotus-platform/docs/demo/canonical-dpm-demo-story.md` and
+    `lotus-platform/wiki/Canonical-DPM-Demo-Story.md`, tied to `PB_SG_GLOBAL_BAL_001`, canonical
+    demo-data contracts, Workbench panel registry, platform QA, audience-specific demo guidance,
+    diagrams, and unsupported-claim boundaries.
 12. RFC-0038 has delivered the first implementation-backed DPM operating-system foundation with a
     source-mapped `DpmMandateDigitalTwin`, deterministic ten-dimension mandate health engine,
     derived monitoring-exception taxonomy, repository contract, in-memory and PostgreSQL
