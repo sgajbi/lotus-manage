@@ -744,6 +744,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "### Slice 13 - Final Closure",
         "## 15. Supported-Features Ledger",
         "## 19. Final Gold-Pass Assessment",
+        "## 20. Post-Closure WTBD Integration Audit",
     ]
     missing_sections = [section for section in required_sections if section not in rfc]
 
@@ -766,14 +767,19 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC-0042-implementation-proof-slice11.md" in rfc
     assert "RFC-0042-hardening-review-slice12.md" in rfc
     assert "RFC-0042-final-closure-slice13.md" in rfc
-    assert "Support below is limited to the manage backend authority" in rfc
+    assert (
+        "Support below includes the manage backend authority plus the bounded first-wave product "
+        "realization" in rfc
+    )
     assert "Outcome review creation | Supported as manage backend authority" in rfc
     assert "Gold-standard conclusion" in rfc
     assert "genuinely reached the expected enterprise standard" in rfc
     assert "output/rfc0042-outcome-proof/20260505-024352/critical-review.json" in rfc
     assert "output/rfc0042-outcome-proof/20260505-025613/critical-review.json" in rfc
     assert "scripts/Start-CanonicalManage.ps1" in rfc
-    assert "Gateway and Workbench product support must not be claimed" in rfc
+    assert "`lotus-gateway` composes manage-owned outcome-review truth" in rfc
+    assert "`lotus-workbench` renders the" in rfc
+    assert "outcome-review surface through Gateway/BFF contracts" in rfc
     assert "`lotus-manage` must not clone risk, performance, tax-lot, fill, cash" in rfc
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in rfc
     assert "RFC41-WTBD-010" in rfc
@@ -781,6 +787,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "DpmOutcomeAiEvidenceInput" in rfc
     assert "PM quality scoring | Not supported" in rfc
     assert "External execution integration | Not supported" in rfc
+    assert "RFC42-WTBD-001" in rfc
+    assert "RFC42-WTBD-008" in rfc
+    assert "`lotus-gateway` PR #186/#187/#188/#189" in rfc
+    assert "`lotus-workbench` PR #146/#147/#148" in rfc
+    assert "`lotus-ai` PR #59/#60" in rfc
+    assert "canonical-front-office-qa-20260509-225912.json" in rfc
     assert "feat/rfc0042-implementation" in rfc
     assert "output/rfc0042-outcome-proof/<timestamp>/" in rfc
 
@@ -1003,6 +1015,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert (
         "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in supported_features
     )
+    assert "Post-Trade Outcome Feedback Flow" in supported_features
+    assert "DpmOutcomeReportInput" in supported_features
+    assert "DpmOutcomeAiEvidenceInput" in supported_features
+    assert "lotus-report / lotus-render / lotus-archive" in supported_features
+    assert "lotus-ai governed narrative" in supported_features
+    assert "canonical-front-office-qa-20260509-225912.json" in supported_features
     assert "output/rfc0042-outcome-proof/20260505-040212/" in wiki_index
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in wiki_index
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in wiki_index
@@ -1021,8 +1039,18 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "Supported as RFC-0042 full product experience" not in supported_features
+    assert "Gateway and Workbench product support must not be claimed" not in rfc
+    assert (
+        "The full front-office product outcome remains deliberately unclaimed until "
+        "Gateway/Workbench implementation" not in rfc
+    )
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
+    assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done
+    assert "stale RFC wording that said Gateway/Workbench product proof remained unclaimed" in (
+        work_to_be_done
+    )
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
