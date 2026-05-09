@@ -1333,7 +1333,7 @@ truth, while product realization and several richer source authorities belong ou
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0039 |
 | --- | --- | --- | --- | --- |
-| RFC39-WTBD-001 | Gateway construction-alternatives composition | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #190 | Gateway consumes manage alternatives without recomputing construction truth or choosing alternatives. Product support still requires Workbench implementation and canonical front-office proof. |
+| RFC39-WTBD-001 | Gateway construction-alternatives composition | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #190 | Gateway consumes manage alternatives without recomputing construction truth or choosing alternatives. First-wave Workbench product support is now implemented and live-proven; lifecycle, OMS, report, AI, and approval depth remain later work. |
 | RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #150 and PR #151 | Workbench consumes Gateway/BFF construction contracts only, sends governed DPM context, renders manage-owned alternatives and traces without browser optimization, and is proven by focused canonical Workbench live evidence. |
 | RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Richer lifecycle depth across proof packs, waves, reports, AI, approval staging, and demos remains RFC39-WTBD-010 / later command-center work. |
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` source authority consumed by manage | Completed for source-backed restriction and sustainability profile consumption | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing. Manage degrades when profiles are missing, blocks candidate trades that violate hard client restrictions, preserves sustainability preferences and source lineage, and keeps classification evidence gaps in `PENDING_REVIEW` rather than claiming automatic ESG approval. |
@@ -1341,8 +1341,22 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
 | RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
-| RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; product UX remains downstream | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. Broader scenario contribution rows, approvals workflow, Gateway composition, and Workbench UX remain downstream/future depth. |
+| RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; bounded construction-lab posture is downstream-visible | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. The Workbench construction lab can render method posture and reason codes through Gateway/manage truth; broader scenario contribution rows, CIO approval workflow, and richer scenario-specific UX remain future depth. |
 | RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Proposed strategic extension | RFC-0039 selects alternatives; cross-RFC lifecycle needs RFC-0040 proof packs, RFC-0041 waves, report/AI owners, and product surfaces. |
+
+### RFC39 Gold-Pass Audit And RFC Reintegration - 2026-05-09
+
+The 2026-05-09 audit moved completed RFC39 WTBD truth into
+`RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md` and refreshed the wiki
+source so the implementation record is not stranded in this WTBD ledger.
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | Manage owns generation/read/selection, source posture, method status, objective/constraint traces, persisted selected alternative state, and authority-backed construction methods. Gateway composes those contracts through PR #190. Workbench renders a first-wave construction lab through PR #150/#151 and the PR #171 retry-identity hardening. Completed WTBD items now sit in the owning RFC as post-closure integrated truth. |
+| Quality improvements made | The audit verified manage construction with 65 focused backend tests and static checks, then exercised the canonical front-office stack instead of relying on stale documentation. Live testing found Workbench repeated-generation identity defects that normal unit proof had missed; merged PR #171 adds unique per-generation idempotency and correlation identifiers plus deterministic unit-test injection. |
+| Debt removed | Stale wording that treated Gateway/Workbench realization as future was removed from the RFC and wiki source. The Workbench deterministic idempotency/correlation assumption was removed because it broke repeated PM generation against persisted manage run records. Unsupported claims around OMS execution, predictive execution pricing, automatic suitability, security-level ESG classification, and local browser optimization remain explicit boundaries. |
+| What was proven through testing and evidence | Manage focused proof passed `tests/unit/dpm/api/test_construction_api.py`, core-sourcing/risk-authority client tests, method registry tests, and construction vocabulary tests with 65 passing tests. Canonical Workbench validation passed for `PB_SG_GLOBAL_BAL_001`. Focused construction live proof first failed with HTTP 409 at `output/rfc39-wtbd-audit-20260509-construction-live/construction-alternatives-live-summary.json`, then failed with HTTP 500 at `output/rfc39-wtbd-audit-20260509-construction-live-fixed/construction-alternatives-live-summary.json`, and finally passed after merged PR #171 at `output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json`. |
+| Expected-standard decision | `lotus-workbench` PR #171 is merged as `8de42e0` with a green Pull Request Merge Gate. The first-wave construction product path is accepted for this slice only after this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, wiki publication is synchronized, and final branch hygiene confirms no stranded governance truth. |
 
 ### Detailed Follow-Up Items
 
@@ -1450,7 +1464,18 @@ Validation and merge evidence:
    with response status `200`, source service `lotus-manage`, authority `lotus-manage:RFC-0039`,
    correlation `corr-workbench-construction-PB_SG_GLOBAL_BAL_001-2026-04-10`, three alternatives,
    visible Gateway mediation, and no local optimizer/methodology claim,
-9. Workbench wiki was published from repo source after merge as `lotus-workbench.wiki` commit
+9. the 2026-05-09 WTBD audit found two repeated-generation defects through live testing:
+   deterministic idempotency returned HTTP 409 and deterministic correlation later returned HTTP 500
+   from persisted run identity collision,
+10. `lotus-workbench` PR #171 merged as `8de42e0` and fixes both defects by issuing unique
+   per-generation idempotency and correlation identifiers while preserving deterministic injection
+   for unit tests,
+11. rebuilt live proof passed at
+   `output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json`
+   with response status `200`, source service `lotus-manage`, authority `lotus-manage:RFC-0039`,
+   supportability `PENDING_REVIEW`, alternative set `cas_ca8c4e1351aa`, three alternatives,
+   visible Gateway mediation, and no local optimizer/methodology claim,
+12. Workbench wiki was published from repo source after merge as `lotus-workbench.wiki` commit
    `a908bab`, and `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-workbench` returned clean.
 
 Quality improvements made during closure:
@@ -1458,8 +1483,10 @@ Quality improvements made during closure:
 1. fixed the Workbench construction request context after live proof exposed a real
    `DPM_CORE_CONTEXT_INCOMPLETE` failure caused by missing mandate/model context and a mismatched
    booking-center/source-date posture,
-2. aligned construction idempotency and correlation keys with the governed construction source date
-   rather than the page/reporting as-of date,
+2. initially aligned construction idempotency and correlation keys with the governed construction
+   source date rather than the page/reporting as-of date, then the 2026-05-09 audit corrected that
+   approach by making mutation identity unique per generation while retaining deterministic test
+   injection and source-date provenance in the identifier prefix,
 3. made Gateway mediation persistent in the panel after successful generation,
 4. hardened a flaky domain-product discovery test by waiting on loaded catalog data instead of a
    static page heading,
