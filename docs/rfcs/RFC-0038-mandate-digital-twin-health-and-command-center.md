@@ -1096,15 +1096,18 @@ Local and remote evidence:
 
 ### 16.5 Remaining Governed Follow-Up
 
-The implementation has reached the expected backend foundation standard for RFC-0038. Remaining
-work is explicitly downstream or deployment-refresh oriented:
+The implementation reached the expected backend foundation standard for RFC-0038. The original
+downstream follow-ups for Gateway composition, Workbench cockpit integration, and platform
+canonical seed automation are now complete and are integrated below as post-closure WTBD truth.
+Remaining work is source-owner enrichment rather than a gap in the completed command-center product
+path:
 
-1. complete Gateway composition in
-   [sgajbi/lotus-gateway#180](https://github.com/sgajbi/lotus-gateway/issues/180),
-2. complete Workbench cockpit integration in
-   [sgajbi/lotus-workbench#140](https://github.com/sgajbi/lotus-workbench/issues/140),
-3. extend platform canonical seed automation in
-   [sgajbi/lotus-platform#294](https://github.com/sgajbi/lotus-platform/issues/294).
+1. richer mandate objective, benchmark, review-cadence, and model-change source products,
+2. client-restriction, sustainability, cashflow, and income-need source products where they affect
+   health scoring,
+3. broader risk and performance health enrichment only through certified source owners,
+4. degraded, blocked, and permission-denied canonical command-center fixtures once source owners
+   publish durable fixture support.
 
 Skills and context decision: no new local Codex skill is required for this RFC. The existing
 `lotus-backend-delivery-governance`, `lotus-endpoint-certification-loop`, and
@@ -1112,3 +1115,104 @@ Skills and context decision: no new local Codex skill is required for this RFC. 
 context and RFC/wiki wording so the current backend foundation, published wiki state, and remaining
 downstream product-surface work are explicitly separated. Gateway, Workbench, and platform context
 should be updated in the owning repositories when those implementations land.
+
+## 17. Post-Closure WTBD Integration Audit
+
+Assessment date: 2026-05-09
+
+This section incorporates completed RFC38 WTBD follow-ons back into RFC-0038 so the command-center
+product truth lives with the originating RFC rather than only in
+`docs/rfcs/RFC-worktobedone.md`.
+
+### 17.1 Completed Follow-On WTBDs
+
+| WTBD | Status | Implementation-backed conclusion |
+| --- | --- | --- |
+| RFC38-WTBD-001 - Gateway DPM command-center composition | Completed and merged | `lotus-gateway` PR #194 merged to `main` at `ee2d806`. Gateway exposes the `/api/v1/dpm/command-center` route family, composes manage-owned mandate, health, monitoring, exception, and drill-down truth, and keeps mandate health and PM-book source authority outside the BFF. |
+| RFC38-WTBD-002 - Workbench DPM cockpit panels | Completed, merged, and live-proven | `lotus-workbench` PR #154 merged to `main` at `2fbfac5`. Workbench consumes Gateway/BFF command-center contracts only and renders health distribution, source readiness, attention queue, active exceptions, mandate health dimensions, monitoring action posture, and bounded observability without browser-side health or source-readiness calculation. |
+| RFC38-WTBD-003 - Platform canonical seed automation | Completed, merged, live-proven, and wiki-published | `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 added the governed command-center seed path for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, and `BOOK_SG_BALANCED_DPM`, including Manage and Gateway mandate/health/summary checks plus canonical Workbench screenshot registration. |
+| RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts | Completed for populated source-owned PM-book monitoring cohorts | `lotus-core` owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it when monitoring run-once receives a portfolio-manager selector without explicit mandate ids; Gateway passes the body through; Workbench now triggers the source-owned path rather than sending a single-mandate fallback. |
+
+### 17.2 Evidence Rechecked
+
+The 2026-05-09 audit rechecked current source and runtime evidence:
+
+1. Manage command-center, mandate, health, monitoring, and repository proof:
+   `python -m pytest tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/api/test_mandates_api.py tests/unit/dpm/api/test_monitoring_api.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py -q`
+   passed with 61 tests.
+2. Manage PM-book core-sourcing proof:
+   `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py -k "pm_book or PortfolioManagerBookMembership or cio_model_change" -q`
+   passed with 1 selected PM-book test.
+3. Static command-center proof:
+   `python -m ruff check src/api/routers/monitoring.py src/api/services/mandate_service.py src/infrastructure/core_sourcing/client.py tests/unit/dpm/api/test_monitoring_api.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py`
+   passed.
+4. Canonical front-office proof:
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-214551.json` passed
+   with DPM command-center seed status `ok`.
+5. The same canonical proof classified `dpm.command_center` as `ready`, with
+   `supportabilityState=READY`, `dataCompletenessState=COMPLETE`, and screenshot evidence under
+   `lotus-platform/output/front-office-qa/wtbd-rfc36-audit-20260509-214550/dpm-command-center-live.png`.
+6. The DPM command-center seed evidence captured populated `ready`, selector-driven `partial`
+   (`PM_BOOK_DISCOVERY_NOT_YET_SOURCED`), and empty-date `empty` posture checks in
+   `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260509-220332.json`.
+
+### 17.3 Critical Review
+
+The completed RFC38 command-center path is production-ready for its first-wave scope:
+
+1. manage remains mandate-health, monitoring, and command-center authority,
+2. Gateway composes but does not recalculate mandate health, source readiness, exceptions, or
+   PM-book membership,
+3. Workbench consumes Gateway/BFF contracts and preserves bounded supportability, health, attention,
+   and exception state without local reconstruction,
+4. canonical seed automation now proves the populated command-center path with current runtime
+   evidence and captures explicit partial and empty postures,
+5. PM-book monitoring cohort discovery fails closed on missing selectors, source unavailability,
+   incomplete source supportability, empty memberships, and missing refreshed mandate twins.
+
+The audit did not find a code gap requiring implementation changes in this slice. The main gap was
+documentation drift: the RFC still described Gateway/Workbench/platform follow-ups as outstanding
+after they had already merged. This section closes that durable-truth drift.
+
+### 17.4 Gold-Pass Reassessment
+
+What was truly completed:
+
+1. the manage backend mandate twin, health, monitoring, exception, and command-center authority,
+2. Gateway command-center composition over manage-owned truth,
+3. Workbench cockpit panels over the Gateway/BFF product contract,
+4. platform canonical seed automation and current live command-center screenshot evidence,
+5. populated PM-book monitoring cohort discovery through `PortfolioManagerBookMembership:v1`.
+
+Quality improvements made:
+
+1. source authority boundaries are now explicit across manage, Gateway, Workbench, and platform
+   automation,
+2. tests prove command-center behavior, selected-run exception scoping, PM-book dependency
+   handling, and PM-book source-client parsing,
+3. canonical evidence preserves ready, partial, and empty states rather than collapsing them into a
+   single success label,
+4. this RFC now owns completed WTBD truth instead of pointing readers to obsolete downstream issue
+   links.
+
+Debt removed:
+
+1. stale follow-up wording for already completed Gateway, Workbench, and platform seed work,
+2. ambiguity between manage backend foundation and full first-wave product realization,
+3. the risk of treating populated command-center screenshots as proof without machine-readable seed
+   and panel-classification evidence.
+
+Testing and evidence:
+
+1. 61 manage RFC38 tests passed in this audit,
+2. PM-book core-sourcing focused proof passed,
+3. Ruff static checks passed for the command-center and core-sourcing files,
+4. governed canonical front-office QA passed with command-center seed status `ok`,
+5. screenshot and `live-validation-summary.json` evidence prove the populated Workbench panel.
+
+Expected-standard decision:
+
+RFC-0038 and completed WTBD-001 through WTBD-004 have genuinely reached the expected first-wave
+standard for backend authority, Gateway composition, Workbench command-center product realization,
+platform seed automation, and PM-book monitoring cohort discovery. Remaining source-product,
+degraded-fixture, and richer health-enrichment work should remain separate WTBD scope.
