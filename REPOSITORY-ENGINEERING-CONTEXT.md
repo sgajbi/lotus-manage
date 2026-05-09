@@ -148,9 +148,12 @@ Current repository posture:
     hashable timeline without reconstructing mandate health, risk, performance, execution, tax,
     cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
     includes the merged and wiki-published `lotus-risk` rolling tracking-error methodology slice
-    from PR #113 (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) for
-    `RollingRiskMetricsReport:v1`; it pins date alignment, pp-to-decimal conversion, `ddof=1`,
-    annualized decimal-ratio output, warm-up/null behavior, and no-aligned-benchmark posture while
+    from PR #113 (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) and rolling
+    information-ratio methodology slice from PR #114
+    (`ffa881e3266c09a4d48044b50df5bb2db43bd489`, wiki `105b716`) for
+    `RollingRiskMetricsReport:v1`; they pin date alignment, pp-to-decimal conversion, `ddof=1`,
+    annualized decimal tracking-error output, dimensionless information-ratio output,
+    warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error flagging while
     still leaving aggregated tax, FX, cash movement, liquidity, execution, and broader methodology
     depth to future source-owner work. First-wave
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
