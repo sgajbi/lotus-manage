@@ -155,8 +155,11 @@ Current repository posture:
     from recursive report-input evidence hashes. `lotus-ai` PR #62
     adds bounded DPM PM memo and outcome-review narrative consumers that validate portfolio
     identity, capped event refs, source content hash, `NO_RAW_PAYLOADS`, and no-reconstruction
-    source-authority policy before exposing compact portfolio-memory lineage summaries. Future AI,
-    OMS, PM-scoring, and client-communication source-event families remain downstream WTBD scope.
+    source-authority policy before exposing compact portfolio-memory lineage summaries. `lotus-ai`
+    PR #64 adds the AI-owned workflow-pack source-event family for no-raw-payload AI run, review,
+    and lineage events at `/platform/workflow-packs/source-events` and
+    `/platform/workflow-packs/runs/{run_id}/source-events`. Future OMS, PM-scoring, and
+    client-communication source-event families remain downstream WTBD scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source

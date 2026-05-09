@@ -772,8 +772,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "`lotus-report` now has the bounded context consumer seam" in supported_features
-    assert "`lotus-ai` has bounded DPM memo/narrative consumers" in supported_features
-    assert "Remaining source-event families stay downstream" in supported_features
+    assert "`lotus-ai` has bounded DPM memo/narrative consumers plus an AI-owned" in (
+        supported_features
+    )
+    assert "Remaining OMS, PM-scoring, and client-communication source-event families" in (
+        supported_features
+    )
     assert "Supported as RFC-0042 full product experience" not in supported_features
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
@@ -871,6 +875,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Manage report-input APIs now attach bounded portfolio-memory context" in work_to_be_done
     assert "tests/unit/core/test_outcome_handoffs.py" in work_to_be_done
     assert "`lotus-ai` PR #62 adds bounded portfolio-memory consumers" in work_to_be_done
+    assert "`lotus-ai` PR #64 adds the AI-owned workflow-pack source-event family" in (
+        work_to_be_done
+    )
+    assert "GET /platform/workflow-packs/source-events" in work_to_be_done
+    assert "GET /platform/workflow-packs/runs/{run_id}/source-events" in work_to_be_done
+    assert "`lotus-ai` wiki publication commit `a4e70d3`" in work_to_be_done
     assert "no-reconstruction source-authority policy" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
