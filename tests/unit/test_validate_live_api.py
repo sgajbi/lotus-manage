@@ -94,6 +94,72 @@ def _construction_second_wave_alternative_set() -> dict:
     }
 
 
+def _stateful_source_backed_construction_response(
+    *,
+    returned_curve_point_count: int = 1,
+) -> dict:
+    return {
+        "alternative_set_id": "cas_stateful_source_backed",
+        "input_mode": "stateful",
+        "source_supportability_state": "READY",
+        "alternatives": [
+            {
+                "method": "COST_AWARE",
+                "diagnostics": {
+                    "authority_context": {
+                        "transaction_cost_context": {
+                            "source_system": "lotus-core",
+                            "source_product_name": "TransactionCostCurve",
+                            "returned_curve_point_count": returned_curve_point_count,
+                            "missing_security_ids": [],
+                        }
+                    },
+                    "enrichment_summary": {"reason_codes": ["TRANSACTION_COST_CURVE_READY"]},
+                },
+            },
+            {
+                "method": "LIQUIDITY_AWARE",
+                "diagnostics": {
+                    "authority_context": {
+                        "liquidity_context": {
+                            "cashflow_projection": {
+                                "source_system": "lotus-core",
+                                "source_product_name": "PortfolioCashflowProjection",
+                                "include_projected": True,
+                                "data_quality_status": "READY",
+                            }
+                        }
+                    },
+                    "enrichment_summary": {"reason_codes": ["CORE_CASHFLOW_PROJECTION_READY"]},
+                },
+            },
+            {
+                "method": "ESG_AWARE",
+                "diagnostics": {
+                    "authority_context": {
+                        "client_restriction_context": {
+                            "source_system": "lotus-core",
+                            "source_product_name": "ClientRestrictionProfile",
+                            "restriction_count": 1,
+                        },
+                        "sustainability_preference_context": {
+                            "source_system": "lotus-core",
+                            "source_product_name": "SustainabilityPreferenceProfile",
+                            "preference_count": 1,
+                        },
+                    },
+                    "enrichment_summary": {
+                        "reason_codes": [
+                            "CLIENT_RESTRICTION_PROFILE_READY",
+                            "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+                        ]
+                    },
+                },
+            },
+        ],
+    }
+
+
 def _construction_response(request: httpx.Request) -> httpx.Response | None:
     path = request.url.path
     if path == "/api/v1/construction/alternative-sets/generate":
@@ -130,6 +196,10 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal async_posts
         path = request.url.path
+        if path == "/api/v1/construction/alternative-sets/generate":
+            body = json.loads(request.content.decode("utf-8")) if request.content else {}
+            if body.get("input_mode") == "stateful":
+                return _json_response(200, _stateful_source_backed_construction_response())
         construction = _construction_response(request)
         if construction is not None:
             return construction
@@ -232,6 +302,134 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
         "supportability_postgres_summary",
         "metrics_exposed_bounded_supportability",
     }
+
+
+def test_live_api_validation_probes_stateful_source_backed_construction(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "scripts.validate_live_api._load_demo_payload",
+        lambda _filename: {
+            "input_mode": "stateless",
+            "stateless_input": {"portfolio_snapshot": {"portfolio_id": "pf_api_live"}},
+        },
+    )
+    async_posts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal async_posts
+        path = request.url.path
+        if path == "/api/v1/construction/alternative-sets/generate":
+            body = json.loads(request.content.decode("utf-8")) if request.content else {}
+            if body.get("input_mode") == "stateful":
+                return _json_response(
+                    200,
+                    _stateful_source_backed_construction_response(returned_curve_point_count=2),
+                )
+        construction = _construction_response(request)
+        if construction is not None:
+            return construction
+        if path == "/health/ready":
+            return _json_response(200, {"status": "ready"})
+        if path == "/api/v1/integration/capabilities":
+            return _json_response(
+                200,
+                {
+                    "supported_input_modes": ["stateful", "stateless"],
+                    "features": [
+                        {"key": "dpm.execution.stateful_portfolio_id", "enabled": True},
+                        {"key": "dpm.execution.stateless", "enabled": True},
+                    ],
+                },
+            )
+        if path == "/openapi.json":
+            return _json_response(
+                200,
+                {
+                    "paths": {
+                        "/metrics": {
+                            "get": {
+                                "responses": {
+                                    "200": {
+                                        "content": {
+                                            "text/plain; version=0.0.4": {
+                                                "schema": {"type": "string"},
+                                                "examples": {"prometheus": {"value": "metric 1"}},
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+            )
+        if path == "/api/v1/rebalance/proposals":
+            return _json_response(404, {"detail": "Not Found"})
+        if path == "/api/v1/rebalance/simulate":
+            return _json_response(
+                200,
+                {
+                    "lineage": {
+                        "input_mode": "stateful",
+                        "source_system": "lotus-core",
+                        "source_supportability_state": "READY",
+                        "stateful_context_hash": "sha256:stateful",
+                        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+                    }
+                },
+            )
+        if path == "/api/v1/rebalance/analyze/async":
+            async_posts += 1
+            if async_posts == 1:
+                return _json_response(202, {"operation_id": "dop_test"})
+            return _json_response(409, {"detail": "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"})
+        if path == "/api/v1/rebalance/supportability/summary":
+            return _json_response(
+                200,
+                {"store_backend": "POSTGRES", "run_count": 1, "operation_count": 1},
+            )
+        if path == "/metrics":
+            return httpx.Response(
+                200,
+                text='lotus_manage_action_register_supportability_total{surface="summary"} 1',
+            )
+        raise AssertionError(f"Unexpected request path: {path}")
+
+    results = run_live_api_validation(
+        "http://manage.test",
+        include_demo_pack=False,
+        expect_stateful_core_sourcing="available",
+        transport=httpx.MockTransport(handler),
+    )
+    summary = summarize(results)
+    by_name = {result.name: result for result in results}
+
+    assert summary["failed"] == 0
+    assert by_name["stateful_source_backed_construction"].ok is True
+    assert by_name["stateful_source_backed_construction"].details["cost_context"] == {
+        "source_system": "lotus-core",
+        "source_product_name": "TransactionCostCurve",
+        "returned_curve_point_count": 2,
+        "missing_security_ids": [],
+    }
+    assert (
+        by_name["stateful_source_backed_construction"].details["cashflow_projection"][
+            "source_product_name"
+        ]
+        == "PortfolioCashflowProjection"
+    )
+    assert (
+        by_name["stateful_source_backed_construction"].details["client_restriction"][
+            "source_product_name"
+        ]
+        == "ClientRestrictionProfile"
+    )
+    assert (
+        by_name["stateful_source_backed_construction"].details["sustainability_preference"][
+            "source_product_name"
+        ]
+        == "SustainabilityPreferenceProfile"
+    )
+    assert by_name["async_duplicate_correlation_conflict"].ok is True
 
 
 def test_live_api_validation_reports_openapi_boundary_failure(monkeypatch) -> None:
@@ -611,6 +809,10 @@ def test_live_api_validation_can_probe_available_stateful_core_sourcing(monkeypa
     def handler(request: httpx.Request) -> httpx.Response:
         nonlocal async_posts
         path = request.url.path
+        if path == "/api/v1/construction/alternative-sets/generate":
+            body = json.loads(request.content.decode("utf-8")) if request.content else {}
+            if body.get("input_mode") == "stateful":
+                return _json_response(200, _stateful_source_backed_construction_response())
         construction = _construction_response(request)
         if construction is not None:
             return construction

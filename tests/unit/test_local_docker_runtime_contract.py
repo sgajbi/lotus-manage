@@ -59,6 +59,7 @@ def test_local_docker_runtime_exposes_stateful_core_sourcing_gates() -> None:
         in compose_text
     )
     assert "DPM_CORE_BASE_URL=${DPM_CORE_BASE_URL:-}" in compose_text
+    assert "DPM_CORE_QUERY_BASE_URL=${DPM_CORE_QUERY_BASE_URL:-}" in compose_text
 
 
 def test_ci_local_docker_compose_does_not_publish_internal_postgres_port() -> None:

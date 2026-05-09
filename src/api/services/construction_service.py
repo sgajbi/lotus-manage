@@ -21,6 +21,7 @@ from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
+    AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativeRegimeStressContext,
     AuthoritativeSustainabilityPreference,
@@ -613,6 +614,42 @@ def _authority_context_with_source_products(
                     for point in curve.curve_points[:10]
                 ],
                 reason_codes=[curve.supportability.reason],
+            )
+    if authority_context.liquidity_context is None:
+        cashflow_projection = source_context.context.portfolio_cashflow_projection
+        if cashflow_projection is not None:
+            payload = cashflow_projection.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            status = (
+                cashflow_projection.data_quality_status
+                if cashflow_projection.data_quality_status in {"READY", "DEGRADED", "INCOMPLETE"}
+                else "READY"
+            )
+            context_updates["liquidity_context"] = AuthoritativeLiquidityContext(
+                supportability_status=ConstructionMethodStatus.READY,
+                source_system="lotus-manage-settlement-engine",
+                policy_id="manage-liquidity-policy.v1",
+                minimum_cash_weight=Decimal("0.02"),
+                allowed_liquidity_tiers=["L1", "L2", "L3"],
+                cashflow_projection=AuthoritativeLiquidityCashflowProjection(
+                    source_product_name=cashflow_projection.product_name,
+                    source_product_version=cashflow_projection.product_version,
+                    source_system="lotus-core",
+                    total_net_cashflow=Money(
+                        amount=cashflow_projection.total_net_cashflow,
+                        currency=cashflow_projection.portfolio_currency,
+                    ),
+                    projection_start=cashflow_projection.range_start_date,
+                    projection_end=cashflow_projection.range_end_date,
+                    include_projected=cashflow_projection.include_projected,
+                    latest_evidence_timestamp=cashflow_projection.latest_evidence_timestamp,
+                    source_batch_fingerprint=cashflow_projection.source_batch_fingerprint
+                    or cashflow_projection.lineage.get("source_batch_fingerprint")
+                    or source_hash,
+                    data_quality_status=_source_status_to_method_status(status),
+                    reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
+                ),
+                reason_codes=["LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"],
             )
     if authority_context.client_restriction_context is None:
         restriction_profile = source_context.context.client_restriction_profile

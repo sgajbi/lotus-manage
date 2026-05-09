@@ -75,6 +75,40 @@ Next bank-buyable product-readiness priorities:
 | 2 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` rolling tracking-error and rolling information-ratio methodology/wiki truth, `lotus-core` holdings-as-of, market-data coverage, DPM source-readiness, transaction-ledger window, cashflow-projection, tax-lot window, and observed transaction-cost curve methodology/wiki truth, and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct rolling active-risk, holdings snapshot selection, position weighting, cash-balance restatement, market price/FX freshness classification, DPM readiness family precedence, transaction row windowing/restatement, operational cash movement, cash-flow schedules, lot/cost-basis selection, observed booked-fee cost curves, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 | 3 | RFC41-WTBD-003 - Tactical house-view, risk-event, and implicit campaign cohorts | Moves the rebalance wave operating model toward bank operating workflows without inventing source-owned cohorts. | Source owners publish governed cohort discovery products; manage consumes them with fail-closed dependency handling, proof-pack/wave preservation, and downstream product evidence. |
 
+2026-05-09 validation hardening:
+
+`make live-api-validate-core` / `scripts/validate_live_api.py` now includes a dedicated
+`stateful_source_backed_construction` probe when
+`LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available`. The probe exercises the live stateful
+construction path and verifies that `COST_AWARE`, `LIQUIDITY_AWARE`, and `ESG_AWARE` alternatives
+preserve `lotus-core` source-backed context for `TransactionCostCurve:v1`,
+`PortfolioCashflowProjection:v1`, `ClientRestrictionProfile:v1`, and
+`SustainabilityPreferenceProfile:v1`. This closes a proof-quality gap in the completed
+RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-007, RFC40-WTBD-007, and RFC40-WTBD-008 claims without
+promoting any unsupported income-need, predictive execution, market-impact, or regulatory
+suitability methodology.
+
+Gold-pass assessment for the 2026-05-09 validation hardening:
+
+1. Truly completed: live stateful construction now proves source-backed cost, liquidity,
+   restriction, and sustainability context from `lotus-core` instead of stopping at stateful
+   simulate lineage.
+2. Quality improvements: `lotus-manage` resolves `PortfolioCashflowProjection:v1` through the
+   query-plane source route, uses a configurable private-banking transaction-cost lookback for
+   low-turnover portfolios, and exposes the required query-plane runtime setting in local Docker.
+3. Debt removed: the previous validation blind spot around stateful construction source products is
+   closed, and the canonical `lotus-core` seed now includes observed booked-fee evidence so
+   `TransactionCostCurve:v1` is not an empty envelope for the governed portfolio.
+4. Proven evidence: `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available make
+   live-api-validate-core` passed 14/14 against `manage.dev.lotus`, `core-control.dev.lotus`, and
+   `core-query.dev.lotus`; the saved evidence shows nine returned transaction-cost curve points,
+   `PortfolioCashflowProjection:v1`, `ClientRestrictionProfile:v1`, and
+   `SustainabilityPreferenceProfile:v1` in the live stateful construction diagnostics.
+5. Standard reached: this slice reaches the expected production-readiness standard for the completed
+   WTBD proof gap. Open items remain only where the WTBD already defers unsupported OMS,
+   market-impact, client-income-need, PM-scoring, and regulatory-suitability methodology to owning
+   future RFCs.
+
 Execution rule:
 
 Do not open a new WTBD implementation slice until the current slice has passed local validation,

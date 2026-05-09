@@ -45,7 +45,9 @@ Current posture under RFC-0082:
 3. stateful `portfolio_id` mode is implemented behind explicit runtime gates and remains anchored
    to governed `lotus-core` authority; it is advertised in `/api/v1/integration/capabilities` only
    when the stateful capability flag, stateful sourcing gate, and `DPM_CORE_BASE_URL` are all
-   configured, and the retired monolithic core route is not configured
+   configured, and the retired monolithic core route is not configured. `DPM_CORE_QUERY_BASE_URL`
+   is also required when stateful construction consumes query-plane source products such as
+   `PortfolioCashflowProjection:v1`.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
@@ -275,7 +277,13 @@ Operationally important truths:
 3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
 4. stateful DPM promotion requires `make live-api-validate-core` to pass with
    `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` after `lotus-core` exposes the
-   RFC-087 certified source-data products and canonical data is seeded
+   RFC-087 certified source-data products and canonical data is seeded. The live proof now includes
+   stateful source-backed construction over `TransactionCostCurve:v1`,
+   `PortfolioCashflowProjection:v1`, `ClientRestrictionProfile:v1`, and
+   `SustainabilityPreferenceProfile:v1`, not only stateful simulate lineage.
+5. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to 400 days so low-turnover private-banking
+   portfolios can consume observed booked-fee evidence without treating it as predictive execution
+   cost, venue, or market-impact methodology.
 
 ## Documentation Map
 

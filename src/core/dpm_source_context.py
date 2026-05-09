@@ -736,6 +736,39 @@ class DpmCoreTransactionCostCurveResponse(BaseModel):
     )
 
 
+class DpmCoreCashflowProjectionPoint(BaseModel):
+    projection_date: date = Field(description="Projection date represented by the source row.")
+    net_cashflow: Decimal = Field(description="Daily net cashflow in portfolio currency.")
+    projected_cumulative_cashflow: Decimal = Field(
+        description="Running cumulative cashflow over the returned projection window."
+    )
+
+
+class DpmCorePortfolioCashflowProjectionResponse(BaseModel):
+    product_name: Literal["PortfolioCashflowProjection"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    as_of_date: date = Field(description="Business-date anchor for the projection.")
+    range_start_date: date = Field(description="Inclusive projection-window start date.")
+    range_end_date: date = Field(description="Inclusive projection-window end date.")
+    include_projected: bool = Field(
+        description="Whether projected future external cash movements are included."
+    )
+    portfolio_currency: str = Field(description="Currency for projected cashflow measures.")
+    points: list[DpmCoreCashflowProjectionPoint] = Field(default_factory=list)
+    total_net_cashflow: Decimal = Field(
+        description="Source-owned total net cashflow over the returned projection window."
+    )
+    projection_days: int = Field(description="Projection horizon in days.")
+    notes: Optional[str] = Field(default=None)
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(default=None)
+    lineage: dict[str, str] = Field(default_factory=dict)
+
+
 class DpmCoreClientRestrictionEntry(BaseModel):
     restriction_scope: str = Field(description="Source-owned restriction scope.")
     restriction_code: str = Field(description="Bounded restriction code.")
@@ -851,6 +884,14 @@ class DpmCoreExecutionContext(BaseModel):
         description=(
             "Optional source-owned observed transaction-cost evidence from "
             "TransactionCostCurve:v1. Absence preserves labelled local cost estimates only."
+        ),
+    )
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = Field(
+        default=None,
+        description=(
+            "Optional source-owned operational cashflow evidence from "
+            "PortfolioCashflowProjection:v1. Absence preserves settlement/current-cash-only "
+            "liquidity behavior."
         ),
     )
     client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = Field(

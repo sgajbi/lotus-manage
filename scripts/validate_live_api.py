@@ -491,8 +491,11 @@ def _probe_construction_second_wave(
         response.status_code == 200
         and set(by_method) == expected_methods
         and all(
-            by_method.get(method, {}).get("method_status") == "READY" for method in expected_methods
+            by_method.get(method, {}).get("method_status") == "READY"
+            for method in expected_methods - {"SOLVER_CONSTRAINED"}
         )
+        and by_method.get("SOLVER_CONSTRAINED", {}).get("method_status")
+        in {"READY", "PENDING_REVIEW"}
         and "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE" in risk_reason_codes
         and "LIQUIDITY_POLICY_READY" in liquidity_reason_codes
         and "REGIME_SCENARIO_PACK_READY" in regime_reason_codes
@@ -516,6 +519,115 @@ def _probe_construction_second_wave(
             "liquidity_reason_codes": liquidity_reason_codes,
             "regime_reason_codes": regime_reason_codes,
             "currency_reason_codes": currency_reason_codes,
+        },
+    )
+
+
+def _probe_stateful_source_backed_construction(
+    client: httpx.Client,
+    *,
+    portfolio_id: str,
+    as_of: str,
+) -> ProbeResult:
+    payload = {
+        "input_mode": "stateful",
+        "stateful_input": _stateful_selector_payload(portfolio_id=portfolio_id, as_of=as_of),
+        "methods": ["COST_AWARE", "LIQUIDITY_AWARE", "ESG_AWARE"],
+    }
+    response = client.post(
+        "/api/v1/construction/alternative-sets/generate",
+        json=payload,
+        headers={
+            "Idempotency-Key": f"live-stateful-source-backed-{uuid.uuid4().hex[:10]}",
+            "X-Correlation-Id": f"corr-live-stateful-source-backed-{uuid.uuid4().hex[:10]}",
+        },
+    )
+    body = response.json() if response.content else {}
+    alternatives = body.get("alternatives") if isinstance(body, dict) else []
+    alternatives = alternatives if isinstance(alternatives, list) else []
+    by_method = {
+        alternative.get("method"): alternative
+        for alternative in alternatives
+        if isinstance(alternative, dict)
+    }
+
+    cost_context = (
+        by_method.get("COST_AWARE", {})
+        .get("diagnostics", {})
+        .get("authority_context", {})
+        .get("transaction_cost_context", {})
+    )
+    liquidity_context = (
+        by_method.get("LIQUIDITY_AWARE", {})
+        .get("diagnostics", {})
+        .get("authority_context", {})
+        .get("liquidity_context", {})
+    )
+    cashflow_projection = liquidity_context.get("cashflow_projection", {})
+    esg_authority = (
+        by_method.get("ESG_AWARE", {}).get("diagnostics", {}).get("authority_context", {})
+    )
+    restriction_context = esg_authority.get("client_restriction_context", {})
+    sustainability_context = esg_authority.get("sustainability_preference_context", {})
+    source_reasons = {
+        method: (
+            alternative.get("diagnostics", {}).get("enrichment_summary", {}).get("reason_codes", [])
+        )
+        for method, alternative in by_method.items()
+    }
+    ok = (
+        response.status_code == 200
+        and body.get("input_mode") == "stateful"
+        and body.get("source_supportability_state") == "READY"
+        and set(by_method) == {"COST_AWARE", "LIQUIDITY_AWARE", "ESG_AWARE"}
+        and cost_context.get("source_system") == "lotus-core"
+        and cost_context.get("source_product_name") == "TransactionCostCurve"
+        and cost_context.get("returned_curve_point_count", 0) > 0
+        and cashflow_projection.get("source_system") == "lotus-core"
+        and cashflow_projection.get("source_product_name") == "PortfolioCashflowProjection"
+        and restriction_context.get("source_system") == "lotus-core"
+        and restriction_context.get("source_product_name") == "ClientRestrictionProfile"
+        and sustainability_context.get("source_system") == "lotus-core"
+        and sustainability_context.get("source_product_name") == "SustainabilityPreferenceProfile"
+        and "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE" not in source_reasons.get("COST_AWARE", [])
+    )
+    return _result(
+        "stateful_source_backed_construction",
+        ok,
+        {
+            "status_code": response.status_code,
+            "alternative_set_id": body.get("alternative_set_id")
+            if isinstance(body, dict)
+            else None,
+            "input_mode": body.get("input_mode") if isinstance(body, dict) else None,
+            "source_supportability_state": (
+                body.get("source_supportability_state") if isinstance(body, dict) else None
+            ),
+            "methods": sorted(by_method),
+            "cost_context": {
+                "source_system": cost_context.get("source_system"),
+                "source_product_name": cost_context.get("source_product_name"),
+                "returned_curve_point_count": cost_context.get("returned_curve_point_count"),
+                "missing_security_ids": cost_context.get("missing_security_ids"),
+            },
+            "cashflow_projection": {
+                "source_system": cashflow_projection.get("source_system"),
+                "source_product_name": cashflow_projection.get("source_product_name"),
+                "include_projected": cashflow_projection.get("include_projected"),
+                "data_quality_status": cashflow_projection.get("data_quality_status"),
+            },
+            "client_restriction": {
+                "source_system": restriction_context.get("source_system"),
+                "source_product_name": restriction_context.get("source_product_name"),
+                "restriction_count": restriction_context.get("restriction_count"),
+            },
+            "sustainability_preference": {
+                "source_system": sustainability_context.get("source_system"),
+                "source_product_name": sustainability_context.get("source_product_name"),
+                "preference_count": sustainability_context.get("preference_count"),
+            },
+            "reason_codes": source_reasons,
+            "detail": body.get("detail") if isinstance(body, dict) else None,
         },
     )
 
@@ -680,6 +792,16 @@ def run_live_api_validation(
                 (
                     "stateful_core_sourcing_available",
                     lambda: _probe_stateful_core_sourcing_available(
+                        client,
+                        portfolio_id=portfolio_id,
+                        as_of=as_of,
+                    ),
+                )
+            )
+            probe_calls.append(
+                (
+                    "stateful_source_backed_construction",
+                    lambda: _probe_stateful_source_backed_construction(
                         client,
                         portfolio_id=portfolio_id,
                         as_of=as_of,

@@ -430,6 +430,32 @@ def _transaction_cost_curve_payload() -> dict:
     }
 
 
+def _cashflow_projection_payload() -> dict:
+    return {
+        "product_name": "PortfolioCashflowProjection",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "range_start_date": "2026-04-10",
+        "range_end_date": "2026-07-09",
+        "include_projected": True,
+        "portfolio_currency": "SGD",
+        "points": [
+            {
+                "projection_date": "2026-04-17",
+                "net_cashflow": "-18000.0000000000",
+                "projected_cumulative_cashflow": "-18000.0000000000",
+            }
+        ],
+        "total_net_cashflow": "-18000.0000000000",
+        "projection_days": 90,
+        "notes": "Projected window includes settlement-dated future external cash movements.",
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "cashflow_projection:PB_SG_GLOBAL_BAL_001:2026-04-10",
+    }
+
+
 def _client_restriction_profile_payload() -> dict:
     return {
         "product_name": "ClientRestrictionProfile",
@@ -534,6 +560,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_market_data_coverage_payload())
     if path.endswith("/transaction-cost-curve"):
         return httpx.Response(200, json=_transaction_cost_curve_payload())
+    if path.endswith("/cashflow-projection"):
+        return httpx.Response(200, json=_cashflow_projection_payload())
     if path.endswith("/client-restriction-profile"):
         return httpx.Response(200, json=_client_restriction_profile_payload())
     if path.endswith("/sustainability-preference-profile"):
@@ -574,6 +602,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots",
         "https://core.example.test/integration/market-data/coverage",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/transaction-cost-curve",
+        "https://core.example.test/portfolios/PB_SG_GLOBAL_BAL_001/cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
     ]
@@ -581,19 +610,111 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"sections":["positions_baseline","portfolio_totals"]' in seen[2][2]
     assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
+    assert b'"window":{"start_date":"2025-02-18","end_date":"2026-03-25"}' in seen[6][2]
     assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
-    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[7][2]
-    assert b'"include_inactive_restrictions":false' in seen[7][2]
-    assert b'"include_inactive_preferences":false' in seen[8][2]
+    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[8][2]
+    assert b'"include_inactive_restrictions":false' in seen[8][2]
+    assert b'"include_inactive_preferences":false' in seen[9][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
     assert context.transaction_cost_curve is not None
     assert context.transaction_cost_curve.supportability.state == "READY"
+    assert context.portfolio_cashflow_projection is not None
+    assert context.portfolio_cashflow_projection.product_name == "PortfolioCashflowProjection"
+    assert context.portfolio_cashflow_projection.include_projected is True
     assert context.client_restriction_profile is not None
     assert context.client_restriction_profile.supportability.state == "READY"
     assert context.sustainability_preference_profile is not None
     assert context.sustainability_preference_profile.supportability.state == "READY"
+
+
+def test_core_resolver_routes_cashflow_projection_to_query_base_url():
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return _composed_context_response_for(request)
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core-control.example.test",
+            query_base_url="https://core-query.example.test",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    context = client.resolve_execution_context(
+        stateful_input=_stateful_input(),
+        correlation_id="corr-core-query-001",
+    )
+
+    assert context.portfolio_cashflow_projection is not None
+    assert (
+        "https://core-query.example.test/portfolios/PB_SG_GLOBAL_BAL_001/"
+        "cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true"
+    ) in seen
+    assert all(
+        url.startswith("https://core-control.example.test/")
+        for url in seen
+        if "cashflow-projection" not in url
+    )
+
+
+def test_core_resolver_cashflow_projection_path_can_be_disabled():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            portfolio_cashflow_projection_path_template="",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(_composed_context_response_for)),
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+    ):
+        client.resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+
+def test_core_resolver_cashflow_projection_maps_get_failures():
+    unavailable_client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=1),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(503, json={"detail": "maintenance"})
+            )
+        ),
+    )
+    incomplete_client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(404, json={"detail": "missing"})
+            )
+        ),
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+    ):
+        unavailable_client.resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_CASHFLOW_PROJECTION_INCOMPLETE"):
+        incomplete_client.resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
 
 
 def test_core_resolver_retries_transient_unavailable_response():
