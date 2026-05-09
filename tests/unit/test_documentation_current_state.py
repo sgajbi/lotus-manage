@@ -979,6 +979,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-core.wiki` commit `231bd75`" in work_to_be_done
     assert "PortfolioCashflowProjection:v1` methodology" in work_to_be_done
     assert "same-day booked/projected additivity" in work_to_be_done
+    assert "Latest WTBD-006 core portfolio-tax-lot methodology proof" in work_to_be_done
+    assert "`lotus-core` PR #346" in work_to_be_done
+    assert "`e48d85a98ae3f53199bdccbe2e83f6304c9e050c`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `f37af67`" in work_to_be_done
+    assert "`PortfolioTaxLotWindow:v1` methodology" in work_to_be_done
+    assert "empty full-portfolio" in work_to_be_done
+    assert "jurisdiction-specific tax advice" in work_to_be_done
     assert "Latest WTBD-006 core transaction-cost-curve methodology proof" in work_to_be_done
     assert "`lotus-core` PR #345" in work_to_be_done
     assert "`83d791d0e599f06a2c0caab6eaba647f717d4658`" in work_to_be_done
@@ -1018,6 +1025,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "attribution methodology truth" in supported_features
     assert "current core slices" in supported_features
     assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
+        supported_features
+    )
+    assert "`PortfolioTaxLotWindow:v1` methodology truth through `lotus-core` PR #346" in (
         supported_features
     )
     assert "`TransactionCostCurve:v1` methodology truth through `lotus-core` PR #345" in (
