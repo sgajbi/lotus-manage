@@ -65,14 +65,14 @@ Partial / in-progress items:
 | RFC37-WTBD-001 | `lotus-manage` RFC-0042 backend authority and first-wave outcome product path are implemented. | Complete richer downstream/source-owner realization across all outcome learning loops. |
 | RFC40-WTBD-009 | First-wave regime scenario evidence exists through RFC-0039 selected alternatives. | Direct proof-pack scenario contribution, CIO approval, and richer source-owner proof-pack enrichment remain future work. |
 | RFC40-WTBD-010 | `lotus-manage` exposes `/api/v1/rebalance/portfolio-memory/{portfolio_id}` as a deterministic source-backed read model over mandate health snapshots, monitoring exceptions, proof packs, proof-pack timelines, rebalance waves, internal handoffs, and outcome-review events; `lotus-gateway` composes it for the command center; and `lotus-workbench` renders the first-wave portfolio-memory timeline with canonical browser proof. Manage now also emits stable event identity plus retention, redaction, access, and audit policy in the API contract. `lotus-report` PR #92 adds the report-side consumer seam for bounded `portfolio_memory_context` lineage in proof-pack, wave, and outcome report jobs, and `lotus-report` PR #93 adds the report-owned source-event family at `GET /reports/jobs/{job_id}/portfolio-memory-events` for report lifecycle, snapshot, render, and archive evidence. Manage report-input APIs now attach bounded portfolio-memory context for proof-pack, rebalance-wave, and outcome-review reports without folding that context into recursive report-input hashes. `lotus-ai` PR #62 adds bounded DPM PM memo and outcome-review narrative consumers that validate portfolio identity, capped event refs, `NO_RAW_PAYLOADS`, source content hash, and no-reconstruction source-authority policy before exposing compact lineage summaries; `lotus-ai` PR #64 adds the AI-owned no-raw-payload workflow-pack source-event family. | Additional OMS, PM-scoring, and client-communication source-event families still need owning-app implementation before the broader portfolio-memory WTBD can be closed. |
-| RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow source-family adapters are implemented. `lotus-risk` now has implementation-backed rolling tracking-error and rolling information-ratio methodology truth for `RollingRiskMetricsReport:v1`, including inner date alignment, percentage-point to decimal conversion, `ddof=1` sample standard deviation, annualized decimal tracking-error output, dimensionless information-ratio output, warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error information-ratio flagging. `lotus-performance` has tightened source-owner MWR and contribution methodology/wiki truth for stateful lotus-core source resolution and portfolio/position timeseries normalization. The attribution methodology truth still covers stateful lotus-core portfolio/position, benchmark, and source-currency normalization for allocation, selection, interaction, active-return, and currency-attribution outputs. | Aggregated risk/performance, tax, FX, cash movement, liquidity, and execution methodologies remain source-owner work. |
+| RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow source-family adapters are implemented. `lotus-risk` now has implementation-backed rolling tracking-error and rolling information-ratio methodology truth for `RollingRiskMetricsReport:v1`, including inner date alignment, percentage-point to decimal conversion, `ddof=1` sample standard deviation, annualized decimal tracking-error output, dimensionless information-ratio output, warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error information-ratio flagging. `lotus-core` now has implementation-backed `PortfolioCashflowProjection:v1` methodology truth for booked-only versus projected modes, latest cashflow row selection, settlement-dated external `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity, portfolio-base-currency output, and explicit non-claims for liquidity ladders, tax, performance, market impact, and OMS execution. `lotus-performance` has tightened source-owner MWR and contribution methodology/wiki truth for stateful lotus-core source resolution and portfolio/position timeseries normalization. The attribution methodology truth still covers stateful lotus-core portfolio/position, benchmark, and source-currency normalization for allocation, selection, interaction, active-return, and currency-attribution outputs. | Aggregated risk/performance, tax, FX, liquidity ladders, and execution methodologies remain source-owner work. |
 
 Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC40-WTBD-010 - Decision timeline and portfolio memory | Links mandate, exception, wave, proof-pack, handoff, outcome, and report-input lineage into portfolio memory without inventing source truth. First-wave Manage/Gateway/Workbench product realization is merged, live-proven, and wiki-published; manage now emits mandate-health, monitoring-exception, event identity, retention, redaction, access, audit policy, and bounded report-input context; `lotus-report` has the bounded context consumer plus a report-owned source-event family; and `lotus-ai` has bounded DPM memo/narrative consumers plus an AI-owned source-event family. | Remaining OMS, PM-scoring, and client-communication source-event families are implemented by their owners, tested, and canonically proven without reconstructing source facts. |
-| 2 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` rolling tracking-error and rolling information-ratio methodology/wiki truth and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct rolling active-risk, cash-flow schedules, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
+| 2 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` rolling tracking-error and rolling information-ratio methodology/wiki truth, `lotus-core` cashflow-projection methodology/wiki truth, and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct rolling active-risk, operational cash movement, cash-flow schedules, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 | 3 | RFC41-WTBD-003 - Tactical house-view, risk-event, and implicit campaign cohorts | Moves the rebalance wave operating model toward bank operating workflows without inventing source-owned cohorts. | Source owners publish governed cohort discovery products; manage consumes them with fail-closed dependency handling, proof-pack/wave preservation, and downstream product evidence. |
 
 Execution rule:
@@ -3596,6 +3596,33 @@ Latest WTBD-006 core realized-outcome source-boundary proof:
 6. this does not close RFC42-WTBD-006: aggregated tax, aggregated FX, cash movement methodology
    beyond source-emitted totals, liquidity ladders, execution methodology, and any client tax or
    OMS acknowledgement claims remain future source-owner work.
+
+Latest WTBD-006 core cashflow-projection methodology proof:
+
+1. `lotus-core` PR #344 was merged to `main` as
+   `3a29c3ea92fce92d39fbc91f325bd04cb1157d20` and the repo-local wiki was published to
+   `lotus-core.wiki` commit `231bd75`,
+2. `docs/methodologies/source-data-products/portfolio-cashflow-projection.md` now records the
+   implemented `PortfolioCashflowProjection:v1` methodology with endpoint modes, inputs,
+   upstream source tables, unit conventions, variable dictionary, formulas, deterministic steps,
+   validation/failure behavior, configuration options, outputs, and a worked example,
+3. the methodology pins booked-only versus projected mode behavior, latest-cashflow-row selection,
+   settlement-dated external `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected
+   additivity, empty-day cumulative carry-forward, portfolio-base-currency output, and explicit
+   boundaries from liquidity ladders, tax methodology, performance returns, market impact, and OMS
+   execution forecasting,
+4. `wiki/Cashflow-Calculator.md` and `wiki/Mesh-Data-Products.md` now carry implementation-backed
+   business, operations, developer, and sales/client-demo truth for the cashflow projection source
+   product,
+5. local source-owner proof passed with `8` focused service/doc tests plus the OpenAPI cashflow
+   projection example test, and local contract gates passed for OpenAPI quality, API vocabulary,
+   and source-data-product contracts,
+6. GitHub PR Merge Gate passed workflow lint, lint/typecheck/contracts/security, unit,
+   unit-db, integration-lite, ops-contract, transaction contract tests, coverage, docker build,
+   docker smoke, E2E smoke, latency, and fast performance gates,
+7. this advances RFC42-WTBD-006 but does not close it: aggregated tax, aggregated FX, liquidity
+   ladders, execution methodology, broader aggregate risk/performance products, and any client tax
+   or OMS acknowledgement claims remain future source-owner work.
 
 Latest WTBD-006 performance-contribution tightening proof:
 

@@ -755,6 +755,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "rolling information-ratio methodology truth" in supported_features
     assert "`lotus-risk` PR #114" in supported_features
     assert "wiki `105b716`" in supported_features
+    assert "`PortfolioCashflowProjection:v1` methodology truth" in supported_features
+    assert "`lotus-core` PR #344" in supported_features
+    assert "wiki `231bd75`" in supported_features
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
     assert (
         "Supported as RFC-0042 manage backend authority plus first-wave product realization"
@@ -970,6 +973,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "lotus-core` PR #343" in work_to_be_done
     assert "`25cbff191d681a6518dfc7072dc2a8c9cf2fd7f0`" in work_to_be_done
     assert "`lotus-core.wiki` commit `a9d1f68`" in work_to_be_done
+    assert "Latest WTBD-006 core cashflow-projection methodology proof" in work_to_be_done
+    assert "`lotus-core` PR #344" in work_to_be_done
+    assert "`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `231bd75`" in work_to_be_done
+    assert "PortfolioCashflowProjection:v1` methodology" in work_to_be_done
+    assert "same-day booked/projected additivity" in work_to_be_done
+    assert "OpenAPI quality, API vocabulary" in work_to_be_done
     assert "tests/unit/docs/test_source_data_product_boundaries.py" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
     assert "stateful lotus-core portfolio/position timeseries normalization" in work_to_be_done
@@ -998,7 +1008,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "contribution methodology truth" in supported_features
     assert "attribution methodology truth" in supported_features
-    assert "current core source-boundary slice" in supported_features
+    assert "current core slices" in supported_features
+    assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
+        supported_features
+    )
     assert "transaction-ledger row measures" in supported_features
     assert "cashflow projection totals" in supported_features
     assert "benchmark context" in supported_features
