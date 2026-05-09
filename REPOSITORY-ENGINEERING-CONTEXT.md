@@ -154,7 +154,13 @@ Current repository posture:
     reporting-currency cash balances, snapshot-versus-history fallback, position weights,
     supportability states, and explicit non-claims for liquidity ladders, income-needs planning,
     performance returns, risk exposure methodology, tax advice, execution quality, and OMS
-    acknowledgement. It also includes the merged and wiki-published `lotus-risk` rolling
+    acknowledgement. It also includes the merged and wiki-published `lotus-core`
+    `MarketDataCoverageWindow:v1` methodology slice from PR #349
+    (`4101f1ba321b8464093c12358e57f5c448440413`, wiki `9be04cc`), which pins latest price and FX
+    observation selection, configurable max-staleness policy, missing/stale market-data posture,
+    populated DPM source-readiness support, and explicit non-claims for valuation methodology, FX
+    attribution, liquidity ladders, market impact, execution quality, best execution, venue
+    routing, and OMS acknowledgement. It also includes the merged and wiki-published `lotus-risk` rolling
     tracking-error methodology slice from PR #113
     (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) and rolling
     information-ratio methodology slice from PR #114
@@ -259,6 +265,7 @@ Current repository posture:
     `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
     measures, and `lotus-core` `HoldingsAsOf:v1` cash totals plus
+    `MarketDataCoverageWindow:v1` price/FX freshness posture,
     `TransactionLedgerWindow:v1` explicit transaction-row trade-fee, withholding-tax,
     realized-FX-P&L, linked-cashflow measures, and `PortfolioCashflowProjection:v1` total net
     cashflow, live

@@ -1009,6 +1009,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "snapshot-versus-history fallback" in work_to_be_done
     assert "reporting-currency cash balances" in work_to_be_done
     assert "liquidity ladders, income-needs planning" in work_to_be_done
+    assert "Latest WTBD-006 core market-data coverage methodology proof" in work_to_be_done
+    assert "`lotus-core` PR #349" in work_to_be_done
+    assert "`4101f1ba321b8464093c12358e57f5c448440413`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `9be04cc`" in work_to_be_done
+    assert "`MarketDataCoverageWindow:v1` methodology" in work_to_be_done
+    assert "latest observation selection at or before `as_of_date`" in work_to_be_done
+    assert "price and FX freshness posture" in work_to_be_done
+    assert "valuation methodology, FX attribution" in work_to_be_done
     assert "OpenAPI quality, API vocabulary" in work_to_be_done
     assert "tests/unit/docs/test_source_data_product_boundaries.py" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
@@ -1039,7 +1047,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "contribution methodology truth" in supported_features
     assert "attribution methodology truth" in supported_features
     assert "current core slices" in supported_features
+    assert "market-data coverage, transaction-ledger row measures" in supported_features
     assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
+        supported_features
+    )
+    assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features
     )
     assert "`HoldingsAsOf:v1` methodology truth through `lotus-core` PR #348" in (
