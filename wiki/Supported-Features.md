@@ -169,6 +169,71 @@ Audience use:
 4. Engineers can trace the flow from core source products through manage health and monitoring,
    Gateway BFF composition, Workbench rendering, and platform QA evidence.
 
+## RFC-0039 Construction Alternatives Product Path
+
+RFC-0039 now has a bounded first-wave product path for discretionary portfolio construction
+alternatives. Manage remains the construction authority, Gateway composes manage-owned contracts,
+and Workbench renders the construction lab without browser optimization or local methodology
+reconstruction.
+
+```mermaid
+flowchart LR
+    CoreProducts[lotus-core mandate, model, cost, cashflow, restriction, and sustainability products]
+    RiskScenario[lotus-risk concentration and scenario authority]
+    ManageConstruction[lotus-manage RFC-0039 construction authority]
+    GatewayConstruction[lotus-gateway construction BFF]
+    WorkbenchLab[lotus-workbench construction lab]
+    Evidence[Live evidence and audit artifacts]
+
+    CoreProducts --> ManageConstruction
+    RiskScenario --> ManageConstruction
+    ManageConstruction --> GatewayConstruction
+    GatewayConstruction --> WorkbenchLab
+    WorkbenchLab --> Evidence
+```
+
+Current functional behavior:
+
+1. Manage generates, reads, and records selected construction alternatives through the
+   `/api/v1/construction` route family.
+2. Gateway exposes Workbench-facing construction BFF routes while preserving manage alternative
+   identifiers, method status, objective/constraint traces, source supportability, reason codes,
+   and selected state.
+3. Workbench renders the canonical construction lab with generation action, comparison table,
+   method status, drift/turnover metrics, objective/constraint trace counts, source posture,
+   correlation evidence, selected-alternative state, Gateway mediation, and manage authority.
+4. Source-backed method depth includes `TransactionCostCurve:v1`,
+   `PortfolioCashflowProjection:v1`, `ClientRestrictionProfile:v1`,
+   `SustainabilityPreferenceProfile:v1`, and `RegimeScenarioPackEvaluation:v1` where owning
+   services are configured and ready.
+5. The 2026-05-09 live audit found and fixed repeated-generation identity defects in Workbench:
+   deterministic idempotency produced HTTP 409, deterministic correlation then produced HTTP 500,
+   and merged `lotus-workbench` PR #171 moved generation to unique per-mutation idempotency and
+   correlation identifiers.
+
+Non-functional controls:
+
+| Control area | Current implementation-backed posture |
+| --- | --- |
+| Source authority | Core and risk own their source products; manage owns construction interpretation; Gateway and Workbench do not reconstruct construction facts. |
+| Data mesh posture | Construction alternatives preserve source service, source product, source reference, supportability state, reason codes, and content-hash lineage where emitted by source owners. |
+| Retry safety | Workbench generation uses unique mutation identity for idempotency and correlation while retaining deterministic injection for unit tests. |
+| Observability | Construction responses carry bounded supportability, authority, reason, and correlation fields suitable for diagnosis without sensitive metric-label sprawl. |
+| Failure behavior | Missing cost curves, cashflow projections, restriction profiles, sustainability profiles, or risk scenario packs degrade, block, or mark alternatives pending review instead of fabricating readiness. |
+| Demo readiness | The canonical path is live-proven for `PB_SG_GLOBAL_BAL_001`; `construction-alternatives-live-summary.json` evidence shows source service `lotus-manage`, authority `lotus-manage:RFC-0039`, three alternatives, visible Gateway mediation, and no local optimizer/methodology claim. |
+
+Audience use:
+
+1. Business users can describe the feature as a governed PM comparison surface for alternatives,
+   source posture, trade-offs, and selected intent before execution.
+2. Operations users can inspect degraded, blocked, or pending-review reasons without assuming
+   missing source products are ready.
+3. Sales and pre-sales teams can demo generated alternatives and selection posture while avoiding
+   unsupported claims about OMS execution, predictive execution quotes, automatic suitability,
+   autonomous PM choice, or AI narrative completion.
+4. Engineers can trace the product path from source products through manage construction,
+   Gateway composition, Workbench rendering, and live evidence artifacts.
+
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it
@@ -397,8 +462,8 @@ evidence.
 | Mandate digital twin | RFC-0038 | Refresh/read/version/diff API foundation is supported and live-proven with core/manage proof. Populated Gateway/Workbench command-center product proof is implementation-backed in owning repositories. |
 | Mandate health score | RFC-0038 | Scoring, persistence, refresh-response output, standalone health APIs, bounded monitoring integration, and command-center aggregation are implementation-backed and live-proven at the manage/core API layer. |
 | DPM command center | RFC-0038 | Bounded command-center summary API is implemented over monitoring runs and active exceptions scoped to the selected monitoring run, with explicit ready/partial/empty/degraded/blocked supportability state. Gateway composition, Workbench cockpit rendering, populated canonical seed proof, populated ready/partial/empty platform posture checks, and PM-book-backed monitoring selectors are implementation-backed in the owning repositories; degraded and blocked canonical fixtures remain future source-owner scope. |
-| Advanced construction alternatives | RFC-0039 | Manage backend foundation is supported for first-wave and mandatory authority-backed generation/read/selection after implementation proof and hardening. Full product-surface promotion still requires the paired Gateway/Workbench realization RFCs to be implemented and proven. |
-| Tax, liquidity, risk, currency, regime, and ESG/restriction-aware construction | RFC-0039 | Supported as manage backend construction capabilities with explicit source-authority context. Liquidity-aware construction accepts source-owned `PortfolioCashflowProjection:v1` evidence to flag projected cash-pressure policy breaches; regime-stress-aware construction consumes `lotus-risk` `RegimeScenarioPackEvaluation:v1` when configured; ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` to block hard restriction violations and preserve sustainability review evidence. Client income-need planning, security-level ESG classification, and regulatory suitability approval remain unsupported. Promote the new profile surface to full product outcome only after Gateway/Workbench implementation and canonical browser proof. |
+| Advanced construction alternatives | RFC-0039 | Manage backend foundation and bounded first-wave Gateway/Workbench product path are supported for generation, read, selection, comparison, source posture, reason-code display, and selected-alternative controls after implementation proof, canonical front-office proof, and PR #171 retry-identity hardening. Proof-pack lifecycle, rebalance-wave orchestration, report/AI narrative workflow, external OMS execution, autonomous PM choice, and approval staging remain unsupported until owning RFCs implement and prove them. |
+| Tax, liquidity, risk, currency, regime, and ESG/restriction-aware construction | RFC-0039 | Supported as manage backend construction capabilities with explicit source-authority context. Liquidity-aware construction accepts source-owned `PortfolioCashflowProjection:v1` evidence to flag projected cash-pressure policy breaches; regime-stress-aware construction consumes `lotus-risk` `RegimeScenarioPackEvaluation:v1` when configured; ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` to block hard restriction violations and preserve sustainability review evidence. Client income-need planning, security-level ESG classification, predictive execution quotes, market-impact modelling, venue routing, local browser optimization, and regulatory suitability approval remain unsupported. |
 | Full front-office proof-pack review | RFC-0040, Gateway RFC-0098, Workbench RFC-0098 | First-wave full proof-pack product realization is supported for the canonical portfolio after manage backend authority, Gateway proof-pack composition, Workbench proof-pack review UX, replay-safe deterministic proof-pack generation, governed platform QA proof, report/render/archive proof-pack materialization in owning services, governed AI memo generation, source-owned risk/performance proof-pack enrichment, source-owned observed transaction-cost evidence from `TransactionCostCurve:v1` with merged source-owner methodology proof, source-owned client restriction/sustainability profile preservation from `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1`, and cross-RFC portfolio-memory first-wave product realization. Richer source-owner methodology depth and downstream profile-detail presentation remain separate WTBDs. |
 | Decision timeline and portfolio memory | RFC-0038, RFC-0040, RFC-0041, RFC-0042 | Manage backend portfolio memory is implementation-backed through `/api/v1/rebalance/portfolio-memory/{portfolio_id}` for mandate health, monitoring exception, proof-pack, wave, handoff, and outcome-review lineage. Gateway command-center composition, Workbench timeline rendering, platform panel registration, canonical browser proof, and Workbench wiki publication are also implementation-backed. Manage now emits event identity plus retention, redaction, access, audit policy, and bounded `portfolio_memory_context` on proof-pack, rebalance-wave, and outcome-review report inputs. `lotus-report` PR #92 implements report-side bounded context consumption, and `lotus-report` PR #93 implements the report-owned source-event family for report lifecycle, snapshot, render, and archive evidence. `lotus-ai` PR #62 implements bounded DPM PM memo and outcome-review narrative context consumption, and `lotus-ai` PR #64 implements the AI-owned workflow-pack source-event family for no-raw-payload AI run, review, and lineage evidence. Remaining OMS, PM-scoring, and client-communication source-event families stay downstream until implemented and canonically proven in the owning apps. |
 | CIO model-change and full front-office rebalance waves | RFC-0041, Gateway RFC-0098, Workbench RFC-0098 | Manage backend support is implementation-backed and closed as `DONE` for explicit portfolio-list waves, source-owned `PM_BOOK_REVIEW` wave discovery through lotus-core `PortfolioManagerBookMembership:v1`, and source-owned `CIO_MODEL_CHANGE` wave discovery through lotus-core `CioModelChangeAffectedCohort:v1`. Gateway wave composition, first-wave Workbench wave command center support, governed rebalance-wave report materialization in report/render/archive, and AI memo generation from wave evidence are implementation-backed, live-proven or CI-proven as applicable, and wiki-published where changed. Risk-event/tactical house-view/campaign cohort discovery and external OMS execution remain deferred until source-owning products and owning-service implementations are complete. |

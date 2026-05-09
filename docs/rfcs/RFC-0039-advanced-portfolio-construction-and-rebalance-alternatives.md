@@ -39,11 +39,14 @@ source supportability, fallback decisions, and evidence. The selected alternativ
 input to proof packs, review workflows, rebalance waves, and post-trade outcome learning in later
 RFCs.
 
-This RFC is a manage-side backend RFC. As of this RFC tightening, `lotus-manage` construction
-alternatives are not integrated with `lotus-gateway` or `lotus-workbench`. Gateway and Workbench
-must receive separate paired RFCs near the end of the manage implementation, after the manage
-contract and evidence are concrete enough to articulate correctly. The full business outcome must
-not be claimed from manage-only implementation.
+This RFC began as a manage-side backend RFC and remains the authority record for construction
+alternative methodology, persistence, source supportability, and selection state. Post-closure WTBD
+work has now delivered the first-wave downstream product path: `lotus-gateway` composes the
+manage-owned construction contracts without recomputation, and `lotus-workbench` renders the
+Gateway-backed construction lab for the canonical front-office portfolio. The full business outcome
+is therefore implementation-backed for generated alternatives, comparison posture, source
+supportability, and selection controls, while richer lifecycle choreography across proof packs,
+waves, reports, AI, approvals, and OMS handoff remains tracked separately.
 
 ---
 
@@ -221,15 +224,17 @@ RFCs such as RFC-0040, RFC-0041, RFC-0042, and RFC-0043 consume selected alterna
 packs, waves, outcome learning, and AI summarization; they must not create duplicate construction
 method RFCs unless a genuinely separate business capability appears. The following second-wave
 methods are governed inside RFC-0039 and must not be split into duplicate method RFCs. This
-gold-pass promotes five authority-backed methods and keeps ESG/restriction-aware construction
-explicitly deferred:
+gold-pass promotes five authority-backed methods and a bounded source-backed
+ESG/restriction-aware method while keeping regulatory suitability, security-level ESG
+classification, and automatic client approval explicitly out of scope:
 
 1. `SOLVER_CONSTRAINED`
 2. `RISK_AWARE`
 3. `LIQUIDITY_AWARE`
 4. `CURRENCY_OVERLAY`
 5. `REGIME_STRESS_AWARE`
-6. `ESG_AWARE` / restriction-aware construction - deferred until source products are available
+6. `ESG_AWARE` / restriction-aware construction - supported when core restriction and
+   sustainability profiles are source-backed; degraded or pending-review otherwise
 7. advanced multi-objective blend methods
 
 Second-wave implementation must stay slice-driven within this RFC:
@@ -244,7 +249,8 @@ Second-wave implementation must stay slice-driven within this RFC:
 5. `REGIME_STRESS_AWARE` only after scenario packs and stress contribution evidence are
    risk/CIO-authoritative or explicitly unavailable.
 6. `ESG_AWARE` only after restriction, sustainability, eligibility, and missing-profile behavior
-   are source-backed; until then it must degrade with an explicit deferral reason.
+   are source-backed; missing profiles, classification gaps, or automatic suitability claims must
+   degrade or remain pending review with explicit reason codes.
 7. Advanced blends only after the component methods and objective weighting governance are already
    proven.
 
@@ -1202,9 +1208,10 @@ Current behavior:
 ### Slice 16: Gateway and Workbench Realization RFC Slice
 
 Slice 10 created the construction-specific downstream handoff after manage evidence and hardening
-were stable. The handoff intentionally keeps current `lotus-manage` ownership of construction
-truth while requiring Gateway and Workbench to realize the business outcome later without direct
-Workbench-to-manage calls or duplicated construction logic.
+were stable. The handoff intentionally kept `lotus-manage` ownership of construction truth while
+requiring Gateway and Workbench to realize the business outcome later without direct
+Workbench-to-manage calls or duplicated construction logic. That downstream first wave has since
+been implemented, merged, wiki-published, and revalidated during the 2026-05-09 WTBD audit.
 
 Scope:
 
@@ -1216,8 +1223,8 @@ Scope:
 4. define how Workbench renders alternatives, comparison matrix, selected alternative, evidence,
    degraded states, and action gating,
 5. define canonical demo proof across manage, gateway, and workbench,
-6. explicitly record that current `lotus-manage` is not yet integrated with Gateway/Workbench for
-   construction alternatives.
+6. explicitly record that `lotus-manage` remains the construction authority even after
+   Gateway/Workbench realization.
 
 Acceptance:
 
@@ -1228,8 +1235,8 @@ Acceptance:
    not speculative payloads.
 4. Manage RFC-0039 remains backend authority for alternatives; Gateway/Workbench do not own
    construction logic.
-5. Full business outcome is explicitly not claimed until paired RFCs are implemented and live
-   proven.
+5. First-wave business outcome is claimed only after paired RFCs are implemented, live-proven,
+   merged, and wiki-published.
 
 Evidence:
 
@@ -1252,8 +1259,10 @@ Critical review:
    browser-side optimizer logic, and Gateway recomputation of manage construction truth.
 3. The downstream RFCs define the product panels, states, supportability handling, and canonical
    proof expectations needed to realize the business outcome later.
-4. No downstream support claim is made. Gateway and Workbench remain not integrated with
-   construction alternatives until their owning implementations are complete and live-proven.
+4. Post-closure WTBD audit confirmed the downstream support claim is now bounded and
+   implementation-backed for generated alternatives, comparison, source posture, and selection
+   controls. Gateway and Workbench still do not own construction methodology, optimization, order
+   execution, or lifecycle claims.
 
 ### Slice 17: Final Closure Slice
 
@@ -1340,7 +1349,7 @@ Required artifacts:
 | Liquidity-aware construction | Supported at manage backend layer for settlement/current-cash and source-backed `PortfolioCashflowProjection:v1` projected cash-pressure evidence | Client income-need planning remains deferred until a governed source product exists. |
 | Solver-constrained construction | Proposed | Promote only after solver status, objective terms, constraints, relaxations, infeasibility, and fallback are exposed. |
 | Risk/performance-aware construction | Proposed | Promote only after enrichment seams or live integrations degrade truthfully when unavailable. |
-| ESG/restriction-aware construction | Proposed | Promote only after restriction, sustainability, and eligibility evidence is complete. |
+| ESG/restriction-aware construction | Supported for source-backed `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` consumption | Keep regulatory suitability approval, security-level ESG classification, and automatic client approval unsupported until owning source products and approval workflows are proven. |
 | Currency-overlay construction | Proposed | Promote only after FX exposure, hedge-ratio, FX funding, settlement, and hedge-blocking evidence exists. |
 | Regime/stress-aware construction | Proposed | Promote only after scenario packs and stress contribution evidence are risk-authoritative. |
 | Alternative selection | Proposed | Promote only after actor-attributed selection events are persisted and audited. |
@@ -1359,7 +1368,7 @@ Required artifacts:
 | Premature second-wave support claim | Second-wave methods must expose supportability, degraded source authority, tests, certification, and live proof before final RFC closure. |
 | Solver non-determinism | Bounded time budgets, deterministic fallback, traceable solver version and tolerance. |
 | Sensitive optimization traces leak | Bounded traces and forbidden-field tests. |
-| Full business outcome not visible | Paired Gateway and Workbench RFCs are created after manage implementation proof and hardening, then implemented separately before any full product-outcome claim. |
+| Full business outcome over-claimed | The first-wave Gateway/Workbench construction path is now implementation-backed for generated alternatives, source posture, comparison, and selection controls only; proof-pack, wave, report, AI, approval, OMS, and autonomous decisioning claims remain unsupported until implemented and live-proven by owning RFCs. |
 
 ---
 
@@ -1377,7 +1386,7 @@ RFC-0039 is complete only when:
 8. live proof shows realistic discretionary mandate comparison for `PB_SG_GLOBAL_BAL_001`,
 9. degraded-source behavior is tested,
 10. no AI, Gateway, or UI layer chooses the alternative on behalf of the PM,
-11. paired Gateway/Workbench RFCs have been created from stable manage contracts and live evidence for integration and full realization,
+11. paired Gateway/Workbench first-wave product realization is implemented, live-proven, merged, and wiki-published without moving construction authority out of manage,
 12. README/wiki/supported-features are updated truthfully,
 13. CI is green,
 14. wiki is published after merge,
@@ -1398,10 +1407,10 @@ RFC-0039 is complete only when:
 | Source-data and degraded proof | Stateful source posture is preserved on generated alternative sets; risk-aware construction consumes `lotus-risk` concentration authority; liquidity diagnostics carry settlement policy plus optional `lotus-core` cashflow projection evidence; currency and regime-stress diagnostics carry source-backed authority context; ESG/restriction-aware construction consumes `lotus-core` client restriction and sustainability profiles with explicit degraded/blocked/pending-review posture; client income-need planning remains explicitly deferred until source products exist. |
 | API certification result | `make check` passed with Ruff, format, monetary-float guard, no-alias guard, mypy, OpenAPI quality, API vocabulary, domain-data product, trust telemetry, observability contract, and 683 unit tests. Canonical live validation passed 11/11 on `http://127.0.0.1:8021` with Postgres-backed evidence in `output/rfc0039-proof/20260503-193842-authority-backed-canonical/summary.json`. |
 | Data mesh and observability result | Existing mesh product, trust telemetry, and observability contract gates passed through `make check`; construction proof preserves source supportability without moving core, risk, or performance authority into manage. |
-| Gateway/Workbench realization RFC result | Manage handoff document created; Gateway and Workbench RFC material captures construction-specific composition and construction-lab requirements. No downstream implementation or support claim is made yet. |
+| Gateway/Workbench realization RFC result | First-wave downstream realization is implementation-backed through `lotus-gateway` PR #190, `lotus-workbench` PR #150/#151, and the 2026-05-09 live audit hardening in `lotus-workbench` PR #171. Gateway composes manage contracts; Workbench renders the construction lab; neither layer recomputes construction truth or chooses alternatives. |
 | Documentation/wiki result | README, repository context, RFC, wiki API surface, architecture, integrations, endpoint certification, supported features, RFC index, and roadmap were updated with implementation-backed wording and explicit downstream boundaries. |
-| Remaining governed follow-up | Gateway/Workbench construction lab implementation and canonical browser proof remain downstream product-realization work. Manage does not claim full front-office construction-lab outcome until those repositories implement and prove their paired RFCs. |
-| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation for first-wave and mandatory authority-backed construction alternatives, with ESG/restriction-aware construction deferred truthfully. The full front-office business outcome is intentionally not claimed until Gateway and Workbench realization is implemented and live-proven. |
+| Remaining governed follow-up | RFC39-WTBD-010 remains open for construction lifecycle depth across proof packs, waves, reports, AI, approval staging, OMS handoff, and richer demo choreography. Predictive execution quotes, market impact, venue routing, regulatory suitability approval, security-level ESG classification, and autonomous PM choice remain unsupported. |
+| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation and a bounded first-wave front-office product path after live audit defect fixes. The accepted claim covers generated alternatives, source supportability, comparison, and selection controls only; `lotus-workbench/output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json` proves the canonical path after retry identity hardening. |
 
 Additional slice assessment:
 
@@ -1411,8 +1420,8 @@ Additional slice assessment:
    have method-specific tests plus canonical live proof.
 3. Future work should extend authoritative upstream integration depth, not create duplicate
    construction-method RFCs.
-4. The only remaining RFC-0039 work is Slice 17 governance closure: PR, GitHub CI, merge,
-   post-merge wiki publication, and branch hygiene.
+4. The remaining RFC-0039 work is governed lifecycle depth under RFC39-WTBD-010 plus normal
+   closure hygiene: PR, GitHub CI, merge, post-merge wiki publication, and branch hygiene.
 
 Wiki publication note:
 
@@ -1426,22 +1435,74 @@ Wiki publication note:
 
 ---
 
-## 20. Relationship to Gateway and Workbench Realization
+## 20. Post-Closure WTBD Integration Audit
+
+The 2026-05-09 WTBD audit moved completed RFC39 work back into this RFC so implementation truth is
+not stranded in the WTBD ledger.
+
+| WTBD | Integrated result | Current boundary |
+| --- | --- | --- |
+| RFC39-WTBD-001 | `lotus-gateway` PR #190 implements construction-alternatives composition over manage generate/read/select contracts without recomputation or alternative choice. | Gateway is a BFF/composition boundary only; it does not own construction methodology or order execution. |
+| RFC39-WTBD-002 | `lotus-workbench` PR #150/#151 implements the construction lab panel, generation action, comparison table, reason-code display, trace counts, and selection controls. | Workbench renders Gateway/manage truth and does not run a browser optimizer or infer source supportability. |
+| RFC39-WTBD-003 | First-wave front-office product realization is complete for generated alternatives, source posture, comparison, and selection controls. | Proof-pack, wave, report, AI, approval, and OMS lifecycle depth remains RFC39-WTBD-010 / cross-RFC work. |
+| RFC39-WTBD-004 | `ESG_AWARE` consumes `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` through stateful core sourcing, blocks hard client restrictions, and preserves sustainability review evidence. | No regulatory suitability approval, security-level ESG classification, or automatic client approval is claimed. |
+| RFC39-WTBD-006 | `COST_AWARE` consumes `TransactionCostCurve:v1`, applies observed average cost bps to candidate trade notionals, and emits `ESTIMATED_COST` traces when source coverage exists. | Predictive execution quotes, market impact, venue routing, best execution, and OMS acknowledgement are unsupported. |
+| RFC39-WTBD-007 | `LIQUIDITY_AWARE` consumes `PortfolioCashflowProjection:v1` and evaluates projected cash pressure against minimum cash policy. | Client income-need planning and liability forecasting remain unsupported. |
+| RFC39-WTBD-009 | `REGIME_STRESS_AWARE` can consume `RegimeScenarioPackEvaluation:v1` from `lotus-risk` when configured. | Scenario contribution rows, CIO approval workflow, and richer product UX remain future depth. |
+
+Audit evidence:
+
+1. Stranded-truth reconciliation before this slice found no unmerged `lotus-manage` governance
+   branches against `origin/main`.
+2. Manage construction proof passed:
+   `python -m pytest tests/unit/dpm/api/test_construction_api.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py tests/unit/dpm/construction/test_method_registry.py tests/unit/dpm/construction/test_vocabulary.py -q`
+   with 65 tests passed.
+3. Construction static proof passed:
+   `python -m ruff check src/api/routers/construction.py src/api/services/construction_service.py src/core/construction src/infrastructure/core_sourcing/client.py src/infrastructure/risk_authority tests/unit/dpm/api/test_construction_api.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py tests/unit/dpm/construction/test_method_registry.py tests/unit/dpm/construction/test_vocabulary.py`.
+4. Canonical front-office validation passed for `PB_SG_GLOBAL_BAL_001` with screenshots at
+   `lotus-workbench/output/rfc39-wtbd-audit-20260509-canonical`.
+5. Focused construction live proof initially failed with HTTP 409 at
+   `lotus-workbench/output/rfc39-wtbd-audit-20260509-construction-live/construction-alternatives-live-summary.json`
+   because Workbench reused a deterministic idempotency key for repeated PM generation.
+6. After fixing idempotency, focused construction live proof failed with HTTP 500 at
+   `lotus-workbench/output/rfc39-wtbd-audit-20260509-construction-live-fixed/construction-alternatives-live-summary.json`
+   because Workbench still reused a deterministic correlation id that collided with manage
+   persisted run records.
+7. `lotus-workbench` PR #171 merged as `8de42e0` and fixes both defects by issuing unique
+   generation idempotency and correlation identifiers while preserving deterministic injection for
+   unit tests.
+8. Rebuilt Workbench live proof passed at
+   `lotus-workbench/output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json`:
+   response status `200`, source service `lotus-manage`, authority `lotus-manage:RFC-0039`,
+   supportability `PENDING_REVIEW`, alternative set `cas_ca8c4e1351aa`, three alternatives,
+   visible Gateway mediation, and no local optimizer/methodology claim.
+
+Gold-pass decision:
+
+The live-found Workbench defects are merged to `main` through `lotus-workbench` PR #171 with a
+green Pull Request Merge Gate. The first-wave RFC39 construction product path is accepted for this
+slice only after this RFC/wiki/WTBD truth is merged to `lotus-manage` `main`, the repo-local wiki
+is published, and final branch hygiene confirms no stranded governance truth remains.
+
+---
+
+## 21. Relationship to Gateway and Workbench Realization
 
 This RFC delivers manage-side construction alternatives. It does not by itself deliver the full
 business outcome to users.
 
-Full realization requires:
+First-wave realization now includes:
 
-1. Gateway and Workbench realization RFCs created near the end of manage implementation, after
-   manage API contracts, supportability behavior, and live evidence are stable enough to avoid
-   speculative payloads,
-2. a Gateway RFC that composes manage alternative sets into a Workbench-facing construction
-   comparison contract,
-3. a Workbench RFC that renders a DPM construction lab / alternatives comparison experience,
-4. canonical proof across manage, gateway, and workbench,
-5. documentation and wiki material useful for business, engineering, operations, sales/pre-sales,
+1. Gateway composition of manage alternative sets into a Workbench-facing construction comparison
+   contract,
+2. a Workbench DPM construction lab / alternatives comparison experience,
+3. canonical proof across manage, gateway, and workbench,
+4. documentation and wiki material useful for business, engineering, operations, sales/pre-sales,
    marketing, and client demos.
 
-Until those paired RFCs are implemented and live-proven, `lotus-manage` may claim backend
-construction-alternatives support only, not the complete front-office DPM construction experience.
+This first-wave product path does not complete the broader lifecycle outcome. `lotus-manage` may
+claim construction-alternatives authority and the bounded Gateway/Workbench product path for
+generation, comparison, source posture, and selection controls only. It must not claim proof-pack
+lifecycle, rebalance-wave orchestration, report/AI narrative workflow, external OMS execution,
+autonomous PM choice, predictive execution pricing, or regulatory suitability approval until those
+owners implement and live-prove the corresponding contracts.

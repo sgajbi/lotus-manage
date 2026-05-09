@@ -338,6 +338,56 @@ def test_rfc0039_scaffolding_standard_preserves_trace_and_status_governance() ->
     assert "construction-alternatives-api-governance.md" in rfc
 
 
+def test_rfc0039_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
+    rfc = (
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_rfc_terms = [
+        "Post-Closure WTBD Integration Audit",
+        "RFC39-WTBD-001",
+        "lotus-workbench` PR #171",
+        "construction-live-fixed2",
+        "HTTP 409",
+        "HTTP 500",
+        "cas_ca8c4e1351aa",
+        "no local optimizer/methodology claim",
+    ]
+    missing_rfc_terms = [term for term in required_rfc_terms if term not in rfc]
+
+    assert missing_rfc_terms == []
+
+    required_wtbd_terms = [
+        "RFC39 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
+        "lotus-workbench` PR #171",
+        "construction-live-fixed2",
+        "deterministic idempotency",
+        "deterministic correlation",
+    ]
+    missing_wtbd_terms = [term for term in required_wtbd_terms if term not in wtbd]
+
+    assert missing_wtbd_terms == []
+
+    required_wiki_terms = [
+        "RFC-0039 Construction Alternatives Product Path",
+        "TransactionCostCurve:v1",
+        "PortfolioCashflowProjection:v1",
+        "ClientRestrictionProfile:v1",
+        "SustainabilityPreferenceProfile:v1",
+        "RegimeScenarioPackEvaluation:v1",
+        "local browser optimization",
+    ]
+    missing_wiki_terms = [term for term in required_wiki_terms if term not in supported_features]
+
+    assert missing_wiki_terms == []
+    assert "Full product-surface promotion still requires" not in supported_features
+
+
 def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> None:
     rfc = (
         ROOT / "docs" / "rfcs" / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md"
