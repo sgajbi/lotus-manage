@@ -751,7 +751,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Remaining roadmap work is source-owner methodology enrichment" in roadmap
     assert "rolling tracking-error methodology truth" in supported_features
     assert "`lotus-risk` PR #113" in supported_features
-    assert "wiki commit `d1330ee`" in supported_features
+    assert "wiki `d1330ee`" in supported_features
+    assert "rolling information-ratio methodology truth" in supported_features
+    assert "`lotus-risk` PR #114" in supported_features
+    assert "wiki `105b716`" in supported_features
     assert "| Post-trade outcome feedback | RFC-0042 |" in supported_features
     assert (
         "Supported as RFC-0042 manage backend authority plus first-wave product realization"
@@ -895,6 +898,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "tests/unit/test_methodology_docs.py" in work_to_be_done
     assert "this advances RFC42-WTBD-006 but does not close it" in work_to_be_done
+    assert "Latest WTBD-006 risk rolling-information-ratio methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #114" in work_to_be_done
+    assert "`ffa881e3266c09a4d48044b50df5bb2db43bd489`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `105b716`" in work_to_be_done
+    assert "`ROLLING_INFORMATION_RATIO` source-owner methodology" in work_to_be_done
+    assert "zero-tracking-error flagging" in work_to_be_done
+    assert "rolling active-risk contract test" in work_to_be_done
+    assert "local test-pyramid proof showing `307` unit, `94`" in work_to_be_done
+    assert "`22` e2e tests within policy" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
