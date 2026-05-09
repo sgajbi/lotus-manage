@@ -147,8 +147,16 @@ Current repository posture:
     internal handoff refs, and RFC-0042 outcome-review events into a deterministic, source-backed,
     hashable timeline without reconstructing mandate health, risk, performance, execution, tax,
     cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
-    includes the merged and wiki-published `lotus-risk` rolling tracking-error methodology slice
-    from PR #113 (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) and rolling
+    includes the merged and wiki-published `lotus-core`
+    `HoldingsAsOf:v1` methodology slice from PR #348
+    (`0a8785e0a4be7ea737b40eded07bd9c7f8002f25`, wiki `2a428eb`), which pins booked holdings,
+    explicit as-of holdings, projected-inclusive holdings, cash-balance reads,
+    reporting-currency cash balances, snapshot-versus-history fallback, position weights,
+    supportability states, and explicit non-claims for liquidity ladders, income-needs planning,
+    performance returns, risk exposure methodology, tax advice, execution quality, and OMS
+    acknowledgement. It also includes the merged and wiki-published `lotus-risk` rolling
+    tracking-error methodology slice from PR #113
+    (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) and rolling
     information-ratio methodology slice from PR #114
     (`ffa881e3266c09a4d48044b50df5bb2db43bd489`, wiki `105b716`) for
     `RollingRiskMetricsReport:v1`; they pin date alignment, pp-to-decimal conversion, `ddof=1`,
