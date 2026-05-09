@@ -465,6 +465,52 @@ Current boundaries:
 3. manage handoff refs are internal readiness evidence and must not be described as external
    execution or order routing.
 
+## Post-Trade Outcome Feedback Flow
+
+RFC-0042 makes `lotus-manage` the authority for source-backed expected-versus-realized outcome
+reviews. The first-wave product path is implementation-backed across Gateway, Workbench,
+report/render/archive, and AI narrative request surfaces while keeping source-owner methodology and
+execution boundaries explicit.
+
+```mermaid
+flowchart LR
+    Proof[Pre-trade proof pack or wave handoff] --> Manage[lotus-manage outcome-review authority]
+    Sources[lotus-core / lotus-risk / lotus-performance evidence] --> Manage
+    Manage --> Review[Immutable outcome review]
+    Manage --> Support[Supportability and source-refresh events]
+    Manage --> ReportInput[DpmOutcomeReportInput]
+    Manage --> AiInput[DpmOutcomeAiEvidenceInput]
+    Review --> Gateway[lotus-gateway composition]
+    Gateway --> Workbench[lotus-workbench outcome-review UX]
+    ReportInput --> Report[lotus-report / lotus-render / lotus-archive]
+    AiInput --> AI[lotus-ai governed narrative]
+    Support --> Ops[Operations and audit diagnostics]
+```
+
+Current supported behavior:
+
+1. source-backed preview/create/retrieve/search for outcome reviews,
+2. immutable review snapshots, append-only events, source hashes, run lookup, wave lookup, and
+   indexed search,
+3. source-refresh eventing and product-safe supportability diagnostics,
+4. bounded report input and AI evidence input handoffs,
+5. Gateway outcome-review composition and Workbench first-wave outcome-review panel,
+6. governed outcome report materialization and archive lifecycle in the owning report/render/archive
+   services,
+7. governed AI narrative request flow through `lotus-ai`,
+8. live manage proof under `output/rfc0042-outcome-proof/20260505-024352/`, WTBD audit proof under
+   `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/`, canonical Workbench proof under
+   `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`, and canonical platform QA
+   proof through `canonical-front-office-qa-20260509-225912.json`.
+
+Current boundaries:
+
+1. external OMS execution and acknowledgements are not supported,
+2. PM quality scoring and behavioral analytics are not supported,
+3. client communication source-event lineage remains future downstream scope,
+4. aggregated tax, FX, cash movements beyond source-emitted totals, liquidity ladders, and execution
+   methodologies remain source-owner follow-on work.
+
 ```mermaid
 flowchart LR
     Stateless[Stateless execution] --> Supported[Advertised today]

@@ -44,8 +44,13 @@ applications rather than calculating source truth locally.
 RFC-0042 is not complete when a local manage object exists. It is complete only when source lineage,
 supportability, persistence, APIs, OpenAPI quality, degraded-state behavior, report/AI evidence
 handoffs, live proof, documentation, and downstream realization direction are all implementation
-backed. Gateway and Workbench product support must not be claimed until downstream RFCs are created
-or tightened, implemented, certified, and proven through the governed front-office runtime.
+backed. Post-closure WTBD work has since completed the bounded first-wave product path:
+`lotus-gateway` composes manage-owned outcome-review truth, `lotus-workbench` renders the
+outcome-review surface through Gateway/BFF contracts, report/render/archive materialize governed
+outcome-review reports from bounded input, and `lotus-ai` owns guarded narrative execution from
+bounded evidence input. Execution/OMS integration, PM quality scoring, client communication, and
+richer source-owner methodology remain outside the supported claim until their owners implement and
+prove them.
 
 ---
 
@@ -773,9 +778,10 @@ Every RFC-0042 endpoint must satisfy:
 
 ## 15. Supported-Features Ledger
 
-Support below is limited to the manage backend authority. Full front-office product realization,
-rendered reports, AI narrative generation, execution/OMS integration, and PM quality scoring remain
-outside the manage support claim.
+Support below includes the manage backend authority plus the bounded first-wave product realization
+that has been implemented and proven in the owning repositories. Execution/OMS integration, PM
+quality scoring, client communication, and richer source-owner methodology remain outside the
+support claim.
 
 | Feature | Current state | Promotion rule |
 | --- | --- | --- |
@@ -783,10 +789,10 @@ outside the manage support claim.
 | Expected-versus-realized variance decomposition | Supported for source-backed supplied dimensions | Supported where expected and realized evidence reconcile with lineage, hashes, and tests. |
 | Source-degraded outcome review | Supported as explicit state behavior | Degraded, blocked, unsupported, stale, partial, malformed, conflicting, and execution-evidence-blocked states are tested and documented. |
 | Searchable outcome memory | Supported as manage backend memory | Immutable persistence, events, source hashes, run lookup, wave lookup, and indexed search are proven. |
-| Report input from outcome review | Supported as manage handoff contract | No rendered report support is claimed. |
-| AI evidence input from outcome review | Supported as bounded evidence contract | No AI narrative, recommendation, PM scoring, or client-contact support is claimed. |
-| Gateway outcome composition | Downstream proposed | Promote in `lotus-gateway` only after downstream RFC implementation and proof. |
-| Workbench outcome review UX | Downstream proposed | Promote in `lotus-workbench` only after Gateway composition and canonical front-office proof. |
+| Report input from outcome review | Supported as manage handoff contract plus first-wave materialization path | Manage emits bounded report input; `lotus-report`, `lotus-render`, and `lotus-archive` own generated report and archive lifecycle without recomputing outcome truth. |
+| AI evidence input from outcome review | Supported as bounded evidence contract plus governed narrative path | Manage emits bounded AI evidence input; `lotus-ai` owns guarded workflow-pack narrative execution. No recommendation, PM scoring, or client-contact support is claimed. |
+| Gateway outcome composition | Supported through `lotus-gateway` PR #186/#187/#188/#189 | Gateway composes manage outcome-review truth and report/AI handoff posture without recomputing expected values, realized values, variance, tolerance, lineage, freshness, or review state. |
+| Workbench outcome review UX | Supported through `lotus-workbench` PR #146/#147/#148 | Workbench consumes Gateway/BFF contracts only and renders the first-wave outcome-review, report-request, and AI-narrative request posture with canonical proof. |
 | PM quality scoring | Not supported | Requires a separate governed methodology and business approval; not an RFC-0042 first-wave claim. |
 | External execution integration | Not supported | Requires execution/OMS owner, certified contract, controls, and proof. |
 
@@ -915,21 +921,66 @@ Post-merge gold-pass audit addendum:
    `npm run live:stack:up` and `npm run live:validate`; after stale manage action-register evidence
    was refreshed, validation passed for `PB_SG_GLOBAL_BAL_001` with screenshots under
    `lotus-workbench/output/playwright/live-canonical`.
-4. The canonical validation does not promote Workbench outcome-review UX. It proves the current
-   front-office stack and supportability boundary are healthy while preserving the downstream
-   Gateway/Workbench RFC-0098 product-realization requirement.
+4. The later WTBD audit and downstream owning-repo implementations promote only the bounded
+   first-wave outcome-review product path. Gateway, Workbench, report/render/archive, and AI remain
+   consumers or owning downstream artifact services; manage remains the outcome-review evidence
+   authority.
 
 Remaining outside the support claim:
 
-1. Gateway command-center composition and Workbench outcome-review UX are downstream product
-   realization work,
-2. rendered report generation belongs to `lotus-report`, `lotus-render`, and `lotus-archive`,
-3. AI narrative/copilot behavior belongs to `lotus-ai` and RFC-0043,
-4. execution/OMS integration, PM quality scoring, automatic source-owner calculation, and
+1. execution/OMS integration and acknowledgements require a future execution owner,
+2. PM quality scoring or behavioral analytics require business ownership, methodology approval,
+   and bias controls,
+3. client-communication source-event lineage remains future downstream scope,
+4. automatic source-owner calculation beyond implemented source-emitted measures and
    source-owner risk/performance/tax/FX/cash methodologies remain outside manage support.
 
 Gold-standard conclusion:
 
 RFC-0042 genuinely reached the expected enterprise standard for the manage-owned backend outcome
-review authority. The full front-office product outcome remains deliberately unclaimed until
-Gateway/Workbench implementation and canonical front-office proof are completed in the owning apps.
+review authority and the bounded first-wave outcome-review product path. The implementation-backed
+path now covers Gateway composition, Workbench outcome-review UX, outcome-review report
+materialization, archive lifecycle, and governed AI narrative request flow while preserving manage
+as the evidence authority. Execution/OMS integration, PM scoring, client communication, and richer
+source-owner methodology remain explicit future scope, not hidden gaps in the supported path.
+
+---
+
+## 20. Post-Closure WTBD Integration Audit
+
+The 2026-05-09 WTBD audit moved completed RFC42 work back into this owning RFC so durable product
+truth is not stranded only in the WTBD ledger or wiki.
+
+| WTBD | Integrated result | Current boundary |
+| --- | --- | --- |
+| RFC42-WTBD-001 | `lotus-gateway` PR #186 implements Gateway outcome-review composition over manage APIs without recomputation. | Gateway remains a composition layer and does not own outcome-review calculations or source truth. |
+| RFC42-WTBD-002 | `lotus-workbench` PR #146 implements the post-trade outcome-review UX through Gateway/BFF contracts and live canonical proof. | Workbench does not call manage directly or synthesize source lineage, variance, report input, AI evidence, or review state. |
+| RFC42-WTBD-003 | `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 complete the first-wave front-office product path. | Reporting, AI, OMS, source-owner methodology, and PM scoring remain separately owned where not listed below. |
+| RFC42-WTBD-004 | `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 implement rendered outcome reports and archive lifecycle from bounded manage report input. | Report/render/archive own generated artifact lifecycle; manage remains report-input and evidence authority. |
+| RFC42-WTBD-005 | `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 implement governed outcome-review AI narrative request flow from bounded evidence input. | AI does not approve, score PMs, recommend trades, contact clients, or reconstruct source truth. |
+| RFC42-WTBD-006 | Source-owner methodology enrichment has progressed across risk, performance, and core source products and is consumed by manage adapters where implemented. | Aggregated tax, FX, cash movements beyond source-emitted totals, liquidity ladders, and execution methodologies remain source-owner follow-on work. |
+| RFC42-WTBD-007 | External execution/OMS integration remains unsupported. | Requires a future execution/OMS owner, certified controls, acknowledgements, and reconciliation contract. |
+| RFC42-WTBD-008 | PM quality scoring remains unsupported. | Requires business approval, governed methodology, bias controls, and a separate support claim. |
+
+Audit evidence:
+
+1. Stranded-truth reconciliation before this slice found no unmerged Lotus remote governance
+   branches against `origin/main`.
+2. Manage proof remains anchored in
+   `output/rfc0042-outcome-proof/20260505-024352/critical-review.json`,
+   `output/rfc0042-outcome-proof/20260505-025613/critical-review.json`, and
+   `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/critical-review.json`.
+3. Canonical Workbench proof remains anchored in
+   `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/live-validation-summary.json`
+   and `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/dpm-outcome-review-live.png`.
+4. The 2026-05-09 canonical front-office QA pass remains available at
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.json` and
+   confirms the governed DPM front-office stack remains healthy after the current WTBD audit cycle.
+5. Documentation regression now guards RFC42 RFC/WTBD/wiki truth so stale downstream-unclaimed
+   wording cannot return after the first-wave product path has been implemented.
+
+Gold-pass decision:
+
+RFC-0042 reaches the expected standard for manage-owned outcome-review authority and the bounded
+first-wave product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, the
+repo-local wiki is published, and final branch hygiene confirms no stranded governance truth.

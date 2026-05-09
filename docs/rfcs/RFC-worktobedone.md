@@ -3113,6 +3113,27 @@ Closure evidence:
 | WTBD audit outcome proof | `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/critical-review.json` |
 | WTBD canonical Workbench proof | `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/live-validation-summary.json` |
 
+### RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09
+
+Gold-pass assessment:
+
+1. Truly completed: RFC42-WTBD-001 through RFC42-WTBD-005 are completed for the bounded first-wave
+   product path. Manage owns outcome-review authority; Gateway composes it; Workbench renders it;
+   report/render/archive materialize governed outcome-review reports; and `lotus-ai` owns governed
+   outcome-review narrative execution from bounded evidence input.
+2. Quality improvements made: the owning RFC now carries the post-closure implementation truth,
+   supported-feature boundaries, downstream owner boundaries, and evidence links instead of leaving
+   those facts only in this WTBD ledger and wiki.
+3. Debt removed: stale RFC wording that said Gateway/Workbench product proof remained unclaimed has
+   been removed. The RFC now distinguishes implemented first-wave product support from unsupported
+   OMS, PM-scoring, client-communication, and richer source-owner methodology work.
+4. Testing and evidence proven: live manage proof, hardening proof, WTBD audit proof, canonical
+   Workbench proof, and the 2026-05-09 canonical front-office QA pass are all linked from the RFC.
+   Documentation regression now guards the RFC/WTBD/wiki alignment.
+5. Standard reached: RFC-0042 reaches the expected standard for manage-owned backend authority and
+   the bounded first-wave product path once this reintegration is merged to `main`, the repo-local
+   wiki is published, and final branch hygiene confirms no stranded governance truth.
+
 Audit refresh on 2026-05-05:
 
 1. `lotus-manage` mainline truth was reconciled with `git fetch origin --prune` and
