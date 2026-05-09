@@ -430,6 +430,32 @@ def _transaction_cost_curve_payload() -> dict:
     }
 
 
+def _cashflow_projection_payload() -> dict:
+    return {
+        "product_name": "PortfolioCashflowProjection",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "range_start_date": "2026-04-10",
+        "range_end_date": "2026-07-09",
+        "include_projected": True,
+        "portfolio_currency": "SGD",
+        "points": [
+            {
+                "projection_date": "2026-04-17",
+                "net_cashflow": "-18000.0000000000",
+                "projected_cumulative_cashflow": "-18000.0000000000",
+            }
+        ],
+        "total_net_cashflow": "-18000.0000000000",
+        "projection_days": 90,
+        "notes": "Projected window includes settlement-dated future external cash movements.",
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "cashflow_projection:PB_SG_GLOBAL_BAL_001:2026-04-10",
+    }
+
+
 def _client_restriction_profile_payload() -> dict:
     return {
         "product_name": "ClientRestrictionProfile",
@@ -534,6 +560,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_market_data_coverage_payload())
     if path.endswith("/transaction-cost-curve"):
         return httpx.Response(200, json=_transaction_cost_curve_payload())
+    if path.endswith("/cashflow-projection"):
+        return httpx.Response(200, json=_cashflow_projection_payload())
     if path.endswith("/client-restriction-profile"):
         return httpx.Response(200, json=_client_restriction_profile_payload())
     if path.endswith("/sustainability-preference-profile"):
@@ -574,6 +602,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots",
         "https://core.example.test/integration/market-data/coverage",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/transaction-cost-curve",
+        "https://core.example.test/portfolios/PB_SG_GLOBAL_BAL_001/cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
     ]
@@ -582,14 +611,17 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
     assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
-    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[7][2]
-    assert b'"include_inactive_restrictions":false' in seen[7][2]
-    assert b'"include_inactive_preferences":false' in seen[8][2]
+    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[8][2]
+    assert b'"include_inactive_restrictions":false' in seen[8][2]
+    assert b'"include_inactive_preferences":false' in seen[9][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
     assert context.transaction_cost_curve is not None
     assert context.transaction_cost_curve.supportability.state == "READY"
+    assert context.portfolio_cashflow_projection is not None
+    assert context.portfolio_cashflow_projection.product_name == "PortfolioCashflowProjection"
+    assert context.portfolio_cashflow_projection.include_projected is True
     assert context.client_restriction_profile is not None
     assert context.client_restriction_profile.supportability.state == "READY"
     assert context.sustainability_preference_profile is not None

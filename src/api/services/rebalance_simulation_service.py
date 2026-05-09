@@ -125,6 +125,7 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
     return DpmCoreResolverClient(
         config=DpmCoreResolverConfig(
             base_url=base_url,
+            query_base_url=os.getenv("DPM_CORE_QUERY_BASE_URL", "").strip() or None,
             path_template=os.getenv(
                 "DPM_CORE_RESOLVER_PATH_TEMPLATE",
                 "",
@@ -137,6 +138,11 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
                 "DPM_CORE_TRANSACTION_COST_CURVE_PATH_TEMPLATE",
                 "/integration/portfolios/{portfolio_id}/transaction-cost-curve",
             ),
+            portfolio_cashflow_projection_path_template=os.getenv(
+                "DPM_CORE_CASHFLOW_PROJECTION_PATH_TEMPLATE",
+                "/portfolios/{portfolio_id}/cashflow-projection",
+            ),
+            transaction_cost_lookback_days=env_int("DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS", 400),
             timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
             max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),
         )

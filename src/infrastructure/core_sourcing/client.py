@@ -13,6 +13,7 @@ from src.core.dpm_source_context import (
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioCashflowProjectionResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
     DpmCorePortfolioTaxLotWindowResponse,
     DpmCorePolicyContext,
@@ -44,6 +45,7 @@ LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-
 @dataclass(frozen=True)
 class DpmCoreResolverConfig:
     base_url: str
+    query_base_url: str | None = None
     path_template: str = ""
     model_portfolio_targets_path_template: str = (
         "/integration/model-portfolios/{model_portfolio_id}/targets"
@@ -62,6 +64,10 @@ class DpmCoreResolverConfig:
     transaction_cost_curve_path_template: str = (
         "/integration/portfolios/{portfolio_id}/transaction-cost-curve"
     )
+    portfolio_cashflow_projection_path_template: str = (
+        "/portfolios/{portfolio_id}/cashflow-projection"
+    )
+    transaction_cost_lookback_days: int = 400
     client_restriction_profile_path_template: str = (
         "/integration/portfolios/{portfolio_id}/client-restriction-profile"
     )
@@ -152,6 +158,14 @@ class DpmCoreResolverConfig:
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
 
+    def resolve_portfolio_cashflow_projection_url(self, portfolio_id: str) -> str:
+        path_template = self.portfolio_cashflow_projection_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE")
+        base = (self.query_base_url or self.base_url).rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
     def resolve_client_restriction_profile_url(self, portfolio_id: str) -> str:
         path_template = self.client_restriction_profile_path_template.strip()
         if not path_template:
@@ -201,6 +215,43 @@ class DpmCoreResolverClient:
             for attempt in range(attempts):
                 try:
                     response = client.post(url, json=payload, headers=headers)
+                except (httpx.TimeoutException, httpx.TransportError) as exc:
+                    last_error = exc
+                    if attempt + 1 >= attempts:
+                        raise DpmCoreResolverUnavailableError(unavailable_code) from exc
+                    continue
+                if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
+                    continue
+                if response.status_code >= 500:
+                    raise DpmCoreResolverUnavailableError(unavailable_code)
+                if response.status_code >= 400:
+                    raise DpmCoreResolverError(incomplete_code)
+                response_payload = response.json()
+                if not isinstance(response_payload, dict):
+                    raise DpmCoreResolverError(incomplete_code)
+                return response_payload
+            raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
+        finally:
+            if self._owns_client:
+                client.close()
+
+    def _get_source_product(
+        self,
+        *,
+        url: str,
+        params: dict[str, Any],
+        correlation_id: Optional[str],
+        unavailable_code: str,
+        incomplete_code: str,
+    ) -> dict[str, Any]:
+        attempts = max(self._config.max_attempts, 1)
+        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        try:
+            last_error: Exception | None = None
+            for attempt in range(attempts):
+                try:
+                    response = client.get(url, params=params, headers=headers)
                 except (httpx.TimeoutException, httpx.TransportError) as exc:
                     last_error = exc
                     if attempt + 1 >= attempts:
@@ -295,6 +346,13 @@ class DpmCoreResolverClient:
             tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
+        portfolio_cashflow_projection = self._try_resolve_portfolio_cashflow_projection(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            horizon_days=90,
+            include_projected=True,
+            correlation_id=correlation_id,
+        )
         client_restriction_profile = self._try_resolve_client_restriction_profile(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -348,6 +406,7 @@ class DpmCoreResolverClient:
                 degraded_source_families=[],
             ),
             transaction_cost_curve=transaction_cost_curve,
+            portfolio_cashflow_projection=portfolio_cashflow_projection,
             client_restriction_profile=client_restriction_profile,
             sustainability_preference_profile=sustainability_preference_profile,
         )
@@ -606,6 +665,30 @@ class DpmCoreResolverClient:
         )
         return DpmCoreTransactionCostCurveResponse.model_validate(response)
 
+    def resolve_portfolio_cashflow_projection(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        horizon_days: int = 90,
+        include_projected: bool = True,
+        correlation_id: Optional[str],
+    ) -> DpmCorePortfolioCashflowProjectionResponse:
+        url = self._config.resolve_portfolio_cashflow_projection_url(portfolio_id)
+        params = {
+            "as_of_date": as_of_date.isoformat(),
+            "horizon_days": horizon_days,
+            "include_projected": str(include_projected).lower(),
+        }
+        response = self._get_source_product(
+            url=url,
+            params=params,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+            incomplete_code="DPM_CORE_CASHFLOW_PROJECTION_INCOMPLETE",
+        )
+        return DpmCorePortfolioCashflowProjectionResponse.model_validate(response)
+
     def resolve_client_restriction_profile(
         self,
         *,
@@ -673,12 +756,33 @@ class DpmCoreResolverClient:
             return self.resolve_transaction_cost_curve(
                 portfolio_id=portfolio_id,
                 as_of_date=as_of_date,
-                window_start_date=as_of_date - timedelta(days=90),
+                window_start_date=as_of_date
+                - timedelta(days=max(self._config.transaction_cost_lookback_days, 1)),
                 window_end_date=as_of_date,
                 security_ids=security_ids,
                 transaction_types=["BUY", "SELL"],
                 min_observation_count=1,
                 tenant_id=tenant_id,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_portfolio_cashflow_projection(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        horizon_days: int,
+        include_projected: bool,
+        correlation_id: Optional[str],
+    ) -> DpmCorePortfolioCashflowProjectionResponse | None:
+        try:
+            return self.resolve_portfolio_cashflow_projection(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                horizon_days=horizon_days,
+                include_projected=include_projected,
                 correlation_id=correlation_id,
             )
         except DpmCoreResolverError:

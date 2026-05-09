@@ -55,9 +55,16 @@ make live-api-validate-core
 ```
 
 The validator proves capability truth against the RFC-087 certified composed DPM source-data products,
-a live stateful simulate call with READY `lotus-core` lineage, duplicate async correlation handling,
-supportability persistence, metrics, and continued absence of the retired monolithic core DPM
-execution-context route.
+a live stateful simulate call with READY `lotus-core` lineage, stateful source-backed construction
+over `TransactionCostCurve:v1`, `PortfolioCashflowProjection:v1`,
+`ClientRestrictionProfile:v1`, and `SustainabilityPreferenceProfile:v1`, duplicate async
+correlation handling, supportability persistence, metrics, and continued absence of the retired
+monolithic core DPM execution-context route.
+
+Canonical core/manage proof mode must configure both `DPM_CORE_BASE_URL` and
+`DPM_CORE_QUERY_BASE_URL` for `lotus-manage`. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to
+400 days so the observed-cost proof covers low-turnover private-banking portfolios without making
+predictive execution-cost or market-impact claims.
 
 ## Documentation contract proof
 

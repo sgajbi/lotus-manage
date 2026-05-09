@@ -232,6 +232,7 @@ def _core_execution_context(
     *,
     supportability_state: str = "DEGRADED",
     include_transaction_cost_curve: bool = False,
+    include_cashflow_projection: bool = False,
 ) -> DpmCoreExecutionContext:
     payload = {
         "portfolio_snapshot": {
@@ -315,6 +316,29 @@ def _core_execution_context(
             "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
             "source_batch_fingerprint": "sha256:transaction-cost-curve",
         }
+    if include_cashflow_projection:
+        payload["portfolio_cashflow_projection"] = {
+            "product_name": "PortfolioCashflowProjection",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "range_start_date": "2026-05-03",
+            "range_end_date": "2026-08-01",
+            "include_projected": True,
+            "portfolio_currency": "SGD",
+            "points": [
+                {
+                    "projection_date": "2026-05-10",
+                    "net_cashflow": "-50.0000000000",
+                    "projected_cumulative_cashflow": "-50.0000000000",
+                }
+            ],
+            "total_net_cashflow": "-50.0000000000",
+            "projection_days": 90,
+            "data_quality_status": "COMPLETE",
+            "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
+            "source_batch_fingerprint": "sha256:cashflow-projection",
+        }
     return DpmCoreExecutionContext.model_validate(payload)
 
 
@@ -328,6 +352,7 @@ class _TransactionCostCoreResolver:
         return _core_execution_context(
             supportability_state="READY",
             include_transaction_cost_curve=True,
+            include_cashflow_projection=True,
         )
 
 
@@ -918,6 +943,45 @@ def test_stateful_construction_attaches_core_transaction_cost_curve(monkeypatch)
     assert cost_context["curve_points"][0]["average_cost_bps"] == "5.0000"
     assert "TRANSACTION_COST_CURVE_READY" in reason_codes
     assert "AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE" not in reason_codes
+
+
+def test_stateful_construction_attaches_core_cashflow_projection(monkeypatch) -> None:
+    repository = InMemoryConstructionRepository()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: _TransactionCostCoreResolver(),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "methods": ["LIQUIDITY_AWARE"],
+            },
+            headers={"Idempotency-Key": "idem-construction-stateful-cashflow"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    body = response.json()
+    alternative = body["alternatives"][0]
+    liquidity_context = alternative["diagnostics"]["authority_context"]["liquidity_context"]
+    cashflow_projection = liquidity_context["cashflow_projection"]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "LIQUIDITY_AWARE"
+    assert cashflow_projection["source_system"] == "lotus-core"
+    assert cashflow_projection["source_product_name"] == "PortfolioCashflowProjection"
+    assert cashflow_projection["include_projected"] is True
+    assert cashflow_projection["total_net_cashflow"] == {
+        "amount": "-50.0000000000",
+        "currency": "SGD",
+    }
+    assert "CASHFLOW_PROJECTION_CONTEXT_PRESENT" in reason_codes
 
 
 def test_generate_construction_alternative_set_idempotency_conflict() -> None:
