@@ -1001,6 +1001,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "observed booked-fee aggregation" in work_to_be_done
     assert "notional-weighted average bps" in work_to_be_done
     assert "best execution" in work_to_be_done
+    assert "Latest WTBD-006 core holdings-as-of methodology proof" in work_to_be_done
+    assert "`lotus-core` PR #348" in work_to_be_done
+    assert "`0a8785e0a4be7ea737b40eded07bd9c7f8002f25`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `2a428eb`" in work_to_be_done
+    assert "`HoldingsAsOf:v1` methodology" in work_to_be_done
+    assert "snapshot-versus-history fallback" in work_to_be_done
+    assert "reporting-currency cash balances" in work_to_be_done
+    assert "liquidity ladders, income-needs planning" in work_to_be_done
     assert "OpenAPI quality, API vocabulary" in work_to_be_done
     assert "tests/unit/docs/test_source_data_product_boundaries.py" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
@@ -1032,6 +1040,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "attribution methodology truth" in supported_features
     assert "current core slices" in supported_features
     assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
+        supported_features
+    )
+    assert "`HoldingsAsOf:v1` methodology truth through `lotus-core` PR #348" in (
         supported_features
     )
     assert "`TransactionLedgerWindow:v1` methodology truth through `lotus-core` PR #347" in (
