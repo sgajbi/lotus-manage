@@ -162,7 +162,16 @@ Current repository posture:
     output, and explicit non-claims for liquidity ladders, tax methodology, performance returns,
     market impact, and OMS execution forecasting while still leaving aggregated tax, FX,
     liquidity-ladder, execution, and broader methodology depth to future source-owner work. The
-    source-owner record also includes the merged and wiki-published `lotus-core`
+    record also includes the merged and wiki-published `lotus-core`
+    `TransactionLedgerWindow:v1` methodology slice from PR #347
+    (`7aef82bc8f9232c62333b8386001527b19829f86`, wiki `6bb1041`), which pins booked and
+    projected-inclusive ledger modes, effective as-of resolution,
+    portfolio/instrument/security/transaction type/FX-event/date-window filters, joined
+    transaction-cost and linked-cashflow row preservation, optional reporting-currency
+    restatement, empty/complete/paged data-quality posture, and explicit non-claims for tax
+    advice, FX attribution, cash movement aggregation, transaction-cost methodology,
+    execution-quality assessment, and OMS acknowledgement; the merged and wiki-published
+    `lotus-core`
     `PortfolioTaxLotWindow:v1` methodology slice from PR #346
     (`e48d85a98ae3f53199bdccbe2e83f6304c9e050c`, wiki `f37af67`), which pins effective-date lot
     selection, optional security filtering, open/closed lot posture, deterministic paging,
