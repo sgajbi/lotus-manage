@@ -2574,10 +2574,24 @@ downstream product-surface implementation, or owning-service materialization out
 | RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Completed in this slice for manage aggregate authority | RFC-0041 aggregate impact is carried from source-owned risk/performance authority context into wave aggregate metrics with supportability, lineage refs, source reason codes, and source-emitted scalar values. Manage does not calculate risk or performance methodology locally. |
 | RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196 | Completed after manage contracts stabilized. Gateway composes manage truth without becoming wave authority or reconstructing state. |
 | RFC41-WTBD-006 | Workbench wave command center | `lotus-workbench` with `lotus-gateway`, `lotus-platform`, and `lotus-manage` support | Completed, merged, CI-proven, live-proven, and wiki-published through Manage PR #120, Gateway PR #197, Platform PR #306, and Workbench PR #165 | Workbench now consumes Gateway/BFF routes only and provides the PM operating cockpit over explicit portfolio-list waves. |
-| RFC41-WTBD-007 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Proposed, not supported | The full product outcome requires both downstream implementations and canonical front-office evidence, not manage backend proof alone. |
+| RFC41-WTBD-007 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | Completed for first-wave wave command-center product support through Manage PR #120, Gateway PR #197, Platform PR #306, Workbench PR #165, and canonical QA | The canonical front-office path now renders the wave command center from Gateway/manage truth and captures validated screenshot evidence. Tactical house-view, risk-event, campaign cohorts, richer source-owner cohorts, and external OMS execution remain separate WTBDs. |
 | RFC41-WTBD-008 | Report materialization from wave/proof-pack evidence | `lotus-manage`, `lotus-report`, `lotus-render`, `lotus-archive` | Completed, merged, CI-proven, and wiki-published through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render` PR #12, and `lotus-archive` PR #24 | Manage exposes deterministic wave report input while report/render/archive own generated report, template, and archive lifecycle. |
 | RFC41-WTBD-009 | AI PM memo generation from wave evidence | `lotus-ai`, governed by RFC-0043 direction; `lotus-gateway` and `lotus-workbench` as product consumers | Completed, merged, CI-proven, live-proven, and wiki-published where changed through `lotus-ai` PR #63, `lotus-gateway` PR #201, and `lotus-workbench` PR #168 | `lotus-ai` owns `dpm_wave_pm_memo.pack@v1` for bounded `DpmWaveReportInput` memo assistance. Gateway preserves Manage evidence identity and AI guardrails, while Workbench exposes report-input and AI memo request posture without constructing prompts or memo content locally. |
 | RFC41-WTBD-010 | External execution integration | Future execution/OMS owner or governed operations integration | Out of RFC-0041 scope | RFC-0041 intentionally stops at internal operations handoff evidence and preserves `external_execution_claimed=false`. |
+
+### RFC41 Gold-Pass Audit And RFC Reintegration - 2026-05-09
+
+The 2026-05-09 audit moved completed RFC41 WTBD truth into
+`RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md` and refreshed the wiki
+source so the current implementation record is available from the owning RFC.
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | Manage owns wave preview/create/source-check/simulate/select/approve/stage/handoff/cancel/search/supportability/proof-pack/report-input authority. Source-owned PM-book and CIO model-change cohorts are implemented. Gateway wave composition, Workbench wave command center, governed wave report materialization, and review-gated wave PM memo handoff are implemented in owning repositories. |
+| Quality improvements made | The audit removes stale backend-only RFC wording and keeps manage as wave authority while acknowledging the merged first-wave product path. It separates completed wave command-center support from future tactical/risk/campaign cohorts and external OMS execution. |
+| Debt removed | Stale WTBD wording that listed full front-office wave support as proposed was retired. Unsupported execution and source-owner cohort claims remain explicit instead of being hidden behind broad command-center wording. |
+| What was proven through testing and evidence | Existing manage proof remains anchored in `output/rfc0041-wave-proof/20260504-231914` and `output/rfc0041-wave-proof/20260507-224144`. First-wave product proof remains anchored in `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-142715.json`, `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260507-143459.json`, and `lotus-workbench/output/playwright/live-canonical/dpm-wave-command-center-live.png`. The 2026-05-09 audit reran canonical front-office QA successfully with report `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.json`, Markdown summary `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.md`, DPM seed evidence `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260509-230635.json`, and screenshots in `lotus-platform/output/front-office-qa/wtbd-rfc40-audit-20260509`. |
+| Expected-standard decision | RFC41 reaches the expected standard for manage-owned wave authority and the bounded first-wave product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, wiki publication is synchronized, and final branch hygiene confirms no stranded governance truth. |
 
 ### Detailed Follow-Up Items
 
@@ -2864,32 +2878,35 @@ Target business outcome:
 The RFC-0041 wave capability is visible as an end-to-end front-office product workflow, not only as
 manage backend APIs.
 
-Why it cannot be done now:
+Completion result:
 
-Manage backend completion is necessary but not sufficient. Full product support requires Gateway
-composition, Workbench implementation, canonical runtime validation, and product documentation
-across the downstream apps.
+Completed for the first-wave wave command-center product path. Manage remains the wave authority,
+Gateway composes manage wave truth, Workbench renders the PM command-center surface, and platform
+canonical QA validates the populated path before screenshots are accepted as demo evidence.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. RFC41-WTBD-005 complete,
-2. RFC41-WTBD-006 complete,
-3. canonical front-office QA passes with populated panels,
-4. supported-feature ledgers in all participating apps are aligned,
+1. RFC41-WTBD-005 Gateway wave composition is merged and wiki-published,
+2. RFC41-WTBD-006 Workbench wave command center is merged, live-proven, and wiki-published,
+3. canonical front-office QA passed with populated wave panel evidence,
+4. supported-feature ledgers in participating apps are aligned,
 5. wiki material is suitable for developers, operations, business users, sales/pre-sales, and demos.
-
-Expected implementation wave:
-
-Close only after Gateway and Workbench PRs merge and publish wiki updates. Treat this as a final
-cross-app proof and documentation slice, not as a manage-only change.
 
 Promotion proof:
 
-1. canonical front-office evidence pack,
-2. API, BFF, and UI tests green,
-3. demo screenshots clearly tied to validated backend evidence,
-4. cross-repo supported-feature entries aligned,
-5. no unresolved blocking downstream issue.
+1. canonical front-office evidence pack
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-142715.json`,
+2. 2026-05-09 audit evidence pack
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.json`,
+3. API, BFF, and UI tests green in the owning PRs,
+4. demo screenshot `lotus-workbench/output/playwright/live-canonical/dpm-wave-command-center-live.png`
+   tied to validated backend evidence,
+5. cross-repo supported-feature entries aligned.
+
+Remaining boundary:
+
+This completion does not promote tactical house-view, risk-event, campaign cohort discovery, or
+external OMS execution. Those remain separate source-owner or execution-product WTBDs.
 
 #### RFC41-WTBD-008 - Report Materialization From Wave / Proof-Pack Evidence
 

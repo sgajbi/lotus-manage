@@ -530,7 +530,7 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     missing_sections = [section for section in required_sections if section not in rfc]
 
     assert missing_sections == []
-    assert "| **Status** | DONE |" in rfc
+    assert "FIRST-WAVE PRODUCT PATH LIVE-PROVEN" in rfc
     assert "| RFC-0041 | Rebalance Wave Orchestration and CIO Model Change Impact | DONE |" in index
     assert "feat/rfc0041-gold-standard-tightening" in rfc
     assert "feat/rfc0041-implementation" in rfc
@@ -541,7 +541,7 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "create or tighten paired RFCs in" in rfc
     assert "`lotus-gateway` and `lotus-workbench`" in rfc
     assert "Gold-standard conclusion" in rfc
-    assert "is `DONE` for the manage-owned explicit portfolio-list wave backend authority" in rfc
+    assert "bounded first-wave product path is implementation-backed" in rfc
     assert (
         "is `DONE` for the manage-owned explicit portfolio-list wave backend authority"
         in wiki_index_normalized
@@ -550,10 +550,11 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "| Explicit portfolio-list rebalance waves |" in supported_features
     assert "Supported as RFC-0041 `DONE` manage backend authority" in supported_features
     assert "PM-book wave discovery is source-backed through lotus-core" in supported_features
-    assert "CIO/risk-event cohort discovery" in supported_features
+    assert "source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohorts" in supported_features
     assert (
-        "Gateway command-center composition and Workbench first-wave wave command-center UX are "
-        "implementation-backed" in supported_features
+        "Gateway command-center composition, Workbench first-wave wave command-center UX, "
+        "wave report materialization, and wave PM memo assistance are implementation-backed"
+        in supported_features
     )
     assert "external OMS execution remain unsupported future WTBDs" in supported_features
 
@@ -618,6 +619,67 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert (
         "Do not start product implementation before this Slice 0 artifact is reviewed" in source_map
     )
+
+
+def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
+    rfc = (
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+
+    required_rfc_terms = [
+        "FIRST-WAVE PRODUCT PATH LIVE-PROVEN",
+        "Post-Closure WTBD Integration Audit",
+        "RFC41-WTBD-001",
+        "RFC41-WTBD-010",
+        "`lotus-gateway` PR #196/#197/#201",
+        "`lotus-workbench` PR #165/#168",
+        "`lotus-report` PR #91",
+        "`lotus-ai` PR #63",
+        "`CioModelChangeAffectedCohort:v1`",
+        "external_execution_claimed=false",
+        "canonical-front-office-qa-20260509-225912.json",
+        "wtbd-rfc40-audit-20260509",
+    ]
+    missing_rfc_terms = [term for term in required_rfc_terms if term not in rfc]
+
+    assert missing_rfc_terms == []
+
+    required_wtbd_terms = [
+        "RFC41 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
+        "Completed for first-wave wave command-center product support",
+        "Full front-office command-center product support",
+        "canonical-front-office-qa-20260509-225912.json",
+        "dpm-wave-command-center-live.png",
+        "external OMS execution",
+    ]
+    missing_wtbd_terms = [term for term in required_wtbd_terms if term not in wtbd]
+
+    assert missing_wtbd_terms == []
+
+    required_wiki_terms = [
+        "Rebalance Wave Flow",
+        "source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohorts",
+        "lotus-report/render/archive wave report",
+        "review-gated wave PM memo",
+        "canonical-front-office-qa-20260509-225912.json",
+        "external OMS execution is not supported",
+    ]
+    missing_wiki_terms = [term for term in required_wiki_terms if term not in supported_features]
+
+    assert missing_wiki_terms == []
+    assert "Gateway wave composition | Not supported in manage RFC" not in rfc
+    assert "Workbench wave command center | Not supported in manage RFC" not in rfc
+    assert (
+        "RFC41-WTBD-007 | Full front-office command-center product support | "
+        "`lotus-gateway`, `lotus-workbench`, with manage as backend authority | "
+        "Proposed, not supported" not in wtbd
+    )
+    assert "Gateway/Workbench product consumption and canonical proof remain open" not in wtbd
 
 
 def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
