@@ -1023,8 +1023,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`TransactionCostCurve:v1` methodology truth through `lotus-core` PR #345" in (
         supported_features
     )
-    assert "source-owned observed transaction-cost evidence from `TransactionCostCurve:v1` with merged source-owner methodology proof" in (
-        supported_features
+    assert (
+        "source-owned observed transaction-cost evidence from `TransactionCostCurve:v1` with merged source-owner methodology proof"
+        in (supported_features)
     )
     assert "transaction-ledger row measures" in supported_features
     assert "cashflow projection totals" in supported_features
