@@ -146,7 +146,13 @@ Current repository posture:
     exceptions, proof packs, proof-pack-local decision timeline events, RFC-0041 wave events,
     internal handoff refs, and RFC-0042 outcome-review events into a deterministic, source-backed,
     hashable timeline without reconstructing mandate health, risk, performance, execution, tax,
-    cash, FX, or source-owner methodology. First-wave
+    cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
+    includes the merged and wiki-published `lotus-risk` rolling tracking-error methodology slice
+    from PR #113 (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) for
+    `RollingRiskMetricsReport:v1`; it pins date alignment, pp-to-decimal conversion, `ddof=1`,
+    annualized decimal-ratio output, warm-up/null behavior, and no-aligned-benchmark posture while
+    still leaving aggregated tax, FX, cash movement, liquidity, execution, and broader methodology
+    depth to future source-owner work. First-wave
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
     PR #199, `lotus-workbench` PR #167, `lotus-platform` PR #307, and canonical Workbench evidence
     `lotus-workbench/output/playwright/live-canonical/dpm-portfolio-memory-live.png`.
