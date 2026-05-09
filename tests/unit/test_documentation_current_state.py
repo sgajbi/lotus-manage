@@ -1017,6 +1017,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "latest observation selection at or before `as_of_date`" in work_to_be_done
     assert "price and FX freshness posture" in work_to_be_done
     assert "valuation methodology, FX attribution" in work_to_be_done
+    assert "Latest WTBD-006 core DPM source-readiness methodology proof" in work_to_be_done
+    assert "`lotus-core` PR #350" in work_to_be_done
+    assert "`c17bfa3298470375faa0b5e15bf369fa88a70597`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `e3fd859`" in work_to_be_done
+    assert "`DpmSourceReadiness:v1` methodology" in work_to_be_done
+    assert "fail-closed source-family precedence" in work_to_be_done
+    assert "mandate approval, client suitability" in work_to_be_done
     assert "OpenAPI quality, API vocabulary" in work_to_be_done
     assert "tests/unit/docs/test_source_data_product_boundaries.py" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
@@ -1047,11 +1054,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "contribution methodology truth" in supported_features
     assert "attribution methodology truth" in supported_features
     assert "current core slices" in supported_features
-    assert "market-data coverage, transaction-ledger row measures" in supported_features
+    assert "market-data coverage, DPM source-readiness" in supported_features
+    assert "transaction-ledger row measures" in supported_features
     assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
         supported_features
     )
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
+        supported_features
+    )
+    assert "`DpmSourceReadiness:v1` methodology truth through `lotus-core` PR #350" in (
         supported_features
     )
     assert "`HoldingsAsOf:v1` methodology truth through `lotus-core` PR #348" in (

@@ -160,7 +160,14 @@ Current repository posture:
     observation selection, configurable max-staleness policy, missing/stale market-data posture,
     populated DPM source-readiness support, and explicit non-claims for valuation methodology, FX
     attribution, liquidity ladders, market impact, execution quality, best execution, venue
-    routing, and OMS acknowledgement. It also includes the merged and wiki-published `lotus-risk` rolling
+    routing, and OMS acknowledgement. It also includes the merged and wiki-published `lotus-core`
+    `DpmSourceReadiness:v1` methodology slice from PR #350
+    (`c17bfa3298470375faa0b5e15bf369fa88a70597`, wiki `e3fd859`), which pins mandate binding,
+    model target, eligibility, tax-lot, and market-data coverage composition, deterministic
+    instrument-universe assembly, fail-closed source-family precedence, supportability and
+    data-quality mapping, and explicit non-claims for mandate approval, client suitability, tax
+    advice, valuation methodology, FX attribution, liquidity ladders, execution quality, best
+    execution, venue routing, and OMS acknowledgement. It also includes the merged and wiki-published `lotus-risk` rolling
     tracking-error methodology slice from PR #113
     (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`) and rolling
     information-ratio methodology slice from PR #114
