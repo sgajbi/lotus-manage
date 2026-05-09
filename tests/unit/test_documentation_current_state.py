@@ -921,8 +921,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC41-WTBD-004 - Risk And Performance Aggregate Enrichment" in work_to_be_done
     assert "Latest WTBD-006 performance MWR source-truth proof" in work_to_be_done
     assert "Latest WTBD-006 performance contribution source-truth proof" in work_to_be_done
+    assert "Latest WTBD-006 performance attribution source-truth proof" in work_to_be_done
     assert "stateful lotus-core source resolution" in work_to_be_done
     assert "stateful lotus-core portfolio/position timeseries normalization" in work_to_be_done
+    assert (
+        "stateful lotus-core portfolio/position, benchmark, and source-currency normalization"
+        in (work_to_be_done)
+    )
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
     assert "does not calculate risk or performance methodology locally" in work_to_be_done
@@ -937,13 +942,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "developers, business users, operations, sales/pre-sales" in supported_features
     assert "59 WTBD items: 35 done on merged/published truth, 4 partial" in (supported_features)
     assert (
-        "MWR and contribution methodology truth for stateful lotus-core source resolution"
+        "MWR methodology truth, contribution methodology truth, and attribution methodology truth"
         in supported_features
     )
-    assert (
-        "contribution methodology truth for stateful lotus-core source resolution"
-        in supported_features
-    )
+    assert "contribution methodology truth" in supported_features
+    assert "attribution methodology truth" in supported_features
+    assert "benchmark context" in supported_features
     assert "PM-book-backed monitoring cohort resolution" in supported_features
     assert "PortfolioManagerBookMembership:v1" in supported_features
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
