@@ -161,8 +161,16 @@ Current repository posture:
     `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity, portfolio-base-currency
     output, and explicit non-claims for liquidity ladders, tax methodology, performance returns,
     market impact, and OMS execution forecasting while still leaving aggregated tax, FX,
-    liquidity-ladder, execution, and broader methodology depth to future source-owner work. It
-    also includes the merged and wiki-published `lotus-core` `TransactionCostCurve:v1` methodology
+    liquidity-ladder, execution, and broader methodology depth to future source-owner work. The
+    source-owner record also includes the merged and wiki-published `lotus-core`
+    `PortfolioTaxLotWindow:v1` methodology slice from PR #346
+    (`e48d85a98ae3f53199bdccbe2e83f6304c9e050c`, wiki `f37af67`), which pins effective-date lot
+    selection, optional security filtering, open/closed lot posture, deterministic paging,
+    open-quantity status derivation, cost-basis preservation, empty-source supportability, and
+    explicit non-claims for jurisdiction-specific tax advice, realized-tax optimization,
+    wash-sale treatment, client-tax approval, tax-reporting certification, execution methodology,
+    and OMS acknowledgement. It also includes the merged and wiki-published `lotus-core`
+    `TransactionCostCurve:v1` methodology
     slice from PR #345 (`83d791d0e599f06a2c0caab6eaba647f717d4658`, wiki `154ae27`), which pins
     observed booked-fee grouping by `(security_id, transaction_type, currency)`, fee-field
     precedence, zero-fee and zero-notional exclusion, notional-weighted average bps, min/max bps,
