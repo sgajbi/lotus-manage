@@ -233,6 +233,7 @@ def _core_execution_context(
     supportability_state: str = "DEGRADED",
     include_transaction_cost_curve: bool = False,
     include_cashflow_projection: bool = False,
+    cashflow_data_quality_status: str = "COMPLETE",
 ) -> DpmCoreExecutionContext:
     payload = {
         "portfolio_snapshot": {
@@ -335,7 +336,7 @@ def _core_execution_context(
             ],
             "total_net_cashflow": "-50.0000000000",
             "projection_days": 90,
-            "data_quality_status": "COMPLETE",
+            "data_quality_status": cashflow_data_quality_status,
             "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
             "source_batch_fingerprint": "sha256:cashflow-projection",
         }
@@ -353,6 +354,15 @@ class _TransactionCostCoreResolver:
             supportability_state="READY",
             include_transaction_cost_curve=True,
             include_cashflow_projection=True,
+        )
+
+
+class _DegradedCashflowCoreResolver:
+    def resolve_execution_context(self, *, stateful_input, correlation_id):
+        return _core_execution_context(
+            supportability_state="READY",
+            include_cashflow_projection=True,
+            cashflow_data_quality_status="DEGRADED",
         )
 
 
@@ -982,6 +992,38 @@ def test_stateful_construction_attaches_core_cashflow_projection(monkeypatch) ->
         "currency": "SGD",
     }
     assert "CASHFLOW_PROJECTION_CONTEXT_PRESENT" in reason_codes
+
+
+def test_stateful_construction_marks_degraded_core_cashflow_projection(monkeypatch) -> None:
+    repository = InMemoryConstructionRepository()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: _DegradedCashflowCoreResolver(),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "methods": ["LIQUIDITY_AWARE"],
+            },
+            headers={"Idempotency-Key": "idem-construction-stateful-cashflow-degraded"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    body = response.json()
+    alternative = body["alternatives"][0]
+    cashflow_projection = alternative["diagnostics"]["authority_context"]["liquidity_context"][
+        "cashflow_projection"
+    ]
+    assert cashflow_projection["data_quality_status"] == "DEGRADED"
+    assert alternative["method_status"] == "DEGRADED"
 
 
 def test_generate_construction_alternative_set_idempotency_conflict() -> None:

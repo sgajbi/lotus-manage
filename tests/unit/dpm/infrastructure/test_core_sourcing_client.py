@@ -610,6 +610,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"sections":["positions_baseline","portfolio_totals"]' in seen[2][2]
     assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
+    assert b'"window":{"start_date":"2025-02-18","end_date":"2026-03-25"}' in seen[6][2]
     assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
     assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[8][2]
     assert b'"include_inactive_restrictions":false' in seen[8][2]
@@ -626,6 +627,94 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.client_restriction_profile.supportability.state == "READY"
     assert context.sustainability_preference_profile is not None
     assert context.sustainability_preference_profile.supportability.state == "READY"
+
+
+def test_core_resolver_routes_cashflow_projection_to_query_base_url():
+    seen: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(str(request.url))
+        return _composed_context_response_for(request)
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core-control.example.test",
+            query_base_url="https://core-query.example.test",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    context = client.resolve_execution_context(
+        stateful_input=_stateful_input(),
+        correlation_id="corr-core-query-001",
+    )
+
+    assert context.portfolio_cashflow_projection is not None
+    assert (
+        "https://core-query.example.test/portfolios/PB_SG_GLOBAL_BAL_001/"
+        "cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true"
+    ) in seen
+    assert all(
+        url.startswith("https://core-control.example.test/")
+        for url in seen
+        if "cashflow-projection" not in url
+    )
+
+
+def test_core_resolver_cashflow_projection_path_can_be_disabled():
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            portfolio_cashflow_projection_path_template="",
+        ),
+        client=httpx.Client(transport=httpx.MockTransport(_composed_context_response_for)),
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+    ):
+        client.resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+
+def test_core_resolver_cashflow_projection_maps_get_failures():
+    unavailable_client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=1),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(503, json={"detail": "maintenance"})
+            )
+        ),
+    )
+    incomplete_client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(404, json={"detail": "missing"})
+            )
+        ),
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE",
+    ):
+        unavailable_client.resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_CASHFLOW_PROJECTION_INCOMPLETE"):
+        incomplete_client.resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 4, 10),
+            correlation_id=None,
+        )
 
 
 def test_core_resolver_retries_transient_unavailable_response():
