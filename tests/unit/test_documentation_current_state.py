@@ -52,6 +52,36 @@ def test_current_docs_do_not_advertise_removed_advisory_runtime_surface() -> Non
     assert failures == []
 
 
+def test_completed_wtbd_gold_pass_truth_is_not_left_in_pre_merge_language() -> None:
+    audited_paths = [
+        ROOT / "docs" / "rfcs" / "RFC-worktobedone.md",
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md",
+        ROOT / "docs" / "rfcs" / "RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md",
+        ROOT
+        / "docs"
+        / "rfcs"
+        / "RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md",
+        ROOT / "docs" / "rfcs" / "RFC-0042-post-trade-outcome-feedback-loop.md",
+    ]
+    stale_closure_terms = [
+        "ready for PR merge/wiki publication",
+        "once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`",
+        "once this branch is merged to `main`",
+        "the supported manage wave path remains unchanged until a later manage consumer slice",
+    ]
+    failures: list[str] = []
+    for path in audited_paths:
+        text = path.read_text(encoding="utf-8")
+        for term in stale_closure_terms:
+            if term in text:
+                failures.append(f"{path.relative_to(ROOT)} contains stale closure term {term!r}")
+
+    assert failures == []
+
+
 def test_removed_advisory_demo_and_rfc_sources_stay_retired() -> None:
     retired_patterns = [
         "docs/demo/*advisory*.json",

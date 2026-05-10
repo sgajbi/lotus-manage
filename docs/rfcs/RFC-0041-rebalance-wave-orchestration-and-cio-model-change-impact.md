@@ -1010,8 +1010,8 @@ Audit evidence:
 Gold-pass decision:
 
 RFC-0041 reaches the expected standard for manage-owned wave authority and the bounded first-wave
-product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, the repo-local wiki
-is published, and final branch hygiene confirms no stranded governance truth. The risk-event
-source-product foundation is now real and governed, but the supported manage wave path remains
-unchanged until a later manage consumer slice integrates it. Remaining gaps are explicit future
-source-owner, consumer, or execution-product scope, not hidden defects in the supported wave path.
+product path on merged `lotus-manage` `main` truth with repo-local wiki publication and final branch
+hygiene confirming no stranded governance truth. The risk-event source-product foundation and
+bounded manage consumer path are now real and governed. Remaining tactical house-view, campaign, and
+external execution gaps are explicit future source-owner or execution-product scope, not hidden
+defects in the supported wave path.
