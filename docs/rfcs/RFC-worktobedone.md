@@ -564,7 +564,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0037 |
 | --- | --- | --- | --- | --- |
 | RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` | Completed for the bounded first-wave outcome-review product path; richer source-owner/OMS/PM-scoring/client-communication scope remains | RFC-0037 identifies outcome learning as target-state. RFC-0042 now delivers manage authority, Gateway/Workbench product realization, report/archive materialization, and governed AI narrative request flow. |
-| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Proposed | AI must use governed workflow packs, guardrails, provenance, and unavailable fallback; roadmap text is not implementation. |
+| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Partially implemented for owner-side DPM workflow packs | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, and outcome-review narrative packs with guardrails and provenance. Separate exception summary, operations handoff summary, default-version resolution, full copilot workspace, and any additional product surfaces remain future work. |
 | RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0042 | Multiple canonical product surfaces are live-proven, but RFC-0043, full portfolio memory, OMS, PM scoring, and remaining source-owner depth are not complete. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive` | Partially implemented for proof-pack, wave, and outcome-review first-wave artifacts | Generated documents and archive lifecycle are implementation-backed for supported handoff paths; broader client/internal evidence catalog remains future owner scope. |
@@ -648,11 +648,28 @@ Target business outcome:
 AI assists PMs with summarization, evidence packaging, exception narratives, and review support
 without becoming the source of investment truth.
 
-Why it cannot be done now:
+Current implementation-backed status:
 
-RFC-0043 remains proposed and AI behavior belongs to `lotus-ai`. Manage can provide structured
-evidence, but AI workflow packs, prompts, guardrails, provenance, and fallback behavior must be
-implemented in the owning service.
+RFC-0043 is no longer purely proposed. Manage provides structured evidence only, while `lotus-ai`
+owns the implemented review-gated workflow-pack execution paths for:
+
+1. `dpm_pm_memo.pack@v1` over `DpmProofPackAiEvidenceInput`,
+2. `dpm_wave_pm_memo.pack@v1` over `DpmWaveReportInput`,
+3. `outcome_review_narrative.pack@v1` over `DpmOutcomeAiEvidenceInput`.
+
+The implemented packs validate forbidden actions, forbidden fields, unsupported requested outputs,
+source refs, no-raw-payload posture, optional bounded `portfolio_memory_context`, review-gated run
+posture, and no-reconstruction source-authority policy. Gateway and Workbench have first-wave
+invocation/posture surfaces for the implemented DPM memo paths where recorded under RFC40, RFC41,
+and RFC42 WTBD evidence.
+
+What remains open:
+
+RFC-0043 still needs separate exception-summary and operations-handoff summary packs if those
+surfaces are promoted, default-version resolution, broader copilot workspace UX, additional
+AI-unavailable product fallbacks where not already implemented, and any future product surfaces in
+their owning apps. AI behavior remains support-only and cannot approve, recommend, execute, or
+contact clients.
 
 Dependencies before implementation:
 
@@ -664,8 +681,9 @@ Dependencies before implementation:
 
 Expected implementation wave:
 
-Implement in `lotus-ai` and integrate through Gateway/Workbench after evidence contracts are
-stable.
+Continue in `lotus-ai` for any additional pack families, then integrate through Gateway/Workbench
+after evidence contracts are stable. Do not add direct provider calls or prompt construction to
+`lotus-manage`.
 
 Promotion proof:
 
@@ -673,6 +691,16 @@ Promotion proof:
 2. provenance and evidence-hash proof,
 3. unavailable/blocked fallback evidence,
 4. Gateway/Workbench integration proof if surfaced.
+
+Gold-pass assessment - 2026-05-10:
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | Owner-side DPM workflow-pack execution exists for proof-pack PM memo, wave PM memo, and outcome-review narrative. |
+| Quality improvements made | RFC37-WTBD-002 and RFC-0043 now distinguish implemented workflow packs from future copilot surfaces instead of treating all AI work as proposed. |
+| Debt removed | Stale roadmap wording that ignored merged `lotus-ai` DPM packs was retired from the WTBD/RFC truth. |
+| What was proven through testing and evidence | Existing `lotus-ai` slices prove guardrails, source refs, review posture, no-raw-payload behavior, bounded portfolio-memory lineage, and AI-owned source-event projections; Gateway/Workbench evidence covers first-wave invocation/posture where implemented. |
+| Expected-standard decision | The owner-side DPM workflow-pack subset reaches the expected standard. The broader RFC37-WTBD-002 remains partial until future exception, operations, default-version, workspace, and additional product-surface requirements are implemented and merged by their owners. |
 
 #### RFC37-WTBD-003 - Full Front-Office DPM Product Realization
 

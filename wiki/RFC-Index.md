@@ -114,8 +114,10 @@ evidence, and supported-feature promotion.
   implementation. Remaining RFC-0042 work is source-owner methodology enrichment, external
   execution/OMS ownership, and any separately governed PM quality-scoring RFC
 - RFC-0043
-  proposed governed AI PM copilot roadmap using `lotus-ai` without transferring domain decision
-  ownership to AI
+  partially implemented governed AI PM copilot roadmap using `lotus-ai` without transferring domain
+  decision ownership to AI. Owner-side DPM packs exist for proof-pack PM memo, wave PM memo, and
+  outcome-review narrative; exception/operations packs and broader copilot workspace depth remain
+  future owner work
 
 ## Removed local RFC sprawl
 

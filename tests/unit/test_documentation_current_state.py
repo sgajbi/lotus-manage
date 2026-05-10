@@ -543,6 +543,35 @@ def test_rfc0040_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     assert "| Pre-trade proof pack | Supported |" not in supported_features
 
 
+def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> None:
+    rfc = (ROOT / "docs" / "rfcs" / "RFC-0043-governed-ai-pm-copilot-for-dpm.md").read_text(
+        encoding="utf-8"
+    )
+    index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+    wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "PARTIALLY IMPLEMENTED - OWNER-SIDE DPM WORKFLOW PACKS",
+        "`dpm_pm_memo.pack@v1`",
+        "`dpm_wave_pm_memo.pack@v1`",
+        "`outcome_review_narrative.pack@v1`",
+        "WTBD Reintegration Audit - 2026-05-10",
+        "review-gated proof-pack PM memo, wave PM memo, and outcome-review narrative packs",
+        "support-only narrative aids",
+    ]
+
+    for term in required_terms:
+        assert term in rfc or term in wtbd or term in supported_features or term in wiki_index
+
+    assert "PARTIALLY IMPLEMENTED (OWNER-SIDE DPM WORKFLOW PACKS)" in index
+    assert "Partially supported through owner-side `lotus-ai` DPM workflow packs" in (
+        supported_features
+    )
+    assert "all AI copilot features as proposed" not in rfc
+
+
 def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     rfc = (
         ROOT
