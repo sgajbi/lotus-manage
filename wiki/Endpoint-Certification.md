@@ -1878,9 +1878,9 @@ Non-functional posture:
 - Does not expose raw upstream payloads.
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
-- Portfolio-memory truth is partial only for report/AI consumers and future report, AI, OMS,
-  PM-scoring, and client-communication source-event families that are not yet implemented in their
-  owning apps.
+- Portfolio-memory truth is partial only for remaining OMS and PM-scoring source-event families
+  that are not yet implemented in their owning apps. Report, AI, and archive generated-document
+  source-event families are implementation-backed in their owning repositories.
 
 ```mermaid
 flowchart LR
