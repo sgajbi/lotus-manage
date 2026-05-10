@@ -1395,8 +1395,8 @@ Audit evidence:
 Gold-pass decision:
 
 RFC-0040 reaches the expected standard for manage-owned proof-pack authority and the bounded
-first-wave product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, the
-repo-local wiki is published, and final branch hygiene confirms no stranded governance truth. The
+first-wave product path on merged `lotus-manage` `main` truth with repo-local wiki publication and
+final branch hygiene confirming no stranded governance truth. The
 remaining gaps are explicit future source-owner or product-lifecycle scope, not hidden defects in
 the supported proof-pack path.
 

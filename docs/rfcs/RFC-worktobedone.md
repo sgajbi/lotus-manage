@@ -53,10 +53,12 @@ retained only as evidence index and sequencing control.
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: the RFC41-WTBD-003 manage risk-event consumer slice after
+Snapshot basis: the 2026-05-10 mainline after the RFC40-WTBD-009 selected-alternative
+regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI workflow-pack truth
+reintegration slice, and the RFC41-WTBD-003 manage risk-event consumer slice. RFC41-WTBD-003 now has
 `lotus-risk:RiskEventAffectedCohort:v1` source ownership, the platform mesh mirror, and the
-`lotus-manage` `RISK_EVENT` wave preview/create consumer are implemented, validated locally, and
-ready for PR merge/wiki publication.
+`lotus-manage` `RISK_EVENT` wave preview/create consumer implemented, validated, merged to
+`main`, and wiki-published.
 The canonical DPM command-center seed still proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
 ready/degraded/blocked source-readiness states for downstream consumers. RFC40-WTBD-007 adds
@@ -1457,7 +1459,7 @@ source so the implementation record is not stranded in this WTBD ledger.
 | Quality improvements made | The audit verified manage construction with 65 focused backend tests and static checks, then exercised the canonical front-office stack instead of relying on stale documentation. Live testing found Workbench repeated-generation identity defects that normal unit proof had missed; merged PR #171 adds unique per-generation idempotency and correlation identifiers plus deterministic unit-test injection. |
 | Debt removed | Stale wording that treated Gateway/Workbench realization as future was removed from the RFC and wiki source. The Workbench deterministic idempotency/correlation assumption was removed because it broke repeated PM generation against persisted manage run records. Unsupported claims around OMS execution, predictive execution pricing, automatic suitability, security-level ESG classification, and local browser optimization remain explicit boundaries. |
 | What was proven through testing and evidence | Manage focused proof passed `tests/unit/dpm/api/test_construction_api.py`, core-sourcing/risk-authority client tests, method registry tests, and construction vocabulary tests with 65 passing tests. Canonical Workbench validation passed for `PB_SG_GLOBAL_BAL_001`. Focused construction live proof first failed with HTTP 409 at `output/rfc39-wtbd-audit-20260509-construction-live/construction-alternatives-live-summary.json`, then failed with HTTP 500 at `output/rfc39-wtbd-audit-20260509-construction-live-fixed/construction-alternatives-live-summary.json`, and finally passed after merged PR #171 at `output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json`. |
-| Expected-standard decision | `lotus-workbench` PR #171 is merged as `8de42e0` with a green Pull Request Merge Gate. The first-wave construction product path is accepted for this slice only after this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, wiki publication is synchronized, and final branch hygiene confirms no stranded governance truth. |
+| Expected-standard decision | `lotus-workbench` PR #171 is merged as `8de42e0` with a green Pull Request Merge Gate, and the RFC/WTBD/wiki truth has been merged to `lotus-manage` `main` with synchronized wiki publication and clean final branch hygiene. The first-wave construction product path is accepted for this completed slice. |
 
 ### Detailed Follow-Up Items
 
@@ -2033,7 +2035,7 @@ current implementation record is available from the owning RFC.
 | Quality improvements made | The audit removed stale backend-only RFC wording and replaced it with an implementation-backed support boundary. It keeps manage as evidence authority while recognizing downstream product truth and explicitly separates completed first-wave support from future OMS, PM-scoring, client communication execution, direct scenario contribution, and richer profile presentation. |
 | Debt removed | Stale language that treated Gateway/Workbench/report/AI realization as future was retired from the owning RFC. The WTBD now records proof-pack product realization as wiki-published rather than merely wiki-ready. Unsupported product claims remain explicit instead of being hidden in broad "full product" wording. |
 | What was proven through testing and evidence | Existing backend proof remains anchored in `output/rfc0040-proof/20260503-145818` and `output/rfc0040-proof/20260507-230235`. First-wave product proof remains anchored in `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-124405.json`, Workbench `live-validation-summary.json`, and `dpm-proof-pack-live.png`. The 2026-05-09 audit reran canonical front-office QA successfully with report `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.json`, Markdown summary `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.md`, DPM seed evidence `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260509-230635.json`, and screenshots in `lotus-platform/output/front-office-qa/wtbd-rfc40-audit-20260509`. |
-| Expected-standard decision | RFC40 reaches the expected standard for manage-owned proof-pack authority and the bounded first-wave product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, wiki publication is synchronized, and final branch hygiene confirms no stranded governance truth. |
+| Expected-standard decision | RFC40 reaches the expected standard for manage-owned proof-pack authority and the bounded first-wave product path on merged `lotus-manage` `main` truth with synchronized wiki publication and clean final branch hygiene. |
 
 ### Detailed Follow-Up Items
 
@@ -2720,7 +2722,7 @@ source so the current implementation record is available from the owning RFC.
 | Quality improvements made | The audit removes stale backend-only RFC wording and keeps manage as wave authority while acknowledging the merged first-wave product path. It separates completed wave command-center support from future tactical/risk/campaign cohorts and external OMS execution. |
 | Debt removed | Stale WTBD wording that listed full front-office wave support as proposed was retired. Unsupported execution and source-owner cohort claims remain explicit instead of being hidden behind broad command-center wording. |
 | What was proven through testing and evidence | Existing manage proof remains anchored in `output/rfc0041-wave-proof/20260504-231914` and `output/rfc0041-wave-proof/20260507-224144`. First-wave product proof remains anchored in `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260507-142715.json`, `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260507-143459.json`, and `lotus-workbench/output/playwright/live-canonical/dpm-wave-command-center-live.png`. The 2026-05-09 audit reran canonical front-office QA successfully with report `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.json`, Markdown summary `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-225912.md`, DPM seed evidence `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260509-230635.json`, and screenshots in `lotus-platform/output/front-office-qa/wtbd-rfc40-audit-20260509`. |
-| Expected-standard decision | RFC41 reaches the expected standard for manage-owned wave authority and the bounded first-wave product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, wiki publication is synchronized, and final branch hygiene confirms no stranded governance truth. |
+| Expected-standard decision | RFC41 reaches the expected standard for manage-owned wave authority and the bounded first-wave product path on merged `lotus-manage` `main` truth with synchronized wiki publication and clean final branch hygiene. |
 
 ### Detailed Follow-Up Items
 
@@ -2869,7 +2871,7 @@ Gold-pass assessment for the 2026-05-10 risk-event consumer slice:
 | Quality improvements made | The implementation adds a typed risk-authority client method, explicit request fields and OpenAPI descriptions, fail-closed selector and dependency handling, stricter malformed-response rejection, and a machine-readable `lotus-risk` consumer declaration. |
 | Debt removed | Previous RFC/wiki wording stopped at the source-owner foundation and left manage consumption as a future claim. This slice removes that drift while keeping tactical/campaign cohorts explicitly unpromoted. |
 | What was proven through testing and evidence | Focused API and client tests prove source-ready preview/create, source-ref preservation, outbound payload shape, invalid date, missing risk event id, missing candidates, empty/negative exposure weights, unavailable risk authority, rejected risk requests, degraded supportability, empty affected cohorts, and malformed source responses. Local gates passed for focused tests, mypy, ruff, OpenAPI quality, no-alias guard, API vocabulary inventory, and domain-data-product contract validation. |
-| Expected-standard decision | The bounded `RISK_EVENT` manage-consumer slice reaches the expected backend standard once this branch is merged to `main`, GitHub checks are green, and repo-local wiki publication is synchronized. RFC41-WTBD-003 remains partial only because tactical house-view and implicit campaign source authorities are not yet implemented. |
+| Expected-standard decision | The bounded `RISK_EVENT` manage-consumer slice reaches the expected backend standard on merged `lotus-manage` `main` truth with green GitHub checks and synchronized repo-local wiki publication. RFC41-WTBD-003 remains partial only because tactical house-view and implicit campaign source authorities are not yet implemented. |
 
 #### RFC41-WTBD-004 - Risk And Performance Aggregate Enrichment
 
