@@ -1,15 +1,22 @@
 from decimal import Decimal
+from types import SimpleNamespace
 
 import pytest
 
 from src.api.request_models import RebalanceRequest
 import src.api.services.construction_service as construction_service
 from src.core.construction import (
+    AuthoritativeClientRestrictionContext,
+    AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
     AuthoritativeRiskContext,
+    AuthoritativeSustainabilityPreference,
+    AuthoritativeSustainabilityPreferenceContext,
+    AuthoritativeTransactionCostContext,
+    AuthoritativeTransactionCostPoint,
     ConstructionAuthorityContext,
     ConstructionMethodStatus,
     estimate_transaction_cost,
@@ -20,7 +27,12 @@ from src.core.construction.repository import (
     ConstructionIdempotencyConflictError,
 )
 from src.core.construction.vocabulary import ConstructionMethod
-from src.core.models import EngineOptions, RebalanceResult
+from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
+    DpmCoreSustainabilityPreferenceProfileResponse,
+    DpmResolvedSourceContext,
+)
+from src.core.models import EngineOptions, Money, RebalanceResult
 from src.core.rebalance.engine import run_simulation
 from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import (
@@ -238,6 +250,513 @@ def test_cashflow_projection_context_rejects_unusable_projection_posture() -> No
     assert "CASHFLOW_PROJECTION_DEGRADED_BY_SOURCE" in reason_codes
 
 
+def test_transaction_cost_context_marks_missing_observed_evidence_degraded() -> None:
+    result = _trade_result()
+    context = AuthoritativeTransactionCostContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        as_of_date="2026-05-03",
+        window_start_date="2026-05-01",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=1,
+        curve_points=[
+            AuthoritativeTransactionCostPoint(
+                security_id="NOT_TRADED",
+                transaction_type="BUY",
+                currency="USD",
+                observation_count=3,
+                total_notional=Decimal("1000"),
+                total_cost=Decimal("1"),
+                average_cost_bps=Decimal("10"),
+                min_cost_bps=Decimal("8"),
+                max_cost_bps=Decimal("12"),
+                first_observed_date="2026-05-01",
+                last_observed_date="2026-05-03",
+            )
+        ],
+        reason_codes=["TRANSACTION_COST_CURVE_READY"],
+    )
+
+    assert (
+        construction_service._observed_transaction_cost_estimate(result=result, context=context)
+        is None
+    )
+    assert (
+        construction_service._transaction_cost_status(result=result, context=context)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    reason_codes = construction_service._transaction_cost_reason_codes(
+        result=result,
+        context=context,
+    )
+
+    assert "TRANSACTION_COST_CURVE_MISSING_TRADED_SECURITIES" in reason_codes
+    assert "TRANSACTION_COST_ESTIMATE_UNAVAILABLE" in reason_codes
+
+
+def test_transaction_cost_context_ignores_intents_without_base_notional() -> None:
+    result = _trade_result()
+    result = result.model_copy(
+        update={
+            "intents": [
+                intent.model_copy(update={"notional_base": None}) for intent in result.intents
+            ]
+        }
+    )
+    context = AuthoritativeTransactionCostContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        as_of_date="2026-05-03",
+        window_start_date="2026-05-01",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=1,
+        curve_points=[
+            AuthoritativeTransactionCostPoint(
+                security_id="EQ_B",
+                transaction_type="BUY",
+                currency="USD",
+                observation_count=3,
+                total_notional=Decimal("1000"),
+                total_cost=Decimal("1"),
+                average_cost_bps=Decimal("10"),
+                min_cost_bps=Decimal("8"),
+                max_cost_bps=Decimal("12"),
+                first_observed_date="2026-05-01",
+                last_observed_date="2026-05-03",
+            )
+        ],
+        reason_codes=["TRANSACTION_COST_CURVE_READY"],
+    )
+
+    assert (
+        construction_service._observed_transaction_cost_estimate(result=result, context=context)
+        is None
+    )
+
+
+def test_client_restriction_context_applies_source_owned_restriction_scopes() -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    result = _trade_result()
+    context = AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.DEGRADED,
+        source_system="lotus-core",
+        portfolio_id="pf_enrich_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date="2026-05-03",
+        restriction_count=4,
+        missing_data_families=["issuer_classification"],
+        restrictions=[
+            AuthoritativeClientRestrictionRule(
+                restriction_scope="instrument",
+                restriction_code="NO_BUY_EQ_B",
+                restriction_status="ACTIVE",
+                restriction_source="CLIENT_PROFILE",
+                applies_to_buy=True,
+                applies_to_sell=False,
+                instrument_ids=["EQ_B"],
+                effective_from="2026-01-01",
+                restriction_version=1,
+            ),
+            AuthoritativeClientRestrictionRule(
+                restriction_scope="inactive",
+                restriction_code="INACTIVE_RESTRICTION",
+                restriction_status="INACTIVE",
+                restriction_source="CLIENT_PROFILE",
+                applies_to_buy=True,
+                applies_to_sell=True,
+                instrument_ids=["EQ_B"],
+                effective_from="2026-01-01",
+                restriction_version=1,
+            ),
+            AuthoritativeClientRestrictionRule(
+                restriction_scope="sell_only",
+                restriction_code="SELL_ONLY_RULE",
+                restriction_status="ACTIVE",
+                restriction_source="CLIENT_PROFILE",
+                applies_to_buy=False,
+                applies_to_sell=True,
+                instrument_ids=["EQ_B"],
+                effective_from="2026-01-01",
+                restriction_version=1,
+            ),
+        ],
+        reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+    )
+
+    assert (
+        construction_service._client_restriction_status(
+            request=request,
+            result=result,
+            context=context,
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+    reason_codes = construction_service._client_restriction_reason_codes(
+        request=request,
+        result=result,
+        context=context,
+    )
+
+    assert "CLIENT_RESTRICTION_PROFILE_DEGRADED" in reason_codes
+    assert "MISSING_ISSUER_CLASSIFICATION" in reason_codes
+    assert "CLIENT_RESTRICTION_VIOLATION_NO_BUY_EQ_B" in reason_codes
+
+
+def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rules() -> None:
+    result = _trade_result()
+    intent = next(intent for intent in result.intents if intent.instrument_id == "EQ_B")
+    shelf = shelf_entry(
+        "EQ_B",
+        status="APPROVED",
+        asset_class="EQUITY",
+        issuer_id="ISSUER_TECH",
+    ).model_copy(
+        update={"attributes": {"country_of_risk": "US"}},
+    )
+
+    base_rule = {
+        "restriction_scope": "scope",
+        "restriction_code": "RULE",
+        "restriction_status": "ACTIVE",
+        "restriction_source": "CLIENT_PROFILE",
+        "applies_to_buy": True,
+        "applies_to_sell": True,
+        "effective_from": "2026-01-01",
+        "restriction_version": 1,
+    }
+
+    assert construction_service._restriction_matches_intent(
+        intent=intent,
+        shelf=shelf,
+        restriction=AuthoritativeClientRestrictionRule(**base_rule),
+    )
+    assert not construction_service._restriction_matches_intent(
+        intent=intent,
+        shelf=None,
+        restriction=AuthoritativeClientRestrictionRule(
+            **base_rule,
+            asset_classes=["EQUITY"],
+        ),
+    )
+    assert construction_service._restriction_matches_intent(
+        intent=intent,
+        shelf=shelf,
+        restriction=AuthoritativeClientRestrictionRule(
+            **base_rule,
+            asset_classes=["EQUITY"],
+        ),
+    )
+    assert construction_service._restriction_matches_intent(
+        intent=intent,
+        shelf=shelf,
+        restriction=AuthoritativeClientRestrictionRule(
+            **base_rule,
+            issuer_ids=["ISSUER_TECH"],
+        ),
+    )
+    assert construction_service._restriction_matches_intent(
+        intent=intent,
+        shelf=shelf,
+        restriction=AuthoritativeClientRestrictionRule(
+            **base_rule,
+            country_codes=["US"],
+        ),
+    )
+
+
+def test_sustainability_context_flags_allocation_and_classification_review() -> None:
+    result = _trade_result()
+    context = AuthoritativeSustainabilityPreferenceContext(
+        supportability_status=ConstructionMethodStatus.DEGRADED,
+        source_system="lotus-core",
+        portfolio_id="pf_enrich_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date="2026-05-03",
+        preference_count=3,
+        missing_data_families=["issuer_esg_classification"],
+        preferences=[
+            AuthoritativeSustainabilityPreference(
+                preference_framework="BANK_SUSTAINABILITY",
+                preference_code="MIN_EQUITY",
+                preference_status="ACTIVE",
+                preference_source="CLIENT_PROFILE",
+                maximum_allocation=Decimal("0.50"),
+                applies_to_asset_classes=["EQUITY"],
+                effective_from="2026-01-01",
+                preference_version=1,
+            ),
+            AuthoritativeSustainabilityPreference(
+                preference_framework="BANK_SUSTAINABILITY",
+                preference_code="EXCLUSION_REVIEW",
+                preference_status="ACTIVE",
+                preference_source="CLIENT_PROFILE",
+                exclusion_codes=["THERMAL_COAL"],
+                effective_from="2026-01-01",
+                preference_version=1,
+            ),
+            AuthoritativeSustainabilityPreference(
+                preference_framework="BANK_SUSTAINABILITY",
+                preference_code="INACTIVE_LIMIT",
+                preference_status="INACTIVE",
+                preference_source="CLIENT_PROFILE",
+                maximum_allocation=Decimal("0.01"),
+                applies_to_asset_classes=["EQUITY"],
+                effective_from="2026-01-01",
+                preference_version=1,
+            ),
+        ],
+        reason_codes=["SUSTAINABILITY_PROFILE_READY"],
+    )
+
+    assert (
+        construction_service._sustainability_preference_status(
+            result=result,
+            context=context,
+        )
+        == ConstructionMethodStatus.DEGRADED
+    )
+    reason_codes = construction_service._sustainability_preference_reason_codes(
+        result=result,
+        context=context,
+    )
+
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_DEGRADED" in reason_codes
+    assert "MISSING_ISSUER_ESG_CLASSIFICATION" in reason_codes
+    assert "SUSTAINABILITY_ALLOCATION_REVIEW_MIN_EQUITY" in reason_codes
+    assert "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED" in reason_codes
+
+
+def test_source_context_lifts_client_restriction_and_sustainability_profiles() -> None:
+    restriction_profile = DpmCoreClientRestrictionProfileResponse.model_validate(
+        {
+            "product_name": "ClientRestrictionProfile",
+            "product_version": "v1",
+            "portfolio_id": "pf_enrich_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "restrictions": [
+                {
+                    "restriction_scope": "instrument",
+                    "restriction_code": "NO_BUY_EQ_B",
+                    "restriction_status": "ACTIVE",
+                    "restriction_source": "CLIENT_PROFILE",
+                    "applies_to_buy": True,
+                    "applies_to_sell": False,
+                    "instrument_ids": ["EQ_B"],
+                    "effective_from": "2026-01-01",
+                    "restriction_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "INCOMPLETE",
+                "reason": "CLIENT_RESTRICTION_PROFILE_INCOMPLETE",
+                "restriction_count": 1,
+                "missing_data_families": ["issuer_classification"],
+            },
+            "lineage": {"source_batch_fingerprint": "restriction-source-hash"},
+            "data_quality_status": "INCOMPLETE",
+        }
+    )
+    sustainability_profile = DpmCoreSustainabilityPreferenceProfileResponse.model_validate(
+        {
+            "product_name": "SustainabilityPreferenceProfile",
+            "product_version": "v1",
+            "portfolio_id": "pf_enrich_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "preferences": [
+                {
+                    "preference_framework": "BANK_SUSTAINABILITY",
+                    "preference_code": "EXCLUSION_REVIEW",
+                    "preference_status": "ACTIVE",
+                    "preference_source": "CLIENT_PROFILE",
+                    "exclusion_codes": ["THERMAL_COAL"],
+                    "effective_from": "2026-01-01",
+                    "preference_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+                "preference_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"source_batch_fingerprint": "sustainability-source-hash"},
+            "data_quality_status": "READY",
+        }
+    )
+    source_context = DpmResolvedSourceContext.model_construct(
+        input_mode="stateful",
+        source_system="lotus-core",
+        stateful_context_hash="source-context-hash",
+        context=SimpleNamespace(
+            transaction_cost_curve=None,
+            portfolio_cashflow_projection=None,
+            client_restriction_profile=restriction_profile,
+            sustainability_preference_profile=sustainability_profile,
+        ),
+    )
+
+    context = construction_service._authority_context_with_source_products(
+        authority_context=ConstructionAuthorityContext(),
+        source_context=source_context,
+    )
+
+    assert context.client_restriction_context is not None
+    assert (
+        context.client_restriction_context.supportability_status == ConstructionMethodStatus.BLOCKED
+    )
+    assert context.client_restriction_context.content_hash
+    assert context.sustainability_preference_context is not None
+    assert (
+        context.sustainability_preference_context.supportability_status
+        == ConstructionMethodStatus.READY
+    )
+    assert context.sustainability_preference_context.content_hash
+    assert (
+        construction_service._source_status_to_method_status("INCOMPLETE")
+        == ConstructionMethodStatus.BLOCKED
+    )
+
+
+def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:
+    payload = valid_api_payload()
+    payload["portfolio_snapshot"]["base_currency"] = "SGD"
+    payload["market_data_snapshot"]["prices"][0]["currency"] = "USD"
+    payload["market_data_snapshot"]["fx_rates"] = []
+    request = RebalanceRequest.model_validate(payload)
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(result=result, tax_required=False)
+
+    reason_codes = construction_service._method_specific_reason_codes(
+        request=request,
+        method=ConstructionMethod.CURRENCY_OVERLAY,
+        result=result,
+        enrichment=enrichment,
+        authority_context=ConstructionAuthorityContext(),
+    )
+
+    assert "CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING" in reason_codes
+
+
+def test_regime_context_unavailable_is_kept_source_safe() -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    result = _trade_result()
+
+    context = construction_service._authority_context_for_method(
+        request=request,
+        method=ConstructionMethod.REGIME_STRESS_AWARE,
+        result=result,
+        authority_context=ConstructionAuthorityContext(),
+        risk_authority_client=_UnavailableRiskClient(),
+        correlation_id="corr-regime",
+    )
+
+    assert context.regime_stress_context is None
+
+
+def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
+    result = _trade_result()
+    warning_result = result.model_copy(
+        update={
+            "diagnostics": result.diagnostics.model_copy(
+                update={"warnings": ["INFEASIBLE_CASH_CONSTRAINT"]}
+            )
+        }
+    )
+    blocked_result = result.model_copy(
+        update={
+            "diagnostics": result.diagnostics.model_copy(
+                update={
+                    "cash_ladder": [
+                        {"date_offset": 1, "currency": "USD", "projected_balance": "-1.00"}
+                    ],
+                    "cash_ladder_breaches": [
+                        {
+                            "date_offset": 1,
+                            "currency": "USD",
+                            "projected_balance": "-1.00",
+                            "allowed_floor": "0.00",
+                            "reason_code": "SETTLEMENT_CASH_LADDER_BREACH",
+                        }
+                    ],
+                    "insufficient_cash": [{"currency": "USD", "deficit": "1.00"}],
+                }
+            )
+        }
+    )
+    liquidity_context = AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.03"),
+        allowed_liquidity_tiers=["L1"],
+        cashflow_projection=AuthoritativeLiquidityCashflowProjection(
+            source_product_name="PortfolioCashflowProjection",
+            source_product_version="v1",
+            source_system="lotus-core",
+            total_net_cashflow={"amount": "100.00", "currency": "USD"},
+            projection_start="2026-05-03",
+            projection_end="2026-06-03",
+            include_projected=True,
+            reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
+        ),
+        reason_codes=["LIQUIDITY_POLICY_READY"],
+    )
+
+    assert (
+        construction_service._solver_method_status(result=warning_result)
+        == ConstructionMethodStatus.BLOCKED
+    )
+    assert (
+        construction_service._liquidity_status(result=blocked_result, context=liquidity_context)
+        == ConstructionMethodStatus.BLOCKED
+    )
+    blocked_reason_codes = construction_service._liquidity_reason_codes(
+        result=blocked_result,
+        context=liquidity_context,
+    )
+    assert "SETTLEMENT_CASH_LADDER_BREACH" in blocked_reason_codes
+    assert "LIQUIDITY_FUNDING_DEFICIT" in blocked_reason_codes
+
+    zero_value_state = result.after_simulated.model_copy(
+        update={"total_value": Money(amount=Decimal("0"), currency="USD")}
+    )
+    zero_value_result = result.model_copy(update={"after_simulated": zero_value_state})
+    assert (
+        construction_service._liquidity_status(
+            result=zero_value_result,
+            context=liquidity_context,
+        )
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert "CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE" in (
+        construction_service._liquidity_reason_codes(
+            result=zero_value_result,
+            context=liquidity_context,
+        )
+    )
+
+    no_cash_state = result.after_simulated.model_copy(
+        update={
+            "allocation_by_asset_class": [
+                allocation
+                for allocation in result.after_simulated.allocation_by_asset_class
+                if allocation.key != "CASH"
+            ]
+        }
+    )
+    no_cash_result = result.model_copy(update={"after_simulated": no_cash_state})
+    assert "CASHFLOW_PROJECTION_READY" not in construction_service._liquidity_reason_codes(
+        result=no_cash_result,
+        context=liquidity_context,
+    )
+
+
 def test_construction_service_currency_overlay_helper_edges() -> None:
     payload = valid_api_payload()
     payload["portfolio_snapshot"]["base_currency"] = "SGD"
@@ -308,6 +827,9 @@ def test_construction_service_uses_method_specific_run_correlation_ids() -> None
 class _UnavailableRiskClient:
     def concentration_context(self, *, result, correlation_id):
         raise construction_service.LotusRiskAuthorityUnavailableError("risk down")
+
+    def regime_scenario_context(self, *, result, portfolio_id, as_of_date, correlation_id):
+        raise construction_service.LotusRiskAuthorityUnavailableError("regime down")
 
 
 def test_enrichment_summary_marks_turnover_pending_review_when_budget_drops_intents() -> None:

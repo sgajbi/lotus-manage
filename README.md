@@ -68,7 +68,10 @@ RFC-0037 through RFC-0043 define the revamp from a certified rebalance/supportab
 a discretionary mandate portfolio-management operating system.
 
 RFC-0038 is now implementation-backed for the mandate digital-twin, health-score, monitoring, and
-command-center backend foundation. RFC-0039 is implementation-backed for the manage-side
+command-center backend foundation, including first-wave mandate-health consumption of
+`ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and
+`PortfolioCashflowProjection:v1` with source lineage, bounded review/block posture, and explicit
+gap codes when optional source products are unavailable. RFC-0039 is implementation-backed for the manage-side
 construction-alternative foundation: first-wave and authority-backed generate/read/select APIs,
 do-nothing baseline, explainable heuristic, minimum-turnover, tax-aware, solver-constrained,
 risk-aware, liquidity-aware with optional `lotus-core` `PortfolioCashflowProjection:v1` projected

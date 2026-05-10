@@ -8,9 +8,12 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceProfileResponse,
 )
 
 
@@ -191,6 +194,10 @@ class DpmMandateHealthInput(BaseModel):
     degraded_source_families: list[str] = Field(default_factory=list)
     stale_source_families: list[str] = Field(default_factory=list)
     restricted_held_instruments: list[str] = Field(default_factory=list)
+    restricted_target_instruments: list[str] = Field(default_factory=list)
+    sustainability_review_required: bool = False
+    projected_net_cashflow: Optional[Decimal] = Field(default=None)
+    projected_cashflow_currency: Optional[str] = Field(default=None)
     tax_lot_missing_security_ids: list[str] = Field(default_factory=list)
     turnover_budget_used: Optional[Decimal] = Field(default=None)
     tax_budget_used_base: Optional[Decimal] = Field(default=None)
@@ -445,21 +452,97 @@ def compile_mandate_digital_twin_from_core(
     model_targets: DpmCoreModelPortfolioTargetResponse,
     as_of_date: date,
     reference_currency: Optional[str] = None,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = None,
+    sustainability_preference_profile: Optional[
+        DpmCoreSustainabilityPreferenceProfileResponse
+    ] = None,
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
 ) -> DpmMandateDigitalTwin:
     """Compile the minimum viable mandate twin from current RFC-087 core products."""
 
     field_gaps = [
         "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED",
-        "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED",
-        "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED",
-        "PORTFOLIO_CASHFLOW_FORECAST_NOT_YET_SOURCED",
+        "CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED",
     ]
+    if client_restriction_profile is None:
+        field_gaps.append("CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED")
+    if sustainability_preference_profile is None:
+        field_gaps.append("SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED")
+    if portfolio_cashflow_projection is None:
+        field_gaps.append("PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED")
     cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
     constraints = DpmMandateConstraintSet(
         cash_band_min_weight=cash_reserve_weight,
         cash_band_max_weight=max(cash_reserve_weight, Decimal("0.10")),
         turnover_budget=Decimal("0.15"),
     )
+    if client_restriction_profile is not None:
+        constraints.restricted_instruments = sorted(
+            {
+                instrument_id
+                for restriction in client_restriction_profile.restrictions
+                if restriction.restriction_status.upper() == "ACTIVE"
+                for instrument_id in restriction.instrument_ids
+            }
+        )
+    preferences = DpmMandatePreferences()
+    if sustainability_preference_profile is not None:
+        preferences.sustainability_strategy = _sustainability_strategy(
+            sustainability_preference_profile
+        )
+        preferences.bespoke_notes = [
+            preference.preference_code
+            for preference in sustainability_preference_profile.preferences
+            if preference.preference_status.upper() == "ACTIVE"
+        ]
+    source_lineage = [
+        _lineage_from_core_product(
+            product_name=mandate.product_name,
+            product_version=mandate.product_version,
+            lineage=mandate.lineage,
+            data_quality_status=mandate.data_quality_status,
+            latest_evidence_timestamp=mandate.latest_evidence_timestamp,
+        ),
+        _lineage_from_core_product(
+            product_name=model_targets.product_name,
+            product_version=model_targets.product_version,
+            lineage=model_targets.lineage,
+            data_quality_status=model_targets.data_quality_status,
+            latest_evidence_timestamp=model_targets.latest_evidence_timestamp,
+        ),
+    ]
+    if client_restriction_profile is not None:
+        source_lineage.append(
+            _lineage_from_core_product(
+                product_name=client_restriction_profile.product_name,
+                product_version=client_restriction_profile.product_version,
+                lineage=client_restriction_profile.lineage,
+                data_quality_status=client_restriction_profile.data_quality_status,
+                latest_evidence_timestamp=client_restriction_profile.latest_evidence_timestamp,
+            )
+        )
+    if sustainability_preference_profile is not None:
+        source_lineage.append(
+            _lineage_from_core_product(
+                product_name=sustainability_preference_profile.product_name,
+                product_version=sustainability_preference_profile.product_version,
+                lineage=sustainability_preference_profile.lineage,
+                data_quality_status=sustainability_preference_profile.data_quality_status,
+                latest_evidence_timestamp=(
+                    sustainability_preference_profile.latest_evidence_timestamp
+                ),
+            )
+        )
+    if portfolio_cashflow_projection is not None:
+        source_lineage.append(
+            _lineage_from_core_product(
+                product_name=portfolio_cashflow_projection.product_name,
+                product_version=portfolio_cashflow_projection.product_version,
+                lineage=portfolio_cashflow_projection.lineage,
+                data_quality_status=portfolio_cashflow_projection.data_quality_status,
+                latest_evidence_timestamp=portfolio_cashflow_projection.latest_evidence_timestamp,
+            )
+        )
     return DpmMandateDigitalTwin(
         mandate_id=mandate.mandate_id,
         portfolio_id=mandate.portfolio_id,
@@ -473,23 +556,9 @@ def compile_mandate_digital_twin_from_core(
         model_portfolio_id=mandate.model_portfolio_id,
         model_portfolio_version=model_targets.model_portfolio_version,
         constraints=constraints,
+        preferences=preferences,
         review_policy=DpmMandateReviewPolicy(review_frequency=mandate.rebalance_frequency.upper()),
-        source_lineage=[
-            _lineage_from_core_product(
-                product_name=mandate.product_name,
-                product_version=mandate.product_version,
-                lineage=mandate.lineage,
-                data_quality_status=mandate.data_quality_status,
-                latest_evidence_timestamp=mandate.latest_evidence_timestamp,
-            ),
-            _lineage_from_core_product(
-                product_name=model_targets.product_name,
-                product_version=model_targets.product_version,
-                lineage=model_targets.lineage,
-                data_quality_status=model_targets.data_quality_status,
-                latest_evidence_timestamp=model_targets.latest_evidence_timestamp,
-            ),
-        ],
+        source_lineage=source_lineage,
         field_gap_codes=field_gaps,
     )
 
@@ -499,6 +568,12 @@ def build_health_input_from_core_sources(
     twin: DpmMandateDigitalTwin,
     model_targets: DpmCoreModelPortfolioTargetResponse,
     market_data_coverage: Optional[DpmCoreMarketDataCoverageWindowResponse] = None,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = None,
+    sustainability_preference_profile: Optional[
+        DpmCoreSustainabilityPreferenceProfileResponse
+    ] = None,
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
+    unavailable_source_families: Optional[list[str]] = None,
 ) -> DpmMandateHealthInput:
     missing_sources: list[str] = []
     degraded_sources: list[str] = []
@@ -512,6 +587,10 @@ def build_health_input_from_core_sources(
         stale_sources.extend(market_data_coverage.supportability.stale_currency_pairs)
         if readiness_state == "DEGRADED":
             degraded_sources.append("MARKET_DATA_COVERAGE")
+    if unavailable_source_families:
+        degraded_sources.extend(unavailable_source_families)
+        if readiness_state == "READY":
+            readiness_state = "DEGRADED"
 
     return DpmMandateHealthInput(
         twin=twin,
@@ -522,6 +601,23 @@ def build_health_input_from_core_sources(
         missing_source_families=missing_sources,
         degraded_source_families=degraded_sources,
         stale_source_families=stale_sources,
+        restricted_target_instruments=_restricted_model_targets(
+            model_targets=model_targets,
+            client_restriction_profile=client_restriction_profile,
+        ),
+        sustainability_review_required=_requires_sustainability_review(
+            sustainability_preference_profile
+        ),
+        projected_net_cashflow=(
+            portfolio_cashflow_projection.total_net_cashflow
+            if portfolio_cashflow_projection is not None
+            else None
+        ),
+        projected_cashflow_currency=(
+            portfolio_cashflow_projection.portfolio_currency
+            if portfolio_cashflow_projection is not None
+            else None
+        ),
         model_effective_to=model_targets.effective_to,
     )
 
@@ -619,6 +715,59 @@ def _lineage_from_core_product(
         lineage=lineage,
         data_quality_status=data_quality_status,
         latest_evidence_timestamp=latest_evidence_timestamp,
+    )
+
+
+def _sustainability_strategy(
+    profile: DpmCoreSustainabilityPreferenceProfileResponse,
+) -> Optional[str]:
+    active_frameworks = sorted(
+        {
+            preference.preference_framework
+            for preference in profile.preferences
+            if preference.preference_status.upper() == "ACTIVE"
+        }
+    )
+    if not active_frameworks:
+        return None
+    return "+".join(active_frameworks)
+
+
+def _restricted_model_targets(
+    *,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse],
+) -> list[str]:
+    if client_restriction_profile is None:
+        return []
+    restricted_instruments = {
+        instrument_id
+        for restriction in client_restriction_profile.restrictions
+        if restriction.restriction_status.upper() == "ACTIVE" and restriction.applies_to_buy
+        for instrument_id in restriction.instrument_ids
+    }
+    return sorted(
+        target.instrument_id
+        for target in model_targets.targets
+        if target.target_status.lower() == "active"
+        and target.instrument_id in restricted_instruments
+    )
+
+
+def _requires_sustainability_review(
+    profile: Optional[DpmCoreSustainabilityPreferenceProfileResponse],
+) -> bool:
+    if profile is None:
+        return False
+    return any(
+        preference.preference_status.upper() == "ACTIVE"
+        and (
+            preference.minimum_allocation is not None
+            or preference.maximum_allocation is not None
+            or bool(preference.exclusion_codes)
+            or bool(preference.positive_tilt_codes)
+        )
+        for preference in profile.preferences
     )
 
 
@@ -741,6 +890,15 @@ def _score_cash_liquidity(input_: DpmMandateHealthInput) -> DpmMandateDimensionS
             measured_value=input_.cash_weight,
             threshold_value=constraints.cash_band_max_weight,
         )
+    if input_.projected_net_cashflow is not None and input_.projected_net_cashflow < Decimal("0"):
+        return _attention_score(
+            dimension=MandateHealthDimension.CASH_LIQUIDITY,
+            score=70,
+            state=MandateHealthState.PENDING_REVIEW,
+            reason_code="PROJECTED_CASHFLOW_PRESSURE",
+            measured_value=input_.projected_net_cashflow,
+            threshold_value=0,
+        )
     return _ready_score(MandateHealthDimension.CASH_LIQUIDITY)
 
 
@@ -772,6 +930,7 @@ def _score_tax_turnover(input_: DpmMandateHealthInput) -> DpmMandateDimensionSco
 
 def _score_eligibility_restrictions(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
     restricted = set(input_.restricted_held_instruments)
+    restricted.update(input_.restricted_target_instruments)
     restricted.update(
         instrument_id
         for instrument_id in input_.current_weights
@@ -807,6 +966,13 @@ def _score_workflow_readiness(input_: DpmMandateHealthInput) -> DpmMandateDimens
             score=0,
             state=MandateHealthState.BLOCKED,
             reason_code="REBALANCE_RUN_BLOCKED",
+        )
+    if input_.sustainability_review_required:
+        return _attention_score(
+            dimension=MandateHealthDimension.WORKFLOW_READINESS,
+            score=70,
+            state=MandateHealthState.PENDING_REVIEW,
+            reason_code="SUSTAINABILITY_REVIEW_REQUIRED",
         )
     if input_.approval_required:
         return _attention_score(

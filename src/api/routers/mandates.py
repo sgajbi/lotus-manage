@@ -86,11 +86,22 @@ MANDATE_RESPONSE_EXAMPLE: dict[str, Any] = {
             "data_quality_status": "READY",
             "latest_evidence_timestamp": "2026-05-03T01:00:00Z",
             "lineage": {"contract_version": "DiscretionaryMandateBinding:v1"},
-        }
+        },
+        {
+            "product_name": "ClientRestrictionProfile",
+            "product_version": "v1",
+            "source_system": "lotus-core",
+            "source_record_id": "ClientRestrictionProfile:v1",
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+            "lineage": {"contract_version": "ClientRestrictionProfile:v1"},
+        },
     ],
     "field_gap_codes": [
         "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED",
-        "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED",
+        "CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED",
+        "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED",
+        "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED",
     ],
 }
 

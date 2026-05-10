@@ -939,7 +939,7 @@ products, and canonical seed automation belonged to downstream or source-owning 
 | RFC38-WTBD-003 | Platform canonical seed automation for populated command-center proof | `lotus-platform` with source-app seeds | Completed, merged, CI-proven, live-proven, wiki-published, and hardened locally for populated ready/partial/empty seed posture checks | Platform canonical automation refreshes the governed DPM mandate from core through manage, runs one monitoring pass for command-center evidence, verifies Manage and Gateway mandate/health/summary reads, and runs canonical Workbench validation with `dpm.command_center` classified from Manage supportability. The current hardening adds platform seed `posture_checks` for populated source-ready `ready`, selector-driven `partial`, and empty-date `empty` command-center states. Degraded and blocked canonical fixtures remain source-owner follow-up rather than demo-ready claims. |
 | RFC38-WTBD-004 | PM-book discovery for monitoring and command-center cohorts | `lotus-core` source authority consumed by `lotus-manage`, surfaced through `lotus-gateway` and `lotus-workbench` | Completed in this slice for populated source-owned PM-book monitoring cohorts | Manage monitoring run-once can now resolve PM-book cohorts from `PortfolioManagerBookMembership:v1` when callers omit mandate IDs. Workbench command-center monitoring uses that source-owned path by default. Populated ready/partial/empty seed-posture checks are now covered by RFC38-WTBD-003 hardening; degraded/blocked fixtures remain source-owner follow-up, not a blocker for populated PM-book monitoring support. |
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
-| RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` or dedicated client-governance/cashflow owners | Deferred source enrichment | Health dimensions preserve gaps rather than inventing restrictions, ESG preferences, or cashflow forecasts. |
+| RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` source authority consumed by `lotus-manage` | Completed for first-wave manage mandate-health consumption | Mandate refresh consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when available, preserves source lineage, removes only fulfilled field-gap codes, degrades explicitly when optional profiles are unavailable, blocks restricted active model targets, flags sustainability preferences as review-required, and raises projected cashflow pressure from source-owned negative net cashflow. Client income-needs planning, issuer/sector restriction joins, security-level sustainability classification, regulatory suitability approval, and downstream UI profile-detail presentation remain future source-owner/product slices. |
 | RFC38-WTBD-007 | Broader risk and performance health enrichment | `lotus-risk`, `lotus-performance` | Deferred unless owning-service contracts are consumed | Manage health cannot clone risk or performance methodology. Risk/performance attention must come from certified owners. |
 | RFC38-WTBD-008 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend foundation | Proposed, not supported | Full product support requires Gateway composition, Workbench cockpit implementation, canonical runtime proof, and cross-app documentation. |
 
@@ -1286,31 +1286,43 @@ Target business outcome:
 Mandate health can assess restriction, sustainability, liquidity, income-need, and cashflow risks
 from source-backed client and portfolio profiles.
 
-Why it cannot be done now:
+Implementation result:
 
-No certified `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, or
-`PortfolioCashflowForecast:v1` source exists for RFC-0038. Manage preserves gaps and does not
-fabricate compliance or cashflow facts.
+Completed for first-wave manage mandate-health consumption on 2026-05-10. `lotus-core` now owns
+the implemented source products `ClientRestrictionProfile:v1`,
+`SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1`; `lotus-manage`
+mandate refresh consumes them opportunistically, preserves lineage, and keeps explicit gap codes
+only when a source product is absent.
 
-Dependencies before implementation:
+Implemented behavior:
 
-1. source-owner products and permission model,
-2. effective date, expiry, jurisdiction, client/mandate binding, and lineage semantics,
-3. health scoring rules for missing, stale, partial, and blocked profiles,
-4. Workbench/Gateway presentation rules if surfaced,
-5. documentation that avoids unsupported ESG/compliance claims.
+1. active client restriction profile instrument restrictions are copied to the mandate twin and
+   assessed against active model targets,
+2. restricted active model targets block `ELIGIBILITY_RESTRICTIONS` with
+   `RESTRICTED_INSTRUMENT_HELD`,
+3. active sustainability preference profiles preserve framework and preference codes on the twin,
+4. sustainability allocation, exclusion, or positive-tilt preferences move workflow readiness to
+   `PENDING_REVIEW` with `SUSTAINABILITY_REVIEW_REQUIRED`,
+5. negative `PortfolioCashflowProjection:v1.total_net_cashflow` creates
+   `PROJECTED_CASHFLOW_PRESSURE` when current cash is otherwise within mandate bands,
+6. unavailable optional source products degrade source readiness and keep gap codes instead of
+   fabricating client-governance or cashflow facts.
 
-Expected implementation wave:
+Explicit boundaries:
 
-Implement after source products exist. Coordinate with RFC-0039 ESG/restriction construction and
-RFC-0040 proof-pack enrichment so semantics stay consistent.
+1. `PortfolioCashflowProjection:v1` is not a client income-needs profile,
+2. manage does not infer issuer, sector, jurisdiction, or ESG-security classifications without a
+   source-owned join,
+3. manage does not claim regulatory suitability approval or automatic ESG compliance,
+4. downstream Gateway/Workbench profile-detail presentation remains a product-surface follow-up.
 
 Promotion proof:
 
-1. source-owner tests and live proof,
-2. manage health-dimension tests,
-3. canonical evidence with missing and partial profile cases,
-4. README/wiki/supported-feature updates.
+1. `python -m pytest tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/api/test_mandates_api.py -q`
+   passed with 43 tests,
+2. tests prove lineage preservation, gap-code removal, optional-source degradation, restricted
+   target blocking, sustainability review posture, and projected cashflow pressure,
+3. RFC-0038 and `docs/rfcs/RFC-0038-source-data-field-map.md` now contain the completed WTBD truth.
 
 #### RFC38-WTBD-007 - Broader Risk And Performance Health Enrichment
 

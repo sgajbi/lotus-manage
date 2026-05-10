@@ -14,9 +14,12 @@ from src.api.main import app
 import src.api.routers.mandates as mandates_router
 from src.api.routers.mandates import get_core_resolver_client
 from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceProfileResponse,
 )
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthInput
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
@@ -29,9 +32,18 @@ MANDATE_ID = "MANDATE_PB_SG_GLOBAL_BAL_001"
 
 
 class FakeCoreResolver:
-    def __init__(self, *, unavailable: bool = False, incomplete: bool = False) -> None:
+    def __init__(
+        self,
+        *,
+        unavailable: bool = False,
+        incomplete: bool = False,
+        optional_unavailable: bool = False,
+        optional_incomplete: bool = False,
+    ) -> None:
         self.unavailable = unavailable
         self.incomplete = incomplete
+        self.optional_unavailable = optional_unavailable
+        self.optional_incomplete = optional_incomplete
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     def resolve_mandate_binding(self, **kwargs: Any) -> DpmCoreMandateBindingResponse:
@@ -51,6 +63,47 @@ class FakeCoreResolver:
     ) -> DpmCoreMarketDataCoverageWindowResponse:
         self.calls.append(("market_data", kwargs))
         return DpmCoreMarketDataCoverageWindowResponse.model_validate(_market_data_payload())
+
+    def resolve_client_restriction_profile(
+        self, **kwargs: Any
+    ) -> DpmCoreClientRestrictionProfileResponse:
+        self.calls.append(("client_restrictions", kwargs))
+        if self.optional_unavailable:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE")
+        if self.optional_incomplete:
+            return DpmCoreClientRestrictionProfileResponse.model_validate(
+                _client_restriction_profile_payload(
+                    supportability={
+                        "state": "INCOMPLETE",
+                        "reason": "CLIENT_RESTRICTION_PROFILE_INCOMPLETE",
+                        "restriction_count": 0,
+                        "missing_data_families": ["CLIENT_RESTRICTIONS"],
+                    }
+                )
+            )
+        return DpmCoreClientRestrictionProfileResponse.model_validate(
+            _client_restriction_profile_payload()
+        )
+
+    def resolve_sustainability_preference_profile(
+        self, **kwargs: Any
+    ) -> DpmCoreSustainabilityPreferenceProfileResponse:
+        self.calls.append(("sustainability_preferences", kwargs))
+        if self.optional_unavailable:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE")
+        return DpmCoreSustainabilityPreferenceProfileResponse.model_validate(
+            _sustainability_preference_profile_payload()
+        )
+
+    def resolve_portfolio_cashflow_projection(
+        self, **kwargs: Any
+    ) -> DpmCorePortfolioCashflowProjectionResponse:
+        self.calls.append(("cashflow_projection", kwargs))
+        if self.optional_unavailable:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE")
+        return DpmCorePortfolioCashflowProjectionResponse.model_validate(
+            _portfolio_cashflow_projection_payload()
+        )
 
 
 def _mandate_binding_payload(*, binding_version: int = 3) -> dict[str, Any]:
@@ -151,6 +204,105 @@ def _market_data_payload() -> dict[str, Any]:
     }
 
 
+def _client_restriction_profile_payload(**overrides: Any) -> dict[str, Any]:
+    payload = {
+        "product_name": "ClientRestrictionProfile",
+        "product_version": "v1",
+        "portfolio_id": PORTFOLIO_ID,
+        "client_id": "CIF_SG_000184",
+        "mandate_id": MANDATE_ID,
+        "as_of_date": "2026-05-03",
+        "restrictions": [
+            {
+                "restriction_scope": "INSTRUMENT",
+                "restriction_code": "CLIENT_RESTRICTED_SECURITY",
+                "restriction_status": "ACTIVE",
+                "restriction_source": "CLIENT_PROFILE",
+                "applies_to_buy": True,
+                "applies_to_sell": False,
+                "instrument_ids": ["EQ_US_AAPL"],
+                "asset_classes": [],
+                "issuer_ids": [],
+                "country_codes": [],
+                "effective_from": "2026-04-01",
+                "restriction_version": 1,
+                "source_record_id": "client-restriction:CIF_SG_000184:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "CLIENT_RESTRICTION_PROFILE_READY",
+            "restriction_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "ClientRestrictionProfile:v1"},
+        "data_quality_status": "READY",
+        "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _sustainability_preference_profile_payload() -> dict[str, Any]:
+    return {
+        "product_name": "SustainabilityPreferenceProfile",
+        "product_version": "v1",
+        "portfolio_id": PORTFOLIO_ID,
+        "client_id": "CIF_SG_000184",
+        "mandate_id": MANDATE_ID,
+        "as_of_date": "2026-05-03",
+        "preferences": [
+            {
+                "preference_framework": "BANK_SUSTAINABILITY",
+                "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
+                "preference_status": "ACTIVE",
+                "preference_source": "CLIENT_PROFILE",
+                "minimum_allocation": "0.20",
+                "applies_to_asset_classes": ["EQUITY"],
+                "exclusion_codes": [],
+                "positive_tilt_codes": ["CLIMATE_TRANSITION"],
+                "effective_from": "2026-04-01",
+                "preference_version": 1,
+                "source_record_id": "sustainability:CIF_SG_000184:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+            "preference_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "SustainabilityPreferenceProfile:v1"},
+        "data_quality_status": "READY",
+        "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+    }
+
+
+def _portfolio_cashflow_projection_payload() -> dict[str, Any]:
+    return {
+        "product_name": "PortfolioCashflowProjection",
+        "product_version": "v1",
+        "portfolio_id": PORTFOLIO_ID,
+        "as_of_date": "2026-05-03",
+        "range_start_date": "2026-05-03",
+        "range_end_date": "2026-08-01",
+        "include_projected": True,
+        "portfolio_currency": "SGD",
+        "points": [
+            {
+                "projection_date": "2026-05-10",
+                "net_cashflow": "-25000.00",
+                "projected_cumulative_cashflow": "-25000.00",
+            }
+        ],
+        "total_net_cashflow": "-25000.00",
+        "projection_days": 90,
+        "lineage": {"contract_version": "PortfolioCashflowProjection:v1"},
+        "data_quality_status": "READY",
+        "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+    }
+
+
 def _twin(
     *, version: str = "3", turnover_budget: Decimal = Decimal("0.15")
 ) -> DpmMandateDigitalTwin:
@@ -215,8 +367,65 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
     assert body["mandate"]["model_portfolio_version"] == "2026.04"
     assert body["health_snapshot"]["portfolio_id"] == PORTFOLIO_ID
     assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" in body["field_gap_codes"]
-    assert [name for name, _ in resolver.calls] == ["mandate", "model_targets", "market_data"]
+    assert "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED" not in body["field_gap_codes"]
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED" not in body["field_gap_codes"]
+    assert "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED" not in body["field_gap_codes"]
+    assert "EQ_US_AAPL" in body["mandate"]["constraints"]["restricted_instruments"]
+    assert body["mandate"]["preferences"]["sustainability_strategy"] == "BANK_SUSTAINABILITY"
+    assert "ClientRestrictionProfile" in {
+        lineage["product_name"] for lineage in body["mandate"]["source_lineage"]
+    }
+    reason_codes = {reason["reason_code"] for reason in body["health_snapshot"]["top_reasons"]}
+    assert "RESTRICTED_INSTRUMENT_HELD" in reason_codes
+    assert "SUSTAINABILITY_REVIEW_REQUIRED" in reason_codes
+    assert [name for name, _ in resolver.calls] == [
+        "mandate",
+        "model_targets",
+        "market_data",
+        "client_restrictions",
+        "sustainability_preferences",
+        "cashflow_projection",
+    ]
     assert repository.get_latest_mandate(mandate_id=MANDATE_ID) is not None
+
+
+def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_health() -> None:
+    repository = InMemoryDpmMandateRepository()
+    resolver = FakeCoreResolver(optional_unavailable=True)
+
+    with _client(repository, resolver) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED" in body["field_gap_codes"]
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED" in body["field_gap_codes"]
+    assert "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED" in body["field_gap_codes"]
+    assert body["health_snapshot"]["source_readiness_state"] == "DEGRADED"
+    assert any(
+        reason["reason_code"] == "DPM_SOURCE_STALE"
+        for reason in body["health_snapshot"]["top_reasons"]
+    )
+
+
+def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -> None:
+    repository = InMemoryDpmMandateRepository()
+    resolver = FakeCoreResolver(optional_incomplete=True)
+
+    with _client(repository, resolver) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED" in body["field_gap_codes"]
+    assert "EQ_US_AAPL" not in body["mandate"]["constraints"]["restricted_instruments"]
+    assert body["health_snapshot"]["source_readiness_state"] == "DEGRADED"
 
 
 def test_read_mandate_by_portfolio_and_by_id_use_persisted_state() -> None:

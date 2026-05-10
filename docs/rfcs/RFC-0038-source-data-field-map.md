@@ -29,8 +29,8 @@ classified as source-backed, derived, local policy, or a known gap.
 | `constraints.cash_band_max_weight` | Derived from cash reserve with conservative default | Local policy fallback set to at least `0.10`. | Needs explicit mandate cash-band source. |
 | `constraints.turnover_budget` | Not yet available | Local policy fallback `0.15`. | Policy-pack or mandate restriction source should own this. |
 | concentration, tax, tracking-error, active-share limits | Not yet available | Nullable, not invented. | Needs mandate restriction/profile products. |
-| restricted instruments/issuers/sectors | Not yet available | Empty list with gap code; health input can still receive explicit restricted holdings. | `ClientRestrictionProfile:v1`. |
-| sustainability exclusions | Not yet available | Empty list with gap code. | `SustainabilityPreferenceProfile:v1`. |
+| restricted instruments/issuers/sectors | `ClientRestrictionProfile:v1` when the source product is available | Active instrument-level client restrictions are preserved on the twin and assessed against active model targets in mandate health. Missing profiles remain explicit gap codes. | Issuer, sector, country, and product taxonomy restriction matching remain future enrichment unless source products provide security-level joins. |
+| sustainability preferences | `SustainabilityPreferenceProfile:v1` when the source product is available | Active preference framework and bounded preference codes are preserved on the twin. Allocation bands, exclusions, and positive tilts trigger `SUSTAINABILITY_REVIEW_REQUIRED` rather than automatic ESG approval. | Security-level sustainability classification and regulatory suitability approval remain source-owner follow-up. |
 | review frequency | `DiscretionaryMandateBinding:v1.rebalance_frequency` | Source-backed and normalized to uppercase. | Need separate review cadence if different from rebalance cadence. |
 | last/next review dates | Not yet available | Nullable, not invented. | `MandateObjectiveProfile:v1` or mandate operations source. |
 | source lineage | Core source product lineage fields | Preserved as `DpmSourceProductLineage`. | None for source-backed products. |
@@ -42,11 +42,11 @@ classified as source-backed, derived, local policy, or a known gap.
 | `SOURCE_READINESS` | Source-readiness state, missing/degraded/stale families, market-data coverage supportability | `INCOMPLETE`/`UNAVAILABLE` or missing source families block; degraded/stale source families create pending review. | Direct `DpmSourceReadiness:v1` integration in API slice. |
 | `ALLOCATION_DRIFT` | Current and target instrument weights | Computes max absolute instrument drift against the initial 2.5% attention band. Missing weights create pending review, not a false ready state. | Band-aware drift from model target min/max and asset-class policy bands. |
 | `RISK_DRIFT` | Tracking error plus mandate max tracking-error when available | Ready when risk enrichment is absent; pending review when supplied tracking error breaches supplied threshold. | `lotus-risk` enrichment and benchmark-aware risk decomposition. |
-| `CASH_LIQUIDITY` | Cash weight and mandate cash band | Pending review when below or above band. | Cashflow forecast, settlement ladder, income need, overdraft risk. |
+| `CASH_LIQUIDITY` | Cash weight, mandate cash band, and optional `PortfolioCashflowProjection:v1.total_net_cashflow` | Pending review when below/above band. Negative source-owned projected net cashflow creates `PROJECTED_CASHFLOW_PRESSURE` when current cash is within band. | Client income-need profile, settlement ladder, overdraft risk, and richer horizon semantics. |
 | `TAX_TURNOVER` | Missing tax-lot securities and turnover budget usage | Missing tax lots block; turnover usage above 80% of budget creates pending review. | Tax budget source, realized gain forecast, wash-sale/local tax rules where applicable. |
-| `ELIGIBILITY_RESTRICTIONS` | Restricted held instruments and mandate restricted instruments | Restricted holdings block. | Client restriction, issuer, sector, ESG and product-shelf rationale. |
+| `ELIGIBILITY_RESTRICTIONS` | Restricted held instruments, mandate restricted instruments, and optional `ClientRestrictionProfile:v1` active buy restrictions | Restricted holdings and restricted active model targets block with `RESTRICTED_INSTRUMENT_HELD`. | Issuer, sector, ESG and product-shelf rationale. |
 | `PERFORMANCE_ATTENTION` | Explicit performance-under-review flag | Pending review when flagged; otherwise neutral until performance enrichment exists. | `lotus-performance` benchmark-relative underperformance and attribution flags. |
-| `WORKFLOW_READINESS` | Workflow blocked / approval required flags | Blocked workflows block; approval required creates pending review. | Persisted workflow-gate integration in API slice. |
+| `WORKFLOW_READINESS` | Workflow blocked / approval required flags and optional `SustainabilityPreferenceProfile:v1` review posture | Blocked workflows block; approval required and sustainability review requirements create pending review. | Persisted workflow-gate integration and source-owner sustainability classification. |
 | `REVIEW_CADENCE` | Next review due date when available | Overdue review creates pending review. | Core mandate review schedule or manage-owned review workflow. |
 | `MODEL_FRESHNESS` | Model effective end date when available | Expired model creates pending review. | CIO model-change events and model approval lifecycle. |
 
@@ -55,9 +55,12 @@ classified as source-backed, derived, local policy, or a known gap.
 The following source products remain valid candidates from RFC-0038 Section 4.2:
 
 1. `MandateObjectiveProfile:v1`
-2. `ClientRestrictionProfile:v1`
-3. `SustainabilityPreferenceProfile:v1`
-4. `PortfolioCashflowForecast:v1`
+2. `ClientRestrictionProfile:v1` - implemented for active instrument-level restriction preservation
+   and model-target health blocking.
+3. `SustainabilityPreferenceProfile:v1` - implemented for preference preservation and bounded
+   review-required posture.
+4. `PortfolioCashflowProjection:v1` - implemented for projected net-cashflow pressure; a separate
+   client income-need profile is still not sourced.
 5. `ModelChangeEvent:v1`
 
 They are not blockers for Slice 1 because the pure engine records field gaps and does not claim

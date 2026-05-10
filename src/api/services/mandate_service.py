@@ -151,17 +151,86 @@ def refresh_mandate_from_core(
         raise DpmMandateSourceUnavailableError("DPM_MANDATE_SOURCE_UNAVAILABLE") from exc
     except DpmCoreResolverError as exc:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_SOURCE_INCOMPLETE") from exc
+    client_restriction_profile, unavailable_client_restrictions = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_client_restriction_profile",
+        family_name="CLIENT_RESTRICTION_PROFILE",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        tenant_id=tenant_id,
+        mandate_id=mandate_id,
+        include_inactive_restrictions=False,
+        correlation_id=correlation_id,
+    )
+    client_restriction_profile, unavailable_client_restrictions = _ready_optional_source(
+        source=client_restriction_profile,
+        unavailable_family=unavailable_client_restrictions,
+        family_name="CLIENT_RESTRICTION_PROFILE",
+    )
+    (
+        sustainability_preference_profile,
+        unavailable_sustainability_preferences,
+    ) = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_sustainability_preference_profile",
+        family_name="SUSTAINABILITY_PREFERENCE_PROFILE",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        tenant_id=tenant_id,
+        mandate_id=mandate_id,
+        include_inactive_preferences=False,
+        correlation_id=correlation_id,
+    )
+    (
+        sustainability_preference_profile,
+        unavailable_sustainability_preferences,
+    ) = _ready_optional_source(
+        source=sustainability_preference_profile,
+        unavailable_family=unavailable_sustainability_preferences,
+        family_name="SUSTAINABILITY_PREFERENCE_PROFILE",
+    )
+    portfolio_cashflow_projection, unavailable_cashflow_projection = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_portfolio_cashflow_projection",
+        family_name="PORTFOLIO_CASHFLOW_PROJECTION",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        horizon_days=90,
+        include_projected=True,
+        correlation_id=correlation_id,
+    )
+    portfolio_cashflow_projection, unavailable_cashflow_projection = _ready_optional_source(
+        source=portfolio_cashflow_projection,
+        unavailable_family=unavailable_cashflow_projection,
+        family_name="PORTFOLIO_CASHFLOW_PROJECTION",
+    )
+    unavailable_source_families = [
+        family
+        for family in (
+            unavailable_client_restrictions,
+            unavailable_sustainability_preferences,
+            unavailable_cashflow_projection,
+        )
+        if family is not None
+    ]
 
     twin = compile_mandate_digital_twin_from_core(
         mandate=mandate,
         model_targets=model_targets,
         as_of_date=as_of_date,
         reference_currency=reference_currency,
+        client_restriction_profile=client_restriction_profile,
+        sustainability_preference_profile=sustainability_preference_profile,
+        portfolio_cashflow_projection=portfolio_cashflow_projection,
     )
     health_input = build_health_input_from_core_sources(
         twin=twin,
         model_targets=model_targets,
         market_data_coverage=market_data_coverage,
+        client_restriction_profile=client_restriction_profile,
+        sustainability_preference_profile=sustainability_preference_profile,
+        portfolio_cashflow_projection=portfolio_cashflow_projection,
+        unavailable_source_families=unavailable_source_families,
     )
     health_snapshot = calculate_mandate_health(health_input)
     monitoring_exceptions = monitoring_exceptions_from_health(
@@ -179,6 +248,39 @@ def refresh_mandate_from_core(
         health_snapshot=health_snapshot,
         monitoring_exceptions=monitoring_exceptions,
     )
+
+
+def _try_resolve_optional_source(
+    *,
+    resolver: DpmCoreResolverClient,
+    method_name: str,
+    family_name: str,
+    **kwargs: Any,
+) -> tuple[Any | None, str | None]:
+    method = getattr(resolver, method_name, None)
+    if method is None:
+        return None, None
+    try:
+        return method(**kwargs), None
+    except DpmCoreResolverError:
+        return None, family_name
+
+
+def _ready_optional_source(
+    *,
+    source: Any | None,
+    unavailable_family: str | None,
+    family_name: str,
+) -> tuple[Any | None, str | None]:
+    if source is None:
+        return None, unavailable_family
+    supportability = getattr(source, "supportability", None)
+    if supportability is not None and getattr(supportability, "state", None) != "READY":
+        return None, family_name
+    data_quality_status = getattr(source, "data_quality_status", None)
+    if data_quality_status is not None and str(data_quality_status).upper() != "READY":
+        return None, family_name
+    return source, unavailable_family
 
 
 def get_latest_mandate_by_portfolio(

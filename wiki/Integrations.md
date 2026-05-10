@@ -155,6 +155,14 @@ candidate trades that violate hard client restrictions and can flag sustainabili
 classification evidence gaps for review. It does not infer unsupported ESG classifications or
 convert sustainability preferences into automatic compliance approval.
 
+Mandate-health refresh also consumes `ClientRestrictionProfile:v1`,
+`SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when those optional
+core products are available. Manage preserves their lineage on the mandate twin, keeps gap codes
+when a product is unavailable, blocks restricted active model targets, flags sustainability
+preferences for review, and treats source-owned negative projected net cashflow as cash-liquidity
+attention. This is not a client income-needs, security-level ESG classification, or suitability
+approval engine.
+
 Risk-event rebalance waves consume `lotus-risk` `RiskEventAffectedCohort:v1` through the bounded
 risk-authority client when `DPM_RISK_BASE_URL` is configured. Manage requires caller-supplied
 candidate portfolios and source-supplied exposure weights, preserves lotus-risk cohort/event/member
