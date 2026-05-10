@@ -890,7 +890,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-core` PR #356 / wiki `28c4ae2`" in rfc
     assert "PortfolioLiquidityLadder opening-cash" in source_map
     assert "PortfolioLiquidityLadder:v1" in roadmap
-    assert "PortfolioLiquidityLadder:v1` methodology truth through `lotus-core` PR #356" in supported_features
+    assert (
+        "PortfolioLiquidityLadder:v1` methodology truth through `lotus-core` PR #356"
+        in supported_features
+    )
 
     assert "Slice 1 - Platform Automation and Scaffolding Improvement" in platform_slice
     assert "sgajbi/lotus-platform#297" in platform_slice
