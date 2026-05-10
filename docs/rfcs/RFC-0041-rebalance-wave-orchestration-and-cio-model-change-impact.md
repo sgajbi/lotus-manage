@@ -8,7 +8,7 @@
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | CIO desk, DPM head, portfolio manager, investment control, operations, compliance, sales/pre-sales |
 | **Depends On** | RFC-0018, RFC-0020, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, RFC-0040, `lotus-core` RFC-0087 |
-| **Downstream Realization Depends On** | First-wave Gateway/Workbench wave command center, report/render/archive materialization, and AI PM memo handoff are implementation-backed; future tactical house-view, risk-event, campaign, external OMS execution, and richer source-owner cohorts remain downstream WTBDs |
+| **Downstream Realization Depends On** | First-wave Gateway/Workbench wave command center, report/render/archive materialization, and AI PM memo handoff are implementation-backed; `lotus-risk` now owns the first risk-event cohort source product; future manage risk-event consumption, tactical house-view, campaign, external OMS execution, and richer source-owner cohorts remain downstream WTBDs |
 | **RFC Tightening Branch** | `feat/rfc0041-gold-standard-tightening` |
 | **Implementation Branch** | `feat/rfc0041-implementation` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md` |
@@ -45,8 +45,10 @@ review-gated PM memo execution from bounded wave evidence.
 
 The supported claim is deliberately bounded to those implemented flows. Gateway and Workbench
 consume manage truth; they do not reconstruct wave state, source readiness, aggregate analytics,
-report input, AI prompts, or execution posture. Tactical house-view, risk-event, campaign cohorts,
-and external OMS execution remain future source-owner/product scope.
+report input, AI prompts, or execution posture. `lotus-risk` now owns
+`RiskEventAffectedCohort:v1` as the first risk-event cohort source product, but `lotus-manage` has
+not yet promoted a risk-event wave trigger. Tactical house-view, manage risk-event consumption,
+campaign cohorts, and external OMS execution remain future source-owner/product scope.
 
 ---
 
@@ -869,6 +871,7 @@ Every wave endpoint must satisfy:
 | Wave preview | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented and live-proven with source-backed candidates and blocked caller-only portfolio evidence. |
 | Durable rebalance wave aggregate | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented with persistence, state machine, events, retention policy, repository parity, idempotency, and live retrieval proof. |
 | CIO model-change impact | Supported for source-owned affected-cohort discovery | Implemented through lotus-core `CioModelChangeAffectedCohort:v1` and manage `CIO_MODEL_CHANGE` preview/create. First-wave Gateway/Workbench rendering is implementation-backed for the command-center surface; richer tactical/risk/campaign cohorts remain future source-owner scope. |
+| Risk-event affected-cohort source product | Partial source-owner foundation; not yet a manage-supported trigger | Implemented in `lotus-risk` through `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, merged in `lotus-risk` PR #115 (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`), wiki-published as `91f933a`, and mirrored in `lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`). Manage preview/create consumption, tactical house-view cohorts, and campaign cohorts remain future WTBD scope. |
 | Wave source check | Supported | Implemented with item-level readiness, source refs, blocked/degraded/review reasons, and mixed-readiness proof. |
 | Wave simulation | Supported for source-ready items | Implemented through RFC-0039 alternatives for ready items while blocked, degraded, and review-required items remain visible. |
 | Alternative selection | Supported | Implemented with actor/rationale selection, proof-pack generation option, durable reload, and optimistic-lock tests. |
@@ -962,7 +965,7 @@ RFC-0041 is complete only when:
 | Documentation/wiki result | README, RFC index, repository context, source-map, supported-features, endpoint certification wiki, RFC index wiki, and roadmap wiki are aligned to implementation truth. Wiki publication is required after the Slice 12 PR merges. |
 | Skills/context/guidance decision | `no change needed`; current Lotus skills and agent context were sufficient and no new reusable execution rule emerged from final closure. |
 | Tests and evidence | Local gates passed: focused hardening tests, OpenAPI certification/docs tests, OpenAPI quality gate, API vocabulary validation, `make check`, and full coverage gate at 99.17%. GitHub PR gates must pass before merge. |
-| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves plus source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohort discovery, and the bounded first-wave product path is implementation-backed across Gateway, Workbench, report/render/archive, and AI memo handoff. Tactical house-view, risk-event, campaign discovery, and external OMS execution remain unsupported future scope. |
+| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves plus source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohort discovery, and the bounded first-wave product path is implementation-backed across Gateway, Workbench, report/render/archive, and AI memo handoff. The first risk-event source product is now implementation-backed in `lotus-risk`, but manage risk-event trigger consumption, tactical house-view discovery, campaign discovery, and external OMS execution remain unsupported future scope. |
 
 ---
 
@@ -975,7 +978,7 @@ implementation truth is available in the owning RFC, not only in the WTBD ledger
 | --- | --- | --- |
 | RFC41-WTBD-001 | `lotus-core` PR #339 and `lotus-manage` PR #126 support source-owned `PortfolioManagerBookMembership:v1` PM-book wave discovery. | Tactical house-view, risk-event, campaign, and permission-denied cohort semantics remain future owner scope. |
 | RFC41-WTBD-002 | `CioModelChangeAffectedCohort:v1` and manage `CIO_MODEL_CHANGE` preview/create support source-owned affected-mandate discovery. | Tactical house-view, risk-event, and campaign cohorts remain unsupported. |
-| RFC41-WTBD-003 | Deferred intentionally because no governed tactical house-view, risk-event, or campaign cohort authority exists. | No support claim is made. |
+| RFC41-WTBD-003 | Partially advanced: `lotus-risk` PR #115 implements `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, platform PR #313 mirrors the data-product declaration, and the `lotus-risk` wiki is published at `91f933a`. | Manage does not yet consume the product for `RISK_BREACH_REMEDIATION` or another risk-event wave trigger; tactical house-view and campaign cohort authorities remain unassigned, so no manage-supported cohort claim is made. |
 | RFC41-WTBD-004 | Wave aggregate metrics preserve source-owned risk/performance authority context with supportability, lineage, source refs, reason codes, and bounded source-emitted values. | Manage does not compute risk/performance methodology locally. |
 | RFC41-WTBD-005 | `lotus-gateway` PR #196 composes manage wave APIs without becoming wave authority. | Gateway does not classify source readiness, generate alternatives, approve/stage, reconstruct proof packs, or claim execution. |
 | RFC41-WTBD-006 | `lotus-workbench` PR #165 renders the first-wave wave command center, with platform PR #306 panel registration and canonical live proof. | Workbench does not compute wave state, readiness, alternatives, proof-pack posture, report input, AI memo content, or execution posture. |
@@ -1007,6 +1010,7 @@ Gold-pass decision:
 
 RFC-0041 reaches the expected standard for manage-owned wave authority and the bounded first-wave
 product path once this RFC/WTBD/wiki truth is merged to `lotus-manage` `main`, the repo-local wiki
-is published, and final branch hygiene confirms no stranded governance truth. Remaining gaps are
-explicit future source-owner or execution-product scope, not hidden defects in the supported wave
-path.
+is published, and final branch hygiene confirms no stranded governance truth. The risk-event
+source-product foundation is now real and governed, but the supported manage wave path remains
+unchanged until a later manage consumer slice integrates it. Remaining gaps are explicit future
+source-owner, consumer, or execution-product scope, not hidden defects in the supported wave path.

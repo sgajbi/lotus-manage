@@ -679,6 +679,10 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "`lotus-report` PR #91",
         "`lotus-ai` PR #63",
         "`CioModelChangeAffectedCohort:v1`",
+        "`RiskEventAffectedCohort:v1`",
+        "`lotus-risk` PR #115",
+        "`lotus-platform` PR #313",
+        "`91f933a`",
         "external_execution_claimed=false",
         "canonical-front-office-qa-20260509-225912.json",
         "wtbd-rfc40-audit-20260509",
@@ -691,6 +695,8 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "RFC41 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
         "Completed for first-wave wave command-center product support",
         "Full front-office command-center product support",
+        "Partial source-owner foundation: `lotus-risk` `RiskEventAffectedCohort:v1`",
+        "manage consumption is not yet implemented",
         "canonical-front-office-qa-20260509-225912.json",
         "dpm-wave-command-center-live.png",
         "external OMS execution",
@@ -704,6 +710,8 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohorts",
         "lotus-report/render/archive wave report",
         "review-gated wave PM memo",
+        "Risk-event affected-cohort source product",
+        "Manage consumption remains the next slice before any supported risk-event wave claim",
         "canonical-front-office-qa-20260509-225912.json",
         "external OMS execution is not supported",
     ]
@@ -1114,14 +1122,21 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 36 |" in work_to_be_done
-    assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 19 |" in work_to_be_done
+    assert "| Partial / in progress | 5 |" in work_to_be_done
+    assert "| Remaining / open | 18 |" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
     assert "source-owned populated PM-book monitoring path" in work_to_be_done
     assert "RFC38-WTBD-003 hardening" in work_to_be_done
     assert "ready/partial/empty seed-posture checks" in work_to_be_done
     assert "The current hardening adds platform seed `posture_checks`" in work_to_be_done
     assert "RFC41-WTBD-003 - Tactical House-View, Risk-Event, And Implicit Campaign Cohorts" in (
+        work_to_be_done
+    )
+    assert "`RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`" in (
+        work_to_be_done
+    )
+    assert "`lotus-risk.wiki` commit `91f933a`" in work_to_be_done
+    assert "`lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`)" in (
         work_to_be_done
     )
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
