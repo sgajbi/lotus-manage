@@ -163,6 +163,8 @@ def test_rfc0036_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     assert "truthfully_degraded" in rfc
     assert "Expected-standard decision" in rfc
     assert "Completed: rebuild `lotus-gateway` integration" in rfc
+    assert "Completed: close conditional downstream migration handling" in rfc
+    assert "`lotus-platform` PR #316" in rfc
     assert "Remaining: promote stateful DPM source-data products" in rfc
 
     assert "RFC36 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in wtbd
@@ -1207,9 +1209,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 39 |" in work_to_be_done
+    assert "| Done on merged/published truth | 40 |" in work_to_be_done
     assert "| Partial / in progress | 5 |" in work_to_be_done
-    assert "| Remaining / open | 15 |" in work_to_be_done
+    assert "| Remaining / open | 14 |" in work_to_be_done
+    assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
+    assert "`lotus-platform` PR #316" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
     assert "source-owned populated PM-book monitoring path" in work_to_be_done
     assert "RFC38-WTBD-003 hardening" in work_to_be_done
@@ -1474,7 +1478,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 39 done on merged/published truth, 5 partial" in (supported_features)
+    assert "59 WTBD items: 40 done on merged/published truth, 5 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

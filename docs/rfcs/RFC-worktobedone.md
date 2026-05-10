@@ -43,7 +43,7 @@ retained only as evidence index and sequencing control.
 
 | Owning RFC | Completed WTBD truth now integrated into the RFC | Ledger boundary that remains here |
 | --- | --- | --- |
-| RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 through RFC36-WTBD-006 remain source-product, upstream-depth, or conditional migration controls. |
+| RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 and RFC36-WTBD-006 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 and RFC36-WTBD-005 remain source-product and upstream-depth controls. |
 | RFC-0037 | RFC37-WTBD-005, RFC37-WTBD-006, and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops, full portfolio memory, source-owner depth, execution, PM scoring, and client-communication ownership stay outside the completed parent-roadmap claims. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 and RFC38-WTBD-006 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005, RFC38-WTBD-007, and RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
@@ -60,7 +60,10 @@ reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the RF
 source-backed mandate-health consumption slice, and the RFC39-WTBD-010 construction lifecycle
 audit. RFC37-WTBD-005 now has the supported proof-pack, rebalance-wave, and outcome-review report,
 render, archive, Gateway/Workbench posture, and AI-evidence handoff truth moved into RFC-0037 as a
-completed parent-roadmap closure result. RFC41-WTBD-003 now has
+completed parent-roadmap closure result. RFC36-WTBD-006 is now closed as a no-migration-required
+conditional item after the cross-repo audit found no active consumer dependency that justifies
+restoring retired manage proposal routes; the only stale durable truth found was the platform API
+vocabulary mirror, which `lotus-platform` PR #316 refreshed and validated. RFC41-WTBD-003 now has
 `lotus-risk:RiskEventAffectedCohort:v1` source ownership, the platform mesh mirror, and the
 `lotus-manage` `RISK_EVENT` wave preview/create consumer implemented, validated, merged to
 `main`, and wiki-published. RFC38-WTBD-006 now has `lotus-manage` first-wave mandate-health
@@ -83,9 +86,9 @@ execution methodology, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 39 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 40 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 5 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 15 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 14 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -187,7 +190,7 @@ mesh/product promotion belong to downstream or platform/source owners.
 | RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Completed, merged, live-proven, and wiki-published through `lotus-gateway` PR #192/#193 and `lotus-workbench` PR #153 | RFC-0036 certified execution/source posture. This follow-up now promotes recent-run and supportability telemetry into the Gateway BFF and Workbench product surface without making Workbench call manage directly. |
 | RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-platform` with source producers and `lotus-manage` consumer declarations | Deferred until source-data lineage stabilizes | Current source products are live-proven; future stateful products need producer approval, declarations, trust telemetry, SLO/access/evidence policies, and certification. |
 | RFC36-WTBD-005 | Additional upstream source-product depth for stateful execution | `lotus-core` and future source owners | Deferred source enrichment | RFC-0036 consumes the certified RFC-087 products. Additional portfolio, market-data, cashflow, benchmark, restriction, or execution-depth sources require explicit retrieval design. |
-| RFC36-WTBD-006 | Downstream migration handling if production consumers of removed aliases are discovered | Owning consumer repo, likely `lotus-gateway` | Conditional | RFC-0036 removed stale aliases by design. Permanent compatibility code should not be added unless a real production dependency is proven. |
+| RFC36-WTBD-006 | Downstream migration handling if production consumers of removed aliases are discovered | Owning consumer repo if a dependency is proven; `lotus-platform` for durable vocabulary mirrors | Completed as no-migration-required conditional closure | Cross-repo audit found no active Gateway/Workbench production dependency that requires retired manage proposal routes or unversioned manage capability aliases. The only stale durable truth found was the platform `lotus-manage` API-vocabulary mirror; `lotus-platform` PR #316 refreshed it from current manage vocabulary, removed retired route entries, and added a regression. No compatibility alias is added. |
 
 ### Detailed Follow-Up Items
 
@@ -495,29 +498,43 @@ Target business outcome:
 If a real production consumer of removed aliases or retired routes appears, it is migrated without
 polluting the strategic manage API contract.
 
-Why it cannot be done now:
+Closure result:
 
-RFC-0036 found no production dependency that justified permanent compatibility code. Adding aliases
-preemptively would reverse the cleanup and weaken the target contract.
+Completed as a no-migration-required conditional closure on 2026-05-10. The cross-repo audit found
+no active Gateway or Workbench production dependency that requires retired manage proposal routes,
+unversioned manage capability aliases, or legacy camelCase manage source-query parameters. The
+right outcome is to keep the strategic `/api/v1` manage contract clean rather than adding
+compatibility code.
 
-Dependencies before implementation:
+Issue found and fixed:
 
-1. consumer and route/payload dependency are proven,
-2. owning consumer repo accepts a migration issue,
-3. any temporary adapter has an expiry/removal plan,
-4. manage API vocabulary remains clean,
-5. no unsupported legacy behavior is advertised.
+The audit did find stale durable platform governance truth:
+`lotus-platform/platform-contracts/api-vocabulary/lotus-manage-api-vocabulary.v1.json` still
+contained retired manage proposal and unversioned capability paths. `lotus-platform` PR #316
+refreshed that platform mirror from the current `lotus-manage` API-vocabulary snapshot and added a
+regression that rejects retired manage paths.
 
-Expected implementation wave:
+Validation evidence:
 
-Only execute if a real consumer dependency is discovered.
+1. cross-repo search found no active Gateway/Workbench production use of retired manage proposal
+   routes,
+2. `lotus-platform` PR #316 merged to `main` with green Cross-App Vocabulary Gate, Feature Lane,
+   and PR Merge Gate platform-contract checks,
+3. local platform proof passed `python platform-contracts/api-vocabulary/validate_api_vocabulary_catalog.py`,
+4. local platform proof passed
+   `python -m pytest tests/unit/test_analytics_ui_ecosystem_final_closure.py -q`,
+5. the refreshed platform vocabulary mirror no longer contains `/rebalance/proposals`,
+   `/api/v1/rebalance/proposals`, or unversioned manage `/integration/capabilities` entries.
 
-Promotion proof:
+Gold-pass assessment - 2026-05-10:
 
-1. migration issue and owner,
-2. temporary adapter tests if needed,
-3. removal evidence,
-4. docs explaining the strategic contract remains canonical.
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | The conditional downstream-migration item was audited and closed without adding compatibility aliases because no real consumer dependency was found. The stale platform API-vocabulary mirror was corrected and merged. |
+| Quality improvements made | Durable platform contract truth now matches the certified manage `/api/v1` surface, and a regression prevents retired manage proposal routes from returning to the platform vocabulary mirror. |
+| Debt removed | Stale platform vocabulary entries for removed manage proposal and unversioned capability paths were removed instead of preserving misleading compatibility history. |
+| What was proven through testing and evidence | Cross-repo search, platform API-vocabulary catalog validation, focused platform contract tests, and green `lotus-platform` PR #316 checks prove the strategic manage contract remains canonical. |
+| Expected-standard decision | RFC36-WTBD-006 reaches the expected standard as a no-migration-required closure. Future compatibility work requires a newly proven consumer dependency and must not add permanent aliases without an expiry/removal plan. |
 
 ### Suggested Sequencing
 
@@ -527,7 +544,7 @@ Recommended order:
 2. add Workbench product surfaces through Gateway,
 3. implement portfolio-level operation dashboards if needed,
 4. add new source products and mesh certification as future RFCs require them,
-5. handle legacy-consumer migration only if an actual production dependency is proven.
+5. keep legacy-consumer migration closed unless an actual production dependency is proven later.
 
 ### RFC-0036 Promotion Checklist For Any Future Item
 

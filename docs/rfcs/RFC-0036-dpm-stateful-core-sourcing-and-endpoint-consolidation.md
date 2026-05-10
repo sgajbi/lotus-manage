@@ -1804,9 +1804,13 @@ This RFC is complete only when:
    certified.
 3. Completed: add portfolio-level DPM operation dashboards after run/supportability APIs are
    certified against stateful executions.
-4. Remaining: promote stateful DPM source-data products into platform mesh certification only after
+4. Completed: close conditional downstream migration handling without adding compatibility aliases
+   because no real consumer dependency was found; `lotus-platform` PR #316 refreshed the stale
+   platform `lotus-manage` API-vocabulary mirror from current manage truth.
+5. Remaining: promote stateful DPM source-data products into platform mesh certification only after
    the source-data lineage and supportability evidence is stable.
-5. Remaining: add further upstream source-product depth only through source-owner contracts,
+6. Remaining: add further upstream source-product depth only through source-owner contracts,
    retrieval design, supportability semantics, and live proof.
-6. Conditional: migrate real downstream consumers if production dependencies on removed aliases are
-   discovered; do not add permanent compatibility aliases without proven consumer need.
+7. Future conditional: reopen legacy-consumer migration only if a real production dependency is
+   proven later; do not add permanent compatibility aliases without owner, expiry, and removal
+   evidence.
