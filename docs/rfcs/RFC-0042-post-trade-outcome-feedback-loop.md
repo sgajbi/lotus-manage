@@ -958,7 +958,7 @@ truth is not stranded only in the WTBD ledger or wiki.
 | RFC42-WTBD-003 | `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 complete the first-wave front-office product path. | Reporting, AI, OMS, source-owner methodology, and PM scoring remain separately owned where not listed below. |
 | RFC42-WTBD-004 | `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 implement rendered outcome reports and archive lifecycle from bounded manage report input. | Report/render/archive own generated artifact lifecycle; manage remains report-input and evidence authority. |
 | RFC42-WTBD-005 | `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 implement governed outcome-review AI narrative request flow from bounded evidence input. | AI does not approve, score PMs, recommend trades, contact clients, or reconstruct source truth. |
-| RFC42-WTBD-006 | Source-owner methodology enrichment has progressed across risk, performance, and core source products and is consumed by manage adapters where implemented. `TransactionLedgerWindow:v1` now also restates explicit row-level realized FX P&L local evidence into `realized_fx_pnl_local_reporting_currency` for reporting surfaces. `PortfolioCashflowProjection:v1` now emits total, booked, and projected-settlement cashflow measures, and `PortfolioLiquidityLadder:v1` now emits opening cash, fixed horizon bucket, booked/projected/net cashflow, cumulative cash, shortfall, and asset-liquidity-tier exposure evidence from `lotus-core` PR #356 / wiki `28c4ae2`. | Aggregated tax, FX attribution, client income-needs planning, and execution methodologies remain source-owner follow-on work. |
+| RFC42-WTBD-006 | Source-owner methodology enrichment has progressed across risk, performance, and core source products and is consumed by manage adapters where implemented. `TransactionLedgerWindow:v1` now restates reporting-currency fields by source-currency basis: book-currency measures use book currency, trade/local measures use trade currency when present, and explicit row-level realized FX P&L local evidence is exposed through `realized_fx_pnl_local_reporting_currency` for reporting surfaces. Canonical front-office seed data also carries USD/SGD and EUR/SGD reporting-currency FX coverage for live proof from `lotus-core` PR #359. `PortfolioCashflowProjection:v1` now emits total, booked, and projected-settlement cashflow measures, and `PortfolioLiquidityLadder:v1` now emits opening cash, fixed horizon bucket, booked/projected/net cashflow, cumulative cash, shortfall, and asset-liquidity-tier exposure evidence from `lotus-core` PR #356 / wiki `28c4ae2`. | Aggregated tax, FX attribution, client income-needs planning, and execution methodologies remain source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration remains unsupported. | Requires a future execution/OMS owner, certified controls, acknowledgements, and reconciliation contract. |
 | RFC42-WTBD-008 | PM quality scoring remains unsupported. | Requires business approval, governed methodology, bias controls, and a separate support claim. |
 
@@ -978,6 +978,12 @@ Audit evidence:
    confirms the governed DPM front-office stack remains healthy after the current WTBD audit cycle.
 5. Documentation regression now guards RFC42 RFC/WTBD/wiki truth so stale downstream-unclaimed
    wording cannot return after the first-wave product path has been implemented.
+6. `lotus-core` PR #359 anchors the audited `TransactionLedgerWindow:v1` reporting-currency
+   correction: field-aware book versus trade/local currency selection, canonical USD/SGD and
+   EUR/SGD front-office seed coverage, focused source-product tests and gates, live
+   `PB_SG_GLOBAL_BAL_001` transaction-ledger proof, clean Gateway/core logs after the passing run,
+   and a successful canonical Workbench validation with `31` API checks, `12` screenshots, `19` UI
+   checks, `0` console errors, and `17/17` panels ready.
 
 Gold-pass decision:
 
