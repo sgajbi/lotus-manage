@@ -886,6 +886,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "| `EXECUTION_QUALITY` | Fill/order/execution source exists" in source_map
     assert "Workbench must consume Gateway/BFF only" in source_map
     assert "PB_SG_GLOBAL_BAL_001" in source_map
+    assert "PortfolioLiquidityLadder" in rfc
+    assert "`lotus-core` PR #356 / wiki `28c4ae2`" in rfc
+    assert "PortfolioLiquidityLadder opening-cash" in source_map
+    assert "PortfolioLiquidityLadder:v1" in roadmap
+    assert (
+        "PortfolioLiquidityLadder:v1` methodology truth through `lotus-core` PR #356"
+        in supported_features
+    )
 
     assert "Slice 1 - Platform Automation and Scaffolding Improvement" in platform_slice
     assert "sgajbi/lotus-platform#297" in platform_slice
@@ -1320,7 +1328,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`HoldingsAsOf:v1` methodology" in work_to_be_done
     assert "snapshot-versus-history fallback" in work_to_be_done
     assert "reporting-currency cash balances" in work_to_be_done
-    assert "liquidity ladders, income-needs planning" in work_to_be_done
+    assert "PortfolioLiquidityLadder:v1` methodology" in work_to_be_done
+    assert "`lotus-core` PR #356" in work_to_be_done
     assert "Latest WTBD-006 core market-data coverage methodology proof" in work_to_be_done
     assert "`lotus-core` PR #349" in work_to_be_done
     assert "`4101f1ba321b8464093c12358e57f5c448440413`" in work_to_be_done
@@ -1368,9 +1377,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "current core slices" in supported_features
     assert "market-data coverage, DPM source-readiness" in supported_features
     assert "transaction-ledger row measures" in supported_features
-    assert "cashflow projection totals, tax lots, and observed transaction-cost evidence" in (
-        supported_features
-    )
+    assert (
+        "cashflow projection totals, liquidity-ladder buckets, tax lots, and observed "
+        "transaction-cost evidence"
+    ) in supported_features
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features
     )

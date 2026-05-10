@@ -180,9 +180,16 @@ Current repository posture:
     (`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`, wiki `231bd75`), which pins booked-only
     versus projected mode behavior, latest-cashflow-row selection, settlement-dated external
     `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity, portfolio-base-currency
-    output, and explicit non-claims for liquidity ladders, tax methodology, performance returns,
-    market impact, and OMS execution forecasting while still leaving aggregated tax, FX,
-    liquidity-ladder, execution, and broader methodology depth to future source-owner work. The
+    output, and explicit non-claims for tax methodology, performance returns, market impact, and
+    OMS execution forecasting while still leaving aggregated tax, FX, execution, and broader
+    methodology depth to future source-owner work. The
+    record also includes the merged and wiki-published `lotus-core`
+    `PortfolioLiquidityLadder:v1` methodology slice from PR #356
+    (`d47eb716e2992ea0988ddbb92e402594d4193dec`, wiki `28c4ae2`), which pins opening cash,
+    fixed horizon buckets, booked/projected/net cashflow, cumulative cash, shortfall,
+    asset-liquidity-tier exposure, source-product catalog/security posture, and explicit
+    non-claims for advice, funding recommendations, income-needs planning, tax methodology,
+    FX attribution, market impact, best execution, venue routing, and OMS acknowledgement. The
     record also includes the merged and wiki-published `lotus-core`
     `TransactionLedgerWindow:v1` methodology slice from PR #347
     (`7aef82bc8f9232c62333b8386001527b19829f86`, wiki `6bb1041`), which pins booked and
