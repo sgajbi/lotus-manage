@@ -195,7 +195,10 @@ def test_rfc0037_completed_child_truth_is_integrated_into_parent_rfc() -> None:
         "Post-Closure WTBD Integration Audit",
         "RFC37-WTBD-001",
         "RFC37-WTBD-006",
+        "RFC37-WTBD-005",
         "bounded first-wave outcome-review product path",
+        "Supported proof-pack, rebalance-wave, and outcome-review evidence now flow",
+        "client communication execution remains unsupported",
         "`lotus-platform` PR #310",
         "`884bec3`",
         "DPM sales/demo story | RFC-0037 plus wiki | Supported canonical story",
@@ -208,6 +211,8 @@ def test_rfc0037_completed_child_truth_is_integrated_into_parent_rfc() -> None:
         "RFC37 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
         "RFC37-WTBD-006 is complete as an implementation-backed canonical sales/demo",
         "RFC37-WTBD-001 is complete for the bounded RFC-0042 first-wave outcome-review product",
+        "RFC37-WTBD-005 is complete for supported proof-pack, wave, and outcome-review report",
+        "Supported proof-pack, wave, and outcome-review evidence now flow",
         "`42e0ecff3597257ac3ea63b0c59b425603eeb291`",
         "`884bec3`",
     ]
@@ -217,6 +222,8 @@ def test_rfc0037_completed_child_truth_is_integrated_into_parent_rfc() -> None:
 
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in supported_features
     assert "Canonical DPM demo story" in supported_features
+    assert "Report, archive, and evidence materialization" in supported_features
+    assert "RFC37-WTBD-005 is complete for first-wave generated report" in supported_features
     assert "Post-trade outcome feedback | RFC-0042 | Proposed" not in rfc
     assert "DPM sales/demo story | RFC-0037 plus wiki | Proposed" not in rfc
 
@@ -1200,9 +1207,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 38 |" in work_to_be_done
+    assert "| Done on merged/published truth | 39 |" in work_to_be_done
     assert "| Partial / in progress | 5 |" in work_to_be_done
-    assert "| Remaining / open | 16 |" in work_to_be_done
+    assert "| Remaining / open | 15 |" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
     assert "source-owned populated PM-book monitoring path" in work_to_be_done
     assert "RFC38-WTBD-003 hardening" in work_to_be_done
@@ -1467,7 +1474,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 38 done on merged/published truth, 5 partial" in (supported_features)
+    assert "59 WTBD items: 39 done on merged/published truth, 5 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

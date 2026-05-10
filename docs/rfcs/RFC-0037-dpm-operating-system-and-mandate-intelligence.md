@@ -1738,26 +1738,31 @@ Feature-expansion rule:
 
 ## 20. Post-Closure WTBD Integration Audit
 
-The 2026-05-09 WTBD audit moved completed RFC37 child-roadmap truth into this strategic parent RFC
-without marking the full parent roadmap done.
+The 2026-05-09 and 2026-05-10 WTBD audits moved completed RFC37 child-roadmap truth into this
+strategic parent RFC without marking the full parent roadmap done.
 
 | WTBD | Integrated result | Current boundary |
 | --- | --- | --- |
 | RFC37-WTBD-001 | RFC-0042 now supports manage-owned outcome-review authority plus bounded Gateway/Workbench, report/archive, and AI narrative first-wave realization. | Source-owner methodology depth, external OMS execution, PM scoring, and client communication remain future scope. |
+| RFC37-WTBD-005 | Supported proof-pack, rebalance-wave, and outcome-review evidence now flow from manage-owned report inputs into generated report, render, archive, Gateway/Workbench request posture, AI evidence handoff, and report/archive lineage families. | `lotus-manage` does not generate or archive documents, client communication execution remains unsupported, and any new evidence artifact family needs its own owner, controls, and proof. |
 | RFC37-WTBD-006 | `lotus-platform` PR #310, merge `42e0ecff3597257ac3ea63b0c59b425603eeb291`, and wiki publication commit `884bec3` provide the canonical DPM demo story for `PB_SG_GLOBAL_BAL_001`. | Demo material must keep unsupported OMS, PM-scoring, client-communication, autonomous AI, and unimplemented degraded/blocked seed fixtures out of supported claims. |
 
 Gold-pass assessment:
 
-1. Truly completed: RFC37-WTBD-006 is complete as a governed canonical sales/demo story, and
-   RFC37-WTBD-001 is complete for the RFC-0042 bounded first-wave outcome-review product path.
+1. Truly completed: RFC37-WTBD-006 is complete as a governed canonical sales/demo story,
+   RFC37-WTBD-001 is complete for the RFC-0042 bounded first-wave outcome-review product path, and
+   RFC37-WTBD-005 is complete for supported proof-pack, wave, and outcome-review evidence
+   materialization.
 2. Quality improvements made: RFC-0037 now distinguishes implemented child capabilities from the
    remaining parent-roadmap ambition instead of leaving the supported-features ledger entirely in
    proposed state.
 3. Debt removed: stale parent-roadmap wording that understated RFC-0042 and the canonical demo story
    was retired while preserving explicit unsupported boundaries.
-4. Testing and evidence proven: proof is anchored in RFC-0042 manage/live/canonical evidence,
-   `lotus-platform` PR #310, platform wiki publication commit `884bec3`, and the documentation
-   regression that guards RFC/WTBD/wiki truth.
+4. Testing and evidence proven: proof is anchored in RFC-0040/RFC-0041/RFC-0042 report-input,
+   render, archive, Gateway/Workbench, AI-evidence, and canonical evidence, `lotus-platform`
+   PR #310, platform wiki publication commit `884bec3`, and the documentation regression that
+   guards RFC/WTBD/wiki truth.
 5. Expected-standard decision: the completed child-roadmap items have reached the expected standard
-   once this RFC/WTBD truth is merged to `main`, wiki posture is explicitly checked, and final
-   branch hygiene confirms no stranded governance truth.
+   on merged and wiki-published owning-repository truth; RFC-0037 remains partial only where
+   future source-owner depth, portfolio-memory completion, OMS execution, PM scoring, client
+   communication, and broader copilot workspace scope are still unimplemented.

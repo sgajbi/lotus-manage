@@ -44,7 +44,7 @@ retained only as evidence index and sequencing control.
 | Owning RFC | Completed WTBD truth now integrated into the RFC | Ledger boundary that remains here |
 | --- | --- | --- |
 | RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 through RFC36-WTBD-006 remain source-product, upstream-depth, or conditional migration controls. |
-| RFC-0037 | RFC37-WTBD-006 and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops stay partial until source-owner depth, execution, PM scoring, and client-communication ownership are proven. |
+| RFC-0037 | RFC37-WTBD-005, RFC37-WTBD-006, and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops, full portfolio memory, source-owner depth, execution, PM scoring, and client-communication ownership stay outside the completed parent-roadmap claims. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 and RFC38-WTBD-006 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005, RFC38-WTBD-007, and RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-009 plus the implementation-backed RFC40-WTBD-010 report, AI, and archive source-event slices are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`. | RFC40-WTBD-010 remains partial until the remaining OMS and PM-scoring portfolio-memory source-event families are completed by their owners. Richer per-security scenario contribution and CIO approval evidence remain future `lotus-risk` / CIO source depth rather than a hidden manage proof-pack gap. |
@@ -58,7 +58,9 @@ Snapshot basis: the 2026-05-10 mainline after the RFC40-WTBD-009 selected-altern
 regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI workflow-pack truth
 reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the RFC38-WTBD-006
 source-backed mandate-health consumption slice, and the RFC39-WTBD-010 construction lifecycle
-audit. RFC41-WTBD-003 now has
+audit. RFC37-WTBD-005 now has the supported proof-pack, rebalance-wave, and outcome-review report,
+render, archive, Gateway/Workbench posture, and AI-evidence handoff truth moved into RFC-0037 as a
+completed parent-roadmap closure result. RFC41-WTBD-003 now has
 `lotus-risk:RiskEventAffectedCohort:v1` source ownership, the platform mesh mirror, and the
 `lotus-manage` `RISK_EVENT` wave preview/create consumer implemented, validated, merged to
 `main`, and wiki-published. RFC38-WTBD-006 now has `lotus-manage` first-wave mandate-health
@@ -81,9 +83,9 @@ execution methodology, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 38 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 39 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 5 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 16 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 15 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -577,7 +579,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Partially implemented for owner-side DPM workflow packs | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, and outcome-review narrative packs with guardrails and provenance. Separate exception summary, operations handoff summary, default-version resolution, full copilot workspace, and any additional product surfaces remain future work. |
 | RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0043 | Multiple canonical product surfaces and first-wave AI workflow-pack invocation paths are implementation-backed, but the broader RFC-0043 copilot workspace, full portfolio memory, OMS, PM scoring, and remaining source-owner depth are not complete. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
-| RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive` | Partially implemented for proof-pack, wave, and outcome-review first-wave artifacts | Generated documents and archive lifecycle are implementation-backed for supported handoff paths; broader client/internal evidence catalog remains future owner scope. |
+| RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
 | RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus report, AI, and archive source-event families | Manage/Gateway/Workbench portfolio memory, report-owned source events, AI workflow-pack source events, and archive generated-document/client-delivery source events exist; OMS and PM-scoring source-event families remain future. |
 
@@ -586,18 +588,21 @@ not to mark RFC-0037 complete from roadmap text alone.
 Gold-pass assessment:
 
 1. Truly completed: RFC37-WTBD-006 is complete as an implementation-backed canonical sales/demo
-   story, and RFC37-WTBD-001 is complete for the bounded RFC-0042 first-wave outcome-review product
-   path.
+   story, RFC37-WTBD-001 is complete for the bounded RFC-0042 first-wave outcome-review product
+   path, and RFC37-WTBD-005 is complete for supported proof-pack, wave, and outcome-review report,
+   render, archive, and evidence handoff materialization.
 2. Quality improvements made: RFC-0037 now carries the current child-roadmap support posture and no
    longer presents the supported-features ledger as entirely proposed.
 3. Debt removed: stale parent-roadmap language that treated RFC-0042 product support and canonical
    demo material as future-only was corrected while keeping the strategic parent unclosed.
-4. Testing and evidence proven: proof is anchored in RFC-0042 manage/live/canonical evidence,
-   `lotus-platform` PR #310, merge `42e0ecff3597257ac3ea63b0c59b425603eeb291`, and wiki
-   publication commit `884bec3`.
+4. Testing and evidence proven: proof is anchored in RFC-0040/RFC-0041/RFC-0042 report-input,
+   render, archive, Gateway/Workbench, AI-evidence, and canonical evidence, plus `lotus-platform`
+   PR #310, merge `42e0ecff3597257ac3ea63b0c59b425603eeb291`, and wiki publication commit
+   `884bec3`.
 5. Expected-standard decision: completed RFC37 child-roadmap items have reached the expected
-   standard once this RFC/WTBD truth is merged to `main`, wiki posture is checked, and branch
-   hygiene confirms no stranded governance truth.
+   standard on merged and wiki-published owning-repository truth. RFC-0037 remains partial only
+   where future source-owner depth, full portfolio memory, OMS execution, PM scoring, client
+   communication, and broader copilot workspace scope are still unimplemented.
 
 ### Detailed Follow-Up Items
 
@@ -785,29 +790,61 @@ Target business outcome:
 PM, investment committee, client, compliance, and audit audiences can receive governed documents
 and archives generated from DPM evidence.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-`lotus-report`, `lotus-render`, and `lotus-archive` own generated documents and archive lifecycle.
-RFC-0037 cannot claim those outputs until owning apps implement them against manage evidence.
+Completed for the supported first-wave DPM evidence paths. RFC-0040, RFC-0041, and RFC-0042 now
+provide manage-owned proof-pack, wave, and outcome-review report-input contracts; `lotus-report`,
+`lotus-render`, and `lotus-archive` own deterministic generated-document and archive lifecycle for
+those paths; Gateway and Workbench expose governed request posture where product-surfaced; and
+`lotus-ai` consumes bounded evidence inputs for review-gated narrative assistance without becoming
+report authority.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. report-input contracts from proof packs, waves, and outcomes,
-2. render templates and deterministic output rules,
-3. archive retention/legal-hold/access-audit rules,
-4. Gateway/Workbench report posture,
-5. live proof that documents reconcile to source evidence.
+1. proof-pack report materialization from `DpmProofPackReportInput` through `lotus-render` PR #11,
+   `lotus-report` PR #90, and `lotus-archive` PR #23,
+2. rebalance-wave report materialization from `DpmWaveReportInput` through `lotus-manage` PR #124,
+   `lotus-report` PR #91, `lotus-render` PR #12, and `lotus-archive` PR #24,
+3. outcome-review report/archive materialization through RFC-0042 owning-app evidence and the
+   Workbench canonical audit proof,
+4. generated-document/client-delivery source-event lineage through `lotus-archive` PR #25,
+5. bounded portfolio-memory report lineage through `lotus-report` PR #92 and report-owned
+   source-event publication through `lotus-report` PR #93,
+6. governed AI evidence handoffs for proof-pack PM memo, wave PM memo, and outcome-review narrative
+   packs without raw payload reconstruction or autonomous decisioning.
 
-Expected implementation wave:
+Explicit boundaries:
 
-Implement through report/render/archive RFCs after evidence contracts stabilize.
+1. `lotus-manage` remains evidence and report-input authority; it does not generate, render,
+   archive, retrieve, or retain documents,
+2. report/render/archive do not create investment recommendations beyond the source evidence they
+   receive,
+3. this closure does not claim client communication execution, external OMS execution, PM quality
+   scoring, autonomous AI decisions, or new evidence catalog families,
+4. any future client/internal evidence artifact family still needs an owning RFC, source contract,
+   generated-document lifecycle, archive policy, and product-surface proof.
 
 Promotion proof:
 
-1. report/render/archive tests,
-2. deterministic artifact evidence,
-3. archive retrieval and retention proof,
-4. docs and supported-feature promotion in owning apps.
+1. RFC40-WTBD-004 proves proof-pack report/render/archive materialization with owning-repository
+   PR evidence,
+2. RFC41-WTBD-008 proves rebalance-wave report/render/archive materialization with owning-repository
+   PR evidence,
+3. RFC42-WTBD-004 proves outcome-review report/render/archive materialization and canonical
+   product posture,
+4. RFC40-WTBD-005, RFC41-WTBD-009, and RFC42-WTBD-005 prove governed AI evidence handoff paths,
+5. RFC40-WTBD-010 proves bounded report-lineage source events in `lotus-report` and
+   generated-document/client-delivery source events in `lotus-archive`.
+
+Gold-pass assessment - 2026-05-10:
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | Supported proof-pack, wave, and outcome-review evidence now flow from manage-owned report inputs into generated report, render, archive, Gateway/Workbench request posture, AI evidence handoff, and report/archive lineage families. |
+| Quality improvements made | RFC-0037 now names the completed report/archive evidence families explicitly instead of leaving the parent roadmap in a partial state despite child RFC completion. |
+| Debt removed | Stale wording that treated report, archive, and evidence materialization as future-only was retired, while source-owner and client-communication boundaries remain explicit. |
+| What was proven through testing and evidence | Proof is anchored in the merged RFC40/RFC41/RFC42 child slices, their local and GitHub gates, canonical Workbench evidence where product-surfaced, report/render/archive owning PRs, AI evidence handoff PRs, and documentation regression coverage. |
+| Expected-standard decision | RFC37-WTBD-005 reaches the expected standard for supported first-wave evidence materialization. Broader client/internal evidence catalog expansion remains future owner scope and is not claimed. |
 
 #### RFC37-WTBD-006 - Canonical Sales/Demo Story
 
