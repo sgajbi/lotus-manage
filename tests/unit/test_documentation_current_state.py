@@ -1509,8 +1509,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1`" in (
         supported_features
     )
-    assert "optional `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1`" in (
-        supported_features
+    assert (
+        "optional `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1`"
+        in (supported_features)
     )
     assert "restricted active model targets can block eligibility health" in supported_features
     assert "source-owned negative projected net cashflow can raise cash-liquidity attention" in (

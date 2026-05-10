@@ -313,7 +313,9 @@ def test_compile_mandate_twin_uses_core_source_truth_and_explicit_gap_codes() ->
     assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" in twin.field_gap_codes
 
 
-def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainability_lineage() -> None:
+def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainability_lineage() -> (
+    None
+):
     twin = compile_mandate_digital_twin_from_core(
         mandate=_mandate_binding(),
         model_targets=_model_targets(),
@@ -380,9 +382,10 @@ def test_build_health_input_uses_source_backed_profile_and_cashflow_risk_signals
 
     snapshot = calculate_mandate_health(health_input)
 
-    assert _dimension(
-        snapshot, MandateHealthDimension.ELIGIBILITY_RESTRICTIONS
-    ).reason_code == "RESTRICTED_INSTRUMENT_HELD"
+    assert (
+        _dimension(snapshot, MandateHealthDimension.ELIGIBILITY_RESTRICTIONS).reason_code
+        == "RESTRICTED_INSTRUMENT_HELD"
+    )
     assert _dimension(snapshot, MandateHealthDimension.CASH_LIQUIDITY).reason_code == (
         "PROJECTED_CASHFLOW_PRESSURE"
     )

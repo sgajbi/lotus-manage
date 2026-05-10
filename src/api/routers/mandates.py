@@ -95,7 +95,7 @@ MANDATE_RESPONSE_EXAMPLE: dict[str, Any] = {
             "data_quality_status": "READY",
             "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
             "lineage": {"contract_version": "ClientRestrictionProfile:v1"},
-        }
+        },
     ],
     "field_gap_codes": [
         "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED",
