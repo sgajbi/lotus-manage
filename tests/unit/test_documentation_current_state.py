@@ -616,17 +616,21 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
         "`dpm_pm_memo.pack@v1`",
         "`dpm_wave_pm_memo.pack@v1`",
         "`outcome_review_narrative.pack@v1`",
+        "`dpm_operations_handoff_summary.pack@v1`",
         "The bounded owner-side DPM workflow-pack result from RFC37-WTBD-002 is incorporated",
         "RFC-0043 owner-side DPM workflow-pack subset",
         "WTBD Reintegration Audit - 2026-05-10",
-        "review-gated proof-pack PM memo, wave PM memo, and outcome-review narrative packs",
+        "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, and operations handoff summary packs",
         "support-only narrative aids",
     ]
 
     for term in required_terms:
         assert term in rfc or term in wtbd or term in supported_features or term in wiki_index
 
-    assert "PARTIALLY IMPLEMENTED (OWNER-SIDE DPM WORKFLOW PACKS)" in index
+    assert (
+        "PARTIALLY IMPLEMENTED (OWNER-SIDE DPM WORKFLOW PACKS; OPERATIONS HANDOFF PACK COMPLETE)"
+        in index
+    )
     assert "Partially supported through owner-side `lotus-ai` DPM workflow packs" in (
         supported_features
     )
@@ -1487,7 +1491,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 42 done on merged/published truth, 5 partial" in (supported_features)
+    assert "59 WTBD items: 43 done on merged/published truth, 4 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (
