@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-08T16:18:09.923796+00:00",
+  "generatedAt": "2026-05-10T04:16:22.877462+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2874,6 +2874,22 @@
       ]
     },
     {
+      "semanticId": "lotus.exposure_weights",
+      "canonicalTerm": "exposure_weights",
+      "preferredName": "exposure_weights",
+      "description": "Required for `RISK_EVENT`. Source-supplied exposure weights by risk-event bucket; manage forwards them to lotus-risk and does not calculate risk-event impact locally.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.external_execution_claimed",
       "canonicalTerm": "external_execution_claimed",
       "preferredName": "external_execution_claimed",
@@ -5012,6 +5028,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.minimum_impact_score",
+      "canonicalTerm": "minimum_impact_score",
+      "preferredName": "minimum_impact_score",
+      "description": "Minimum source-owned risk-event impact score required for cohort inclusion.",
+      "example": 10.5,
+      "type": "number",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "number"
       ]
     },
     {
@@ -7377,6 +7407,20 @@
       "preferredName": "risk_context",
       "description": "Optional lotus-risk authoritative concentration/risk context.",
       "example": "risk_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.risk_event_id",
+      "canonicalTerm": "risk_event_id",
+      "preferredName": "risk_event_id",
+      "description": "Required for `RISK_EVENT`. Manage evaluates the candidate set through lotus-risk `RiskEventAffectedCohort:v1` and preserves source-owned membership evidence.",
+      "example": "RISK_EVENT_001",
       "type": "object",
       "locations": [
         "body"
@@ -57570,6 +57614,22 @@
             "attributeRef": "#/attributeCatalog/lotus.mandate_id"
           },
           {
+            "name": "portfolios[].portfolio_manager_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "portfolios[].exposure_weights",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.exposure_weights",
+            "attributeRef": "#/attributeCatalog/lotus.exposure_weights"
+          },
+          {
             "name": "portfolios[].source_refs",
             "location": "body",
             "required": false,
@@ -57640,6 +57700,22 @@
             "type": "object",
             "semanticId": "lotus.model_portfolio_id",
             "attributeRef": "#/attributeCatalog/lotus.model_portfolio_id"
+          },
+          {
+            "name": "risk_event_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.risk_event_id",
+            "attributeRef": "#/attributeCatalog/lotus.risk_event_id"
+          },
+          {
+            "name": "minimum_impact_score",
+            "location": "body",
+            "required": false,
+            "type": "number",
+            "semanticId": "lotus.minimum_impact_score",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_impact_score"
           },
           {
             "name": "tenant_id",
@@ -58585,6 +58661,22 @@
             "attributeRef": "#/attributeCatalog/lotus.mandate_id"
           },
           {
+            "name": "portfolios[].portfolio_manager_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "portfolios[].exposure_weights",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.exposure_weights",
+            "attributeRef": "#/attributeCatalog/lotus.exposure_weights"
+          },
+          {
             "name": "portfolios[].source_refs",
             "location": "body",
             "required": false,
@@ -58655,6 +58747,22 @@
             "type": "object",
             "semanticId": "lotus.model_portfolio_id",
             "attributeRef": "#/attributeCatalog/lotus.model_portfolio_id"
+          },
+          {
+            "name": "risk_event_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.risk_event_id",
+            "attributeRef": "#/attributeCatalog/lotus.risk_event_id"
+          },
+          {
+            "name": "minimum_impact_score",
+            "location": "body",
+            "required": false,
+            "type": "number",
+            "semanticId": "lotus.minimum_impact_score",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_impact_score"
           },
           {
             "name": "tenant_id",

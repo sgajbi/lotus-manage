@@ -1670,8 +1670,9 @@ Functional coverage:
   remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
   trace details,
 - PM-book discovery is supported only through source-owned `PM_BOOK_REVIEW`; CIO model-change
-  cohort discovery, Gateway composition, and Workbench product claims remain bounded to their
-  owning slices.
+  discovery is supported only through source-owned `CIO_MODEL_CHANGE`; bounded risk-event discovery
+  is supported only through source-owned `RISK_EVENT`; Gateway composition and Workbench product
+  claims remain bounded to their owning slices.
 
 Non-functional posture:
 
@@ -1697,6 +1698,9 @@ Non-functional posture:
 - Report input is a bounded handoff contract only. It does not create report jobs, render PDFs,
   create archive records, generate AI prompts, or claim external execution.
 - `PM_BOOK_REVIEW` calls lotus-core `PortfolioManagerBookMembership:v1` during preview/create.
+- `CIO_MODEL_CHANGE` calls lotus-core `CioModelChangeAffectedCohort:v1` during preview/create.
+- `RISK_EVENT` calls lotus-risk `RiskEventAffectedCohort:v1` during preview/create and requires
+  caller-supplied candidate portfolios with source-supplied exposure weights.
   Other wave commands and read models do not call `lotus-risk`, `lotus-performance`,
   `lotus-report`, `lotus-ai`, Gateway, or Workbench directly in Slices 4 through 10.
 
@@ -1709,8 +1713,9 @@ ready items, RFC-0040 proof-pack outputs generated from selected alternatives, a
 workflow decisions captured through actor-attributed approval/staging/handoff commands.
 Supportability diagnostics are derived from persisted wave state and bounded item diagnostics.
 PM-book wave discovery is source-backed through lotus-core `PortfolioManagerBookMembership:v1`.
-CIO model-change cohort discovery remains deferred until the owning app exposes a certified source
-product.
+CIO model-change wave discovery is source-backed through lotus-core
+`CioModelChangeAffectedCohort:v1`. Bounded risk-event wave discovery is source-backed through
+lotus-risk `RiskEventAffectedCohort:v1` and does not calculate risk-event impact locally.
 
 Downstream consumers:
 

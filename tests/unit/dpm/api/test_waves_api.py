@@ -12,6 +12,7 @@ from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
     get_proof_pack_repository,
+    get_risk_authority_client,
     get_wave_repository,
 )
 from src.api.main import app
@@ -39,6 +40,11 @@ from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.infrastructure.risk_authority import (
+    LotusRiskAuthorityUnavailableError,
+    RiskEventAffectedCohort,
+    RiskEventAffectedPortfolio,
+)
 from src.core.waves import (
     DpmWaveAlreadyExistsError,
     DpmRebalanceWave,
@@ -154,6 +160,35 @@ def _cio_model_change_request() -> dict[str, object]:
         "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
         "tenant_id": "default",
         "booking_center_code": "Singapore",
+    }
+
+
+def _risk_event_request() -> dict[str, object]:
+    return {
+        "trigger_type": "RISK_EVENT",
+        "trigger_id": "risk-event-review-20260510",
+        "rationale": "Review portfolios affected by the rates-up risk event.",
+        "as_of_date": "2026-05-10",
+        "actor_id": "risk_001",
+        "risk_event_id": "RISK_EVENT_2026_Q2_RATES_UP",
+        "minimum_impact_score": 0.05,
+        "portfolios": [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "mandate_id": MANDATE_ID,
+                "portfolio_manager_id": "PM_SG_DPM_001",
+                "exposure_weights": {"EQUITY": 0.55, "FIXED_INCOME": 0.35, "CASH": 0.10},
+                "source_refs": [
+                    {
+                        "source_system": "lotus-core",
+                        "source_type": "DPM_SOURCE_READINESS",
+                        "source_id": "source-readiness-001",
+                        "source_version": "v1",
+                        "supportability_state": "READY",
+                    }
+                ],
+            }
+        ],
     }
 
 
@@ -299,6 +334,53 @@ class _IncompleteCioModelChangeResolver:
         raise DpmCoreResolverError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE")
 
 
+class _RiskEventAuthority:
+    def __init__(
+        self,
+        *,
+        supportability: str = "ready",
+        affected_portfolios: tuple[RiskEventAffectedPortfolio, ...] | None = None,
+        unavailable_error: str | None = None,
+    ) -> None:
+        self.supportability = supportability
+        self.affected_portfolios = affected_portfolios
+        self.unavailable_error = unavailable_error
+        self.calls: list[dict[str, object]] = []
+
+    def risk_event_affected_cohort(self, **kwargs: object) -> RiskEventAffectedCohort:
+        self.calls.append(kwargs)
+        if self.unavailable_error is not None:
+            raise LotusRiskAuthorityUnavailableError(self.unavailable_error)
+        return RiskEventAffectedCohort(
+            cohort_id="risk_event_cohort_test",
+            risk_event_id="RISK_EVENT_2026_Q2_RATES_UP",
+            display_name="Rates-up inflation persistence",
+            product_name="RiskEventAffectedCohort",
+            product_version="v1",
+            source_service="lotus-risk",
+            request_fingerprint="sha256:risk-event-cohort",
+            calculation_supportability=self.supportability,
+            reason_codes=("RISK_EVENT_AFFECTED_COHORT_READY",),
+            affected_portfolios=(
+                self.affected_portfolios
+                if self.affected_portfolios is not None
+                else (
+                    RiskEventAffectedPortfolio(
+                        portfolio_id=PORTFOLIO_ID,
+                        mandate_id=MANDATE_ID,
+                        source_ref=(
+                            "risk-event-cohort:RISK_EVENT_2026_Q2_RATES_UP:"
+                            "2026-05-10:PB_SG_GLOBAL_BAL_001"
+                        ),
+                        reason_codes=("RISK_EVENT_THRESHOLD_BREACHED",),
+                        impact_score=Decimal("0.0745"),
+                        dominant_bucket="FIXED_INCOME",
+                    ),
+                )
+            ),
+        )
+
+
 def _rebalance_request(portfolio_id: str = PORTFOLIO_ID) -> dict[str, object]:
     return {
         "portfolio_snapshot": {
@@ -324,6 +406,7 @@ def _client(
     proof_pack_repository: InMemoryDpmProofPackRepository | None = None,
     outcome_review_repository: InMemoryDpmOutcomeReviewRepository | None = None,
     run_service: DpmRunSupportService | None = None,
+    risk_authority_client: object | None = None,
 ) -> TestClient:
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
@@ -337,6 +420,8 @@ def _client(
         app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     if run_service is not None:
         app.dependency_overrides[get_dpm_run_support_service] = lambda: run_service
+    if risk_authority_client is not None:
+        app.dependency_overrides[get_risk_authority_client] = lambda: risk_authority_client
     app.openapi_schema = None
     return TestClient(app)
 
@@ -835,6 +920,192 @@ def test_cio_model_change_wave_preview_maps_source_resolution_failures(
 
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         response = client.post("/api/v1/rebalance/waves/preview", json=_cio_model_change_request())
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+
+
+def test_risk_event_wave_preview_resolves_source_owned_cohort() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    risk_authority = _RiskEventAuthority()
+
+    with _client(
+        mandate_repository,
+        InMemoryDpmWaveRepository(),
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_risk_event_request(),
+            headers={"X-Correlation-Id": "corr-risk-event-preview"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["durable"] is False
+    assert payload["wave"]["trigger"]["trigger_type"] == "RISK_EVENT"
+    assert payload["wave"]["trigger"]["source_refs"][0]["source_type"] == (
+        "RiskEventAffectedCohort"
+    )
+    item = payload["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert item["mandate_id"] == MANDATE_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "RiskEventAffectedCohort",
+        "RISK_EVENT",
+        "RISK_EVENT_AFFECTED_PORTFOLIO",
+        "DPM_SOURCE_READINESS",
+        "MANDATE_DIGITAL_TWIN",
+    }
+    assert risk_authority.calls == [
+        {
+            "risk_event_id": "RISK_EVENT_2026_Q2_RATES_UP",
+            "as_of_date": date(2026, 5, 10),
+            "portfolios": [
+                {
+                    "portfolio_id": PORTFOLIO_ID,
+                    "mandate_id": MANDATE_ID,
+                    "portfolio_manager_id": "PM_SG_DPM_001",
+                    "exposure_weights": {
+                        "EQUITY": 0.55,
+                        "FIXED_INCOME": 0.35,
+                        "CASH": 0.10,
+                    },
+                }
+            ],
+            "minimum_impact_score": Decimal("0.05"),
+            "correlation_id": "corr-risk-event-preview",
+        }
+    ]
+
+
+def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    risk_authority = _RiskEventAuthority()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves",
+            json=_risk_event_request(),
+            headers={"Idempotency-Key": "idem-risk-event-wave"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["durable"] is True
+    assert payload["wave"]["trigger"]["trigger_type"] == "RISK_EVENT"
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+@pytest.mark.parametrize(
+    ("request_patch", "expected_status", "expected_code"),
+    [
+        (
+            {"as_of_date": "2026/05/10"},
+            422,
+            "INVALID_AS_OF_DATE",
+        ),
+        (
+            {"risk_event_id": None},
+            422,
+            "RISK_EVENT_ID_REQUIRED",
+        ),
+        (
+            {"portfolios": []},
+            422,
+            "RISK_EVENT_CANDIDATE_PORTFOLIOS_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "exposure_weights": {},
+                    }
+                ]
+            },
+            422,
+            "RISK_EVENT_EXPOSURE_WEIGHTS_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "exposure_weights": {"EQUITY": -0.1},
+                    }
+                ]
+            },
+            422,
+            "RISK_EVENT_EXPOSURE_WEIGHTS_INVALID",
+        ),
+    ],
+)
+def test_risk_event_wave_preview_rejects_invalid_selector(
+    request_patch: dict[str, object],
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    request = {**_risk_event_request(), **request_patch}
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        risk_authority_client=_RiskEventAuthority(),
+    ) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+
+
+@pytest.mark.parametrize(
+    ("risk_authority", "expected_status", "expected_code"),
+    [
+        (None, 503, "DPM_RISK_EVENT_COHORT_UNAVAILABLE"),
+        (
+            _RiskEventAuthority(unavailable_error="LOTUS_RISK_UNAVAILABLE"),
+            503,
+            "LOTUS_RISK_UNAVAILABLE",
+        ),
+        (
+            _RiskEventAuthority(unavailable_error="LOTUS_RISK_EVENT_COHORT_REJECTED"),
+            424,
+            "LOTUS_RISK_EVENT_COHORT_REJECTED",
+        ),
+        (
+            _RiskEventAuthority(supportability="degraded"),
+            424,
+            "DPM_RISK_EVENT_COHORT_INCOMPLETE",
+        ),
+        (
+            _RiskEventAuthority(affected_portfolios=()),
+            424,
+            "DPM_RISK_EVENT_COHORT_EMPTY",
+        ),
+    ],
+)
+def test_risk_event_wave_preview_maps_source_resolution_failures(
+    risk_authority,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        risk_authority_client=risk_authority,
+    ) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=_risk_event_request())
 
     assert response.status_code == expected_status
     assert response.json()["detail"]["code"] == expected_code

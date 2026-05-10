@@ -85,6 +85,29 @@
         "pr-merge"
       ],
       "failure_posture": "degrade_or_pending_review"
+    },
+    {
+      "product_name": "RiskEventAffectedCohort",
+      "producer_repository": "lotus-risk",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "lineage_version",
+        "request_fingerprint",
+        "source_services"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "api_read",
+      "business_purpose": "Resolve source-owned risk-event affected portfolio cohorts for discretionary rebalance wave preview and creation while preserving lotus-risk lineage, supportability, request fingerprint, and reason codes without recalculating risk-event impact in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
     }
   ]
 }

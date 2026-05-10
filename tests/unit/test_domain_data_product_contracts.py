@@ -49,6 +49,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "PortfolioStateSnapshot",
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
+        "RiskEventAffectedCohort",
     }
     assert (
         by_name["PortfolioStateSnapshot"]["consumption_mode"] == "caller_supplied_contract_payload"
@@ -62,6 +63,9 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert (
         by_name["SustainabilityPreferenceProfile"]["failure_posture"] == "degrade_or_pending_review"
     )
+    assert by_name["RiskEventAffectedCohort"]["producer_repository"] == "lotus-risk"
+    assert by_name["RiskEventAffectedCohort"]["consumption_mode"] == "api_read"
+    assert by_name["RiskEventAffectedCohort"]["failure_posture"] == "fail_closed"
 
     request_models = REQUEST_MODELS_PATH.read_text(encoding="utf-8")
     assert "portfolio_snapshot: PortfolioSnapshot" in request_models
@@ -135,4 +139,4 @@ def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() 
 
     assert "DpmExecutionContext" not in dependency_names
     assert "DpmCoreExecutionContext" not in dependency_names
-    assert "New core products should be added here only after source-owner approval" in readme
+    assert "New source products should be added here only after source-owner approval" in readme

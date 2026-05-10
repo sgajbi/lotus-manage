@@ -269,15 +269,16 @@ Current repository posture:
     forbidden-action guardrails, while Workbench exposes report-input and AI memo request posture
     without constructing prompts or memo content locally. CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
-    RFC41-WTBD-003 now has its first risk-event source-owner foundation through `lotus-risk`
-    `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`,
-    merged in `lotus-risk` PR #115 (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`),
-    wiki-published at `91f933a`, and mirrored into platform mesh governance through
-    `lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`). `lotus-manage` does
-    not yet consume that product for wave preview/create, and tactical house-view cohorts,
-    implicit campaign cohorts, Gateway/Workbench rendering of wave risk/performance analytics
-    posture, and external OMS execution remain unpromoted until owning implementations are
-    live-proven.
+    RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through
+    `lotus-risk` `RiskEventAffectedCohort:v1` at
+    `POST /analytics/risk/risk-event-cohorts/evaluate`, merged in `lotus-risk` PR #115
+    (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`), wiki-published at `91f933a`, mirrored into
+    platform mesh governance through `lotus-platform` PR #313
+    (`4218d4319d5dac82e87106429fadb14247c36515`), and consumed by `lotus-manage` for bounded
+    `RISK_EVENT` wave preview/create over caller-supplied candidate portfolios with
+    source-supplied exposure weights. Tactical house-view cohorts, implicit campaign cohorts,
+    Gateway/Workbench rendering of wave risk/performance analytics posture, and external OMS
+    execution remain unpromoted until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
