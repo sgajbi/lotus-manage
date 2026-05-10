@@ -287,6 +287,10 @@ Operationally important truths:
 5. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to 400 days so low-turnover private-banking
    portfolios can consume observed booked-fee evidence without treating it as predictive execution
    cost, venue, or market-impact methodology.
+6. selected-alternative proof packs preserve `RegimeScenarioPackEvaluation:v1` evidence only when
+   source-backed scenario context is carried by the chosen construction alternative. Manage records
+   scenario pack id, worst-case loss, policy threshold, supportability, lineage, and reason codes;
+   it does not generate scenario methodology, contribution rows, or CIO approval evidence locally.
 
 ## Documentation Map
 

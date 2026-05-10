@@ -7,6 +7,7 @@ from src.core.construction import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
     AuthoritativePerformanceContext,
+    AuthoritativeRegimeStressContext,
     AuthoritativeRiskContext,
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
@@ -669,6 +670,64 @@ def test_selected_alternative_proof_pack_preserves_restriction_and_sustainabilit
     )
 
 
+def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source() -> None:
+    result = _ready_rebalance_result()
+    authority_context = ConstructionAuthorityContext(
+        regime_stress_context=AuthoritativeRegimeStressContext(
+            supportability_status="PENDING_REVIEW",
+            source_system="lotus-risk",
+            scenario_pack_id="CIO_REGIME_2026_Q2",
+            worst_case_loss_pct=Decimal("0.1800"),
+            maximum_allowed_loss_pct=Decimal("0.1200"),
+            reason_codes=["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"],
+        )
+    )
+    alternative = build_rebalance_result_alternative(result=result).model_copy(
+        update={
+            "diagnostics": {
+                "authority_context": authority_context.model_dump(
+                    mode="json",
+                    exclude_none=True,
+                )
+            }
+        }
+    )
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_regime_scenario_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        run=_run_record(result=result),
+        created_by="pm_001",
+        reason="Use source-owned scenario-pack evidence for proof-pack review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    scenario = _section(pack, "scenario_and_regime_evidence")
+
+    assert scenario.state == "PENDING_REVIEW"
+    assert scenario.facts["source_system"] == "lotus-risk"
+    assert scenario.facts["source_product_name"] == "RegimeScenarioPackEvaluation"
+    assert scenario.facts["source_product_version"] == "v1"
+    assert scenario.facts["scenario_pack_id"] == "CIO_REGIME_2026_Q2"
+    assert scenario.metrics["worst_case_loss_pct"] == "0.1800"
+    assert scenario.metrics["maximum_allowed_loss_pct"] == "0.1200"
+    assert scenario.reason_codes == ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"]
+    assert pack.source_hashes["regime_stress_context"].startswith("sha256:")
+    assert any(
+        ref.source_system == "lotus-risk"
+        and ref.source_type == "RegimeScenarioPackEvaluation"
+        and ref.source_id == "CIO_REGIME_2026_Q2"
+        for ref in pack.sections[0].source_refs
+    )
+
+
 def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
     result = _ready_rebalance_result()
     authority_context = ConstructionAuthorityContext(
@@ -706,6 +765,13 @@ def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
             as_of_date="2026-05-03",
             preference_count=0,
         ),
+        regime_stress_context=AuthoritativeRegimeStressContext(
+            supportability_status="DEGRADED",
+            source_system="lotus-risk",
+            scenario_pack_id="CIO_REGIME_2026_Q2",
+            worst_case_loss_pct=Decimal("0.0800"),
+            maximum_allowed_loss_pct=Decimal("0.1200"),
+        ),
     )
     alternative = build_rebalance_result_alternative(result=result).model_copy(
         update={
@@ -732,6 +798,10 @@ def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
         alternative=alternative,
         family="sustainability_preference",
     )
+    regime_stress = source_analytics_for_alternative(
+        alternative=alternative,
+        family="regime_stress",
+    )
 
     assert risk is not None
     assert risk.reason_codes == ["DPM_RISK_AUTHORITY_CONTEXT_DEGRADED"]
@@ -745,6 +815,8 @@ def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
     assert sustainability is not None
     assert sustainability.state == "PENDING_REVIEW"
     assert sustainability.reason_codes == ["DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED"]
+    assert regime_stress is not None
+    assert regime_stress.reason_codes == ["DPM_REGIME_STRESS_CONTEXT_DEGRADED"]
 
 
 @pytest.mark.parametrize(
@@ -755,6 +827,7 @@ def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
         "transaction_cost",
         "client_restriction",
         "sustainability_preference",
+        "regime_stress",
     ],
 )
 def test_source_analytics_rejects_malformed_authority_contexts(

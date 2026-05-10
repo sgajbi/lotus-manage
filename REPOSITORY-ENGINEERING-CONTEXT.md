@@ -135,7 +135,12 @@ Current repository posture:
     construction alternatives, and preserve supportability, source refs, content hashes, reason
     codes, evidence windows, missing securities, bounded curve points, and represented observation
     counts in the proof-pack `turnover_and_cost` section. Local estimated construction cost remains
-    labelled separately. RFC39-WTBD-006 is now implemented for source-owned observed-cost
+    labelled separately. RFC40-WTBD-009 manage proof-pack enrichment is implemented for
+    selected-alternative scenario-pack evidence: `scenario_and_regime_evidence` preserves
+    `lotus-risk` / CIO `RegimeScenarioPackEvaluation:v1` supportability, source refs, canonical
+    `regime_stress_context` hashes, scenario pack id, worst-case loss, policy threshold, and bounded
+    reason codes without manage-local scenario methodology, contribution rows, or CIO approval
+    evidence. RFC39-WTBD-006 is now implemented for source-owned observed-cost
     construction comparison: the `COST_AWARE` method applies `TransactionCostCurve:v1` observed
     average bps to candidate trade notionals, emits `ESTIMATED_COST` objective/constraint traces,
     and degrades when the curve is missing or does not cover traded securities. Manage does not
