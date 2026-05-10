@@ -45,7 +45,7 @@ retained only as evidence index and sequencing control.
 | --- | --- | --- |
 | RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 through RFC36-WTBD-006 remain source-product, upstream-depth, or conditional migration controls. |
 | RFC-0037 | RFC37-WTBD-006 and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops stay partial until source-owner depth, execution, PM scoring, and client-communication ownership are proven. |
-| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005 through RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
+| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 and RFC38-WTBD-006 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005, RFC38-WTBD-007, and RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005, RFC39-WTBD-008, and RFC39-WTBD-010 remain broader risk/performance, treasury-depth, and lifecycle-depth controls. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-009 plus the implementation-backed RFC40-WTBD-010 report, AI, and archive source-event slices are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`. | RFC40-WTBD-010 remains partial until the remaining OMS and PM-scoring portfolio-memory source-event families are completed by their owners. Richer per-security scenario contribution and CIO approval evidence remain future `lotus-risk` / CIO source depth rather than a hidden manage proof-pack gap. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, and the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003 are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial until tactical house-view and implicit campaign owners publish governed cohort products; RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
@@ -56,10 +56,13 @@ retained only as evidence index and sequencing control.
 
 Snapshot basis: the 2026-05-10 mainline after the RFC40-WTBD-009 selected-alternative
 regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI workflow-pack truth
-reintegration slice, and the RFC41-WTBD-003 manage risk-event consumer slice. RFC41-WTBD-003 now has
+reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, and the RFC38-WTBD-006
+source-backed mandate-health consumption slice. RFC41-WTBD-003 now has
 `lotus-risk:RiskEventAffectedCohort:v1` source ownership, the platform mesh mirror, and the
 `lotus-manage` `RISK_EVENT` wave preview/create consumer implemented, validated, merged to
-`main`, and wiki-published.
+`main`, and wiki-published. RFC38-WTBD-006 now has `lotus-manage` first-wave mandate-health
+consumption of `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and
+`PortfolioCashflowProjection:v1` merged, CI-green, and wiki-published.
 The canonical DPM command-center seed still proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
 ready/degraded/blocked source-readiness states for downstream consumers. RFC40-WTBD-007 adds
@@ -75,9 +78,9 @@ execution methodology, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 36 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 37 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 5 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 18 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 17 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -1318,11 +1321,29 @@ Explicit boundaries:
 
 Promotion proof:
 
-1. `python -m pytest tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/api/test_mandates_api.py -q`
-   passed with 43 tests,
-2. tests prove lineage preservation, gap-code removal, optional-source degradation, restricted
-   target blocking, sustainability review posture, and projected cashflow pressure,
-3. RFC-0038 and `docs/rfcs/RFC-0038-source-data-field-map.md` now contain the completed WTBD truth.
+1. `lotus-manage` PR #180 merged to `main` on 2026-05-10 with green Feature Lane and PR Merge Gate
+   checks, including unit, integration, e2e, 99 percent coverage, and Docker build validation,
+2. local proof passed `python -m pytest tests/unit/dpm/construction/test_enrichment.py
+   tests/unit/dpm/infrastructure/test_core_sourcing_client.py
+   tests/unit/dpm/core/test_mandate_health.py -q` with 68 tests,
+3. local full coverage proof passed `python -m pytest --cov=src --cov-report=term
+   --cov-fail-under=99 -q` with 1,264 tests, 2 warnings, and 99.03 percent total coverage,
+4. tests prove lineage preservation, gap-code removal, optional-source degradation, restricted
+   target blocking, sustainability review posture, projected cashflow pressure, source-context
+   lifting into construction evidence, restriction-scope matching, and source-safe resolver errors,
+5. RFC-0038 and `docs/rfcs/RFC-0038-source-data-field-map.md` now contain the completed WTBD truth,
+6. `lotus-manage` wiki publication completed from repo-authored source and
+   `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` returned zero drift.
+
+Gold-pass assessment:
+
+| Question | Assessment |
+| --- | --- |
+| What was truly completed | First-wave mandate-health consumption of `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` is implemented, merged, CI-green, and wiki-published. |
+| Quality improvements made | Optional source products now have source-safe degraded handling, source lineage preservation, explicit field-gap behavior, private-banking reason codes, and high-value regression tests across mandate health, construction evidence, and core resolver edge cases. |
+| Debt removed | Stale ledger wording that treated RFC38-WTBD-006 as unimplemented is retired, and completed truth is anchored in RFC-0038 instead of living only in the WTBD ledger. |
+| What was proven through testing and evidence | Focused tests, full 99 percent coverage proof, lint, typecheck, OpenAPI, API vocabulary, mesh contract validation, documentation current-state tests, GitHub PR Merge Gate, Docker build validation, and wiki publish/check evidence all passed. |
+| Expected-standard decision | RFC38-WTBD-006 reaches the expected first-wave backend standard for source-backed mandate-health consumption. Remaining RFC38 work is limited to objective/income-needs source ownership, broader risk/performance health enrichment, and downstream profile-detail product presentation. |
 
 #### RFC38-WTBD-007 - Broader Risk And Performance Health Enrichment
 
