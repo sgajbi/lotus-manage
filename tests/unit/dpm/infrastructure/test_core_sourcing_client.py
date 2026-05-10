@@ -904,8 +904,7 @@ def test_core_resolver_fetches_benchmark_assignment_source_product():
     )
 
     assert seen["url"] == (
-        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/"
-        "benchmark-assignment"
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/benchmark-assignment"
     )
     assert seen["correlation_id"] == "corr-benchmark-001"
     assert b'"as_of_date":"2026-04-10"' in seen["payload"]
