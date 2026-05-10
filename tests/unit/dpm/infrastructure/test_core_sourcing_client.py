@@ -127,8 +127,14 @@ def _mandate_binding_payload() -> dict:
         "jurisdiction_code": "SG",
         "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
         "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "mandate_objective": (
+            "Preserve and grow global balanced wealth within controlled drawdown limits."
+        ),
         "risk_profile": "balanced",
         "investment_horizon": "long_term",
+        "review_cadence": "quarterly",
+        "last_review_date": "2026-03-31",
+        "next_review_due_date": "2026-06-30",
         "leverage_allowed": False,
         "tax_awareness_allowed": True,
         "settlement_awareness_required": True,
@@ -151,6 +157,27 @@ def _mandate_binding_payload() -> dict:
             "contract_version": "rfc_087_v1",
         },
         "data_quality_status": "ACCEPTED",
+        "latest_evidence_timestamp": "2026-04-01T09:00:00Z",
+    }
+
+
+def _benchmark_assignment_payload() -> dict:
+    return {
+        "product_name": "BenchmarkAssignment",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40",
+        "as_of_date": "2026-04-10",
+        "effective_from": "2026-01-01",
+        "effective_to": None,
+        "assignment_source": "mandate_admin",
+        "assignment_status": "active",
+        "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "source_system": "lotus-core",
+        "assignment_recorded_at": "2026-04-01T09:00:00Z",
+        "assignment_version": 1,
+        "contract_version": "rfc_062_v1",
+        "data_quality_status": "COMPLETE",
         "latest_evidence_timestamp": "2026-04-01T09:00:00Z",
     }
 
@@ -853,6 +880,37 @@ def test_core_resolver_fetches_mandate_binding_from_dedicated_source_product():
     assert response.supportability.state == "READY"
     assert response.policy_pack_id == "POLICY_DPM_SG_BALANCED_V1"
     assert response.rebalance_bands.default_band == Decimal("0.0250000000")
+
+
+def test_core_resolver_fetches_benchmark_assignment_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_benchmark_assignment_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_benchmark_assignment(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        reporting_currency="SGD",
+        correlation_id="corr-benchmark-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/benchmark-assignment"
+    )
+    assert seen["correlation_id"] == "corr-benchmark-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"reporting_currency":"SGD"' in seen["payload"]
+    assert response.product_name == "BenchmarkAssignment"
+    assert response.benchmark_id == "BMK_PB_GLOBAL_BALANCED_60_40"
 
 
 def test_core_resolver_fetches_portfolio_manager_book_membership_source_product():

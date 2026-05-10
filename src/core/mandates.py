@@ -8,6 +8,7 @@ from typing import Literal, Optional
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 from src.core.dpm_source_context import (
+    DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
@@ -457,13 +458,15 @@ def compile_mandate_digital_twin_from_core(
         DpmCoreSustainabilityPreferenceProfileResponse
     ] = None,
     portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
+    benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse] = None,
 ) -> DpmMandateDigitalTwin:
     """Compile the minimum viable mandate twin from current RFC-087 core products."""
 
-    field_gaps = [
-        "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED",
-        "CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED",
-    ]
+    field_gaps = ["CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED"]
+    if not mandate.mandate_objective:
+        field_gaps.append("MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED")
+    if not mandate.review_cadence or mandate.next_review_due_date is None:
+        field_gaps.append("MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED")
     if client_restriction_profile is None:
         field_gaps.append("CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED")
     if sustainability_preference_profile is None:
@@ -543,6 +546,23 @@ def compile_mandate_digital_twin_from_core(
                 latest_evidence_timestamp=portfolio_cashflow_projection.latest_evidence_timestamp,
             )
         )
+    if benchmark_assignment is not None:
+        source_lineage.append(
+            DpmSourceProductLineage(
+                product_name=benchmark_assignment.product_name,
+                product_version=benchmark_assignment.product_version,
+                source_system=benchmark_assignment.source_system or "lotus-core",
+                source_record_id=(
+                    f"{benchmark_assignment.portfolio_id}:"
+                    f"{benchmark_assignment.benchmark_id}:"
+                    f"{benchmark_assignment.effective_from.isoformat()}:"
+                    f"{benchmark_assignment.assignment_version}"
+                ),
+                data_quality_status=benchmark_assignment.data_quality_status,
+                latest_evidence_timestamp=benchmark_assignment.latest_evidence_timestamp,
+                lineage={"contract_version": benchmark_assignment.contract_version},
+            )
+        )
     return DpmMandateDigitalTwin(
         mandate_id=mandate.mandate_id,
         portfolio_id=mandate.portfolio_id,
@@ -551,13 +571,20 @@ def compile_mandate_digital_twin_from_core(
         base_currency=model_targets.base_currency,
         reference_currency=reference_currency or model_targets.base_currency,
         risk_profile=mandate.risk_profile.upper(),
-        investment_objective="LONG_TERM_TOTAL_RETURN",
+        investment_objective=mandate.mandate_objective or "LONG_TERM_TOTAL_RETURN",
         time_horizon=mandate.investment_horizon.upper(),
         model_portfolio_id=mandate.model_portfolio_id,
         model_portfolio_version=model_targets.model_portfolio_version,
+        benchmark_id=(
+            benchmark_assignment.benchmark_id if benchmark_assignment is not None else None
+        ),
         constraints=constraints,
         preferences=preferences,
-        review_policy=DpmMandateReviewPolicy(review_frequency=mandate.rebalance_frequency.upper()),
+        review_policy=DpmMandateReviewPolicy(
+            review_frequency=(mandate.review_cadence or mandate.rebalance_frequency).upper(),
+            last_review_date=mandate.last_review_date,
+            next_review_due_date=mandate.next_review_due_date,
+        ),
         source_lineage=source_lineage,
         field_gap_codes=field_gaps,
     )

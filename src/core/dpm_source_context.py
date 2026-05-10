@@ -192,8 +192,24 @@ class DpmCoreMandateBindingResponse(BaseModel):
         default=None,
         description="Policy pack selected by the mandate.",
     )
+    mandate_objective: Optional[str] = Field(
+        default=None,
+        description="Source-owned discretionary mandate objective from lotus-core.",
+    )
     risk_profile: str = Field(description="Mandate risk profile.")
     investment_horizon: str = Field(description="Mandate investment horizon.")
+    review_cadence: Optional[str] = Field(
+        default=None,
+        description="Source-owned mandate review cadence from lotus-core.",
+    )
+    last_review_date: Optional[date] = Field(
+        default=None,
+        description="Most recent completed mandate review date from lotus-core.",
+    )
+    next_review_due_date: Optional[date] = Field(
+        default=None,
+        description="Next due mandate review date from lotus-core.",
+    )
     leverage_allowed: bool = Field(description="Whether mandate leverage is allowed.")
     tax_awareness_allowed: bool = Field(description="Whether tax-aware execution is allowed.")
     settlement_awareness_required: bool = Field(
@@ -224,6 +240,32 @@ class DpmCoreMandateBindingResponse(BaseModel):
         default=None,
         description="Latest evidence timestamp returned by lotus-core.",
     )
+
+
+class DpmCoreBenchmarkAssignmentResponse(BaseModel):
+    product_name: Literal["BenchmarkAssignment"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    benchmark_id: str = Field(description="Core-governed benchmark identifier.")
+    as_of_date: date = Field(description="As-of date used to resolve the assignment.")
+    effective_from: date = Field(description="Assignment effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None,
+        description="Assignment effective end date.",
+    )
+    assignment_source: str = Field(description="Source channel that established the assignment.")
+    assignment_status: str = Field(description="Benchmark assignment lifecycle status.")
+    policy_pack_id: Optional[str] = Field(default=None)
+    source_system: Optional[str] = Field(default=None)
+    assignment_recorded_at: datetime = Field(
+        description="Timestamp when the assignment was recorded in lotus-core."
+    )
+    assignment_version: int = Field(description="Version used for effective-date tie-breaks.")
+    contract_version: str = Field(default="rfc_062_v1")
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
 
 
 class DpmCorePortfolioManagerBookMember(BaseModel):

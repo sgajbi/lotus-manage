@@ -245,9 +245,14 @@ def test_rfc0038_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     assert (
         "RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products" in rfc
     )
+    assert (
+        "RFC38-WTBD-005 - Mandate objective, benchmark, review cadence, and model-change sources"
+        in rfc
+    )
     assert "RFC38-WTBD-008 - Full front-office command-center product support" in rfc
-    assert "### 17.5 WTBD-008 Gold-Pass Assessment" in rfc
-    assert "### 17.6 WTBD-006 Gold-Pass Assessment" in rfc
+    assert "### 17.5 WTBD-005 Gold-Pass Assessment" in rfc
+    assert "### 17.6 WTBD-008 Gold-Pass Assessment" in rfc
+    assert "### 17.7 WTBD-006 Gold-Pass Assessment" in rfc
     assert "canonical-front-office-qa-20260509-214551.json" in rfc
     assert "dpm-command-center-seed-20260509-220332.json" in rfc
     assert "supportabilityState=READY" in rfc
@@ -255,6 +260,7 @@ def test_rfc0038_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
 
     assert "RFC38 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in wtbd
     assert "Their implementation truth has been incorporated into RFC-0038" in wtbd
+    assert "RFC38-WTBD-005 reaches the expected first-wave standard" in wtbd
     assert "RFC38-WTBD-008 reaches the expected first-wave product standard" in wtbd
     assert "dpm-command-center-live.png" in wtbd
     assert (
@@ -1197,7 +1203,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         in work_to_be_done
     )
     assert (
-        "| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004, RFC38-WTBD-006, and RFC38-WTBD-008 are incorporated into "
+        "| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-006 and RFC38-WTBD-008 are incorporated into "
         "`docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`." in work_to_be_done
     )
     assert (
@@ -1212,9 +1218,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 41 |" in work_to_be_done
+    assert "| Done on merged/published truth | 42 |" in work_to_be_done
     assert "| Partial / in progress | 5 |" in work_to_be_done
-    assert "| Remaining / open | 13 |" in work_to_be_done
+    assert "| Remaining / open | 12 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
@@ -1481,7 +1487,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 41 done on merged/published truth, 5 partial" in (supported_features)
+    assert "59 WTBD items: 42 done on merged/published truth, 5 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

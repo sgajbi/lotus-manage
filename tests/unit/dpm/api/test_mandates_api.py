@@ -14,6 +14,7 @@ from src.api.main import app
 import src.api.routers.mandates as mandates_router
 from src.api.routers.mandates import get_core_resolver_client
 from src.core.dpm_source_context import (
+    DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
@@ -105,6 +106,12 @@ class FakeCoreResolver:
             _portfolio_cashflow_projection_payload()
         )
 
+    def resolve_benchmark_assignment(self, **kwargs: Any) -> DpmCoreBenchmarkAssignmentResponse:
+        self.calls.append(("benchmark_assignment", kwargs))
+        if self.optional_unavailable:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE")
+        return DpmCoreBenchmarkAssignmentResponse.model_validate(_benchmark_assignment_payload())
+
 
 def _mandate_binding_payload(*, binding_version: int = 3) -> dict[str, Any]:
     return {
@@ -119,8 +126,14 @@ def _mandate_binding_payload(*, binding_version: int = 3) -> dict[str, Any]:
         "jurisdiction_code": "SG",
         "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
         "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "mandate_objective": (
+            "Preserve and grow global balanced wealth within controlled drawdown limits."
+        ),
         "risk_profile": "balanced",
         "investment_horizon": "long_term",
+        "review_cadence": "quarterly",
+        "last_review_date": "2026-03-31",
+        "next_review_due_date": "2026-06-30",
         "leverage_allowed": False,
         "tax_awareness_allowed": True,
         "settlement_awareness_required": True,
@@ -138,6 +151,26 @@ def _mandate_binding_payload(*, binding_version: int = 3) -> dict[str, Any]:
         },
         "lineage": {"contract_version": "DiscretionaryMandateBinding:v1"},
         "data_quality_status": "READY",
+        "latest_evidence_timestamp": "2026-05-03T01:00:00Z",
+    }
+
+
+def _benchmark_assignment_payload() -> dict[str, Any]:
+    return {
+        "product_name": "BenchmarkAssignment",
+        "product_version": "v1",
+        "portfolio_id": PORTFOLIO_ID,
+        "benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40",
+        "as_of_date": "2026-05-03",
+        "effective_from": "2026-01-01",
+        "assignment_source": "mandate_admin",
+        "assignment_status": "active",
+        "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "source_system": "lotus-core",
+        "assignment_recorded_at": "2026-05-03T01:00:00Z",
+        "assignment_version": 1,
+        "contract_version": "rfc_062_v1",
+        "data_quality_status": "COMPLETE",
         "latest_evidence_timestamp": "2026-05-03T01:00:00Z",
     }
 
@@ -365,14 +398,23 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
     assert body["contract_version"] == "DpmMandateRefreshFromCoreResponse:v1"
     assert body["mandate"]["mandate_id"] == MANDATE_ID
     assert body["mandate"]["model_portfolio_version"] == "2026.04"
+    assert body["mandate"]["investment_objective"] == (
+        "Preserve and grow global balanced wealth within controlled drawdown limits."
+    )
+    assert body["mandate"]["benchmark_id"] == "BMK_PB_GLOBAL_BALANCED_60_40"
+    assert body["mandate"]["review_policy"]["next_review_due_date"] == "2026-06-30"
     assert body["health_snapshot"]["portfolio_id"] == PORTFOLIO_ID
-    assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" in body["field_gap_codes"]
+    assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" not in body["field_gap_codes"]
+    assert "MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED" not in body["field_gap_codes"]
     assert "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED" not in body["field_gap_codes"]
     assert "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED" not in body["field_gap_codes"]
     assert "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED" not in body["field_gap_codes"]
     assert "EQ_US_AAPL" in body["mandate"]["constraints"]["restricted_instruments"]
     assert body["mandate"]["preferences"]["sustainability_strategy"] == "BANK_SUSTAINABILITY"
     assert "ClientRestrictionProfile" in {
+        lineage["product_name"] for lineage in body["mandate"]["source_lineage"]
+    }
+    assert "BenchmarkAssignment" in {
         lineage["product_name"] for lineage in body["mandate"]["source_lineage"]
     }
     reason_codes = {reason["reason_code"] for reason in body["health_snapshot"]["top_reasons"]}
@@ -385,6 +427,7 @@ def test_refresh_from_core_sources_persists_and_returns_mandate_health() -> None
         "client_restrictions",
         "sustainability_preferences",
         "cashflow_projection",
+        "benchmark_assignment",
     ]
     assert repository.get_latest_mandate(mandate_id=MANDATE_ID) is not None
 

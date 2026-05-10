@@ -150,7 +150,8 @@ flowchart LR
 
 | Source product | Current route | Use in RFC-0038 |
 | --- | --- | --- |
-| `DiscretionaryMandateBinding:v1` | `/integration/portfolios/{portfolio_id}/mandate-binding` | Mandate identity, model binding, policy version, review cadence, mandate metadata. |
+| `DiscretionaryMandateBinding:v1` | `/integration/portfolios/{portfolio_id}/mandate-binding` | Mandate identity, objective, model binding, policy version, review cadence, review dates, and mandate metadata. |
+| `BenchmarkAssignment:v1` | `/integration/portfolios/{portfolio_id}/benchmark-assignment` | Source-owned benchmark id for mandate twin context. |
 | `DpmModelPortfolioTarget:v1` | `/integration/model-portfolios/{model_portfolio_id}/targets` | Strategic model target and model version. |
 | `InstrumentEligibilityProfile:v1` | `/integration/instruments/eligibility-bulk` | Product shelf, restrictions, eligibility state. |
 | `PortfolioTaxLotWindow:v1` | `/integration/portfolios/{portfolio_id}/tax-lots` | Tax sensitivity, missing lot readiness, tax-budget monitoring. |
@@ -165,7 +166,9 @@ or extend core products instead of inventing local synthetic truth.
 Potential core additions:
 
 1. `MandateObjectiveProfile:v1`
-   investment objective, income need, horizon, drawdown tolerance, liquidity need, review cadence.
+   no longer required for first-wave mandate objective or review cadence because
+   `DiscretionaryMandateBinding:v1` now supplies those fields; income need, drawdown tolerance,
+   and liquidity need remain future source depth.
 2. `ClientRestrictionProfile:v1`
    client-specific exclusions, restricted sectors, restricted instruments, restricted issuers.
 3. `SustainabilityPreferenceProfile:v1`
@@ -1132,6 +1135,7 @@ product truth lives with the originating RFC rather than only in
 | RFC38-WTBD-002 - Workbench DPM cockpit panels | Completed, merged, and live-proven | `lotus-workbench` PR #154 merged to `main` at `2fbfac5`. Workbench consumes Gateway/BFF command-center contracts only and renders health distribution, source readiness, attention queue, active exceptions, mandate health dimensions, monitoring action posture, and bounded observability without browser-side health or source-readiness calculation. |
 | RFC38-WTBD-003 - Platform canonical seed automation | Completed, merged, live-proven, and wiki-published | `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 added the governed command-center seed path for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, and `BOOK_SG_BALANCED_DPM`, including Manage and Gateway mandate/health/summary checks plus canonical Workbench screenshot registration. |
 | RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts | Completed for populated source-owned PM-book monitoring cohorts | `lotus-core` owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it when monitoring run-once receives a portfolio-manager selector without explicit mandate ids; Gateway passes the body through; Workbench now triggers the source-owned path rather than sending a single-mandate fallback. |
+| RFC38-WTBD-005 - Mandate objective, benchmark, review cadence, and model-change sources | Completed for first-wave source-owned mandate twin enrichment | `lotus-core` enriches `DiscretionaryMandateBinding:v1` with source-owned mandate objective, review cadence, last review date, and next review due date; `lotus-manage` consumes those fields into the mandate twin and health review cadence instead of local defaults. Manage also consumes the existing core `BenchmarkAssignment:v1` source product for `benchmark_id`, while CIO model-change source ownership remains covered by `CioModelChangeAffectedCohort:v1` and RFC-0041. Broader performance benchmark analytics remain owned outside manage. |
 | RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products | Completed for first-wave manage health consumption | `lotus-manage` mandate refresh now optionally consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` from `lotus-core`. Available profiles are preserved in mandate lineage, field-gap codes are removed only when the source product is actually present, active instrument restrictions can block model-target health, sustainability preferences create bounded review-required health posture, and projected negative net cashflow can create cash-liquidity attention. Client income-needs planning, issuer/sector restriction joins, security-level sustainability classification, and regulatory suitability approval remain explicit non-goals. |
 | RFC38-WTBD-008 - Full front-office command-center product support | Completed for the first-wave populated product path | Backend authority, Gateway command-center composition, Workbench cockpit rendering, platform canonical seed automation, PM-book discovery, populated ready proof, selector-driven partial proof, empty-date proof, and demo-ready screenshot evidence are implementation-backed. Degraded/blocked canonical fixtures and richer profile-detail surfaces remain future source-owner or product-depth work. |
 
@@ -1216,10 +1220,60 @@ Expected-standard decision:
 
 RFC-0038 and completed WTBD-001 through WTBD-004 have genuinely reached the expected first-wave
 standard for backend authority, Gateway composition, Workbench command-center product realization,
-platform seed automation, and PM-book monitoring cohort discovery. Remaining source-product,
-degraded-fixture, and richer health-enrichment work should remain separate WTBD scope.
+platform seed automation, PM-book monitoring cohort discovery, and first-wave mandate
+objective/benchmark/review source enrichment. Remaining degraded-fixture and richer
+risk/performance health-enrichment work should remain separate WTBD scope.
 
-### 17.5 WTBD-008 Gold-Pass Assessment
+### 17.5 WTBD-005 Gold-Pass Assessment
+
+Assessment date: 2026-05-10
+
+What was truly completed:
+
+1. `lotus-core` enriched `DiscretionaryMandateBinding:v1` with source-owned mandate objective,
+   review cadence, last review date, and next review due date,
+2. missing objective or review-cycle fields now degrade core mandate-binding supportability rather
+   than letting downstream consumers treat local defaults as source truth,
+3. `lotus-manage` consumes mandate objective and review-cycle fields into the mandate digital twin,
+   removes the corresponding gap codes only when source values are present, and uses
+   `next_review_due_date` in review-cadence health scoring,
+4. `lotus-manage` consumes `BenchmarkAssignment:v1` from `lotus-core` and sets
+   `DpmMandateDigitalTwin.benchmark_id` from source evidence,
+5. model-change source ownership remains implementation-backed through
+   `CioModelChangeAffectedCohort:v1` and the completed RFC-0041 CIO model-change wave path.
+
+Quality improvements made:
+
+1. mandate twin personalization now uses core source data instead of static manage defaults when
+   source data exists,
+2. fallback behavior remains explicit through `MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED` and
+   `MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED`,
+3. benchmark binding is sourced from the existing core benchmark-assignment product without moving
+   performance analytics methodology into manage,
+4. source lineage now records `BenchmarkAssignment:v1` alongside mandate and model source products.
+
+Debt removed:
+
+1. stale field-map wording that treated mandate objective and review dates as unsourced,
+2. the local-default-only mandate objective path for source-ready mandates,
+3. nullable benchmark twin state when core benchmark assignment evidence is available.
+
+Testing and evidence:
+
+1. `lotus-core` focused source-product proof passed with 156 mandate-binding and seed tests,
+2. `lotus-core` source-product and OpenAPI/domain-product guards passed,
+3. `lotus-manage` focused source-consumption proof passed with 94 mandate health, source-context,
+   core-sourcing client, and mandate API tests,
+4. platform domain-product mirror validation passed after syncing the core declaration.
+
+Expected-standard decision:
+
+RFC38-WTBD-005 reaches the expected first-wave standard for source-owned mandate objective,
+benchmark binding, review cadence, review dates, and model-change source authority. Remaining
+RFC38 health enrichment is limited to broader risk/performance analytics and product-depth
+fixtures, not mandate objective or review-source truth.
+
+### 17.6 WTBD-008 Gold-Pass Assessment
 
 Assessment date: 2026-05-10
 
@@ -1261,11 +1315,10 @@ Testing and evidence:
 Expected-standard decision:
 
 RFC38-WTBD-008 reaches the expected first-wave product standard for the populated DPM
-command-center path. Remaining RFC38 work is limited to source-owner objective/benchmark/review
-cadence products, broader risk/performance health enrichment, degraded/blocked canonical fixtures,
-and richer profile-detail product surfaces.
+command-center path. Remaining RFC38 work is limited to broader risk/performance health
+enrichment, degraded/blocked canonical fixtures, and richer profile-detail product surfaces.
 
-### 17.6 WTBD-006 Gold-Pass Assessment
+### 17.7 WTBD-006 Gold-Pass Assessment
 
 Assessment date: 2026-05-10
 
