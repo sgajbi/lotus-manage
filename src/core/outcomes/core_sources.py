@@ -12,7 +12,11 @@ TransactionLedgerOutcomeMeasure = Literal[
     "realized_fx_pnl",
     "cashflow_amount",
 ]
-CashflowProjectionOutcomeMeasure = Literal["total_net_cashflow"]
+CashflowProjectionOutcomeMeasure = Literal[
+    "total_net_cashflow",
+    "booked_total_net_cashflow",
+    "projected_settlement_total_cashflow",
+]
 
 
 class CoreOutcomeSourceError(ValueError):
@@ -150,13 +154,10 @@ def realized_cashflow_projection_source_from_cashflow_projection_response(
             "lotus-core cashflow projection response is missing include_projected"
         )
 
-    if measure != "total_net_cashflow":
-        raise CoreOutcomeSourceError("cashflow projection measure must be 'total_net_cashflow'")
-
-    total_net_cashflow = response.get("total_net_cashflow")
-    if total_net_cashflow is None:
+    selected_cashflow = response.get(measure)
+    if selected_cashflow is None:
         raise CoreOutcomeSourceError(
-            "lotus-core cashflow projection response is missing total_net_cashflow"
+            f"lotus-core cashflow projection response is missing {measure}"
         )
     portfolio_currency = _read_required_text(
         response.get("portfolio_currency"),
@@ -179,7 +180,7 @@ def realized_cashflow_projection_source_from_cashflow_projection_response(
         source_system="lotus-core",
         source_type="PORTFOLIO_CASHFLOW_PROJECTION",
         source_id=source_id,
-        value=_decimal_value(total_net_cashflow),
+        value=_decimal_value(selected_cashflow),
         unit=portfolio_currency,
         source_state=_source_state(metadata["data_quality_status"]),
         quality=_source_quality(metadata["data_quality_status"]),

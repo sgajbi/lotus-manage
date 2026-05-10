@@ -131,16 +131,22 @@ def _cashflow_projection_response() -> dict[str, object]:
         "points": [
             {
                 "projection_date": "2026-05-06",
+                "booked_net_cashflow": "0",
+                "projected_settlement_cashflow": "0",
                 "net_cashflow": "0",
                 "projected_cumulative_cashflow": "0",
             },
             {
                 "projection_date": "2026-05-10",
+                "booked_net_cashflow": "0",
+                "projected_settlement_cashflow": "-25000.00",
                 "net_cashflow": "-25000.00",
                 "projected_cumulative_cashflow": "-25000.00",
             },
         ],
         "total_net_cashflow": "-25000.00",
+        "booked_total_net_cashflow": "0",
+        "projected_settlement_total_cashflow": "-25000.00",
         "projection_days": 10,
     }
 
@@ -425,6 +431,29 @@ def test_cashflow_projection_source_can_make_rfc42_cash_dimension_ready() -> Non
     assert cash.source_refs[0].source_type == "PORTFOLIO_CASHFLOW_PROJECTION"
 
 
+@pytest.mark.parametrize(
+    ("measure", "expected_value"),
+    [
+        ("booked_total_net_cashflow", "0"),
+        ("projected_settlement_total_cashflow", "-25000.00"),
+    ],
+)
+def test_cashflow_projection_adapter_wraps_source_owned_cash_movement_components(
+    measure: str,
+    expected_value: str,
+) -> None:
+    source = realized_cashflow_projection_source_from_cashflow_projection_response(
+        _cashflow_projection_response(),
+        measure=measure,  # type: ignore[arg-type]
+    )
+
+    assert source.dimension == "CASH_RESIDUAL"
+    assert str(source.value) == expected_value
+    assert source.unit == "USD"
+    assert f"CASHFLOW_PROJECTION_MEASURE_{measure.upper()}" in source.reason_codes
+    assert f"cashflow_projection:{measure}:2026-05-06:2026-05-16" in source.source_id
+
+
 def test_incomplete_cashflow_projection_preserves_degraded_core_posture() -> None:
     response = _cashflow_projection_response()
     response["data_quality_status"] = "INCOMPLETE"
@@ -485,7 +514,7 @@ def test_cashflow_projection_adapter_rejects_missing_source_total() -> None:
 
 
 def test_cashflow_projection_adapter_rejects_non_canonical_measure() -> None:
-    with pytest.raises(CoreOutcomeSourceError, match="total_net_cashflow"):
+    with pytest.raises(CoreOutcomeSourceError, match="unsupported_measure"):
         realized_cashflow_projection_source_from_cashflow_projection_response(
             _cashflow_projection_response(),
             measure="unsupported_measure",  # type: ignore[arg-type]
