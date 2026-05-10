@@ -229,8 +229,10 @@ Repo-native gate mapping:
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
   live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture;
-  set `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` when RFC-087 source products and
-  stateful manage gates are active
+  the canonical source-ready stack defaults to `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available`
+  because RFC-087 source products and stateful manage gates are active. Set
+  `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=disabled` only when deliberately validating a
+  non-source-ready local runtime.
 - `make mesh-contract-validate`
   repo-native domain product, trust telemetry, and observability monitoring contract validation
   against Lotus platform governance
@@ -284,8 +286,9 @@ Operationally important truths:
    canonical snake_case query parameters
 3. advisory proposal routes should be served by `lotus-advise`, not reintroduced here
 4. stateful DPM promotion requires `make live-api-validate-core` to pass with
-   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available` after `lotus-core` exposes the
-   RFC-087 certified source-data products and canonical data is seeded. The live proof now includes
+   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available`, which is the repo-native default for the
+   canonical source-ready stack after `lotus-core` exposes the RFC-087 certified source-data
+   products and canonical data is seeded. The live proof now includes
    stateful source-backed construction over `TransactionCostCurve:v1`,
    `PortfolioCashflowProjection:v1`, `ClientRestrictionProfile:v1`, and
    `SustainabilityPreferenceProfile:v1`, not only stateful simulate lineage.
