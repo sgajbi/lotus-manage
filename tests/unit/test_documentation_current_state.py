@@ -1084,6 +1084,19 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
 
     work_to_be_done = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    assert "## Completed WTBD RFC Reintegration Index" in work_to_be_done
+    assert (
+        "Completed and audited WTBD truth belongs in the original RFC that introduced the business change."
+        in work_to_be_done
+    )
+    assert (
+        "| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 are incorporated into "
+        "`docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`." in work_to_be_done
+    )
+    assert (
+        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into "
+        "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
+    )
     assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
     assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done
     assert "stale RFC wording that said Gateway/Workbench product proof remained unclaimed" in (

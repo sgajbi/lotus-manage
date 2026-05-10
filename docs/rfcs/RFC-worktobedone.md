@@ -33,6 +33,24 @@ implementation-backed DPM product-readiness view, integration diagram, and next-
 sequence suitable for developers, operations, business stakeholders, sales/pre-sales, and client
 demo preparation. The wiki remains careful not to promote unfinished WTBDs as supported features.
 
+## Completed WTBD RFC Reintegration Index
+
+Completed and audited WTBD truth belongs in the original RFC that introduced the business change.
+This ledger remains the control register for residual, partial, deferred, or source-owner work; it
+must not become a second durable narrative for completed scope. The following completed WTBD groups
+have been moved back into their owning RFCs as post-closure integration audits, with the WTBD ledger
+retained only as evidence index and sequencing control.
+
+| Owning RFC | Completed WTBD truth now integrated into the RFC | Ledger boundary that remains here |
+| --- | --- | --- |
+| RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 through RFC36-WTBD-006 remain source-product, upstream-depth, or conditional migration controls. |
+| RFC-0037 | RFC37-WTBD-006 and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops stay partial until source-owner depth, execution, PM scoring, and client-communication ownership are proven. |
+| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005 through RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
+| RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005, RFC39-WTBD-008, and RFC39-WTBD-010 remain broader risk/performance, treasury-depth, and lifecycle-depth controls. |
+| RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-008 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`. | RFC40-WTBD-009 and RFC40-WTBD-010 remain partial until direct scenario enrichment and the remaining portfolio-memory source-event families are completed by their owners. |
+| RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, and RFC41-WTBD-004 through RFC41-WTBD-009 are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 and RFC41-WTBD-010 remain deferred source-owner/execution controls with no supported claim. |
+| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 and RFC42-WTBD-008 remain unsupported until ownership, methodology, controls, and proof exist. |
+
 ## Mainline WTBD Control Snapshot
 
 Snapshot basis: the RFC39-WTBD-004 / RFC40-WTBD-008 source-backed restriction and sustainability
