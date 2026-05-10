@@ -695,8 +695,8 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "RFC41 Gold-Pass Audit And RFC Reintegration - 2026-05-09",
         "Completed for first-wave wave command-center product support",
         "Full front-office command-center product support",
-        "Partial source-owner foundation: `lotus-risk` `RiskEventAffectedCohort:v1`",
-        "manage consumption is not yet implemented",
+        "bounded `RISK_EVENT` wave preview and durable",
+        "Gold-pass assessment for the 2026-05-10 risk-event consumer slice",
         "canonical-front-office-qa-20260509-225912.json",
         "dpm-wave-command-center-live.png",
         "external OMS execution",
@@ -707,11 +707,11 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
 
     required_wiki_terms = [
         "Rebalance Wave Flow",
-        "source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohorts",
+        "source-owned PM-book wave discovery",
         "lotus-report/render/archive wave report",
         "review-gated wave PM memo",
-        "Risk-event affected-cohort source product",
-        "Manage consumption remains the next slice before any supported risk-event wave claim",
+        "Source-owned risk-event rebalance waves",
+        "bounded risk-event wave discovery is source-backed through lotus-risk",
         "canonical-front-office-qa-20260509-225912.json",
         "external OMS execution is not supported",
     ]
@@ -1388,7 +1388,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 36 done on merged/published truth, 4 partial" in (supported_features)
+    assert "59 WTBD items: 36 done on merged/published truth, 5 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

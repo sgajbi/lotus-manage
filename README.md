@@ -98,9 +98,12 @@ Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gate
 Workbench first-wave command-center UX, and wave report materialization in `lotus-report`,
 `lotus-render`, and `lotus-archive` are implementation-backed, merged, validated, and
 wiki-published. PM-book cohort discovery is implemented for `PM_BOOK_REVIEW` through the
-source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO/risk-event cohort
-discovery, owning-service risk/performance aggregate enrichment, Gateway/Workbench product
-consumption of `lotus-ai` wave memo generation, and external OMS execution remain unpromoted.
+source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO model-change discovery is
+implemented through `CioModelChangeAffectedCohort:v1`; and bounded risk-event discovery is
+implemented for `RISK_EVENT` through lotus-risk `RiskEventAffectedCohort:v1` over caller-supplied
+candidate portfolios with source-supplied exposure weights. Tactical house-view cohorts, implicit
+campaign cohorts, richer owning-service risk/performance aggregate enrichment, and external OMS
+execution remain unpromoted.
 `lotus-ai` PR #63 now owns the first-wave `dpm_wave_pm_memo.pack@v1` workflow over Manage-owned
 wave report input with review-required guardrails. RFC-0042 is `DONE` for manage backend
 authority:

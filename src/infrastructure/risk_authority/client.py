@@ -21,6 +21,7 @@ class LotusRiskAuthorityConfig:
     base_url: str
     concentration_path: str = "/analytics/risk/concentration"
     regime_scenario_pack_path: str = "/analytics/risk/regime-scenario-pack/evaluate"
+    risk_event_cohort_path: str = "/analytics/risk/risk-event-cohorts/evaluate"
     timeout_seconds: float = 2.0
     max_attempts: int = 2
 
@@ -29,6 +30,33 @@ class LotusRiskAuthorityConfig:
 
     def regime_scenario_pack_url(self) -> str:
         return f"{self.base_url.rstrip('/')}/{self.regime_scenario_pack_path.lstrip('/')}"
+
+    def risk_event_cohort_url(self) -> str:
+        return f"{self.base_url.rstrip('/')}/{self.risk_event_cohort_path.lstrip('/')}"
+
+
+@dataclass(frozen=True)
+class RiskEventAffectedPortfolio:
+    portfolio_id: str
+    mandate_id: str | None
+    source_ref: str
+    reason_codes: tuple[str, ...]
+    impact_score: Decimal
+    dominant_bucket: str
+
+
+@dataclass(frozen=True)
+class RiskEventAffectedCohort:
+    cohort_id: str
+    risk_event_id: str
+    display_name: str
+    product_name: str
+    product_version: str
+    source_service: str
+    request_fingerprint: str
+    calculation_supportability: str
+    reason_codes: tuple[str, ...]
+    affected_portfolios: tuple[RiskEventAffectedPortfolio, ...]
 
 
 class LotusRiskAuthorityClient:
@@ -106,6 +134,37 @@ class LotusRiskAuthorityClient:
             if self._owns_client:
                 client.close()
         return _regime_context_from_scenario_response(response_payload)
+
+    def risk_event_affected_cohort(
+        self,
+        *,
+        risk_event_id: str,
+        as_of_date: date,
+        portfolios: list[dict[str, Any]],
+        minimum_impact_score: Decimal,
+        correlation_id: str | None,
+    ) -> RiskEventAffectedCohort:
+        payload = {
+            "risk_event_id": risk_event_id,
+            "as_of_date": as_of_date.isoformat(),
+            "portfolios": portfolios,
+            "minimum_impact_score": float(minimum_impact_score),
+        }
+        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
+        try:
+            response_payload = _post_with_retries(
+                client=client,
+                url=self._config.risk_event_cohort_url(),
+                payload=payload,
+                headers=headers,
+                attempts=max(self._config.max_attempts, 1),
+                rejected_error="LOTUS_RISK_EVENT_COHORT_REJECTED",
+            )
+        finally:
+            if self._owns_client:
+                client.close()
+        return _risk_event_cohort_from_response(response_payload)
 
 
 def _post_with_retries(
@@ -250,6 +309,48 @@ def _regime_context_from_scenario_response(
             worst_case_loss_pct=Decimal(str(body["worst_case_loss_pct"])),
             maximum_allowed_loss_pct=Decimal(str(body["maximum_allowed_loss_pct"])),
             reason_codes=sorted({str(reason_code) for reason_code in reason_codes}),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
+
+
+def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedCohort:
+    try:
+        metadata = _dict_section(body, "metadata")
+        affected_payload = body.get("affected_portfolios")
+        if not isinstance(affected_payload, list):
+            raise ValueError("affected_portfolios must be a list")
+        reason_codes = body.get("reason_codes")
+        if not isinstance(reason_codes, list):
+            reason_codes = ["RISK_EVENT_COHORT_REASON_CODES_MISSING"]
+        if not all(isinstance(portfolio, dict) for portfolio in affected_payload):
+            raise ValueError("affected_portfolios entries must be objects")
+        affected = tuple(
+            RiskEventAffectedPortfolio(
+                portfolio_id=str(portfolio["portfolio_id"]),
+                mandate_id=(
+                    str(portfolio["mandate_id"])
+                    if portfolio.get("mandate_id") is not None
+                    else None
+                ),
+                source_ref=str(portfolio["source_ref"]),
+                reason_codes=tuple(str(code) for code in portfolio.get("reason_codes", [])),
+                impact_score=Decimal(str(portfolio["impact_score"])),
+                dominant_bucket=str(portfolio["dominant_bucket"]),
+            )
+            for portfolio in affected_payload
+        )
+        return RiskEventAffectedCohort(
+            cohort_id=str(body["cohort_id"]),
+            risk_event_id=str(body["risk_event_id"]),
+            display_name=str(body["display_name"]),
+            product_name=str(metadata.get("product_name") or "RiskEventAffectedCohort"),
+            product_version=str(metadata.get("product_version") or "v1"),
+            source_service=str(metadata.get("source_service") or "lotus-risk"),
+            request_fingerprint=str(metadata.get("request_fingerprint") or ""),
+            calculation_supportability=str(metadata.get("calculation_supportability") or "blocked"),
+            reason_codes=tuple(str(code) for code in reason_codes),
+            affected_portfolios=affected,
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc

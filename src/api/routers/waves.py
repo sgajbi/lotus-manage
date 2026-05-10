@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
@@ -34,7 +35,10 @@ from src.core.waves import (
     DpmWaveSourceRef,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
+from src.infrastructure.risk_authority import (
+    LotusRiskAuthorityClient,
+    LotusRiskAuthorityUnavailableError,
+)
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
@@ -160,6 +164,19 @@ class DpmWavePortfolioInput(BaseModel):
         description="Known mandate id from reviewed source evidence, when supplied.",
         examples=["MANDATE_PB_SG_GLOBAL_BAL_001"],
     )
+    portfolio_manager_id: str | None = Field(
+        default=None,
+        description="Portfolio-manager identifier preserved for source-owned cohort lineage.",
+        examples=["PM_SG_DPM_001"],
+    )
+    exposure_weights: dict[str, float] = Field(
+        default_factory=dict,
+        description=(
+            "Required for `RISK_EVENT`. Source-supplied exposure weights by risk-event bucket; "
+            "manage forwards them to lotus-risk and does not calculate risk-event impact locally."
+        ),
+        examples=[{"EQUITY": 0.55, "FIXED_INCOME": 0.35, "CASH": 0.10}],
+    )
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
         description=(
@@ -223,9 +240,23 @@ class DpmWavePreviewRequest(BaseModel):
         ),
         examples=["MODEL_PB_SG_GLOBAL_BAL_DPM"],
     )
+    risk_event_id: str | None = Field(
+        default=None,
+        description=(
+            "Required for `RISK_EVENT`. Manage evaluates the candidate set through lotus-risk "
+            "`RiskEventAffectedCohort:v1` and preserves source-owned membership evidence."
+        ),
+        examples=["RISK_EVENT_2026_Q2_RATES_UP"],
+    )
+    minimum_impact_score: float = Field(
+        default=0.05,
+        ge=0.0,
+        description="Minimum source-owned risk-event impact score required for cohort inclusion.",
+        examples=[0.05],
+    )
     tenant_id: str | None = Field(
         default=None,
-        description="Optional tenant selector forwarded to the PM-book source product.",
+        description="Optional tenant selector forwarded to source products where supported.",
         examples=["default"],
     )
     booking_center_code: str | None = Field(
@@ -541,6 +572,7 @@ def _portfolio_inputs_for_request(
     *,
     request: DpmWavePreviewRequest,
     correlation_id: str,
+    risk_authority_client: LotusRiskAuthorityClient | None,
 ) -> list[dict[str, object]]:
     if request.trigger_type == "EXPLICIT_PORTFOLIO_LIST":
         return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
@@ -550,6 +582,12 @@ def _portfolio_inputs_for_request(
         return _resolve_cio_model_change_portfolios(
             request=request,
             correlation_id=correlation_id,
+        )
+    if request.trigger_type == "RISK_EVENT":
+        return _resolve_risk_event_portfolios(
+            request=request,
+            correlation_id=correlation_id,
+            risk_authority_client=risk_authority_client,
         )
     return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
 
@@ -747,6 +785,148 @@ def _resolve_cio_model_change_portfolios(
     ]
 
 
+def _resolve_risk_event_portfolios(
+    *,
+    request: DpmWavePreviewRequest,
+    correlation_id: str,
+    risk_authority_client: LotusRiskAuthorityClient | None,
+) -> list[dict[str, object]]:
+    risk_event_id = (request.risk_event_id or "").strip()
+    if not risk_event_id:
+        raise wave_service.DpmWaveValidationError(
+            "RISK_EVENT_ID_REQUIRED",
+            "RISK_EVENT requires risk_event_id.",
+        )
+    if not request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "RISK_EVENT_CANDIDATE_PORTFOLIOS_REQUIRED",
+            "RISK_EVENT requires candidate portfolios with source-supplied exposure weights.",
+        )
+    try:
+        as_of_date = date.fromisoformat(request.as_of_date)
+    except ValueError as exc:
+        raise wave_service.DpmWaveValidationError(
+            "INVALID_AS_OF_DATE",
+            "as_of_date must be an ISO date.",
+        ) from exc
+    if risk_authority_client is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "DPM_RISK_EVENT_COHORT_UNAVAILABLE",
+                "message": "DPM_RISK_BASE_URL is not configured.",
+            },
+        )
+
+    candidate_by_portfolio_id: dict[str, DpmWavePortfolioInput] = {}
+    risk_portfolios: list[dict[str, object]] = []
+    for candidate in request.portfolios:
+        exposure_weights = {
+            bucket.strip().upper(): weight
+            for bucket, weight in candidate.exposure_weights.items()
+            if bucket.strip()
+        }
+        if not exposure_weights:
+            raise wave_service.DpmWaveValidationError(
+                "RISK_EVENT_EXPOSURE_WEIGHTS_REQUIRED",
+                "RISK_EVENT candidate portfolios require source-supplied exposure_weights.",
+            )
+        if any(weight < 0 for weight in exposure_weights.values()):
+            raise wave_service.DpmWaveValidationError(
+                "RISK_EVENT_EXPOSURE_WEIGHTS_INVALID",
+                "RISK_EVENT exposure_weights must be non-negative.",
+            )
+        candidate_by_portfolio_id[candidate.portfolio_id] = candidate
+        risk_portfolios.append(
+            {
+                "portfolio_id": candidate.portfolio_id,
+                "mandate_id": candidate.mandate_id,
+                "portfolio_manager_id": candidate.portfolio_manager_id,
+                "exposure_weights": exposure_weights,
+            }
+        )
+
+    try:
+        cohort = risk_authority_client.risk_event_affected_cohort(
+            risk_event_id=risk_event_id,
+            as_of_date=as_of_date,
+            portfolios=risk_portfolios,
+            minimum_impact_score=Decimal(str(request.minimum_impact_score)),
+            correlation_id=correlation_id,
+        )
+    except LotusRiskAuthorityUnavailableError as exc:
+        error_code = str(exc) or "DPM_RISK_EVENT_COHORT_UNAVAILABLE"
+        status_code = (
+            status.HTTP_424_FAILED_DEPENDENCY
+            if error_code == "LOTUS_RISK_EVENT_COHORT_REJECTED"
+            else status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+        raise HTTPException(
+            status_code=status_code,
+            detail={"code": error_code},
+        ) from exc
+
+    if cohort.calculation_supportability != "ready":
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_RISK_EVENT_COHORT_INCOMPLETE",
+                "message": "Risk-event affected cohort is not source-ready.",
+                "reason_codes": list(cohort.reason_codes),
+            },
+        )
+    if not cohort.affected_portfolios:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_RISK_EVENT_COHORT_EMPTY",
+                "message": "Risk-event affected cohort returned no affected portfolios.",
+            },
+        )
+
+    source_id = cohort.cohort_id or cohort.request_fingerprint or risk_event_id
+    cohort_ref = {
+        "source_system": cohort.source_service,
+        "source_type": cohort.product_name,
+        "source_id": source_id,
+        "source_version": cohort.product_version,
+        "supportability_state": cohort.calculation_supportability.upper(),
+        "content_hash": cohort.request_fingerprint,
+    }
+    event_ref = {
+        "source_system": cohort.source_service,
+        "source_type": "RISK_EVENT",
+        "source_id": cohort.risk_event_id,
+        "source_version": cohort.product_version,
+        "supportability_state": cohort.calculation_supportability.upper(),
+        "content_hash": cohort.request_fingerprint,
+    }
+    portfolios: list[dict[str, object]] = []
+    for affected in cohort.affected_portfolios:
+        matched_candidate = candidate_by_portfolio_id.get(affected.portfolio_id)
+        candidate_refs = matched_candidate.source_refs if matched_candidate is not None else []
+        portfolios.append(
+            {
+                "portfolio_id": affected.portfolio_id,
+                "mandate_id": affected.mandate_id,
+                "source_refs": [
+                    cohort_ref,
+                    event_ref,
+                    {
+                        "source_system": cohort.source_service,
+                        "source_type": "RISK_EVENT_AFFECTED_PORTFOLIO",
+                        "source_id": affected.source_ref,
+                        "source_version": cohort.product_version,
+                        "supportability_state": cohort.calculation_supportability.upper(),
+                        "content_hash": cohort.request_fingerprint,
+                    },
+                    *[ref.model_dump(mode="json") for ref in candidate_refs],
+                ],
+            }
+        )
+    return portfolios
+
+
 @router.post(
     "/preview",
     response_model=DpmWaveResponse,
@@ -756,9 +936,11 @@ def _resolve_cio_model_change_portfolios(
         "Builds a non-durable RFC-0041 affected-portfolio wave preview. "
         "`EXPLICIT_PORTFOLIO_LIST` preserves source refs from the request or existing mandate "
         "digital twins. `PM_BOOK_REVIEW` resolves the cohort from the lotus-core "
-        "`PortfolioManagerBookMembership:v1` source product. Unsupported trigger types remain "
-        "blocked; the endpoint does not perform CIO impact discovery, simulation, approval, "
-        "staging, or operations handoff."
+        "`PortfolioManagerBookMembership:v1` source product. `CIO_MODEL_CHANGE` resolves the "
+        "cohort from lotus-core `CioModelChangeAffectedCohort:v1`. `RISK_EVENT` evaluates the "
+        "candidate set through lotus-risk `RiskEventAffectedCohort:v1` and preserves source-owned "
+        "membership evidence. Unsupported trigger types remain blocked; the endpoint does not "
+        "perform simulation, approval, staging, or operations handoff."
     ),
     responses={
         200: {
@@ -789,10 +971,15 @@ def preview_wave(
         ),
     ] = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
 ) -> DpmWaveResponse:
     correlation_id = x_correlation_id or f"corr_wave_preview_{request.trigger_id}"
     try:
-        portfolios = _portfolio_inputs_for_request(request=request, correlation_id=correlation_id)
+        portfolios = _portfolio_inputs_for_request(
+            request=request,
+            correlation_id=correlation_id,
+            risk_authority_client=risk_authority_client,
+        )
         wave = wave_service.preview_wave(
             trigger_type=request.trigger_type,
             trigger_id=request.trigger_id,
@@ -818,8 +1005,9 @@ def preview_wave(
     summary="Create a durable affected-portfolio rebalance wave",
     description=(
         "Creates a durable RFC-0041 rebalance wave. `EXPLICIT_PORTFOLIO_LIST` uses caller-supplied "
-        "affected portfolios, while `PM_BOOK_REVIEW` resolves the cohort from lotus-core "
-        "`PortfolioManagerBookMembership:v1` before persistence. Required header: "
+        "affected portfolios, while `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` resolve cohorts from "
+        "lotus-core source products and `RISK_EVENT` evaluates the candidate set through "
+        "lotus-risk `RiskEventAffectedCohort:v1` before persistence. Required header: "
         "`Idempotency-Key`. Unsupported trigger types are rejected and missing source evidence "
         "produces blocked items, not false readiness."
     ),
@@ -873,10 +1061,15 @@ def create_wave(
     ] = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
 ) -> DpmWaveResponse:
     correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
     try:
-        portfolios = _portfolio_inputs_for_request(request=request, correlation_id=correlation_id)
+        portfolios = _portfolio_inputs_for_request(
+            request=request,
+            correlation_id=correlation_id,
+            risk_authority_client=risk_authority_client,
+        )
         wave, replayed = wave_service.create_wave(
             trigger_type=request.trigger_type,
             trigger_id=request.trigger_id,

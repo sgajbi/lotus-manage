@@ -151,6 +151,13 @@ candidate trades that violate hard client restrictions and can flag sustainabili
 classification evidence gaps for review. It does not infer unsupported ESG classifications or
 convert sustainability preferences into automatic compliance approval.
 
+Risk-event rebalance waves consume `lotus-risk` `RiskEventAffectedCohort:v1` through the bounded
+risk-authority client when `DPM_RISK_BASE_URL` is configured. Manage requires caller-supplied
+candidate portfolios and source-supplied exposure weights, preserves lotus-risk cohort/event/member
+lineage, and fails closed instead of calculating risk-event impact or full-book membership locally.
+Tactical house-view and implicit campaign cohorts remain unpromoted until their source owners
+publish governed cohort products.
+
 ```mermaid
 flowchart LR
     Core[lotus-core source products] --> Manage[lotus-manage construction authority]

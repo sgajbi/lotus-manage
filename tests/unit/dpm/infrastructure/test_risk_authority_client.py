@@ -13,6 +13,7 @@ from src.infrastructure.risk_authority import (
 )
 from src.infrastructure.risk_authority.client import (
     _post_with_retries,
+    _risk_event_cohort_from_response,
     _regime_context_from_scenario_response,
     _scenario_bucket,
     _scenario_status_from_supportability,
@@ -102,6 +103,39 @@ def _regime_scenario_response(
     }
 
 
+def _risk_event_cohort_response() -> dict[str, object]:
+    return {
+        "cohort_id": "risk_event_cohort_test",
+        "risk_event_id": "RISK_EVENT_2026_Q2_RATES_UP",
+        "display_name": "Rates-up inflation persistence",
+        "as_of_date": "2026-05-10",
+        "affected_portfolios": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+                "impact_score": 0.0745,
+                "dominant_bucket": "FIXED_INCOME",
+                "bucket_impacts": {"FIXED_INCOME": -0.0525, "EQUITY": -0.022},
+                "source_ref": (
+                    "risk-event-cohort:RISK_EVENT_2026_Q2_RATES_UP:2026-05-10:PB_SG_GLOBAL_BAL_001"
+                ),
+                "reason_codes": ["RISK_EVENT_THRESHOLD_BREACHED"],
+            }
+        ],
+        "excluded_portfolios": [],
+        "reason_codes": ["RISK_EVENT_AFFECTED_COHORT_READY"],
+        "metadata": {
+            "product_name": "RiskEventAffectedCohort",
+            "product_version": "v1",
+            "source_service": "lotus-risk",
+            "lineage_version": "risk-event-affected-cohort.v1",
+            "request_fingerprint": "sha256:risk-event-cohort",
+            "calculation_supportability": "ready",
+        },
+    }
+
+
 def test_lotus_risk_authority_client_maps_concentration_supportability() -> None:
     captured: dict[str, object] = {}
 
@@ -166,6 +200,51 @@ def test_lotus_risk_authority_client_maps_regime_scenario_pack_evaluation() -> N
     assert context.scenario_pack_id == "CIO_REGIME_2026_Q2"
     assert context.worst_case_loss_pct == Decimal("0.0845")
     assert context.reason_codes == ["REGIME_SCENARIO_PACK_READY"]
+
+
+def test_lotus_risk_authority_client_maps_risk_event_affected_cohort() -> None:
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["payload"] = request.read()
+        return httpx.Response(200, json=_risk_event_cohort_response())
+
+    client = LotusRiskAuthorityClient(
+        config=LotusRiskAuthorityConfig(base_url="http://risk.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    cohort = client.risk_event_affected_cohort(
+        risk_event_id="RISK_EVENT_2026_Q2_RATES_UP",
+        as_of_date=date(2026, 5, 10),
+        portfolios=[
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+                "exposure_weights": {"EQUITY": 0.55, "FIXED_INCOME": 0.35},
+            }
+        ],
+        minimum_impact_score=Decimal("0.05"),
+        correlation_id="corr-risk-event",
+    )
+
+    assert captured["url"] == "http://risk.test/analytics/risk/risk-event-cohorts/evaluate"
+    assert cohort.product_name == "RiskEventAffectedCohort"
+    assert cohort.calculation_supportability == "ready"
+    assert cohort.request_fingerprint == "sha256:risk-event-cohort"
+    assert cohort.affected_portfolios[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
+    assert cohort.affected_portfolios[0].impact_score == Decimal("0.0745")
+
+
+def test_lotus_risk_authority_client_rejects_invalid_risk_event_response() -> None:
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _risk_event_cohort_from_response({"cohort_id": "missing-required-fields"})
+
+    invalid_body = _risk_event_cohort_response()
+    invalid_body["affected_portfolios"] = ["not-an-object"]
+    with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
+        _risk_event_cohort_from_response(invalid_body)
 
 
 def test_lotus_risk_authority_client_maps_regime_scenario_pending_review() -> None:

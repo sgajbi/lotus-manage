@@ -20,17 +20,21 @@ composition.
    Dedicated client methods currently exist for `DpmModelPortfolioTarget:v1`,
    `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`,
    `ClientRestrictionProfile:v1`, and `SustainabilityPreferenceProfile:v1`.
-4. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
+4. `lotus-manage` uses the bounded `lotus-risk` authority client for risk-owned analytics products.
+   `RegimeScenarioPackEvaluation:v1` supports regime-stress-aware construction when configured;
+   `RiskEventAffectedCohort:v1` supports fail-closed `RISK_EVENT` rebalance wave preview/create
+   from caller-supplied candidate portfolios and source-supplied exposure weights.
+5. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
    options through request contracts. When those inputs are core-referenced, `lotus-core` remains the
    source-data authority.
-5. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
+6. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
    surfaces.
-6. Current downstream evidence for capability discovery flows through
+7. Current downstream evidence for capability discovery flows through
    `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/integration/capabilities`; the
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
-7. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
+8. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
    `sgajbi/lotus-gateway#178`.
-8. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
+9. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
    tracked in `sgajbi/lotus-workbench#135`.
 
 ## `lotus-core` Contract Family Posture
@@ -41,6 +45,13 @@ composition.
 | `market_data_snapshot` request payloads | prices and FX should remain core-governed source data when populated from platform state | Operational Read input / Analytics Input watchlist | valuation, settlement, tax, and rebalance execution support | manage may use inputs for execution, but source truth remains upstream |
 | `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | disabled by default in capabilities until a governed state resolver is configured | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
+
+## `lotus-risk` Contract Family Posture
+
+| Manage surface | Upstream authority relationship | RFC-0082 family | Manage use | Boundary rule |
+| --- | --- | --- | --- | --- |
+| `REGIME_STRESS_AWARE` construction | `lotus-risk` owns scenario-pack evaluation and supportability | Analytics source product | preserve scenario-pack supportability, reason codes, and worst-case loss evidence in construction alternatives | manage may gate alternatives on source output, but must not own risk scenario methodology |
+| `RISK_EVENT` rebalance waves | `lotus-risk` owns risk-event affected-cohort evaluation over supplied candidate portfolios and exposure weights | Cohort membership source product | preview/create source-owned affected-portfolio waves from `RiskEventAffectedCohort:v1` | manage must fail closed on unavailable, rejected, incomplete, or empty source cohorts and must not compute risk-event impact locally |
 
 ## Manage-Owned Contract Families
 
