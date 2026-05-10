@@ -46,7 +46,7 @@ retained only as evidence index and sequencing control.
 | RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 through RFC36-WTBD-006 remain source-product, upstream-depth, or conditional migration controls. |
 | RFC-0037 | RFC37-WTBD-006 and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops stay partial until source-owner depth, execution, PM scoring, and client-communication ownership are proven. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 and RFC38-WTBD-006 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005, RFC38-WTBD-007, and RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
-| RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005, RFC39-WTBD-008, and RFC39-WTBD-010 remain broader risk/performance, treasury-depth, and lifecycle-depth controls. |
+| RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-009 plus the implementation-backed RFC40-WTBD-010 report, AI, and archive source-event slices are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`. | RFC40-WTBD-010 remains partial until the remaining OMS and PM-scoring portfolio-memory source-event families are completed by their owners. Richer per-security scenario contribution and CIO approval evidence remain future `lotus-risk` / CIO source depth rather than a hidden manage proof-pack gap. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, and the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003 are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial until tactical house-view and implicit campaign owners publish governed cohort products; RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
 | RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 and RFC42-WTBD-008 remain unsupported until ownership, methodology, controls, and proof exist. |
@@ -56,13 +56,16 @@ retained only as evidence index and sequencing control.
 
 Snapshot basis: the 2026-05-10 mainline after the RFC40-WTBD-009 selected-alternative
 regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI workflow-pack truth
-reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, and the RFC38-WTBD-006
-source-backed mandate-health consumption slice. RFC41-WTBD-003 now has
+reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the RFC38-WTBD-006
+source-backed mandate-health consumption slice, and the RFC39-WTBD-010 construction lifecycle
+audit. RFC41-WTBD-003 now has
 `lotus-risk:RiskEventAffectedCohort:v1` source ownership, the platform mesh mirror, and the
 `lotus-manage` `RISK_EVENT` wave preview/create consumer implemented, validated, merged to
 `main`, and wiki-published. RFC38-WTBD-006 now has `lotus-manage` first-wave mandate-health
 consumption of `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and
-`PortfolioCashflowProjection:v1` merged, CI-green, and wiki-published.
+`PortfolioCashflowProjection:v1` merged, CI-green, and wiki-published. RFC39-WTBD-010 now has
+bounded selected-alternative lifecycle support across manage proof packs, wave selection and
+proof-pack linkage, report inputs, AI evidence inputs, and outcome expected-snapshot assembly.
 The canonical DPM command-center seed still proves populated source-ready `ready`,
 selector-driven `partial`, and empty-date `empty` postures while `lotus-manage` exposes bounded
 ready/degraded/blocked source-readiness states for downstream consumers. RFC40-WTBD-007 adds
@@ -78,9 +81,9 @@ execution methodology, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 37 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 38 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 5 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 17 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 16 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -1473,14 +1476,14 @@ truth, while product realization and several richer source authorities belong ou
 | --- | --- | --- | --- | --- |
 | RFC39-WTBD-001 | Gateway construction-alternatives composition | `lotus-gateway` | Implemented, merged, CI-proven, and wiki-published through `lotus-gateway` PR #190 | Gateway consumes manage alternatives without recomputing construction truth or choosing alternatives. First-wave Workbench product support is now implemented and live-proven; lifecycle, OMS, report, AI, and approval depth remain later work. |
 | RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #150 and PR #151 | Workbench consumes Gateway/BFF construction contracts only, sends governed DPM context, renders manage-owned alternatives and traces without browser optimization, and is proven by focused canonical Workbench live evidence. |
-| RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Richer lifecycle depth across proof packs, waves, reports, AI, approval staging, and demos remains RFC39-WTBD-010 / later command-center work. |
+| RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Bounded lifecycle depth through proof packs, waves, report input, and AI evidence input is now covered by RFC39-WTBD-010; external OMS execution and autonomous PM decisions remain unsupported. |
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` source authority consumed by manage | Completed for source-backed restriction and sustainability profile consumption | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing. Manage degrades when profiles are missing, blocks candidate trades that violate hard client restrictions, preserves sustainability preferences and source lineage, and keeps classification evidence gaps in `PENDING_REVIEW` rather than claiming automatic ESG approval. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
 | RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
 | RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; bounded construction-lab posture is downstream-visible | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. The Workbench construction lab can render method posture and reason codes through Gateway/manage truth; broader scenario contribution rows, CIO approval workflow, and richer scenario-specific UX remain future depth. |
-| RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Proposed strategic extension | RFC-0039 selects alternatives; cross-RFC lifecycle needs RFC-0040 proof packs, RFC-0041 waves, report/AI owners, and product surfaces. |
+| RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Completed for bounded first-wave lifecycle support | Selected construction alternatives flow into RFC-0040 proof packs, RFC-0041 wave item selection and optional proof-pack linkage, proof-pack and wave report inputs, proof-pack AI evidence inputs, and outcome expected-snapshot assembly without downstream reconstruction of construction truth. External OMS execution, autonomous PM choice, approval beyond manage wave controls, and client communication remain unsupported. |
 
 ### RFC39 Gold-Pass Audit And RFC Reintegration - 2026-05-09
 
@@ -1633,10 +1636,10 @@ Quality improvements made during closure:
 
 Remaining dependency:
 
-Richer construction lifecycle depth remains outside RFC39-WTBD-002: proof-pack linkage, wave
-orchestration, report/AI narrative lifecycle, approval staging, OMS handoff, and broader
-command-center product choreography stay tracked under RFC39-WTBD-010 and later RFC-0098
-command-center work.
+Richer construction lifecycle depth remains outside RFC39-WTBD-002. Bounded proof-pack linkage,
+wave selection/proof-pack posture, report input, and AI evidence input are now covered by
+RFC39-WTBD-010. OMS handoff, autonomous decisions, client communication, and broader command-center
+choreography remain later owner/RFC-0098 work.
 
 #### RFC39-WTBD-003 - Full Front-Office Construction-Lab Product Realization
 
@@ -1649,7 +1652,7 @@ Completion status:
 
 Complete for first-wave product realization on 2026-05-06. Manage owns construction authority,
 Gateway composes it, and Workbench renders a canonical PM-facing construction-lab path with live
-proof. This does not close the later lifecycle expansion tracked in RFC39-WTBD-010.
+proof. The later bounded lifecycle expansion is now closed under RFC39-WTBD-010.
 
 Implemented scope:
 
@@ -1666,15 +1669,12 @@ Implemented scope:
 
 Not included in this first wave:
 
-1. proof-pack attachment for each construction choice,
-2. wave-orchestration promotion from selected alternative to rebalance wave,
-3. rendered report and archive lifecycle for construction decisions,
-4. governed AI narrative over construction choices,
-5. OMS or order-staging handoff,
-6. richer command-center drawers and demo choreography beyond the embedded Workbench panel.
+1. external OMS or order-staging handoff,
+2. autonomous PM choice,
+3. client communication execution,
+4. richer command-center drawers and demo choreography beyond the embedded Workbench panel.
 
-Those items require cross-RFC lifecycle work and remain tracked under RFC39-WTBD-010 or later
-RFC-0098 command-center realization.
+Those items remain tracked under later RFC-0098 command-center realization or future owner RFCs.
 
 #### RFC39-WTBD-004 - ESG/Restriction-Aware Construction Support
 
@@ -1955,30 +1955,61 @@ Target business outcome:
 A selected construction alternative flows coherently into proof packs, rebalance waves, reports,
 and governed AI evidence without any app reconstructing construction truth.
 
-Why it cannot be done now:
+Implementation result:
 
-RFC-0039 stops at construction alternatives and selection. Cross-RFC lifecycle depends on RFC-0040
-proof packs, RFC-0041 waves, report/AI owning services, and Gateway/Workbench product surfaces.
+Completed for bounded first-wave lifecycle support on 2026-05-10. RFC-0040 proof packs consume
+selected construction alternatives; RFC-0041 waves persist item-level selected-alternative refs and
+can generate linked proof packs; proof-pack and wave report-input contracts preserve source hashes
+and lifecycle refs for `lotus-report`; proof-pack AI evidence input preserves bounded construction
+and proof-pack truth for `lotus-ai`; and outcome expected-snapshot assembly reconciles alternative,
+selection, proof-pack, wave, handoff, and outcome lineage without reconstructing construction facts.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. RFC-0040 proof-pack consumption of selected alternatives,
-2. RFC-0041 wave linkage and selected-alternative refs,
-3. report and AI owner contracts,
-4. Gateway/Workbench product surfaces,
-5. event and lineage reconciliation across artifacts.
+1. `POST /api/v1/rebalance/proof-packs` supports selected-alternative generation from
+   `alternative_set_id` and `selected_alternative_id`,
+2. proof-pack report-input and AI-evidence endpoints expose deterministic handoff contracts,
+3. wave item selection delegates selection to the construction repository and optionally generates
+   an RFC-0040 proof pack,
+4. wave proof-pack posture and wave report input expose selected-alternative, proof-pack, and
+   internal handoff refs,
+5. outcome expected-snapshot assembly validates that selected alternative, proof pack, wave item,
+   and handoff identity agree before outcome learning consumes them.
 
-Expected implementation wave:
+Explicit boundaries:
 
-Treat as a later cross-RFC closure/product-memory slice after downstream product surfaces and
-report/AI owners are implemented.
+1. manage still does not execute orders or claim OMS acknowledgement,
+2. approval is limited to manage wave state transitions and does not become client approval,
+3. report rendering, archive records, and AI workflow execution remain owned by their respective
+   apps,
+4. Gateway and Workbench remain product composition surfaces and do not reconstruct construction
+   truth,
+5. autonomous PM choice, predictive execution pricing, market impact, venue routing, and regulatory
+   suitability approval remain unsupported.
 
 Promotion proof:
 
-1. lineage tests across alternative, proof pack, wave, report, and AI evidence,
-2. live/canonical proof,
-3. no-reconstruction tests in Gateway/Workbench/report/AI,
-4. README/wiki/supported-feature updates.
+1. `python -m pytest tests/unit/dpm/api/test_proof_pack_api.py
+   tests/unit/dpm/proof_packs/test_proof_pack_service.py
+   tests/unit/dpm/proof_packs/test_proof_pack_handoffs.py tests/unit/dpm/api/test_waves_api.py
+   tests/integration/dpm/test_outcome_expected_snapshot_assembly.py -q` passed with 101 tests,
+2. tests prove selected-alternative proof-pack generation, proof-pack report/AI evidence handoffs,
+   wave item selection, optional proof-pack linkage, wave report input, no-external-execution handoff
+   posture, and expected-snapshot identity reconciliation,
+3. RFC-0039 now contains this completed WTBD truth as the owning business-change record,
+4. README/wiki/supported-feature material remains explicit that OMS execution, autonomous PM choice,
+   predictive execution pricing, market impact, venue routing, and regulatory suitability approval
+   are not supported.
+
+Gold-pass assessment:
+
+| Question | Assessment |
+| --- | --- |
+| What was truly completed | Bounded construction lifecycle support from selected alternative into proof packs, wave item selection/proof-pack linkage, report input, AI evidence input, and outcome expected-snapshot reconciliation. |
+| Quality improvements made | The audit replaced stale proposed wording with implementation-backed boundaries and pinned the lifecycle claim to existing service, handoff, wave, and integration tests. |
+| Debt removed | The WTBD ledger no longer treats already-implemented RFC-0040/RFC-0041/report/AI handoff paths as future strategic extension. |
+| What was proven through testing and evidence | 101 focused tests passed across proof-pack API/service/handoff, wave API, and outcome expected-snapshot assembly. The tests cover identity matching, proof-pack linkage, report/AI evidence contracts, handoff refs, and failure paths. |
+| Expected-standard decision | RFC39-WTBD-010 reaches the expected bounded first-wave standard. Remaining lifecycle depth is explicitly outside this claim where it requires OMS execution, autonomous PM decisioning, client communication, or richer RFC-0098 command-center choreography. |
 
 ### Suggested Sequencing
 

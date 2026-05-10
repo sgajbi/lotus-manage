@@ -1409,8 +1409,8 @@ RFC-0039 is complete only when:
 | Data mesh and observability result | Existing mesh product, trust telemetry, and observability contract gates passed through `make check`; construction proof preserves source supportability without moving core, risk, or performance authority into manage. |
 | Gateway/Workbench realization RFC result | First-wave downstream realization is implementation-backed through `lotus-gateway` PR #190, `lotus-workbench` PR #150/#151, and the 2026-05-09 live audit hardening in `lotus-workbench` PR #171. Gateway composes manage contracts; Workbench renders the construction lab; neither layer recomputes construction truth or chooses alternatives. |
 | Documentation/wiki result | README, repository context, RFC, wiki API surface, architecture, integrations, endpoint certification, supported features, RFC index, and roadmap were updated with implementation-backed wording and explicit downstream boundaries. |
-| Remaining governed follow-up | RFC39-WTBD-010 remains open for construction lifecycle depth across proof packs, waves, reports, AI, approval staging, OMS handoff, and richer demo choreography. Predictive execution quotes, market impact, venue routing, regulatory suitability approval, security-level ESG classification, and autonomous PM choice remain unsupported. |
-| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation and a bounded first-wave front-office product path after live audit defect fixes. The accepted claim covers generated alternatives, source supportability, comparison, and selection controls only; `lotus-workbench/output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json` proves the canonical path after retry identity hardening. |
+| Remaining governed follow-up | RFC39-WTBD-010 is complete for bounded lifecycle support across selected-alternative proof packs, wave selection/proof-pack linkage, report input, AI evidence input, and outcome expected-snapshot reconciliation. Predictive execution quotes, market impact, venue routing, OMS execution, regulatory suitability approval, security-level ESG classification, client communication, and autonomous PM choice remain unsupported. |
+| Gold-standard conclusion | RFC-0039 has reached a gold-standard manage backend foundation, bounded first-wave front-office product path, and bounded construction lifecycle support after live audit defect fixes. The accepted claim covers generated alternatives, source supportability, comparison, selection controls, and first-wave lifecycle handoff into proof packs, waves, report input, AI evidence input, and outcome expected snapshots; `lotus-workbench/output/rfc39-wtbd-audit-20260509-construction-live-fixed2/construction-alternatives-live-summary.json` proves the canonical construction-lab path after retry identity hardening. |
 
 Additional slice assessment:
 
@@ -1420,8 +1420,9 @@ Additional slice assessment:
    have method-specific tests plus canonical live proof.
 3. Future work should extend authoritative upstream integration depth, not create duplicate
    construction-method RFCs.
-4. The remaining RFC-0039 work is governed lifecycle depth under RFC39-WTBD-010 plus normal
-   closure hygiene: PR, GitHub CI, merge, post-merge wiki publication, and branch hygiene.
+4. RFC39-WTBD-010 is now closed for bounded lifecycle support; remaining RFC-0039 follow-up is
+   source-owner risk/performance and treasury-depth enrichment plus normal closure hygiene: PR,
+   GitHub CI, merge, post-merge wiki publication, and branch hygiene.
 
 Wiki publication note:
 
@@ -1449,6 +1450,7 @@ not stranded in the WTBD ledger.
 | RFC39-WTBD-006 | `COST_AWARE` consumes `TransactionCostCurve:v1`, applies observed average cost bps to candidate trade notionals, and emits `ESTIMATED_COST` traces when source coverage exists. | Predictive execution quotes, market impact, venue routing, best execution, and OMS acknowledgement are unsupported. |
 | RFC39-WTBD-007 | `LIQUIDITY_AWARE` consumes `PortfolioCashflowProjection:v1` and evaluates projected cash pressure against minimum cash policy. | Client income-need planning and liability forecasting remain unsupported. |
 | RFC39-WTBD-009 | `REGIME_STRESS_AWARE` can consume `RegimeScenarioPackEvaluation:v1` from `lotus-risk` when configured. | Scenario contribution rows, CIO approval workflow, and richer product UX remain future depth. |
+| RFC39-WTBD-010 | Selected construction alternatives now flow into RFC-0040 proof packs, RFC-0041 wave item selection and optional proof-pack linkage, proof-pack/wave report inputs, proof-pack AI evidence inputs, and outcome expected-snapshot assembly. | OMS execution, autonomous PM choice, client communication execution, predictive execution pricing, market impact, venue routing, regulatory suitability approval, and richer RFC-0098 choreography remain unsupported. |
 
 Audit evidence:
 
@@ -1500,9 +1502,10 @@ First-wave realization now includes:
 4. documentation and wiki material useful for business, engineering, operations, sales/pre-sales,
    marketing, and client demos.
 
-This first-wave product path does not complete the broader lifecycle outcome. `lotus-manage` may
-claim construction-alternatives authority and the bounded Gateway/Workbench product path for
-generation, comparison, source posture, and selection controls only. It must not claim proof-pack
-lifecycle, rebalance-wave orchestration, report/AI narrative workflow, external OMS execution,
-autonomous PM choice, predictive execution pricing, or regulatory suitability approval until those
-owners implement and live-prove the corresponding contracts.
+This first-wave product path plus RFC39-WTBD-010 now supports bounded lifecycle handoff into
+proof packs, rebalance-wave item selection/proof-pack linkage, report input, AI evidence input, and
+outcome expected-snapshot reconciliation. `lotus-manage` may claim construction-alternatives
+authority, the bounded Gateway/Workbench product path for generation/comparison/source
+posture/selection controls, and the bounded lifecycle handoff contracts. It must not claim external
+OMS execution, autonomous PM choice, predictive execution pricing, market impact, venue routing,
+client communication execution, or regulatory suitability approval.

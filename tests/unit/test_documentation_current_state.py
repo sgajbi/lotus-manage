@@ -429,6 +429,9 @@ def test_rfc0039_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "HTTP 500",
         "cas_ca8c4e1351aa",
         "no local optimizer/methodology claim",
+        "RFC39-WTBD-010",
+        "bounded construction lifecycle support",
+        "outcome expected-snapshot reconciliation",
     ]
     missing_rfc_terms = [term for term in required_rfc_terms if term not in rfc]
 
@@ -440,6 +443,9 @@ def test_rfc0039_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "construction-live-fixed2",
         "deterministic idempotency",
         "deterministic correlation",
+        "RFC39-WTBD-010 - Construction Lifecycle Across Proof Packs, Waves, Reports, And AI",
+        "101 focused tests passed",
+        "Expected-standard decision",
     ]
     missing_wtbd_terms = [term for term in required_wtbd_terms if term not in wtbd]
 
@@ -452,7 +458,8 @@ def test_rfc0039_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "ClientRestrictionProfile:v1",
         "SustainabilityPreferenceProfile:v1",
         "RegimeScenarioPackEvaluation:v1",
-        "local browser optimization",
+        "bounded selected-alternative lifecycle support",
+        "outcome expected-snapshot reconciliation",
     ]
     missing_wiki_terms = [term for term in required_wiki_terms if term not in supported_features]
 
@@ -1193,9 +1200,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 37 |" in work_to_be_done
+    assert "| Done on merged/published truth | 38 |" in work_to_be_done
     assert "| Partial / in progress | 5 |" in work_to_be_done
-    assert "| Remaining / open | 17 |" in work_to_be_done
+    assert "| Remaining / open | 16 |" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
     assert "source-owned populated PM-book monitoring path" in work_to_be_done
     assert "RFC38-WTBD-003 hardening" in work_to_be_done
@@ -1460,7 +1467,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 37 done on merged/published truth, 5 partial" in (supported_features)
+    assert "59 WTBD items: 38 done on merged/published truth, 5 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (
