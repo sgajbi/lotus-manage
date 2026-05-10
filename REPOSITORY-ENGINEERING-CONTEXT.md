@@ -286,7 +286,10 @@ Current repository posture:
     support-only output. `lotus-gateway` PR #201 and `lotus-workbench` PR #168 complete the
     first-wave AI memo product path: Gateway preserves Manage wave evidence identity and passes AI
     forbidden-action guardrails, while Workbench exposes report-input and AI memo request posture
-    without constructing prompts or memo content locally. CIO model-change discovery is now
+    without constructing prompts or memo content locally. `lotus-ai` PR #66 adds conservative
+    workflow-pack default-version resolution for the AI control plane, selecting only registered,
+    activation-eligible, non-superseded pack versions without changing Manage workflow authority.
+    CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through
     `lotus-risk` `RiskEventAffectedCohort:v1` at
