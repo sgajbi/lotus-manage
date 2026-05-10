@@ -23,6 +23,10 @@ PortfolioMemorySupportabilityState = Literal[
     "BLOCKED",
     "EMPTY",
 ]
+PortfolioMemorySourceEventFamilyStatus = Literal[
+    "SUPPORTED",
+    "DEFERRED_SOURCE_OWNER",
+]
 
 PORTFOLIO_MEMORY_EVENT_IDENTITY_SCHEME = (
     "source_system:source_type:source_id:content_hash_or_content_hash_unavailable"
@@ -52,6 +56,30 @@ class DpmPortfolioMemorySourceRef(BaseModel):
     content_hash: str | None = Field(
         default=None,
         description="Canonical content hash when available.",
+    )
+
+
+class DpmPortfolioMemorySourceEventFamilyPosture(BaseModel):
+    family_key: str = Field(description="Stable key for the source-event family.")
+    source_system: str = Field(description="Owning source system or future source-owner boundary.")
+    owner: str = Field(description="Current accountable owner for the source-event family posture.")
+    support_status: PortfolioMemorySourceEventFamilyStatus = Field(
+        description="Support posture for this source-event family in portfolio memory.",
+    )
+    event_types: list[str] = Field(
+        default_factory=list,
+        description="Supported event types for this family when implementation-backed.",
+    )
+    route: str | None = Field(
+        default=None,
+        description="Owning API route when the source-event family is implementation-backed.",
+    )
+    reason_code: str = Field(description="Bounded reason code for this source-event posture.")
+    summary: str = Field(
+        description=(
+            "Business-readable support boundary that prevents consumers from inferring hidden "
+            "portfolio-memory truth."
+        ),
     )
 
 
@@ -134,6 +162,13 @@ class DpmPortfolioMemory(BaseModel):
     governance_policy: dict[str, str] = Field(
         default_factory=dict,
         description="Portfolio-memory event identity, retention, redaction, access, and audit policy.",
+    )
+    source_event_family_posture: list[DpmPortfolioMemorySourceEventFamilyPosture] = Field(
+        default_factory=list,
+        description=(
+            "Supported and deferred source-event families in the portfolio-memory contract, "
+            "including explicit OMS and PM-scoring no-claim boundaries."
+        ),
     )
     events: list[DpmPortfolioMemoryEvent] = Field(
         description="Ordered source-backed portfolio-memory events."

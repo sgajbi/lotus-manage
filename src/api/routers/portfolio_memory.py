@@ -33,8 +33,10 @@ router = APIRouter(
         "When: Use when PM, CIO, operations, audit, Gateway, or Workbench consumers need a "
         "single queryable memory view for a portfolio without reconstructing source truth.\n"
         "How: The endpoint composes persisted RFC-0038, RFC-0040, RFC-0041, and RFC-0042 records. "
-        "It preserves source refs, hashes, states, and reason codes; it does not compute risk, "
-        "performance, execution, tax, cash, mandate-health, or external order truth locally."
+        "It preserves source refs, hashes, states, and reason codes, and publishes source-event "
+        "family posture for supported and deferred source owners; it does not compute risk, "
+        "performance, execution, tax, cash, mandate-health, PM scoring, or external order truth "
+        "locally."
     ),
 )
 def get_portfolio_memory(

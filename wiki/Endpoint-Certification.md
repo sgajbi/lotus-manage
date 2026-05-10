@@ -1871,6 +1871,8 @@ Functional behavior:
 - publishes aggregate and event-level retention, redaction, access, and audit policy:
   `DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y`, `NO_RAW_PAYLOADS`,
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
+- publishes `source_event_family_posture` for supported manage, report, AI, and archive families
+  plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution and PM scoring,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1883,9 +1885,8 @@ Non-functional posture:
 - Does not expose raw upstream payloads.
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
-- Portfolio-memory truth is partial only for remaining OMS and PM-scoring source-event families
-  that are not yet implemented in their owning apps. Report, AI, and archive generated-document
-  source-event families are implementation-backed in their owning repositories.
+- Future OMS execution and PM-scoring products remain source-owner roadmap scope and are visible as
+  deferred posture entries rather than hidden portfolio-memory functionality.
 
 ```mermaid
 flowchart LR

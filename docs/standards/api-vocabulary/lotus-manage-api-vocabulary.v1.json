@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-10T05:55:35.334229+00:00",
+  "generatedAt": "2026-05-10T14:38:29.354854+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2641,6 +2641,22 @@
       ]
     },
     {
+      "semanticId": "lotus.event_types",
+      "canonicalTerm": "event_types",
+      "preferredName": "event_types",
+      "description": "Supported event types for this family when implementation-backed.",
+      "example": [
+        "sample_event_types_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.events",
       "canonicalTerm": "events",
       "preferredName": "events",
@@ -2947,6 +2963,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.family_key",
+      "canonicalTerm": "family_key",
+      "preferredName": "family_key",
+      "description": "Stable key for the source-event family.",
+      "example": "sample_family_key",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -5691,6 +5721,20 @@
       ]
     },
     {
+      "semanticId": "lotus.owner",
+      "canonicalTerm": "owner",
+      "preferredName": "owner",
+      "description": "Current accountable owner for the source-event family posture.",
+      "example": "sample_owner",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.owner_service",
       "canonicalTerm": "owner_service",
       "preferredName": "owner_service",
@@ -7488,6 +7532,20 @@
       ]
     },
     {
+      "semanticId": "lotus.route",
+      "canonicalTerm": "route",
+      "preferredName": "route",
+      "description": "Owning API route when the source-event family is implementation-backed.",
+      "example": "route_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.rule_id",
       "canonicalTerm": "rule_id",
       "preferredName": "rule_id",
@@ -8191,6 +8249,22 @@
       ]
     },
     {
+      "semanticId": "lotus.source_event_family_posture",
+      "canonicalTerm": "source_event_family_posture",
+      "preferredName": "source_event_family_posture",
+      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit OMS and PM-scoring no-claim boundaries.",
+      "example": [
+        "source_event_family_posture_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.source_family",
       "canonicalTerm": "source_family",
       "preferredName": "source_family",
@@ -8765,6 +8839,20 @@
       "preferredName": "support_ref",
       "description": "Opaque support reference that avoids portfolio or client identifiers.",
       "example": "sample_support_ref",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.support_status",
+      "canonicalTerm": "support_status",
+      "preferredName": "support_status",
+      "description": "Support posture for this source-event family in portfolio memory.",
+      "example": "SUPPORTED",
       "type": "string",
       "locations": [
         "body"
@@ -79585,6 +79673,78 @@
             "type": "object",
             "semanticId": "lotus.governance_policy",
             "attributeRef": "#/attributeCatalog/lotus.governance_policy"
+          },
+          {
+            "name": "source_event_family_posture",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_event_family_posture",
+            "attributeRef": "#/attributeCatalog/lotus.source_event_family_posture"
+          },
+          {
+            "name": "source_event_family_posture[].family_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.family_key",
+            "attributeRef": "#/attributeCatalog/lotus.family_key"
+          },
+          {
+            "name": "source_event_family_posture[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "source_event_family_posture[].owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.owner",
+            "attributeRef": "#/attributeCatalog/lotus.owner"
+          },
+          {
+            "name": "source_event_family_posture[].support_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_status",
+            "attributeRef": "#/attributeCatalog/lotus.support_status"
+          },
+          {
+            "name": "source_event_family_posture[].event_types",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.event_types",
+            "attributeRef": "#/attributeCatalog/lotus.event_types"
+          },
+          {
+            "name": "source_event_family_posture[].route",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.route",
+            "attributeRef": "#/attributeCatalog/lotus.route"
+          },
+          {
+            "name": "source_event_family_posture[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "source_event_family_posture[].summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
           },
           {
             "name": "events",

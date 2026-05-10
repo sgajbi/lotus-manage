@@ -265,6 +265,16 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert "lotus-core" in memory.source_systems
     assert "SOURCE_READY" in memory.reason_codes
     assert "ALLOCATION_DRIFT_REVIEW" in memory.reason_codes
+    family_posture = {posture.family_key: posture for posture in memory.source_event_family_posture}
+    assert family_posture["mandate_health"].support_status == "SUPPORTED"
+    assert family_posture["report_lifecycle"].route == (
+        "/reports/jobs/{job_id}/portfolio-memory-events"
+    )
+    assert family_posture["ai_workflow_pack"].source_system == "lotus-ai"
+    assert family_posture["generated_document_archive"].source_system == "lotus-archive"
+    assert family_posture["external_oms_execution"].support_status == "DEFERRED_SOURCE_OWNER"
+    assert family_posture["external_oms_execution"].event_types == []
+    assert family_posture["pm_scoring"].reason_code == "PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED"
     mandate_events = {
         event.event_type: event
         for event in memory.events
@@ -317,8 +327,29 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     )
     assert payload["event_type_counts"]["WAVE_EVENT"] == 1
     assert payload["event_type_counts"]["MANDATE_MONITORING_EXCEPTION"] == 1
+    family_posture = {
+        posture["family_key"]: posture for posture in payload["source_event_family_posture"]
+    }
+    assert family_posture["proof_pack_decision_timeline"]["support_status"] == "SUPPORTED"
+    assert family_posture["external_oms_execution"] == {
+        "family_key": "external_oms_execution",
+        "source_system": "future-oms-owner",
+        "owner": "future execution or OMS owner",
+        "support_status": "DEFERRED_SOURCE_OWNER",
+        "event_types": [],
+        "route": None,
+        "reason_code": "OMS_SOURCE_EVENTS_NOT_SUPPORTED",
+        "summary": (
+            "No external OMS execution, fill, or acknowledgement events are projected until a "
+            "governed OMS owner publishes a no-raw-payload source-event family."
+        ),
+    }
+    assert family_posture["pm_scoring"]["support_status"] == "DEFERRED_SOURCE_OWNER"
     assert all(event["event_identity"] for event in payload["events"])
     assert all(event["redaction_policy"] == "NO_RAW_PAYLOADS" for event in payload["events"])
     assert any(event["event_type"] == "OUTCOME_REVIEW_EVENT" for event in payload["events"])
     assert openapi.status_code == 200
-    assert "/api/v1/rebalance/portfolio-memory/{portfolio_id}" in openapi.json()["paths"]
+    openapi_json = openapi.json()
+    assert "/api/v1/rebalance/portfolio-memory/{portfolio_id}" in openapi_json["paths"]
+    memory_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemory"]
+    assert "source_event_family_posture" in memory_schema["properties"]
