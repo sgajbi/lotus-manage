@@ -993,6 +993,13 @@ Audit evidence:
    gross TWR, `6.997327%` benchmark return, `-7.689119%` active return, `-1.926818%` MWR,
    contribution total `-0.691791%`, attribution active return `-7.016227%`, supported evidence
    view, and explicit stale input-freshness posture for the `2026-05-10` Workbench as-of date.
+8. `lotus-core` PR #360 anchors the current-horizon cashflow/liquidity front-office proof:
+   canonical seeding adds `TXN-WITHDRAWAL-CURRENT-HORIZON-001` for `PB_SG_GLOBAL_BAL_001`, Core
+   `PortfolioCashflowProjection:v1` returns projected-settlement and total net cashflow of
+   `-12000` for `2026-05-08` plus a 30-day projected horizon, Gateway liquidity returns
+   `cashflow_outlook.total_net_cashflow_base=-12000.0` with no warnings or partial failures,
+   `npm run live:validate` passes on the canonical Workbench stack, Core PR Merge Gate passes, and
+   `lotus-core.wiki` publication is synchronized at commit `3956cb6`.
 
 Gold-pass decision:
 
