@@ -227,8 +227,11 @@ Current repository posture:
     Gateway/Workbench product realization is also merged and live-proven through `lotus-gateway`
     PR #199, `lotus-workbench` PR #167, `lotus-platform` PR #307, and canonical Workbench evidence
     `lotus-workbench/output/playwright/live-canonical/dpm-portfolio-memory-live.png`.
-    Manage now emits stable event identity plus retention, redaction, access, and audit policy in
-    the portfolio-memory API contract. `lotus-report` PR #92 adds the report-side bounded
+    Manage now emits stable event identity plus retention, redaction, access, audit policy, and
+    explicit source-event family posture in the portfolio-memory API contract. The posture lists
+    supported manage/report/AI/archive families and marks external OMS execution plus PM scoring as
+    deferred source-owner families, preventing downstream consumers from inferring hidden support.
+    `lotus-report` PR #92 adds the report-side bounded
     `portfolio_memory_context` consumer for proof-pack, rebalance-wave, and outcome-review report
     jobs without reconstructing manage-owned portfolio-memory events, and `lotus-report` PR #93
     adds the report-owned source-event family at
@@ -245,8 +248,8 @@ Current repository posture:
     archive-owned generated-document/client-delivery source-event family at
     `/documents/{document_id}/source-events` for generated-document archive, supersession,
     correction, and client-delivery reissue lineage without raw document bytes, storage keys, raw
-    report payloads, or raw client references. Future OMS and PM-scoring source-event families
-    remain downstream WTBD scope.
+    report payloads, or raw client references. Future OMS and PM-scoring products remain
+    downstream source-owner scope and are not hidden portfolio-memory claims.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, score PMs,
     approve trades, or issue recommendations. Richer attribution/contribution/scenario source

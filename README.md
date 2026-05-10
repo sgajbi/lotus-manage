@@ -93,6 +93,9 @@ implemented in `lotus-render`, `lotus-report`, and `lotus-archive`; and governed
 is implemented in `lotus-ai`, `lotus-gateway`, and `lotus-workbench`. The post-merge gold-pass audit
 also records a canonical front-office risk-drawdown `partial` boundary tracked as
 `sgajbi/lotus-gateway#182`, so no unsupported proof-pack source enrichment is claimed here.
+The portfolio-memory API now publishes source-event family posture for supported manage, report,
+AI, and archive families and explicitly marks OMS execution and PM scoring as deferred
+source-owner families, so downstream consumers do not infer hidden execution or scoring support.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,

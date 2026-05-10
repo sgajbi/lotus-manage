@@ -15,6 +15,7 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
+    DpmPortfolioMemorySourceEventFamilyPosture,
     DpmPortfolioMemorySourceRef,
     PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
     PORTFOLIO_MEMORY_AUDIT_POLICY,
@@ -106,6 +107,7 @@ def build_portfolio_memory(
         source_systems=source_systems,
         reason_codes=reason_codes,
         governance_policy=_portfolio_memory_governance_policy(),
+        source_event_family_posture=_source_event_family_posture(),
         events=events,
         content_hash="",
         generated_at=generated_at.isoformat(),
@@ -124,6 +126,131 @@ def _portfolio_memory_governance_policy() -> dict[str, str]:
         "access_classification": PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
         "source_authority_policy": PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY,
     }
+
+
+def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPosture]:
+    return [
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="mandate_health",
+            source_system="lotus-manage",
+            owner="lotus-manage",
+            support_status="SUPPORTED",
+            event_types=["MANDATE_HEALTH_SNAPSHOT"],
+            route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+            reason_code="MANDATE_HEALTH_SOURCE_EVENTS_SUPPORTED",
+            summary="Mandate health snapshots are projected from persisted mandate repository truth.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="mandate_monitoring_exception",
+            source_system="lotus-manage",
+            owner="lotus-manage",
+            support_status="SUPPORTED",
+            event_types=["MANDATE_MONITORING_EXCEPTION"],
+            route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+            reason_code="MANDATE_MONITORING_SOURCE_EVENTS_SUPPORTED",
+            summary="Mandate monitoring exceptions are projected from persisted exception truth.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="proof_pack_decision_timeline",
+            source_system="lotus-manage",
+            owner="lotus-manage",
+            support_status="SUPPORTED",
+            event_types=["PROOF_PACK_CREATED", "PROOF_PACK_TIMELINE_EVENT"],
+            route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+            reason_code="PROOF_PACK_SOURCE_EVENTS_SUPPORTED",
+            summary="Proof-pack creation and proof-pack-local decision timeline events are projected.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="rebalance_wave",
+            source_system="lotus-manage",
+            owner="lotus-manage",
+            support_status="SUPPORTED",
+            event_types=["WAVE_CREATED", "WAVE_EVENT", "WAVE_HANDOFF_READY"],
+            route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+            reason_code="REBALANCE_WAVE_SOURCE_EVENTS_SUPPORTED",
+            summary="Rebalance wave lifecycle and internal handoff events are projected.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="post_trade_outcome_review",
+            source_system="lotus-manage",
+            owner="lotus-manage",
+            support_status="SUPPORTED",
+            event_types=["OUTCOME_REVIEW_CREATED", "OUTCOME_REVIEW_EVENT"],
+            route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+            reason_code="OUTCOME_REVIEW_SOURCE_EVENTS_SUPPORTED",
+            summary="Post-trade outcome-review creation and review events are projected.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="report_lifecycle",
+            source_system="lotus-report",
+            owner="lotus-report",
+            support_status="SUPPORTED",
+            event_types=[
+                "REPORT_JOB_CREATED",
+                "REPORT_SNAPSHOT_CAPTURED",
+                "REPORT_RENDERED",
+                "REPORT_ARCHIVED",
+            ],
+            route="/reports/jobs/{job_id}/portfolio-memory-events",
+            reason_code="REPORT_SOURCE_EVENTS_SUPPORTED",
+            summary="Report lifecycle, snapshot, render, and archive lineage are source-owned by report.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="ai_workflow_pack",
+            source_system="lotus-ai",
+            owner="lotus-ai",
+            support_status="SUPPORTED",
+            event_types=[
+                "AI_WORKFLOW_PACK_RUN",
+                "AI_WORKFLOW_PACK_REVIEW",
+                "AI_WORKFLOW_PACK_LINEAGE",
+            ],
+            route="/platform/workflow-packs/source-events",
+            reason_code="AI_WORKFLOW_PACK_SOURCE_EVENTS_SUPPORTED",
+            summary="AI workflow-pack run, review, and lineage posture are source-owned by AI.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="generated_document_archive",
+            source_system="lotus-archive",
+            owner="lotus-archive",
+            support_status="SUPPORTED",
+            event_types=[
+                "GENERATED_DOCUMENT_ARCHIVED",
+                "GENERATED_DOCUMENT_SUPERSEDED",
+                "GENERATED_DOCUMENT_CORRECTED",
+                "CLIENT_DELIVERY_REISSUED",
+            ],
+            route="/documents/{document_id}/source-events",
+            reason_code="GENERATED_DOCUMENT_SOURCE_EVENTS_SUPPORTED",
+            summary="Generated-document archive and client-delivery lineage are source-owned by archive.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="external_oms_execution",
+            source_system="future-oms-owner",
+            owner="future execution or OMS owner",
+            support_status="DEFERRED_SOURCE_OWNER",
+            event_types=[],
+            route=None,
+            reason_code="OMS_SOURCE_EVENTS_NOT_SUPPORTED",
+            summary=(
+                "No external OMS execution, fill, or acknowledgement events are projected until a "
+                "governed OMS owner publishes a no-raw-payload source-event family."
+            ),
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="pm_scoring",
+            source_system="future-pm-scoring-owner",
+            owner="future PM scoring methodology owner",
+            support_status="DEFERRED_SOURCE_OWNER",
+            event_types=[],
+            route=None,
+            reason_code="PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED",
+            summary=(
+                "No PM quality-scoring events are projected until an approved methodology, controls, "
+                "and source owner exist."
+            ),
+        ),
+    ]
 
 
 def _mandate_events(
