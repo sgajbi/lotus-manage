@@ -8,7 +8,7 @@
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | DPM head, portfolio manager, CIO desk, investment control, compliance, operations, audit, sales/pre-sales |
 | **Depends On** | RFC-0017, RFC-0019, RFC-0020, RFC-0021, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, `lotus-core` RFC-0087 |
-| **Downstream Realization Depends On** | First-wave Gateway/Workbench, report/archive, AI memo, archive client-communication source events, source-enrichment, and portfolio-memory integrations are implementation-backed; future OMS, PM-scoring, richer scenario contribution, and profile-detail presentation remain downstream WTBDs |
+| **Downstream Realization Depends On** | First-wave Gateway/Workbench, report/archive, AI memo, archive client-communication source events, source-enrichment, scenario contribution source evidence, and portfolio-memory integrations are implementation-backed; future OMS, PM-scoring, CIO approval/applicability evidence, direct proof-pack scenario enrichment, and profile-detail presentation remain downstream/source-owner WTBDs |
 | **Implementation Branch** | `feat/rfc0040-gold-standard-tightening` |
 | **Doc Location** | `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
@@ -1352,7 +1352,7 @@ Final post-merge audit result:
 | Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs; subsequent WTBD work implemented the runtime product path in `lotus-gateway` PR #195, `lotus-workbench` PR #156/#164, and canonical platform QA. Gateway and Workbench remain consumers of manage-owned proof-pack truth, not evidence authorities. |
 | Skills/context/guidance decision | No Lotus skill or central context change is required; repo-local context was updated because repository-supported capability truth changed. |
 | Tests and evidence | Focused audit tests passed for the evidence generator, proof-pack service, proof-pack API, mandate-context hardening, and documentation current-state guardrails. The live manage evidence generator passed against canonical Postgres-backed manage runtime. |
-| Gold-standard conclusion | Manage backend RFC-0040 is implemented, audited, and live-proven, and the bounded first-wave product path is now implementation-backed across Gateway, Workbench, report/render/archive, AI memo handoff, archive client-communication source events, source-enrichment preservation, selected-alternative scenario-pack preservation, and portfolio-memory consumers. The implementation reaches the expected standard for the supported scope; future OMS, PM-scoring, per-security scenario contribution, CIO approval evidence, richer profile presentation, and autonomous advice remain unsupported. |
+| Gold-standard conclusion | Manage backend RFC-0040 is implemented, audited, and live-proven, and the bounded first-wave product path is now implementation-backed across Gateway, Workbench, report/render/archive, AI memo handoff, archive client-communication source events, source-enrichment preservation, selected-alternative scenario-pack preservation, risk-owned scenario contribution evidence, and portfolio-memory consumers. The implementation reaches the expected standard for the supported scope; future OMS, PM-scoring, CIO approval/applicability evidence, direct proof-pack scenario enrichment, richer profile presentation, and autonomous advice remain unsupported. |
 
 ---
 
@@ -1371,7 +1371,7 @@ implementation truth is available in the owning RFC, not only in the WTBD ledger
 | RFC40-WTBD-006 | Proof packs preserve source-owned risk/performance context from selected construction alternatives. | Manage does not compute risk/performance methodology locally. |
 | RFC40-WTBD-007 | Proof packs preserve `TransactionCostCurve:v1` observed booked-fee evidence from `lotus-core`. | Predictive execution quotes, market impact, venue routing, and min-cost execution optimization remain unsupported. |
 | RFC40-WTBD-008 | Proof packs preserve `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` evidence. | Regulatory suitability approval and security-level sustainability classification remain source-owner/future workflow scope. |
-| RFC40-WTBD-009 | Proof packs preserve selected-alternative `RegimeScenarioPackEvaluation:v1` context in `scenario_and_regime_evidence`, including source refs, source hashes, scenario pack id, worst-case loss, policy threshold, supportability state, and reason codes. | Direct proof-pack enrichment when no selected alternative carries scenario context, per-security scenario contribution rows, and CIO approval workflow remain future source depth. |
+| RFC40-WTBD-009 | Proof packs preserve selected-alternative `RegimeScenarioPackEvaluation:v1` context in `scenario_and_regime_evidence`, including source refs, source hashes, scenario pack id, worst-case loss, policy threshold, supportability state, and reason codes. `lotus-risk` PR #116 adds optional reconciled per-security `position_contributions` to the source product and published wiki truth at `7bd5f03`; platform mesh mirror truth landed through `lotus-platform` PR #321. | Direct proof-pack enrichment when no selected alternative carries scenario context, CIO approval workflow, effective-period exception posture, and portfolio/mandate applicability remain future source depth. |
 | RFC40-WTBD-010 | Manage, Gateway, Workbench, Report, AI, and Archive now preserve first-wave portfolio-memory lineage across proof-pack, wave, outcome, report, AI, generated-document archive, supersession, correction, and client-delivery reissue flows. `lotus-archive` PR #25 exposes `GET /documents/{document_id}/source-events` for the `lotus-archive.generated_document_client_communication.v1` family, merged as `aa3a3a8f28b666cb85100c0859f77ff2dab9cede` and wiki-published as `d5e5918`. | Future OMS and PM-scoring source-event families are still required before the broader portfolio-memory WTBD closes. Archive source events deliberately exclude raw document bytes, storage keys, raw report payloads, and raw client references. |
 
 Audit evidence:
@@ -1391,6 +1391,11 @@ Audit evidence:
    and screenshots in `lotus-platform/output/front-office-qa/wtbd-rfc40-audit-20260509`.
 5. Documentation regression now guards the RFC40/WTBD/wiki truth so product-support wording cannot
    drift back to pre-realization backend-only claims.
+6. `lotus-risk` PR #116 (`2570e7589b51db05cf409aa022a247d56858eeda`) proves
+   `RegimeScenarioPackEvaluation:v1` optional per-security contribution rows with green Feature
+   Lane/PR Merge Gate checks, local `make check`, integration, e2e, migration, test-pyramid,
+   security-audit gates, targeted service refresh, live API proof, 422 reconciliation-failure
+   proof, clean risk logs, and canonical Workbench validation for `PB_SG_GLOBAL_BAL_001`.
 
 Gold-pass decision:
 
