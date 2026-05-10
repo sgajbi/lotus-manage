@@ -1081,9 +1081,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-ai` has bounded DPM memo/narrative consumers plus an AI-owned" in (
         supported_features
     )
-    assert "Remaining OMS, PM-scoring, and client-communication source-event families" in (
-        supported_features
-    )
+    assert "`lotus-archive` PR #25 has the generated-document/client-delivery" in supported_features
+    assert "GET /documents/{document_id}/source-events" in supported_features
+    assert "Remaining OMS and PM-scoring source-event families" in supported_features
     assert "Supported as RFC-0042 full product experience" not in supported_features
     assert "Gateway and Workbench product support must not be claimed" not in rfc
     assert (
@@ -1211,6 +1211,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "GET /platform/workflow-packs/runs/{run_id}/source-events" in work_to_be_done
     assert "`lotus-ai` wiki publication commit `a4e70d3`" in work_to_be_done
     assert "no-reconstruction source-authority policy" in work_to_be_done
+    assert "`lotus-archive` PR #25" in work_to_be_done
+    assert "`aa3a3a8f28b666cb85100c0859f77ff2dab9cede`" in work_to_be_done
+    assert "`lotus-archive.wiki` publication commit `d5e5918`" in work_to_be_done
+    assert "lotus-archive.generated_document_client_communication.v1" in work_to_be_done
+    assert "GET /documents/{document_id}/source-events" in work_to_be_done
+    assert "no raw document bytes, storage keys, raw report payloads, or raw client references" in (
+        work_to_be_done
+    )
     assert "Latest WTBD-006 risk rolling-tracking-error methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #113" in work_to_be_done
     assert "`e00ece9279082a96071bd9e745b7211232b82db6`" in work_to_be_done
@@ -1259,7 +1267,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Canonical-DPM-Demo-Story.md" in work_to_be_done
     assert "external OMS execution" in work_to_be_done
     assert "PM quality scoring" in work_to_be_done
-    assert "client-communication source-event lineage" in work_to_be_done
+    assert "client communication execution" in work_to_be_done
     assert "## RFC-0042 - Post-Trade Outcome Feedback Loop" in work_to_be_done
     assert "RFC42-WTBD-001" in work_to_be_done
     assert "RFC42-WTBD-008" in work_to_be_done

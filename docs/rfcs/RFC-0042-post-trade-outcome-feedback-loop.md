@@ -931,7 +931,7 @@ Remaining outside the support claim:
 1. execution/OMS integration and acknowledgements require a future execution owner,
 2. PM quality scoring or behavioral analytics require business ownership, methodology approval,
    and bias controls,
-3. client-communication source-event lineage remains future downstream scope,
+3. client communication execution remains future downstream scope,
 4. automatic source-owner calculation beyond implemented source-emitted measures and
    source-owner risk/performance/tax/FX/cash methodologies remain outside manage support.
 
