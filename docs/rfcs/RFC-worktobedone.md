@@ -4307,6 +4307,37 @@ Latest WTBD-006 core field-aware transaction-ledger restatement proof:
    row-level transaction-ledger evidence, not aggregated portfolio FX attribution, client-tax
    advice, execution-quality assessment, OMS acknowledgement, or PM scoring.
 
+Latest WTBD-006 canonical current-horizon cashflow and liquidity proof:
+
+1. `lotus-core` PR #360 was merged to `main` as
+   `e83f0c85ac0bdaa738af831a8224709e1b29a7fd` and the repo-local wiki was published to
+   `lotus-core.wiki` commit `3956cb6`,
+2. canonical front-office seeding now includes deterministic current-horizon projected withdrawal
+   `TXN-WITHDRAWAL-CURRENT-HORIZON-001` for `PB_SG_GLOBAL_BAL_001`, with transaction date
+   `2026-04-30`, settlement date `2026-05-16`, and USD `12,000` withdrawal evidence so the current
+   Workbench liquidity horizon exercises non-zero projected settlement cashflow,
+3. focused local source-owner proof in `lotus-core` passed with
+   `python -m pytest tests/unit/tools/test_front_office_portfolio_seed.py tests/unit/services/query_service/services/test_liquidity_ladder_service.py -q`
+   returning `51 passed`, and `git diff --check` passed,
+4. GitHub Feature Lane and PR Merge Gate passed workflow lint, lint/typecheck/contracts/security,
+   unit, unit-db, integration-lite, ops-contract, transaction contract tests, coverage, docker
+   build, docker smoke, E2E smoke, latency, and fast performance gates,
+5. live Core proof after canonical reseed showed
+   `PortfolioCashflowProjection:v1` returning `projected_settlement_total_cashflow=-12000` and
+   `total_net_cashflow=-12000` for `as_of_date=2026-05-08`, `horizon_days=30`,
+   `include_projected=true`,
+6. live Gateway proof showed
+   `/api/v1/portfolio/portfolios/PB_SG_GLOBAL_BAL_001/liquidity` returning
+   `cashflow_outlook.total_net_cashflow_base=-12000.0`, no warnings, and no partial failures, and
+   `npm run live:validate` in `lotus-workbench` passed against the canonical stack,
+7. log review found successful Gateway/Core query responses and no sampled `ERROR`, `CRITICAL`,
+   traceback, or `5xx` entries in the final validation window; the Core aggregation backlog stayed
+   visible as `AGGREGATION_BACKLOG_OPEN` and was not hidden or weakened,
+8. this advances RFC42-WTBD-006 but does not close it: the seeded current-horizon event proves
+   operational projected cashflow and liquidity-ladder behavior for the canonical front-office
+   portfolio; it is not client income-needs planning, funding advice, execution forecasting,
+   OMS acknowledgement, or PM scoring.
+
 Latest WTBD-006 core portfolio-tax-lot methodology proof:
 
 1. `lotus-core` PR #346 was merged to `main` as

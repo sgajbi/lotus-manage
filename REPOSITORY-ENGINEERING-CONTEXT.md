@@ -201,6 +201,11 @@ Current repository posture:
     asset-liquidity-tier exposure, source-product catalog/security posture, and explicit
     non-claims for advice, funding recommendations, income-needs planning, tax methodology,
     FX attribution, market impact, best execution, venue routing, and OMS acknowledgement. The
+    canonical current-horizon cashflow/liquidity proof from PR #360
+    (`e83f0c85ac0bdaa738af831a8224709e1b29a7fd`, wiki `3956cb6`) keeps
+    `PB_SG_GLOBAL_BAL_001` seeded with a deterministic projected withdrawal so Core, Gateway, and
+    Workbench live validation exercise non-zero projected settlement cashflow without turning the
+    seed into client income-needs planning, funding advice, or OMS forecasting. The
     record also includes the merged and wiki-published `lotus-core`
     `TransactionLedgerWindow:v1` methodology slice from PR #347
     (`7aef82bc8f9232c62333b8386001527b19829f86`, wiki `6bb1041`), which pins booked and
