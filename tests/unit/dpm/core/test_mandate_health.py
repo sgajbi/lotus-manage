@@ -212,6 +212,41 @@ def _sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfi
     )
 
 
+def _inactive_sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfileResponse:
+    return DpmCoreSustainabilityPreferenceProfileResponse.model_validate(
+        {
+            "product_name": "SustainabilityPreferenceProfile",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "preferences": [
+                {
+                    "preference_framework": "BANK_SUSTAINABILITY",
+                    "preference_code": "LEGACY_EXCLUSION",
+                    "preference_status": "INACTIVE",
+                    "preference_source": "CLIENT_PROFILE",
+                    "exclusion_codes": ["THERMAL_COAL"],
+                    "positive_tilt_codes": [],
+                    "effective_from": "2025-01-01",
+                    "effective_to": "2026-01-01",
+                    "preference_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+                "preference_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"contract_version": "SustainabilityPreferenceProfile:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
 def _portfolio_cashflow_projection() -> DpmCorePortfolioCashflowProjectionResponse:
     return DpmCorePortfolioCashflowProjectionResponse.model_validate(
         {
@@ -394,6 +429,24 @@ def test_build_health_input_uses_source_backed_profile_and_cashflow_risk_signals
     )
 
 
+def test_inactive_sustainability_preferences_do_not_create_review_posture() -> None:
+    profile = _inactive_sustainability_preference_profile()
+    twin = compile_mandate_digital_twin_from_core(
+        mandate=_mandate_binding(),
+        model_targets=_model_targets(),
+        as_of_date=AS_OF,
+        sustainability_preference_profile=profile,
+    )
+    health_input = build_health_input_from_core_sources(
+        twin=twin,
+        model_targets=_model_targets(),
+        sustainability_preference_profile=profile,
+    )
+
+    assert twin.preferences.sustainability_strategy is None
+    assert health_input.sustainability_review_required is False
+
+
 def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> None:
     snapshot = calculate_mandate_health(_ready_input())
 
@@ -407,6 +460,8 @@ def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> N
 def test_mandate_constraints_reject_invalid_ratio_and_cash_band() -> None:
     with pytest.raises(ValueError, match="cash_band_min_weight"):
         DpmMandateConstraintSet(cash_band_min_weight=Decimal("2"))
+    with pytest.raises(ValueError, match="max_tracking_error must be between"):
+        DpmMandateConstraintSet(max_tracking_error=Decimal("2"))
     with pytest.raises(ValueError, match="cash_band_min_weight must not exceed"):
         DpmMandateConstraintSet(
             cash_band_min_weight=Decimal("0.20"),

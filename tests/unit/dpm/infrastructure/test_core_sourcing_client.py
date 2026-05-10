@@ -1165,3 +1165,176 @@ def test_core_resolver_timeout_maps_to_source_safe_error():
         DpmCoreResolverUnavailableError, match="DPM_CORE_MANDATE_BINDING_UNAVAILABLE"
     ):
         client.resolve_execution_context(stateful_input=_stateful_input(), correlation_id=None)
+
+
+def test_optional_profile_url_configuration_fails_source_safe() -> None:
+    config = DpmCoreResolverConfig(
+        base_url="https://core.example.test",
+        client_restriction_profile_path_template="",
+        sustainability_preference_profile_path_template="",
+    )
+
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE",
+    ):
+        config.resolve_client_restriction_profile_url("PB_SG_GLOBAL_BAL_001")
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE",
+    ):
+        config.resolve_sustainability_preference_profile_url("PB_SG_GLOBAL_BAL_001")
+
+
+def test_get_source_product_retries_transient_status_and_rejects_non_object_payload() -> None:
+    attempts = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            return httpx.Response(503, json={"detail": "retry"})
+        return httpx.Response(200, json=["not", "an", "object"])
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=2),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_SOURCE_INCOMPLETE"):
+        client._get_source_product(
+            url="https://core.example.test/source",
+            params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id="corr-get-retry",
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+
+    assert attempts["count"] == 2
+
+
+def test_get_source_product_maps_transport_error_to_unavailable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=1),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        client._get_source_product(
+            url="https://core.example.test/source",
+            params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+
+
+def test_owned_core_resolver_client_closes_managed_http_client() -> None:
+    http_client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200)))
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test")
+    )
+    client._client = http_client
+    client._owns_client = True
+
+    client.close()
+
+    assert http_client.is_closed
+
+
+def test_get_source_product_closes_transient_owned_http_client(monkeypatch: pytest.MonkeyPatch):
+    closed = {"value": False}
+
+    class _ManagedClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def get(self, url, params, headers):
+            return httpx.Response(200, json={"source": "ready"})
+
+        def close(self):
+            closed["value"] = True
+
+    monkeypatch.setattr(httpx, "Client", _ManagedClient)
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test")
+    )
+
+    payload = client._get_source_product(
+        url="https://core.example.test/source",
+        params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+        correlation_id=None,
+        unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+        incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+    )
+
+    assert payload == {"source": "ready"}
+    assert closed["value"] is True
+
+
+def test_optional_resolvers_suppress_unavailable_source_products() -> None:
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(
+            base_url="https://core.example.test",
+            transaction_cost_curve_path_template="",
+            portfolio_cashflow_projection_path_template="",
+            client_restriction_profile_path_template="",
+            sustainability_preference_profile_path_template="",
+        ),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(500, json={}))
+        ),
+    )
+
+    assert (
+        client._try_resolve_transaction_cost_curve(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            security_ids=[],
+            tenant_id="tenant_sg_pb",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_transaction_cost_curve(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            security_ids=["EQ_US_AAPL"],
+            tenant_id="tenant_sg_pb",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_portfolio_cashflow_projection(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            horizon_days=30,
+            include_projected=True,
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_client_restriction_profile(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_sustainability_preference_profile(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            correlation_id=None,
+        )
+        is None
+    )
