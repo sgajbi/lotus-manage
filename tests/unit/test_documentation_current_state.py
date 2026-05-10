@@ -1218,8 +1218,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 42 |" in work_to_be_done
-    assert "| Partial / in progress | 5 |" in work_to_be_done
+    assert "| Done on merged/published truth | 43 |" in work_to_be_done
+    assert "| Partial / in progress | 4 |" in work_to_be_done
     assert "| Remaining / open | 12 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
