@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | PROPOSED |
+| **Status** | PARTIALLY IMPLEMENTED - OWNER-SIDE DPM WORKFLOW PACKS |
 | **Created** | 2026-05-03 |
 | **Depends On** | RFC-0037, RFC-0038, RFC-0039, RFC-0040, RFC-0041, RFC-0042 |
 | **Doc Location** | `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md` |
@@ -21,6 +21,21 @@ CIO, compliance, risk, or operations approval.
 The target architecture routes AI work through `lotus-ai` workflow packs. `lotus-manage` owns the
 business evidence and workflow authority; `lotus-ai` owns prompt, provider, safety, evaluation,
 async, and AI run posture.
+
+Current implementation-backed posture:
+
+1. `lotus-manage` emits bounded AI evidence inputs for proof packs, rebalance waves, and
+   outcome reviews without constructing prompts or generated narrative locally.
+2. `lotus-ai` owns the review-gated `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`, and
+   `outcome_review_narrative.pack@v1` workflow-pack execution paths.
+3. The implemented packs validate forbidden actions, forbidden fields, unsupported requested
+   outputs, `NO_RAW_PAYLOADS` posture, source refs, proof-pack or wave/outcome identity, optional
+   bounded `portfolio_memory_context`, and no-reconstruction source-authority policy before
+   run/audit/task-flow side effects.
+4. Gateway and Workbench have first-wave invocation and posture surfaces for the implemented DPM
+   memo paths where recorded in the WTBD ledger; broader exception-summary, operations-summary,
+   default-version resolution, full copilot workspace, autonomous advice, and domain handoff
+   execution remain unsupported.
 
 ---
 
@@ -184,10 +199,13 @@ Tests must enforce these guardrails.
 
 Initial `lotus-ai` workflow-pack families:
 
-1. `dpm_pm_memo.pack`
-2. `dpm_exception_summary.pack`
-3. `dpm_cio_model_change_brief.pack`
-4. `dpm_operations_handoff_summary.pack`
+1. `dpm_pm_memo.pack` - implemented as `dpm_pm_memo.pack@v1` for proof-pack AI evidence.
+2. `dpm_wave_pm_memo.pack` - implemented as `dpm_wave_pm_memo.pack@v1` for rebalance-wave report
+   input and memo assistance.
+3. `outcome_review_narrative.pack` - implemented as `outcome_review_narrative.pack@v1` for
+   outcome-review AI evidence.
+4. `dpm_exception_summary.pack` - not yet implemented as a separate pack.
+5. `dpm_operations_handoff_summary.pack` - not yet implemented as a separate pack.
 
 Each pack registration must include:
 
@@ -410,11 +428,12 @@ remaining evidence-bound and non-decisioning.
 
 | Feature | Support state before implementation | Promotion rule |
 | --- | --- | --- |
-| PM memo from proof pack | Proposed | Promote only after `lotus-ai` workflow-pack execution, provenance, review state, and fallback are proven. |
+| PM memo from proof pack | Supported for owner-side workflow-pack execution and first-wave product invocation | `lotus-ai` PR #61 implements `dpm_pm_memo.pack@v1`; Gateway PR #198 and Workbench PR #166 expose bounded invocation/posture without local prompt construction. |
+| Wave PM memo / CIO model-change brief support | Supported for owner-side wave memo execution and first-wave product invocation | `lotus-ai` PR #63 implements `dpm_wave_pm_memo.pack@v1`; Gateway PR #201 and Workbench PR #168 expose bounded invocation/posture from manage wave evidence. |
+| Outcome-review narrative | Supported for owner-side workflow-pack execution and first-wave product invocation | `lotus-ai` PR #62 implements bounded outcome narrative consumption; downstream RFC-0042 product realization is implementation-backed in the owning repositories. |
 | Exception narrative | Proposed | Promote only after exception evidence is structured, bounded, and no unsupported claims are generated. |
-| CIO model-change brief | Proposed | Promote only after wave/model-change evidence is accepted by the workflow-pack contract. |
 | Operations handoff summary | Proposed | Promote only after handoff evidence is bounded and does not expose raw sensitive details. |
-| AI safety evaluation | Proposed | Promote only after forbidden-action, forbidden-claim, missing-evidence, and AI-unavailable tests pass. |
+| AI safety evaluation | Partially implemented | Implemented DPM packs enforce forbidden-action, forbidden-field, unsupported-output, source-ref, no-raw-payload, and portfolio-memory source-authority guards. Broader evaluation fixtures and full copilot workspace support remain future depth. |
 
 ### 13.2 Architecture and Domain Direction
 
@@ -476,3 +495,27 @@ Closure evidence must include:
 This RFC inherits RFC-0037 Section 19.4. Completion requires `lotus-ai` workflow-pack provenance,
 no-sensitive telemetry, bounded AI supportability states, actor review posture, structured logs,
 operator diagnostics, API certification, and GitHub lane evidence for every copilot endpoint.
+
+---
+
+## 14. WTBD Reintegration Audit - 2026-05-10
+
+This audit moves implementation-backed RFC37-WTBD-002 and cross-RFC AI memo truth into RFC-0043 so
+the governed AI PM copilot record is no longer stranded in child WTBD rows.
+
+| Implemented capability | Owning evidence | Current boundary |
+| --- | --- | --- |
+| Proof-pack PM memo | `lotus-ai` PR #61, `lotus-gateway` PR #198, `lotus-workbench` PR #166, manage `DpmProofPackAiEvidenceInput` | Review-gated memo assistance only; no approval, recommendation, client contact, or order execution. |
+| Wave PM memo / CIO impact support | `lotus-ai` PR #63, `lotus-gateway` PR #201, `lotus-workbench` PR #168, manage `DpmWaveReportInput` | Summarizes bounded wave evidence and proof-pack posture; no external OMS execution or autonomous wave approval. |
+| Outcome-review narrative | `lotus-ai` PR #62, RFC-0042 manage evidence, Gateway/Workbench outcome-review product realization | Drafts support-only outcome narrative from bounded evidence; no PM scoring, performance methodology ownership, or client communication execution. |
+| Portfolio-memory lineage in AI packs | `lotus-ai` PR #62 and PR #64 | Consumes bounded lineage counts, status, source refs, and content hash only; raw portfolio-memory events and generated output are not source events. |
+
+Gold-pass assessment:
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | Owner-side DPM workflow-pack execution exists for proof-pack PM memo, wave PM memo, and outcome-review narrative, with downstream first-wave invocation/posture where recorded in WTBD evidence. |
+| Quality improvements made | RFC-0043 now reflects actual `lotus-ai` workflow-pack ownership and separates implemented packs from proposed exception and operations summary packs. |
+| Debt removed | Stale wording that treated every AI copilot feature as proposed was removed, while unsupported autonomous advice and execution claims remain explicit. |
+| What was proven through testing and evidence | The owning `lotus-ai` slices include guardrail tests for forbidden actions, forbidden fields, unsupported requested outputs, source refs, no-raw-payload posture, portfolio-memory lineage, review-gated run posture, and AI-owned source-event projections. |
+| Expected-standard decision | RFC-0043 reaches the expected standard for the implemented owner-side DPM workflow packs. It remains partially implemented until separate exception summary, operations handoff summary, default-version resolution, full copilot workspace, and any additional product surfaces are implemented, validated, and merged by their owners. |
