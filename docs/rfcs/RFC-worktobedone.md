@@ -45,7 +45,7 @@ retained only as evidence index and sequencing control.
 | --- | --- | --- |
 | RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-003 and RFC36-WTBD-006 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-004 and RFC36-WTBD-005 remain source-product and upstream-depth controls. |
 | RFC-0037 | RFC37-WTBD-005, RFC37-WTBD-006, and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops, full portfolio memory, source-owner depth, execution, PM scoring, and client-communication ownership stay outside the completed parent-roadmap claims. |
-| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004 and RFC38-WTBD-006 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005, RFC38-WTBD-007, and RFC38-WTBD-008 remain source-owner enrichment or future degraded-fixture/product-depth controls. |
+| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-004, RFC38-WTBD-006, and RFC38-WTBD-008 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-005 and RFC38-WTBD-007 remain source-owner enrichment controls. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-009 plus the implementation-backed RFC40-WTBD-010 report, AI, and archive source-event slices are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`. | RFC40-WTBD-010 remains partial until the remaining OMS and PM-scoring portfolio-memory source-event families are completed by their owners. Richer per-security scenario contribution and CIO approval evidence remain future `lotus-risk` / CIO source depth rather than a hidden manage proof-pack gap. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, and the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003 are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial until tactical house-view and implicit campaign owners publish governed cohort products; RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
@@ -57,7 +57,8 @@ retained only as evidence index and sequencing control.
 Snapshot basis: the 2026-05-10 mainline after the RFC40-WTBD-009 selected-alternative
 regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI workflow-pack truth
 reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the RFC38-WTBD-006
-source-backed mandate-health consumption slice, and the RFC39-WTBD-010 construction lifecycle
+source-backed mandate-health consumption slice, the RFC38-WTBD-008 command-center product closure,
+and the RFC39-WTBD-010 construction lifecycle
 audit. RFC37-WTBD-005 now has the supported proof-pack, rebalance-wave, and outcome-review report,
 render, archive, Gateway/Workbench posture, and AI-evidence handoff truth moved into RFC-0037 as a
 completed parent-roadmap closure result. RFC36-WTBD-006 is now closed as a no-migration-required
@@ -86,9 +87,9 @@ execution methodology, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published truth | 40 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
+| Done on merged/published truth | 41 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
 | Partial / in progress | 5 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 14 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Remaining / open | 13 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Partial / in-progress items:
 
@@ -1001,7 +1002,7 @@ products, and canonical seed automation belonged to downstream or source-owning 
 | RFC38-WTBD-005 | Mandate objective, benchmark, review cadence, and model-change source products | `lotus-core`, `lotus-performance`, CIO/model authority | Deferred source enrichment | MVP fields are source-backed, derived, or gap-coded. Dedicated source products are required before richer personalization can be claimed. |
 | RFC38-WTBD-006 | Client restriction, sustainability, and cashflow source products | `lotus-core` source authority consumed by `lotus-manage` | Completed for first-wave manage mandate-health consumption | Mandate refresh consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when available, preserves source lineage, removes only fulfilled field-gap codes, degrades explicitly when optional profiles are unavailable, blocks restricted active model targets, flags sustainability preferences as review-required, and raises projected cashflow pressure from source-owned negative net cashflow. Client income-needs planning, issuer/sector restriction joins, security-level sustainability classification, regulatory suitability approval, and downstream UI profile-detail presentation remain future source-owner/product slices. |
 | RFC38-WTBD-007 | Broader risk and performance health enrichment | `lotus-risk`, `lotus-performance` | Deferred unless owning-service contracts are consumed | Manage health cannot clone risk or performance methodology. Risk/performance attention must come from certified owners. |
-| RFC38-WTBD-008 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, with manage as backend foundation | Proposed, not supported | Full product support requires Gateway composition, Workbench cockpit implementation, canonical runtime proof, and cross-app documentation. |
+| RFC38-WTBD-008 | Full front-office command-center product support | `lotus-gateway`, `lotus-workbench`, `lotus-platform`, with manage as backend foundation | Completed, merged, live-proven, and wiki-published | Backend authority, Gateway composition, Workbench cockpit rendering, canonical seed automation, PM-book discovery, populated ready proof, selector-driven partial proof, empty-date proof, and demo-ready screenshot evidence are implementation-backed. Degraded/blocked canonical fixtures, richer source-product details, and profile-detail UI remain separate source-owner or product-depth scope. |
 
 ### Detailed Follow-Up Items
 
@@ -1441,23 +1442,34 @@ Target business outcome:
 DPM command-center becomes a complete front-office product surface across manage, Gateway, and
 Workbench, backed by canonical data and demo-ready documentation.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-RFC-0038 closed the backend foundation only. Full product support requires Gateway implementation,
-Workbench cockpit panels, canonical seed automation, browser proof, and cross-repo docs.
+Completed for the first-wave populated DPM command-center product path. RFC38-WTBD-001 through
+RFC38-WTBD-004 delivered the required backend authority, Gateway composition, Workbench cockpit,
+canonical seed automation, and PM-book discovery path. The supported-features wiki now documents
+the command-center product path with business-readable flow, non-functional posture, audience use,
+and demo boundaries.
 
-Dependencies before implementation:
+Implemented scope:
 
-1. RFC38-WTBD-001 complete,
-2. RFC38-WTBD-002 complete,
-3. RFC38-WTBD-003 complete,
-4. canonical front-office validation passes,
-5. supported-feature ledgers align across apps.
+1. manage owns mandate twins, mandate health, monitoring runs, active exceptions, and
+   command-center summary,
+2. Gateway exposes the command-center BFF without recalculating health, source readiness, or
+   PM-book membership,
+3. Workbench renders the cockpit through Gateway/BFF only,
+4. platform canonical seed automation proves populated `ready`, selector-driven `partial`, and
+   empty-date `empty` postures,
+5. canonical evidence includes `canonical-front-office-qa-20260509-214551.json`,
+   `dpm-command-center-seed-20260509-220332.json`, and demo-ready screenshot evidence at
+   `lotus-platform/output/front-office-qa/wtbd-rfc36-audit-20260509-214550/dpm-command-center-live.png`.
 
-Expected implementation wave:
+Explicit boundaries:
 
-Close as a cross-app product-realization slice after Gateway, Workbench, and platform seed
-automation are implemented.
+1. degraded and blocked canonical fixtures remain future source-owner/product-depth work,
+2. profile-detail presentation for restriction, sustainability, cashflow, risk, and performance
+   enrichments remains separate scope,
+3. manage does not claim OMS execution, PM scoring, client communication execution, autonomous AI,
+   local Workbench recomputation, or unsupported source-owner enrichment.
 
 Promotion proof:
 
@@ -1465,6 +1477,16 @@ Promotion proof:
 2. API/BFF/browser/accessibility/visual checks,
 3. demo screenshots tied to validated backend proof,
 4. wiki material suitable for business, operations, sales/pre-sales, and demos.
+
+Gold-pass assessment - 2026-05-10:
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | The first-wave DPM command-center product path is complete across manage backend authority, Gateway composition, Workbench cockpit rendering, platform seed automation, PM-book discovery, and demo-ready canonical screenshot evidence. |
+| Quality improvements made | RFC-0038 now records the product realization as part of the originating command-center RFC, while retaining clear no-claim boundaries for degraded fixtures, profile-detail UI, OMS, PM scoring, and autonomous behavior. |
+| Debt removed | Stale WTBD wording that treated Gateway, Workbench, and platform proof as future work was retired after those owning slices merged and published. |
+| What was proven through testing and evidence | Proof is anchored in the merged RFC38-WTBD-001 through WTBD-004 slices, 61 manage RFC38 tests, focused PM-book source-client proof, Ruff checks, platform canonical front-office QA, command-center seed evidence, and Workbench screenshot evidence. |
+| Expected-standard decision | RFC38-WTBD-008 reaches the expected first-wave product standard. Remaining RFC38 work is limited to source-owner enrichment and richer product-depth fixtures, not the populated command-center path. |
 
 ### Suggested Sequencing
 

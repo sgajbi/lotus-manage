@@ -1118,7 +1118,7 @@ should be updated in the owning repositories when those implementations land.
 
 ## 17. Post-Closure WTBD Integration Audit
 
-Assessment date: 2026-05-09
+Assessment dates: 2026-05-09 and 2026-05-10
 
 This section incorporates completed RFC38 WTBD follow-ons back into RFC-0038 so the command-center
 product truth lives with the originating RFC rather than only in
@@ -1133,6 +1133,7 @@ product truth lives with the originating RFC rather than only in
 | RFC38-WTBD-003 - Platform canonical seed automation | Completed, merged, live-proven, and wiki-published | `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 added the governed command-center seed path for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, and `BOOK_SG_BALANCED_DPM`, including Manage and Gateway mandate/health/summary checks plus canonical Workbench screenshot registration. |
 | RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts | Completed for populated source-owned PM-book monitoring cohorts | `lotus-core` owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it when monitoring run-once receives a portfolio-manager selector without explicit mandate ids; Gateway passes the body through; Workbench now triggers the source-owned path rather than sending a single-mandate fallback. |
 | RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products | Completed for first-wave manage health consumption | `lotus-manage` mandate refresh now optionally consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` from `lotus-core`. Available profiles are preserved in mandate lineage, field-gap codes are removed only when the source product is actually present, active instrument restrictions can block model-target health, sustainability preferences create bounded review-required health posture, and projected negative net cashflow can create cash-liquidity attention. Client income-needs planning, issuer/sector restriction joins, security-level sustainability classification, and regulatory suitability approval remain explicit non-goals. |
+| RFC38-WTBD-008 - Full front-office command-center product support | Completed for the first-wave populated product path | Backend authority, Gateway command-center composition, Workbench cockpit rendering, platform canonical seed automation, PM-book discovery, populated ready proof, selector-driven partial proof, empty-date proof, and demo-ready screenshot evidence are implementation-backed. Degraded/blocked canonical fixtures and richer profile-detail surfaces remain future source-owner or product-depth work. |
 
 ### 17.2 Evidence Rechecked
 
@@ -1218,7 +1219,53 @@ standard for backend authority, Gateway composition, Workbench command-center pr
 platform seed automation, and PM-book monitoring cohort discovery. Remaining source-product,
 degraded-fixture, and richer health-enrichment work should remain separate WTBD scope.
 
-### 17.5 WTBD-006 Gold-Pass Assessment
+### 17.5 WTBD-008 Gold-Pass Assessment
+
+Assessment date: 2026-05-10
+
+What was truly completed:
+
+1. the first-wave DPM command-center product path is complete across manage, Gateway, Workbench,
+   and platform canonical seed automation,
+2. Gateway composes manage-owned command-center truth without recalculating mandate health or
+   source readiness,
+3. Workbench renders the cockpit through Gateway/BFF only,
+4. platform canonical evidence proves populated `ready`, selector-driven `partial`, and empty-date
+   `empty` command-center postures,
+5. demo-ready screenshot evidence exists for the populated canonical portfolio.
+
+Quality improvements made:
+
+1. RFC-0038 now treats product realization as completed implementation truth, not only as a
+   downstream handoff,
+2. the supported scope separates populated product readiness from degraded/blocked fixture depth,
+3. the evidence chain names backend, BFF, browser, seed, and screenshot proof explicitly.
+
+Debt removed:
+
+1. stale downstream-future wording for Gateway, Workbench, and platform seed work,
+2. ambiguity between backend-only support and first-wave product support,
+3. the risk of using screenshots without machine-readable seed and supportability evidence.
+
+Testing and evidence:
+
+1. manage RFC38 tests and focused PM-book source-client proof passed during the prior gold-pass
+   audit,
+2. governed canonical front-office QA passed at
+   `lotus-platform/output/front-office-qa/canonical-front-office-qa-20260509-214551.json`,
+3. seed posture proof is retained at
+   `lotus-platform/output/front-office-qa/dpm-command-center-seed-20260509-220332.json`,
+4. screenshot evidence is retained at
+   `lotus-platform/output/front-office-qa/wtbd-rfc36-audit-20260509-214550/dpm-command-center-live.png`.
+
+Expected-standard decision:
+
+RFC38-WTBD-008 reaches the expected first-wave product standard for the populated DPM
+command-center path. Remaining RFC38 work is limited to source-owner objective/benchmark/review
+cadence products, broader risk/performance health enrichment, degraded/blocked canonical fixtures,
+and richer profile-detail product surfaces.
+
+### 17.6 WTBD-006 Gold-Pass Assessment
 
 Assessment date: 2026-05-10
 
