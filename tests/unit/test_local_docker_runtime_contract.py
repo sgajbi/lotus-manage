@@ -89,8 +89,7 @@ def test_manage_core_live_validation_has_repo_native_command_and_docs() -> None:
         makefile_text
     )
     assert (
-        "--expect-stateful-core-sourcing "
-        "$${LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING:-available}"
+        "--expect-stateful-core-sourcing $${LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING:-available}"
     ) in makefile_text
     assert "`make live-api-validate-core`" in readme_text
     assert "RFC-087 certified source-data" in readme_text
