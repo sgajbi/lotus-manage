@@ -6,6 +6,7 @@ from typing import Any, Optional
 import httpx
 
 from src.core.dpm_source_context import (
+    DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreCioModelChangeAffectedCohortResponse,
     DpmCoreExecutionContext,
@@ -51,6 +52,9 @@ class DpmCoreResolverConfig:
         "/integration/model-portfolios/{model_portfolio_id}/targets"
     )
     mandate_binding_path_template: str = "/integration/portfolios/{portfolio_id}/mandate-binding"
+    benchmark_assignment_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/benchmark-assignment"
+    )
     portfolio_manager_book_memberships_path_template: str = (
         "/integration/portfolio-manager-books/{portfolio_manager_id}/memberships"
     )
@@ -98,6 +102,14 @@ class DpmCoreResolverConfig:
         path_template = self.mandate_binding_path_template.strip()
         if not path_template:
             raise DpmCoreResolverUnavailableError("DPM_CORE_MANDATE_BINDING_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_benchmark_assignment_url(self, portfolio_id: str) -> str:
+        path_template = self.benchmark_assignment_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
@@ -485,6 +497,27 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_MANDATE_BINDING_INCOMPLETE",
         )
         return DpmCoreMandateBindingResponse.model_validate(response)
+
+    def resolve_benchmark_assignment(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        reporting_currency: Optional[str] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCoreBenchmarkAssignmentResponse:
+        url = self._config.resolve_benchmark_assignment_url(portfolio_id)
+        payload: dict[str, Any] = {"as_of_date": as_of_date.isoformat()}
+        if reporting_currency:
+            payload["reporting_currency"] = reporting_currency
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE",
+            incomplete_code="DPM_CORE_BENCHMARK_ASSIGNMENT_INCOMPLETE",
+        )
+        return DpmCoreBenchmarkAssignmentResponse.model_validate(response)
 
     def resolve_portfolio_manager_book_membership(
         self,

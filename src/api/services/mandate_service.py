@@ -204,12 +204,27 @@ def refresh_mandate_from_core(
         unavailable_family=unavailable_cashflow_projection,
         family_name="PORTFOLIO_CASHFLOW_PROJECTION",
     )
+    benchmark_assignment, unavailable_benchmark_assignment = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_benchmark_assignment",
+        family_name="BENCHMARK_ASSIGNMENT",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        reporting_currency=reference_currency,
+        correlation_id=correlation_id,
+    )
+    benchmark_assignment, unavailable_benchmark_assignment = _ready_optional_source(
+        source=benchmark_assignment,
+        unavailable_family=unavailable_benchmark_assignment,
+        family_name="BENCHMARK_ASSIGNMENT",
+    )
     unavailable_source_families = [
         family
         for family in (
             unavailable_client_restrictions,
             unavailable_sustainability_preferences,
             unavailable_cashflow_projection,
+            unavailable_benchmark_assignment,
         )
         if family is not None
     ]
@@ -222,6 +237,7 @@ def refresh_mandate_from_core(
         client_restriction_profile=client_restriction_profile,
         sustainability_preference_profile=sustainability_preference_profile,
         portfolio_cashflow_projection=portfolio_cashflow_projection,
+        benchmark_assignment=benchmark_assignment,
     )
     health_input = build_health_input_from_core_sources(
         twin=twin,
@@ -278,7 +294,11 @@ def _ready_optional_source(
     if supportability is not None and getattr(supportability, "state", None) != "READY":
         return None, family_name
     data_quality_status = getattr(source, "data_quality_status", None)
-    if data_quality_status is not None and str(data_quality_status).upper() != "READY":
+    if data_quality_status is not None and str(data_quality_status).upper() not in {
+        "READY",
+        "COMPLETE",
+        "ACCEPTED",
+    }:
         return None, family_name
     return source, unavailable_family
 

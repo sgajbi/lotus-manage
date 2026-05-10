@@ -5,6 +5,7 @@ from typing import Any
 import pytest
 
 from src.core.dpm_source_context import (
+    DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
@@ -47,8 +48,14 @@ def _mandate_binding(**overrides: object) -> DpmCoreMandateBindingResponse:
         "jurisdiction_code": "SG",
         "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
         "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+        "mandate_objective": (
+            "Preserve and grow global balanced wealth within controlled drawdown limits."
+        ),
         "risk_profile": "balanced",
         "investment_horizon": "long_term",
+        "review_cadence": "quarterly",
+        "last_review_date": "2026-03-31",
+        "next_review_due_date": "2026-06-30",
         "leverage_allowed": False,
         "tax_awareness_allowed": True,
         "settlement_awareness_required": True,
@@ -115,6 +122,27 @@ def _model_targets(**overrides: object) -> DpmCoreModelPortfolioTargetResponse:
     }
     payload.update(overrides)
     return DpmCoreModelPortfolioTargetResponse.model_validate(payload)
+
+
+def _benchmark_assignment(**overrides: object) -> DpmCoreBenchmarkAssignmentResponse:
+    payload: dict[str, Any] = {
+        "product_name": "BenchmarkAssignment",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40",
+        "as_of_date": "2026-05-03",
+        "effective_from": "2026-01-01",
+        "assignment_source": "mandate_admin",
+        "assignment_status": "active",
+        "source_system": "lotus-core",
+        "assignment_recorded_at": "2026-05-03T01:00:00Z",
+        "assignment_version": 1,
+        "contract_version": "rfc_062_v1",
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-05-03T01:00:00Z",
+    }
+    payload.update(overrides)
+    return DpmCoreBenchmarkAssignmentResponse.model_validate(payload)
 
 
 def _market_data_coverage(**overrides: object) -> DpmCoreMarketDataCoverageWindowResponse:
@@ -333,19 +361,45 @@ def test_compile_mandate_twin_uses_core_source_truth_and_explicit_gap_codes() ->
         mandate=_mandate_binding(),
         model_targets=_model_targets(),
         as_of_date=AS_OF,
+        benchmark_assignment=_benchmark_assignment(),
     )
 
     assert twin.mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"
     assert twin.portfolio_id == "PB_SG_GLOBAL_BAL_001"
     assert twin.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
+    assert twin.benchmark_id == "BMK_PB_GLOBAL_BALANCED_60_40"
     assert twin.base_currency == "SGD"
+    assert twin.investment_objective == (
+        "Preserve and grow global balanced wealth within controlled drawdown limits."
+    )
     assert twin.constraints.cash_band_min_weight == Decimal("0.0200000000")
     assert twin.review_policy.review_frequency == "QUARTERLY"
+    assert twin.review_policy.last_review_date == date(2026, 3, 31)
+    assert twin.review_policy.next_review_due_date == date(2026, 6, 30)
     assert [lineage.product_name for lineage in twin.source_lineage] == [
         "DiscretionaryMandateBinding",
         "DpmModelPortfolioTarget",
+        "BenchmarkAssignment",
     ]
+    assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert "MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED" not in twin.field_gap_codes
+
+
+def test_compile_mandate_twin_preserves_explicit_gap_codes_for_missing_profile_fields() -> None:
+    twin = compile_mandate_digital_twin_from_core(
+        mandate=_mandate_binding(
+            mandate_objective=None,
+            review_cadence=None,
+            next_review_due_date=None,
+        ),
+        model_targets=_model_targets(),
+        as_of_date=AS_OF,
+    )
+
+    assert twin.investment_objective == "LONG_TERM_TOTAL_RETURN"
+    assert twin.review_policy.review_frequency == "QUARTERLY"
     assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" in twin.field_gap_codes
+    assert "MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED" in twin.field_gap_codes
 
 
 def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainability_lineage() -> (

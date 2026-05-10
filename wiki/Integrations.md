@@ -67,7 +67,7 @@ Current source-product integration status:
 | Source product | lotus-manage posture | Promotion impact |
 | --- | --- | --- |
 | `DpmModelPortfolioTarget:v1` | Client method and transformer implemented; live proof passed. | Supplies discretionary model targets. |
-| `DiscretionaryMandateBinding:v1` | Client method and policy-context transformer implemented; live proof passed. | Supplies mandate authority, policy pack, and booking context. |
+| `DiscretionaryMandateBinding:v1` | Client method, policy-context transformer, and mandate-twin transformer implemented; live proof passed for the first source wave. | Supplies mandate authority, objective, review cadence, review dates, policy pack, and booking context. |
 | `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof passed. | Supplies buy/sell eligibility, restrictions, settlement, issuer, and taxonomy. |
 | `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof passed. | Supplies tax-aware lot context. |
 | `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof passed. | Supplies price and FX coverage. |
