@@ -11,6 +11,7 @@ from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativePerformanceContext,
+    AuthoritativeRegimeStressContext,
     AuthoritativeRiskContext,
     AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
@@ -25,6 +26,7 @@ ProofPackAnalyticsFamily = Literal[
     "transaction_cost",
     "client_restriction",
     "sustainability_preference",
+    "regime_stress",
 ]
 
 
@@ -62,7 +64,9 @@ def source_analytics_for_alternative(
         return _transaction_cost_source_analytics(source_context)
     if family == "client_restriction":
         return _client_restriction_source_analytics(source_context)
-    return _sustainability_preference_source_analytics(source_context)
+    if family == "sustainability_preference":
+        return _sustainability_preference_source_analytics(source_context)
+    return _regime_stress_source_analytics(source_context)
 
 
 def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAnalytics | None:
@@ -300,6 +304,50 @@ def _sustainability_preference_source_analytics(
         source_ref=source_ref,
         source_hash_key="sustainability_preference_context",
         content_hash=context.content_hash or content_hash,
+    )
+
+
+def _regime_stress_source_analytics(
+    source_context: dict[str, Any],
+) -> ProofPackSourceAnalytics | None:
+    try:
+        context = AuthoritativeRegimeStressContext.model_validate(source_context)
+    except ValidationError:
+        return None
+    payload = context.model_dump(mode="json", exclude_none=True)
+    content_hash = hash_canonical_payload(payload)
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
+        reason_codes.append("DPM_REGIME_STRESS_CONTEXT_DEGRADED")
+    source_ref = _source_ref(
+        family="regime_stress",
+        source_system=context.source_system,
+        source_type="RegimeScenarioPackEvaluation",
+        source_id=context.scenario_pack_id or content_hash,
+        supportability_state=str(context.supportability_status),
+        content_hash=content_hash,
+    )
+    return ProofPackSourceAnalytics(
+        family="regime_stress",
+        state=_section_state(context.supportability_status),
+        summary=(
+            "Scenario/regime evidence is attached from source-owned "
+            "RegimeScenarioPackEvaluation:v1."
+        ),
+        facts={
+            "source_system": context.source_system,
+            "source_product_name": "RegimeScenarioPackEvaluation",
+            "source_product_version": "v1",
+            "scenario_pack_id": context.scenario_pack_id,
+        },
+        metrics={
+            "worst_case_loss_pct": context.worst_case_loss_pct,
+            "maximum_allowed_loss_pct": context.maximum_allowed_loss_pct,
+        },
+        reason_codes=reason_codes,
+        source_ref=source_ref,
+        source_hash_key="regime_stress_context",
+        content_hash=content_hash,
     )
 
 

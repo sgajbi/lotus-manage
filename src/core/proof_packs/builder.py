@@ -727,6 +727,15 @@ def _section_payload(
             ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"],
         )
     if section_type == "scenario_and_regime_evidence":
+        regime_context = source_analytics.get("regime_stress")
+        if regime_context is not None:
+            return (
+                regime_context.state,
+                regime_context.summary,
+                regime_context.facts,
+                regime_context.metrics,
+                sorted(set(regime_context.reason_codes)),
+            )
         return (
             "DEGRADED",
             "Scenario/regime authority context is not attached.",
@@ -1031,6 +1040,7 @@ def _source_analytics(
         "transaction_cost",
         "client_restriction",
         "sustainability_preference",
+        "regime_stress",
     )
     return {
         family: analytics
