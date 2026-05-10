@@ -94,6 +94,12 @@ Current repository posture:
     regime-stress-aware through `lotus-risk` `RegimeScenarioPackEvaluation:v1` when
     `DPM_RISK_BASE_URL` is configured. Client income-need planning is not supported by cashflow
     projection totals and remains deferred until an owning source product exists.
+    RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
+    `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when available:
+    source lineage is preserved, field-gap codes remain only for unavailable optional products,
+    restricted model targets can block eligibility health, sustainability preferences require
+    bounded review, and projected negative net cashflow can raise cash-liquidity attention without
+    claiming client income-needs planning.
     ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
     `SustainabilityPreferenceProfile:v1` through the stateful core-sourcing path when source gates
     are enabled. Client restriction profile violations block matching candidate trades, source

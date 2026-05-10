@@ -1132,6 +1132,7 @@ product truth lives with the originating RFC rather than only in
 | RFC38-WTBD-002 - Workbench DPM cockpit panels | Completed, merged, and live-proven | `lotus-workbench` PR #154 merged to `main` at `2fbfac5`. Workbench consumes Gateway/BFF command-center contracts only and renders health distribution, source readiness, attention queue, active exceptions, mandate health dimensions, monitoring action posture, and bounded observability without browser-side health or source-readiness calculation. |
 | RFC38-WTBD-003 - Platform canonical seed automation | Completed, merged, live-proven, and wiki-published | `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 added the governed command-center seed path for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, and `BOOK_SG_BALANCED_DPM`, including Manage and Gateway mandate/health/summary checks plus canonical Workbench screenshot registration. |
 | RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts | Completed for populated source-owned PM-book monitoring cohorts | `lotus-core` owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it when monitoring run-once receives a portfolio-manager selector without explicit mandate ids; Gateway passes the body through; Workbench now triggers the source-owned path rather than sending a single-mandate fallback. |
+| RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products | Completed for first-wave manage health consumption | `lotus-manage` mandate refresh now optionally consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` from `lotus-core`. Available profiles are preserved in mandate lineage, field-gap codes are removed only when the source product is actually present, active instrument restrictions can block model-target health, sustainability preferences create bounded review-required health posture, and projected negative net cashflow can create cash-liquidity attention. Client income-needs planning, issuer/sector restriction joins, security-level sustainability classification, and regulatory suitability approval remain explicit non-goals. |
 
 ### 17.2 Evidence Rechecked
 
@@ -1216,3 +1217,52 @@ RFC-0038 and completed WTBD-001 through WTBD-004 have genuinely reached the expe
 standard for backend authority, Gateway composition, Workbench command-center product realization,
 platform seed automation, and PM-book monitoring cohort discovery. Remaining source-product,
 degraded-fixture, and richer health-enrichment work should remain separate WTBD scope.
+
+### 17.5 WTBD-006 Gold-Pass Assessment
+
+Assessment date: 2026-05-10
+
+What was truly completed:
+
+1. mandate refresh attempts to consume `ClientRestrictionProfile:v1`,
+   `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` from `lotus-core`,
+2. available source products are attached to mandate lineage and remove only their corresponding
+   field-gap codes,
+3. unavailable optional source products degrade source readiness instead of blocking refresh or
+   fabricating profile facts,
+4. active restricted model targets can block eligibility health,
+5. source-owned sustainability preferences create `SUSTAINABILITY_REVIEW_REQUIRED`, and negative
+   projected net cashflow creates `PROJECTED_CASHFLOW_PRESSURE` when current cash is otherwise
+   inside mandate cash bands.
+
+Quality improvements made:
+
+1. RFC-0038 no longer treats already-certified core client-profile and cashflow products as absent,
+2. health scoring now has bounded first-wave semantics for source-backed restriction,
+   sustainability, and cashflow risk without claiming full suitability or income-needs planning,
+3. source lineage and field gaps now reflect actual source availability rather than static
+   historical assumptions.
+
+Debt removed:
+
+1. stale `PortfolioCashflowForecast` wording has been replaced with the implemented
+   `PortfolioCashflowProjection:v1` boundary,
+2. static client restriction and sustainability field-gap behavior was replaced with
+   source-availability-aware behavior,
+3. the WTBD truth has been moved back into this RFC as implementation-backed product truth.
+
+Testing and evidence:
+
+1. `python -m pytest tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/api/test_mandates_api.py -q`
+   passed with 43 tests,
+2. core health tests prove lineage preservation, field-gap removal, restricted target blocking,
+   sustainability review posture, and projected-cashflow pressure,
+3. mandate API tests prove refresh consumes optional source products and degrades truthfully when
+   they are unavailable.
+
+Expected-standard decision:
+
+WTBD-006 is complete for first-wave manage mandate-health consumption of certified core source
+products. It has not completed client income-needs planning, issuer/sector/client-jurisdiction
+restriction joins, security-level sustainability classification, regulatory suitability approval,
+or downstream UI detail presentation; those remain separately governed source-owner/product slices.

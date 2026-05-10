@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-10T04:16:22.877462+00:00",
+  "generatedAt": "2026-05-10T05:55:35.334229+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -6233,6 +6233,34 @@
       ]
     },
     {
+      "semanticId": "lotus.projected_cashflow_currency",
+      "canonicalTerm": "projected_cashflow_currency",
+      "preferredName": "projected_cashflow_currency",
+      "description": "ISO currency code for projected cashflow currency.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.projected_net_cashflow",
+      "canonicalTerm": "projected_net_cashflow",
+      "preferredName": "projected_net_cashflow",
+      "description": "dpm mandate health input field: projected net cashflow.",
+      "example": "projected_net_cashflow_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.projection_end",
       "canonicalTerm": "projection_end",
       "preferredName": "projection_end",
@@ -7131,6 +7159,22 @@
       "description": "dpm mandate constraint set output field: restricted sectors.",
       "example": [
         "sample_restricted_sectors_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.restricted_target_instruments",
+      "canonicalTerm": "restricted_target_instruments",
+      "preferredName": "restricted_target_instruments",
+      "description": "dpm mandate health input field: restricted target instruments.",
+      "example": [
+        "sample_restricted_target_instruments_item"
       ],
       "type": "array",
       "locations": [
@@ -8869,6 +8913,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.sustainability_review_required",
+      "canonicalTerm": "sustainability_review_required",
+      "preferredName": "sustainability_review_required",
+      "description": "dpm mandate health input field: sustainability review required.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -49732,6 +49790,38 @@
             "type": "array",
             "semanticId": "lotus.restricted_held_instruments",
             "attributeRef": "#/attributeCatalog/lotus.restricted_held_instruments"
+          },
+          {
+            "name": "restricted_target_instruments",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.restricted_target_instruments",
+            "attributeRef": "#/attributeCatalog/lotus.restricted_target_instruments"
+          },
+          {
+            "name": "sustainability_review_required",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.sustainability_review_required",
+            "attributeRef": "#/attributeCatalog/lotus.sustainability_review_required"
+          },
+          {
+            "name": "projected_net_cashflow",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.projected_net_cashflow",
+            "attributeRef": "#/attributeCatalog/lotus.projected_net_cashflow"
+          },
+          {
+            "name": "projected_cashflow_currency",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.projected_cashflow_currency",
+            "attributeRef": "#/attributeCatalog/lotus.projected_cashflow_currency"
           },
           {
             "name": "tax_lot_missing_security_ids",

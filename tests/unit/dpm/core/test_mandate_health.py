@@ -5,9 +5,12 @@ from typing import Any
 import pytest
 
 from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceProfileResponse,
 )
 from src.core.mandates import (
     DIMENSION_WEIGHTS,
@@ -135,6 +138,107 @@ def _market_data_coverage(**overrides: object) -> DpmCoreMarketDataCoverageWindo
     return DpmCoreMarketDataCoverageWindowResponse.model_validate(payload)
 
 
+def _client_restriction_profile() -> DpmCoreClientRestrictionProfileResponse:
+    return DpmCoreClientRestrictionProfileResponse.model_validate(
+        {
+            "product_name": "ClientRestrictionProfile",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "restrictions": [
+                {
+                    "restriction_scope": "INSTRUMENT",
+                    "restriction_code": "CLIENT_RESTRICTED_SECURITY",
+                    "restriction_status": "ACTIVE",
+                    "restriction_source": "CLIENT_PROFILE",
+                    "applies_to_buy": True,
+                    "applies_to_sell": False,
+                    "instrument_ids": ["EQ_US_AAPL"],
+                    "asset_classes": [],
+                    "issuer_ids": [],
+                    "country_codes": [],
+                    "effective_from": "2026-04-01",
+                    "restriction_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "CLIENT_RESTRICTION_PROFILE_READY",
+                "restriction_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"contract_version": "ClientRestrictionProfile:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
+def _sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfileResponse:
+    return DpmCoreSustainabilityPreferenceProfileResponse.model_validate(
+        {
+            "product_name": "SustainabilityPreferenceProfile",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "preferences": [
+                {
+                    "preference_framework": "BANK_SUSTAINABILITY",
+                    "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
+                    "preference_status": "ACTIVE",
+                    "preference_source": "CLIENT_PROFILE",
+                    "minimum_allocation": "0.20",
+                    "applies_to_asset_classes": ["EQUITY"],
+                    "exclusion_codes": ["THERMAL_COAL"],
+                    "positive_tilt_codes": [],
+                    "effective_from": "2026-04-01",
+                    "preference_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+                "preference_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"contract_version": "SustainabilityPreferenceProfile:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
+def _portfolio_cashflow_projection() -> DpmCorePortfolioCashflowProjectionResponse:
+    return DpmCorePortfolioCashflowProjectionResponse.model_validate(
+        {
+            "product_name": "PortfolioCashflowProjection",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "range_start_date": "2026-05-03",
+            "range_end_date": "2026-08-01",
+            "include_projected": True,
+            "portfolio_currency": "SGD",
+            "points": [
+                {
+                    "projection_date": "2026-05-10",
+                    "net_cashflow": "-25000.00",
+                    "projected_cumulative_cashflow": "-25000.00",
+                }
+            ],
+            "total_net_cashflow": "-25000.00",
+            "projection_days": 90,
+            "lineage": {"contract_version": "PortfolioCashflowProjection:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
 def _twin(**overrides: object) -> DpmMandateDigitalTwin:
     payload: dict[str, Any] = {
         "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
@@ -209,6 +313,31 @@ def test_compile_mandate_twin_uses_core_source_truth_and_explicit_gap_codes() ->
     assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" in twin.field_gap_codes
 
 
+def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainability_lineage() -> None:
+    twin = compile_mandate_digital_twin_from_core(
+        mandate=_mandate_binding(),
+        model_targets=_model_targets(),
+        as_of_date=AS_OF,
+        client_restriction_profile=_client_restriction_profile(),
+        sustainability_preference_profile=_sustainability_preference_profile(),
+        portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+    )
+
+    assert "EQ_US_AAPL" in twin.constraints.restricted_instruments
+    assert twin.preferences.sustainability_strategy == "BANK_SUSTAINABILITY"
+    assert "MIN_SUSTAINABLE_ALLOCATION" in twin.preferences.bespoke_notes
+    assert "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert [lineage.product_name for lineage in twin.source_lineage] == [
+        "DiscretionaryMandateBinding",
+        "DpmModelPortfolioTarget",
+        "ClientRestrictionProfile",
+        "SustainabilityPreferenceProfile",
+        "PortfolioCashflowProjection",
+    ]
+
+
 def test_build_health_input_from_market_data_coverage_preserves_degraded_sources() -> None:
     health_input = build_health_input_from_core_sources(
         twin=_twin(),
@@ -230,6 +359,36 @@ def test_build_health_input_from_market_data_coverage_preserves_degraded_sources
     assert health_input.source_readiness_state == "DEGRADED"
     assert health_input.degraded_source_families == ["MARKET_DATA_COVERAGE"]
     assert health_input.stale_source_families == ["EQ_US_AAPL", "USD/SGD"]
+
+
+def test_build_health_input_uses_source_backed_profile_and_cashflow_risk_signals() -> None:
+    twin = compile_mandate_digital_twin_from_core(
+        mandate=_mandate_binding(),
+        model_targets=_model_targets(),
+        as_of_date=AS_OF,
+        client_restriction_profile=_client_restriction_profile(),
+        sustainability_preference_profile=_sustainability_preference_profile(),
+        portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+    )
+    health_input = build_health_input_from_core_sources(
+        twin=twin,
+        model_targets=_model_targets(),
+        client_restriction_profile=_client_restriction_profile(),
+        sustainability_preference_profile=_sustainability_preference_profile(),
+        portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+    ).model_copy(update={"cash_weight": Decimal("0.05")})
+
+    snapshot = calculate_mandate_health(health_input)
+
+    assert _dimension(
+        snapshot, MandateHealthDimension.ELIGIBILITY_RESTRICTIONS
+    ).reason_code == "RESTRICTED_INSTRUMENT_HELD"
+    assert _dimension(snapshot, MandateHealthDimension.CASH_LIQUIDITY).reason_code == (
+        "PROJECTED_CASHFLOW_PRESSURE"
+    )
+    assert _dimension(snapshot, MandateHealthDimension.WORKFLOW_READINESS).reason_code == (
+        "SUSTAINABILITY_REVIEW_REQUIRED"
+    )
 
 
 def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> None:
