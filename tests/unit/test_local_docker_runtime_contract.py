@@ -88,7 +88,13 @@ def test_manage_core_live_validation_has_repo_native_command_and_docs() -> None:
     assert "--expect-core-dpm-route $${LOTUS_MANAGE_EXPECT_CORE_DPM_ROUTE:-absent}" in (
         makefile_text
     )
+    assert (
+        "--expect-stateful-core-sourcing $${LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING:-available}"
+    ) in makefile_text
     assert "`make live-api-validate-core`" in readme_text
-    assert "RFC-087 certified source-data products" in readme_text
+    assert "RFC-087 certified source-data" in readme_text
+    assert "products and canonical data is seeded" in readme_text
+    assert "non-source-ready local runtime" in readme_text
     assert "make live-api-validate-core" in validation_wiki_text
     assert "RFC-087 certified composed DPM source-data products" in validation_wiki_text
+    assert "canonical source-ready stack defaults" in validation_wiki_text

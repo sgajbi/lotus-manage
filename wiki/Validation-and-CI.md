@@ -21,7 +21,10 @@
 - `make live-api-validate`
   live API evidence against a running `lotus-manage` instance
 - `make live-api-validate-core`
-  live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture
+  live API evidence against `lotus-manage` plus current `lotus-core` DPM source-product posture.
+  The canonical source-ready stack defaults to
+  `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available`; set it to `disabled` only for a
+  deliberately non-source-ready local runtime.
 
 ## Live API evidence
 
@@ -50,7 +53,6 @@ python scripts/validate_live_api.py --base-url http://127.0.0.1:8001 --json-outp
 Use this before claiming manage/core integration readiness with stateful sourcing enabled:
 
 ```bash
-LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available \
 make live-api-validate-core
 ```
 
