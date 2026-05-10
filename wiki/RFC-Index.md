@@ -116,8 +116,8 @@ evidence, and supported-feature promotion.
 - RFC-0043
   partially implemented governed AI PM copilot roadmap using `lotus-ai` without transferring domain
   decision ownership to AI. Owner-side DPM packs exist for proof-pack PM memo, wave PM memo, and
-  outcome-review narrative; exception/operations packs and broader copilot workspace depth remain
-  future owner work
+  outcome-review narrative, plus operations handoff summary; exception support, Gateway/Workbench
+  operations-handoff invocation, and broader copilot workspace depth remain future owner work
 
 ## Removed local RFC sprawl
 

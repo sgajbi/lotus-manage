@@ -110,9 +110,10 @@ implemented for `RISK_EVENT` through lotus-risk `RiskEventAffectedCohort:v1` ove
 candidate portfolios with source-supplied exposure weights. Tactical house-view cohorts, implicit
 campaign cohorts, richer owning-service risk/performance aggregate enrichment, and external OMS
 execution remain unpromoted.
-`lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`, and
-`outcome_review_narrative.pack@v1` workflows over Manage-owned proof-pack, wave, and outcome
-evidence with review-required guardrails. RFC-0042 is `DONE` for manage backend
+`lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
+`outcome_review_narrative.pack@v1`, and `dpm_operations_handoff_summary.pack@v1` workflows over
+Manage-owned proof-pack, wave, outcome, and operations handoff evidence with review-required
+guardrails. RFC-0042 is `DONE` for manage backend
 authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
@@ -121,8 +122,8 @@ hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempo
 state-filter validation evidence. Full post-trade outcome product support remains downstream until
 Gateway/Workbench implementation where surfaced is complete and canonically proven. RFC-0043 is
 partially implemented for those owner-side DPM workflow packs; broader exception summaries,
-operations handoff summaries, full copilot workspace UX, and unsupported autonomous advice remain
-future owner work. Target-state features are not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
+Gateway/Workbench operations-handoff product invocation, full copilot workspace UX, and
+unsupported autonomous advice remain future owner work. Target-state features are not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed

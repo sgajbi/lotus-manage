@@ -289,6 +289,11 @@ Current repository posture:
     without constructing prompts or memo content locally. `lotus-ai` PR #66 adds conservative
     workflow-pack default-version resolution for the AI control plane, selecting only registered,
     activation-eligible, non-superseded pack versions without changing Manage workflow authority.
+    `lotus-ai` PR #67 adds the owner-side `dpm_operations_handoff_summary.pack@v1` workflow over
+    Manage-owned `DpmWaveReportInput` handoff evidence with handoff/source-ref requirements,
+    forbidden-action/output guardrails, mixed memo/handoff rejection, review-required support-only
+    output, and no external execution claim. Gateway/Workbench operations-handoff product
+    invocation remains future owning-app work.
     CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through
