@@ -2058,14 +2058,16 @@ Functional coverage:
 - deterministic AI-evidence input generation,
 - OpenAPI success contract for bounded AI-evidence payloads,
 - forbidden-field removal,
-- forbidden-action guardrails,
+- forbidden-action guardrails, including blocked order placement, rebalance approval, control
+  override, invented evidence, PM scoring, client contact, and client-message generation,
 - append-only evidence ref generation when requested by the proof-pack generation call,
 - AI-evidence boundary kept separate from AI PM memo generation.
 
 Non-functional posture:
 
 - `lotus-manage` exposes bounded evidence only; RFC-0043 and `lotus-ai` own memo generation.
-- The payload must not be treated as approval, execution instruction, or client communication.
+- The payload must not be treated as approval, PM scoring, execution instruction, or client
+  communication.
 
 Evidence commands:
 

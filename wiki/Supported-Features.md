@@ -394,7 +394,7 @@ Current supported behavior:
 5. attach persisted RFC-0038 mandate digital-twin and mandate-health evidence when available, and
    degrade `mandate_context` when only a mandate id is supplied,
 6. produce bounded report input and AI evidence input without generating reports, prompts, memos,
-   approvals, or execution instructions inside `lotus-manage`.
+   PM scores, client messages, approvals, or execution instructions inside `lotus-manage`.
 
 Audience notes:
 
