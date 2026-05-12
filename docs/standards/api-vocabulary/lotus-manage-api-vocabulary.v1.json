@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-10T14:38:29.354854+00:00",
+  "generatedAt": "2026-05-12T11:00:00.652125+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5993,6 +5993,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.portfolio_type",
+      "canonicalTerm": "portfolio_type",
+      "preferredName": "portfolio_type",
+      "description": "Source-owned portfolio type used by `BULK_REVIEW_CAMPAIGN` to filter DPM operating campaigns. Manage does not infer this value.",
+      "example": "portfolio_type_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -57808,6 +57822,14 @@
             "attributeRef": "#/attributeCatalog/lotus.exposure_weights"
           },
           {
+            "name": "portfolios[].portfolio_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_type",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_type"
+          },
+          {
             "name": "portfolios[].source_refs",
             "location": "body",
             "required": false,
@@ -58853,6 +58875,14 @@
             "type": "object",
             "semanticId": "lotus.exposure_weights",
             "attributeRef": "#/attributeCatalog/lotus.exposure_weights"
+          },
+          {
+            "name": "portfolios[].portfolio_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_type",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_type"
           },
           {
             "name": "portfolios[].source_refs",

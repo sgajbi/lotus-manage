@@ -53,17 +53,13 @@ SUPPORTED_CREATE_TRIGGER_TYPES = {
     "PM_BOOK_REVIEW",
     "CIO_MODEL_CHANGE",
     "RISK_EVENT",
+    "BULK_REVIEW_CAMPAIGN",
 }
 
 UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES = {
     "TACTICAL_HOUSE_VIEW": (
         "Tactical house-view waves require a governed CIO or risk house-view cohort source "
         "product before manage can preview or create them."
-    ),
-    "BULK_REVIEW_CAMPAIGN": (
-        "Bulk review campaign waves require a governed campaign membership source product with "
-        "review, approval, expiry, and entitlement controls before manage can preview or create "
-        "them."
     ),
 }
 
@@ -1348,7 +1344,10 @@ def _build_item(
     if source_refs:
         state: WaveItemState = "CANDIDATE"
         reason_codes = ["AFFECTED_PORTFOLIO_SOURCE_READY"]
-        diagnostics = {"source_posture": "candidate_evidence_available"}
+        diagnostics = {
+            "source_posture": "candidate_evidence_available",
+            **_diagnostics_from_portfolio(portfolio),
+        }
     else:
         state = "SOURCE_BLOCKED"
         reason_codes = ["MISSING_AFFECTED_PORTFOLIO_SOURCE"]
@@ -1667,6 +1666,13 @@ def _source_refs_from_portfolio(portfolio: dict[str, object]) -> list[DpmWaveSou
         for source_ref in source_refs
         if isinstance(source_ref, dict)
     ]
+
+
+def _diagnostics_from_portfolio(portfolio: dict[str, object]) -> dict[str, object]:
+    diagnostics = portfolio.get("diagnostics", {})
+    if not isinstance(diagnostics, dict):
+        return {}
+    return {str(key): value for key, value in diagnostics.items() if isinstance(key, str)}
 
 
 def _event(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 from datetime import date, datetime
 from decimal import Decimal
@@ -176,6 +178,14 @@ class DpmWavePortfolioInput(BaseModel):
             "manage forwards them to lotus-risk and does not calculate risk-event impact locally."
         ),
         examples=[{"EQUITY": 0.55, "FIXED_INCOME": 0.35, "CASH": 0.10}],
+    )
+    portfolio_type: str | None = Field(
+        default=None,
+        description=(
+            "Source-owned portfolio type used by `BULK_REVIEW_CAMPAIGN` to filter DPM "
+            "operating campaigns. Manage does not infer this value."
+        ),
+        examples=["DISCRETIONARY"],
     )
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
@@ -593,6 +603,8 @@ def _portfolio_inputs_for_request(
             correlation_id=correlation_id,
             risk_authority_client=risk_authority_client,
         )
+    if request.trigger_type == "BULK_REVIEW_CAMPAIGN":
+        return _resolve_bulk_review_campaign_portfolios(request=request)
     return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
 
 
@@ -931,6 +943,125 @@ def _resolve_risk_event_portfolios(
     return portfolios
 
 
+def _resolve_bulk_review_campaign_portfolios(
+    *,
+    request: DpmWavePreviewRequest,
+) -> list[dict[str, object]]:
+    if not request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED",
+            "BULK_REVIEW_CAMPAIGN requires source-backed candidate portfolios.",
+        )
+    try:
+        campaign_as_of_date = date.fromisoformat(request.as_of_date)
+    except ValueError as exc:
+        raise wave_service.DpmWaveValidationError(
+            "INVALID_AS_OF_DATE",
+            "as_of_date must be an ISO date.",
+        ) from exc
+    eligible_portfolio_types = {
+        value.strip().upper() for value in request.portfolio_types if value.strip()
+    }
+    if not eligible_portfolio_types:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED",
+            "BULK_REVIEW_CAMPAIGN requires at least one eligible portfolio type.",
+        )
+
+    included_candidates: list[DpmWavePortfolioInput] = []
+    excluded_count = 0
+    for candidate in request.portfolios:
+        portfolio_type = (candidate.portfolio_type or "").strip().upper()
+        if not portfolio_type:
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED",
+                "BULK_REVIEW_CAMPAIGN candidate portfolios require source-owned portfolio_type.",
+            )
+        if portfolio_type not in eligible_portfolio_types:
+            excluded_count += 1
+            continue
+        if not candidate.source_refs:
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_REQUIRED",
+                "BULK_REVIEW_CAMPAIGN candidate portfolios require source_refs.",
+            )
+        included_candidates.append(candidate)
+
+    if not included_candidates:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_MEMBERSHIP_EMPTY",
+                "message": "Bulk-review campaign membership returned no eligible DPM portfolios.",
+            },
+        )
+
+    membership_hash = _campaign_membership_hash(
+        trigger_id=request.trigger_id,
+        as_of_date=campaign_as_of_date,
+        portfolio_types=sorted(eligible_portfolio_types),
+        portfolios=[candidate.model_dump(mode="json") for candidate in included_candidates],
+    )
+    membership_ref = {
+        "source_system": "lotus-manage",
+        "source_type": "BulkReviewCampaignMembership",
+        "source_id": f"campaign:{request.trigger_id}:{campaign_as_of_date.isoformat()}",
+        "source_version": "v1",
+        "supportability_state": "READY",
+        "content_hash": membership_hash,
+    }
+    return [
+        {
+            "portfolio_id": candidate.portfolio_id,
+            "mandate_id": candidate.mandate_id,
+            "source_refs": [
+                membership_ref,
+                {
+                    "source_system": "lotus-manage",
+                    "source_type": "BULK_REVIEW_CAMPAIGN_MEMBER",
+                    "source_id": f"{request.trigger_id}:{candidate.portfolio_id}",
+                    "source_version": campaign_as_of_date.isoformat(),
+                    "supportability_state": "READY",
+                    "content_hash": membership_hash,
+                },
+                *[ref.model_dump(mode="json") for ref in candidate.source_refs],
+            ],
+            "diagnostics": {
+                "source_owner": "lotus-manage",
+                "source_product": "BulkReviewCampaignMembership:v1",
+                "campaign_id": request.trigger_id,
+                "campaign_as_of_date": campaign_as_of_date.isoformat(),
+                "portfolio_type": candidate.portfolio_type.strip().upper()
+                if candidate.portfolio_type
+                else None,
+                "eligible_portfolio_types": sorted(eligible_portfolio_types),
+                "excluded_candidate_count": excluded_count,
+                "membership_supportability_state": "READY",
+            },
+        }
+        for candidate in included_candidates
+    ]
+
+
+def _campaign_membership_hash(
+    *,
+    trigger_id: str,
+    as_of_date: date,
+    portfolio_types: list[str],
+    portfolios: list[dict[str, object]],
+) -> str:
+    payload = {
+        "product_name": "BulkReviewCampaignMembership",
+        "product_version": "v1",
+        "trigger_id": trigger_id,
+        "as_of_date": as_of_date.isoformat(),
+        "portfolio_types": portfolio_types,
+        "portfolios": portfolios,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
+
+
 @router.post(
     "/preview",
     response_model=DpmWaveResponse,
@@ -943,8 +1074,10 @@ def _resolve_risk_event_portfolios(
         "`PortfolioManagerBookMembership:v1` source product. `CIO_MODEL_CHANGE` resolves the "
         "cohort from lotus-core `CioModelChangeAffectedCohort:v1`. `RISK_EVENT` evaluates the "
         "candidate set through lotus-risk `RiskEventAffectedCohort:v1` and preserves source-owned "
-        "membership evidence. Unsupported trigger types remain blocked; the endpoint does not "
-        "perform simulation, approval, staging, or operations handoff."
+        "membership evidence. `BULK_REVIEW_CAMPAIGN` builds the Manage-owned "
+        "`BulkReviewCampaignMembership:v1` envelope from source-backed candidate portfolios and "
+        "DPM portfolio-type filters. Unsupported trigger types remain blocked; the endpoint does "
+        "not perform simulation, approval, staging, or operations handoff."
     ),
     responses={
         200: {
@@ -1015,9 +1148,10 @@ def preview_wave(
         "Creates a durable RFC-0041 rebalance wave. `EXPLICIT_PORTFOLIO_LIST` uses caller-supplied "
         "affected portfolios, while `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` resolve cohorts from "
         "lotus-core source products and `RISK_EVENT` evaluates the candidate set through "
-        "lotus-risk `RiskEventAffectedCohort:v1` before persistence. Required header: "
-        "`Idempotency-Key`. Unsupported trigger types are rejected and missing source evidence "
-        "produces blocked items, not false readiness."
+        "lotus-risk `RiskEventAffectedCohort:v1` before persistence. `BULK_REVIEW_CAMPAIGN` "
+        "persists a Manage-owned campaign membership wave from source-backed candidates. Required "
+        "header: `Idempotency-Key`. Unsupported trigger types are rejected and missing source "
+        "evidence produces blocked items, not false readiness."
     ),
     responses={
         201: {
@@ -1045,10 +1179,9 @@ def preview_wave(
                         "detail": {
                             "code": "NOT_SUPPORTED_TRIGGER",
                             "message": (
-                                "Trigger type BULK_REVIEW_CAMPAIGN is not supported. Bulk review "
-                                "campaign waves require a governed campaign membership source "
-                                "product with review, approval, expiry, and entitlement controls "
-                                "before manage can preview or create them."
+                                "Trigger type TACTICAL_HOUSE_VIEW is not supported. Tactical "
+                                "house-view waves require a governed CIO or risk house-view "
+                                "cohort source product before manage can preview or create them."
                             ),
                         }
                     }

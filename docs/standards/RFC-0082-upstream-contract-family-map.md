@@ -24,17 +24,20 @@ composition.
    `RegimeScenarioPackEvaluation:v1` supports regime-stress-aware construction when configured;
    `RiskEventAffectedCohort:v1` supports fail-closed `RISK_EVENT` rebalance wave preview/create
    from caller-supplied candidate portfolios and source-supplied exposure weights.
-5. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
+5. `lotus-manage` owns bounded `BulkReviewCampaignMembership:v1` for `BULK_REVIEW_CAMPAIGN`
+   rebalance wave preview/create from source-backed candidate portfolios. Underlying holdings,
+   risk, performance, advisory, tax, and restriction facts remain owned by their source apps.
+6. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
    options through request contracts. When those inputs are core-referenced, `lotus-core` remains the
    source-data authority.
-6. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
+7. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
    surfaces.
-7. Current downstream evidence for capability discovery flows through
+8. Current downstream evidence for capability discovery flows through
    `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/integration/capabilities`; the
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
-8. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
+9. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
    `sgajbi/lotus-gateway#178`.
-9. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
+10. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
    tracked in `sgajbi/lotus-workbench#135`.
 
 ## `lotus-core` Contract Family Posture
@@ -63,6 +66,7 @@ composition.
 | run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
 | policy-pack supportability | `/api/v1/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
 | integration capabilities | `/api/v1/integration/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
+| bulk-review campaign membership | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves` with `trigger_type=BULK_REVIEW_CAMPAIGN` | `lotus-manage` | owns the DPM operating campaign membership envelope, deterministic membership refs, and wave persistence; does not own underlying source facts, campaign approval workflow, expiry governance, entitlement filtering, or OMS execution |
 
 ## Split-Boundary Posture
 

@@ -8,7 +8,7 @@
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | CIO desk, DPM head, portfolio manager, investment control, operations, compliance, sales/pre-sales |
 | **Depends On** | RFC-0018, RFC-0020, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, RFC-0040, `lotus-core` RFC-0087 |
-| **Downstream Realization Depends On** | First-wave Gateway/Workbench wave command center, report/render/archive materialization, and AI PM memo handoff are implementation-backed; bounded manage risk-event consumption now uses `lotus-risk` `RiskEventAffectedCohort:v1`; tactical house-view, campaign, external OMS execution, and richer source-owner cohorts remain downstream WTBDs |
+| **Downstream Realization Depends On** | First-wave Gateway/Workbench wave command center, report/render/archive materialization, and AI PM memo handoff are implementation-backed; bounded manage risk-event consumption now uses `lotus-risk` `RiskEventAffectedCohort:v1`; campaign/bulk-review membership is implemented as manage-owned `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios; tactical house-view ownership is decided for `lotus-advise` but not implemented; external OMS execution and richer source-owner cohorts remain downstream WTBDs |
 | **RFC Tightening Branch** | `feat/rfc0041-gold-standard-tightening` |
 | **Implementation Branch** | `feat/rfc0041-implementation` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0041-source-map-and-gap-analysis.md` |
@@ -48,8 +48,14 @@ consume manage truth; they do not reconstruct wave state, source readiness, aggr
 report input, AI prompts, or execution posture. `lotus-risk` now owns
 `RiskEventAffectedCohort:v1` as the first risk-event cohort source product, and `lotus-manage`
 consumes it for bounded `RISK_EVENT` wave preview/create over caller-supplied candidate portfolios
-with source-supplied exposure weights. Tactical house-view cohorts, implicit campaign cohorts, and
-external OMS execution remain future source-owner/product scope.
+with source-supplied exposure weights. Tactical house-view ownership is now decided for
+`lotus-advise`, which should publish `TacticalHouseViewAffectedCohort:v1` as a governed bank-wide
+advisory/CIO policy cohort over `lotus-core` snapshots and optional `lotus-risk` exposure evidence;
+campaign/bulk-review ownership is now implemented in `lotus-manage` as bounded
+`BulkReviewCampaignMembership:v1`: Manage accepts source-backed campaign candidates, filters to
+eligible DPM portfolio types, emits deterministic membership source refs, and persists normal
+`BULK_REVIEW_CAMPAIGN` waves without owning the underlying holdings, risk, performance, advisory,
+or tax facts. External OMS execution remains future execution-product scope.
 
 ---
 
@@ -211,13 +217,13 @@ Implementation-backed trigger types:
 2. `PM_BOOK_REVIEW`
 3. `CIO_MODEL_CHANGE`
 4. `RISK_EVENT`
+5. `BULK_REVIEW_CAMPAIGN`
 
 Target-state trigger families that remain unsupported until a source owner publishes governed
 cohort membership are:
 
 1. `TACTICAL_HOUSE_VIEW`
-2. `BULK_REVIEW_CAMPAIGN`
-3. any future cash-drag, tax-year-end, ESG/restriction, or other thematic campaign trigger family
+2. any future cash-drag, tax-year-end, ESG/restriction, or other thematic campaign trigger family
 
 Every trigger must record:
 
@@ -237,19 +243,25 @@ Every trigger must record:
 First implementation supported only `EXPLICIT_PORTFOLIO_LIST`. Later source-owner slices promoted
 `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`, `CIO_MODEL_CHANGE`
 through lotus-core `CioModelChangeAffectedCohort:v1`, and bounded `RISK_EVENT` through
-lotus-risk `RiskEventAffectedCohort:v1`. Other trigger families remain unsupported until an
+lotus-risk `RiskEventAffectedCohort:v1`. This slice promotes bounded `BULK_REVIEW_CAMPAIGN`
+through manage-owned `BulkReviewCampaignMembership:v1`, built from source-backed candidate
+portfolios with explicit portfolio type, source refs, deterministic membership hash, and DPM
+portfolio-type filtering. Other trigger families remain unsupported until an
 owning source product or approved manifest governance is implemented and proven. Unsupported
 source-owner trigger types must be rejected with `NOT_SUPPORTED_TRIGGER`; they must not appear as
 supported features.
 
 Promoted source-owned trigger selectors are intentionally narrow: `PM_BOOK_REVIEW` requires
 `portfolio_manager_id`, `CIO_MODEL_CHANGE` requires `model_portfolio_id`, and `RISK_EVENT` requires
-`risk_event_id`, candidate portfolios, and source-supplied exposure weights. PM-book and CIO
+`risk_event_id`, candidate portfolios, and source-supplied exposure weights.
+`BULK_REVIEW_CAMPAIGN` requires source-backed candidate portfolios, source-owned `portfolio_type`,
+source refs, and at least one eligible DPM portfolio type. PM-book and CIO
 model-change waves reject caller-supplied portfolio lists so cohort authority remains in the
-owning source product. Tactical house-view waves require a governed CIO or risk house-view cohort
-source product before manage can preview or create them; bulk review campaign waves require a
-governed campaign membership source product with review, approval, expiry, and entitlement
-controls before manage can preview or create them.
+owning source product. Tactical house-view waves require the decided `lotus-advise`
+`TacticalHouseViewAffectedCohort:v1` source product before manage can preview or create them.
+Campaign/bulk-review waves do not discover portfolios globally, infer source facts, or create
+advisory campaigns locally; they materialize only the DPM operating membership envelope over
+candidate facts supplied by source owners.
 
 ---
 
@@ -881,7 +893,8 @@ Every wave endpoint must satisfy:
 | Wave preview | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented and live-proven with source-backed candidates and blocked caller-only portfolio evidence. |
 | Durable rebalance wave aggregate | Supported for `EXPLICIT_PORTFOLIO_LIST` | Implemented with persistence, state machine, events, retention policy, repository parity, idempotency, and live retrieval proof. |
 | CIO model-change impact | Supported for source-owned affected-cohort discovery | Implemented through lotus-core `CioModelChangeAffectedCohort:v1` and manage `CIO_MODEL_CHANGE` preview/create. First-wave Gateway/Workbench rendering is implementation-backed for the command-center surface; richer tactical/risk/campaign cohorts remain future source-owner scope. |
-| Risk-event affected-cohort waves | Partial WTBD; bounded risk-event family is now manage-supported | `lotus-risk` owns `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, merged in `lotus-risk` PR #115 (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`), wiki-published as `91f933a`, and mirrored in `lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`). `lotus-manage` consumes it for `RISK_EVENT` preview/create with candidate portfolios, source-supplied exposure weights, fail-closed dependency handling, source-ref preservation, OpenAPI/API-vocabulary coverage, and repo-native consumer declaration validation. Tactical house-view and campaign cohorts remain future WTBD scope. |
+| Risk-event affected-cohort waves | Partial WTBD; bounded risk-event family is now manage-supported | `lotus-risk` owns `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, merged in `lotus-risk` PR #115 (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`), wiki-published as `91f933a`, and mirrored in `lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`). `lotus-manage` consumes it for `RISK_EVENT` preview/create with candidate portfolios, source-supplied exposure weights, fail-closed dependency handling, source-ref preservation, OpenAPI/API-vocabulary coverage, and repo-native consumer declaration validation. Tactical house-view ownership is decided for `lotus-advise` through a future `TacticalHouseViewAffectedCohort:v1` product. |
+| Bulk-review campaign membership waves | Supported for bounded DPM operating campaigns | `lotus-manage` owns `BulkReviewCampaignMembership:v1` for `BULK_REVIEW_CAMPAIGN` preview/create. Manage requires candidate portfolios, source-owned `portfolio_type`, source refs, ISO as-of date, and eligible portfolio types; filters out non-DPM portfolios; emits trigger and item source refs with deterministic membership content hash; preserves source facts from core/risk/performance/advise refs without recalculating them; and fails closed for missing candidate portfolios, missing portfolio type, missing source refs, invalid date, empty eligible portfolio-type filters, and empty eligible membership. |
 | Wave source check | Supported | Implemented with item-level readiness, source refs, blocked/degraded/review reasons, and mixed-readiness proof. |
 | Wave simulation | Supported for source-ready items | Implemented through RFC-0039 alternatives for ready items while blocked, degraded, and review-required items remain visible. |
 | Alternative selection | Supported | Implemented with actor/rationale selection, proof-pack generation option, durable reload, and optimistic-lock tests. |
@@ -976,7 +989,7 @@ RFC-0041 is complete only when:
 | Documentation/wiki result | README, RFC index, repository context, source-map, supported-features, endpoint certification wiki, RFC index wiki, and roadmap wiki are aligned to implementation truth. Wiki publication is required after the Slice 12 PR merges. |
 | Skills/context/guidance decision | `no change needed`; current Lotus skills and agent context were sufficient and no new reusable execution rule emerged from final closure. |
 | Tests and evidence | Local gates passed: focused hardening tests, OpenAPI certification/docs tests, OpenAPI quality gate, API vocabulary validation, `make check`, and full coverage gate at 99.17%. GitHub PR gates must pass before merge. |
-| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves plus source-owned `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, and bounded `RISK_EVENT` cohort discovery, and the bounded first-wave product path is implementation-backed across Gateway, Workbench, report/render/archive, and AI memo handoff. Tactical house-view discovery, campaign discovery, and external OMS execution remain unsupported future scope. |
+| Gold-standard conclusion | RFC-0041 has reached the expected manage-owned backend gold standard for explicit portfolio-list rebalance waves plus source-owned `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, bounded `RISK_EVENT` cohort discovery, and bounded `BULK_REVIEW_CAMPAIGN` membership waves, and the bounded first-wave product path is implementation-backed across Gateway, Workbench, report/render/archive, and AI memo handoff. Tactical house-view discovery has a decided future source owner in `lotus-advise` but is not implemented; external OMS execution remains unsupported future scope. |
 
 ---
 
@@ -989,7 +1002,7 @@ implementation truth is available in the owning RFC, not only in the WTBD ledger
 | --- | --- | --- |
 | RFC41-WTBD-001 | `lotus-core` PR #339 and `lotus-manage` PR #126 support source-owned `PortfolioManagerBookMembership:v1` PM-book wave discovery. | Tactical house-view, risk-event, campaign, and permission-denied cohort semantics remain future owner scope. |
 | RFC41-WTBD-002 | `CioModelChangeAffectedCohort:v1` and manage `CIO_MODEL_CHANGE` preview/create support source-owned affected-mandate discovery. | Tactical house-view, risk-event, and campaign cohorts remain unsupported. |
-| RFC41-WTBD-003 | Partially advanced: `lotus-risk` PR #115 implements `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, platform PR #313 mirrors the data-product declaration, the `lotus-risk` wiki is published at `91f933a`, and `lotus-manage` now consumes the product for bounded `RISK_EVENT` wave preview/create. | Tactical house-view and campaign cohort authorities remain unassigned, so only the risk-event trigger family is promoted. |
+| RFC41-WTBD-003 | Advanced again: `lotus-risk` PR #115 implements `RiskEventAffectedCohort:v1` and `lotus-manage` consumes it for bounded `RISK_EVENT` waves. `lotus-manage` now also implements bounded `BulkReviewCampaignMembership:v1` for `BULK_REVIEW_CAMPAIGN` preview/create over source-backed candidate portfolios with DPM portfolio-type filtering, deterministic membership source refs, OpenAPI/API-vocabulary coverage, and fail-closed validation. | Tactical house-view ownership is decided for `lotus-advise`, which should publish a future `TacticalHouseViewAffectedCohort:v1` product over core snapshots and optional risk exposure evidence. Future richer campaign discovery, approval workflow, expiry governance, entitlements, and downstream Gateway/Workbench product surfaces remain future depth beyond the first manage-owned campaign membership envelope. |
 | RFC41-WTBD-004 | Wave aggregate metrics preserve source-owned risk/performance authority context with supportability, lineage, source refs, reason codes, and bounded source-emitted values. | Manage does not compute risk/performance methodology locally. |
 | RFC41-WTBD-005 | `lotus-gateway` PR #196 composes manage wave APIs without becoming wave authority. | Gateway does not classify source readiness, generate alternatives, approve/stage, reconstruct proof packs, or claim execution. |
 | RFC41-WTBD-006 | `lotus-workbench` PR #165 renders the first-wave wave command center, with platform PR #306 panel registration and canonical live proof. | Workbench does not compute wave state, readiness, alternatives, proof-pack posture, report input, AI memo content, or execution posture. |
@@ -1026,6 +1039,7 @@ Gold-pass decision:
 RFC-0041 reaches the expected standard for manage-owned wave authority and the bounded first-wave
 product path on merged `lotus-manage` `main` truth with repo-local wiki publication and final branch
 hygiene confirming no stranded governance truth. The risk-event source-product foundation and
-bounded manage consumer path are now real and governed. Remaining tactical house-view, campaign, and
-external execution gaps are explicit future source-owner or execution-product scope, not hidden
+bounded manage consumer path are now real and governed. Tactical house-view has a decided future
+source owner in `lotus-advise`; campaign/bulk-review has a decided future source owner in
+`lotus-manage`; external execution gaps remain explicit future execution-product scope, not hidden
 defects in the supported wave path.

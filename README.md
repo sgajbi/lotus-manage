@@ -107,9 +107,13 @@ wiki-published. PM-book cohort discovery is implemented for `PM_BOOK_REVIEW` thr
 source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO model-change discovery is
 implemented through `CioModelChangeAffectedCohort:v1`; and bounded risk-event discovery is
 implemented for `RISK_EVENT` through lotus-risk `RiskEventAffectedCohort:v1` over caller-supplied
-candidate portfolios with source-supplied exposure weights. Tactical house-view cohorts, implicit
-campaign cohorts, richer owning-service risk/performance aggregate enrichment, and external OMS
-execution remain unpromoted.
+candidate portfolios with source-supplied exposure weights. Bounded bulk-review campaign
+membership is implemented for `BULK_REVIEW_CAMPAIGN` through Manage-owned
+`BulkReviewCampaignMembership:v1` over source-backed candidate portfolios with source-owned
+portfolio type, DPM portfolio-type filtering, deterministic membership refs, and fail-closed
+validation. Tactical house-view cohorts, richer campaign approval/expiry/entitlement workflow,
+richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
+unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
 `dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,

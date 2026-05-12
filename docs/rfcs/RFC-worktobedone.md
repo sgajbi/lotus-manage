@@ -48,7 +48,7 @@ retained only as evidence index and sequencing control.
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-006 and RFC38-WTBD-008 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-007 remains the broader risk/performance health-enrichment control. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families and explicitly defers OMS execution plus PM scoring to future source owners. | CIO approval evidence, effective-period exception posture, direct proof-pack enrichment when no selected alternative carries scenario context, future OMS execution products, and future PM-scoring products remain future source depth rather than hidden manage proof-pack or portfolio-memory gaps. |
-| RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, and the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003 are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial until tactical house-view and implicit campaign owners publish governed cohort products; RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
+| RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003, and the bounded manage-owned `BulkReviewCampaignMembership:v1` result are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial only for tactical house-view and richer campaign-depth work. Tactical house-view ownership is decided for `lotus-advise`: it owns `TacticalHouseViewAffectedCohort:v1`, using `lotus-core` portfolio/mandate/holding/restriction snapshots and optional `lotus-risk` exposure evidence. `lotus-manage` now owns and implements the first `BulkReviewCampaignMembership:v1` DPM operating campaign envelope while source apps still own the underlying facts and calculated reasons. RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
 | RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 and RFC42-WTBD-008 remain unsupported until ownership, methodology, controls, and proof exist. |
 | RFC-0043 | The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including the merged owner-side operations handoff summary and exception summary packs plus their first-wave Gateway/Workbench invocation surfaces. | RFC-0043 remains partial until the full copilot workspace and any additional product-surface requirements are implemented by their owners. |
 
@@ -109,15 +109,15 @@ Partial / in-progress items:
 | --- | --- | --- |
 | RFC37-WTBD-001 | `lotus-manage` RFC-0042 backend authority and first-wave outcome product path are implemented. | Complete richer downstream/source-owner realization across all outcome learning loops. |
 | RFC40-WTBD-009 | Completed for manage proof-pack preservation of selected-alternative `RegimeScenarioPackEvaluation:v1` context; `lotus-risk` now also owns optional reconciled per-security scenario contribution rows in the source product. | CIO approval workflow evidence, effective-period exception posture, and direct proof-pack enrichment when no selected alternative carries scenario context remain future source-owner / product-depth work. |
-| RFC41-WTBD-003 | `lotus-risk` owns `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, merged in `lotus-risk` PR #115 (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`) and published to `lotus-risk.wiki` commit `91f933a`; `lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`) mirrors the product declaration for mesh governance. `lotus-manage` now consumes that product for bounded `RISK_EVENT` wave preview/create from caller-supplied candidate portfolios with source-supplied exposure weights, fail-closed dependency handling, source-ref preservation, OpenAPI/API-vocabulary updates, and repo-native consumer declaration coverage. | Tactical house-view and implicit campaign cohort authorities remain unassigned, so the broader WTBD remains partial and no tactical/campaign support claim is made. |
-| RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow/source-readiness/liquidity source-family adapters and methodology products are implemented. `lotus-risk` now has implementation-backed rolling tracking-error and rolling information-ratio methodology truth for `RollingRiskMetricsReport:v1`, including inner date alignment, percentage-point to decimal conversion, `ddof=1` sample standard deviation, annualized decimal tracking-error output, dimensionless information-ratio output, warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error information-ratio flagging. `lotus-core` now has implementation-backed `HoldingsAsOf:v1` methodology truth for booked holdings, explicit as-of holdings, projected-inclusive holdings, cash-balance reads, reporting-currency cash balances, snapshot-versus-history fallback, position weights, supportability states, and explicit non-claims for income-needs planning, performance returns, risk exposure methodology, tax advice, execution quality, and OMS acknowledgement. `lotus-core` now has implementation-backed `MarketDataCoverageWindow:v1` methodology truth for latest price and FX observation selection, missing/stale coverage classification, configurable max-staleness policy, populated DPM source-readiness support, and explicit non-claims for valuation, FX attribution, market impact, execution quality, best execution, venue routing, and OMS acknowledgement. `lotus-core` now has implementation-backed `DpmSourceReadiness:v1` methodology truth for mandate binding, model target, eligibility, tax-lot, and market-data coverage composition, deterministic instrument-universe assembly, fail-closed family precedence, supportability/data-quality mapping, and explicit non-claims for mandate approval, client suitability, tax advice, valuation, FX attribution, execution quality, best execution, venue routing, and OMS acknowledgement. `lotus-core` now has implementation-backed `PortfolioCashflowProjection:v1` methodology truth for booked-only versus projected modes, latest cashflow row selection, settlement-dated external `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity with separate booked and projected component fields, portfolio-base-currency output, and explicit non-claims for tax, performance, market impact, and OMS execution. `lotus-core` now also has implementation-backed `PortfolioLiquidityLadder:v1` methodology truth for opening cash balance, fixed horizon buckets, booked/projected/net cashflow, cumulative cash balance, shortfall, asset-liquidity-tier exposure, supportability, OpenAPI route documentation, route-family governance, source-product catalog/security profiles, and explicit non-claims for advice, funding recommendations, income-needs planning, tax methodology, FX attribution, market impact, best execution, venue routing, and OMS acknowledgement. `lotus-core` now also has implementation-backed `PortfolioTaxLotWindow:v1` methodology truth for effective-date lot selection, optional security filtering, open/closed lot posture, deterministic paging, open-quantity status derivation, cost-basis preservation, empty-source supportability, and explicit non-claims for jurisdiction-specific tax advice, realized-tax optimization, wash-sale handling, client-tax approval, tax-reporting certification, and execution methodology. `lotus-core` also has implementation-backed `TransactionLedgerWindow:v1` methodology truth for booked and projected-inclusive ledger modes, effective as-of resolution, row filtering by portfolio/instrument/security/transaction type/FX event/date/as-of window, joined transaction-cost and linked cashflow row preservation, field-aware reporting-currency restatement from latest FX rates using book currency for book fields and trade currency for trade/local fields, explicit row-level realized FX P&L local evidence, canonical USD/SGD and EUR/SGD seed coverage for front-office proof, empty/complete/paged data-quality posture, and explicit non-claims for tax advice, FX attribution, cash movement aggregation, transaction-cost curve methodology, execution quality, and OMS acknowledgement. `lotus-core` also has implementation-backed `TransactionCostCurve:v1` methodology truth for observed booked-fee grouping, trade-fee precedence, zero-fee/zero-notional exclusion, notional-weighted average bps, min/max bps, deterministic paging, and explicit non-claims for predictive execution quotes, market impact, venue routing, best execution, and OMS acknowledgement. `lotus-performance` has tightened source-owner MWR and contribution methodology/wiki truth for stateful lotus-core source resolution and portfolio/position timeseries normalization. The attribution methodology truth still covers stateful lotus-core portfolio/position, benchmark, and source-currency normalization for allocation, selection, interaction, active-return, and currency-attribution outputs. | Aggregated risk/performance, client tax, FX attribution, client income-needs planning, predictive execution, and OMS execution methodologies remain source-owner work. |
+| RFC41-WTBD-003 | `lotus-risk` owns `RiskEventAffectedCohort:v1` at `POST /analytics/risk/risk-event-cohorts/evaluate`, merged in `lotus-risk` PR #115 (`bd69d1576d8c01bdcfd2309202ef37f780cc2d06`) and published to `lotus-risk.wiki` commit `91f933a`; `lotus-platform` PR #313 (`4218d4319d5dac82e87106429fadb14247c36515`) mirrors the product declaration for mesh governance. `lotus-manage` consumes that product for bounded `RISK_EVENT` wave preview/create from caller-supplied candidate portfolios with source-supplied exposure weights, fail-closed dependency handling, source-ref preservation, OpenAPI/API-vocabulary updates, and repo-native consumer declaration coverage. `lotus-manage` now also owns `BulkReviewCampaignMembership:v1` for bounded `BULK_REVIEW_CAMPAIGN` wave preview/create over source-backed candidate portfolios with source-owned portfolio types, DPM portfolio-type filtering, deterministic membership refs and hash, and fail-closed validation. | Tactical house-view remains pending. `lotus-advise` should publish governed bank-wide `TacticalHouseViewAffectedCohort:v1` over `lotus-core` snapshots and optional `lotus-risk` exposure evidence, and `lotus-manage` should consume only managed/discretionary portfolios from that product. Richer campaign depth remains future work: global discovery, approval workflow, expiry governance, entitlements, and downstream Gateway/Workbench product surfaces are not yet promoted. |
+| RFC42-WTBD-006 | Selected risk, performance, core tax/cash/FX/cashflow/source-readiness/liquidity source-family adapters and methodology products are implemented. `lotus-risk` now has implementation-backed rolling tracking-error and rolling information-ratio methodology truth for `RollingRiskMetricsReport:v1`, including inner date alignment, percentage-point to decimal conversion, `ddof=1` sample standard deviation, annualized decimal tracking-error output, dimensionless information-ratio output, warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error information-ratio flagging. `lotus-core` now has implementation-backed `HoldingsAsOf:v1` methodology truth for booked holdings, explicit as-of holdings, projected-inclusive holdings, cash-balance reads, reporting-currency cash balances, snapshot-versus-history fallback, position weights, supportability states, and explicit non-claims for income-needs planning, performance returns, risk exposure methodology, tax advice, execution quality, and OMS acknowledgement. `lotus-core` now has implementation-backed `MarketDataCoverageWindow:v1` methodology truth for latest price and FX observation selection, missing/stale coverage classification, configurable max-staleness policy, populated DPM source-readiness support, and explicit non-claims for valuation, FX attribution, market impact, execution quality, best execution, venue routing, and OMS acknowledgement. `lotus-core` now has implementation-backed `DpmSourceReadiness:v1` methodology truth for mandate binding, model target, eligibility, tax-lot, and market-data coverage composition, deterministic instrument-universe assembly, fail-closed family precedence, supportability/data-quality mapping, and explicit non-claims for mandate approval, client suitability, tax advice, valuation, FX attribution, execution quality, best execution, venue routing, and OMS acknowledgement. `lotus-core` now has implementation-backed `PortfolioCashflowProjection:v1` methodology truth for booked-only versus projected modes, latest cashflow row selection, settlement-dated external `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity with separate booked and projected component fields, portfolio-base-currency output, and explicit non-claims for tax, performance, market impact, and OMS execution. `lotus-core` now also has implementation-backed `PortfolioLiquidityLadder:v1` methodology truth for opening cash balance, fixed horizon buckets, booked/projected/net cashflow, cumulative cash balance, shortfall, asset-liquidity-tier exposure, supportability, OpenAPI route documentation, route-family governance, source-product catalog/security profiles, and explicit non-claims for advice, funding recommendations, income-needs planning, tax methodology, FX attribution, market impact, best execution, venue routing, and OMS acknowledgement. `lotus-core` now also has implementation-backed `PortfolioTaxLotWindow:v1` methodology truth for effective-date lot selection, optional security filtering, open/closed lot posture, deterministic paging, open-quantity status derivation, cost-basis preservation, empty-source supportability, and explicit non-claims for jurisdiction-specific tax advice, realized-tax optimization, wash-sale handling, client-tax approval, tax-reporting certification, and execution methodology. `lotus-core` also has implementation-backed `TransactionLedgerWindow:v1` methodology truth for booked and projected-inclusive ledger modes, effective as-of resolution, row filtering by portfolio/instrument/security/transaction type/FX event/date/as-of window, joined transaction-cost and linked cashflow row preservation, field-aware reporting-currency restatement from latest FX rates using book currency for book fields and trade currency for trade/local fields, explicit row-level realized FX P&L local evidence, canonical USD/SGD and EUR/SGD seed coverage for front-office proof, empty/complete/paged data-quality posture, and explicit non-claims for tax advice, FX attribution, cash movement aggregation, transaction-cost curve methodology, execution quality, and OMS acknowledgement. `lotus-core` also has implementation-backed `TransactionCostCurve:v1` methodology truth for observed booked-fee grouping, trade-fee precedence, zero-fee/zero-notional exclusion, notional-weighted average bps, min/max bps, deterministic paging, and explicit non-claims for predictive execution quotes, market impact, venue routing, best execution, and OMS acknowledgement. `lotus-performance` has tightened source-owner MWR and contribution methodology/wiki truth for stateful lotus-core source resolution and portfolio/position timeseries normalization. The attribution methodology truth still covers stateful lotus-core portfolio/position, benchmark, and source-currency normalization for allocation, selection, interaction, active-return, and currency-attribution outputs. | Aggregated risk/performance remains source-owner work. Client tax ownership is decided for future `lotus-core` `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1`, potentially ingested from external bank/tax systems; implementation remains pending and no tax-advice or after-tax optimization claim is made. FX attribution, client income-needs planning, predictive execution, and OMS execution methodologies remain source-owner work. |
 
 Next bank-buyable product-readiness priorities:
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` rolling tracking-error and rolling information-ratio methodology/wiki truth, `lotus-core` holdings-as-of, market-data coverage, DPM source-readiness, transaction-ledger window, cashflow-projection, tax-lot window, and observed transaction-cost curve methodology/wiki truth, and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct rolling active-risk, holdings snapshot selection, position weighting, cash-balance restatement, market price/FX freshness classification, DPM readiness family precedence, transaction row windowing/restatement, operational cash movement, cash-flow schedules, lot/cost-basis selection, observed booked-fee cost curves, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
-| 2 | RFC41-WTBD-003 - Tactical house-view, risk-event, and implicit campaign cohorts | Moves the rebalance wave operating model toward bank operating workflows without inventing source-owned cohorts. Risk-event source ownership and bounded manage consumption are now implemented; tactical/campaign ownership remains open. | Tactical house-view and implicit campaign owners publish equivalent governed cohort products, then manage consumes each with fail-closed dependency handling, source-ref preservation, tests, OpenAPI/docs, and downstream product evidence before support claims. |
+| 2 | RFC41-WTBD-003 - Tactical house-view, risk-event, and campaign/bulk-review cohorts | Moves the rebalance wave operating model toward bank operating workflows without inventing source-owned cohorts. Risk-event source ownership, bounded manage consumption, and first-wave Manage-owned bulk-review campaign membership are now implemented. Tactical house-view ownership is decided for `lotus-advise`. | `lotus-advise` publishes `TacticalHouseViewAffectedCohort:v1`; richer campaign discovery/approval/expiry/entitlement surfaces are added only after source behavior and downstream product evidence are proven. |
 
 2026-05-09 validation hardening:
 
@@ -1619,8 +1619,8 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` source authority consumed by manage | Completed for source-backed restriction and sustainability profile consumption | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing. Manage degrades when profiles are missing, blocks candidate trades that violate hard client restrictions, preserves sustainability preferences and source lineage, and keeps classification evidence gaps in `PENDING_REVIEW` rather than claiming automatic ESG approval. |
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
-| RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` plus future income-need source | First wave implemented for source-backed cashflow projection; income-need planning remains deferred | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Client income-needs/forecast methodology remains unsupported until a source owner publishes a governed product. |
-| RFC39-WTBD-008 | Treasury-depth currency overlay | `lotus-core` / treasury policy / execution source | Deferred source depth beyond current policy-backed overlay | Current support uses FX readiness and bounded currency-overlay context; forward curves, hedge instruments, and treasury execution readiness are not source-backed. |
+| RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` source authority consumed by `lotus-manage` | Ownership decision made; income-needs and liquidity-reserve source products remain pending | `LIQUIDITY_AWARE` now accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and evaluates projected cash pressure against minimum cash policy. Future client-income support is decided for `lotus-core` through `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional `PlannedWithdrawalSchedule:v1`, potentially ingested from external bank planning/reference systems. Manage may consume these products for liquidity-aware construction, mandate health, proof packs, waves, and outcome review, but must not claim financial-planning advice, funding recommendation, or client liability planning. |
+| RFC39-WTBD-008 | External treasury/currency overlay source boundary | `lotus-core` ingestion of external bank treasury/currency products, consumed by `lotus-manage` | Ownership decision made; Lotus-side external-source contracts and consumption remain pending | Current support uses FX readiness and bounded currency-overlay context. Lotus will not introduce a `lotus-treasury` app; bank treasury systems should map into Lotus-side contracts for external currency exposure, hedge policy, FX forward curves, eligible hedge instruments, and hedge execution readiness. Manage may consume that evidence for construction/rebalance posture but must not price forwards, approve hedge policy, choose counterparties, or claim hedge execution. |
 | RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; bounded construction-lab posture is downstream-visible | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. The Workbench construction lab can render method posture and reason codes through Gateway/manage truth; broader scenario contribution rows, CIO approval workflow, and richer scenario-specific UX remain future depth. |
 | RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Completed for bounded first-wave lifecycle support | Selected construction alternatives flow into RFC-0040 proof packs, RFC-0041 wave item selection and optional proof-pack linkage, proof-pack and wave report inputs, proof-pack AI evidence inputs, and outcome expected-snapshot assembly without downstream reconstruction of construction truth. External OMS execution, autonomous PM choice, approval beyond manage wave controls, and client communication remain unsupported. |
 
@@ -1964,12 +1964,17 @@ Target business outcome:
 Liquidity-aware alternatives can account for client income needs, expected cashflows, and future
 liquidity events rather than only current cash, settlement, and minimum cash policy.
 
-What remains deferred:
+Implementation decision:
 
-Client income-need planning and forecast methodology remain unsupported. `PortfolioCashflowProjection:v1`
-is a source-owned projection of portfolio cashflows; it is not a client income-need profile, spending
-plan, liability ladder, or wealth-planning forecast. Manage must not fabricate income needs or
-liability timing from current cash, transactions, or projection totals.
+Client income-need planning and forecast methodology remain unsupported in the current
+implementation, but the source-owner decision is now explicit. `lotus-core` should publish
+`ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional
+`PlannedWithdrawalSchedule:v1` because these are client/portfolio reference facts needed by
+multiple applications. External bank planning/reference systems may feed these Core products in
+deployment. `PortfolioCashflowProjection:v1` remains a source-owned projection of portfolio
+cashflows; it is not a client income-need profile, spending plan, liability ladder, or
+wealth-planning forecast. Manage must not fabricate income needs or liability timing from current
+cash, transactions, or projection totals.
 
 Dependencies before implementation:
 
@@ -1983,10 +1988,15 @@ Completed first-wave dependencies:
 
 Remaining dependencies before full income-need support:
 
-1. client income-need or liability-planning source product,
-2. income need and forecast horizon semantics distinct from portfolio cashflow projection,
-3. confidence/freshness posture for client planning inputs,
-4. proof-pack and Workbench presentation alignment if surfaced as client income-need support.
+1. `lotus-core` contracts for `ClientIncomeNeedsSchedule:v1`,
+   `LiquidityReserveRequirement:v1`, and optional `PlannedWithdrawalSchedule:v1`,
+2. income need, reserve, recurrence, priority, currency, and forecast-horizon semantics distinct
+   from portfolio cashflow projection,
+3. ready, stale, missing, partial, entitlement-blocked, unsupported, and confidence/freshness
+   posture for client planning inputs,
+4. manage adapters and tests that consume Core products without financial-planning advice or
+   funding-recommendation claims,
+5. proof-pack and Workbench presentation alignment if surfaced as client income-need support.
 
 Expected implementation wave:
 
@@ -2001,29 +2011,41 @@ Promotion proof:
    posture,
 4. supported-feature update.
 
-#### RFC39-WTBD-008 - Treasury-Depth Currency Overlay
+#### RFC39-WTBD-008 - External Treasury/Currency Overlay Source Boundary
 
 Target business outcome:
 
-Currency-overlay construction can use treasury policy, forward curves, hedge instruments, and
-execution readiness rather than FX spot readiness and bounded policy context alone.
+Currency-overlay construction can use bank-owned treasury policy, forward curves, hedge
+instruments, currency exposure, and execution readiness rather than FX spot readiness and bounded
+policy context alone.
 
-Why it cannot be done now:
+Implementation decision:
 
-RFC-0039 supports policy-backed overlay posture, but no treasury-depth source products exist for
-forward curves, hedge instruments, or execution readiness.
+Lotus will not create a `lotus-treasury` application. Treasury/currency overlay should follow the
+same boundary pattern as external OMS integration: Lotus defines contracts, ingestion,
+supportability, and DPM consumption, while deployed bank systems supply the authoritative treasury
+data. `lotus-core` is the preferred Lotus-side ingestion owner for factual/reference-like external
+treasury products because it already owns portfolio facts, holdings, base currency, restrictions,
+market-data coverage, and source-readiness composition. `lotus-manage` consumes the resulting
+products for construction and rebalance evidence only.
 
 Dependencies before implementation:
 
-1. `CurrencyExposurePolicy:v1` or treasury policy source,
-2. forward curves and hedge instrument eligibility,
-3. settlement/execution readiness for hedge actions,
-4. manage overlay tests for ready/degraded/blocked states,
+1. external-source contracts such as `ExternalCurrencyExposure:v1`,
+   `ExternalHedgePolicy:v1`, `ExternalFXForwardCurve:v1`,
+   `ExternalEligibleHedgeInstrument:v1`, and `ExternalHedgeExecutionReadiness:v1`,
+2. `lotus-core` ingestion and source-readiness posture for ready, stale, missing, partial,
+   blocked-by-entitlement, and unsupported external treasury evidence,
+3. `lotus-manage` overlay adapters that preserve source refs and supportability without pricing
+   forwards, approving hedge policy, choosing counterparties, or claiming hedge execution,
+4. manage overlay tests for ready/degraded/blocked states and explicit non-claims,
 5. Gateway/Workbench display rules if surfaced.
 
 Expected implementation wave:
 
-Implement after treasury/source products are certified.
+Implement Lotus-side external treasury/currency contracts and `lotus-core` ingestion first, then
+upgrade manage `CURRENCY_OVERLAY` diagnostics and supported-feature claims to consume the products
+with fail-closed supportability. Bank deployment maps local treasury systems into those contracts.
 
 Promotion proof:
 
@@ -2184,7 +2206,6 @@ Before any item above moves from this ledger into a supported-feature claim:
 8. README, RFC/source-map, wiki, supported-features, endpoint certification, and repository context
    are aligned,
 9. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
-
 ## RFC-0040 - Pre-Trade Proof Pack And Evidence Fabric
 
 Current closure status:
@@ -2931,7 +2952,7 @@ downstream product-surface implementation, or owning-service materialization out
 | --- | --- | --- | --- | --- |
 | RFC41-WTBD-001 | Automatic PM-book / portfolio-manager cohort discovery | `lotus-core` source authority consumed by `lotus-manage` | Completed, merged, CI-proven, and wiki-published through `lotus-core` PR #339 and `lotus-manage` PR #126 | `lotus-core` now owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it for `PM_BOOK_REVIEW` wave preview/create without caller-supplied portfolio fabrication. |
 | RFC41-WTBD-002 | Automatic CIO model-change affected-mandate discovery | `lotus-core` source authority consumed by `lotus-manage` | Completed in this slice for source-owned affected-cohort waves | `lotus-core` now owns `CioModelChangeAffectedCohort:v1`; `lotus-manage` consumes it for `CIO_MODEL_CHANGE` preview/create without caller-supplied portfolio fabrication. |
-| RFC41-WTBD-003 | Tactical house-view, risk-event, and implicit bulk-campaign cohorts | CIO/risk/campaign source owners, with `lotus-risk` owning the first risk-event cohort source product and `lotus-manage` consuming it for bounded waves | Partial: `lotus-risk` `RiskEventAffectedCohort:v1` is merged, CI-proven, wiki-published, and mirrored in platform mesh governance; `lotus-manage` now consumes it for `RISK_EVENT` preview/create with fail-closed dependency handling and source-ref preservation | Tactical house-view plus implicit campaign cohort authorities remain unassigned, so only the risk-event trigger family is promoted. |
+| RFC41-WTBD-003 | Tactical house-view, risk-event, and campaign/bulk-review cohorts | CIO/risk/campaign source owners, with `lotus-risk` owning the first risk-event cohort source product and `lotus-manage` owning the first campaign membership envelope | Partial: `lotus-risk` `RiskEventAffectedCohort:v1` is merged, CI-proven, wiki-published, and mirrored in platform mesh governance; `lotus-manage` consumes it for `RISK_EVENT` preview/create. `lotus-manage` now also supports bounded `BULK_REVIEW_CAMPAIGN` preview/create through `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios. | Tactical house-view ownership is decided for `lotus-advise`, which should publish bank-wide `TacticalHouseViewAffectedCohort:v1` over core portfolio/mandate/holding/restriction snapshots and optional risk exposure evidence. Richer campaign discovery, approval workflow, expiry governance, entitlements, and downstream product surfaces remain future depth. |
 | RFC41-WTBD-004 | Risk and performance aggregate enrichment for waves | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` and later `lotus-gateway` | Completed in this slice for manage aggregate authority | RFC-0041 aggregate impact is carried from source-owned risk/performance authority context into wave aggregate metrics with supportability, lineage refs, source reason codes, and source-emitted scalar values. Manage does not calculate risk or performance methodology locally. |
 | RFC41-WTBD-005 | Gateway wave composition | `lotus-gateway` | Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196 | Completed after manage contracts stabilized. Gateway composes manage truth without becoming wave authority or reconstructing state. |
 | RFC41-WTBD-006 | Workbench wave command center | `lotus-workbench` with `lotus-gateway`, `lotus-platform`, and `lotus-manage` support | Completed, merged, CI-proven, live-proven, and wiki-published through Manage PR #120, Gateway PR #197, Platform PR #306, and Workbench PR #165 | Workbench now consumes Gateway/BFF routes only and provides the PM operating cockpit over explicit portfolio-list waves. |
@@ -3064,10 +3085,25 @@ exposure weights, negative exposure weights, and invalid dates all fail closed w
 codes. Manage does not discover the full book, compute risk-event impact, infer risk buckets, or
 create campaign membership locally.
 
-The broader WTBD remains partial because there is still no certified source authority for tactical
-house-view cohorts or implicit bulk-campaign membership. RFC-0041 therefore promotes only the
-bounded risk-event trigger family and keeps tactical/campaign trigger types unpromoted until their
-owning services publish equivalent governed cohort products.
+This slice adds the bounded manage-owned campaign result. `lotus-manage` now supports
+`BULK_REVIEW_CAMPAIGN` preview/create through `BulkReviewCampaignMembership:v1`. Callers supply
+source-backed candidate portfolios, source-owned `portfolio_type`, source refs, as-of date, and
+eligible DPM portfolio types. Manage filters out non-eligible portfolio types, emits deterministic
+membership and member source refs with a content hash, preserves source refs from underlying
+facts or calculated cohorts, and fails closed for missing candidates, missing portfolio type,
+missing source refs, invalid date, empty eligible portfolio-type filters, or no eligible DPM
+members. Manage does not discover the full book, calculate holdings/risk/performance/advisory
+reasons, approve campaigns, apply entitlements, or claim downstream Workbench campaign UI support.
+
+The broader WTBD remains partial because tactical house-view is not yet implemented and richer
+campaign controls remain future depth. The tactical house-view source-owner decision is explicit:
+`lotus-advise` should publish a governed bank-wide `TacticalHouseViewAffectedCohort:v1` as a
+materialized advisory/CIO policy data product over `lotus-core` portfolio, mandate, holding, and
+restriction snapshots, with optional `lotus-risk` exposure evidence. `lotus-manage` should consume
+that product only for DPM/discretionary portfolios and must preserve source refs, effective-period
+posture, approval posture, and supportability without interpreting CIO policy locally. Future
+campaign depth should expand the now-promoted manage-owned membership envelope with approval,
+expiry, entitlement, and downstream product-surface behavior only after those controls are proven.
 
 Dependencies before remaining tactical/campaign implementation:
 
@@ -3075,14 +3111,16 @@ Dependencies before remaining tactical/campaign implementation:
 2. cohort source APIs expose membership, rationale, source refs, freshness, permissions, and
    exclusion rules,
 3. risk-event cohorts continue to come from `lotus-risk` `RiskEventAffectedCohort:v1`,
-4. campaign cohorts define reviewer, approval, and expiry governance,
-5. manage validates supportability without calculating source membership locally.
+4. richer campaign cohorts define reviewer, approval, entitlement, and expiry governance,
+5. manage validates supportability without calculating underlying source facts locally.
 
 Expected remaining implementation wave:
 
-Treat tactical house-view and implicit campaign cohorts as separate RFCs or explicit slices after
-owner contracts exist. Do not bundle them into manage until source behavior, entitlements, expiry,
-review, and business controls are stable.
+Treat tactical house-view and richer campaign controls as separate RFCs or explicit slices.
+Tactical house-view should start in `lotus-advise` with `TacticalHouseViewAffectedCohort:v1`.
+Campaign/bulk-review now has a first promoted manage-owned membership envelope; future slices
+should add persisted campaign definitions, approval, entitlement, expiry, and downstream product
+surfaces without moving source-fact ownership into Manage.
 
 Promotion proof:
 
@@ -3101,7 +3139,17 @@ Gold-pass assessment for the 2026-05-10 risk-event consumer slice:
 | Quality improvements made | The implementation adds a typed risk-authority client method, explicit request fields and OpenAPI descriptions, fail-closed selector and dependency handling, stricter malformed-response rejection, and a machine-readable `lotus-risk` consumer declaration. |
 | Debt removed | Previous RFC/wiki wording stopped at the source-owner foundation and left manage consumption as a future claim. This slice removes that drift while keeping tactical/campaign cohorts explicitly unpromoted. |
 | What was proven through testing and evidence | Focused API and client tests prove source-ready preview/create, source-ref preservation, outbound payload shape, invalid date, missing risk event id, missing candidates, empty/negative exposure weights, unavailable risk authority, rejected risk requests, degraded supportability, empty affected cohorts, and malformed source responses. Local gates passed for focused tests, mypy, ruff, OpenAPI quality, no-alias guard, API vocabulary inventory, and domain-data-product contract validation. |
-| Expected-standard decision | The bounded `RISK_EVENT` manage-consumer slice reaches the expected backend standard on merged `lotus-manage` `main` truth with green GitHub checks and synchronized repo-local wiki publication. RFC41-WTBD-003 remains partial only because tactical house-view and implicit campaign source authorities are not yet implemented. |
+| Expected-standard decision | The bounded `RISK_EVENT` manage-consumer slice reaches the expected backend standard on merged `lotus-manage` `main` truth with green GitHub checks and synchronized repo-local wiki publication. The bounded `BULK_REVIEW_CAMPAIGN` membership slice is implemented and locally proven in this working tree. RFC41-WTBD-003 remains partial for tactical house-view and richer campaign governance/product surfaces. |
+
+Gold-pass assessment for the 2026-05-12 bulk-review campaign membership slice:
+
+| Gold-pass question | Assessment |
+| --- | --- |
+| What was truly completed | `lotus-manage` now supports `BULK_REVIEW_CAMPAIGN` wave preview/create through manage-owned `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios. |
+| Quality improvements made | The implementation converts a previously blocked ownership decision into an explicit product boundary with deterministic membership source refs, content hash, DPM portfolio-type filtering, OpenAPI descriptions, and focused tests. |
+| Debt removed | The old unsupported-trigger posture for campaign waves was replaced with a bounded first implementation that avoids duplicating source facts or claiming global campaign discovery. |
+| What was proven through testing and evidence | Focused wave API tests prove successful preview/create, source-ref preservation, non-DPM portfolio exclusion, missing candidate validation, missing portfolio-type validation, missing source-ref validation, invalid date handling, empty eligible portfolio-type rejection, empty eligible membership failure, and OpenAPI documentation alignment. |
+| Expected-standard decision | The slice reaches the backend standard for a first Manage-owned campaign membership envelope. It does not yet claim campaign approval workflow, expiry governance, entitlement filtering, global portfolio discovery, Gateway/Workbench campaign UI, or OMS execution. |
 
 #### RFC41-WTBD-004 - Risk And Performance Aggregate Enrichment
 
@@ -3604,9 +3652,9 @@ artifacts belong to report/render/archive services, and AI narrative execution b
 | RFC42-WTBD-003 | Full front-office post-trade outcome feedback product support | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Implemented and canonically proven for current Gateway/Workbench outcome-review product scope through `lotus-gateway` PR #186, `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 | The full first-wave product path is now implementation-backed: manage owns authority, Gateway composes it, Workbench renders it, panel governance certifies it, and live canonical evidence proves it. Reporting, AI, OMS, source-owner methodology, and PM-scoring scope remain separate ledger items. |
 | RFC42-WTBD-004 | Rendered outcome reports and archive lifecycle | `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-gateway`, `lotus-workbench` | Implemented, merged, CI-proven, and wiki-published through `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 | Manage emits bounded report input only; downstream services now consume it to create deterministic outcome-review report artifacts, preserve archive posture, expose Gateway submission, and add the Workbench report request action without recomputing outcome truth. |
 | RFC42-WTBD-005 | Governed AI narrative/copilot over outcome evidence | `lotus-ai`, Gateway, Workbench, with manage as evidence authority | Implemented, merged, CI-proven, and wiki-published through `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 | Manage emits AI evidence input only; `lotus-ai` now owns guarded workflow-pack narrative execution, Gateway composes the evidence/narrative BFF, and Workbench exposes only a governed request action without prompt construction or autonomous decisioning. |
-| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash/liquidity outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, drawdown response max drawdown, concentration response selected measures, rolling metric summaries, historical attribution selected measures, performance RFC-046 TWR daily evidence/supportability/benchmark posture, workspace-summary TWR, active return, stateful MWR, contribution selected measures, attribution selected measures, core HoldingsAsOf cash totals, core TransactionLedgerWindow explicit transaction-row measures and field-aware book/trade reporting-currency restatement, core PortfolioCashflowProjection total/booked/projected-settlement cashflow, and core PortfolioLiquidityLadder operational bucket measures now have source-owned implementation truth; client tax, portfolio-level FX attribution beyond source-owned performance attribution, client income-needs planning, predictive execution, OMS acknowledgements, and PM scoring stay source-owner follow-on work. |
+| RFC42-WTBD-006 | Source-owned realized risk/performance/tax/FX/cash/liquidity outcome methodologies | `lotus-risk`, `lotus-performance`, `lotus-core`, future source owners | In progress source-family by source-family | RiskMetricsReport, drawdown response max drawdown, concentration response selected measures, rolling metric summaries, historical attribution selected measures, performance RFC-046 TWR daily evidence/supportability/benchmark posture, workspace-summary TWR, active return, stateful MWR, contribution selected measures, attribution selected measures, core HoldingsAsOf cash totals, core TransactionLedgerWindow explicit transaction-row measures and field-aware book/trade reporting-currency restatement, core PortfolioCashflowProjection total/booked/projected-settlement cashflow, and core PortfolioLiquidityLadder operational bucket measures now have source-owned implementation truth. Client tax ownership is now decided for `lotus-core` through future `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1` products, potentially ingested from external bank/tax systems. Client income-needs and liquidity-reserve ownership is now decided for future `lotus-core` `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional `PlannedWithdrawalSchedule:v1`. Portfolio-level FX attribution beyond source-owned performance attribution, predictive execution, OMS acknowledgements, and PM scoring stay source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration and acknowledgements | Execution/OMS owner, `lotus-manage` consumer | Ownership not established | RFC-0042 can compare expected and realized evidence, but OMS integration needs a separate owner, controls, acknowledgements, and reconciliation contract. |
-| RFC42-WTBD-008 | PM quality scoring or behavioral analytics | Business owner, methodology owner, `lotus-ai` only if approved | Not supported | RFC-0042 intentionally avoids scoring PMs. Any future scoring requires business approval, auditable methodology, bias controls, and governance. |
+| RFC42-WTBD-008 | PM operating quality framework / configurable scoring | `lotus-manage` with source evidence from `lotus-core`, `lotus-risk`, and `lotus-performance`; `lotus-ai` narrative only | Ownership decision made; implementation remains pending and default support claim remains disabled | Future PM operating quality belongs in `lotus-manage` as a configurable, evidence-first, default-disabled framework with bank-defined policy versions, dimensions, weights, thresholds, peer groups, access mode, non-use posture, fairness controls, explainability, and audit. `lotus-ai` must not calculate scores. Current RFC-0042 intentionally avoids PM scoring until this separate governance-heavy product is implemented and proven. |
 
 ### Detailed Follow-Up Items
 
@@ -4421,6 +4469,20 @@ Latest WTBD-006 core portfolio-tax-lot methodology proof:
    advice, realized-tax optimization, wash-sale treatment, client-tax approval, tax-reporting
    certification, predictive execution methodology, or OMS acknowledgement.
 
+Latest WTBD-006 client tax-profile and tax-rule ownership decision:
+
+1. `lotus-core` is the Lotus-side owner for future `ClientTaxProfile:v1` and
+   `ClientTaxRuleSet:v1` products because client/portfolio reference data, booking jurisdiction,
+   tax lots, transaction evidence, and source-readiness composition already belong in Core,
+2. deployed banks may map external tax/reference systems into those Core products; Lotus does not
+   need a separate tax application for the current WTBD decision,
+3. `lotus-manage` may consume these products for bounded tax-aware construction, proof-pack, and
+   outcome-review supportability, but must not claim tax advice, after-tax optimization, legal
+   interpretation, tax-loss harvesting suitability, client-tax approval, or jurisdiction-specific
+   recommendation,
+4. implementation remains pending until Core publishes contracts, supportability states, examples,
+   tests, and source-owner methodology/docs for the profile and rule-set products.
+
 Latest WTBD-006 core transaction-cost-curve methodology proof:
 
 1. `lotus-core` PR #345 was merged to `main` as
@@ -4705,39 +4767,59 @@ Promotion proof:
 4. operational runbook and supportability evidence,
 5. supported-feature promotion that names the execution boundary.
 
-#### RFC42-WTBD-008 - PM Quality Scoring Or Behavioral Analytics
+#### RFC42-WTBD-008 - PM Operating Quality Framework / Configurable Scoring
 
 Target business outcome:
 
-If the business later approves it, outcome evidence could support governed learning analytics over
-process quality without becoming opaque, punitive, or biased.
+If a buying bank enables it, outcome evidence could support a governed PM operating quality
+framework over process quality without becoming opaque, punitive, or biased. The product may expose
+scores, but only through explicit bank configuration, access controls, explainability,
+supportability, and non-use posture.
 
-Why it cannot be done now:
+Implementation decision:
 
-RFC-0042 explicitly supports outcome review, not PM scoring. Scoring requires business ownership,
-methodology, controls, explainability, fairness review, and governance that do not exist in this
-RFC.
+PM operating quality policy, configuration, score runs, reason decomposition, access mode,
+non-use posture, audit trail, and supportability should be owned by `lotus-manage`. This is a DPM
+management workflow product because Manage owns waves, proof packs, construction alternatives,
+overrides, handoffs, outcome reviews, and PM activity evidence. `lotus-core` provides PM book,
+mandate, portfolio, client/portfolio constraint, region, and source-context evidence.
+`lotus-risk` provides risk-breach and risk-response evidence. `lotus-performance` provides
+outcome and benchmark-relative evidence. `lotus-ai` may summarize evidence but must not calculate
+or own the score.
+
+The default shipped posture should remain scoring disabled, with evidence timeline and quality
+indicators available only as non-ranking signals until a bank configures and approves the policy.
 
 2026-05-12 boundary-hardening result:
 
 `lotus-manage` portfolio memory already publishes `pm_scoring` as
 `DEFERRED_SOURCE_OWNER`. The audit strengthened regression proof so the deferred family is locked
-as `future-pm-scoring-owner`, has no event types, has no route, and carries
+as a future Manage-owned PM operating quality product placeholder, has no event types, has no route, and carries
 `PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED`. OpenAPI schema assertions now pin the
 source-event-family posture wording so consumers do not infer hidden PM-scoring or behavioral
 analytics functionality from portfolio memory.
 
 Dependencies before implementation:
 
-1. named business owner,
-2. approved auditable methodology,
-3. bias, explainability, and appropriate-use controls,
-4. source and outcome evidence boundaries,
-5. AI/product/legal/compliance sign-off if AI is involved.
+1. Manage-owned `PmOperatingQualityPolicy:v1` / `PmOperatingQualityScoreRun:v1` contract with
+   policy versioning, dimensions, weights, thresholds, evidence minimums, peer groups, lookback
+   windows, access mode, and non-use posture,
+2. business owner, approved purpose, and bank-configured governance mode such as disabled,
+   coaching-only, supervisory, compliance, or restricted,
+3. methodology owner and documented metric design,
+4. bias/fairness controls across mandate type, book profile, region, client constraints, market
+   regime, liquidity/tax restrictions, and source availability,
+5. explainability, source evidence, missing-evidence posture, supportability, and reason
+   decomposition for every score or indicator,
+6. policy for whether PM scoring can affect supervision, compensation, conduct decisions, or HR
+   workflows; default must be no such use,
+7. AI/product/legal/compliance sign-off if AI summarization is involved.
 
 Expected implementation wave:
 
-Treat as a separate governed RFC only if the business explicitly wants this capability.
+Treat as a separate Manage-owned governed RFC. The first implementation should keep scoring
+disabled by default and expose only evidence-first quality indicators until an explicit bank policy
+configuration enables scoring.
 
 Promotion proof:
 
@@ -4764,15 +4846,16 @@ Recommended order:
 3. maintain governed AI narrative support only through `lotus-ai`, Gateway, and Workbench,
 4. add source-owned risk/performance/tax/FX/cash/execution methodologies as source owners publish
    certified contracts,
-5. evaluate PM quality scoring only as a separate governance-heavy RFC.
+5. evaluate PM operating quality scoring only as a separate Manage-owned governance-heavy RFC.
 
 Rationale:
 
 Gateway, Workbench, report/render/archive, and governed AI narrative now realize the supported
 manage backend for the first-wave RFC-0042 product path without waiting for every future source
-methodology. Execution/OMS integration, richer source-owned outcome methodologies, and PM scoring
-still introduce separate ownership, control, audit, and regulatory considerations and must not be
-folded back into manage.
+methodology. Execution/OMS integration and richer source-owned outcome methodologies still
+introduce separate ownership, control, audit, and regulatory considerations. PM operating quality
+is decided as a future Manage-owned configurable framework, but it must remain outside current
+support claims until the policy/configuration, controls, tests, and evidence are implemented.
 
 ### RFC-0042 Promotion Checklist For Any Future Item
 

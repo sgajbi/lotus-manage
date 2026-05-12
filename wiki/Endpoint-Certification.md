@@ -1610,8 +1610,9 @@ Routes:
 
 Purpose:
 
-RFC-0041 Slice 4 manage-owned wave entrypoint for the first supported trigger:
-`EXPLICIT_PORTFOLIO_LIST`. The preview endpoint builds a non-durable affected-portfolio wave so
+RFC-0041 Slice 4 manage-owned wave entrypoint for supported triggers:
+`EXPLICIT_PORTFOLIO_LIST`, `PM_BOOK_REVIEW`, `CIO_MODEL_CHANGE`, `RISK_EVENT`, and
+`BULK_REVIEW_CAMPAIGN`. The preview endpoint builds a non-durable affected-portfolio wave so
 portfolio managers and downstream orchestration can see the candidate set, source refs, blocked
 items, aggregate counts, and event posture before persistence. The create endpoint persists the same
 governed wave contract with an idempotency key. Slice 5 adds durable source-check classification
@@ -1626,15 +1627,25 @@ APIs, then proves the full flow live against Postgres-backed manage repositories
 
 Functional coverage:
 
-- explicit affected-portfolio input only,
+- explicit affected-portfolio input and bounded source/cohort trigger families,
 - source-backed candidate selection from caller-supplied source refs,
 - source-backed candidate enrichment from an existing RFC-0038 mandate digital twin,
+- source-backed PM-book discovery through lotus-core `PortfolioManagerBookMembership:v1`,
+- source-backed CIO model-change discovery through lotus-core
+  `CioModelChangeAffectedCohort:v1`,
+- source-backed risk-event discovery through lotus-risk `RiskEventAffectedCohort:v1` over
+  caller-supplied candidates and source-supplied exposure weights,
+- bounded Manage-owned bulk-review campaign membership through
+  `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios, source-owned
+  `portfolio_type`, eligible DPM portfolio-type filters, deterministic membership source refs,
+  and fail-closed validation,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can
   preserve source authority instead of reconstructing readiness,
-- unsupported tactical house-view and bulk review campaign trigger rejection with
-  `NOT_SUPPORTED_TRIGGER` and source-owner gap reasons,
+- unsupported tactical house-view trigger rejection with `NOT_SUPPORTED_TRIGGER` and source-product
+  gap reasons; tactical house-view ownership is decided for a future `lotus-advise`
+  `TacticalHouseViewAffectedCohort:v1`,
 - durable create with idempotent replay,
 - durable source-check from `CREATED` to `SOURCE_CHECKED`,
 - item classification as `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, or
@@ -1822,7 +1833,9 @@ Non-functional posture:
 - Manage endpoint certification remains scoped to manage-owned outcome-review authority. First-wave
   downstream product realization is now complete in owning apps and canonically proven at
   `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`; richer source-owner
-  methodologies, external execution/OMS, and PM quality scoring remain outside this API claim.
+  methodologies, external execution/OMS, and PM operating quality scoring remain outside this API
+  claim. PM operating quality ownership is decided for a future Manage-owned configurable
+  framework, but current endpoint certification makes no scoring claim.
 
 Upstream integration posture:
 
@@ -1877,7 +1890,7 @@ Functional behavior:
   `DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y`, `NO_RAW_PAYLOADS`,
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
 - publishes `source_event_family_posture` for supported manage, report, AI, and archive families
-  plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution and PM scoring,
+  plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution and PM operating quality,
   with no route or event types for deferred families until owning products publish governed source
   contracts,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
@@ -1892,9 +1905,11 @@ Non-functional posture:
 - Does not expose raw upstream payloads.
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
-- Future OMS execution and PM-scoring products remain source-owner roadmap scope and are visible as
-  deferred posture entries rather than hidden portfolio-memory functionality. `pm_scoring` remains
-  pinned as `PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED` with no projected events or route.
+- Future OMS execution and PM operating quality products remain roadmap scope and are visible as
+  deferred posture entries rather than hidden portfolio-memory functionality. PM operating quality
+  ownership is decided for a future Manage-owned configurable framework, but `pm_scoring` remains
+  pinned as `PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED` with no projected events or route until that
+  framework is implemented and explicitly supported.
 
 ```mermaid
 flowchart LR
