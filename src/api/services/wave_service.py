@@ -54,6 +54,18 @@ SUPPORTED_CREATE_TRIGGER_TYPES = {
     "RISK_EVENT",
 }
 
+UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES = {
+    "TACTICAL_HOUSE_VIEW": (
+        "Tactical house-view waves require a governed CIO or risk house-view cohort source "
+        "product before manage can preview or create them."
+    ),
+    "BULK_REVIEW_CAMPAIGN": (
+        "Bulk review campaign waves require a governed campaign membership source product with "
+        "review, approval, expiry, and entitlement controls before manage can preview or create "
+        "them."
+    ),
+}
+
 
 class DpmWaveValidationError(ValueError):
     def __init__(self, code: str, message: str) -> None:
@@ -1679,6 +1691,12 @@ def _event(
 
 def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:
     if trigger_type not in SUPPORTED_CREATE_TRIGGER_TYPES:
+        source_owner_reason = UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES.get(trigger_type)
+        if source_owner_reason is not None:
+            raise DpmWaveValidationError(
+                "NOT_SUPPORTED_TRIGGER",
+                f"Trigger type {trigger_type} is not supported. {source_owner_reason}",
+            )
         raise DpmWaveValidationError(
             "NOT_SUPPORTED_TRIGGER",
             f"Trigger type {trigger_type} is not supported for RFC-0041 Slice 4.",
