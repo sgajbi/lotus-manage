@@ -612,13 +612,13 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
 
     required_terms = [
-        "PARTIALLY IMPLEMENTED - OWNER-SIDE DPM WORKFLOW PACKS",
+        "PARTIALLY IMPLEMENTED - BOUNDED DPM WORKFLOW PACKS AND FIRST-WAVE PRODUCT INVOCATION",
         "`dpm_pm_memo.pack@v1`",
         "`dpm_wave_pm_memo.pack@v1`",
         "`outcome_review_narrative.pack@v1`",
         "`dpm_operations_handoff_summary.pack@v1`",
-        "The bounded owner-side DPM workflow-pack result from RFC37-WTBD-002 is incorporated",
-        "RFC-0043 owner-side DPM workflow-pack subset",
+        "The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated",
+        "bounded current RFC37-WTBD-002 product path",
         "WTBD Reintegration Audit - 2026-05-10",
         "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, and exception summary packs",
         "`dpm_exception_summary.pack@v1`",
@@ -630,11 +630,12 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
         assert term in rfc or term in wtbd or term in supported_features or term in wiki_index
 
     assert (
-        "PARTIALLY IMPLEMENTED (OWNER-SIDE DPM WORKFLOW PACKS; OPERATIONS HANDOFF PACK COMPLETE)"
+        "PARTIALLY IMPLEMENTED (BOUNDED DPM WORKFLOW PACKS; FIRST-WAVE PRODUCT INVOCATION COMPLETE)"
         in index
     )
-    assert "Partially supported through owner-side `lotus-ai` DPM workflow packs" in (
-        supported_features
+    assert (
+        "Partially supported through bounded DPM workflow packs and first-wave product invocation"
+        in (supported_features)
     )
     assert "all AI copilot features as proposed" not in rfc
     assert "RFC-0043 remains proposed" not in wtbd
@@ -1572,7 +1573,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "AI memo generation from wave evidence" in supported_features
     assert "`lotus-ai` owns the guarded wave PM memo workflow pack" in (supported_features)
     assert (
-        "Gateway and Workbench consume that AI workflow without local prompt or memo generation"
+        "Gateway and Workbench consume those AI workflows without local prompt or memo generation"
         in (supported_features)
     )
     assert "Gateway proof-pack composition is implementation-backed" in supported_features
