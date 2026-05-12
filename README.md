@@ -111,9 +111,10 @@ candidate portfolios with source-supplied exposure weights. Tactical house-view 
 campaign cohorts, richer owning-service risk/performance aggregate enrichment, and external OMS
 execution remain unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
-`outcome_review_narrative.pack@v1`, and `dpm_operations_handoff_summary.pack@v1` workflows over
-Manage-owned proof-pack, wave, outcome, and operations handoff evidence with review-required
-guardrails. RFC-0042 is `DONE` for manage backend
+`outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
+`dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,
+operations handoff, and monitoring-exception evidence with review-required guardrails. RFC-0042 is
+`DONE` for manage backend
 authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
@@ -121,8 +122,8 @@ and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024
 hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
 state-filter validation evidence. Full post-trade outcome product support remains downstream until
 Gateway/Workbench implementation where surfaced is complete and canonically proven. RFC-0043 is
-partially implemented for those owner-side DPM workflow packs; broader exception summaries,
-Gateway/Workbench operations-handoff product invocation, full copilot workspace UX, and
+partially implemented for those owner-side DPM workflow packs; broader Gateway/Workbench
+operations-handoff and exception-summary product invocation, full copilot workspace UX, and
 unsupported autonomous advice remain future owner work. Target-state features are not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
 
