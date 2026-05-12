@@ -1878,6 +1878,8 @@ Functional behavior:
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
 - publishes `source_event_family_posture` for supported manage, report, AI, and archive families
   plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution and PM scoring,
+  with no route or event types for deferred families until owning products publish governed source
+  contracts,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1891,7 +1893,8 @@ Non-functional posture:
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
 - Future OMS execution and PM-scoring products remain source-owner roadmap scope and are visible as
-  deferred posture entries rather than hidden portfolio-memory functionality.
+  deferred posture entries rather than hidden portfolio-memory functionality. `pm_scoring` remains
+  pinned as `PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED` with no projected events or route.
 
 ```mermaid
 flowchart LR

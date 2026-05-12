@@ -274,7 +274,13 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert family_posture["generated_document_archive"].source_system == "lotus-archive"
     assert family_posture["external_oms_execution"].support_status == "DEFERRED_SOURCE_OWNER"
     assert family_posture["external_oms_execution"].event_types == []
+    assert family_posture["pm_scoring"].source_system == "future-pm-scoring-owner"
+    assert family_posture["pm_scoring"].owner == "future PM scoring methodology owner"
+    assert family_posture["pm_scoring"].support_status == "DEFERRED_SOURCE_OWNER"
+    assert family_posture["pm_scoring"].event_types == []
+    assert family_posture["pm_scoring"].route is None
     assert family_posture["pm_scoring"].reason_code == "PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED"
+    assert "approved methodology" in family_posture["pm_scoring"].summary
     mandate_events = {
         event.event_type: event
         for event in memory.events
@@ -345,6 +351,19 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
         ),
     }
     assert family_posture["pm_scoring"]["support_status"] == "DEFERRED_SOURCE_OWNER"
+    assert family_posture["pm_scoring"] == {
+        "family_key": "pm_scoring",
+        "source_system": "future-pm-scoring-owner",
+        "owner": "future PM scoring methodology owner",
+        "support_status": "DEFERRED_SOURCE_OWNER",
+        "event_types": [],
+        "route": None,
+        "reason_code": "PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED",
+        "summary": (
+            "No PM quality-scoring events are projected until an approved methodology, controls, "
+            "and source owner exist."
+        ),
+    }
     assert all(event["event_identity"] for event in payload["events"])
     assert all(event["redaction_policy"] == "NO_RAW_PAYLOADS" for event in payload["events"])
     assert any(event["event_type"] == "OUTCOME_REVIEW_EVENT" for event in payload["events"])
@@ -353,3 +372,11 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert "/api/v1/rebalance/portfolio-memory/{portfolio_id}" in openapi_json["paths"]
     memory_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemory"]
     assert "source_event_family_posture" in memory_schema["properties"]
+    posture_schema = openapi_json["components"]["schemas"][
+        "DpmPortfolioMemorySourceEventFamilyPosture"
+    ]
+    assert "hidden portfolio-memory truth" in posture_schema["properties"]["summary"]["description"]
+    assert (
+        "PM-scoring no-claim boundaries"
+        in memory_schema["properties"]["source_event_family_posture"]["description"]
+    )
