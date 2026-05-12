@@ -509,7 +509,9 @@ Current supported behavior:
 Current boundaries:
 
 1. external OMS execution and acknowledgements are not supported,
-2. PM quality scoring and behavioral analytics are not supported,
+2. PM quality scoring and behavioral analytics are not supported; portfolio memory publishes this
+   as `pm_scoring` with `DEFERRED_SOURCE_OWNER`, no route, no event types, and
+   `PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED`,
 3. client communication execution remains future downstream scope,
 4. aggregated tax, FX, client income-needs planning, and execution methodologies
    remain source-owner follow-on work.

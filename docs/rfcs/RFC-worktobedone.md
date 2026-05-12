@@ -4710,6 +4710,15 @@ RFC-0042 explicitly supports outcome review, not PM scoring. Scoring requires bu
 methodology, controls, explainability, fairness review, and governance that do not exist in this
 RFC.
 
+2026-05-12 boundary-hardening result:
+
+`lotus-manage` portfolio memory already publishes `pm_scoring` as
+`DEFERRED_SOURCE_OWNER`. The audit strengthened regression proof so the deferred family is locked
+as `future-pm-scoring-owner`, has no event types, has no route, and carries
+`PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED`. OpenAPI schema assertions now pin the
+source-event-family posture wording so consumers do not infer hidden PM-scoring or behavioral
+analytics functionality from portfolio memory.
+
 Dependencies before implementation:
 
 1. named business owner,
@@ -4729,6 +4738,14 @@ Promotion proof:
 3. governance approval evidence,
 4. README/wiki/supported-feature updates with strict wording,
 5. client-facing material reviewed for appropriate claims.
+
+Boundary-hardening proof:
+
+1. `python -m pytest tests/unit/dpm/api/test_portfolio_memory_api.py -q`,
+2. portfolio-memory API regression proves `pm_scoring` remains a deferred source-owner family with
+   no route and no event types,
+3. OpenAPI regression proves the source-event-family posture describes hidden-truth prevention and
+   PM-scoring no-claim boundaries.
 
 ### Suggested Sequencing
 
