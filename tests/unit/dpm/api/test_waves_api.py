@@ -192,6 +192,56 @@ def _risk_event_request() -> dict[str, object]:
     }
 
 
+def _bulk_review_campaign_request() -> dict[str, object]:
+    return {
+        "trigger_type": "BULK_REVIEW_CAMPAIGN",
+        "trigger_id": "campaign-holdings-apple-tesla-20260510",
+        "rationale": "Review discretionary portfolios affected by the Apple and Tesla campaign.",
+        "as_of_date": "2026-05-10",
+        "actor_id": "pm_001",
+        "portfolio_types": ["DISCRETIONARY"],
+        "portfolios": [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "mandate_id": MANDATE_ID,
+                "portfolio_type": "DISCRETIONARY",
+                "source_refs": [
+                    {
+                        "source_system": "lotus-core",
+                        "source_type": "HoldingsAsOf",
+                        "source_id": "holdings-asof-pb-sg-global-bal-001",
+                        "source_version": "v1",
+                        "supportability_state": "READY",
+                        "content_hash": "sha256:holdings",
+                    },
+                    {
+                        "source_system": "lotus-advise",
+                        "source_type": "IdeaTargetingUniverse",
+                        "source_id": "idea-aapl-tsla-001",
+                        "source_version": "v1",
+                        "supportability_state": "READY",
+                        "content_hash": "sha256:idea-targeting",
+                    },
+                ],
+            },
+            {
+                "portfolio_id": "PB_SG_ADVISORY_002",
+                "mandate_id": "MANDATE_PB_SG_ADVISORY_002",
+                "portfolio_type": "ADVISORY",
+                "source_refs": [
+                    {
+                        "source_system": "lotus-core",
+                        "source_type": "HoldingsAsOf",
+                        "source_id": "holdings-asof-pb-sg-advisory-002",
+                        "source_version": "v1",
+                        "supportability_state": "READY",
+                    }
+                ],
+            },
+        ],
+    }
+
+
 def _pm_book_membership_payload(
     *,
     supportability_state: str = "READY",
@@ -1003,6 +1053,149 @@ def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
     assert payload["wave"]["trigger"]["trigger_type"] == "RISK_EVENT"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
     assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+
+    with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_bulk_review_campaign_request(),
+            headers={"X-Correlation-Id": "corr-bulk-review-preview"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["durable"] is False
+    assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
+    assert payload["wave"]["trigger"]["source_refs"][0]["source_type"] == (
+        "BulkReviewCampaignMembership"
+    )
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    item = payload["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert item["mandate_id"] == MANDATE_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "BulkReviewCampaignMembership",
+        "BULK_REVIEW_CAMPAIGN_MEMBER",
+        "HoldingsAsOf",
+        "IdeaTargetingUniverse",
+        "MANDATE_DIGITAL_TWIN",
+    }
+    assert item["diagnostics"]["source_product"] == "BulkReviewCampaignMembership:v1"
+    assert item["diagnostics"]["excluded_candidate_count"] == 1
+    assert item["diagnostics"]["eligible_portfolio_types"] == ["DISCRETIONARY"]
+
+
+def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(mandate_repository, wave_repository) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves",
+            json=_bulk_review_campaign_request(),
+            headers={"Idempotency-Key": "idem-bulk-review-campaign-wave"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["durable"] is True
+    assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+@pytest.mark.parametrize(
+    ("request_patch", "expected_status", "expected_code"),
+    [
+        (
+            {"as_of_date": "2026/05/10"},
+            422,
+            "INVALID_AS_OF_DATE",
+        ),
+        (
+            {"portfolios": []},
+            422,
+            "BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED",
+        ),
+        (
+            {"portfolio_types": [" "]},
+            422,
+            "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-core",
+                                "source_type": "HoldingsAsOf",
+                                "source_id": "holdings-asof-pb-sg-global-bal-001",
+                                "supportability_state": "READY",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": "PB_SG_ADVISORY_002",
+                        "mandate_id": "MANDATE_PB_SG_ADVISORY_002",
+                        "portfolio_type": "ADVISORY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-core",
+                                "source_type": "HoldingsAsOf",
+                                "source_id": "holdings-asof-pb-sg-advisory-002",
+                                "supportability_state": "READY",
+                            }
+                        ],
+                    }
+                ]
+            },
+            424,
+            "BULK_REVIEW_CAMPAIGN_MEMBERSHIP_EMPTY",
+        ),
+    ],
+)
+def test_bulk_review_campaign_preview_rejects_invalid_or_empty_membership(
+    request_patch: dict[str, object],
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    request = {**_bulk_review_campaign_request(), **request_patch}
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
 
 
 @pytest.mark.parametrize(
@@ -2999,32 +3192,19 @@ def test_wave_preview_and_create_reject_source_owner_triggers_without_fallback()
             "/api/v1/rebalance/waves/preview",
             json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
         )
-        campaign_preview = client.post(
-            "/api/v1/rebalance/waves/preview",
-            json={**_request(), "trigger_type": "BULK_REVIEW_CAMPAIGN"},
-        )
         tactical_create = client.post(
             "/api/v1/rebalance/waves",
             headers={"Idempotency-Key": "tactical-wave-unsupported"},
             json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
         )
-        campaign_create = client.post(
-            "/api/v1/rebalance/waves",
-            headers={"Idempotency-Key": "campaign-wave-unsupported"},
-            json={**_request(), "trigger_type": "BULK_REVIEW_CAMPAIGN"},
-        )
 
-    for response in [tactical_preview, campaign_preview, tactical_create, campaign_create]:
+    for response in [tactical_preview, tactical_create]:
         assert response.status_code == 422
         assert response.json()["detail"]["code"] == "NOT_SUPPORTED_TRIGGER"
 
     assert (
         "governed CIO or risk house-view cohort source product"
         in (tactical_preview.json()["detail"]["message"])
-    )
-    assert (
-        "governed campaign membership source product"
-        in (campaign_preview.json()["detail"]["message"])
     )
 
 
@@ -3083,15 +3263,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         )
     )
     assert (
-        "BULK_REVIEW_CAMPAIGN"
-        in (
-            create["responses"]["422"]["content"]["application/json"]["example"]["detail"][
-                "message"
-            ]
-        )
-    )
-    assert (
-        "governed campaign membership source product"
+        "TACTICAL_HOUSE_VIEW"
         in (
             create["responses"]["422"]["content"]["application/json"]["example"]["detail"][
                 "message"

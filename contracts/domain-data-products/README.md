@@ -18,7 +18,11 @@ Current declarations:
    risk-event rebalance waves.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
-   implemented rebalance supportability, artifact, and workflow route families.
+   implemented rebalance supportability, artifact, and workflow route families, and
+   `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
+   `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios,
+   and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through explicit bank-policy PM
+   operating quality score-run preview.
 
 Local validation:
 

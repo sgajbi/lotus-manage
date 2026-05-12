@@ -174,7 +174,11 @@ Potential core additions:
 3. `SustainabilityPreferenceProfile:v1`
    ESG strategy, exclusions, sustainability labels, ratings, transition preferences.
 4. `PortfolioCashflowForecast:v1`
-   known upcoming withdrawals, deposits, fees, income needs, and liquidity events.
+   known upcoming withdrawals, deposits, fees, and liquidity events.
+5. Future `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional
+   `PlannedWithdrawalSchedule:v1`
+   client income needs, liquidity reserve requirements, planned withdrawals, and source-owned
+   planning/reference posture from `lotus-core`.
 5. `ModelChangeEvent:v1`
    CIO/model changes that should trigger monitoring and command-center attention.
 
@@ -1136,7 +1140,7 @@ product truth lives with the originating RFC rather than only in
 | RFC38-WTBD-003 - Platform canonical seed automation | Completed, merged, live-proven, and wiki-published | `lotus-platform` PR #304, `lotus-workbench` PR #155, and `lotus-manage` PR #113 added the governed command-center seed path for `PB_SG_GLOBAL_BAL_001`, `MANDATE_PB_SG_GLOBAL_BAL_001`, `PM_SG_DPM_001`, and `BOOK_SG_BALANCED_DPM`, including Manage and Gateway mandate/health/summary checks plus canonical Workbench screenshot registration. |
 | RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts | Completed for populated source-owned PM-book monitoring cohorts | `lotus-core` owns `PortfolioManagerBookMembership:v1`; `lotus-manage` consumes it when monitoring run-once receives a portfolio-manager selector without explicit mandate ids; Gateway passes the body through; Workbench now triggers the source-owned path rather than sending a single-mandate fallback. |
 | RFC38-WTBD-005 - Mandate objective, benchmark, review cadence, and model-change sources | Completed for first-wave source-owned mandate twin enrichment | `lotus-core` enriches `DiscretionaryMandateBinding:v1` with source-owned mandate objective, review cadence, last review date, and next review due date; `lotus-manage` consumes those fields into the mandate twin and health review cadence instead of local defaults. Manage also consumes the existing core `BenchmarkAssignment:v1` source product for `benchmark_id`, while CIO model-change source ownership remains covered by `CioModelChangeAffectedCohort:v1` and RFC-0041. Broader performance benchmark analytics remain owned outside manage. |
-| RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products | Completed for first-wave manage health consumption | `lotus-manage` mandate refresh now optionally consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` from `lotus-core`. Available profiles are preserved in mandate lineage, field-gap codes are removed only when the source product is actually present, active instrument restrictions can block model-target health, sustainability preferences create bounded review-required health posture, and projected negative net cashflow can create cash-liquidity attention. Client income-needs planning, issuer/sector restriction joins, security-level sustainability classification, and regulatory suitability approval remain explicit non-goals. |
+| RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products | Completed for first-wave manage health consumption | `lotus-manage` mandate refresh now optionally consumes `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` from `lotus-core`. Available profiles are preserved in mandate lineage, field-gap codes are removed only when the source product is actually present, active instrument restrictions can block model-target health, sustainability preferences create bounded review-required health posture, and projected negative net cashflow can create cash-liquidity attention. Client income-needs and liquidity-reserve ownership is decided for future `lotus-core` `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional `PlannedWithdrawalSchedule:v1`; implementation remains pending and no financial-planning advice claim is made. Issuer/sector restriction joins, security-level sustainability classification, and regulatory suitability approval remain explicit non-goals. |
 | RFC38-WTBD-008 - Full front-office command-center product support | Completed for the first-wave populated product path | Backend authority, Gateway command-center composition, Workbench cockpit rendering, platform canonical seed automation, PM-book discovery, populated ready proof, selector-driven partial proof, empty-date proof, and demo-ready screenshot evidence are implementation-backed. Degraded/blocked canonical fixtures and richer profile-detail surfaces remain future source-owner or product-depth work. |
 
 ### 17.2 Evidence Rechecked
@@ -1363,6 +1367,7 @@ Testing and evidence:
 Expected-standard decision:
 
 WTBD-006 is complete for first-wave manage mandate-health consumption of certified core source
-products. It has not completed client income-needs planning, issuer/sector/client-jurisdiction
+products. It has not implemented client income-needs or liquidity-reserve products yet, but
+ownership is decided for future `lotus-core` source products. Issuer/sector/client-jurisdiction
 restriction joins, security-level sustainability classification, regulatory suitability approval,
-or downstream UI detail presentation; those remain separately governed source-owner/product slices.
+and downstream UI detail presentation remain separately governed source-owner/product slices.

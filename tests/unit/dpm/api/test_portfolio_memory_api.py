@@ -274,13 +274,15 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert family_posture["generated_document_archive"].source_system == "lotus-archive"
     assert family_posture["external_oms_execution"].support_status == "DEFERRED_SOURCE_OWNER"
     assert family_posture["external_oms_execution"].event_types == []
-    assert family_posture["pm_scoring"].source_system == "future-pm-scoring-owner"
-    assert family_posture["pm_scoring"].owner == "future PM scoring methodology owner"
-    assert family_posture["pm_scoring"].support_status == "DEFERRED_SOURCE_OWNER"
+    assert family_posture["pm_scoring"].source_system == "lotus-manage"
+    assert family_posture["pm_scoring"].owner == "lotus-manage PM operating quality product"
+    assert family_posture["pm_scoring"].support_status == "SEPARATE_PRODUCT_NO_EVENT_FAMILY"
     assert family_posture["pm_scoring"].event_types == []
-    assert family_posture["pm_scoring"].route is None
-    assert family_posture["pm_scoring"].reason_code == "PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED"
-    assert "approved methodology" in family_posture["pm_scoring"].summary
+    assert family_posture["pm_scoring"].route == (
+        "/api/v1/rebalance/pm-operating-quality/score-runs/preview"
+    )
+    assert family_posture["pm_scoring"].reason_code == ("PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY")
+    assert "bank-supplied policy" in family_posture["pm_scoring"].summary
     mandate_events = {
         event.event_type: event
         for event in memory.events
@@ -350,18 +352,19 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "governed OMS owner publishes a no-raw-payload source-event family."
         ),
     }
-    assert family_posture["pm_scoring"]["support_status"] == "DEFERRED_SOURCE_OWNER"
+    assert family_posture["pm_scoring"]["support_status"] == "SEPARATE_PRODUCT_NO_EVENT_FAMILY"
     assert family_posture["pm_scoring"] == {
         "family_key": "pm_scoring",
-        "source_system": "future-pm-scoring-owner",
-        "owner": "future PM scoring methodology owner",
-        "support_status": "DEFERRED_SOURCE_OWNER",
+        "source_system": "lotus-manage",
+        "owner": "lotus-manage PM operating quality product",
+        "support_status": "SEPARATE_PRODUCT_NO_EVENT_FAMILY",
         "event_types": [],
-        "route": None,
-        "reason_code": "PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED",
+        "route": "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+        "reason_code": "PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY",
         "summary": (
-            "No PM quality-scoring events are projected until an approved methodology, controls, "
-            "and source owner exist."
+            "PM operating quality score-run preview is supported as a separate explicit "
+            "Manage product with bank-supplied policy and source-backed evidence; portfolio "
+            "memory projects no PM-scoring events until a persisted score-run lifecycle exists."
         ),
     }
     assert all(event["event_identity"] for event in payload["events"])

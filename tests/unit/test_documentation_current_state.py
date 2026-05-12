@@ -936,7 +936,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC41-WTBD-010" in rfc
     assert "DpmOutcomeReportInput" in rfc
     assert "DpmOutcomeAiEvidenceInput" in rfc
-    assert "PM quality scoring | Not supported" in rfc
+    assert (
+        "PM operating quality score-run preview | Supported as separate Manage-owned "
+        "first-wave product"
+    ) in rfc
+    assert "PmOperatingQualityScoreRun:v1" in rfc
+    assert "/api/v1/rebalance/pm-operating-quality/score-runs/preview" in rfc
     assert "External execution integration | Not supported" in rfc
     assert "RFC42-WTBD-001" in rfc
     assert "RFC42-WTBD-008" in rfc
@@ -1184,19 +1189,31 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in wiki_index
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in wiki_index
     assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
-    assert "Execution/OMS integration, PM quality scoring" in supported_features
+    assert "Remaining OMS stays downstream" in supported_features
+    assert (
+        "PM operating quality score-run preview is supported separately by Manage and "
+        "intentionally does not project portfolio-memory score events"
+    ) in supported_features
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
     assert "mandate health, monitoring exception, proof-pack" in supported_features
     assert "stable event identity plus retention, redaction, access, audit policy" in (
         supported_features
     )
-    assert "`lotus-report` now has the bounded context consumer seam" in supported_features
-    assert "`lotus-ai` has bounded DPM memo/narrative consumers plus an AI-owned" in (
+    assert "`lotus-report` PR #92 implements report-side bounded context consumption" in (
         supported_features
     )
-    assert "`lotus-archive` PR #25 has the generated-document/client-delivery" in supported_features
+    assert "`lotus-ai` PR #62 implements bounded DPM PM memo and outcome-review narrative" in (
+        supported_features
+    )
+    assert (
+        "`lotus-archive` PR #25 implements the archive-owned generated-document/client-delivery"
+        in (supported_features)
+    )
     assert "GET /documents/{document_id}/source-events" in supported_features
-    assert "Remaining OMS and PM-scoring source-event families" in supported_features
+    assert (
+        "PM operating quality scoring is supported only as an explicit Manage-owned "
+        "score-run preview"
+    ) in supported_features
     assert "Supported as RFC-0042 full product experience" not in supported_features
     assert "Gateway and Workbench product support must not be claimed" not in rfc
     assert (
@@ -1215,9 +1232,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`." in work_to_be_done
     )
     assert (
-        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into "
+        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the first bounded "
+        "RFC42-WTBD-008 PM operating quality score-run preview are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
+    assert "First bounded score-run preview implemented" in work_to_be_done
+    assert "PmOperatingQualityScoreRun:v1" in work_to_be_done
     assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
     assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done
     assert "stale RFC wording that said Gateway/Workbench product proof remained unclaimed" in (

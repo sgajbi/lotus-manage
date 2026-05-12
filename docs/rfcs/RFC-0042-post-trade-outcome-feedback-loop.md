@@ -48,9 +48,10 @@ backed. Post-closure WTBD work has since completed the bounded first-wave produc
 `lotus-gateway` composes manage-owned outcome-review truth, `lotus-workbench` renders the
 outcome-review surface through Gateway/BFF contracts, report/render/archive materialize governed
 outcome-review reports from bounded input, and `lotus-ai` owns guarded narrative execution from
-bounded evidence input. Execution/OMS integration, PM quality scoring, client communication, and
-richer source-owner methodology remain outside the supported claim until their owners implement and
-prove them.
+bounded evidence input. PM operating quality score-run preview is now implemented as a separate
+Manage-owned, configurable, default-disabled product over source-backed evidence. Execution/OMS
+integration, persisted PM quality lifecycle, client communication, and richer source-owner
+methodology remain outside the supported claim until their owners implement and prove them.
 
 ---
 
@@ -61,7 +62,7 @@ prove them.
 | Scope | The draft said "compare expected versus realized outcomes" without defining first-wave boundaries. | This RFC defines source ownership, first-wave support, unsupported states, and promotion rules. |
 | Source authority | `lotus-core`, `lotus-risk`, and `lotus-performance` were named but not contractually bounded. | Each source family has an owner, required posture, degraded behavior, and source-gap policy. |
 | Execution evidence | Partial fills and slippage were listed as if execution truth already existed. | Execution-quality support is blocked unless `lotus-core` or an execution/OMS owner exposes certified fill/order evidence. |
-| PM quality metrics | The draft proposed PM quality and method quality metrics too early. | First wave may emit outcome facts and review classifications only. PM scoring, ranking, or AI judgment is not supported. |
+| PM quality metrics | The draft proposed PM quality and method quality metrics too early. | First-wave outcome review still emits facts and classifications only. PM operating quality is implemented separately as a Manage-owned score-run preview product with scoring disabled by default, explicit bank policy, source refs, decomposed reasons, and prohibited-use boundaries. |
 | API quality | Endpoint list lacked supportability, report input, AI input, refresh, and source-check behavior. | API surface now includes certified review, search, supportability, report input, AI evidence input, and source refresh contracts. |
 | Persistence | Tables were underspecified and did not cover immutability, hashes, idempotency, or retention. | Persistence now requires immutable review snapshots, append-only events, source hashes, retention, and legal-hold compatibility. |
 | Downstream realization | Gateway and Workbench were not explicitly planned. | A dedicated slice creates or tightens Gateway and Workbench RFCs after manage contracts stabilize. |
@@ -147,7 +148,7 @@ flowchart LR
     Alt[RFC-0039<br/>Construction alternatives]
     Proof[RFC-0040<br/>Pre-trade proof pack]
     Wave[RFC-0041<br/>Wave and handoff evidence]
-    Core[lotus-core<br/>booked transactions, fills, holdings, cash, FX, tax lots]
+    Core[lotus-core<br/>booked transactions, fills, holdings, cash, FX, tax lots, tax profile/rules]
     Risk[lotus-risk<br/>post-trade risk and supportability]
     Perf[lotus-performance<br/>returns, contribution, attribution]
     Manage[lotus-manage<br/>DpmPostTradeOutcomeReview]
@@ -172,8 +173,9 @@ Ownership rules:
 
 1. `lotus-manage` owns the expected-versus-realized review, review state machine, workflow memory,
    supportability roll-up, and evidence handoff contracts.
-2. `lotus-core` owns booked transactions, holdings, cash movements, FX executions, tax lots, source
-   readiness, and any fill or transaction-window source products it exposes.
+2. `lotus-core` owns booked transactions, holdings, cash movements, FX executions, tax lots, future
+   client tax profile/rule products, source readiness, and any fill or transaction-window source
+   products it exposes.
 3. `lotus-risk` owns risk, stress, concentration, drawdown, and risk supportability calculations.
 4. `lotus-performance` owns returns, contribution, attribution, benchmark-relative context, and
    performance supportability calculations.
@@ -779,8 +781,9 @@ Every RFC-0042 endpoint must satisfy:
 ## 15. Supported-Features Ledger
 
 Support below includes the manage backend authority plus the bounded first-wave product realization
-that has been implemented and proven in the owning repositories. Execution/OMS integration, PM
-quality scoring, client communication, and richer source-owner methodology remain outside the
+that has been implemented and proven in the owning repositories. PM operating quality score-run
+preview is supported as a separate Manage-owned product; execution/OMS integration, persisted PM
+quality lifecycle, client communication, and richer source-owner methodology remain outside the
 support claim.
 
 | Feature | Current state | Promotion rule |
@@ -793,7 +796,7 @@ support claim.
 | AI evidence input from outcome review | Supported as bounded evidence contract plus governed narrative path | Manage emits bounded AI evidence input; `lotus-ai` owns guarded workflow-pack narrative execution. No recommendation, PM scoring, or client-contact support is claimed. |
 | Gateway outcome composition | Supported through `lotus-gateway` PR #186/#187/#188/#189 | Gateway composes manage outcome-review truth and report/AI handoff posture without recomputing expected values, realized values, variance, tolerance, lineage, freshness, or review state. |
 | Workbench outcome review UX | Supported through `lotus-workbench` PR #146/#147/#148 | Workbench consumes Gateway/BFF contracts only and renders the first-wave outcome-review, report-request, and AI-narrative request posture with canonical proof. |
-| PM quality scoring | Not supported | Requires a separate governed methodology and business approval; not an RFC-0042 first-wave claim. |
+| PM operating quality score-run preview | Supported as separate Manage-owned first-wave product | `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview` emits `PmOperatingQualityScoreRun:v1` from explicit bank policy, source-backed evidence, and optional persisted outcome reviews. Scoring is disabled by default, enabled policies fail closed for missing evidence, and HR, compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, and source-owner methodology claims are prohibited. |
 | External execution integration | Not supported | Requires execution/OMS owner, certified contract, controls, and proof. |
 
 ---
@@ -825,7 +828,7 @@ improve understanding.
 | --- | --- |
 | Manage fabricates realized truth | Enforce source-owner adapters and tests; no local methodology clone. |
 | Execution-quality claims lack fill/order evidence | Emit `EXECUTION_EVIDENCE_BLOCKED` until certified source exists. |
-| PM scoring is inferred from outcome facts | Keep scoring out of first wave and reject AI/personnel judgments. |
+| PM scoring is inferred from outcome facts | Keep outcome reviews factual. PM operating quality is only available through the separate explicit score-run preview route with bank policy, source evidence, non-use posture, and no portfolio-memory score-event projection. |
 | Source outages look like manage defects | Expose operator-safe supportability and source-owner diagnostics. |
 | UI claims outrun backend truth | Require Gateway/Workbench RFCs, implementation, and canonical proof before promotion. |
 | Report/AI claims outrun handoff contracts | Manage emits only bounded inputs; owning apps generate artifacts/narratives. |
@@ -929,8 +932,11 @@ Post-merge gold-pass audit addendum:
 Remaining outside the support claim:
 
 1. execution/OMS integration and acknowledgements require a future execution owner,
-2. PM quality scoring or behavioral analytics require business ownership, methodology approval,
-   and bias controls,
+2. PM operating quality now has a bounded Manage-owned score-run preview product with explicit
+   bank enablement, source-backed evidence, no-use posture for HR/compensation/conduct/autonomous
+   ranking, decomposed reasons, source refs, and deterministic hashes; persisted score-run
+   lifecycle, policy administration, downstream UI, and advanced fairness analytics remain future
+   expansion,
 3. client communication execution remains future downstream scope,
 4. automatic source-owner calculation beyond implemented source-emitted measures and
    source-owner risk/performance/tax/FX/cash methodologies remain outside manage support.
@@ -941,8 +947,10 @@ RFC-0042 genuinely reached the expected enterprise standard for the manage-owned
 review authority and the bounded first-wave outcome-review product path. The implementation-backed
 path now covers Gateway composition, Workbench outcome-review UX, outcome-review report
 materialization, archive lifecycle, and governed AI narrative request flow while preserving manage
-as the evidence authority. Execution/OMS integration, PM scoring, client communication, and richer
-source-owner methodology remain explicit future scope, not hidden gaps in the supported path.
+as the evidence authority. Execution/OMS integration, client communication, persisted PM operating
+quality lifecycle, and richer source-owner methodology remain explicit future scope, not hidden gaps
+in the supported path. PM operating quality first-wave preview is now owned by `lotus-manage` and
+implementation-backed with strict policy, evidence, and non-use boundaries.
 
 ---
 
@@ -955,12 +963,12 @@ truth is not stranded only in the WTBD ledger or wiki.
 | --- | --- | --- |
 | RFC42-WTBD-001 | `lotus-gateway` PR #186 implements Gateway outcome-review composition over manage APIs without recomputation. | Gateway remains a composition layer and does not own outcome-review calculations or source truth. |
 | RFC42-WTBD-002 | `lotus-workbench` PR #146 implements the post-trade outcome-review UX through Gateway/BFF contracts and live canonical proof. | Workbench does not call manage directly or synthesize source lineage, variance, report input, AI evidence, or review state. |
-| RFC42-WTBD-003 | `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 complete the first-wave front-office product path. | Reporting, AI, OMS, source-owner methodology, and PM scoring remain separately owned where not listed below. |
+| RFC42-WTBD-003 | `lotus-gateway` PR #187, `lotus-workbench` PR #146, `lotus-platform` PR #300, and `lotus-core` PR #336 complete the first-wave front-office product path. | Reporting, AI, OMS, source-owner methodology, and PM operating quality scoring remain separately owned where not listed below. |
 | RFC42-WTBD-004 | `lotus-render` PR #9, `lotus-archive` PR #21, `lotus-report` PR #88, `lotus-gateway` PR #188, and `lotus-workbench` PR #147 implement rendered outcome reports and archive lifecycle from bounded manage report input. | Report/render/archive own generated artifact lifecycle; manage remains report-input and evidence authority. |
 | RFC42-WTBD-005 | `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 implement governed outcome-review AI narrative request flow from bounded evidence input. | AI does not approve, score PMs, recommend trades, contact clients, or reconstruct source truth. |
-| RFC42-WTBD-006 | Source-owner methodology enrichment has progressed across risk, performance, and core source products and is consumed by manage adapters where implemented. `lotus-performance` now has merged source-owner methodology and evidence truth for RFC-046 TWR daily calculation evidence, supportability, benchmark FX/calendar posture, stateful MWR, contribution, and attribution source-resolution boundaries through PR #144 (`37e125b6`), PR #145 (`7aa83fe5`), PR #146 (`817c5bbc`), and PR #156 (`bf173b4`). Live audit on 2026-05-10 confirmed current canonical `PB_SG_GLOBAL_BAL_001` performance evidence through `POST /performance/twr`, Gateway performance summary/details, canonical TWR inspection, Workbench live validation, and clean performance/gateway logs. `TransactionLedgerWindow:v1` now restates reporting-currency fields by source-currency basis: book-currency measures use book currency, trade/local measures use trade currency when present, and explicit row-level realized FX P&L local evidence is exposed through `realized_fx_pnl_local_reporting_currency` for reporting surfaces. Canonical front-office seed data also carries USD/SGD and EUR/SGD reporting-currency FX coverage for live proof from `lotus-core` PR #359. `PortfolioCashflowProjection:v1` now emits total, booked, and projected-settlement cashflow measures, and `PortfolioLiquidityLadder:v1` now emits opening cash, fixed horizon bucket, booked/projected/net cashflow, cumulative cash, shortfall, and asset-liquidity-tier exposure evidence from `lotus-core` PR #356 / wiki `28c4ae2`. | Aggregated tax, portfolio-level FX attribution beyond source-owned performance attribution, client income-needs planning, predictive execution, OMS acknowledgements, and PM scoring remain source-owner follow-on work. |
+| RFC42-WTBD-006 | Source-owner methodology enrichment has progressed across risk, performance, and core source products and is consumed by manage adapters where implemented. `lotus-performance` now has merged source-owner methodology and evidence truth for RFC-046 TWR daily calculation evidence, supportability, benchmark FX/calendar posture, stateful MWR, contribution, and attribution source-resolution boundaries through PR #144 (`37e125b6`), PR #145 (`7aa83fe5`), PR #146 (`817c5bbc`), and PR #156 (`bf173b4`). Live audit on 2026-05-10 confirmed current canonical `PB_SG_GLOBAL_BAL_001` performance evidence through `POST /performance/twr`, Gateway performance summary/details, canonical TWR inspection, Workbench live validation, and clean performance/gateway logs. `TransactionLedgerWindow:v1` now restates reporting-currency fields by source-currency basis: book-currency measures use book currency, trade/local measures use trade currency when present, and explicit row-level realized FX P&L local evidence is exposed through `realized_fx_pnl_local_reporting_currency` for reporting surfaces. Canonical front-office seed data also carries USD/SGD and EUR/SGD reporting-currency FX coverage for live proof from `lotus-core` PR #359. `PortfolioCashflowProjection:v1` now emits total, booked, and projected-settlement cashflow measures, and `PortfolioLiquidityLadder:v1` now emits opening cash, fixed horizon bucket, booked/projected/net cashflow, cumulative cash, shortfall, and asset-liquidity-tier exposure evidence from `lotus-core` PR #356 / wiki `28c4ae2`. Client tax ownership is decided for future `lotus-core` `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1`, potentially ingested from external bank/tax systems. Client income-needs and liquidity-reserve ownership is decided for future `lotus-core` `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional `PlannedWithdrawalSchedule:v1`. | Aggregated tax/profile-rule implementation, portfolio-level FX attribution beyond source-owned performance attribution, income-needs/liquidity-reserve implementation, predictive execution, and OMS acknowledgements remain source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration remains unsupported. | Requires a future execution/OMS owner, certified controls, acknowledgements, and reconciliation contract. |
-| RFC42-WTBD-008 | PM quality scoring remains unsupported. | Requires business approval, governed methodology, bias controls, and a separate support claim. |
+| RFC42-WTBD-008 | `lotus-manage` implements the first bounded PM operating quality score-run preview product at `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`, emitting `PmOperatingQualityScoreRun:v1` from explicit bank policy, source-owned evidence, and optional persisted outcome reviews. | Scoring is disabled by default; enabled policies fail closed for missing evidence and reject prohibited use. Persisted policy administration, persisted score-run lifecycle, PM-book materialization, downstream UI, and advanced fairness analytics remain future expansion. |
 
 Audit evidence:
 

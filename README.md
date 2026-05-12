@@ -94,8 +94,9 @@ is implemented in `lotus-ai`, `lotus-gateway`, and `lotus-workbench`. The post-m
 also records a canonical front-office risk-drawdown `partial` boundary tracked as
 `sgajbi/lotus-gateway#182`, so no unsupported proof-pack source enrichment is claimed here.
 The portfolio-memory API now publishes source-event family posture for supported manage, report,
-AI, and archive families and explicitly marks OMS execution and PM scoring as deferred
-source-owner families, so downstream consumers do not infer hidden execution or scoring support.
+AI, and archive families, explicitly marks OMS execution as deferred, and points PM scoring to the
+separate Manage-owned PM operating quality score-run preview product rather than inventing hidden
+portfolio-memory scoring events.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
@@ -107,9 +108,13 @@ wiki-published. PM-book cohort discovery is implemented for `PM_BOOK_REVIEW` thr
 source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO model-change discovery is
 implemented through `CioModelChangeAffectedCohort:v1`; and bounded risk-event discovery is
 implemented for `RISK_EVENT` through lotus-risk `RiskEventAffectedCohort:v1` over caller-supplied
-candidate portfolios with source-supplied exposure weights. Tactical house-view cohorts, implicit
-campaign cohorts, richer owning-service risk/performance aggregate enrichment, and external OMS
-execution remain unpromoted.
+candidate portfolios with source-supplied exposure weights. Bounded bulk-review campaign
+membership is implemented for `BULK_REVIEW_CAMPAIGN` through Manage-owned
+`BulkReviewCampaignMembership:v1` over source-backed candidate portfolios with source-owned
+portfolio type, DPM portfolio-type filtering, deterministic membership refs, and fail-closed
+validation. Tactical house-view cohorts, richer campaign approval/expiry/entitlement workflow,
+richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
+unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
 `dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,
@@ -126,6 +131,13 @@ partially implemented for the bounded DPM workflow-pack product path: owner-side
 workflow-pack resolution, and first-wave Gateway/Workbench operations-handoff plus
 exception-summary invocation are merged, validated, and wiki-published. Full copilot workspace UX,
 additional future product surfaces, and unsupported autonomous advice remain future owner work.
+RFC42-WTBD-008 now has a bounded Manage-owned PM operating quality backend foundation:
+`POST /api/v1/rebalance/pm-operating-quality/score-runs/preview` emits
+`PmOperatingQualityScoreRun:v1` from explicit bank policy, source-backed evidence, and optional
+persisted outcome reviews. Scoring is disabled by default, enabled policies fail closed for missing
+required evidence, and prohibited HR, compensation, conduct-enforcement, and autonomous-ranking
+uses remain outside the product contract. Persisted policy administration, persisted score-run
+lifecycle, downstream UI, and advanced fairness analytics remain future expansion.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).

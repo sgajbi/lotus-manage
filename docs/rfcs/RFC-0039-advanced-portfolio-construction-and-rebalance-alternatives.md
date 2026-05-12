@@ -82,8 +82,8 @@ RFC-0039 must deliver these business outcomes:
    Each alternative shows drift, tracking error, turnover, estimated cost, tax, liquidity, cash,
    FX, ESG/restriction, source-readiness, and supportability trade-offs.
 3. **More personalized DPM**
-   Mandates can prioritize tax sensitivity, low turnover, liquidity, income needs, risk reduction,
-   sustainability, currency exposure, or CIO model adherence.
+   Mandates can prioritize tax sensitivity, low turnover, liquidity, future Core-sourced income
+   needs, risk reduction, sustainability, currency exposure, or CIO model adherence.
 4. **Higher investment discipline**
    Construction becomes objective-driven, constraint-aware, repeatable, and evidence-backed.
 5. **Improved review and approval quality**
@@ -184,7 +184,7 @@ flowchart LR
 
 | Domain | Authority | Manage usage |
 | --- | --- | --- |
-| Source portfolio, holdings, model, eligibility, tax lots, price, FX | `lotus-core` | consume source products and preserve source readiness |
+| Source portfolio, holdings, model, eligibility, tax lots, tax profile/rules, price, FX | `lotus-core` | consume source products and preserve source readiness |
 | Mandate digital twin, health, construction alternatives, selection | `lotus-manage` | own |
 | Risk impact, stress, drawdown, concentration, tracking error where authoritative | `lotus-risk` | consume enrichment; degrade truthfully when unavailable |
 | Performance/benchmark context, attribution, realized return context | `lotus-performance` | consume enrichment/context; do not recompute performance truth |
@@ -244,8 +244,9 @@ Second-wave implementation must stay slice-driven within this RFC:
 2. `RISK_AWARE` only through `lotus-risk` authority; manage must not become risk methodology
    authority.
 3. `LIQUIDITY_AWARE` only with settlement, cash, funding, and policy evidence.
-4. `CURRENCY_OVERLAY` only after FX exposure, hedge-ratio bands, hedge eligibility, and settlement
-   readiness are documented and tested.
+4. `CURRENCY_OVERLAY` treasury-depth support only after external bank treasury/currency products
+   for currency exposure, hedge policy, FX forward curves, eligible hedge instruments, and hedge
+   execution readiness are ingested through Lotus-side contracts and tested.
 5. `REGIME_STRESS_AWARE` only after scenario packs and stress contribution evidence are
    risk/CIO-authoritative or explicitly unavailable.
 6. `ESG_AWARE` only after restriction, sustainability, eligibility, and missing-profile behavior
@@ -310,7 +311,10 @@ Purpose:
 
 1. reduce realized gains within mandate or policy tax budget,
 2. use tax-lot windows from `lotus-core`,
-3. flag missing tax lots explicitly.
+3. flag missing tax lots explicitly,
+4. preserve the boundary that future client-tax-aware construction requires `lotus-core`
+   `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1` products before any jurisdiction-specific tax
+   treatment, tax-loss harvesting suitability, or after-tax optimization support claim.
 
 Lot-selection posture:
 
@@ -321,7 +325,9 @@ Lot-selection posture:
 5. `TAX_LOTS_UNAVAILABLE`
 
 No tax-aware alternative may be `READY` when required tax lots are unavailable and the mandate
-requires tax-aware execution.
+requires tax-aware execution. Future client-tax-aware alternatives must also fail closed or degrade
+when `ClientTaxProfile:v1` or `ClientTaxRuleSet:v1` is missing, stale, entitlement-blocked, or
+unsupported; manage must not infer client tax rules locally.
 
 #### LIQUIDITY_AWARE
 
@@ -1135,16 +1141,19 @@ Evidence:
 3. `tests/unit/dpm/api/test_construction_api.py`
 4. `scripts/validate_live_api.py` probe `construction_alternatives_authority_backed`
 
-### Slice 13: Currency-Overlay Full Implementation Slice
+### Slice 13: Currency-Overlay Bounded Implementation Slice
 
 Scope:
 
-1. promote `CURRENCY_OVERLAY` to policy-backed FX construction,
+1. promote `CURRENCY_OVERLAY` to bounded policy-backed FX construction,
 2. require FX pair readiness, currency exposure, eligible-currency policy, settlement awareness,
    and hedge-ratio policy context,
 3. block missing FX sources,
 4. mark unsupported currencies `PENDING_REVIEW`,
-5. include currency policy context in diagnostics.
+5. include currency policy context in diagnostics,
+6. preserve the boundary that treasury-depth evidence from external bank systems is not yet
+   implemented until Lotus-side contracts for external currency exposure, hedge policy, FX forward
+   curves, eligible hedge instruments, and hedge execution readiness are ingested and consumed.
 
 Acceptance:
 
@@ -1350,7 +1359,7 @@ Required artifacts:
 | Solver-constrained construction | Proposed | Promote only after solver status, objective terms, constraints, relaxations, infeasibility, and fallback are exposed. |
 | Risk/performance-aware construction | Proposed | Promote only after enrichment seams or live integrations degrade truthfully when unavailable. |
 | ESG/restriction-aware construction | Supported for source-backed `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` consumption | Keep regulatory suitability approval, security-level ESG classification, and automatic client approval unsupported until owning source products and approval workflows are proven. |
-| Currency-overlay construction | Proposed | Promote only after FX exposure, hedge-ratio, FX funding, settlement, and hedge-blocking evidence exists. |
+| Currency-overlay construction | Proposed for treasury-depth source support | Current bounded overlay posture is implemented at the manage backend layer, but treasury-depth support requires Lotus-side external bank source contracts and ingestion for currency exposure, hedge policy, FX forward curves, eligible hedge instruments, and hedge execution readiness. Do not create a `lotus-treasury` app; map deployed bank treasury systems into contracts consumed through core/source-readiness and then manage. |
 | Regime/stress-aware construction | Proposed | Promote only after scenario packs and stress contribution evidence are risk-authoritative. |
 | Alternative selection | Proposed | Promote only after actor-attributed selection events are persisted and audited. |
 
@@ -1421,7 +1430,7 @@ Additional slice assessment:
 3. Future work should extend authoritative upstream integration depth, not create duplicate
    construction-method RFCs.
 4. RFC39-WTBD-010 is now closed for bounded lifecycle support; remaining RFC-0039 follow-up is
-   source-owner risk/performance and treasury-depth enrichment plus normal closure hygiene: PR,
+   source-owner risk/performance and external treasury/currency source-boundary enrichment plus normal closure hygiene: PR,
    GitHub CI, merge, post-merge wiki publication, and branch hygiene.
 
 Wiki publication note:

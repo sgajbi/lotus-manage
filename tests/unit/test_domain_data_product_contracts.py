@@ -110,14 +110,19 @@ def test_manage_declaration_directory_contains_consumer_and_owned_product_contra
     ]
 
 
-def test_manage_product_declaration_publishes_portfolio_action_register() -> None:
+def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     payload = _load_product_declaration()
     products = payload["products"]
 
     assert payload["producer_repository"] == "lotus-manage"
-    assert [product["product_name"] for product in products] == ["PortfolioActionRegister"]
+    by_name = {product["product_name"]: product for product in products}
+    assert set(by_name) == {
+        "PortfolioActionRegister",
+        "BulkReviewCampaignMembership",
+        "PmOperatingQualityScoreRun",
+    }
 
-    product = products[0]
+    product = by_name["PortfolioActionRegister"]
     assert product["product_version"] == "v1"
     assert product["lifecycle_status"] == "active"
     assert product["approved_consumers"] == ["lotus-gateway"]
@@ -130,6 +135,27 @@ def test_manage_product_declaration_publishes_portfolio_action_register() -> Non
     ]
     assert product["lineage_policy"]["lineage_required"] is True
     assert product["lineage_policy"]["lineage_bundle_class_ref"] == "customer_lineage_summary"
+
+    campaign_membership = by_name["BulkReviewCampaignMembership"]
+    assert campaign_membership["product_version"] == "v1"
+    assert campaign_membership["lifecycle_status"] == "active"
+    assert campaign_membership["request_scope"]["supports_bulk"] is True
+    assert campaign_membership["approved_consumers"] == ["lotus-gateway"]
+    assert campaign_membership["current_routes"] == [
+        "/api/v1/rebalance/waves/preview",
+        "/api/v1/rebalance/waves",
+    ]
+    assert campaign_membership["lineage_policy"]["lineage_required"] is True
+
+    pm_quality = by_name["PmOperatingQualityScoreRun"]
+    assert pm_quality["product_version"] == "v1"
+    assert pm_quality["lifecycle_status"] == "active"
+    assert pm_quality["request_scope"]["scope_level"] == "portfolio_manager_book"
+    assert pm_quality["approved_consumers"] == ["lotus-gateway"]
+    assert pm_quality["current_routes"] == [
+        "/api/v1/rebalance/pm-operating-quality/score-runs/preview"
+    ]
+    assert pm_quality["lineage_policy"]["lineage_required"] is True
 
 
 def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() -> None:
