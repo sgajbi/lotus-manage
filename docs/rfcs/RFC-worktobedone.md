@@ -47,9 +47,9 @@ retained only as evidence index and sequencing control.
 | RFC-0037 | RFC37-WTBD-005, RFC37-WTBD-006, and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops, full portfolio memory, source-owner depth, execution, PM scoring, and client-communication ownership stay outside the completed parent-roadmap claims. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-006 and RFC38-WTBD-008 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-007 remains the broader risk/performance health-enrichment control. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
-| RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families and explicitly defers OMS execution plus PM scoring to future source owners. | CIO approval evidence, effective-period exception posture, direct proof-pack enrichment when no selected alternative carries scenario context, future OMS execution products, and future PM-scoring products remain future source depth rather than hidden manage proof-pack or portfolio-memory gaps. |
+| RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families, explicitly defers OMS execution, and points PM scoring to the separate Manage-owned PM operating quality score-run preview product without projecting hidden portfolio-memory score events. | CIO approval evidence, effective-period exception posture, direct proof-pack enrichment when no selected alternative carries scenario context, future OMS execution products, and persisted PM quality lifecycle remain future source depth rather than hidden manage proof-pack or portfolio-memory gaps. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003, and the bounded manage-owned `BulkReviewCampaignMembership:v1` result are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial only for tactical house-view and richer campaign-depth work. Tactical house-view ownership is decided for `lotus-advise`: it owns `TacticalHouseViewAffectedCohort:v1`, using `lotus-core` portfolio/mandate/holding/restriction snapshots and optional `lotus-risk` exposure evidence. `lotus-manage` now owns and implements the first `BulkReviewCampaignMembership:v1` DPM operating campaign envelope while source apps still own the underlying facts and calculated reasons. RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
-| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 and RFC42-WTBD-008 remain unsupported until ownership, methodology, controls, and proof exist. |
+| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the first bounded RFC42-WTBD-008 PM operating quality score-run preview are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 remains unsupported execution/OMS scope; RFC42-WTBD-008 remains partial for persisted policy administration, persisted score-run lifecycle, PM-book materialization, downstream UI, and advanced fairness analytics. |
 | RFC-0043 | The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including the merged owner-side operations handoff summary and exception summary packs plus their first-wave Gateway/Workbench invocation surfaces. | RFC-0043 remains partial until the full copilot workspace and any additional product-surface requirements are implemented by their owners. |
 
 ## Mainline WTBD Control Snapshot
@@ -2247,7 +2247,7 @@ analytics enrichment, and broader source coverage belong to other Lotus apps.
 | RFC40-WTBD-007 | Authoritative transaction-cost curve | `lotus-core` source authority consumed by `lotus-manage` | Completed for proof-pack evidence authority | `lotus-core` publishes `TransactionCostCurve:v1` observed booked-fee evidence and `lotus-manage` consumes it through stateful core sourcing, attaches `AuthoritativeTransactionCostContext` to selected construction alternatives, and preserves source-owned supportability, source refs, content hashes, reason codes, evidence windows, missing securities, and bounded curve points in `turnover_and_cost` proof-pack evidence. Manage still labels local construction estimates separately and does not claim predictive execution quotes or min-cost optimization. |
 | RFC40-WTBD-008 | Sustainability preferences and client restriction profiles | `lotus-core` source authority consumed by `lotus-manage` | Completed for manage proof-pack evidence authority | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing, attached to selected construction alternatives, and preserved in proof-pack `eligibility_and_restrictions` and `sustainability_controls` sections with source refs, content hashes, reason codes, and review/block posture. Security-level sustainability classification remains a pending-review boundary when source evidence is absent. |
 | RFC40-WTBD-009 | Scenario-pack authority beyond supplied context | `lotus-risk` / CIO authority, consumed by `lotus-manage` construction and proof-pack evidence | Completed for manage selected-alternative proof-pack preservation | `RegimeScenarioPackEvaluation:v1` supplies first-wave scenario-pack evaluation for `REGIME_STRESS_AWARE` alternatives. Proof packs now preserve that selected-alternative context in `scenario_and_regime_evidence` with source refs, source hashes, bounded facts, metrics, supportability state, and reason codes. Per-security scenario contribution rows, CIO approval, and richer scenario methodology remain future source-owner depth. |
-| RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, outcome, report, AI, and generated-document events | `lotus-manage` with downstream/source participants | Completed for the current bank-buyable support claim: manage backend authority plus first-wave Gateway/Workbench product realization are merged, live-proven, and wiki-published; mandate health, monitoring-exception, event identity, retention, redaction, access, audit policy, and source-event family posture are implemented in manage; `lotus-report` PR #92 implements the report-side bounded context consumer; `lotus-report` PR #93 implements the report-owned source-event family for report lifecycle, snapshot, render, and archive evidence; `lotus-ai` PR #62 implements bounded DPM memo/narrative consumers; `lotus-ai` PR #64 implements the AI-owned workflow-pack source-event family; `lotus-archive` PR #25 implements the archive-owned generated-document/client-delivery reissue source-event family | Manage exposes a deterministic source-backed portfolio-memory read model over persisted mandate health snapshots, monitoring exceptions, proof packs, proof-pack-local timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events. Gateway composes that read model and Workbench renders the first-wave timeline panel with canonical browser proof. `lotus-report` can carry Manage-owned `portfolio_memory_context` into proof-pack, wave, and outcome report snapshot/render lineage without reconstruction and now exposes stable report-owned event identities for downstream portfolio-memory ingestion. `lotus-ai` validates that same context for DPM PM memo and outcome-review narrative packs without reconstructing timeline facts and now exposes no-raw-payload AI workflow-pack source events at `/platform/workflow-packs/source-events` and `/platform/workflow-packs/runs/{run_id}/source-events`. `lotus-archive` now exposes stable generated-document archive, supersession, correction, and client-delivery reissue source events at `/documents/{document_id}/source-events` with checksum-backed content hashes, retention/redaction/access/audit policy, bounded artifact refs, and no raw document bytes, storage keys, raw report payloads, or raw client references. The manage API publishes OMS execution and PM scoring as deferred source-owner posture, so future products are separate roadmap scope rather than hidden portfolio-memory gaps. |
+| RFC40-WTBD-010 | Decision timeline and portfolio memory across mandate, exception, wave, handoff, outcome, report, AI, and generated-document events | `lotus-manage` with downstream/source participants | Completed for the current bank-buyable support claim: manage backend authority plus first-wave Gateway/Workbench product realization are merged, live-proven, and wiki-published; mandate health, monitoring-exception, event identity, retention, redaction, access, audit policy, and source-event family posture are implemented in manage; `lotus-report` PR #92 implements the report-side bounded context consumer; `lotus-report` PR #93 implements the report-owned source-event family for report lifecycle, snapshot, render, and archive evidence; `lotus-ai` PR #62 implements bounded DPM memo/narrative consumers; `lotus-ai` PR #64 implements the AI-owned workflow-pack source-event family; `lotus-archive` PR #25 implements the archive-owned generated-document/client-delivery reissue source-event family | Manage exposes a deterministic source-backed portfolio-memory read model over persisted mandate health snapshots, monitoring exceptions, proof packs, proof-pack-local timeline events, RFC-0041 wave events, internal handoff refs, and RFC-0042 outcome-review events. Gateway composes that read model and Workbench renders the first-wave timeline panel with canonical browser proof. `lotus-report` can carry Manage-owned `portfolio_memory_context` into proof-pack, wave, and outcome report snapshot/render lineage without reconstruction and now exposes stable report-owned event identities for downstream portfolio-memory ingestion. `lotus-ai` validates that same context for DPM PM memo and outcome-review narrative packs without reconstructing timeline facts and now exposes no-raw-payload AI workflow-pack source events at `/platform/workflow-packs/source-events` and `/platform/workflow-packs/runs/{run_id}/source-events`. `lotus-archive` now exposes stable generated-document archive, supersession, correction, and client-delivery reissue source events at `/documents/{document_id}/source-events` with checksum-backed content hashes, retention/redaction/access/audit policy, bounded artifact refs, and no raw document bytes, storage keys, raw report payloads, or raw client references. The manage API publishes OMS execution as deferred source-owner posture and points PM scoring to the separate Manage-owned score-run preview product without projecting hidden portfolio-memory score events. |
 
 ### RFC40 Gold-Pass Audit And RFC Reintegration - 2026-05-09
 
@@ -2813,14 +2813,16 @@ source truth:
     raw report payloads, and raw client references,
 18. this source-event posture slice adds `source_event_family_posture` to the manage
     portfolio-memory API so the contract names supported manage, report, AI, and archive
-    source-event families and explicitly marks external OMS execution plus PM scoring as
-    `DEFERRED_SOURCE_OWNER`.
+    source-event families, explicitly marks external OMS execution as `DEFERRED_SOURCE_OWNER`, and
+    points PM scoring to the separate Manage-owned score-run preview product without projecting
+    hidden portfolio-memory score events.
 
 Remaining dependencies before full support claim:
 
-None for the current source-backed portfolio-memory support claim. Future OMS execution and
-PM-scoring products remain separate source-owner roadmap scope and are explicitly published as
-deferred posture entries rather than hidden manage support.
+None for the current source-backed portfolio-memory support claim. Future OMS execution remains a
+separate source-owner roadmap scope and is explicitly published as deferred posture rather than
+hidden manage support. PM operating quality score-run preview is supported separately; persisted
+score-run lifecycle remains future expansion.
 
 Implementation proof:
 
@@ -2918,7 +2920,6 @@ Before any item above moves from this ledger into a supported-feature claim:
 8. README, RFC/source-map, wiki, supported-features, endpoint certification, and repository context
    are aligned,
 9. PR checks are green, PRs are merged, wiki is published, and branches are cleaned.
-
 ## RFC-0041 - Rebalance Wave Orchestration And CIO Model Change Impact
 
 Current closure status:
@@ -4790,52 +4791,61 @@ or own the score.
 The default shipped posture should remain scoring disabled, with evidence timeline and quality
 indicators available only as non-ranking signals until a bank configures and approves the policy.
 
-2026-05-12 boundary-hardening result:
+2026-05-12 implementation result:
 
-`lotus-manage` portfolio memory already publishes `pm_scoring` as
-`DEFERRED_SOURCE_OWNER`. The audit strengthened regression proof so the deferred family is locked
-as a future Manage-owned PM operating quality product placeholder, has no event types, has no route, and carries
-`PM_SCORING_SOURCE_EVENTS_NOT_SUPPORTED`. OpenAPI schema assertions now pin the
-source-event-family posture wording so consumers do not infer hidden PM-scoring or behavioral
-analytics functionality from portfolio memory.
+`lotus-manage` now implements the first bounded Manage-owned PM operating quality product through
+`POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`. The route emits
+`PmOperatingQualityScoreRun:v1` from an explicit bank-owned `PmOperatingQualityPolicy`, optional
+persisted outcome-review ids, and source-owned evidence signals. Scoring remains disabled by
+default: a disabled policy returns `DISABLED` with no score, enabled policies fail closed for
+missing required evidence, and every score returns decomposed indicator results, bounded reason
+codes, source refs, content hash, forbidden-use posture, and correlation evidence. The route does
+not create HR, compensation, conduct-enforcement, autonomous-ranking, AI-generated, risk,
+performance, execution, tax, or source-owner methodology claims.
 
-Dependencies before implementation:
+Portfolio memory now publishes `pm_scoring` as `SEPARATE_PRODUCT_NO_EVENT_FAMILY` with route
+`/api/v1/rebalance/pm-operating-quality/score-runs/preview`: PM quality score-run preview is
+supported separately, but no PM-scoring events are projected into portfolio memory until a
+persisted score-run lifecycle exists.
 
-1. Manage-owned `PmOperatingQualityPolicy:v1` / `PmOperatingQualityScoreRun:v1` contract with
-   policy versioning, dimensions, weights, thresholds, evidence minimums, peer groups, lookback
-   windows, access mode, and non-use posture,
-2. business owner, approved purpose, and bank-configured governance mode such as disabled,
-   coaching-only, supervisory, compliance, or restricted,
-3. methodology owner and documented metric design,
-4. bias/fairness controls across mandate type, book profile, region, client constraints, market
-   regime, liquidity/tax restrictions, and source availability,
-5. explainability, source evidence, missing-evidence posture, supportability, and reason
-   decomposition for every score or indicator,
-6. policy for whether PM scoring can affect supervision, compensation, conduct decisions, or HR
-   workflows; default must be no such use,
-7. AI/product/legal/compliance sign-off if AI summarization is involved.
+Implemented first-wave dependency posture:
 
-Expected implementation wave:
+1. Manage-owned `PmOperatingQualityPolicy` and `PmOperatingQualityScoreRun:v1` models are
+   implementation-backed for policy versioning, enablement, weights, thresholds, evidence
+   minimums, access purpose, non-use posture, score decomposition, source refs, and content hash.
+2. The first-wave implementation supports explicit policy-supplied PM/book scope. Peer groups,
+   lookback-window materialization, and persisted policy administration remain future expansion.
+3. Bias/fairness controls are enforced first as no-hidden-use and no-prohibited-use controls:
+   compensation, HR, conduct enforcement, and autonomous decisioning are rejected or listed as
+   forbidden. Advanced fairness analytics across mandate type, region, book profile, client
+   constraints, and market regime remain future governance-heavy expansion.
+4. Explainability, missing-evidence posture, supportability state, reason decomposition, source
+   refs, and deterministic content hash are implementation-backed for every indicator.
+5. AI remains narrative-only and is not involved in score calculation.
 
-Treat as a separate Manage-owned governed RFC. The first implementation should keep scoring
-disabled by default and expose only evidence-first quality indicators until an explicit bank policy
-configuration enables scoring.
+Remaining expansion wave:
+
+1. persisted policy administration and score-run storage,
+2. PM-book materialization from source products rather than caller-supplied scope,
+3. richer fairness analytics and governance approvals,
+4. Gateway/Workbench composition after the backend product path is certified,
+5. optional AI narrative over score-run evidence without score ownership.
 
 Promotion proof:
 
-1. methodology document and worked examples,
-2. tests for explainability, constraints, and inappropriate-use blocks,
-3. governance approval evidence,
-4. README/wiki/supported-feature updates with strict wording,
-5. client-facing material reviewed for appropriate claims.
+1. `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+2. `tests/unit/api/test_pm_operating_quality_api.py`,
+3. `tests/unit/dpm/api/test_portfolio_memory_api.py`,
+4. `tests/unit/test_domain_data_product_contracts.py`,
+5. OpenAPI, vocabulary, no-alias, typecheck, lint, and domain-product contract gates before PR.
 
 Boundary-hardening proof:
 
 1. `python -m pytest tests/unit/dpm/api/test_portfolio_memory_api.py -q`,
-2. portfolio-memory API regression proves `pm_scoring` remains a deferred source-owner family with
-   no route and no event types,
-3. OpenAPI regression proves the source-event-family posture describes hidden-truth prevention and
-   PM-scoring no-claim boundaries.
+2. portfolio-memory API regression proves `pm_scoring` is a separate product with no projected
+   portfolio-memory event family,
+3. OpenAPI regression proves the explicit PM operating quality score-run preview route is
+   documented and that hidden-truth prevention and non-use posture remain visible.
 
 ### Suggested Sequencing
 
@@ -4846,7 +4856,8 @@ Recommended order:
 3. maintain governed AI narrative support only through `lotus-ai`, Gateway, and Workbench,
 4. add source-owned risk/performance/tax/FX/cash/execution methodologies as source owners publish
    certified contracts,
-5. evaluate PM operating quality scoring only as a separate Manage-owned governance-heavy RFC.
+5. expand PM operating quality beyond preview only through a separate persisted-policy and
+   persisted-score-run slice with fairness/access governance.
 
 Rationale:
 
@@ -4854,8 +4865,9 @@ Gateway, Workbench, report/render/archive, and governed AI narrative now realize
 manage backend for the first-wave RFC-0042 product path without waiting for every future source
 methodology. Execution/OMS integration and richer source-owned outcome methodologies still
 introduce separate ownership, control, audit, and regulatory considerations. PM operating quality
-is decided as a future Manage-owned configurable framework, but it must remain outside current
-support claims until the policy/configuration, controls, tests, and evidence are implemented.
+now has a bounded Manage-owned score-run preview product with scoring disabled by default and
+strict non-use posture. Persisted score-run lifecycle, policy administration, downstream UI, and
+advanced fairness governance remain future expansion.
 
 ### RFC-0042 Promotion Checklist For Any Future Item
 

@@ -26,6 +26,7 @@ PortfolioMemorySupportabilityState = Literal[
 PortfolioMemorySourceEventFamilyStatus = Literal[
     "SUPPORTED",
     "DEFERRED_SOURCE_OWNER",
+    "SEPARATE_PRODUCT_NO_EVENT_FAMILY",
 ]
 
 PORTFOLIO_MEMORY_EVENT_IDENTITY_SCHEME = (

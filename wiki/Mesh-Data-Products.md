@@ -4,7 +4,7 @@
 
 `lotus-manage` is a maturity-wave producer in the Lotus enterprise data mesh.
 
-## Governed product
+## Governed products
 
 - Product ID: `lotus-manage:PortfolioActionRegister:v1`
 - Product role: governed portfolio action register for management, reporting, gateway, and
@@ -17,13 +17,35 @@
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Trust telemetry: `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
 
+- Product ID: `lotus-manage:BulkReviewCampaignMembership:v1`
+- Product role: governed Manage-owned campaign membership evidence for bulk-review rebalance
+  waves.
+- Implemented route families:
+  - `/api/v1/rebalance/waves/preview`
+  - `/api/v1/rebalance/waves`
+- Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
+
+- Product ID: `lotus-manage:PmOperatingQualityScoreRun:v1`
+- Product role: governed PM operating quality score-run preview generated from explicit bank
+  policy, source-backed evidence, and optional persisted outcome reviews.
+- Implemented route families:
+  - `/api/v1/rebalance/pm-operating-quality/score-runs/preview`
+- Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
+- Boundary: scoring is disabled by default, missing required evidence blocks the run, and HR,
+  compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, source-owner risk,
+  performance, execution, and tax methodology remain outside the product contract.
+
 ## Platform relationship
 
 `lotus-platform` aggregates the repo-native declaration, validates trust telemetry, applies mesh SLO/access/evidence policies, and includes this product in generated catalog, dependency graph, live certification, maturity matrix, evidence packs, and RFC-0092 operating reports.
 
 ## Operating rule
 
-Portfolio action state and lifecycle evidence belong in `lotus-manage`. Platform certification can block publication when action-register telemetry, lifecycle, access, SLO, or evidence posture drifts.
+Portfolio action state, campaign membership evidence, and explicit PM operating quality score-run
+preview evidence belong in `lotus-manage`. Platform certification can block publication when
+action-register telemetry, lifecycle, access, SLO, or evidence posture drifts. PM operating quality
+score-run preview is not portfolio-memory event projection and should not be treated as an
+execution, compensation, HR, conduct, or autonomous-ranking product.
 
 Stateful `portfolio_id` execution is not yet a promoted mesh consumption mode. The resolver seam is
 implemented, but live source-data dependency declaration waits for RFC-087 `lotus-core` composed

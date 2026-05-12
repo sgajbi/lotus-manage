@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-12T11:00:00.652125+00:00",
+  "generatedAt": "2026-05-12T12:08:11.775748+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -16,6 +16,20 @@
       "preferredName": "access_classification",
       "description": "Audience and access classification.",
       "example": "sample_access_classification",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.access_purpose",
+      "canonicalTerm": "access_purpose",
+      "preferredName": "access_purpose",
+      "description": "Permitted purpose for this score run.",
+      "example": "PORTFOLIO_MANAGEMENT_REVIEW",
       "type": "string",
       "locations": [
         "body"
@@ -327,6 +341,22 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.allowed_uses",
+      "canonicalTerm": "allowed_uses",
+      "preferredName": "allowed_uses",
+      "description": "Operator-visible allowed uses. Compensation, HR, conduct enforcement, and autonomous decisioning are rejected by the score engine.",
+      "example": [
+        "sample_allowed_uses_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -2689,6 +2719,36 @@
       ]
     },
     {
+      "semanticId": "lotus.evidence_count",
+      "canonicalTerm": "evidence_count",
+      "preferredName": "evidence_count",
+      "description": "Number of source-backed signals used.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.evidence_items",
+      "canonicalTerm": "evidence_items",
+      "preferredName": "evidence_items",
+      "description": "Source-owned evidence signals not already represented by outcome-review ids.",
+      "example": [
+        "evidence_items_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.evidence_ref",
       "canonicalTerm": "evidence_ref",
       "preferredName": "evidence_ref",
@@ -2720,6 +2780,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.evidence_state",
+      "canonicalTerm": "evidence_state",
+      "preferredName": "evidence_state",
+      "description": "Bounded source evidence posture.",
+      "example": "DISABLED",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -3132,6 +3206,22 @@
       ]
     },
     {
+      "semanticId": "lotus.forbidden_uses",
+      "canonicalTerm": "forbidden_uses",
+      "preferredName": "forbidden_uses",
+      "description": "Uses explicitly outside this product contract.",
+      "example": [
+        "sample_forbidden_uses_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.freshness_bucket",
       "canonicalTerm": "freshness_bucket",
       "preferredName": "freshness_bucket",
@@ -3369,6 +3459,20 @@
       "preferredName": "generated_at",
       "description": "UTC timestamp when this capability payload was generated.",
       "example": "2026-03-02T10:30:00Z",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.generated_by",
+      "canonicalTerm": "generated_by",
+      "preferredName": "generated_by",
+      "description": "Actor or service that generated the score run.",
+      "example": "sample_generated_by",
       "type": "string",
       "locations": [
         "body"
@@ -3889,6 +3993,36 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.indicator",
+      "canonicalTerm": "indicator",
+      "preferredName": "indicator",
+      "description": "Bounded indicator included in the bank-configured score policy.",
+      "example": "OUTCOME_DISCIPLINE",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.indicator_results",
+      "canonicalTerm": "indicator_results",
+      "preferredName": "indicator_results",
+      "description": "Decomposed indicator results.",
+      "example": [
+        "indicator_results_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -5061,6 +5195,20 @@
       ]
     },
     {
+      "semanticId": "lotus.minimum_evidence_count",
+      "canonicalTerm": "minimum_evidence_count",
+      "preferredName": "minimum_evidence_count",
+      "description": "Minimum source-backed signals required for this indicator.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.minimum_impact_score",
       "canonicalTerm": "minimum_impact_score",
       "preferredName": "minimum_impact_score",
@@ -5693,6 +5841,22 @@
       ]
     },
     {
+      "semanticId": "lotus.outcome_review_ids",
+      "canonicalTerm": "outcome_review_ids",
+      "preferredName": "outcome_review_ids",
+      "description": "Persisted lotus-manage outcome reviews to include as source-backed evidence.",
+      "example": [
+        "sample_outcome_review_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.outcome_review_version",
       "canonicalTerm": "outcome_review_version",
       "preferredName": "outcome_review_version",
@@ -5860,6 +6024,36 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.pm_id",
+      "canonicalTerm": "pm_id",
+      "preferredName": "pm_id",
+      "description": "Portfolio manager identifier supplied by the buying bank.",
+      "example": "PM_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.policy",
+      "canonicalTerm": "policy",
+      "preferredName": "policy",
+      "description": "Bank-owned PM operating quality policy supplied to a score run.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmPmOperatingQualityPolicy",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmPmOperatingQualityPolicy"
       ]
     },
     {
@@ -6567,6 +6761,20 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.ready_threshold",
+      "canonicalTerm": "ready_threshold",
+      "preferredName": "ready_threshold",
+      "description": "Minimum score for READY posture.",
+      "example": "ready_threshold_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -7767,7 +7975,38 @@
       ],
       "observedTypes": [
         "string",
-        "integer"
+        "integer",
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.score_run",
+      "canonicalTerm": "score_run",
+      "preferredName": "score_run",
+      "description": "Deterministic, explainable PM operating quality score run.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmPmOperatingQualityScoreRun",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmPmOperatingQualityScoreRun"
+      ]
+    },
+    {
+      "semanticId": "lotus.score_run_id",
+      "canonicalTerm": "score_run_id",
+      "preferredName": "score_run_id",
+      "description": "Stable content-addressed score-run identifier.",
+      "example": "SCORE_RUN_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -9993,6 +10232,20 @@
       ]
     },
     {
+      "semanticId": "lotus.watch_threshold",
+      "canonicalTerm": "watch_threshold",
+      "preferredName": "watch_threshold",
+      "description": "Minimum score before BREACHED posture.",
+      "example": "watch_threshold_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.wave",
       "canonicalTerm": "wave",
       "preferredName": "wave",
@@ -10097,6 +10350,22 @@
         "string",
         "object",
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.weights",
+      "canonicalTerm": "weights",
+      "preferredName": "weights",
+      "description": "Configured scoring weights. Required when policy is enabled.",
+      "example": [
+        "weights_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -12467,6 +12736,18 @@
       "allowedValues": [],
       "semanticId": "lotus.limit",
       "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "x_correlation_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional correlation id.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_correlation_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     }
   ],
   "endpoints": [
@@ -80055,6 +80336,573 @@
             "type": "string",
             "semanticId": "lotus.generated_at",
             "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "POST",
+      "path": "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+      "operationId": "preview_pm_operating_quality_score_run_endpoint_api_v1_rebalance_pm_operating_quality_score_runs_preview_post",
+      "summary": "Preview PM operating quality score run",
+      "request": {
+        "fields": [
+          {
+            "name": "x-correlation-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "pm_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.pm_id",
+            "attributeRef": "#/attributeCatalog/lotus.pm_id"
+          },
+          {
+            "name": "book_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.book_id",
+            "attributeRef": "#/attributeCatalog/lotus.book_id"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "policy",
+            "location": "body",
+            "required": true,
+            "type": "DpmPmOperatingQualityPolicy",
+            "semanticId": "lotus.policy",
+            "attributeRef": "#/attributeCatalog/lotus.policy"
+          },
+          {
+            "name": "policy.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy.policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "policy.enabled",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.enabled",
+            "attributeRef": "#/attributeCatalog/lotus.enabled"
+          },
+          {
+            "name": "policy.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "policy.access_purpose",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "policy.weights",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.weights",
+            "attributeRef": "#/attributeCatalog/lotus.weights"
+          },
+          {
+            "name": "policy.weights[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "policy.weights[].weight",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.weight",
+            "attributeRef": "#/attributeCatalog/lotus.weight"
+          },
+          {
+            "name": "policy.weights[].minimum_evidence_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_evidence_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_evidence_count"
+          },
+          {
+            "name": "policy.ready_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.ready_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.ready_threshold"
+          },
+          {
+            "name": "policy.watch_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.watch_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.watch_threshold"
+          },
+          {
+            "name": "policy.allowed_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.allowed_uses",
+            "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "evidence_items",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.evidence_items",
+            "attributeRef": "#/attributeCatalog/lotus.evidence_items"
+          },
+          {
+            "name": "evidence_items[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "evidence_items[].evidence_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.evidence_state",
+            "attributeRef": "#/attributeCatalog/lotus.evidence_state"
+          },
+          {
+            "name": "evidence_items[].score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.score",
+            "attributeRef": "#/attributeCatalog/lotus.score"
+          },
+          {
+            "name": "evidence_items[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "evidence_items[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "evidence_items[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "evidence_items[].reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "evidence_items[].source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "evidence_items[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "evidence_items[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "evidence_items[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "evidence_items[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "evidence_items[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "outcome_review_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.outcome_review_ids",
+            "attributeRef": "#/attributeCatalog/lotus.outcome_review_ids"
+          },
+          {
+            "name": "actor_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "score_run",
+            "location": "body",
+            "required": true,
+            "type": "DpmPmOperatingQualityScoreRun",
+            "semanticId": "lotus.score_run",
+            "attributeRef": "#/attributeCatalog/lotus.score_run"
+          },
+          {
+            "name": "score_run.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "score_run.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "score_run.score_run_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.score_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_id"
+          },
+          {
+            "name": "score_run.pm_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.pm_id",
+            "attributeRef": "#/attributeCatalog/lotus.pm_id"
+          },
+          {
+            "name": "score_run.book_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.book_id",
+            "attributeRef": "#/attributeCatalog/lotus.book_id"
+          },
+          {
+            "name": "score_run.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "score_run.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "score_run.policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "score_run.state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "score_run.score",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.score",
+            "attributeRef": "#/attributeCatalog/lotus.score"
+          },
+          {
+            "name": "score_run.indicator_results",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.indicator_results",
+            "attributeRef": "#/attributeCatalog/lotus.indicator_results"
+          },
+          {
+            "name": "score_run.indicator_results[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "score_run.indicator_results[].score",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.score",
+            "attributeRef": "#/attributeCatalog/lotus.score"
+          },
+          {
+            "name": "score_run.indicator_results[].weight",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.weight",
+            "attributeRef": "#/attributeCatalog/lotus.weight"
+          },
+          {
+            "name": "score_run.indicator_results[].state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "score_run.indicator_results[].evidence_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.evidence_count",
+            "attributeRef": "#/attributeCatalog/lotus.evidence_count"
+          },
+          {
+            "name": "score_run.indicator_results[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.indicator_results[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.indicator_results[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.indicator_results[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.indicator_results[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.indicator_results[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.indicator_results[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.forbidden_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.forbidden_uses",
+            "attributeRef": "#/attributeCatalog/lotus.forbidden_uses"
+          },
+          {
+            "name": "score_run.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          },
+          {
+            "name": "score_run.generated_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_by",
+            "attributeRef": "#/attributeCatalog/lotus.generated_by"
+          },
+          {
+            "name": "score_run.correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           }
         ]
       }

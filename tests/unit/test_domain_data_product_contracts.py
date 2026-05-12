@@ -116,7 +116,11 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
 
     assert payload["producer_repository"] == "lotus-manage"
     by_name = {product["product_name"]: product for product in products}
-    assert set(by_name) == {"PortfolioActionRegister", "BulkReviewCampaignMembership"}
+    assert set(by_name) == {
+        "PortfolioActionRegister",
+        "BulkReviewCampaignMembership",
+        "PmOperatingQualityScoreRun",
+    }
 
     product = by_name["PortfolioActionRegister"]
     assert product["product_version"] == "v1"
@@ -142,6 +146,16 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/waves",
     ]
     assert campaign_membership["lineage_policy"]["lineage_required"] is True
+
+    pm_quality = by_name["PmOperatingQualityScoreRun"]
+    assert pm_quality["product_version"] == "v1"
+    assert pm_quality["lifecycle_status"] == "active"
+    assert pm_quality["request_scope"]["scope_level"] == "portfolio_manager_book"
+    assert pm_quality["approved_consumers"] == ["lotus-gateway"]
+    assert pm_quality["current_routes"] == [
+        "/api/v1/rebalance/pm-operating-quality/score-runs/preview"
+    ]
+    assert pm_quality["lineage_policy"]["lineage_required"] is True
 
 
 def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() -> None:

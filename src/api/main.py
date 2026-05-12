@@ -43,6 +43,7 @@ from src.api.routers.integration_capabilities import (
 from src.api.routers.mandates import router as mandates_router
 from src.api.routers.monitoring import router as monitoring_router
 from src.api.routers.portfolio_memory import router as portfolio_memory_router
+from src.api.routers.pm_operating_quality import router as pm_operating_quality_router
 from src.api.routers.proof_packs import router as proof_pack_router
 from src.api.routers.outcome_reviews import (
     router as outcome_reviews_router,
@@ -163,6 +164,12 @@ app = FastAPI(
                 "RFC-0042 post-trade expected-versus-realized outcome-review endpoints."
             ),
         },
+        {
+            "name": "lotus-manage PM Operating Quality",
+            "description": (
+                "RFC42-WTBD-008 configurable PM operating quality score-run preview endpoints."
+            ),
+        },
     ],
     lifespan=_app_lifespan,
 )
@@ -203,6 +210,7 @@ app.include_router(outcome_reviews_router, prefix="/api/v1")
 app.include_router(outcome_review_run_lookup_router, prefix="/api/v1")
 app.include_router(outcome_review_wave_lookup_router, prefix="/api/v1")
 app.include_router(portfolio_memory_router, prefix="/api/v1")
+app.include_router(pm_operating_quality_router, prefix="/api/v1")
 
 
 @app.get(
