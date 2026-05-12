@@ -620,7 +620,9 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
         "The bounded owner-side DPM workflow-pack result from RFC37-WTBD-002 is incorporated",
         "RFC-0043 owner-side DPM workflow-pack subset",
         "WTBD Reintegration Audit - 2026-05-10",
-        "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, and operations handoff summary packs",
+        "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, and exception summary packs",
+        "`dpm_exception_summary.pack@v1`",
+        "lotus-ai` PR #68",
         "support-only narrative aids",
     ]
 
@@ -636,6 +638,7 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
     )
     assert "all AI copilot features as proposed" not in rfc
     assert "RFC-0043 remains proposed" not in wtbd
+    assert "Exception-summary packs, full copilot workspace UX" not in supported_features
 
 
 def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:

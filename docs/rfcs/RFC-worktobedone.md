@@ -50,7 +50,7 @@ retained only as evidence index and sequencing control.
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families and explicitly defers OMS execution plus PM scoring to future source owners. | CIO approval evidence, effective-period exception posture, direct proof-pack enrichment when no selected alternative carries scenario context, future OMS execution products, and future PM-scoring products remain future source depth rather than hidden manage proof-pack or portfolio-memory gaps. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, and the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003 are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial until tactical house-view and implicit campaign owners publish governed cohort products; RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
 | RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 and RFC42-WTBD-008 remain unsupported until ownership, methodology, controls, and proof exist. |
-| RFC-0043 | The bounded owner-side DPM workflow-pack result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including the merged operations handoff summary pack. | RFC-0043 remains partial until exception-summary, full copilot workspace, Gateway/Workbench operations-handoff product invocation, and additional product-surface requirements are implemented by their owners. |
+| RFC-0043 | The bounded owner-side DPM workflow-pack result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including the merged operations handoff summary and exception summary packs. | RFC-0043 remains partial until full copilot workspace, Gateway/Workbench operations-handoff and exception-summary product invocation, and additional product-surface requirements are implemented by their owners. |
 
 ## Mainline WTBD Control Snapshot
 
@@ -604,7 +604,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0037 |
 | --- | --- | --- | --- | --- |
 | RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` | Completed for the bounded first-wave outcome-review product path; richer source-owner/OMS/PM-scoring/client-communication scope remains | RFC-0037 identifies outcome learning as target-state. RFC-0042 now delivers manage authority, Gateway/Workbench product realization, report/archive materialization, and governed AI narrative request flow. |
-| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Partially implemented for owner-side DPM workflow packs and default-version registry resolution | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, and operations handoff summary packs with guardrails and provenance, plus conservative workflow-pack default-version resolution. Separate exception summary, full copilot workspace, Gateway/Workbench operations-handoff product invocation, and any additional product surfaces remain future work. |
+| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Partially implemented for owner-side DPM workflow packs and default-version registry resolution | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, and exception summary packs with guardrails and provenance, plus conservative workflow-pack default-version resolution. Full copilot workspace, Gateway/Workbench operations-handoff and exception-summary product invocation, and any additional product surfaces remain future work. |
 | RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0043 | Multiple canonical product surfaces and first-wave AI workflow-pack invocation paths are implementation-backed, but the broader RFC-0043 copilot workspace, full portfolio memory, OMS, PM scoring, and remaining source-owner depth are not complete. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
@@ -700,7 +700,9 @@ owns the implemented review-gated workflow-pack execution paths for:
 2. `dpm_wave_pm_memo.pack@v1` over `DpmWaveReportInput`,
 3. `outcome_review_narrative.pack@v1` over `DpmOutcomeAiEvidenceInput`,
 4. `dpm_operations_handoff_summary.pack@v1` over Manage-owned `DpmWaveReportInput`
-   handoff evidence.
+   handoff evidence,
+5. `dpm_exception_summary.pack@v1` over bounded monitoring-exception evidence and optional
+   portfolio-memory context.
 
 The implemented packs validate forbidden actions, forbidden fields, unsupported requested outputs,
 source refs, no-raw-payload posture, optional bounded `portfolio_memory_context`, review-gated run
@@ -722,10 +724,16 @@ requires handoff refs and source refs, rejects ambiguous `memo_request` payloads
 order/routing/approval/client-message outputs, preserves `external_execution_claimed=false`, and
 returns review-required support-only output.
 
-RFC-0043 still needs separate exception-summary support, broader copilot workspace UX, Gateway and
-Workbench operations-handoff product invocation, additional AI-unavailable product fallbacks where
-not already implemented, and any future product surfaces in their owning apps. AI behavior remains
-support-only and cannot approve, recommend, execute, or contact clients.
+`lotus-ai` PR #68 adds owner-side exception summary support through
+`dpm_exception_summary.pack@v1`. The pack consumes bounded monitoring-exception evidence only,
+requires source refs and content hashes, validates optional portfolio-memory context, rejects raw
+payloads and forbidden client-message, PM-scoring, routing, approval, and execution outputs, and
+returns review-required support-only output.
+
+RFC-0043 still needs broader copilot workspace UX, Gateway and Workbench operations-handoff and
+exception-summary product invocation, additional AI-unavailable product fallbacks where not already
+implemented, and any future product surfaces in their owning apps. AI behavior remains support-only
+and cannot approve, recommend, execute, score PMs, route orders, or contact clients.
 
 Dependencies before implementation:
 
@@ -752,11 +760,11 @@ Gold-pass assessment - 2026-05-10:
 
 | Gold-pass question | Assessment |
 | --- | --- |
-| What was truly completed | Owner-side DPM workflow-pack execution exists for proof-pack PM memo, wave PM memo, outcome-review narrative, and operations handoff summary; `lotus-ai` also exposes conservative default-version resolution for workflow-pack families. |
+| What was truly completed | Owner-side DPM workflow-pack execution exists for proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, and exception summary; `lotus-ai` also exposes conservative default-version resolution for workflow-pack families. |
 | Quality improvements made | RFC37-WTBD-002 and RFC-0043 now distinguish implemented workflow packs and registry default resolution from future copilot workspace and product-surface scope instead of treating all AI work as proposed. |
-| Debt removed | Stale roadmap wording that ignored merged `lotus-ai` DPM packs and left default-version resolution or operations handoff summary support as future-only gaps was retired from the WTBD/RFC truth. |
-| What was proven through testing and evidence | Existing `lotus-ai` slices prove guardrails, source refs, review posture, no-raw-payload behavior, bounded portfolio-memory lineage, and AI-owned source-event projections. `lotus-ai` PR #66 proves default-version resolution with focused registry tests, `make check`, green Feature Lane and PR Merge Gate, and wiki publication. `lotus-ai` PR #67 proves operations handoff summary support with guardrail/stub/API tests, full `make check`, live registry/execution/guardrail API proof, clean server-log scan, green Feature Lane and PR Merge Gate including coverage and Docker build, and wiki publication. Gateway/Workbench evidence covers first-wave invocation/posture where implemented. |
-| Expected-standard decision | The owner-side DPM workflow-pack subset plus default-version registry resolution reaches the expected standard. The broader RFC37-WTBD-002 remains partial until future exception, full workspace, Gateway/Workbench operations-handoff invocation, and additional product-surface requirements are implemented and merged by their owners. |
+| Debt removed | Stale roadmap wording that ignored merged `lotus-ai` DPM packs and left default-version resolution, operations handoff summary support, or exception summary support as future-only gaps was retired from the WTBD/RFC truth. |
+| What was proven through testing and evidence | Existing `lotus-ai` slices prove guardrails, source refs, review posture, no-raw-payload behavior, bounded portfolio-memory lineage, and AI-owned source-event projections. `lotus-ai` PR #66 proves default-version resolution with focused registry tests, `make check`, green Feature Lane and PR Merge Gate, and wiki publication. `lotus-ai` PR #67 proves operations handoff summary support with guardrail/stub/API tests, full `make check`, live registry/execution/guardrail API proof, clean server-log scan, green Feature Lane and PR Merge Gate including coverage and Docker build, and wiki publication. `lotus-ai` PR #68 proves exception summary support with guardrail/stub/API tests, optional portfolio-memory context validation, forbidden client-message/PM-scoring/routing/action-output coverage, local 99 percent coverage-gate proof, green Feature Lane and PR Merge Gate including coverage and Docker build, merge to main, and wiki publication. Gateway/Workbench evidence covers first-wave invocation/posture where implemented. |
+| Expected-standard decision | The owner-side DPM workflow-pack subset plus default-version registry resolution reaches the expected standard. The broader RFC37-WTBD-002 remains partial until full workspace, Gateway/Workbench operations-handoff and exception-summary invocation, and additional product-surface requirements are implemented and merged by their owners. |
 
 #### RFC37-WTBD-003 - Full Front-Office DPM Product Realization
 
