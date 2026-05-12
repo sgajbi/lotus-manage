@@ -205,16 +205,19 @@ defer that feature from supported status.
 
 ## 6. Trigger Contract
 
-Supported trigger types:
+Implementation-backed trigger types:
 
-1. `CIO_MODEL_CHANGE`
-2. `TACTICAL_HOUSE_VIEW`
-3. `PM_BOOK_REVIEW`
-4. `RISK_BREACH_REMEDIATION`
-5. `CASH_DRAG_CAMPAIGN`
-6. `TAX_YEAR_END_REVIEW`
-7. `ESG_RESTRICTION_UPDATE`
-8. `EXPLICIT_PORTFOLIO_LIST`
+1. `EXPLICIT_PORTFOLIO_LIST`
+2. `PM_BOOK_REVIEW`
+3. `CIO_MODEL_CHANGE`
+4. `RISK_EVENT`
+
+Target-state trigger families that remain unsupported until a source owner publishes governed
+cohort membership are:
+
+1. `TACTICAL_HOUSE_VIEW`
+2. `BULK_REVIEW_CAMPAIGN`
+3. any future cash-drag, tax-year-end, ESG/restriction, or other thematic campaign trigger family
 
 Every trigger must record:
 
@@ -232,15 +235,21 @@ Every trigger must record:
 12. `correlation_id`
 
 First implementation supported only `EXPLICIT_PORTFOLIO_LIST`. Later source-owner slices promoted
-`PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1` and `CIO_MODEL_CHANGE`
-through lotus-core `CioModelChangeAffectedCohort:v1`. Other trigger types remain unsupported until
-an owning source product or approved manifest governance is implemented and proven. Unsupported
-trigger types must be rejected or returned as `NOT_SUPPORTED`; they must not appear as supported
-features.
+`PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`, `CIO_MODEL_CHANGE`
+through lotus-core `CioModelChangeAffectedCohort:v1`, and bounded `RISK_EVENT` through
+lotus-risk `RiskEventAffectedCohort:v1`. Other trigger families remain unsupported until an
+owning source product or approved manifest governance is implemented and proven. Unsupported
+source-owner trigger types must be rejected with `NOT_SUPPORTED_TRIGGER`; they must not appear as
+supported features.
 
 Promoted source-owned trigger selectors are intentionally narrow: `PM_BOOK_REVIEW` requires
-`portfolio_manager_id`, while `CIO_MODEL_CHANGE` requires `model_portfolio_id`. Both reject
-caller-supplied portfolio lists so cohort authority remains in the owning source product.
+`portfolio_manager_id`, `CIO_MODEL_CHANGE` requires `model_portfolio_id`, and `RISK_EVENT` requires
+`risk_event_id`, candidate portfolios, and source-supplied exposure weights. PM-book and CIO
+model-change waves reject caller-supplied portfolio lists so cohort authority remains in the
+owning source product. Tactical house-view waves require a governed CIO or risk house-view cohort
+source product before manage can preview or create them; bulk review campaign waves require a
+governed campaign membership source product with review, approval, expiry, and entitlement
+controls before manage can preview or create them.
 
 ---
 

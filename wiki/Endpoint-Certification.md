@@ -1633,7 +1633,8 @@ Functional coverage:
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can
   preserve source authority instead of reconstructing readiness,
-- unsupported trigger rejection with `NOT_SUPPORTED_TRIGGER`,
+- unsupported tactical house-view and bulk review campaign trigger rejection with
+  `NOT_SUPPORTED_TRIGGER` and source-owner gap reasons,
 - durable create with idempotent replay,
 - durable source-check from `CREATED` to `SOURCE_CHECKED`,
 - item classification as `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, or

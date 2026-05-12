@@ -2932,15 +2932,39 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
 
 
-def test_wave_preview_rejects_unsupported_trigger_without_fallback() -> None:
+def test_wave_preview_and_create_reject_source_owner_triggers_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
-        response = client.post(
+        tactical_preview = client.post(
             "/api/v1/rebalance/waves/preview",
             json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
         )
+        campaign_preview = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json={**_request(), "trigger_type": "BULK_REVIEW_CAMPAIGN"},
+        )
+        tactical_create = client.post(
+            "/api/v1/rebalance/waves",
+            headers={"Idempotency-Key": "tactical-wave-unsupported"},
+            json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
+        )
+        campaign_create = client.post(
+            "/api/v1/rebalance/waves",
+            headers={"Idempotency-Key": "campaign-wave-unsupported"},
+            json={**_request(), "trigger_type": "BULK_REVIEW_CAMPAIGN"},
+        )
 
-    assert response.status_code == 422
-    assert response.json()["detail"]["code"] == "NOT_SUPPORTED_TRIGGER"
+    for response in [tactical_preview, campaign_preview, tactical_create, campaign_create]:
+        assert response.status_code == 422
+        assert response.json()["detail"]["code"] == "NOT_SUPPORTED_TRIGGER"
+
+    assert (
+        "governed CIO or risk house-view cohort source product"
+        in (tactical_preview.json()["detail"]["message"])
+    )
+    assert (
+        "governed campaign membership source product"
+        in (campaign_preview.json()["detail"]["message"])
+    )
 
 
 def test_wave_openapi_documents_preview_and_create() -> None:
@@ -2981,6 +3005,38 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     )
     assert "422" in preview["responses"]
     assert "409" in create["responses"]
+    assert (
+        "TACTICAL_HOUSE_VIEW"
+        in (
+            preview["responses"]["422"]["content"]["application/json"]["example"]["detail"][
+                "message"
+            ]
+        )
+    )
+    assert (
+        "governed CIO or risk house-view cohort source product"
+        in (
+            preview["responses"]["422"]["content"]["application/json"]["example"]["detail"][
+                "message"
+            ]
+        )
+    )
+    assert (
+        "BULK_REVIEW_CAMPAIGN"
+        in (
+            create["responses"]["422"]["content"]["application/json"]["example"]["detail"][
+                "message"
+            ]
+        )
+    )
+    assert (
+        "governed campaign membership source product"
+        in (
+            create["responses"]["422"]["content"]["application/json"]["example"]["detail"][
+                "message"
+            ]
+        )
+    )
     assert "durable RFC-0041 waves" in search["description"]
     assert "does not regenerate downstream" in detail["description"]
     assert "without UI-side recomputation" in items["description"]

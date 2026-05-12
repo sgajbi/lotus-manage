@@ -954,7 +954,11 @@ def _resolve_risk_event_portfolios(
                     "example": {
                         "detail": {
                             "code": "NOT_SUPPORTED_TRIGGER",
-                            "message": "Trigger type CIO_MODEL_CHANGE is not supported.",
+                            "message": (
+                                "Trigger type TACTICAL_HOUSE_VIEW is not supported. Tactical "
+                                "house-view waves require a governed CIO or risk house-view "
+                                "cohort source product before manage can preview or create them."
+                            ),
                         }
                     }
                 }
@@ -1036,7 +1040,12 @@ def preview_wave(
                     "example": {
                         "detail": {
                             "code": "NOT_SUPPORTED_TRIGGER",
-                            "message": "Trigger type PM_BOOK_REVIEW is not supported.",
+                            "message": (
+                                "Trigger type BULK_REVIEW_CAMPAIGN is not supported. Bulk review "
+                                "campaign waves require a governed campaign membership source "
+                                "product with review, approval, expiry, and entitlement controls "
+                                "before manage can preview or create them."
+                            ),
                         }
                     }
                 }
