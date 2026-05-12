@@ -150,6 +150,8 @@ def test_ai_evidence_input_is_bounded_and_removes_forbidden_fields() -> None:
     assert "raw_payload" in ai_input.forbidden_fields_removed
     assert "secret" not in str(payload)
     assert "place_orders" in ai_input.forbidden_actions
+    assert "score_portfolio_manager" in ai_input.forbidden_actions
+    assert "generate_client_message" in ai_input.forbidden_actions
     assert_no_ai_forbidden_fields(payload)
 
 

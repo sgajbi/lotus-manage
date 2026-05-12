@@ -2495,6 +2495,14 @@ Supported boundaries:
 4. the supported state is review-gated narrative assistance, not autonomous investment advice,
    client contact, order approval, or execution.
 
+2026-05-12 boundary-hardening result:
+
+`DpmProofPackAiEvidenceInput` now explicitly lists `score_portfolio_manager` and
+`generate_client_message` in `forbidden_actions`, aligning proof-pack AI evidence with the
+outcome-review and RFC-0043 guardrail posture. Focused API and handoff tests pin the boundary so
+proof-pack evidence cannot be misread as permission for PM scoring, client-message generation,
+trade approval, order placement, control override, or invented evidence.
+
 #### RFC40-WTBD-006 - Broader Risk And Performance Proof-Pack Enrichment
 
 Target business outcome:

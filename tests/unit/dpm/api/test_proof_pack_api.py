@@ -218,6 +218,8 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert ai_input["content_hash"].startswith("sha256:")
     assert ai_input["evidence_ref"]["ref_type"] == "DPM_PROOF_PACK_AI_EVIDENCE_INPUT"
     assert "place_orders" in ai_input["forbidden_actions"]
+    assert "score_portfolio_manager" in ai_input["forbidden_actions"]
+    assert "generate_client_message" in ai_input["forbidden_actions"]
 
 
 def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
