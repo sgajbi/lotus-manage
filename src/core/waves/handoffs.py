@@ -20,6 +20,10 @@ WAVE_REPORT_INPUT_CONTRACT_VERSION = "1.0"
 WAVE_REPORT_INPUT_REF_TYPE = "DPM_WAVE_REPORT_INPUT"
 
 
+class DpmWaveReportInputBoundaryError(ValueError):
+    """Raised when report-input evidence would cross an unsupported ownership boundary."""
+
+
 class DpmWaveReportEvidenceRef(BaseModel):
     ref_type: str = Field(description="Evidence reference type.")
     ref_id: str = Field(description="Evidence reference identifier.")
@@ -100,6 +104,11 @@ def build_wave_report_input(
     proof_pack_posture: dict[str, Any],
     portfolio_memory_context: DpmPortfolioMemoryReportContext | None = None,
 ) -> DpmWaveReportInput:
+    if bool(proof_pack_posture.get("external_execution_claimed")):
+        raise DpmWaveReportInputBoundaryError(
+            "Wave report input cannot propagate external execution claims; "
+            "lotus-manage only owns internal operations handoff evidence."
+        )
     wave_payload = wave.model_dump(mode="json")
     wave_content_hash = hash_canonical_payload(wave_payload)
     payload = DpmWaveReportInput(
@@ -129,7 +138,7 @@ def build_wave_report_input(
         source_refs=_dedupe_source_refs(wave),
         portfolio_memory_context=portfolio_memory_context,
         redaction_policy="NO_RAW_PAYLOADS",
-        external_execution_claimed=bool(proof_pack_posture.get("external_execution_claimed")),
+        external_execution_claimed=False,
         evidence_ref=DpmWaveReportEvidenceRef(
             ref_type=WAVE_REPORT_INPUT_REF_TYPE,
             ref_id=f"{wave.wave_id}:{WAVE_REPORT_INPUT_REF_TYPE.lower()}",

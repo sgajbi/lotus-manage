@@ -27,6 +27,7 @@ from src.core.waves import (
     DpmWaveIdempotencyConflictError,
     DpmWaveInvalidTransitionError,
     DpmWaveRepository,
+    DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
     DpmWaveSourceRef,
     DpmWaveSourceAnalyticsSummary,
@@ -786,18 +787,21 @@ def get_report_input(
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
     supportability = wave_supportability_payload(wave)
     proof_pack_posture_payload = proof_pack_posture_for_wave(wave=wave)
-    return build_wave_report_input(
-        wave=wave,
-        supportability=supportability,
-        proof_pack_posture=proof_pack_posture_payload,
-        portfolio_memory_context=_portfolio_memory_context_for_report(
+    try:
+        return build_wave_report_input(
             wave=wave,
-            proof_pack_repository=proof_pack_repository,
-            wave_repository=wave_repository,
-            outcome_review_repository=outcome_review_repository,
-            mandate_repository=mandate_repository,
-        ),
-    )
+            supportability=supportability,
+            proof_pack_posture=proof_pack_posture_payload,
+            portfolio_memory_context=_portfolio_memory_context_for_report(
+                wave=wave,
+                proof_pack_repository=proof_pack_repository,
+                wave_repository=wave_repository,
+                outcome_review_repository=outcome_review_repository,
+                mandate_repository=mandate_repository,
+            ),
+        )
+    except DpmWaveReportInputBoundaryError as exc:
+        raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
 
 
 def _portfolio_memory_context_for_report(

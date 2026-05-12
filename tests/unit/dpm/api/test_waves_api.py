@@ -2932,6 +2932,67 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
 
 
+def test_wave_report_input_rejects_external_execution_claims() -> None:
+    wave_repository = InMemoryDpmWaveRepository()
+    wave = DpmRebalanceWave(
+        wave_id="dwv_external_claim",
+        state="HANDOFF_READY",
+        trigger=DpmWaveTrigger(
+            trigger_type="EXPLICIT_PORTFOLIO_LIST",
+            trigger_id="manual-wave-external-claim",
+            rationale="Verify report input blocks unsupported OMS execution claims.",
+        ),
+        as_of_date="2026-05-03",
+        created_by="pm_001",
+        correlation_id="corr-wave-external-claim",
+        items=[
+            DpmRebalanceWaveItem(
+                wave_item_id="dwi_external_claim",
+                portfolio_id=PORTFOLIO_ID,
+                state="HANDOFF_READY",
+                selected_alternative_id="alt_min_turnover",
+                proof_pack_id="dpp_external_claim",
+                reason_codes=["WAVE_ITEM_HANDOFF_READY"],
+                diagnostics={
+                    "proof_pack_state": "READY",
+                    "external_execution_claimed": False,
+                },
+            )
+        ],
+        aggregate_metrics=DpmWaveAggregateMetrics(
+            item_count=1,
+            state_counts={"HANDOFF_READY": 1},
+            ready_item_count=1,
+            blocked_item_count=0,
+            review_required_item_count=0,
+            source_degraded_item_count=0,
+        ),
+        handoff_refs=[
+            DpmWaveHandoffRef(
+                handoff_ref_id="dwh_external_claim",
+                wave_id="dwv_external_claim",
+                item_ids=["dwi_external_claim"],
+                actor_id="ops_001",
+                reason_code="READY_FOR_OPERATIONS_REVIEW",
+                correlation_id="corr-wave-external-claim-handoff",
+                external_execution_claimed=True,
+                content_hash="sha256:external-claim",
+            )
+        ],
+    )
+    wave_repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+
+    with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
+        proof_pack = client.get("/api/v1/rebalance/waves/dwv_external_claim/proof-pack")
+        report_input = client.get("/api/v1/rebalance/waves/dwv_external_claim/report-input")
+
+    assert proof_pack.status_code == 200
+    assert proof_pack.json()["external_execution_claimed"] is True
+    assert report_input.status_code == 422
+    assert report_input.json()["detail"]["code"] == "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"
+    assert "cannot propagate external execution claims" in report_input.json()["detail"]["message"]
+
+
 def test_wave_preview_and_create_reject_source_owner_triggers_without_fallback() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         tactical_preview = client.post(
@@ -3048,4 +3109,17 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
     assert "does not cancel external orders" in cancel["description"]
+    assert "422" in report_input["responses"]
+    assert "unsupported external OMS/execution boundary" in report_input["responses"]["422"][
+        "description"
+    ]
+    proof_pack_schema_ref = proof_pack["responses"]["200"]["content"]["application/json"]["schema"][
+        "$ref"
+    ]
+    proof_pack_schema = openapi["components"]["schemas"][proof_pack_schema_ref.rsplit("/", 1)[1]]
+    external_execution_description = proof_pack_schema["properties"][
+        "external_execution_claimed"
+    ]["description"]
+    assert "Always false for valid manage-owned handoff evidence" in external_execution_description
+    assert "external OMS/execution owner contract" in external_execution_description
     assert "excludes portfolio identifiers" in supportability["description"]

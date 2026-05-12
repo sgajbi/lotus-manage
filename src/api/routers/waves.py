@@ -543,7 +543,11 @@ class DpmWaveProofPackPostureResponse(BaseModel):
         description="Append-only internal operations handoff evidence refs."
     )
     external_execution_claimed: bool = Field(
-        description="True only if any handoff ref claims external execution; expected false.",
+        description=(
+            "Always false for valid manage-owned handoff evidence. If persisted evidence ever "
+            "contains an external execution claim, downstream report input is blocked until an "
+            "external OMS/execution owner contract exists."
+        ),
         examples=[False],
     )
 
@@ -1739,6 +1743,12 @@ def get_wave_proof_pack_posture(
     responses={
         200: {"description": "Generated wave report-input payload."},
         404: {"description": "Wave not found."},
+        422: {
+            "description": (
+                "Wave evidence crosses the unsupported external OMS/execution boundary and cannot "
+                "be emitted as manage report input."
+            )
+        },
     },
 )
 def get_wave_report_input(
@@ -1761,6 +1771,8 @@ def get_wave_report_input(
             status_code=status.HTTP_404_NOT_FOUND,
             detail={"code": exc.code, "message": exc.message},
         ) from exc
+    except wave_service.DpmWaveValidationError as exc:
+        raise _wave_validation_http_exception(exc) from exc
 
 
 @router.get(
