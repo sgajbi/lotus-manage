@@ -3110,16 +3110,17 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "external_execution_claimed=false" in handoff["description"]
     assert "does not cancel external orders" in cancel["description"]
     assert "422" in report_input["responses"]
-    assert "unsupported external OMS/execution boundary" in report_input["responses"]["422"][
-        "description"
-    ]
+    assert (
+        "unsupported external OMS/execution boundary"
+        in report_input["responses"]["422"]["description"]
+    )
     proof_pack_schema_ref = proof_pack["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ]
     proof_pack_schema = openapi["components"]["schemas"][proof_pack_schema_ref.rsplit("/", 1)[1]]
-    external_execution_description = proof_pack_schema["properties"][
-        "external_execution_claimed"
-    ]["description"]
+    external_execution_description = proof_pack_schema["properties"]["external_execution_claimed"][
+        "description"
+    ]
     assert "Always false for valid manage-owned handoff evidence" in external_execution_description
     assert "external OMS/execution owner contract" in external_execution_description
     assert "excludes portfolio identifiers" in supportability["description"]
