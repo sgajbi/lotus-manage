@@ -633,8 +633,9 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
         "PARTIALLY IMPLEMENTED (BOUNDED DPM WORKFLOW PACKS; FIRST-WAVE PRODUCT INVOCATION COMPLETE)"
         in index
     )
-    assert "Partially supported through bounded DPM workflow packs and first-wave product invocation" in (
-        supported_features
+    assert (
+        "Partially supported through bounded DPM workflow packs and first-wave product invocation"
+        in (supported_features)
     )
     assert "all AI copilot features as proposed" not in rfc
     assert "RFC-0043 remains proposed" not in wtbd
