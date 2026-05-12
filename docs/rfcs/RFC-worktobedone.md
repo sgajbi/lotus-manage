@@ -3411,6 +3411,15 @@ RFC-0041 intentionally ends at internal operations handoff evidence. No external
 OMS contract is established, and claiming execution would overstate manage's current business
 capability.
 
+2026-05-12 boundary-hardening result:
+
+`lotus-manage` now fails closed if persisted wave handoff evidence ever contains an external
+execution claim. `GET /api/v1/rebalance/waves/{wave_id}/proof-pack` can expose the contaminated
+posture for operator diagnosis, but `GET /api/v1/rebalance/waves/{wave_id}/report-input` returns
+`DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating the claim into downstream report,
+render, archive, or AI evidence paths. This does not implement OMS integration; it makes the
+unsupported boundary machine-readable, API-documented, and regression-tested.
+
 Dependencies before implementation:
 
 1. execution/OMS owner and contract,
@@ -3432,6 +3441,14 @@ Promotion proof:
 3. failure and reconciliation proof,
 4. operational runbook and supportability evidence,
 5. explicit supported-feature promotion that names the execution boundary.
+
+Boundary-hardening proof:
+
+1. `python -m pytest tests/unit/dpm/api/test_waves_api.py -q`, 64 passed,
+2. OpenAPI regression asserts the report-input `422` unsupported-boundary response and the
+   proof-pack `external_execution_claimed` invariant wording,
+3. report-input API regression proves an unsafe external-execution claim returns
+   `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY`.
 
 ### Suggested Sequencing
 
@@ -4651,6 +4668,14 @@ Why it cannot be done now:
 
 No execution/OMS owner or contract is established. RFC-0041 deliberately stopped at internal
 operations handoff evidence, and RFC-0042 must not invent execution truth.
+
+2026-05-12 boundary-hardening result:
+
+The upstream RFC-0041 wave report-input seam now refuses to emit report input when persisted wave
+handoff evidence contains an external execution claim. Outcome review can continue to consume
+manage-owned internal handoff and expected-snapshot evidence, but OMS acknowledgement remains an
+explicit future owner contract. This prevents downstream outcome, report, archive, and AI flows
+from treating contaminated manage handoff evidence as execution truth.
 
 Dependencies before implementation:
 

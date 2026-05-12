@@ -1667,6 +1667,9 @@ Functional coverage:
   supportability, proof-pack posture, item rows, event rows, handoff refs, source refs,
   redaction policy, wave/content hashes, and `external_execution_claimed=false` for downstream
   report generation,
+- report input fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` if persisted wave handoff
+  evidence ever contains an external execution claim; proof-pack posture remains available for
+  operator diagnosis, but unsupported OMS truth is not propagated downstream,
 - supportability returns wave posture, issue counts, source owners, bounded reason codes,
   remediation routes, and support refs without portfolio ids, client ids, raw payloads, secrets, or
   trace details,
@@ -1697,7 +1700,8 @@ Non-functional posture:
 - Read models are repository-backed and do not regenerate construction alternatives, proof packs,
   supportability source evidence, or handoff refs.
 - Report input is a bounded handoff contract only. It does not create report jobs, render PDFs,
-  create archive records, generate AI prompts, or claim external execution.
+  create archive records, generate AI prompts, or claim external execution. Unsafe external
+  execution claims block report-input generation instead of becoming downstream evidence.
 - `PM_BOOK_REVIEW` calls lotus-core `PortfolioManagerBookMembership:v1` during preview/create.
 - `CIO_MODEL_CHANGE` calls lotus-core `CioModelChangeAffectedCohort:v1` during preview/create.
 - `RISK_EVENT` calls lotus-risk `RiskEventAffectedCohort:v1` during preview/create and requires

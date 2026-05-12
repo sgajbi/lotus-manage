@@ -120,7 +120,9 @@ flowchart LR
 - `GET /api/v1/rebalance/waves/{wave_id}/report-input`
   returns deterministic `DpmWaveReportInput` for downstream report materialization without
   requiring `lotus-report` to reconstruct wave state, proof-pack linkage, internal handoff refs, or
-  source hashes.
+  source hashes. If persisted handoff evidence contains an external execution claim, this endpoint
+  fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating unsupported OMS
+  truth downstream.
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
   returns product-safe operator diagnostics and bounded reason-code posture.
 
@@ -132,7 +134,8 @@ affected-mandate discovery is supported for `CIO_MODEL_CHANGE` through lotus-cor
 portfolios and source-supplied exposure weights. Report materialization, rendering, archive
 lifecycle, AI memo generation, tactical/campaign cohort discovery, and external OMS execution
 remain downstream or source-owner responsibilities unless their owning repos have implemented and
-proven support.
+proven support. The manage report-input seam is explicitly bounded to internal operations handoff
+evidence and will not emit report input for contaminated external-execution claims.
 
 ```mermaid
 flowchart LR

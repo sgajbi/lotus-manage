@@ -970,6 +970,7 @@ RFC-0041 is complete only when:
 | APIs certified | 13 RFC-0041 wave operations are OpenAPI-certified with route grouping, examples, request/response schemas, error posture, and vocabulary inventory validation. |
 | Wave states and sections proven | Live proof validated mixed `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, `SOURCE_BLOCKED`, `PARTIALLY_SIMULATED`, approval-with-exceptions, `STAGED`, `HANDOFF_READY`, and `CANCELLED` behavior with aggregate reconciliation. |
 | Report/AI/proof-pack handoff posture | Wave selection delegates proof-pack generation to RFC-0040 and exposes proof-pack/handoff posture. Report materialization is implementation-backed through `lotus-report`/`lotus-render`/`lotus-archive`, and AI PM memo generation is implementation-backed through `lotus-ai` plus Gateway/Workbench consumers. Manage remains evidence and report-input authority only. |
+| External execution boundary | `lotus-manage` intentionally stops at internal operations handoff. The report-input seam now fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` if persisted handoff evidence ever contains an external execution claim, so downstream report/render/archive/AI paths cannot propagate unsupported OMS truth. |
 | Live evidence reviewed | Machine-readable proof exists under `output/rfc0041-wave-proof/20260504-231914/`; `critical-review.json` and `critical-review.md` passed after fixing the live-found gaps. |
 | Gateway/Workbench realization RFC result | Downstream realization RFC addenda are complete and the first-wave runtime product path is implemented, merged, wiki-published, and canonically proven. Gateway and Workbench remain consumers of manage-owned wave truth, not wave authorities. |
 | Documentation/wiki result | README, RFC index, repository context, source-map, supported-features, endpoint certification wiki, RFC index wiki, and roadmap wiki are aligned to implementation truth. Wiki publication is required after the Slice 12 PR merges. |
@@ -995,7 +996,7 @@ implementation truth is available in the owning RFC, not only in the WTBD ledger
 | RFC41-WTBD-007 | Full first-wave front-office command-center product support is now implementation-backed for the canonical wave path. | Future tactical/risk/campaign cohorts and external OMS execution remain separate WTBDs. |
 | RFC41-WTBD-008 | `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render` PR #12, and `lotus-archive` PR #24 materialize governed rebalance-wave reports from `DpmWaveReportInput`. | Report/render/archive own generated document lifecycle; manage remains wave evidence and report-input authority. |
 | RFC41-WTBD-009 | `lotus-ai` PR #63, `lotus-gateway` PR #201, and `lotus-workbench` PR #168 implement review-gated wave PM memo consumption. | AI does not approve, recommend, contact clients, or execute orders. |
-| RFC41-WTBD-010 | External execution integration remains out of scope with `external_execution_claimed=false`. | Requires a future execution/OMS owner and contract. |
+| RFC41-WTBD-010 | External execution integration remains out of scope with `external_execution_claimed=false`; the report-input API now refuses unsafe handoff evidence with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating external execution claims downstream. | Requires a future execution/OMS owner and contract before OMS acknowledgement, cancellation, order status, or reconciliation can be promoted. |
 
 Audit evidence:
 
@@ -1015,6 +1016,10 @@ Audit evidence:
    and screenshots in `lotus-platform/output/front-office-qa/wtbd-rfc40-audit-20260509`.
 5. Documentation regression now guards the RFC41/WTBD/wiki truth so product-support wording cannot
    drift back to pre-realization backend-only claims.
+6. 2026-05-12 boundary-hardening proof passed
+   `python -m pytest tests/unit/dpm/api/test_waves_api.py -q`, 64 passed, covering the report-input
+   fail-closed behavior and OpenAPI response/schema wording for the unsupported external
+   OMS/execution boundary.
 
 Gold-pass decision:
 

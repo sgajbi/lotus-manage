@@ -14,6 +14,7 @@ from src.core.waves.models import (
     WaveTriggerType,
 )
 from src.core.waves.handoffs import (
+    DpmWaveReportInputBoundaryError,
     DpmWaveReportEvidenceRef,
     DpmWaveReportEvent,
     DpmWaveReportInput,
@@ -46,6 +47,7 @@ __all__ = [
     "DpmWaveAlreadyExistsError",
     "DpmWaveIdempotencyConflictError",
     "DpmWaveInvalidTransitionError",
+    "DpmWaveReportInputBoundaryError",
     "DpmWaveNotFoundError",
     "DpmWaveReportEvidenceRef",
     "DpmWaveReportEvent",
