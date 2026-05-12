@@ -122,9 +122,12 @@ and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024
 hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
 state-filter validation evidence. Full post-trade outcome product support remains downstream until
 Gateway/Workbench implementation where surfaced is complete and canonically proven. RFC-0043 is
-partially implemented for those owner-side DPM workflow packs; broader Gateway/Workbench
-operations-handoff and exception-summary product invocation, full copilot workspace UX, and
-unsupported autonomous advice remain future owner work. Target-state features are not support claims until the owning RFC is implemented, certified, live-proven, and reflected in
+partially implemented for the bounded DPM workflow-pack product path: owner-side packs, default
+workflow-pack resolution, and first-wave Gateway/Workbench operations-handoff plus
+exception-summary invocation are merged, validated, and wiki-published. Full copilot workspace UX,
+additional future product surfaces, and unsupported autonomous advice remain future owner work.
+Target-state features are not support claims until the owning RFC is implemented, certified,
+live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
 
 The revamp is strategic-first: duplicate, stale, advisory-era, or poorly named APIs may be removed
