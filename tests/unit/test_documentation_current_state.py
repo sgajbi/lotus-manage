@@ -937,7 +937,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "DpmOutcomeReportInput" in rfc
     assert "DpmOutcomeAiEvidenceInput" in rfc
     assert (
-        "PM operating quality score-run preview | Supported as separate Manage-owned "
+        "PM operating quality score-run lifecycle | Supported as separate Manage-owned "
         "first-wave product"
     ) in rfc
     assert "PmOperatingQualityScoreRun:v1" in rfc
@@ -1191,7 +1191,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
     assert "Remaining OMS stays downstream" in supported_features
     assert (
-        "PM operating quality score-run preview is supported separately by Manage and "
+        "PM operating quality score-run lifecycle is supported separately by Manage and "
         "intentionally does not project portfolio-memory score events"
     ) in supported_features
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
@@ -1212,7 +1212,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "GET /documents/{document_id}/source-events" in supported_features
     assert (
         "PM operating quality scoring is supported only as an explicit Manage-owned "
-        "score-run preview"
+        "score-run lifecycle"
     ) in supported_features
     assert "Supported as RFC-0042 full product experience" not in supported_features
     assert "Gateway and Workbench product support must not be claimed" not in rfc
@@ -1232,11 +1232,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`." in work_to_be_done
     )
     assert (
-        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the first bounded "
-        "RFC42-WTBD-008 PM operating quality score-run preview are incorporated into "
+        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
+        "RFC42-WTBD-008 PM operating quality preview plus persisted score-run lifecycle are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
-    assert "First bounded score-run preview implemented" in work_to_be_done
+    assert (
+        "First bounded score-run preview plus immutable create/read/list score-run lifecycle implemented"
+        in work_to_be_done
+    )
     assert "PmOperatingQualityScoreRun:v1" in work_to_be_done
     assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
     assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done

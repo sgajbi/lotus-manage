@@ -279,7 +279,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert family_posture["pm_scoring"].support_status == "SEPARATE_PRODUCT_NO_EVENT_FAMILY"
     assert family_posture["pm_scoring"].event_types == []
     assert family_posture["pm_scoring"].route == (
-        "/api/v1/rebalance/pm-operating-quality/score-runs/preview"
+        "/api/v1/rebalance/pm-operating-quality/score-runs"
     )
     assert family_posture["pm_scoring"].reason_code == ("PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY")
     assert "bank-supplied policy" in family_posture["pm_scoring"].summary
@@ -359,12 +359,12 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
         "owner": "lotus-manage PM operating quality product",
         "support_status": "SEPARATE_PRODUCT_NO_EVENT_FAMILY",
         "event_types": [],
-        "route": "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+        "route": "/api/v1/rebalance/pm-operating-quality/score-runs",
         "reason_code": "PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY",
         "summary": (
-            "PM operating quality score-run preview is supported as a separate explicit "
+            "Persisted PM operating quality score runs are supported as a separate explicit "
             "Manage product with bank-supplied policy and source-backed evidence; portfolio "
-            "memory projects no PM-scoring events until a persisted score-run lifecycle exists."
+            "memory projects no PM-scoring events until a separate event family is governed."
         ),
     }
     assert all(event["event_identity"] for event in payload["events"])
