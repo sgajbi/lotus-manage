@@ -3,8 +3,10 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_outcome_review_repository
+from src.api.dependencies import get_pm_quality_score_run_repository
 from src.api.main import app
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
+from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
@@ -63,6 +65,42 @@ def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> 
     assert score_run["correlation_id"] == "corr-pmq-001"
     assert any(ref["source_type"] == "PostTradeOutcomeReview" for ref in score_run["source_refs"])
     assert "autonomous_pm_ranking" in score_run["forbidden_uses"]
+
+
+def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() -> None:
+    outcome_repository = InMemoryDpmOutcomeReviewRepository()
+    outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
+    try:
+        with TestClient(app) as client:
+            created = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs",
+                json=_request(),
+                headers={"X-Correlation-Id": "corr-pmq-create"},
+            )
+            score_run_id = created.json()["score_run"]["score_run_id"]
+            fetched = client.get(
+                f"/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}"
+            )
+            listed = client.get(
+                "/api/v1/rebalance/pm-operating-quality/score-runs",
+                params={"pm_id": "pm_001", "policy_id": "pmq_sg_dpm"},
+            )
+            missing = client.get("/api/v1/rebalance/pm-operating-quality/score-runs/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert created.status_code == 201
+    assert created.json()["score_run"]["correlation_id"] == "corr-pmq-create"
+    assert fetched.status_code == 200
+    assert fetched.json()["score_run"]["score_run_id"] == score_run_id
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+    assert listed.json()["score_runs"][0]["score_run_id"] == score_run_id
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
 
 
 def test_pm_operating_quality_api_returns_disabled_score_run_without_score() -> None:
@@ -126,3 +164,14 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert "requestBody" in operation
     assert "200" in operation["responses"]
     assert "compensation" in operation["description"]
+
+    create_path = "/api/v1/rebalance/pm-operating-quality/score-runs"
+    get_path = "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}"
+    assert create_path in schema["paths"]
+    assert get_path in schema["paths"]
+    assert "201" in schema["paths"][create_path]["post"]["responses"]
+    assert "policy" in schema["paths"][create_path]["post"]["description"]
+    assert "200" in schema["paths"][create_path]["get"]["responses"]
+    assert "does not recompute scores" in schema["paths"][create_path]["get"]["description"]
+    assert "200" in schema["paths"][get_path]["get"]["responses"]
+    assert "does not recompute" in schema["paths"][get_path]["get"]["description"]

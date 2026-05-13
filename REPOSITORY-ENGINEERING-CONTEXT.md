@@ -235,7 +235,7 @@ Current repository posture:
     Manage now emits stable event identity plus retention, redaction, access, audit policy, and
     explicit source-event family posture in the portfolio-memory API contract. The posture lists
     supported manage/report/AI/archive families, marks external OMS execution as deferred, and
-    points PM scoring to the separate Manage-owned PM operating quality score-run preview product
+    points PM scoring to the separate Manage-owned PM operating quality score-run lifecycle product
     without projecting hidden portfolio-memory score events.
     `lotus-report` PR #92 adds the report-side bounded
     `portfolio_memory_context` consumer for proof-pack, rebalance-wave, and outcome-review report
@@ -255,8 +255,8 @@ Current repository posture:
     `/documents/{document_id}/source-events` for generated-document archive, supersession,
     correction, and client-delivery reissue lineage without raw document bytes, storage keys, raw
     report payloads, or raw client references. Future OMS remains downstream source-owner scope,
-    while PM operating quality score-run preview is supported separately by `lotus-manage` with
-    bank-supplied policy and source-backed evidence.
+    while PM operating quality score-run preview/create/read/list is supported separately by
+    `lotus-manage` with bank-supplied policy and source-backed evidence.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,

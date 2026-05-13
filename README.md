@@ -95,7 +95,7 @@ also records a canonical front-office risk-drawdown `partial` boundary tracked a
 `sgajbi/lotus-gateway#182`, so no unsupported proof-pack source enrichment is claimed here.
 The portfolio-memory API now publishes source-event family posture for supported manage, report,
 AI, and archive families, explicitly marks OMS execution as deferred, and points PM scoring to the
-separate Manage-owned PM operating quality score-run preview product rather than inventing hidden
+separate Manage-owned PM operating quality score-run lifecycle product rather than inventing hidden
 portfolio-memory scoring events.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
@@ -132,12 +132,13 @@ workflow-pack resolution, and first-wave Gateway/Workbench operations-handoff pl
 exception-summary invocation are merged, validated, and wiki-published. Full copilot workspace UX,
 additional future product surfaces, and unsupported autonomous advice remain future owner work.
 RFC42-WTBD-008 now has a bounded Manage-owned PM operating quality backend foundation:
-`POST /api/v1/rebalance/pm-operating-quality/score-runs/preview` emits
-`PmOperatingQualityScoreRun:v1` from explicit bank policy, source-backed evidence, and optional
-persisted outcome reviews. Scoring is disabled by default, enabled policies fail closed for missing
-required evidence, and prohibited HR, compensation, conduct-enforcement, and autonomous-ranking
-uses remain outside the product contract. Persisted policy administration, persisted score-run
-lifecycle, downstream UI, and advanced fairness analytics remain future expansion.
+`POST /api/v1/rebalance/pm-operating-quality/score-runs/preview` previews
+`PmOperatingQualityScoreRun:v1`, while `POST /score-runs`, `GET /score-runs`, and
+`GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence. Scoring is
+disabled by default, enabled policies fail closed for missing required evidence, and prohibited HR,
+compensation, conduct-enforcement, and autonomous-ranking uses remain outside the product contract.
+Persisted policy administration, PM-book materialization, downstream UI, and advanced fairness
+analytics remain future expansion.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).

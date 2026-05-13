@@ -167,7 +167,7 @@ app = FastAPI(
         {
             "name": "lotus-manage PM Operating Quality",
             "description": (
-                "RFC42-WTBD-008 configurable PM operating quality score-run preview endpoints."
+                "RFC42-WTBD-008 configurable PM operating quality score-run lifecycle endpoints."
             ),
         },
     ],

@@ -26,10 +26,13 @@
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 
 - Product ID: `lotus-manage:PmOperatingQualityScoreRun:v1`
-- Product role: governed PM operating quality score-run preview generated from explicit bank
-  policy, source-backed evidence, and optional persisted outcome reviews.
+- Product role: governed PM operating quality score-run preview and immutable persisted
+  lifecycle generated from explicit bank policy, source-backed evidence, and optional
+  persisted outcome reviews.
 - Implemented route families:
   - `/api/v1/rebalance/pm-operating-quality/score-runs/preview`
+  - `/api/v1/rebalance/pm-operating-quality/score-runs`
+  - `/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Boundary: scoring is disabled by default, missing required evidence blocks the run, and HR,
   compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, source-owner risk,
@@ -42,9 +45,9 @@
 ## Operating rule
 
 Portfolio action state, campaign membership evidence, and explicit PM operating quality score-run
-preview evidence belong in `lotus-manage`. Platform certification can block publication when
+lifecycle evidence belong in `lotus-manage`. Platform certification can block publication when
 action-register telemetry, lifecycle, access, SLO, or evidence posture drifts. PM operating quality
-score-run preview is not portfolio-memory event projection and should not be treated as an
+score-run lifecycle is not portfolio-memory event projection and should not be treated as an
 execution, compensation, HR, conduct, or autonomous-ranking product.
 
 Stateful `portfolio_id` execution is not yet a promoted mesh consumption mode. The resolver seam is

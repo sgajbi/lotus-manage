@@ -22,7 +22,7 @@ Current declarations:
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through explicit bank-policy PM
-   operating quality score-run preview.
+   operating quality preview plus immutable create/read/list score-run lifecycle routes.
 
 Local validation:
 

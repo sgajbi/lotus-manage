@@ -243,12 +243,12 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
             owner="lotus-manage PM operating quality product",
             support_status="SEPARATE_PRODUCT_NO_EVENT_FAMILY",
             event_types=[],
-            route="/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+            route="/api/v1/rebalance/pm-operating-quality/score-runs",
             reason_code="PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY",
             summary=(
-                "PM operating quality score-run preview is supported as a separate explicit "
+                "Persisted PM operating quality score runs are supported as a separate explicit "
                 "Manage product with bank-supplied policy and source-backed evidence; portfolio "
-                "memory projects no PM-scoring events until a persisted score-run lifecycle exists."
+                "memory projects no PM-scoring events until a separate event family is governed."
             ),
         ),
     ]

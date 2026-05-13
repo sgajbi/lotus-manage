@@ -1834,7 +1834,7 @@ Non-functional posture:
   downstream product realization is now complete in owning apps and canonically proven at
   `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`; richer source-owner
   methodologies and external execution/OMS remain outside this API claim. PM operating quality is
-  certified separately as a score-run preview product and does not change outcome-review authority.
+  certified separately as a score-run lifecycle product and does not change outcome-review authority.
 
 Upstream integration posture:
 
@@ -1890,7 +1890,7 @@ Functional behavior:
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
 - publishes `source_event_family_posture` for supported manage, report, AI, and archive families
   plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution and
-  `SEPARATE_PRODUCT_NO_EVENT_FAMILY` posture for PM operating quality score-run preview,
+  `SEPARATE_PRODUCT_NO_EVENT_FAMILY` posture for PM operating quality score-run lifecycle,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1904,9 +1904,9 @@ Non-functional posture:
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
 - Future OMS execution remains roadmap scope and is visible as deferred posture rather than hidden
-  portfolio-memory functionality. PM operating quality score-run preview is implemented separately
-  at `/api/v1/rebalance/pm-operating-quality/score-runs/preview`; `pm_scoring` remains pinned as
-  no projected portfolio-memory events until a persisted score-run lifecycle exists.
+  portfolio-memory functionality. Persisted PM operating quality score runs are implemented
+  separately at `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` remains pinned as
+  no projected portfolio-memory events until a separate event family is governed.
 
 ```mermaid
 flowchart LR
@@ -1975,17 +1975,20 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: PM operating quality score-run preview
+## Certified endpoint: PM operating quality score-run lifecycle
 
 Route:
 
 - `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`
+- `POST /api/v1/rebalance/pm-operating-quality/score-runs`
+- `GET /api/v1/rebalance/pm-operating-quality/score-runs`
+- `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`
 
 Purpose:
 
-Builds a deterministic `PmOperatingQualityScoreRun:v1` from explicit bank-owned policy,
-source-backed evidence signals, and optional persisted outcome reviews. The route is the bounded
-first implementation of RFC42-WTBD-008.
+Builds and optionally persists deterministic `PmOperatingQualityScoreRun:v1` evidence from explicit
+bank-owned policy, source-backed evidence signals, and optional persisted outcome reviews. The
+route family is the bounded first implementation of RFC42-WTBD-008.
 
 Functional coverage:
 
@@ -2001,8 +2004,8 @@ Non-functional posture:
 
 - The endpoint does not create HR, compensation, conduct-enforcement, autonomous-ranking,
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
-- Persisted policy administration, persisted score-run lifecycle, PM-book materialization,
-  downstream UI, and advanced fairness analytics remain future expansion.
+- Persisted policy administration, PM-book materialization, downstream UI, portfolio-memory
+  score-event projection, and advanced fairness analytics remain future expansion.
 
 Evidence commands:
 

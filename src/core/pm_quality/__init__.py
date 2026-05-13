@@ -10,6 +10,10 @@ from src.core.pm_quality.models import (
     PmQualityIndicator,
     PmQualityState,
 )
+from src.core.pm_quality.repository import (
+    DpmPmQualityScoreRunConflictError,
+    DpmPmQualityScoreRunRepository,
+)
 from src.core.pm_quality.scoring import (
     DpmPmQualityValidationError,
     build_pm_operating_quality_score_run,
@@ -20,6 +24,8 @@ __all__ = [
     "DpmPmOperatingQualityScoreRun",
     "DpmPmQualityEvidenceItem",
     "DpmPmQualityIndicatorResult",
+    "DpmPmQualityScoreRunConflictError",
+    "DpmPmQualityScoreRunRepository",
     "DpmPmQualityValidationError",
     "DpmPmQualityWeight",
     "PmQualityAccessPurpose",
