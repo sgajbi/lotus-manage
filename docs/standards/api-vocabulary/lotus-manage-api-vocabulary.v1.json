@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T04:27:50.382825+00:00",
+  "generatedAt": "2026-05-14T08:27:43.393370+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1437,6 +1437,20 @@
       ]
     },
     {
+      "semanticId": "lotus.client_income_needs_schedule",
+      "canonicalTerm": "client_income_needs_schedule",
+      "preferredName": "client_income_needs_schedule",
+      "description": "Optional lotus-core ClientIncomeNeedsSchedule:v1 evidence. It is preserved for supportability only and is not a funding recommendation or financial-planning output.",
+      "example": "client_income_needs_schedule_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.client_restriction_context",
       "canonicalTerm": "client_restriction_context",
       "preferredName": "client_restriction_context",
@@ -1850,6 +1864,22 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.currencies",
+      "canonicalTerm": "currencies",
+      "preferredName": "currencies",
+      "description": "authoritative client income needs schedule field: currencies.",
+      "example": [
+        "sample_currencies_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -4118,6 +4148,20 @@
       ]
     },
     {
+      "semanticId": "lotus.highest_priority",
+      "canonicalTerm": "highest_priority",
+      "preferredName": "highest_priority",
+      "description": "authoritative client income needs schedule field: highest priority.",
+      "example": "highest_priority_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.highest_severity",
       "canonicalTerm": "highest_severity",
       "preferredName": "highest_severity",
@@ -4145,6 +4189,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.horizon_days",
+      "canonicalTerm": "horizon_days",
+      "preferredName": "horizon_days",
+      "description": "authoritative planned withdrawal schedule field: horizon days.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -5025,6 +5083,20 @@
       ]
     },
     {
+      "semanticId": "lotus.liquidity_reserve_requirement",
+      "canonicalTerm": "liquidity_reserve_requirement",
+      "preferredName": "liquidity_reserve_requirement",
+      "description": "Optional lotus-core LiquidityReserveRequirement:v1 evidence.",
+      "example": "liquidity_reserve_requirement_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.liquidity_tier",
       "canonicalTerm": "liquidity_tier",
       "preferredName": "liquidity_tier",
@@ -5395,6 +5467,20 @@
       "preferredName": "maximum_allowed_loss_pct",
       "description": "Maximum permitted scenario loss ratio for the mandate.",
       "example": "maximum_allowed_loss_pct_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.maximum_horizon_days",
+      "canonicalTerm": "maximum_horizon_days",
+      "preferredName": "maximum_horizon_days",
+      "description": "authoritative liquidity reserve requirement field: maximum horizon days.",
+      "example": "maximum_horizon_days_example",
       "type": "object",
       "locations": [
         "body"
@@ -6463,6 +6549,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.planned_withdrawal_schedule",
+      "canonicalTerm": "planned_withdrawal_schedule",
+      "preferredName": "planned_withdrawal_schedule",
+      "description": "Optional lotus-core PlannedWithdrawalSchedule:v1 evidence. It is not an OMS instruction or execution forecast.",
+      "example": "planned_withdrawal_schedule_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -7804,6 +7904,20 @@
       ]
     },
     {
+      "semanticId": "lotus.requirement_count",
+      "canonicalTerm": "requirement_count",
+      "preferredName": "requirement_count",
+      "description": "authoritative liquidity reserve requirement field: requirement count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.requires_review",
       "canonicalTerm": "requires_review",
       "preferredName": "requires_review",
@@ -8451,6 +8565,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.schedule_count",
+      "canonicalTerm": "schedule_count",
+      "preferredName": "schedule_count",
+      "description": "authoritative client income needs schedule field: schedule count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -10972,6 +11100,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.withdrawal_count",
+      "canonicalTerm": "withdrawal_count",
+      "preferredName": "withdrawal_count",
+      "description": "authoritative planned withdrawal schedule field: withdrawal count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -54478,6 +54620,270 @@
             "attributeRef": "#/attributeCatalog/lotus.reason_codes"
           },
           {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.client_income_needs_schedule",
+            "attributeRef": "#/attributeCatalog/lotus.client_income_needs_schedule"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.schedule_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.schedule_count",
+            "attributeRef": "#/attributeCatalog/lotus.schedule_count"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.currencies",
+            "attributeRef": "#/attributeCatalog/lotus.currencies"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.highest_priority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.highest_priority",
+            "attributeRef": "#/attributeCatalog/lotus.highest_priority"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.supportability_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.liquidity_context.client_income_needs_schedule.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.liquidity_reserve_requirement",
+            "attributeRef": "#/attributeCatalog/lotus.liquidity_reserve_requirement"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.requirement_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.requirement_count",
+            "attributeRef": "#/attributeCatalog/lotus.requirement_count"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.currencies",
+            "attributeRef": "#/attributeCatalog/lotus.currencies"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.maximum_horizon_days",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_horizon_days",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_horizon_days"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.supportability_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.liquidity_context.liquidity_reserve_requirement.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.planned_withdrawal_schedule",
+            "attributeRef": "#/attributeCatalog/lotus.planned_withdrawal_schedule"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.withdrawal_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.withdrawal_count",
+            "attributeRef": "#/attributeCatalog/lotus.withdrawal_count"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.currencies",
+            "attributeRef": "#/attributeCatalog/lotus.currencies"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.horizon_days",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.horizon_days",
+            "attributeRef": "#/attributeCatalog/lotus.horizon_days"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.supportability_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "authority_context.liquidity_context.planned_withdrawal_schedule.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
             "name": "authority_context.liquidity_context.reason_codes",
             "location": "body",
             "required": false,
@@ -67485,6 +67891,270 @@
           },
           {
             "name": "item_inputs[].authority_context.liquidity_context.cashflow_projection.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.client_income_needs_schedule",
+            "attributeRef": "#/attributeCatalog/lotus.client_income_needs_schedule"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.schedule_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.schedule_count",
+            "attributeRef": "#/attributeCatalog/lotus.schedule_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.currencies",
+            "attributeRef": "#/attributeCatalog/lotus.currencies"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.highest_priority",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.highest_priority",
+            "attributeRef": "#/attributeCatalog/lotus.highest_priority"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.supportability_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.client_income_needs_schedule.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.liquidity_reserve_requirement",
+            "attributeRef": "#/attributeCatalog/lotus.liquidity_reserve_requirement"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.requirement_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.requirement_count",
+            "attributeRef": "#/attributeCatalog/lotus.requirement_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.currencies",
+            "attributeRef": "#/attributeCatalog/lotus.currencies"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.maximum_horizon_days",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_horizon_days",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_horizon_days"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.supportability_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.liquidity_reserve_requirement.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.planned_withdrawal_schedule",
+            "attributeRef": "#/attributeCatalog/lotus.planned_withdrawal_schedule"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.withdrawal_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.withdrawal_count",
+            "attributeRef": "#/attributeCatalog/lotus.withdrawal_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.currencies",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.currencies",
+            "attributeRef": "#/attributeCatalog/lotus.currencies"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.horizon_days",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.horizon_days",
+            "attributeRef": "#/attributeCatalog/lotus.horizon_days"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.supportability_status",
+            "location": "body",
+            "required": false,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "item_inputs[].authority_context.liquidity_context.planned_withdrawal_schedule.reason_codes",
             "location": "body",
             "required": false,
             "type": "array",

@@ -87,6 +87,78 @@
       "failure_posture": "degrade_or_pending_review"
     },
     {
+      "product_name": "ClientIncomeNeedsSchedule",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned client income-needs schedule evidence in mandate-health lineage and liquidity-aware construction diagnostics without inferring financial-planning advice, funding recommendations, or client liability planning in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade"
+    },
+    {
+      "product_name": "LiquidityReserveRequirement",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned liquidity reserve requirements in mandate-health lineage and liquidity-aware construction diagnostics while keeping local DPM execution bounded to policy review and supportability evidence.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
+    },
+    {
+      "product_name": "PlannedWithdrawalSchedule",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned planned withdrawal schedules in liquidity-aware construction diagnostics without treating withdrawals as OMS instructions, execution forecasts, or treasury actions.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
+    },
+    {
       "product_name": "RiskEventAffectedCohort",
       "producer_repository": "lotus-risk",
       "required_product_version": "v1",

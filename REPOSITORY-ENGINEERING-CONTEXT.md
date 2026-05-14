@@ -90,16 +90,20 @@ Current repository posture:
     and selecting persisted alternative sets. First-wave and mandatory authority-backed methods are
     supported as manage backend capabilities: solver-constrained, risk-aware through `lotus-risk`
     concentration authority, liquidity-aware with optional `lotus-core`
-    `PortfolioCashflowProjection:v1` projected cash-pressure evidence, currency-overlay, and
-    regime-stress-aware through `lotus-risk` `RegimeScenarioPackEvaluation:v1` when
-    `DPM_RISK_BASE_URL` is configured. Client income-need planning is not supported by cashflow
-    projection totals and remains deferred until an owning source product exists.
+    `PortfolioCashflowProjection:v1` projected cash-pressure evidence, optional source-owned
+    `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and
+    `PlannedWithdrawalSchedule:v1` supportability evidence, currency-overlay, and regime-stress-aware
+    through `lotus-risk` `RegimeScenarioPackEvaluation:v1` when `DPM_RISK_BASE_URL` is configured.
+    Manage preserves these client-liquidity source products as evidence only and does not claim
+    financial-planning advice, funding recommendation, client liability planning, OMS instruction,
+    or treasury action.
     RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
-    `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when available:
-    source lineage is preserved, field-gap codes remain only for unavailable optional products,
-    restricted model targets can block eligibility health, sustainability preferences require
-    bounded review, and projected negative net cashflow can raise cash-liquidity attention without
-    claiming client income-needs planning.
+    `SustainabilityPreferenceProfile:v1`, `PortfolioCashflowProjection:v1`,
+    `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and
+    `PlannedWithdrawalSchedule:v1` when available: source lineage is preserved, field-gap codes
+    remain only for unavailable optional products, restricted model targets can block eligibility
+    health, sustainability preferences require bounded review, and projected negative net cashflow
+    can raise cash-liquidity attention without claiming client income-needs planning.
     ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
     `SustainabilityPreferenceProfile:v1` through the stateful core-sourcing path when source gates
     are enabled. Client restriction profile violations block matching candidate trades, source

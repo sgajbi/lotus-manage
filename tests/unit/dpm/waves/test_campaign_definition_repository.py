@@ -12,8 +12,10 @@ from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionCo
 from src.infrastructure.waves.campaign_definitions import (
     InMemoryDpmBulkReviewCampaignDefinitionRepository,
     PostgresDpmBulkReviewCampaignDefinitionRepository,
+    _import_psycopg,
     _payload,
 )
+import src.infrastructure.waves.campaign_definitions as campaign_definition_infra
 
 
 def _definition(
@@ -174,6 +176,91 @@ def test_postgres_campaign_definition_repository_uses_payload_rows() -> None:
     assert listed == [definition]
     assert _payload({"payload_json": {"campaign_id": "dict"}}) == {"campaign_id": "dict"}
     assert _payload({"payload_json": 1}) == "1"
+
+
+def test_postgres_campaign_definition_repository_init_guards(monkeypatch) -> None:
+    with pytest.raises(RuntimeError, match="DPM_CAMPAIGN_DEFINITION_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmBulkReviewCampaignDefinitionRepository(dsn="")
+
+    monkeypatch.setattr(campaign_definition_infra, "has_psycopg", lambda: False)
+    with pytest.raises(RuntimeError, match="DPM_CAMPAIGN_DEFINITION_POSTGRES_DRIVER_MISSING"):
+        PostgresDpmBulkReviewCampaignDefinitionRepository(dsn="postgresql://campaigns")
+
+
+def test_postgres_campaign_definition_repository_connects_and_initializes(monkeypatch) -> None:
+    first_expected_connection = _Connection([_Cursor()])
+    init_expected_connection = _Connection([_Cursor()])
+    connections = [first_expected_connection, init_expected_connection]
+    connect_calls: list[tuple[str, object]] = []
+    migrations: list[tuple[_Connection, str]] = []
+    dict_row = object()
+
+    class FakePsycopg:
+        @staticmethod
+        def connect(dsn: str, *, row_factory: object) -> _Connection:
+            connect_calls.append((dsn, row_factory))
+            return connections.pop(0)
+
+    monkeypatch.setattr(
+        campaign_definition_infra,
+        "_import_psycopg",
+        lambda: (FakePsycopg, dict_row),
+    )
+    monkeypatch.setattr(
+        campaign_definition_infra,
+        "apply_postgres_migrations",
+        lambda *, connection, namespace: migrations.append((connection, namespace)),
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    repository._dsn = "postgresql://campaigns"
+
+    first_connection = repository._connect()
+    repository._init_db()
+
+    assert first_connection is first_expected_connection
+    assert connect_calls == [
+        ("postgresql://campaigns", dict_row),
+        ("postgresql://campaigns", dict_row),
+    ]
+    assert migrations == [(init_expected_connection, "dpm")]
+
+
+def test_postgres_campaign_definition_repository_init_stores_dsn(monkeypatch) -> None:
+    init_calls: list[str] = []
+
+    monkeypatch.setattr(campaign_definition_infra, "has_psycopg", lambda: True)
+    monkeypatch.setattr(
+        PostgresDpmBulkReviewCampaignDefinitionRepository,
+        "_init_db",
+        lambda self: init_calls.append(self._dsn),
+    )
+
+    repository = PostgresDpmBulkReviewCampaignDefinitionRepository(dsn="postgresql://campaigns")
+
+    assert repository._dsn == "postgresql://campaigns"
+    assert init_calls == ["postgresql://campaigns"]
+
+
+def test_postgres_campaign_definition_payload_and_driver_import_edges() -> None:
+    assert _payload({"payload_json": "raw-json"}) == "raw-json"
+    psycopg, dict_row = _import_psycopg()
+
+    assert psycopg is not None
+    assert dict_row is not None
+
+
+def test_postgres_campaign_definition_repository_returns_none_for_missing_definition() -> None:
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection([_Cursor(row=None)])
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert (
+        repository.get_definition(
+            campaign_id="missing",
+            campaign_version="2026.05",
+        )
+        is None
+    )
 
 
 def test_postgres_campaign_definition_repository_detects_conflict() -> None:

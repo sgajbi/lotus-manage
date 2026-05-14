@@ -360,6 +360,45 @@ class AuthoritativeLiquidityCashflowProjection(BaseModel):
     )
 
 
+class AuthoritativeClientIncomeNeedsSchedule(BaseModel):
+    source_product_name: str = Field(default="ClientIncomeNeedsSchedule")
+    source_product_version: str = Field(default="v1")
+    source_system: str = Field(default="lotus-core")
+    source_id: str | None = Field(default=None)
+    content_hash: str | None = Field(default=None)
+    schedule_count: int = Field(ge=0)
+    currencies: list[str] = Field(default_factory=list)
+    highest_priority: int | None = Field(default=None)
+    supportability_status: ConstructionMethodStatus = Field(default=ConstructionMethodStatus.READY)
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+class AuthoritativeLiquidityReserveRequirement(BaseModel):
+    source_product_name: str = Field(default="LiquidityReserveRequirement")
+    source_product_version: str = Field(default="v1")
+    source_system: str = Field(default="lotus-core")
+    source_id: str | None = Field(default=None)
+    content_hash: str | None = Field(default=None)
+    requirement_count: int = Field(ge=0)
+    currencies: list[str] = Field(default_factory=list)
+    maximum_horizon_days: int | None = Field(default=None)
+    supportability_status: ConstructionMethodStatus = Field(default=ConstructionMethodStatus.READY)
+    reason_codes: list[str] = Field(default_factory=list)
+
+
+class AuthoritativePlannedWithdrawalSchedule(BaseModel):
+    source_product_name: str = Field(default="PlannedWithdrawalSchedule")
+    source_product_version: str = Field(default="v1")
+    source_system: str = Field(default="lotus-core")
+    source_id: str | None = Field(default=None)
+    content_hash: str | None = Field(default=None)
+    withdrawal_count: int = Field(ge=0)
+    currencies: list[str] = Field(default_factory=list)
+    horizon_days: int = Field(ge=1)
+    supportability_status: ConstructionMethodStatus = Field(default=ConstructionMethodStatus.READY)
+    reason_codes: list[str] = Field(default_factory=list)
+
+
 class AuthoritativeLiquidityContext(BaseModel):
     supportability_status: ConstructionMethodStatus = Field(
         description="Liquidity and settlement supportability status for the alternative."
@@ -379,6 +418,24 @@ class AuthoritativeLiquidityContext(BaseModel):
             "Optional lotus-core PortfolioCashflowProjection:v1 evidence used to evaluate "
             "future cash pressure against the liquidity policy. Absence preserves the "
             "settlement/current-cash-only liquidity behavior."
+        ),
+    )
+    client_income_needs_schedule: AuthoritativeClientIncomeNeedsSchedule | None = Field(
+        default=None,
+        description=(
+            "Optional lotus-core ClientIncomeNeedsSchedule:v1 evidence. It is preserved for "
+            "supportability only and is not a funding recommendation or financial-planning output."
+        ),
+    )
+    liquidity_reserve_requirement: AuthoritativeLiquidityReserveRequirement | None = Field(
+        default=None,
+        description="Optional lotus-core LiquidityReserveRequirement:v1 evidence.",
+    )
+    planned_withdrawal_schedule: AuthoritativePlannedWithdrawalSchedule | None = Field(
+        default=None,
+        description=(
+            "Optional lotus-core PlannedWithdrawalSchedule:v1 evidence. It is not an OMS "
+            "instruction or execution forecast."
         ),
     )
     reason_codes: list[str] = Field(

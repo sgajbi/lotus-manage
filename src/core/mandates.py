@@ -9,10 +9,13 @@ from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_va
 
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
+    DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreClientRestrictionProfileResponse,
+    DpmCoreLiquidityReserveRequirementResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
@@ -458,11 +461,20 @@ def compile_mandate_digital_twin_from_core(
         DpmCoreSustainabilityPreferenceProfileResponse
     ] = None,
     portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
+    client_income_needs_schedule: Optional[DpmCoreClientIncomeNeedsScheduleResponse] = None,
+    liquidity_reserve_requirement: Optional[DpmCoreLiquidityReserveRequirementResponse] = None,
+    planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse] = None,
     benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse] = None,
 ) -> DpmMandateDigitalTwin:
     """Compile the minimum viable mandate twin from current RFC-087 core products."""
 
-    field_gaps = ["CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED"]
+    field_gaps = []
+    if client_income_needs_schedule is None:
+        field_gaps.append("CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED")
+    if liquidity_reserve_requirement is None:
+        field_gaps.append("LIQUIDITY_RESERVE_REQUIREMENT_NOT_YET_SOURCED")
+    if planned_withdrawal_schedule is None:
+        field_gaps.append("PLANNED_WITHDRAWAL_SCHEDULE_NOT_YET_SOURCED")
     if not mandate.mandate_objective:
         field_gaps.append("MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED")
     if not mandate.review_cadence or mandate.next_review_due_date is None:
@@ -544,6 +556,36 @@ def compile_mandate_digital_twin_from_core(
                 lineage=portfolio_cashflow_projection.lineage,
                 data_quality_status=portfolio_cashflow_projection.data_quality_status,
                 latest_evidence_timestamp=portfolio_cashflow_projection.latest_evidence_timestamp,
+            )
+        )
+    if client_income_needs_schedule is not None:
+        source_lineage.append(
+            _lineage_from_core_product(
+                product_name=client_income_needs_schedule.product_name,
+                product_version=client_income_needs_schedule.product_version,
+                lineage=client_income_needs_schedule.lineage,
+                data_quality_status=client_income_needs_schedule.data_quality_status,
+                latest_evidence_timestamp=client_income_needs_schedule.latest_evidence_timestamp,
+            )
+        )
+    if liquidity_reserve_requirement is not None:
+        source_lineage.append(
+            _lineage_from_core_product(
+                product_name=liquidity_reserve_requirement.product_name,
+                product_version=liquidity_reserve_requirement.product_version,
+                lineage=liquidity_reserve_requirement.lineage,
+                data_quality_status=liquidity_reserve_requirement.data_quality_status,
+                latest_evidence_timestamp=liquidity_reserve_requirement.latest_evidence_timestamp,
+            )
+        )
+    if planned_withdrawal_schedule is not None:
+        source_lineage.append(
+            _lineage_from_core_product(
+                product_name=planned_withdrawal_schedule.product_name,
+                product_version=planned_withdrawal_schedule.product_version,
+                lineage=planned_withdrawal_schedule.lineage,
+                data_quality_status=planned_withdrawal_schedule.data_quality_status,
+                latest_evidence_timestamp=planned_withdrawal_schedule.latest_evidence_timestamp,
             )
         )
     if benchmark_assignment is not None:

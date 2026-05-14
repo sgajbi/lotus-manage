@@ -142,6 +142,18 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
                 "DPM_CORE_CASHFLOW_PROJECTION_PATH_TEMPLATE",
                 "/portfolios/{portfolio_id}/cashflow-projection",
             ),
+            client_income_needs_schedule_path_template=os.getenv(
+                "DPM_CORE_INCOME_NEEDS_SCHEDULE_PATH_TEMPLATE",
+                "/integration/portfolios/{portfolio_id}/client-income-needs-schedule",
+            ),
+            liquidity_reserve_requirement_path_template=os.getenv(
+                "DPM_CORE_LIQUIDITY_RESERVE_REQUIREMENT_PATH_TEMPLATE",
+                "/integration/portfolios/{portfolio_id}/liquidity-reserve-requirement",
+            ),
+            planned_withdrawal_schedule_path_template=os.getenv(
+                "DPM_CORE_PLANNED_WITHDRAWAL_SCHEDULE_PATH_TEMPLATE",
+                "/integration/portfolios/{portfolio_id}/planned-withdrawal-schedule",
+            ),
             transaction_cost_lookback_days=env_int("DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS", 400),
             timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
             max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),

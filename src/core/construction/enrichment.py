@@ -148,6 +148,15 @@ def _liquidity_context_reason_codes(context: AuthoritativeLiquidityContext) -> l
     if context.cashflow_projection is not None:
         reason_codes.extend(context.cashflow_projection.reason_codes)
         reason_codes.append("CASHFLOW_PROJECTION_CONTEXT_PRESENT")
+    if context.client_income_needs_schedule is not None:
+        reason_codes.extend(context.client_income_needs_schedule.reason_codes)
+        reason_codes.append("CLIENT_INCOME_NEEDS_CONTEXT_PRESENT")
+    if context.liquidity_reserve_requirement is not None:
+        reason_codes.extend(context.liquidity_reserve_requirement.reason_codes)
+        reason_codes.append("LIQUIDITY_RESERVE_CONTEXT_PRESENT")
+    if context.planned_withdrawal_schedule is not None:
+        reason_codes.extend(context.planned_withdrawal_schedule.reason_codes)
+        reason_codes.append("PLANNED_WITHDRAWAL_CONTEXT_PRESENT")
     return reason_codes
 
 

@@ -33,7 +33,9 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityBookScopeEvidence,
 )
+from src.core.portfolio_memory import service as portfolio_memory_service
 from src.core.portfolio_memory.service import build_portfolio_memory
+from src.core.proof_packs import DpmProofPackEvidenceRef
 from src.core.waves.models import (
     DpmRebalanceWave,
     DpmRebalanceWaveEvent,
@@ -458,4 +460,93 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert (
         "PM-quality projection boundaries"
         in memory_schema["properties"]["source_event_family_posture"]["description"]
+    )
+
+
+def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
+    wave = _wave()
+    outcome_ref = DpmOutcomeSourceRef(
+        source_system="lotus-manage",
+        source_type="DpmPostTradeOutcomeReview",
+        source_id="dor_memory_helper",
+        source_version="v1",
+        content_hash="sha256:outcome-ref",
+    )
+    proof_pack_ref = DpmProofPackEvidenceRef(
+        ref_type="AI_EVIDENCE_INPUT",
+        ref_id="ai-evidence:memory-helper",
+        source_system="lotus-manage",
+        content_hash="sha256:ai-evidence",
+    )
+    assert (
+        portfolio_memory_service._from_proof_pack_evidence_ref(proof_pack_ref).source_id
+        == proof_pack_ref.ref_id
+    )
+    assert (
+        portfolio_memory_service._from_source_product_lineage(
+            _mandate_twin().source_lineage[0]
+        ).source_type
+        == "CoreMandateBinding"
+    )
+    assert (
+        portfolio_memory_service._from_wave_source_ref(wave.items[0].source_refs[0]).source_version
+        == "v1"
+    )
+    assert (
+        portfolio_memory_service._from_outcome_source_ref(outcome_ref).source_id
+        == outcome_ref.source_id
+    )
+    assert portfolio_memory_service._memory_state([]) == "EMPTY"
+    assert portfolio_memory_service._state("FAILED") == "BLOCKED"
+    assert portfolio_memory_service._state("PARTIAL") == "DEGRADED"
+    assert portfolio_memory_service._state("CREATED") == "PENDING_REVIEW"
+    assert (
+        portfolio_memory_service._score_run_includes_portfolio(
+            score_run=_pm_quality_score_run().model_copy(update={"book_scope_evidence": None}),
+            portfolio_id=PORTFOLIO_ID,
+        )
+        is False
+    )
+    assert (
+        portfolio_memory_service._score_run_includes_portfolio(
+            score_run=_pm_quality_score_run().model_copy(
+                update={
+                    "book_scope_evidence": _pm_quality_score_run().book_scope_evidence.model_copy(
+                        update={
+                            "member_portfolio_ids": [],
+                            "source_refs": [
+                                DpmOutcomeSourceRef(
+                                    source_system="lotus-core",
+                                    source_type="PORTFOLIO_MANAGER_BOOK_MEMBER",
+                                    source_id=f"pm-book:{PORTFOLIO_ID}",
+                                )
+                            ],
+                        }
+                    )
+                }
+            ),
+            portfolio_id=PORTFOLIO_ID,
+        )
+        is True
+    )
+    assert (
+        portfolio_memory_service._monitoring_exception_state(
+            _monitoring_exception().model_copy(update={"state": "RESOLVED"})
+        )
+        == "READY"
+    )
+    assert (
+        portfolio_memory_service._monitoring_exception_state(
+            _monitoring_exception().model_copy(update={"severity": MonitoringSeverity.CRITICAL})
+        )
+        == "BLOCKED"
+    )
+    assert portfolio_memory_service._monitoring_exception_state(_monitoring_exception()) == (
+        "DEGRADED"
+    )
+    assert (
+        portfolio_memory_service._monitoring_exception_state(
+            _monitoring_exception().model_copy(update={"severity": MonitoringSeverity.INFO})
+        )
+        == "PENDING_REVIEW"
     )
