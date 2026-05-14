@@ -1,19 +1,23 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field, model_validator
 
+from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.dependencies import (
     get_outcome_review_repository,
     get_pm_quality_policy_repository,
     get_pm_quality_score_run_repository,
 )
+from src.core.outcomes import DpmOutcomeSourceRef
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
+    DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
@@ -22,6 +26,36 @@ from src.core.pm_quality import (
     DpmPmQualityValidationError,
     build_pm_operating_quality_score_run,
 )
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+
+
+class DpmPmOperatingQualityPmBookScopeRequest(BaseModel):
+    tenant_id: str | None = Field(
+        default=None,
+        description="Optional tenant selector forwarded to lotus-core PM-book membership.",
+    )
+    booking_center_code: str | None = Field(
+        default=None,
+        description="Optional booking-center selector forwarded to lotus-core PM-book membership.",
+        examples=["Singapore"],
+    )
+    portfolio_types: list[str] = Field(
+        default_factory=lambda: ["DPM"],
+        description="Portfolio types eligible for the source-owned PM-book membership scope.",
+        examples=[["DPM", "DISCRETIONARY"]],
+    )
+    include_inactive: bool = Field(
+        default=False,
+        description="Whether inactive PM-book members may be included. Defaults to active only.",
+    )
+
+    @model_validator(mode="after")
+    def validate_scope(self) -> "DpmPmOperatingQualityPmBookScopeRequest":
+        portfolio_types = [value.strip().upper() for value in self.portfolio_types if value.strip()]
+        if not portfolio_types:
+            raise ValueError("pm_book_scope.portfolio_types must contain at least one value")
+        self.portfolio_types = portfolio_types
+        return self
 
 
 class DpmPmOperatingQualityScorePreviewRequest(BaseModel):
@@ -33,6 +67,14 @@ class DpmPmOperatingQualityScorePreviewRequest(BaseModel):
         default=None,
         description="PM book identifier when the score run covers a defined book.",
         examples=["sg_dpm_balanced_book"],
+    )
+    pm_book_scope: DpmPmOperatingQualityPmBookScopeRequest | None = Field(
+        default=None,
+        description=(
+            "Optional source-owned PM-book membership scope to materialize from lotus-core. "
+            "When supplied, the score run fails closed unless PortfolioManagerBookMembership:v1 "
+            "is READY and non-empty."
+        ),
     )
     as_of_date: str = Field(description="Score-run business as-of date.", examples=["2026-05-12"])
     policy: DpmPmOperatingQualityPolicy | None = Field(
@@ -118,6 +160,8 @@ router = APIRouter(
         "bank has enabled a governed scoring policy.\n"
         "How: Supply the policy, source-backed evidence, and optional outcome-review ids. Disabled "
         "policies return a DISABLED run with no score; missing required evidence blocks the run. "
+        "Optionally supply pm_book_scope to attach source-owned lotus-core PM-book membership "
+        "evidence; unavailable, incomplete, degraded, or empty membership fails closed. "
         "The endpoint does not create HR, compensation, conduct-enforcement, autonomous ranking, "
         "AI-generated, risk, performance, execution, or tax methodology."
     ),
@@ -152,7 +196,7 @@ def preview_pm_operating_quality_score_run_endpoint(
         "score-run lifecycle evidence.\n"
         "How: Supply the same evidence contract as preview. The persisted run is content-addressed "
         "and can be retrieved or listed for governance review. This endpoint does not administer "
-        "policies, materialize PM books, create HR or compensation decisions, perform conduct "
+        "policies, create HR or compensation decisions, perform conduct "
         "enforcement, autonomously rank PMs, or calculate source-owned risk/performance/tax facts."
     ),
 )
@@ -354,6 +398,15 @@ def _build_score_run(
     policy_repository: DpmPmQualityPolicyRepository,
 ) -> DpmPmOperatingQualityScoreRun:
     policy = _resolve_policy(request=request, repository=policy_repository)
+    evidence_items = list(request.evidence_items)
+    book_scope_evidence = None
+    if request.pm_book_scope is not None:
+        book_scope_evidence = _resolve_pm_book_scope_evidence(
+            request=request,
+            scope=request.pm_book_scope,
+            correlation_id=x_correlation_id or request.actor_id,
+        )
+        evidence_items.append(_book_scope_signal(book_scope_evidence))
     outcome_reviews = []
     for outcome_review_id in request.outcome_review_ids:
         review = outcome_repository.get_outcome_review(outcome_review_id=outcome_review_id)
@@ -369,8 +422,9 @@ def _build_score_run(
             book_id=request.book_id,
             as_of_date=request.as_of_date,
             policy=policy,
-            evidence_items=request.evidence_items,
+            evidence_items=evidence_items,
             outcome_reviews=outcome_reviews,
+            book_scope_evidence=book_scope_evidence,
             generated_by=request.actor_id,
             correlation_id=x_correlation_id or request.actor_id,
         )
@@ -380,6 +434,107 @@ def _build_score_run(
             detail=str(exc),
         ) from exc
     return score_run
+
+
+def _resolve_pm_book_scope_evidence(
+    *,
+    request: DpmPmOperatingQualityScorePreviewRequest,
+    scope: DpmPmOperatingQualityPmBookScopeRequest,
+    correlation_id: str,
+) -> DpmPmQualityBookScopeEvidence:
+    try:
+        as_of_date = date.fromisoformat(request.as_of_date)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="INVALID_AS_OF_DATE",
+        ) from exc
+    try:
+        membership = build_core_resolver_client().resolve_portfolio_manager_book_membership(
+            portfolio_manager_id=request.pm_id,
+            as_of_date=as_of_date,
+            tenant_id=scope.tenant_id,
+            booking_center_code=scope.booking_center_code,
+            portfolio_types=scope.portfolio_types,
+            include_inactive=scope.include_inactive,
+            correlation_id=correlation_id,
+        )
+    except DpmCoreResolverUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
+        ) from exc
+    except DpmCoreResolverError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
+        ) from exc
+
+    if membership.supportability.state != "READY":
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": membership.supportability.reason,
+                "message": "PM-book membership is not source-ready for PM operating quality.",
+            },
+        )
+    if not membership.members:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+                "message": "PM-book membership returned no portfolios for PM operating quality.",
+            },
+        )
+
+    source_id = (
+        membership.snapshot_id
+        or membership.source_batch_fingerprint
+        or f"pm_book:{membership.portfolio_manager_id}:{membership.as_of_date.isoformat()}"
+    )
+    book_ref = DpmOutcomeSourceRef(
+        source_system="lotus-core",
+        source_type="PortfolioManagerBookMembership",
+        source_id=source_id,
+        source_version=membership.product_version,
+        content_hash=membership.source_batch_fingerprint,
+    )
+    member_refs = [
+        DpmOutcomeSourceRef(
+            source_system="lotus-core",
+            source_type="PORTFOLIO_MANAGER_BOOK_MEMBER",
+            source_id=member.source_record_id or member.portfolio_id,
+            source_version=membership.as_of_date.isoformat(),
+        )
+        for member in membership.members[:100]
+    ]
+    return DpmPmQualityBookScopeEvidence(
+        source_id=source_id,
+        product_version=membership.product_version,
+        supportability_state=membership.supportability.state,
+        returned_portfolio_count=len(membership.members),
+        filters_applied=membership.supportability.filters_applied,
+        reason_codes=[
+            "PM_BOOK_SCOPE_MATERIALIZED",
+            membership.supportability.reason,
+        ],
+        source_refs=[book_ref, *member_refs],
+    )
+
+
+def _book_scope_signal(
+    book_scope_evidence: DpmPmQualityBookScopeEvidence,
+) -> DpmPmQualityEvidenceItem:
+    return DpmPmQualityEvidenceItem(
+        indicator="SOURCE_QUALITY",
+        evidence_state="READY",
+        score=None,
+        source_system=book_scope_evidence.source_system,
+        source_type=book_scope_evidence.source_type,
+        source_id=book_scope_evidence.source_id,
+        reason_codes=book_scope_evidence.reason_codes,
+        source_refs=book_scope_evidence.source_refs,
+    )
 
 
 def _resolve_policy(

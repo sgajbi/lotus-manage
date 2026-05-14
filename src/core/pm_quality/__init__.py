@@ -3,6 +3,7 @@
 from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
+    DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityIndicatorResult,
     DpmPmQualityWeight,
@@ -25,6 +26,7 @@ __all__ = [
     "DpmPmOperatingQualityPolicy",
     "DpmPmOperatingQualityScoreRun",
     "DpmPmQualityEvidenceItem",
+    "DpmPmQualityBookScopeEvidence",
     "DpmPmQualityIndicatorResult",
     "DpmPmQualityPolicyConflictError",
     "DpmPmQualityPolicyRepository",

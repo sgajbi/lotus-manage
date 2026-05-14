@@ -14,6 +14,7 @@ from src.core.outcomes import DpmOutcomeSourceRef, DpmPostTradeOutcomeReview
 from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
+    DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityIndicatorResult,
     DpmPmQualityWeight,
@@ -42,6 +43,7 @@ def build_pm_operating_quality_score_run(
     policy: DpmPmOperatingQualityPolicy,
     evidence_items: list[DpmPmQualityEvidenceItem],
     outcome_reviews: list[DpmPostTradeOutcomeReview],
+    book_scope_evidence: DpmPmQualityBookScopeEvidence | None = None,
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
@@ -57,6 +59,7 @@ def build_pm_operating_quality_score_run(
             as_of_date=as_of_date,
             policy=policy,
             generated_at=generated_at,
+            book_scope_evidence=book_scope_evidence,
             generated_by=generated_by,
             correlation_id=correlation_id,
         )
@@ -86,6 +89,7 @@ def build_pm_operating_quality_score_run(
         state=state,
         score=score,
         indicator_results=results,
+        book_scope_evidence=book_scope_evidence,
         reason_codes=reason_codes,
         generated_at=generated_at,
         generated_by=generated_by,
@@ -100,6 +104,7 @@ def _disabled_score_run(
     as_of_date: str,
     policy: DpmPmOperatingQualityPolicy,
     generated_at: datetime,
+    book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
@@ -111,6 +116,7 @@ def _disabled_score_run(
         state="DISABLED",
         score=None,
         indicator_results=[],
+        book_scope_evidence=book_scope_evidence,
         reason_codes=["PM_QUALITY_POLICY_DISABLED"],
         generated_at=generated_at,
         generated_by=generated_by,
@@ -283,12 +289,16 @@ def _score_run(
     state: PmQualityState,
     score: Decimal | None,
     indicator_results: list[DpmPmQualityIndicatorResult],
+    book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
     reason_codes: list[str],
     generated_at: datetime,
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
-    source_refs = _dedupe_refs([ref for result in indicator_results for ref in result.source_refs])
+    scope_refs = book_scope_evidence.source_refs if book_scope_evidence is not None else []
+    source_refs = _dedupe_refs(
+        [ref for result in indicator_results for ref in result.source_refs] + scope_refs
+    )
     hash_payload = {
         "pm_id": pm_id,
         "book_id": book_id,
@@ -297,6 +307,9 @@ def _score_run(
         "state": state,
         "score": str(score) if score is not None else None,
         "indicator_results": [result.model_dump(mode="json") for result in indicator_results],
+        "book_scope_evidence": (
+            book_scope_evidence.model_dump(mode="json") if book_scope_evidence is not None else None
+        ),
         "reason_codes": reason_codes,
         "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
     }
@@ -311,6 +324,7 @@ def _score_run(
         state=state,
         score=score,
         indicator_results=indicator_results,
+        book_scope_evidence=book_scope_evidence,
         reason_codes=reason_codes,
         source_refs=source_refs,
         content_hash=content_hash,

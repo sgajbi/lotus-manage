@@ -159,6 +159,38 @@ class DpmPmQualityIndicatorResult(BaseModel):
     source_refs: list[DpmOutcomeSourceRef] = Field(description="Source refs used by the indicator.")
 
 
+class DpmPmQualityBookScopeEvidence(BaseModel):
+    """Source-owned PM-book scope evidence attached to a score run."""
+
+    source_system: Literal["lotus-core"] = Field(
+        default="lotus-core",
+        description="System that owns PM-book membership source truth.",
+    )
+    source_type: Literal["PortfolioManagerBookMembership"] = Field(
+        default="PortfolioManagerBookMembership",
+        description="Source data product used to materialize the PM book.",
+    )
+    source_id: str = Field(description="Core PM-book membership snapshot or batch identifier.")
+    product_version: str = Field(description="Core source data product version.")
+    supportability_state: str = Field(description="Core supportability state for the book scope.")
+    returned_portfolio_count: int = Field(
+        ge=1,
+        description="Number of portfolios returned by the source-owned PM-book membership product.",
+    )
+    filters_applied: dict[str, object] = Field(
+        default_factory=dict,
+        description="Source-applied filters returned by lotus-core for replay and audit.",
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Bounded reason codes explaining the book-scope evidence.",
+    )
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Source references supporting the PM-book scope.",
+    )
+
+
 class DpmPmOperatingQualityScoreRun(BaseModel):
     """Deterministic, explainable PM operating quality score run."""
 
@@ -177,6 +209,13 @@ class DpmPmOperatingQualityScoreRun(BaseModel):
     score: Decimal | None = Field(description="Overall score, null when scoring is disabled.")
     indicator_results: list[DpmPmQualityIndicatorResult] = Field(
         description="Decomposed indicator results."
+    )
+    book_scope_evidence: DpmPmQualityBookScopeEvidence | None = Field(
+        default=None,
+        description=(
+            "Optional source-owned PM-book membership evidence used to materialize the score-run "
+            "scope. Null means the caller supplied scope without Core PM-book materialization."
+        ),
     )
     reason_codes: list[str] = Field(description="Bounded score-run reason codes.")
     source_refs: list[DpmOutcomeSourceRef] = Field(description="Source refs used by the run.")
