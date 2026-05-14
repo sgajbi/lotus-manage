@@ -20,7 +20,8 @@ Current declarations:
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
    implemented rebalance supportability, artifact, and workflow route families, and
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
-   `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios,
+   `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
+   with optional approval/expiry/actor-entitlement governance evidence,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
    quality policy administration, preview, and create/read/list score-run lifecycle routes.
 

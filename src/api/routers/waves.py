@@ -197,6 +197,50 @@ class DpmWavePortfolioInput(BaseModel):
     )
 
 
+class DpmBulkReviewCampaignGovernanceInput(BaseModel):
+    approval_ref: str | None = Field(
+        default=None,
+        description=(
+            "Optional bank approval reference for this bulk-review campaign. When any approval "
+            "field is supplied, all approval fields are required."
+        ),
+        examples=["BRC-APPROVAL-2026-05"],
+    )
+    approved_by: str | None = Field(
+        default=None,
+        description="Optional approving actor or committee identifier.",
+        examples=["cio_ops_committee"],
+    )
+    approved_at: str | None = Field(
+        default=None,
+        description="Optional approval timestamp or business date from the bank control record.",
+        examples=["2026-05-14T08:30:00+08:00"],
+    )
+    expires_on: str | None = Field(
+        default=None,
+        description=(
+            "Optional campaign expiry date. Expired campaigns fail closed for preview/create."
+        ),
+        examples=["2026-06-30"],
+    )
+    entitled_actor_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Optional actor allow-list for this campaign. When supplied, actor_id must be listed."
+        ),
+        examples=[["pm_001", "ops"]],
+    )
+    access_purpose: str = Field(
+        default="DPM_BULK_REVIEW_CAMPAIGN",
+        description="Bank access purpose preserved in campaign membership diagnostics.",
+        examples=["DPM_BULK_REVIEW_CAMPAIGN"],
+    )
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Optional source refs for approval, entitlement, or campaign-control evidence.",
+    )
+
+
 class DpmWavePreviewRequest(BaseModel):
     trigger_type: Literal[
         "EXPLICIT_PORTFOLIO_LIST",
@@ -278,6 +322,14 @@ class DpmWavePreviewRequest(BaseModel):
         default_factory=lambda: ["DISCRETIONARY"],
         description="PM-book portfolio types eligible for automatic wave discovery.",
         examples=[["DISCRETIONARY"]],
+    )
+    campaign_governance: DpmBulkReviewCampaignGovernanceInput | None = Field(
+        default=None,
+        description=(
+            "Optional Manage-owned governance evidence for `BULK_REVIEW_CAMPAIGN`, covering "
+            "approval reference, expiry, actor entitlement, access purpose, and source refs. "
+            "Manage validates this envelope but does not infer source-owned cohort facts."
+        ),
     )
 
 
@@ -959,6 +1011,10 @@ def _resolve_bulk_review_campaign_portfolios(
             "INVALID_AS_OF_DATE",
             "as_of_date must be an ISO date.",
         ) from exc
+    governance_diagnostics, governance_refs = _resolve_bulk_review_campaign_governance(
+        request=request,
+        campaign_as_of_date=campaign_as_of_date,
+    )
     eligible_portfolio_types = {
         value.strip().upper() for value in request.portfolio_types if value.strip()
     }
@@ -1016,6 +1072,7 @@ def _resolve_bulk_review_campaign_portfolios(
             "mandate_id": candidate.mandate_id,
             "source_refs": [
                 membership_ref,
+                *governance_refs,
                 {
                     "source_system": "lotus-manage",
                     "source_type": "BULK_REVIEW_CAMPAIGN_MEMBER",
@@ -1037,10 +1094,112 @@ def _resolve_bulk_review_campaign_portfolios(
                 "eligible_portfolio_types": sorted(eligible_portfolio_types),
                 "excluded_candidate_count": excluded_count,
                 "membership_supportability_state": "READY",
+                **governance_diagnostics,
             },
         }
         for candidate in included_candidates
     ]
+
+
+def _resolve_bulk_review_campaign_governance(
+    *,
+    request: DpmWavePreviewRequest,
+    campaign_as_of_date: date,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    governance = request.campaign_governance
+    if governance is None:
+        return (
+            {
+                "campaign_governance_status": "NOT_SUPPLIED",
+                "campaign_access_purpose": None,
+                "campaign_expiry_state": "NOT_SUPPLIED",
+                "campaign_actor_entitlement_state": "NOT_SUPPLIED",
+            },
+            [],
+        )
+
+    approval_fields = [governance.approval_ref, governance.approved_by, governance.approved_at]
+    supplied_approval_fields = [value for value in approval_fields if value]
+    if supplied_approval_fields and len(supplied_approval_fields) != len(approval_fields):
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE",
+            "Bulk-review campaign approval evidence requires approval_ref, approved_by, and approved_at.",
+        )
+
+    expiry_state = "NOT_SUPPLIED"
+    if governance.expires_on:
+        try:
+            expires_on = date.fromisoformat(governance.expires_on)
+        except ValueError as exc:
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
+                "campaign_governance.expires_on must be an ISO date.",
+            ) from exc
+        if expires_on < campaign_as_of_date:
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_EXPIRED",
+                "Bulk-review campaign governance is expired for the requested as_of_date.",
+            )
+        expiry_state = "ACTIVE"
+
+    entitled_actor_ids = {actor.strip() for actor in governance.entitled_actor_ids if actor.strip()}
+    actor_entitlement_state = "NOT_SUPPLIED"
+    if entitled_actor_ids:
+        actor_entitlement_state = "AUTHORIZED"
+        if request.actor_id not in entitled_actor_ids:
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED",
+                "actor_id is not entitled for this bulk-review campaign.",
+            )
+
+    governance_hash = _campaign_governance_hash(
+        trigger_id=request.trigger_id,
+        actor_id=request.actor_id,
+        governance=governance.model_dump(mode="json"),
+    )
+    governance_refs = [
+        {
+            "source_system": "lotus-manage",
+            "source_type": "BulkReviewCampaignGovernance",
+            "source_id": f"campaign-governance:{request.trigger_id}",
+            "source_version": governance.approved_at or campaign_as_of_date.isoformat(),
+            "supportability_state": "READY",
+            "content_hash": governance_hash,
+        },
+        *[ref.model_dump(mode="json") for ref in governance.source_refs],
+    ]
+    return (
+        {
+            "campaign_governance_status": "APPROVED"
+            if len(supplied_approval_fields) == len(approval_fields)
+            else "NOT_SUPPLIED",
+            "campaign_approval_ref": governance.approval_ref,
+            "campaign_approved_by": governance.approved_by,
+            "campaign_approved_at": governance.approved_at,
+            "campaign_access_purpose": governance.access_purpose,
+            "campaign_expiry_state": expiry_state,
+            "campaign_expires_on": governance.expires_on,
+            "campaign_actor_entitlement_state": actor_entitlement_state,
+        },
+        governance_refs,
+    )
+
+
+def _campaign_governance_hash(
+    *,
+    trigger_id: str,
+    actor_id: str,
+    governance: dict[str, object],
+) -> str:
+    payload = {
+        "product_name": "BulkReviewCampaignGovernance",
+        "product_version": "v1",
+        "trigger_id": trigger_id,
+        "actor_id": actor_id,
+        "governance": governance,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
 
 
 def _campaign_membership_hash(

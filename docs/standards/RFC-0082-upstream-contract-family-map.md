@@ -66,7 +66,7 @@ composition.
 | run supportability | `/api/v1/rebalance/runs/*`, `/api/v1/rebalance/supportability/summary` | `lotus-manage` | owns run lookup, lineage, idempotency mapping, support bundles, and deterministic artifacts |
 | policy-pack supportability | `/api/v1/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
 | integration capabilities | `/api/v1/integration/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
-| bulk-review campaign membership | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves` with `trigger_type=BULK_REVIEW_CAMPAIGN` | `lotus-manage` | owns the DPM operating campaign membership envelope, deterministic membership refs, and wave persistence; does not own underlying source facts, campaign approval workflow, expiry governance, entitlement filtering, or OMS execution |
+| bulk-review campaign membership | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves` with `trigger_type=BULK_REVIEW_CAMPAIGN` | `lotus-manage` | owns the DPM operating campaign membership envelope, deterministic membership refs, optional approval/expiry/actor-entitlement governance evidence, and wave persistence; does not own underlying source facts, persisted campaign definitions, global campaign discovery, downstream campaign UI, or OMS execution |
 
 ## Split-Boundary Posture
 

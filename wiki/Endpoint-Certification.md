@@ -1638,7 +1638,7 @@ Functional coverage:
 - bounded Manage-owned bulk-review campaign membership through
   `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios, source-owned
   `portfolio_type`, eligible DPM portfolio-type filters, deterministic membership source refs,
-  and fail-closed validation,
+  optional approval/expiry/actor-entitlement governance evidence, and fail-closed validation,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

@@ -19,7 +19,8 @@
 
 - Product ID: `lotus-manage:BulkReviewCampaignMembership:v1`
 - Product role: governed Manage-owned campaign membership evidence for bulk-review rebalance
-  waves.
+  waves, with optional approval, expiry, access-purpose, source-ref, and actor-entitlement
+  governance evidence preserved in the membership envelope.
 - Implemented route families:
   - `/api/v1/rebalance/waves/preview`
   - `/api/v1/rebalance/waves`
