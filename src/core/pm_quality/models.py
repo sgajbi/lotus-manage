@@ -54,6 +54,36 @@ class DpmPmQualityWeight(BaseModel):
     )
 
 
+class DpmPmQualityGovernanceApproval(BaseModel):
+    """Bank approval and fairness-review evidence for an enabled PM quality policy."""
+
+    approval_ref: str = Field(
+        description="Bank approval reference for this PM operating quality policy.",
+        examples=["PMQ-APPROVAL-2026-05"],
+    )
+    approved_by: str = Field(description="Approver or committee identifier.")
+    approved_at: str = Field(description="UTC timestamp or bank approval timestamp.")
+    fairness_review_ref: str = Field(
+        description="Reference for the bank fairness/access governance review.",
+        examples=["FAIRNESS-PMQ-2026-05"],
+    )
+    fairness_reviewed_by: str = Field(description="Fairness reviewer or committee identifier.")
+    fairness_reviewed_at: str = Field(description="Fairness review timestamp.")
+    expires_on: str | None = Field(
+        default=None,
+        description="Optional ISO date after which this policy may no longer score runs.",
+        examples=["2026-06-30"],
+    )
+    entitled_actor_ids: list[str] = Field(
+        default_factory=list,
+        description="Optional actor allow-list. When supplied, generated_by must be listed.",
+    )
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Approval, entitlement, or fairness-review source refs.",
+    )
+
+
 class DpmPmOperatingQualityPolicy(BaseModel):
     """Bank-owned PM operating quality policy supplied to a score run."""
 
@@ -98,6 +128,13 @@ class DpmPmOperatingQualityPolicy(BaseModel):
             "decisioning are rejected by the score engine."
         ),
     )
+    governance_approval: DpmPmQualityGovernanceApproval | None = Field(
+        default=None,
+        description=(
+            "Required bank approval and fairness-review evidence when the policy is enabled. "
+            "Disabled policies may omit it."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_policy(self) -> "DpmPmOperatingQualityPolicy":
@@ -105,6 +142,8 @@ class DpmPmOperatingQualityPolicy(BaseModel):
             raise ValueError("ready_threshold must be greater than or equal to watch_threshold")
         if self.enabled and not self.weights:
             raise ValueError("enabled PM quality policies require at least one configured weight")
+        if self.enabled and self.governance_approval is None:
+            raise ValueError("PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED")
         indicators = [weight.indicator for weight in self.weights]
         if len(set(indicators)) != len(indicators):
             raise ValueError("PM quality policy indicators must be unique")
@@ -191,6 +230,25 @@ class DpmPmQualityBookScopeEvidence(BaseModel):
     )
 
 
+class DpmPmQualityGovernanceEvidence(BaseModel):
+    """Governance evidence applied to a score run."""
+
+    approval_ref: str = Field(description="Bank approval reference used by this score run.")
+    approved_by: str = Field(description="Approver or committee identifier.")
+    approved_at: str = Field(description="Approval timestamp.")
+    fairness_review_ref: str = Field(description="Fairness/access governance review reference.")
+    fairness_reviewed_by: str = Field(description="Fairness reviewer or committee identifier.")
+    fairness_reviewed_at: str = Field(description="Fairness review timestamp.")
+    expires_on: str | None = Field(description="Optional policy expiry date.")
+    actor_entitlement_state: Literal["AUTHORIZED", "NOT_SUPPLIED"] = Field(
+        description="Actor entitlement posture applied to this run."
+    )
+    reason_codes: list[str] = Field(description="Bounded governance reason codes.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Approval, entitlement, or fairness-review source refs."
+    )
+
+
 class DpmPmOperatingQualityScoreRun(BaseModel):
     """Deterministic, explainable PM operating quality score run."""
 
@@ -216,6 +274,10 @@ class DpmPmOperatingQualityScoreRun(BaseModel):
             "Optional source-owned PM-book membership evidence used to materialize the score-run "
             "scope. Null means the caller supplied scope without Core PM-book materialization."
         ),
+    )
+    governance_evidence: DpmPmQualityGovernanceEvidence | None = Field(
+        default=None,
+        description="Governance approval and fairness-review evidence applied to the score run.",
     )
     reason_codes: list[str] = Field(description="Bounded score-run reason codes.")
     source_refs: list[DpmOutcomeSourceRef] = Field(description="Source refs used by the run.")

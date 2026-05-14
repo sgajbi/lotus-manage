@@ -10,6 +10,7 @@ import pytest
 
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
+    DpmPmQualityGovernanceApproval,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityWeight,
@@ -26,6 +27,19 @@ from src.infrastructure.pm_quality.postgres import (
 )
 
 
+def _governance_approval() -> DpmPmQualityGovernanceApproval:
+    return DpmPmQualityGovernanceApproval(
+        approval_ref="PMQ-APPROVAL-2026-05",
+        approved_by="pm_quality_committee",
+        approved_at="2026-05-10T09:00:00Z",
+        fairness_review_ref="FAIRNESS-PMQ-2026-05",
+        fairness_reviewed_by="model_risk_governance",
+        fairness_reviewed_at="2026-05-10T10:00:00Z",
+        expires_on="2026-06-30",
+        entitled_actor_ids=["ops"],
+    )
+
+
 def _score_run(*, pm_id: str = "pm_001", policy_id: str = "pmq_sg_dpm"):
     policy = DpmPmOperatingQualityPolicy(
         policy_id=policy_id,
@@ -40,6 +54,7 @@ def _score_run(*, pm_id: str = "pm_001", policy_id: str = "pmq_sg_dpm"):
                 minimum_evidence_count=1,
             )
         ],
+        governance_approval=_governance_approval(),
     )
     return build_pm_operating_quality_score_run(
         pm_id=pm_id,
@@ -69,6 +84,7 @@ def _policy(*, policy_id: str = "pmq_sg_dpm", enabled: bool = True):
         ]
         if enabled
         else [],
+        governance_approval=_governance_approval() if enabled else None,
     )
 
 

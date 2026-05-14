@@ -50,10 +50,11 @@ outcome-review surface through Gateway/BFF contracts, report/render/archive mate
 outcome-review reports from bounded input, and `lotus-ai` owns guarded narrative execution from
 bounded evidence input. PM operating quality preview and immutable score-run lifecycle are now
 implemented as a separate Manage-owned, configurable, default-disabled product over source-backed
-evidence. Immutable policy-version administration and optional lotus-core PM-book scope
-materialization are also implemented for that product. Execution/OMS integration, client
-communication, downstream PM quality UI, portfolio-memory score-event projection, advanced fairness
-analytics, and richer source-owner methodology remain outside the supported claim until their
+evidence. Immutable policy-version administration, required bank approval and fairness-review
+evidence for enabled policies, and optional lotus-core PM-book scope materialization are also
+implemented for that product. Execution/OMS integration, client
+communication, downstream PM quality UI, portfolio-memory score-event projection, advanced
+cross-segment fairness analytics, and richer source-owner methodology remain outside the supported claim until their
 owners implement and prove them.
 
 ---
@@ -788,8 +789,8 @@ that has been implemented and proven in the owning repositories. PM operating qu
 administration and score-run lifecycle are supported as a separate Manage-owned product;
 score-run PM-book materialization through lotus-core `PortfolioManagerBookMembership:v1` is
 supported when explicitly requested. Execution/OMS integration, client communication, downstream PM
-quality UI, portfolio-memory score-event projection, advanced fairness analytics, and richer
-source-owner methodology remain outside the support claim.
+quality UI, portfolio-memory score-event projection, advanced cross-segment fairness analytics, and
+richer source-owner methodology remain outside the support claim.
 
 | Feature | Current state | Promotion rule |
 | --- | --- | --- |
@@ -801,7 +802,7 @@ source-owner methodology remain outside the support claim.
 | AI evidence input from outcome review | Supported as bounded evidence contract plus governed narrative path | Manage emits bounded AI evidence input; `lotus-ai` owns guarded workflow-pack narrative execution. No recommendation, PM scoring, or client-contact support is claimed. |
 | Gateway outcome composition | Supported through `lotus-gateway` PR #186/#187/#188/#189 | Gateway composes manage outcome-review truth and report/AI handoff posture without recomputing expected values, realized values, variance, tolerance, lineage, freshness, or review state. |
 | Workbench outcome review UX | Supported through `lotus-workbench` PR #146/#147/#148 | Workbench consumes Gateway/BFF contracts only and renders the first-wave outcome-review, report-request, and AI-narrative request posture with canonical proof. |
-| PM operating quality policy and score-run lifecycle | Supported as separate Manage-owned first-wave product | `PUT /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `GET /policies`, and `GET /policies/{policy_id}/versions/{policy_version}` administer immutable policy versions; `POST /score-runs/preview` emits `PmOperatingQualityScoreRun:v1`; `POST /score-runs`, `GET /score-runs`, and `GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence. Optional `pm_book_scope` materializes source-owned lotus-core `PortfolioManagerBookMembership:v1` scope evidence and fails closed for unavailable, incomplete, degraded, or empty PM-book membership. Scoring is disabled by default, enabled policies fail closed for missing evidence, and HR, compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, and source-owner methodology claims are prohibited. |
+| PM operating quality policy and score-run lifecycle | Supported as separate Manage-owned first-wave product | `PUT /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `GET /policies`, and `GET /policies/{policy_id}/versions/{policy_version}` administer immutable policy versions; `POST /score-runs/preview` emits `PmOperatingQualityScoreRun:v1`; `POST /score-runs`, `GET /score-runs`, and `GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence. Enabled policies require bank approval and fairness-review evidence; score-run preview/create emits `governance_evidence` and fails closed for missing approval, invalid/expired expiry, unauthorized actors, and missing scoring evidence. Optional `pm_book_scope` materializes source-owned lotus-core `PortfolioManagerBookMembership:v1` scope evidence and fails closed for unavailable, incomplete, degraded, or empty PM-book membership. Scoring is disabled by default, and HR, compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, and source-owner methodology claims are prohibited. |
 | External execution integration | Not supported | Requires execution/OMS owner, certified contract, controls, and proof. |
 
 ---
@@ -938,10 +939,11 @@ Remaining outside the support claim:
 
 1. execution/OMS integration and acknowledgements require a future execution owner,
 2. PM operating quality now has a bounded Manage-owned policy administration, score-run preview, and lifecycle product with explicit
-   bank enablement, source-backed evidence, no-use posture for HR/compensation/conduct/autonomous
-   ranking, decomposed reasons, source refs, deterministic hashes, immutable storage, and
+   bank enablement, governance approval, fairness-review evidence, source-backed evidence, no-use
+   posture for HR/compensation/conduct/autonomous ranking, decomposed reasons, source refs,
+   deterministic hashes, immutable storage, and
    read/list retrieval, and optional source-owned lotus-core PM-book scope materialization;
-   downstream UI, portfolio-memory score-event projection, and advanced fairness analytics remain
+   downstream UI, portfolio-memory score-event projection, and advanced cross-segment fairness analytics remain
    future expansion,
 3. client communication execution remains future downstream scope,
 4. automatic source-owner calculation beyond implemented source-emitted measures and
@@ -954,11 +956,11 @@ review authority and the bounded first-wave outcome-review product path. The imp
 path now covers Gateway composition, Workbench outcome-review UX, outcome-review report
 materialization, archive lifecycle, and governed AI narrative request flow while preserving manage
 as the evidence authority. Execution/OMS integration, client communication, downstream PM quality
-UI, portfolio-memory score-event projection, advanced fairness analytics, and richer source-owner
+UI, portfolio-memory score-event projection, advanced cross-segment fairness analytics, and richer source-owner
 methodology remain explicit future scope, not hidden gaps in the supported path. PM operating
 quality first-wave policy administration, preview, score-run lifecycle, and optional source-owned
 PM-book scope materialization are now owned by `lotus-manage` and implementation-backed with strict
-policy, evidence, storage, and non-use boundaries.
+policy, governance, evidence, storage, and non-use boundaries.
 
 ---
 
@@ -976,7 +978,7 @@ truth is not stranded only in the WTBD ledger or wiki.
 | RFC42-WTBD-005 | `lotus-ai` PR #59/#60, `lotus-gateway` PR #189, and `lotus-workbench` PR #148 implement governed outcome-review AI narrative request flow from bounded evidence input. | AI does not approve, score PMs, recommend trades, contact clients, or reconstruct source truth. |
 | RFC42-WTBD-006 | Source-owner methodology enrichment has progressed across risk, performance, and core source products and is consumed by manage adapters where implemented. `lotus-performance` now has merged source-owner methodology and evidence truth for RFC-046 TWR daily calculation evidence, supportability, benchmark FX/calendar posture, stateful MWR, contribution, and attribution source-resolution boundaries through PR #144 (`37e125b6`), PR #145 (`7aa83fe5`), PR #146 (`817c5bbc`), and PR #156 (`bf173b4`). Live audit on 2026-05-10 confirmed current canonical `PB_SG_GLOBAL_BAL_001` performance evidence through `POST /performance/twr`, Gateway performance summary/details, canonical TWR inspection, Workbench live validation, and clean performance/gateway logs. `TransactionLedgerWindow:v1` now restates reporting-currency fields by source-currency basis: book-currency measures use book currency, trade/local measures use trade currency when present, and explicit row-level realized FX P&L local evidence is exposed through `realized_fx_pnl_local_reporting_currency` for reporting surfaces. Canonical front-office seed data also carries USD/SGD and EUR/SGD reporting-currency FX coverage for live proof from `lotus-core` PR #359. `PortfolioCashflowProjection:v1` now emits total, booked, and projected-settlement cashflow measures, and `PortfolioLiquidityLadder:v1` now emits opening cash, fixed horizon bucket, booked/projected/net cashflow, cumulative cash, shortfall, and asset-liquidity-tier exposure evidence from `lotus-core` PR #356 / wiki `28c4ae2`. Client tax ownership is decided for future `lotus-core` `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1`, potentially ingested from external bank/tax systems. Client income-needs and liquidity-reserve ownership is decided for future `lotus-core` `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and optional `PlannedWithdrawalSchedule:v1`. | Aggregated tax/profile-rule implementation, portfolio-level FX attribution beyond source-owned performance attribution, income-needs/liquidity-reserve implementation, predictive execution, and OMS acknowledgements remain source-owner follow-on work. |
 | RFC42-WTBD-007 | External execution/OMS integration remains unsupported. | Requires a future execution/OMS owner, certified controls, acknowledgements, and reconciliation contract. |
-| RFC42-WTBD-008 | `lotus-manage` implements the first bounded PM operating quality policy administration, score-run preview, and lifecycle product at `PUT /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `GET /api/v1/rebalance/pm-operating-quality/policies`, `GET /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`, `POST /api/v1/rebalance/pm-operating-quality/score-runs`, `GET /api/v1/rebalance/pm-operating-quality/score-runs`, and `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`, emitting and persisting `PmOperatingQualityScoreRun:v1` from explicit bank policy, source-owned evidence, optional persisted outcome reviews, and optional lotus-core `PortfolioManagerBookMembership:v1` PM-book scope evidence. | Scoring is disabled by default; enabled policies fail closed for missing evidence and reject prohibited use. PM-book materialization fails closed for unavailable, incomplete, degraded, or empty source membership. Downstream UI, portfolio-memory score-event projection, and advanced fairness analytics remain future expansion. |
+| RFC42-WTBD-008 | `lotus-manage` implements the first bounded PM operating quality policy administration, score-run preview, and lifecycle product at `PUT /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `GET /api/v1/rebalance/pm-operating-quality/policies`, `GET /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`, `POST /api/v1/rebalance/pm-operating-quality/score-runs`, `GET /api/v1/rebalance/pm-operating-quality/score-runs`, and `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`, emitting and persisting `PmOperatingQualityScoreRun:v1` from explicit bank policy, governance approval, fairness-review evidence, source-owned evidence, optional persisted outcome reviews, and optional lotus-core `PortfolioManagerBookMembership:v1` PM-book scope evidence. | Scoring is disabled by default; enabled policies fail closed for missing evidence, missing approval, invalid/expired expiry, or unauthorized actors and reject prohibited use. PM-book materialization fails closed for unavailable, incomplete, degraded, or empty source membership. Downstream UI, portfolio-memory score-event projection, and advanced cross-segment fairness analytics remain future expansion. |
 
 Audit evidence:
 

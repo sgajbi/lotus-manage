@@ -944,6 +944,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "/api/v1/rebalance/pm-operating-quality/score-runs/preview" in rfc
     assert "PortfolioManagerBookMembership:v1" in rfc
     assert "pm_book_scope" in rfc
+    assert "Enabled policies require bank approval and fairness-review evidence" in rfc
+    assert "governance_evidence" in rfc
     assert "External execution integration | Not supported" in rfc
     assert "RFC42-WTBD-001" in rfc
     assert "RFC42-WTBD-008" in rfc
@@ -1235,14 +1237,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, and optional source-owned PM-book materialization are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, and optional source-owned PM-book materialization are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, and optional source-owned PM-book materialization are implemented"
+        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, and actor entitlement checks are implemented"
         in work_to_be_done
     )
     assert "book_scope_evidence" in work_to_be_done
+    assert "governance_evidence" in work_to_be_done
     assert "PmOperatingQualityScoreRun:v1" in work_to_be_done
     assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
     assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done

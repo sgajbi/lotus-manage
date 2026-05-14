@@ -5,6 +5,7 @@ import pytest
 from src.core.outcomes import DpmOutcomeSourceRef
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
+    DpmPmQualityGovernanceApproval,
     DpmPmQualityEvidenceItem,
     DpmPmQualityValidationError,
     DpmPmQualityWeight,
@@ -24,6 +25,27 @@ def _enabled_policy() -> DpmPmOperatingQualityPolicy:
             DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("50")),
             DpmPmQualityWeight(indicator="SOURCE_QUALITY", weight=Decimal("30")),
             DpmPmQualityWeight(indicator="EVIDENCE_COMPLETENESS", weight=Decimal("20")),
+        ],
+        governance_approval=_governance_approval(),
+    )
+
+
+def _governance_approval() -> DpmPmQualityGovernanceApproval:
+    return DpmPmQualityGovernanceApproval(
+        approval_ref="PMQ-APPROVAL-2026-05",
+        approved_by="pm_quality_committee",
+        approved_at="2026-05-10T09:00:00Z",
+        fairness_review_ref="FAIRNESS-PMQ-2026-05",
+        fairness_reviewed_by="model_risk_governance",
+        fairness_reviewed_at="2026-05-10T10:00:00Z",
+        expires_on="2026-06-30",
+        entitled_actor_ids=["ops"],
+        source_refs=[
+            DpmOutcomeSourceRef(
+                source_system="bank-governance",
+                source_type="PM_QUALITY_POLICY_APPROVAL",
+                source_id="PMQ-APPROVAL-2026-05",
+            )
         ],
     )
 
@@ -53,6 +75,7 @@ def test_pm_operating_quality_score_run_is_disabled_by_default() -> None:
     assert score_run.indicator_results == []
     assert score_run.reason_codes == ["PM_QUALITY_POLICY_DISABLED"]
     assert "compensation_decision" in score_run.forbidden_uses
+    assert score_run.governance_evidence is None
 
 
 def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs() -> None:
@@ -91,6 +114,10 @@ def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs()
     assert score_run.product_name == "PmOperatingQualityScoreRun"
     assert score_run.state == "READY"
     assert score_run.score == Decimal("100.00")
+    assert score_run.governance_evidence is not None
+    assert score_run.governance_evidence.approval_ref == "PMQ-APPROVAL-2026-05"
+    assert score_run.governance_evidence.fairness_review_ref == "FAIRNESS-PMQ-2026-05"
+    assert score_run.governance_evidence.actor_entitlement_state == "AUTHORIZED"
     assert score_run.score_run_id.startswith("pmq_")
     assert score_run.content_hash.startswith("sha256:")
     assert [result.indicator for result in score_run.indicator_results] == [
@@ -116,6 +143,7 @@ def test_pm_operating_quality_score_run_blocks_when_required_evidence_is_missing
                 minimum_evidence_count=2,
             )
         ],
+        governance_approval=_governance_approval(),
     )
 
     score_run = build_pm_operating_quality_score_run(
@@ -155,7 +183,18 @@ def test_pm_operating_quality_policy_rejects_prohibited_uses_and_date_mismatch()
             as_of_date="2026-05-12",
             access_purpose="SUPERVISORY_CONTROL_REVIEW",
             weights=[DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("100"))],
+            governance_approval=_governance_approval(),
             allowed_uses=["portfolio_management_review", "compensation"],
+        )
+
+    with pytest.raises(ValueError, match="PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED"):
+        DpmPmOperatingQualityPolicy(
+            policy_id="pmq_missing_governance",
+            policy_version="2026.05",
+            enabled=True,
+            as_of_date="2026-05-12",
+            access_purpose="SUPERVISORY_CONTROL_REVIEW",
+            weights=[DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("100"))],
         )
 
     with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH"):

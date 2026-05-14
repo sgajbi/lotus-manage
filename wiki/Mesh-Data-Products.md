@@ -30,7 +30,8 @@
 - Product role: governed PM operating quality policy administration, score-run preview, and
   immutable persisted lifecycle generated from explicit bank policy, source-backed evidence, and
   optional persisted outcome reviews. Optional `pm_book_scope` materializes source-owned lotus-core
-  `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`.
+  `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`. Enabled policies carry
+  bank approval and fairness-review evidence into score-run `governance_evidence`.
 - Implemented route families:
   - `/api/v1/rebalance/pm-operating-quality/policies`
   - `/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`
@@ -42,6 +43,8 @@
   compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, source-owner risk,
   performance, execution, and tax methodology remain outside the product contract. PM-book scope
   materialization fails closed for unavailable, incomplete, degraded, or empty source membership.
+  Governance approval fails closed for missing approval, invalid or expired expiry, and
+  unauthorized actors.
 
 ## Platform relationship
 
