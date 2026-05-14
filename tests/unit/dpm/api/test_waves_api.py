@@ -1698,6 +1698,18 @@ def test_wave_simulate_selects_alternative_and_links_proof_pack_after_reload() -
     assert simulated_item["state"] == "SIMULATED"
     assert simulated_item["alternative_set_id"].startswith("cas_")
     assert simulated_item["diagnostics"]["alternative_count"] == 3
+    assert simulated_item["diagnostics"]["proposed_changes"] == [
+        {
+            "intent_id": "oi_1",
+            "security_id": "EQ_1",
+            "action": "BUY",
+            "quantity": "20",
+            "estimated_value": "2000.0",
+            "currency": "SGD",
+            "reason": "Align",
+            "reason_code": "DRIFT_REBALANCE",
+        },
+    ]
     assert simulated_replay.json()["idempotent_replay"] is True
 
     assert selected.status_code == 200

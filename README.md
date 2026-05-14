@@ -80,6 +80,9 @@ cash-pressure evidence, currency-overlay, and regime-stress-aware construction t
 `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` when stateful core sourcing
 is enabled: hard client restrictions can block candidate trades, sustainability allocation
 preferences can trigger pending review, and profile source lineage is preserved for proof packs.
+Construction alternatives also carry bounded `proposed_changes` diagnostics from generated
+security trade intents so wave simulation can show PM-reviewable proposed changes without claiming
+order execution, venue routing, execution price, or OMS handoff.
 Security-level sustainability classification evidence remains an explicit pending-review boundary;
 client income-need planning is still deferred until an owning source product exists. Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
@@ -331,6 +334,9 @@ Operationally important truths:
    source-backed scenario context is carried by the chosen construction alternative. Manage records
    scenario pack id, worst-case loss, policy threshold, supportability, lineage, and reason codes;
    it does not generate scenario methodology, contribution rows, or CIO approval evidence locally.
+7. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
+   construction alternatives. These rows are pre-trade review evidence only and are not orders,
+   executions, fills, or OMS instructions.
 
 ## Documentation Map
 

@@ -87,6 +87,46 @@ def test_rebalance_result_wraps_heuristic_as_comparable_alternative() -> None:
         ConstructionTraceTerm.DRIFT,
         ConstructionTraceTerm.TURNOVER,
     }
+    proposed_changes = alternative.diagnostics["proposed_changes"]
+    assert proposed_changes == [
+        {
+            "intent_id": "oi_1",
+            "security_id": "EQ_A",
+            "action": "SELL",
+            "quantity": "5",
+            "estimated_value": "500.0",
+            "currency": "USD",
+            "reason": "Align",
+            "reason_code": "DRIFT_REBALANCE",
+        },
+        {
+            "intent_id": "oi_2",
+            "security_id": "EQ_B",
+            "action": "BUY",
+            "quantity": "5",
+            "estimated_value": "500.0",
+            "currency": "USD",
+            "reason": "Align",
+            "reason_code": "DRIFT_REBALANCE",
+        },
+    ]
+
+
+def test_rebalance_result_proposed_changes_preserve_constraint_labels() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "intents": [
+                result.intents[0].model_copy(update={"constraints_applied": ["MIN_LOT_SIZE"]}),
+                *result.intents[1:],
+            ]
+        }
+    )
+
+    alternative = build_rebalance_result_alternative(result=result)
+
+    proposed_changes = alternative.diagnostics["proposed_changes"]
+    assert proposed_changes[0]["constraints_applied"] == ["MIN_LOT_SIZE"]
 
 
 def test_alternative_set_rolls_up_conservative_status() -> None:
