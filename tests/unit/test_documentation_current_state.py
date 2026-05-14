@@ -253,6 +253,7 @@ def test_rfc0038_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     assert "### 17.5 WTBD-005 Gold-Pass Assessment" in rfc
     assert "### 17.6 WTBD-008 Gold-Pass Assessment" in rfc
     assert "### 17.7 WTBD-006 Gold-Pass Assessment" in rfc
+    assert "`lotus-core` PR #362 implements `ClientIncomeNeedsSchedule:v1`" in rfc
     assert "canonical-front-office-qa-20260509-214551.json" in rfc
     assert "dpm-command-center-seed-20260509-220332.json" in rfc
     assert "supportabilityState=READY" in rfc
@@ -1483,6 +1484,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`PortfolioTaxLotWindow:v1` methodology" in work_to_be_done
     assert "empty full-portfolio" in work_to_be_done
     assert "jurisdiction-specific tax advice" in work_to_be_done
+    assert "`lotus-core` PR #362" in work_to_be_done
+    assert "`c1fb350c`" in work_to_be_done
+    assert "`ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`" in (work_to_be_done)
+    assert "wiki publication (`40a1228`)" in work_to_be_done
     assert "Latest WTBD-006 core portfolio-realized-tax-summary methodology proof" in (
         work_to_be_done
     )
