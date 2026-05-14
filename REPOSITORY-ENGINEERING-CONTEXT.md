@@ -313,7 +313,7 @@ Current repository posture:
     source-supplied exposure weights. `BULK_REVIEW_CAMPAIGN` additionally preserves optional
     Manage-owned approval, expiry, access-purpose, source-ref, and actor-entitlement governance
     evidence without discovering source-owned cohorts. Tactical house-view cohorts, persisted
-    campaign definitions, global campaign discovery, Gateway/Workbench rendering of campaign or
+    global campaign discovery, Gateway/Workbench rendering of campaign or
     wave risk/performance analytics posture, and external OMS execution remain unpromoted until
     owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:

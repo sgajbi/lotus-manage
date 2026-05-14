@@ -112,10 +112,11 @@ candidate portfolios with source-supplied exposure weights. Bounded bulk-review 
 membership is implemented for `BULK_REVIEW_CAMPAIGN` through Manage-owned
 `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios with source-owned
 portfolio type, DPM portfolio-type filtering, deterministic membership refs, optional
-approval/expiry/actor-entitlement governance evidence, and fail-closed validation. Tactical
-house-view cohorts, persisted campaign definitions, global campaign discovery, downstream
-campaign product surfaces, richer owning-service risk/performance aggregate enrichment, and
-external OMS execution remain unpromoted.
+approval/expiry/actor-entitlement governance evidence, immutable
+`BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, and fail-closed
+validation. Tactical house-view cohorts, global campaign discovery, downstream campaign product
+surfaces, richer owning-service risk/performance aggregate enrichment, and external OMS execution
+remain unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
 `dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,

@@ -13,6 +13,15 @@ from src.core.waves.models import (
     WaveState,
     WaveTriggerType,
 )
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionCandidate,
+    DpmBulkReviewCampaignDefinitionGovernance,
+)
+from src.core.waves.campaign_repository import (
+    DpmBulkReviewCampaignDefinitionConflictError,
+    DpmBulkReviewCampaignDefinitionRepository,
+)
 from src.core.waves.handoffs import (
     DpmWaveReportInputBoundaryError,
     DpmWaveReportEvidenceRef,
@@ -40,6 +49,11 @@ __all__ = [
     "DpmRebalanceWave",
     "DpmRebalanceWaveEvent",
     "DpmRebalanceWaveItem",
+    "DpmBulkReviewCampaignDefinition",
+    "DpmBulkReviewCampaignDefinitionCandidate",
+    "DpmBulkReviewCampaignDefinitionConflictError",
+    "DpmBulkReviewCampaignDefinitionGovernance",
+    "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
     "DpmWaveHandoffRef",
     "DpmWaveSourceAnalyticsSummary",

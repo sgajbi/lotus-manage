@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
+    get_campaign_definition_repository,
     get_construction_repository,
     get_mandate_repository,
     get_outcome_review_repository,
@@ -38,7 +39,10 @@ from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
-from src.infrastructure.waves import InMemoryDpmWaveRepository
+from src.infrastructure.waves import (
+    InMemoryDpmBulkReviewCampaignDefinitionRepository,
+    InMemoryDpmWaveRepository,
+)
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityUnavailableError,
@@ -263,6 +267,30 @@ def _bulk_review_campaign_governance() -> dict[str, object]:
     }
 
 
+def _bulk_review_campaign_definition_request() -> dict[str, object]:
+    campaign_request = _bulk_review_campaign_request()
+    return {
+        "display_name": "Apple and Tesla holdings review",
+        "status": "ACTIVE",
+        "as_of_date": campaign_request["as_of_date"],
+        "rationale": campaign_request["rationale"],
+        "eligible_portfolio_types": campaign_request["portfolio_types"],
+        "candidates": campaign_request["portfolios"],
+        "governance": _bulk_review_campaign_governance(),
+        "created_by": "ops",
+        "correlation_id": "corr-campaign-definition-001",
+        "source_refs": [
+            {
+                "source_system": "lotus-manage",
+                "source_type": "BULK_REVIEW_CAMPAIGN_DEFINITION_RECORD",
+                "source_id": "campaign-definition-record-2026-05",
+                "source_version": "1.0.0",
+                "supportability_state": "READY",
+            }
+        ],
+    }
+
+
 def _pm_book_membership_payload(
     *,
     supportability_state: str = "READY",
@@ -478,9 +506,13 @@ def _client(
     outcome_review_repository: InMemoryDpmOutcomeReviewRepository | None = None,
     run_service: DpmRunSupportService | None = None,
     risk_authority_client: object | None = None,
+    campaign_definition_repository: InMemoryDpmBulkReviewCampaignDefinitionRepository | None = None,
 ) -> TestClient:
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: (
+        campaign_definition_repository or InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    )
     app.dependency_overrides[get_proof_pack_repository] = lambda: (
         proof_pack_repository or InMemoryDpmProofPackRepository()
     )
@@ -1136,6 +1168,83 @@ def test_bulk_review_campaign_preview_preserves_governance_evidence() -> None:
     assert item["diagnostics"]["campaign_access_purpose"] == "SUPERVISORY_BULK_REVIEW"
     assert item["diagnostics"]["campaign_expiry_state"] == "ACTIVE"
     assert item["diagnostics"]["campaign_actor_entitlement_state"] == "AUTHORIZED"
+
+
+def test_bulk_review_campaign_definition_can_feed_preview_without_inline_candidates() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        mandate_repository,
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        put_response = client.put(
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05",
+            json=_bulk_review_campaign_definition_request(),
+        )
+        preview_request = {
+            "trigger_type": "BULK_REVIEW_CAMPAIGN",
+            "trigger_id": "ignored-request-trigger",
+            "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+            "campaign_definition_version": "2026.05",
+            "rationale": "Use persisted source-backed campaign definition.",
+            "as_of_date": "2026-05-10",
+            "actor_id": "pm_001",
+        }
+        preview_response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=preview_request,
+            headers={"X-Correlation-Id": "corr-bulk-review-definition-preview"},
+        )
+
+    assert put_response.status_code == 200
+    definition = put_response.json()
+    assert definition["product_name"] == "BulkReviewCampaignDefinition"
+    assert definition["content_hash"].startswith("sha256:")
+    assert preview_response.status_code == 200
+    item = preview_response.json()["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "BulkReviewCampaignDefinition",
+        "BulkReviewCampaignMembership",
+        "BulkReviewCampaignGovernance",
+    }
+    assert item["diagnostics"]["campaign_governance_status"] == "APPROVED"
+
+
+def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        first = client.put(route, json=_bulk_review_campaign_definition_request())
+        second_payload = {
+            **_bulk_review_campaign_definition_request(),
+            "display_name": "Changed campaign name",
+        }
+        conflict = client.put(route, json=second_payload)
+        listed = client.get("/api/v1/rebalance/waves/campaign-definitions")
+        fetched = client.get(route)
+
+    assert first.status_code == 200
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["code"] == (
+        "BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT"
+    )
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+    assert fetched.status_code == 200
+    assert fetched.json()["campaign_version"] == "2026.05"
 
 
 def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:

@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from src.api.observability import record_wave_supportability
 from src.api.dependencies import (
+    get_campaign_definition_repository,
     get_construction_repository,
     get_mandate_repository,
     get_outcome_review_repository,
@@ -31,10 +32,17 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
+    DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionConflictError,
+    DpmBulkReviewCampaignDefinitionRepository,
     DpmRebalanceWave,
     DpmWaveReportInput,
     DpmWaveRepository,
     DpmWaveSourceRef,
+)
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinitionCandidate,
+    DpmBulkReviewCampaignDefinitionGovernance,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.risk_authority import (
@@ -241,6 +249,31 @@ class DpmBulkReviewCampaignGovernanceInput(BaseModel):
     )
 
 
+class DpmBulkReviewCampaignDefinitionRequest(BaseModel):
+    display_name: str = Field(examples=["Apple and Tesla holdings review"])
+    status: Literal["ACTIVE"] = Field(default="ACTIVE")
+    as_of_date: str = Field(examples=["2026-05-10"])
+    rationale: str = Field(description="Business rationale for the persisted campaign definition.")
+    eligible_portfolio_types: list[str] = Field(default_factory=lambda: ["DISCRETIONARY"])
+    candidates: list[DpmBulkReviewCampaignDefinitionCandidate] = Field(
+        description=(
+            "Source-backed candidates captured by the campaign definition. Manage persists this "
+            "bounded set but does not discover a global portfolio universe."
+        )
+    )
+    governance: DpmBulkReviewCampaignDefinitionGovernance | None = Field(default=None)
+    source_refs: list[DpmWaveSourceRef] = Field(default_factory=list)
+    created_by: str = Field(examples=["ops"])
+    correlation_id: str = Field(examples=["corr-campaign-definition-001"])
+
+
+class DpmBulkReviewCampaignDefinitionPage(BaseModel):
+    items: list[DpmBulkReviewCampaignDefinition]
+    limit: int
+    offset: int
+    count: int
+
+
 class DpmWavePreviewRequest(BaseModel):
     trigger_type: Literal[
         "EXPLICIT_PORTFOLIO_LIST",
@@ -301,6 +334,19 @@ class DpmWavePreviewRequest(BaseModel):
             "`RiskEventAffectedCohort:v1` and preserves source-owned membership evidence."
         ),
         examples=["RISK_EVENT_2026_Q2_RATES_UP"],
+    )
+    campaign_definition_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional persisted Manage-owned bulk-review campaign definition id. When supplied "
+            "for `BULK_REVIEW_CAMPAIGN`, Manage uses the persisted source-backed candidate set."
+        ),
+        examples=["campaign-holdings-apple-tesla-20260510"],
+    )
+    campaign_definition_version: str | None = Field(
+        default=None,
+        description="Required with campaign_definition_id.",
+        examples=["2026.05"],
     )
     minimum_impact_score: float = Field(
         default=0.05,
@@ -639,6 +685,7 @@ def _portfolio_inputs_for_request(
     request: DpmWavePreviewRequest,
     correlation_id: str,
     risk_authority_client: LotusRiskAuthorityClient | None,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> list[dict[str, object]]:
     if request.trigger_type == "EXPLICIT_PORTFOLIO_LIST":
         return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
@@ -656,8 +703,80 @@ def _portfolio_inputs_for_request(
             risk_authority_client=risk_authority_client,
         )
     if request.trigger_type == "BULK_REVIEW_CAMPAIGN":
-        return _resolve_bulk_review_campaign_portfolios(request=request)
+        resolved_request = _request_with_campaign_definition(
+            request=request,
+            repository=campaign_definition_repository,
+        )
+        return _resolve_bulk_review_campaign_portfolios(request=resolved_request)
     return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
+
+
+def _request_with_campaign_definition(
+    *,
+    request: DpmWavePreviewRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository,
+) -> DpmWavePreviewRequest:
+    if request.campaign_definition_id is None and request.campaign_definition_version is None:
+        return request
+    if not request.campaign_definition_id or not request.campaign_definition_version:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_REF_INCOMPLETE",
+            "campaign_definition_id and campaign_definition_version must be supplied together.",
+        )
+    if request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_REJECTS_CALLER_PORTFOLIOS",
+            "Persisted campaign definitions supply the candidate portfolio set.",
+        )
+    definition = repository.get_definition(
+        campaign_id=request.campaign_definition_id,
+        campaign_version=request.campaign_definition_version,
+    )
+    if definition is None:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+            "Persisted bulk-review campaign definition was not found.",
+        )
+    if definition.as_of_date != request.as_of_date:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_AS_OF_DATE_MISMATCH",
+            "campaign definition as_of_date must match the wave request as_of_date.",
+        )
+    definition_ref = DpmWaveSourceRef(
+        source_system="lotus-manage",
+        source_type="BulkReviewCampaignDefinition",
+        source_id=f"campaign-definition:{definition.campaign_id}:{definition.campaign_version}",
+        source_version=definition.product_version,
+        supportability_state="READY",
+        content_hash=definition.content_hash,
+    )
+    portfolios = [
+        DpmWavePortfolioInput(
+            portfolio_id=candidate.portfolio_id,
+            mandate_id=candidate.mandate_id,
+            portfolio_manager_id=candidate.portfolio_manager_id,
+            portfolio_type=candidate.portfolio_type,
+            source_refs=[definition_ref, *candidate.source_refs],
+        )
+        for candidate in definition.candidates
+    ]
+    governance = (
+        DpmBulkReviewCampaignGovernanceInput.model_validate(
+            definition.governance.model_dump(mode="json")
+        )
+        if definition.governance is not None
+        else request.campaign_governance
+    )
+    return request.model_copy(
+        update={
+            "trigger_id": definition.campaign_id,
+            "rationale": definition.rationale,
+            "portfolios": portfolios,
+            "portfolio_types": definition.eligible_portfolio_types,
+            "campaign_governance": governance,
+        },
+        deep=True,
+    )
 
 
 def _resolve_pm_book_portfolios(
@@ -1221,6 +1340,116 @@ def _campaign_membership_hash(
     return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
 
 
+@router.put(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_200_OK,
+    summary="Persist bulk-review campaign definition",
+    description=(
+        "Persists an immutable Manage-owned `BulkReviewCampaignDefinition:v1` over a bounded, "
+        "source-backed candidate portfolio set. This endpoint does not discover the global book, "
+        "own source facts, run maker-checker workflow, expose downstream UI, or claim OMS "
+        "execution."
+    ),
+)
+def put_bulk_review_campaign_definition(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    try:
+        definition = DpmBulkReviewCampaignDefinition(
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            display_name=request.display_name,
+            status=request.status,
+            as_of_date=request.as_of_date,
+            rationale=request.rationale,
+            eligible_portfolio_types=request.eligible_portfolio_types,
+            candidates=request.candidates,
+            governance=request.governance,
+            source_refs=request.source_refs,
+            created_by=request.created_by,
+            correlation_id=request.correlation_id,
+        )
+        repository.save_definition(definition=definition)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    return definition
+
+
+@router.get(
+    "/campaign-definitions",
+    response_model=DpmBulkReviewCampaignDefinitionPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign definitions",
+    description="Lists immutable Manage-owned bulk-review campaign definitions.",
+)
+def list_bulk_review_campaign_definitions(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED"] | None = Query(default=None),
+    as_of_date: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionPage:
+    items = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return DpmBulkReviewCampaignDefinitionPage(
+        items=items,
+        limit=limit,
+        offset=offset,
+        count=len(items),
+    )
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_200_OK,
+    summary="Get bulk-review campaign definition",
+    description="Retrieves one immutable Manage-owned bulk-review campaign definition.",
+)
+def get_bulk_review_campaign_definition(
+    campaign_id: str,
+    campaign_version: str,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    definition = repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if definition is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return definition
+
+
 @router.post(
     "/preview",
     response_model=DpmWaveResponse,
@@ -1272,6 +1501,9 @@ def preview_wave(
     ] = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
 ) -> DpmWaveResponse:
     correlation_id = x_correlation_id or f"corr_wave_preview_{request.trigger_id}"
     try:
@@ -1279,6 +1511,7 @@ def preview_wave(
             request=request,
             correlation_id=correlation_id,
             risk_authority_client=risk_authority_client,
+            campaign_definition_repository=campaign_definition_repository,
         )
         wave = wave_service.preview_wave(
             trigger_type=request.trigger_type,
@@ -1367,6 +1600,9 @@ def create_wave(
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
 ) -> DpmWaveResponse:
     correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
     try:
@@ -1374,6 +1610,7 @@ def create_wave(
             request=request,
             correlation_id=correlation_id,
             risk_authority_client=risk_authority_client,
+            campaign_definition_repository=campaign_definition_repository,
         )
         wave, replayed = wave_service.create_wave(
             trigger_type=request.trigger_type,

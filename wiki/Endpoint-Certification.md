@@ -1595,6 +1595,9 @@ Routes:
 - `POST /api/v1/rebalance/waves/preview`
 - `POST /api/v1/rebalance/waves`
 - `GET /api/v1/rebalance/waves`
+- `PUT /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
+- `GET /api/v1/rebalance/waves/campaign-definitions`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
 - `GET /api/v1/rebalance/waves/{wave_id}`
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
@@ -1638,7 +1641,8 @@ Functional coverage:
 - bounded Manage-owned bulk-review campaign membership through
   `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios, source-owned
   `portfolio_type`, eligible DPM portfolio-type filters, deterministic membership source refs,
-  optional approval/expiry/actor-entitlement governance evidence, and fail-closed validation,
+  optional approval/expiry/actor-entitlement governance evidence, immutable
+  `BulkReviewCampaignDefinition:v1` campaign definitions, and fail-closed validation,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can
