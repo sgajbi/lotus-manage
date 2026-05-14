@@ -1281,9 +1281,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-gateway` PR #212 (`891d00dea0328525ada14fabad278af1d1b9386b`)" in (
         work_to_be_done
     )
-    assert "Global campaign discovery and downstream Workbench campaign product UI" in (
+    assert "`lotus-workbench` PR #184 (`502aa2113a6e3954d53a35f9f956d258c84d5be0`)" in (
         work_to_be_done
     )
+    assert "published Workbench wiki commit `694d9cd`" in work_to_be_done
+    assert "Global campaign discovery and broader campaign workflow surfaces" in (work_to_be_done)
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
