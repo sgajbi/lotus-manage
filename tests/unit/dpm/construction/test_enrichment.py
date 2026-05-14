@@ -109,6 +109,27 @@ def test_enrichment_summary_blocks_required_tax_without_tax_impact() -> None:
     assert "PERFORMANCE_CONTEXT_UNAVAILABLE" in summary.reason_codes
 
 
+def test_enrichment_summary_flags_missing_fx_and_cash_weight_sources() -> None:
+    result = SimpleNamespace(
+        tax_impact=None,
+        diagnostics=SimpleNamespace(missing_fx_pairs=[("USD", "SGD")], dropped_intents=[]),
+        after_simulated=SimpleNamespace(allocation_by_asset_class=[]),
+    )
+
+    summary = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        performance_required=False,
+        authoritative_cost_available=True,
+    )
+
+    assert summary.fx_status == ConstructionMethodStatus.BLOCKED
+    assert summary.liquidity_status == ConstructionMethodStatus.DEGRADED
+    assert "FX_SOURCE_MISSING" in summary.reason_codes
+    assert "CASH_WEIGHT_UNAVAILABLE" in summary.reason_codes
+
+
 def test_construction_service_error_mapping_and_missing_set() -> None:
     with pytest.raises(ConstructionAlternativeSetNotFoundError):
         construction_service.get_construction_alternative_set(

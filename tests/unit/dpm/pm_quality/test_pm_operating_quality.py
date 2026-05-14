@@ -7,10 +7,12 @@ from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
     DpmPmQualityGovernanceApproval,
     DpmPmQualityEvidenceItem,
+    DpmPmQualityIndicatorResult,
     DpmPmQualityValidationError,
     DpmPmQualityWeight,
     build_pm_operating_quality_score_run,
 )
+from src.core.pm_quality import scoring
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
@@ -185,6 +187,93 @@ def test_pm_operating_quality_policy_rejects_prohibited_uses_and_date_mismatch()
             weights=[DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("100"))],
             governance_approval=_governance_approval(),
             allowed_uses=["portfolio_management_review", "compensation"],
+        )
+
+
+def test_pm_quality_scoring_guard_edges_are_source_safe() -> None:
+    ready_result = DpmPmQualityIndicatorResult(
+        indicator="SOURCE_QUALITY",
+        score=Decimal("80"),
+        weight=Decimal("100"),
+        state="READY",
+        evidence_count=1,
+        reason_codes=["SOURCE_READY"],
+        source_refs=[],
+    )
+    degraded_result = ready_result.model_copy(
+        update={"state": "DEGRADED", "reason_codes": ["SOURCE_DEGRADED"]}
+    )
+    breached_result = ready_result.model_copy(
+        update={"state": "BREACHED", "reason_codes": ["POLICY_BREACHED"]}
+    )
+
+    with pytest.raises(
+        DpmPmQualityValidationError,
+        match="PM_QUALITY_NO_SCORABLE_INDICATORS",
+    ):
+        scoring._weighted_score([])
+
+    assert (
+        scoring._score_state(
+            score=Decimal("80"), policy=_enabled_policy(), results=[breached_result]
+        )
+        == "BREACHED"
+    )
+    assert (
+        scoring._score_state(
+            score=Decimal("80"), policy=_enabled_policy(), results=[degraded_result]
+        )
+        == "DEGRADED"
+    )
+    assert (
+        scoring._score_state(score=Decimal("75"), policy=_enabled_policy(), results=[ready_result])
+        == "PENDING_REVIEW"
+    )
+    assert (
+        scoring._score_state(score=Decimal("40"), policy=_enabled_policy(), results=[ready_result])
+        == "BREACHED"
+    )
+    assert scoring._score_reason_codes(state="DEGRADED", results=[degraded_result]) == [
+        "PM_QUALITY_DEGRADED_SOURCE_POSTURE",
+        "SOURCE_DEGRADED",
+    ]
+    assert scoring._worst_state(["DISABLED"]) == "DISABLED"
+    assert scoring._worst_state(["BLOCKED"]) == "BLOCKED"
+    assert scoring._worst_state(["BREACHED"]) == "BREACHED"
+    assert scoring._worst_state(["DEGRADED"]) == "DEGRADED"
+    assert scoring._worst_state(["PENDING_REVIEW"]) == "PENDING_REVIEW"
+    assert scoring._worst_state(["UNKNOWN"]) == "DEGRADED"
+    assert scoring._mean([]) == Decimal("0")
+
+
+def test_pm_quality_governance_evidence_rejects_stale_or_unauthorized_policy() -> None:
+    policy = _enabled_policy().model_copy(update={"governance_approval": None})
+    with pytest.raises(
+        DpmPmQualityValidationError,
+        match="PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED",
+    ):
+        scoring._governance_evidence(policy=policy, as_of_date="2026-05-12", generated_by="ops")
+
+    expired_policy = _enabled_policy().model_copy(
+        update={
+            "governance_approval": _governance_approval().model_copy(
+                update={"expires_on": "2026-05-01"}
+            )
+        }
+    )
+    with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_GOVERNANCE_EXPIRED"):
+        scoring._governance_evidence(
+            policy=expired_policy,
+            as_of_date="2026-05-12",
+            generated_by="ops",
+        )
+
+    unauthorized_policy = _enabled_policy()
+    with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_ACTOR_NOT_ENTITLED"):
+        scoring._governance_evidence(
+            policy=unauthorized_policy,
+            as_of_date="2026-05-12",
+            generated_by="unauthorized",
         )
 
     with pytest.raises(ValueError, match="PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED"):

@@ -560,6 +560,114 @@ def _sustainability_preference_profile_payload() -> dict:
     }
 
 
+def _client_income_needs_schedule_payload() -> dict:
+    return {
+        "product_name": "ClientIncomeNeedsSchedule",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "schedules": [
+            {
+                "schedule_id": "income-need-001",
+                "need_type": "RETIREMENT_INCOME",
+                "need_status": "active",
+                "amount": "12000.0000000000",
+                "currency": "SGD",
+                "frequency": "monthly",
+                "start_date": "2026-04-01",
+                "end_date": None,
+                "priority": 1,
+                "funding_policy": "BANK_APPROVED_INCOME_POLICY",
+                "source_record_id": "income-need:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "CLIENT_INCOME_NEEDS_SCHEDULE_READY",
+            "schedule_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "rfc_042_client_income_needs_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:client-income-needs",
+    }
+
+
+def _liquidity_reserve_requirement_payload() -> dict:
+    return {
+        "product_name": "LiquidityReserveRequirement",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "requirements": [
+            {
+                "reserve_requirement_id": "reserve-001",
+                "reserve_type": "CLIENT_LIQUIDITY_RESERVE",
+                "reserve_status": "active",
+                "required_amount": "50000.0000000000",
+                "currency": "SGD",
+                "horizon_days": 90,
+                "priority": 1,
+                "policy_source": "BANK_APPROVED_RESERVE_POLICY",
+                "effective_from": "2026-01-01",
+                "effective_to": None,
+                "requirement_version": 1,
+                "source_record_id": "reserve:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "LIQUIDITY_RESERVE_REQUIREMENT_READY",
+            "requirement_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "rfc_042_liquidity_reserve_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:liquidity-reserve",
+    }
+
+
+def _planned_withdrawal_schedule_payload() -> dict:
+    return {
+        "product_name": "PlannedWithdrawalSchedule",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "horizon_days": 365,
+        "withdrawals": [
+            {
+                "withdrawal_schedule_id": "withdrawal-001",
+                "withdrawal_type": "CLIENT_DRAWDOWN",
+                "withdrawal_status": "planned",
+                "amount": "25000.0000000000",
+                "currency": "SGD",
+                "scheduled_date": "2026-06-01",
+                "recurrence_frequency": None,
+                "purpose_code": "CLIENT_LIQUIDITY",
+                "source_record_id": "withdrawal:1",
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "PLANNED_WITHDRAWAL_SCHEDULE_READY",
+            "withdrawal_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "rfc_042_planned_withdrawal_v1"},
+        "data_quality_status": "COMPLETE",
+        "latest_evidence_timestamp": "2026-04-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:planned-withdrawals",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -589,6 +697,12 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_transaction_cost_curve_payload())
     if path.endswith("/cashflow-projection"):
         return httpx.Response(200, json=_cashflow_projection_payload())
+    if path.endswith("/client-income-needs-schedule"):
+        return httpx.Response(200, json=_client_income_needs_schedule_payload())
+    if path.endswith("/liquidity-reserve-requirement"):
+        return httpx.Response(200, json=_liquidity_reserve_requirement_payload())
+    if path.endswith("/planned-withdrawal-schedule"):
+        return httpx.Response(200, json=_planned_withdrawal_schedule_payload())
     if path.endswith("/client-restriction-profile"):
         return httpx.Response(200, json=_client_restriction_profile_payload())
     if path.endswith("/sustainability-preference-profile"):
@@ -657,6 +771,12 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.portfolio_cashflow_projection is not None
     assert context.portfolio_cashflow_projection.product_name == "PortfolioCashflowProjection"
     assert context.portfolio_cashflow_projection.include_projected is True
+    assert context.client_income_needs_schedule is not None
+    assert context.client_income_needs_schedule.supportability.schedule_count == 1
+    assert context.liquidity_reserve_requirement is not None
+    assert context.liquidity_reserve_requirement.supportability.requirement_count == 1
+    assert context.planned_withdrawal_schedule is not None
+    assert context.planned_withdrawal_schedule.supportability.withdrawal_count == 1
     assert context.client_restriction_profile is not None
     assert context.client_restriction_profile.supportability.state == "READY"
     assert context.sustainability_preference_profile is not None
@@ -1148,6 +1268,64 @@ def test_core_resolver_fetches_transaction_cost_curve_from_dedicated_source_prod
     assert response.curve_points[0].average_cost_bps == Decimal("5.0000")
 
 
+def test_core_resolver_fetches_client_liquidity_source_products_from_dedicated_routes():
+    seen: list[tuple[str, bytes]] = []
+    payloads = {
+        "/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-income-needs-schedule": (
+            _client_income_needs_schedule_payload()
+        ),
+        "/integration/portfolios/PB_SG_GLOBAL_BAL_001/liquidity-reserve-requirement": (
+            _liquidity_reserve_requirement_payload()
+        ),
+        "/integration/portfolios/PB_SG_GLOBAL_BAL_001/planned-withdrawal-schedule": (
+            _planned_withdrawal_schedule_payload()
+        ),
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((request.url.path, request.read()))
+        return httpx.Response(200, json=payloads[request.url.path])
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    income_needs = client.resolve_client_income_needs_schedule(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        correlation_id="corr-liquidity-products",
+    )
+    reserve = client.resolve_liquidity_reserve_requirement(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        correlation_id="corr-liquidity-products",
+    )
+    withdrawals = client.resolve_planned_withdrawal_schedule(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        horizon_days=365,
+        correlation_id="corr-liquidity-products",
+    )
+
+    assert [path for path, _ in seen] == list(payloads)
+    assert b'"include_inactive_schedules":false' in seen[0][1]
+    assert b'"include_inactive_requirements":false' in seen[1][1]
+    assert b'"include_inactive_withdrawals":false' in seen[2][1]
+    assert income_needs.product_name == "ClientIncomeNeedsSchedule"
+    assert income_needs.supportability.state == "READY"
+    assert reserve.product_name == "LiquidityReserveRequirement"
+    assert reserve.supportability.state == "READY"
+    assert withdrawals.product_name == "PlannedWithdrawalSchedule"
+    assert withdrawals.supportability.state == "READY"
+
+
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(base_url="https://core.example.test"),
@@ -1235,8 +1413,12 @@ def test_core_resolver_timeout_maps_to_source_safe_error():
 def test_optional_profile_url_configuration_fails_source_safe() -> None:
     config = DpmCoreResolverConfig(
         base_url="https://core.example.test",
+        benchmark_assignment_path_template="",
         client_restriction_profile_path_template="",
         sustainability_preference_profile_path_template="",
+        client_income_needs_schedule_path_template="",
+        liquidity_reserve_requirement_path_template="",
+        planned_withdrawal_schedule_path_template="",
     )
 
     with pytest.raises(
@@ -1249,6 +1431,26 @@ def test_optional_profile_url_configuration_fails_source_safe() -> None:
         match="DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE",
     ):
         config.resolve_sustainability_preference_profile_url("PB_SG_GLOBAL_BAL_001")
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE",
+    ):
+        config.resolve_benchmark_assignment_url("PB_SG_GLOBAL_BAL_001")
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_INCOME_NEEDS_UNAVAILABLE",
+    ):
+        config.resolve_client_income_needs_schedule_url("PB_SG_GLOBAL_BAL_001")
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_LIQUIDITY_RESERVE_UNAVAILABLE",
+    ):
+        config.resolve_liquidity_reserve_requirement_url("PB_SG_GLOBAL_BAL_001")
+    with pytest.raises(
+        DpmCoreResolverUnavailableError,
+        match="DPM_CORE_PLANNED_WITHDRAWAL_UNAVAILABLE",
+    ):
+        config.resolve_planned_withdrawal_schedule_url("PB_SG_GLOBAL_BAL_001")
 
 
 def test_get_source_product_retries_transient_status_and_rejects_non_object_payload() -> None:
@@ -1294,6 +1496,51 @@ def test_get_source_product_maps_transport_error_to_unavailable() -> None:
             unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
             incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
         )
+
+
+def test_source_product_helpers_retry_until_source_safe_unavailable() -> None:
+    post_attempts = {"count": 0}
+
+    def post_handler(request: httpx.Request) -> httpx.Response:
+        post_attempts["count"] += 1
+        raise httpx.ConnectError("connection refused", request=request)
+
+    post_client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=2),
+        client=httpx.Client(transport=httpx.MockTransport(post_handler)),
+    )
+
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        post_client._post_source_product(
+            url="https://core.example.test/source",
+            payload={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+
+    get_attempts = {"count": 0}
+
+    def get_handler(request: httpx.Request) -> httpx.Response:
+        get_attempts["count"] += 1
+        raise httpx.ConnectError("connection refused", request=request)
+
+    get_client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=2),
+        client=httpx.Client(transport=httpx.MockTransport(get_handler)),
+    )
+
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        get_client._get_source_product(
+            url="https://core.example.test/source",
+            params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+
+    assert post_attempts["count"] == 2
+    assert get_attempts["count"] == 2
 
 
 def test_owned_core_resolver_client_closes_managed_http_client() -> None:
@@ -1347,6 +1594,9 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
             portfolio_cashflow_projection_path_template="",
             client_restriction_profile_path_template="",
             sustainability_preference_profile_path_template="",
+            client_income_needs_schedule_path_template="",
+            liquidity_reserve_requirement_path_template="",
+            planned_withdrawal_schedule_path_template="",
         ),
         client=httpx.Client(
             transport=httpx.MockTransport(lambda request: httpx.Response(500, json={}))
@@ -1399,6 +1649,37 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
             as_of_date=date(2026, 5, 3),
             tenant_id="tenant_sg_pb",
             mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_client_income_needs_schedule(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_liquidity_reserve_requirement(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_planned_withdrawal_schedule(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            horizon_days=365,
             correlation_id=None,
         )
         is None

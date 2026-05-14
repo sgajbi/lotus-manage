@@ -6,10 +6,13 @@ import pytest
 
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
+    DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreClientRestrictionProfileResponse,
+    DpmCoreLiquidityReserveRequirementResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
@@ -302,6 +305,106 @@ def _portfolio_cashflow_projection() -> DpmCorePortfolioCashflowProjectionRespon
     )
 
 
+def _client_income_needs_schedule() -> DpmCoreClientIncomeNeedsScheduleResponse:
+    return DpmCoreClientIncomeNeedsScheduleResponse.model_validate(
+        {
+            "product_name": "ClientIncomeNeedsSchedule",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "schedules": [
+                {
+                    "schedule_id": "income-need-001",
+                    "need_type": "RETIREMENT_INCOME",
+                    "need_status": "active",
+                    "amount": "12000.00",
+                    "currency": "SGD",
+                    "frequency": "monthly",
+                    "start_date": "2026-05-01",
+                    "priority": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "CLIENT_INCOME_NEEDS_SCHEDULE_READY",
+                "schedule_count": 1,
+            },
+            "lineage": {"contract_version": "ClientIncomeNeedsSchedule:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
+def _liquidity_reserve_requirement() -> DpmCoreLiquidityReserveRequirementResponse:
+    return DpmCoreLiquidityReserveRequirementResponse.model_validate(
+        {
+            "product_name": "LiquidityReserveRequirement",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "requirements": [
+                {
+                    "reserve_requirement_id": "reserve-001",
+                    "reserve_type": "CLIENT_LIQUIDITY_RESERVE",
+                    "reserve_status": "active",
+                    "required_amount": "50000.00",
+                    "currency": "SGD",
+                    "horizon_days": 90,
+                    "priority": 1,
+                    "policy_source": "BANK_APPROVED_RESERVE_POLICY",
+                    "effective_from": "2026-01-01",
+                    "requirement_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "LIQUIDITY_RESERVE_REQUIREMENT_READY",
+                "requirement_count": 1,
+            },
+            "lineage": {"contract_version": "LiquidityReserveRequirement:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
+def _planned_withdrawal_schedule() -> DpmCorePlannedWithdrawalScheduleResponse:
+    return DpmCorePlannedWithdrawalScheduleResponse.model_validate(
+        {
+            "product_name": "PlannedWithdrawalSchedule",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "horizon_days": 365,
+            "withdrawals": [
+                {
+                    "withdrawal_schedule_id": "withdrawal-001",
+                    "withdrawal_type": "CLIENT_DRAWDOWN",
+                    "withdrawal_status": "planned",
+                    "amount": "25000.00",
+                    "currency": "SGD",
+                    "scheduled_date": "2026-06-01",
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "PLANNED_WITHDRAWAL_SCHEDULE_READY",
+                "withdrawal_count": 1,
+            },
+            "lineage": {"contract_version": "PlannedWithdrawalSchedule:v1"},
+            "data_quality_status": "READY",
+            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+        }
+    )
+
+
 def _twin(**overrides: object) -> DpmMandateDigitalTwin:
     payload: dict[str, Any] = {
         "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
@@ -412,6 +515,9 @@ def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainabili
         client_restriction_profile=_client_restriction_profile(),
         sustainability_preference_profile=_sustainability_preference_profile(),
         portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+        client_income_needs_schedule=_client_income_needs_schedule(),
+        liquidity_reserve_requirement=_liquidity_reserve_requirement(),
+        planned_withdrawal_schedule=_planned_withdrawal_schedule(),
     )
 
     assert "EQ_US_AAPL" in twin.constraints.restricted_instruments
@@ -420,12 +526,18 @@ def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainabili
     assert "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED" not in twin.field_gap_codes
     assert "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED" not in twin.field_gap_codes
     assert "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert "CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert "LIQUIDITY_RESERVE_REQUIREMENT_NOT_YET_SOURCED" not in twin.field_gap_codes
+    assert "PLANNED_WITHDRAWAL_SCHEDULE_NOT_YET_SOURCED" not in twin.field_gap_codes
     assert [lineage.product_name for lineage in twin.source_lineage] == [
         "DiscretionaryMandateBinding",
         "DpmModelPortfolioTarget",
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
         "PortfolioCashflowProjection",
+        "ClientIncomeNeedsSchedule",
+        "LiquidityReserveRequirement",
+        "PlannedWithdrawalSchedule",
     ]
 
 
