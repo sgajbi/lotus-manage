@@ -190,6 +190,13 @@ Current repository posture:
     `RollingRiskMetricsReport:v1`; they pin date alignment, pp-to-decimal conversion, `ddof=1`,
     annualized decimal tracking-error output, dimensionless information-ratio output,
     warm-up/null behavior, no-aligned-benchmark posture, and zero-tracking-error flagging.
+    It also includes the merged and wiki-published `lotus-performance`
+    `currency_attribution_totals` source-product slice from PR #164
+    (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
+    portfolio-level Karnosky-Singer local allocation, local selection, currency allocation,
+    currency selection, total effect, and currency-count output in the source-owned attribution
+    response without requiring Manage, Gateway, Workbench, or reporting consumers to reconstruct
+    portfolio-level FX attribution from rendered currency rows.
     It also includes the merged and wiki-published `lotus-core`
     `PortfolioCashflowProjection:v1` methodology slice from PR #344
     (`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`, wiki `231bd75`), which pins booked-only
