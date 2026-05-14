@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
+    get_pm_quality_score_run_repository,
     get_proof_pack_repository,
     get_wave_repository,
 )
@@ -27,6 +28,11 @@ from src.core.mandates import (
     MandateRecommendedAction,
     MonitoringSeverity,
 )
+from src.core.outcomes import DpmOutcomeSourceRef
+from src.core.pm_quality.models import (
+    DpmPmOperatingQualityScoreRun,
+    DpmPmQualityBookScopeEvidence,
+)
 from src.core.portfolio_memory.service import build_portfolio_memory
 from src.core.waves.models import (
     DpmRebalanceWave,
@@ -39,6 +45,7 @@ from src.core.waves.models import (
 )
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
+from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 from tests.unit.dpm.proof_packs.test_proof_pack_repository import _proof_pack
@@ -159,6 +166,50 @@ def _monitoring_exception() -> DpmMonitoringException:
     )
 
 
+def _pm_quality_score_run() -> DpmPmOperatingQualityScoreRun:
+    book_ref = DpmOutcomeSourceRef(
+        source_system="lotus-core",
+        source_type="PortfolioManagerBookMembership",
+        source_id="pm-book-snapshot-20260512",
+        source_version="v1",
+        content_hash="sha256:pm-book",
+    )
+    member_ref = DpmOutcomeSourceRef(
+        source_system="lotus-core",
+        source_type="PORTFOLIO_MANAGER_BOOK_MEMBER",
+        source_id="pm-book:001",
+        source_version="2026-05-12",
+    )
+    return DpmPmOperatingQualityScoreRun(
+        score_run_id="pmq_score_run_001",
+        pm_id="pm_001",
+        book_id="sg_dpm_book",
+        as_of_date="2026-05-12",
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+        state="READY",
+        score=Decimal("91.25"),
+        indicator_results=[],
+        book_scope_evidence=DpmPmQualityBookScopeEvidence(
+            source_id="pm-book-snapshot-20260512",
+            product_version="v1",
+            supportability_state="READY",
+            returned_portfolio_count=2,
+            member_portfolio_ids=[PORTFOLIO_ID, "PB_SG_GLOBAL_INC_002"],
+            filters_applied={"portfolio_types": ["DPM"], "include_inactive": False},
+            reason_codes=["PM_BOOK_SCOPE_MATERIALIZED", "DPM_CORE_PM_BOOK_READY"],
+            source_refs=[book_ref, member_ref],
+        ),
+        governance_evidence=None,
+        reason_codes=["PM_QUALITY_SCORE_READY"],
+        source_refs=[book_ref, member_ref],
+        content_hash="sha256:pmq-score-run-001",
+        generated_at=datetime(2026, 5, 12, 10, 0, tzinfo=timezone.utc),
+        generated_by="ops",
+        correlation_id="corr-pmq-memory",
+    )
+
+
 def _wave() -> DpmRebalanceWave:
     item = DpmRebalanceWaveItem(
         wave_item_id="dwi_memory_001",
@@ -230,6 +281,8 @@ def _wave() -> DpmRebalanceWave:
 
 def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
 
     memory = build_portfolio_memory(
         portfolio_id=PORTFOLIO_ID,
@@ -237,6 +290,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         wave_repository=wave_repository,
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
+        pm_quality_score_run_repository=pm_quality_repository,
         generated_at=datetime(2026, 5, 7, 10, 0, tzinfo=timezone.utc),
     )
 
@@ -261,6 +315,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.event_type_counts["MANDATE_MONITORING_EXCEPTION"] == 1
     assert memory.event_type_counts["WAVE_HANDOFF_READY"] == 1
     assert memory.event_type_counts["OUTCOME_REVIEW_CREATED"] == 1
+    assert memory.event_type_counts["PM_QUALITY_SCORE_RUN"] == 1
     assert "lotus-manage" in memory.source_systems
     assert "lotus-core" in memory.source_systems
     assert "SOURCE_READY" in memory.reason_codes
@@ -276,13 +331,16 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert family_posture["external_oms_execution"].event_types == []
     assert family_posture["pm_scoring"].source_system == "lotus-manage"
     assert family_posture["pm_scoring"].owner == "lotus-manage PM operating quality product"
-    assert family_posture["pm_scoring"].support_status == "SEPARATE_PRODUCT_NO_EVENT_FAMILY"
-    assert family_posture["pm_scoring"].event_types == []
+    assert family_posture["pm_scoring"].support_status == "SUPPORTED"
+    assert family_posture["pm_scoring"].event_types == ["PM_QUALITY_SCORE_RUN"]
     assert family_posture["pm_scoring"].route == (
         "/api/v1/rebalance/pm-operating-quality/score-runs"
     )
-    assert family_posture["pm_scoring"].reason_code == ("PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY")
+    assert family_posture["pm_scoring"].reason_code == (
+        "PM_QUALITY_SCORE_RUN_SOURCE_EVENTS_SUPPORTED"
+    )
     assert "bank-supplied policy" in family_posture["pm_scoring"].summary
+    assert "does not copy raw score payloads" in family_posture["pm_scoring"].summary
     mandate_events = {
         event.event_type: event
         for event in memory.events
@@ -294,6 +352,13 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         mandate_events["MANDATE_MONITORING_EXCEPTION"].metadata["monitoring_run_id"]
         == "dmr_memory_001"
     )
+    pm_quality_events = [
+        event for event in memory.events if event.event_type == "PM_QUALITY_SCORE_RUN"
+    ]
+    assert pm_quality_events[0].source_id == "pmq_score_run_001"
+    assert pm_quality_events[0].metadata["numeric_score_projected"] is False
+    assert "score" not in pm_quality_events[0].metadata
+    assert pm_quality_events[0].artifact_refs[0].content_hash == "sha256:pmq-score-run-001"
     assert memory.events == sorted(
         memory.events,
         key=lambda event: (event.event_time, event.event_id),
@@ -316,10 +381,13 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
 
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
     app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: pm_quality_repository
     app.openapi_schema = None
 
     with TestClient(app) as client:
@@ -335,6 +403,7 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     )
     assert payload["event_type_counts"]["WAVE_EVENT"] == 1
     assert payload["event_type_counts"]["MANDATE_MONITORING_EXCEPTION"] == 1
+    assert payload["event_type_counts"]["PM_QUALITY_SCORE_RUN"] == 1
     family_posture = {
         posture["family_key"]: posture for posture in payload["source_event_family_posture"]
     }
@@ -352,21 +421,28 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "governed OMS owner publishes a no-raw-payload source-event family."
         ),
     }
-    assert family_posture["pm_scoring"]["support_status"] == "SEPARATE_PRODUCT_NO_EVENT_FAMILY"
+    assert family_posture["pm_scoring"]["support_status"] == "SUPPORTED"
     assert family_posture["pm_scoring"] == {
         "family_key": "pm_scoring",
         "source_system": "lotus-manage",
         "owner": "lotus-manage PM operating quality product",
-        "support_status": "SEPARATE_PRODUCT_NO_EVENT_FAMILY",
-        "event_types": [],
+        "support_status": "SUPPORTED",
+        "event_types": ["PM_QUALITY_SCORE_RUN"],
         "route": "/api/v1/rebalance/pm-operating-quality/score-runs",
-        "reason_code": "PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY",
+        "reason_code": "PM_QUALITY_SCORE_RUN_SOURCE_EVENTS_SUPPORTED",
         "summary": (
             "Persisted PM operating quality score runs are supported as a separate explicit "
             "Manage product with bank-supplied policy and source-backed evidence; portfolio "
-            "memory projects no PM-scoring events until a separate event family is governed."
+            "memory projects only source-backed score-run lineage for portfolios included in "
+            "Core PM-book membership evidence and does not copy raw score payloads or create "
+            "portfolio-level rankings."
         ),
     }
+    pm_quality_events = [
+        event for event in payload["events"] if event["event_type"] == "PM_QUALITY_SCORE_RUN"
+    ]
+    assert pm_quality_events[0]["metadata"]["numeric_score_projected"] is False
+    assert "score" not in pm_quality_events[0]["metadata"]
     assert all(event["event_identity"] for event in payload["events"])
     assert all(event["redaction_policy"] == "NO_RAW_PAYLOADS" for event in payload["events"])
     assert any(event["event_type"] == "OUTCOME_REVIEW_EVENT" for event in payload["events"])
@@ -380,6 +456,6 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     ]
     assert "hidden portfolio-memory truth" in posture_schema["properties"]["summary"]["description"]
     assert (
-        "PM-scoring no-claim boundaries"
+        "PM-quality projection boundaries"
         in memory_schema["properties"]["source_event_family_posture"]["description"]
     )

@@ -513,6 +513,7 @@ def _resolve_pm_book_scope_evidence(
         product_version=membership.product_version,
         supportability_state=membership.supportability.state,
         returned_portfolio_count=len(membership.members),
+        member_portfolio_ids=[member.portfolio_id for member in membership.members[:100]],
         filters_applied=membership.supportability.filters_applied,
         reason_codes=[
             "PM_BOOK_SCOPE_MATERIALIZED",

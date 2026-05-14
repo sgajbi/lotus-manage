@@ -168,11 +168,16 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
         "/api/v1/rebalance/pm-operating-quality/score-runs",
         "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
+        "/api/v1/rebalance/portfolio-memory/{portfolio_id}",
     ]
     assert pm_quality["lineage_policy"]["lineage_required"] is True
     assert "portfolio_id" in pm_quality["identifier_refs"]
     assert (
         "bank approval and fairness-review evidence"
+        in (pm_quality["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "Portfolio memory projects bounded score-run lineage"
         in (pm_quality["freshness_policy"]["max_allowed_age_description"])
     )
 

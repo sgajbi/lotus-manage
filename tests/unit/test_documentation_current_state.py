@@ -1195,8 +1195,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
     assert "Remaining OMS stays downstream" in supported_features
     assert (
-        "PM operating quality score-run lifecycle is supported separately by Manage and "
-        "intentionally does not project portfolio-memory score events"
+        "Portfolio memory projects only bounded `PM_QUALITY_SCORE_RUN` lineage for persisted "
+        "source-backed score runs"
     ) in supported_features
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
     assert "mandate health, monitoring exception, proof-pack" in supported_features
@@ -1237,11 +1237,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, and optional source-owned PM-book materialization are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, and bounded portfolio-memory score-run lineage projection are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, and actor entitlement checks are implemented"
+        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, and bounded portfolio-memory score-run lineage projection are implemented"
         in work_to_be_done
     )
     assert "book_scope_evidence" in work_to_be_done
