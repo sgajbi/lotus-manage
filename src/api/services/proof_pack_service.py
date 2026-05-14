@@ -18,6 +18,7 @@ from src.core.proof_packs import (
     proof_pack_id_for_rebalance_run,
     proof_pack_id_for_selected_alternative,
 )
+from src.core.construction.models import AuthoritativeRegimeStressContext
 from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
@@ -58,6 +59,7 @@ def generate_proof_pack_from_run(
     run_service: DpmRunSupportService,
     mandate_repository: DpmMandateRepository | None,
     proof_pack_repository: DpmProofPackRepository,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
     if idempotency_key is not None:
         existing = proof_pack_repository.get_proof_pack_by_idempotency(
@@ -88,6 +90,7 @@ def generate_proof_pack_from_run(
         workflow_decisions=run_service.list_workflow_decision_records(
             rebalance_run_id=rebalance_run_id
         ),
+        direct_regime_stress_context=direct_regime_stress_context,
     )
     _persist(
         proof_pack_repository=proof_pack_repository,
@@ -110,6 +113,7 @@ def generate_proof_pack_from_selected_alternative(
     run_service: DpmRunSupportService,
     mandate_repository: DpmMandateRepository | None,
     proof_pack_repository: DpmProofPackRepository,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
     if idempotency_key is not None:
         existing = proof_pack_repository.get_proof_pack_by_idempotency(
@@ -170,6 +174,7 @@ def generate_proof_pack_from_selected_alternative(
         mandate_health=mandate_health,
         mandate_evidence_gap_codes=mandate_evidence_gap_codes,
         workflow_decisions=workflow_decisions,
+        direct_regime_stress_context=direct_regime_stress_context,
     )
     _persist(
         proof_pack_repository=proof_pack_repository,

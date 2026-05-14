@@ -259,6 +259,59 @@ def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
     )
 
 
+def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
+    client: TestClient,
+) -> None:
+    alternative_set_id, selected_alternative_id = _generate_selected_alternative(client)
+
+    response = client.post(
+        "/api/v1/rebalance/proof-packs",
+        json={
+            "source_type": "SELECTED_ALTERNATIVE",
+            "alternative_set_id": alternative_set_id,
+            "selected_alternative_id": selected_alternative_id,
+            "actor_id": "pm_api",
+            "reason": "Attach source-owned scenario evidence directly.",
+            "mandate_id": "mandate_api_001",
+            "regime_stress_context": {
+                "supportability_status": "PENDING_REVIEW",
+                "source_system": "lotus-risk",
+                "scenario_pack_id": "CIO_REGIME_2026_Q3",
+                "worst_case_loss_pct": "0.1700",
+                "maximum_allowed_loss_pct": "0.1200",
+                "reason_codes": ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"],
+            },
+        },
+        headers={
+            "Idempotency-Key": "proof-pack-selected-alt-regime-api-001",
+            "X-Correlation-Id": "corr-proof-pack-selected-alt-regime",
+        },
+    )
+
+    assert response.status_code == 200
+    proof_pack = response.json()["proof_pack"]
+    scenario = next(
+        section
+        for section in proof_pack["sections"]
+        if section["section_type"] == "scenario_and_regime_evidence"
+    )
+    assert scenario["state"] == "PENDING_REVIEW"
+    assert scenario["facts"]["source_system"] == "lotus-risk"
+    assert scenario["facts"]["source_product_name"] == "RegimeScenarioPackEvaluation"
+    assert scenario["facts"]["scenario_pack_id"] == "CIO_REGIME_2026_Q3"
+    assert scenario["metrics"]["worst_case_loss_pct"] == "0.1700"
+    assert scenario["metrics"]["maximum_allowed_loss_pct"] == "0.1200"
+    assert scenario["reason_codes"] == ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"]
+    assert proof_pack["source_hashes"]["regime_stress_context"].startswith("sha256:")
+    assert any(
+        ref["source_system"] == "lotus-risk"
+        and ref["source_type"] == "RegimeScenarioPackEvaluation"
+        and ref["source_id"] == "CIO_REGIME_2026_Q3"
+        for section in proof_pack["sections"]
+        for ref in section["source_refs"]
+    )
+
+
 def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None:
     missing_run = client.post(
         "/api/v1/rebalance/proof-packs",
@@ -371,4 +424,9 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     operation = openapi["paths"]["/api/v1/rebalance/proof-packs"]["post"]
     assert operation["summary"] == "Generate a pre-trade proof pack"
     assert "Idempotency-Key" in str(operation["parameters"])
+    assert "regime_stress_context" in str(operation["requestBody"])
+    generate_request_schema = openapi["components"]["schemas"]["DpmProofPackGenerateRequest"]
+    regime_context_schema = generate_request_schema["properties"]["regime_stress_context"]
+    assert "RegimeScenarioPackEvaluation:v1" in str(regime_context_schema)
+    assert "does not calculate scenario methodology" in str(regime_context_schema)
     assert "Reserved for Slice 7" not in str(operation)

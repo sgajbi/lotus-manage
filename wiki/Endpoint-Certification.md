@@ -1559,6 +1559,8 @@ Functional coverage:
 - selected-alternative source validation,
 - persisted proof-pack lookup after generation,
 - optional Markdown/report/AI link generation in the response,
+- optional generation-time source-owned `regime_stress_context` preservation for
+  `scenario_and_regime_evidence` when selected-alternative regime-stress authority is absent,
 - source-backed mandate-context attachment from the persisted RFC-0038 mandate digital twin and
   latest mandate-health snapshot when available,
 - truthful mandate-context degradation when a caller supplies only a mandate id without persisted
@@ -1574,6 +1576,9 @@ Non-functional posture:
   posture.
 - The route does not reconstruct source facts from downstream report, AI, Gateway, or Workbench
   layers.
+- The route preserves `RegimeScenarioPackEvaluation:v1` facts, metrics, reason codes, source refs,
+  and hashes when supplied, but does not calculate scenario methodology, CIO approval, effective
+  period exceptions, or portfolio/mandate applicability locally.
 - Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
   `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
   not inferred from these refs.

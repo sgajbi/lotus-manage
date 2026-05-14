@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.construction.models import (
+    AuthoritativeRegimeStressContext,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
@@ -27,6 +28,7 @@ from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
     ProofPackSourceAnalytics,
     source_analytics_for_alternative,
+    source_analytics_for_context,
 )
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
@@ -95,6 +97,7 @@ def build_proof_pack_from_run(
     mandate_health: DpmMandateHealthSnapshot | None = None,
     mandate_evidence_gap_codes: list[str] | None = None,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
     return _build_proof_pack(
         source_type="REBALANCE_RUN",
@@ -111,6 +114,7 @@ def build_proof_pack_from_run(
         mandate_health=mandate_health,
         mandate_evidence_gap_codes=mandate_evidence_gap_codes or [],
         workflow_decisions=workflow_decisions or [],
+        direct_regime_stress_context=direct_regime_stress_context,
     )
 
 
@@ -129,6 +133,7 @@ def build_proof_pack_from_selected_alternative(
     mandate_health: DpmMandateHealthSnapshot | None = None,
     mandate_evidence_gap_codes: list[str] | None = None,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
     selected = next(
         (
@@ -160,6 +165,7 @@ def build_proof_pack_from_selected_alternative(
         mandate_health=mandate_health,
         mandate_evidence_gap_codes=mandate_evidence_gap_codes or [],
         workflow_decisions=workflow_decisions or [],
+        direct_regime_stress_context=direct_regime_stress_context,
     )
 
 
@@ -179,6 +185,7 @@ def _build_proof_pack(
     mandate_health: DpmMandateHealthSnapshot | None,
     mandate_evidence_gap_codes: list[str],
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
 ) -> DpmPreTradeProofPack:
     resolved_created_at = created_at or datetime.now(timezone.utc)
     result = RebalanceResult.model_validate(run.result_json) if run is not None else None
@@ -190,7 +197,10 @@ def _build_proof_pack(
         mandate_twin=mandate_twin,
         mandate_health=mandate_health,
     )
-    source_analytics = _source_analytics(selected_alternative)
+    source_analytics = _source_analytics(
+        selected_alternative=selected_alternative,
+        direct_regime_stress_context=direct_regime_stress_context,
+    )
     for analytics in source_analytics.values():
         source_hashes[analytics.source_hash_key] = analytics.content_hash
     portfolio_id = _resolve_portfolio_id(run=run, alternative_set=alternative_set)
@@ -1032,7 +1042,9 @@ def _source_hashes(
 
 
 def _source_analytics(
+    *,
     selected_alternative: ConstructionAlternative | None,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
 ) -> dict[str, ProofPackSourceAnalytics]:
     families: tuple[ProofPackAnalyticsFamily, ...] = (
         "risk",
@@ -1042,7 +1054,7 @@ def _source_analytics(
         "sustainability_preference",
         "regime_stress",
     )
-    return {
+    analytics_by_family: dict[str, ProofPackSourceAnalytics] = {
         family: analytics
         for family in families
         if (
@@ -1053,6 +1065,14 @@ def _source_analytics(
         )
         is not None
     }
+    if direct_regime_stress_context is not None and "regime_stress" not in analytics_by_family:
+        direct_analytics = source_analytics_for_context(
+            source_context=direct_regime_stress_context.model_dump(mode="json"),
+            family="regime_stress",
+        )
+        if direct_analytics is not None:
+            analytics_by_family["regime_stress"] = direct_analytics
+    return analytics_by_family
 
 
 def _source_refs(

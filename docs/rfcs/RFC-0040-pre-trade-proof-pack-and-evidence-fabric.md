@@ -8,7 +8,7 @@
 | **Owner** | `lotus-manage` |
 | **Business Sponsor Persona** | DPM head, portfolio manager, CIO desk, investment control, compliance, operations, audit, sales/pre-sales |
 | **Depends On** | RFC-0017, RFC-0019, RFC-0020, RFC-0021, RFC-0023, RFC-0036, RFC-0037, RFC-0038, RFC-0039, `lotus-core` RFC-0087 |
-| **Downstream Realization Depends On** | First-wave Gateway/Workbench, report/archive, AI memo, archive client-communication source events, source-enrichment, scenario contribution source evidence, and portfolio-memory integrations are implementation-backed; future OMS, PM-scoring, CIO approval/applicability evidence, direct proof-pack scenario enrichment, and profile-detail presentation remain downstream/source-owner WTBDs |
+| **Downstream Realization Depends On** | First-wave Gateway/Workbench, report/archive, AI memo, archive client-communication source events, source-enrichment, scenario contribution source evidence, direct source-owned proof-pack scenario enrichment, and portfolio-memory integrations are implementation-backed; future OMS, PM-scoring, CIO approval/applicability evidence, and profile-detail presentation remain downstream/source-owner WTBDs |
 | **Implementation Branch** | `feat/rfc0040-gold-standard-tightening` |
 | **Doc Location** | `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md` |
 | **Slice 0 Evidence** | `docs/rfcs/RFC-0040-source-map-and-gap-analysis.md` |
@@ -52,7 +52,7 @@ composes proof-pack truth, Workbench renders proof-pack review, report/render/ar
 governed proof-pack documents, `lotus-ai` owns review-gated PM memo execution, and portfolio-memory
 consumers preserve proof-pack lineage. The supported claim is deliberately bounded to those
 implemented flows and does not include external OMS execution, autonomous investment advice,
-PM-scoring, or direct scenario/CIO approval enrichment.
+PM-scoring, scenario contribution approval, or CIO approval enrichment.
 
 ---
 
@@ -303,7 +303,7 @@ Current gaps:
 | `liquidity_and_cash` | `lotus-manage` settlement engine | Captures settlement ladder, cash buffer, funding deficits. | `BLOCKED` on funding deficits; `PENDING_REVIEW` on policy breach. |
 | `fx_funding_plan` | market/FX source + manage diagnostics | Captures FX pair readiness, funding, base currency. | `BLOCKED` on missing required FX pairs. |
 | `currency_overlay_evidence` | manage policy + FX source | Captures hedge policy and overlay readiness. | `DEGRADED` if no overlay value; `BLOCKED` on source gaps. |
-| `scenario_and_regime_evidence` | risk/CIO authority context | Preserves selected-alternative `RegimeScenarioPackEvaluation:v1` source refs, scenario pack id, worst-case loss, policy threshold, supportability state, and bounded reason codes. | `DEGRADED` when no selected-alternative scenario-pack evidence is available. |
+| `scenario_and_regime_evidence` | risk/CIO authority context | Preserves selected-alternative `RegimeScenarioPackEvaluation:v1` source refs, scenario pack id, worst-case loss, policy threshold, supportability state, and bounded reason codes. Also accepts generation-time direct source-owned `regime_stress_context` when the selected alternative does not already carry regime-stress authority. | `DEGRADED` when no selected-alternative or direct source-owned scenario-pack evidence is available. |
 | `eligibility_and_restrictions` | core/eligibility/restriction authority | Captures product eligibility and restrictions. | `DEGRADED` until restriction sources are implemented. |
 | `sustainability_controls` | future sustainability authority | Captures ESG/sustainability only when source-backed. | `DEGRADED`; no unsupported ESG claim. |
 | `rule_results` | `lotus-manage` policy engine | Captures rule pass/warn/block outcomes. | `BLOCKED` if mandatory rules cannot be evaluated. |
@@ -1281,7 +1281,7 @@ Required artifacts:
 | Report input handoff | Proposed | Promote only after `DpmProofPackReportInput` contract tests, examples, and forbidden-field checks pass. |
 | AI evidence handoff | Proposed | Promote only after `DpmProofPackAiEvidenceInput` guardrail tests prove AI receives bounded evidence only. |
 | Proof-pack API certification | Proposed | Promote only after OpenAPI, API vocabulary, no-alias, error-path, and endpoint certification gates pass. |
-| Cross-app source/product integration | Supported for implemented report/render/archive materialization, AI PM memo handoff, source-owned risk/performance preservation, observed transaction-cost evidence, client restriction/sustainability profile preservation, portfolio-memory context consumers, and generated-document/client-delivery archive source events | Future OMS, PM-scoring, direct scenario/CIO contribution, and richer profile-detail presentation require source-owner products and live proof before promotion. |
+| Cross-app source/product integration | Supported for implemented report/render/archive materialization, AI PM memo handoff, source-owned risk/performance preservation, observed transaction-cost evidence, client restriction/sustainability profile preservation, direct source-owned scenario context preservation, portfolio-memory context consumers, and generated-document/client-delivery archive source events | Future OMS, PM-scoring, scenario contribution approval, CIO approval/applicability evidence, and richer profile-detail presentation require source-owner products and live proof before promotion. |
 | Gateway proof-pack composition | Supported through `lotus-gateway` PR #195 | Gateway composes proof-pack truth only and must not reconstruct proof-pack sections, hashes, report input, AI evidence, or source readiness. |
 | Workbench proof-pack review UX | Supported through `lotus-workbench` PR #156 and PR #164 | Workbench renders Gateway/manage truth only and must not synthesize proof-pack evidence, hashes, report input, AI evidence, or PM recommendations in browser code. |
 
@@ -1352,7 +1352,7 @@ Final post-merge audit result:
 | Gateway/Workbench realization RFC result | Slice 8 aligned downstream RFCs; subsequent WTBD work implemented the runtime product path in `lotus-gateway` PR #195, `lotus-workbench` PR #156/#164, and canonical platform QA. Gateway and Workbench remain consumers of manage-owned proof-pack truth, not evidence authorities. |
 | Skills/context/guidance decision | No Lotus skill or central context change is required; repo-local context was updated because repository-supported capability truth changed. |
 | Tests and evidence | Focused audit tests passed for the evidence generator, proof-pack service, proof-pack API, mandate-context hardening, and documentation current-state guardrails. The live manage evidence generator passed against canonical Postgres-backed manage runtime. |
-| Gold-standard conclusion | Manage backend RFC-0040 is implemented, audited, and live-proven, and the bounded first-wave product path is now implementation-backed across Gateway, Workbench, report/render/archive, AI memo handoff, archive client-communication source events, source-enrichment preservation, selected-alternative scenario-pack preservation, risk-owned scenario contribution evidence, and portfolio-memory consumers. The implementation reaches the expected standard for the supported scope; future OMS, PM-scoring, CIO approval/applicability evidence, direct proof-pack scenario enrichment, richer profile presentation, and autonomous advice remain unsupported. |
+| Gold-standard conclusion | Manage backend RFC-0040 is implemented, audited, and live-proven, and the bounded first-wave product path is now implementation-backed across Gateway, Workbench, report/render/archive, AI memo handoff, archive client-communication source events, source-enrichment preservation, selected-alternative scenario-pack preservation, direct source-owned scenario-pack enrichment, risk-owned scenario contribution evidence, and portfolio-memory consumers. The implementation reaches the expected standard for the supported scope; future OMS, PM-scoring, CIO approval/applicability evidence, richer profile presentation, and autonomous advice remain unsupported. |
 
 ---
 
@@ -1371,7 +1371,7 @@ implementation truth is available in the owning RFC, not only in the WTBD ledger
 | RFC40-WTBD-006 | Proof packs preserve source-owned risk/performance context from selected construction alternatives. | Manage does not compute risk/performance methodology locally. |
 | RFC40-WTBD-007 | Proof packs preserve `TransactionCostCurve:v1` observed booked-fee evidence from `lotus-core`. | Predictive execution quotes, market impact, venue routing, and min-cost execution optimization remain unsupported. |
 | RFC40-WTBD-008 | Proof packs preserve `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` evidence. | Regulatory suitability approval and security-level sustainability classification remain source-owner/future workflow scope. |
-| RFC40-WTBD-009 | Proof packs preserve selected-alternative `RegimeScenarioPackEvaluation:v1` context in `scenario_and_regime_evidence`, including source refs, source hashes, scenario pack id, worst-case loss, policy threshold, supportability state, and reason codes. `lotus-risk` PR #116 adds optional reconciled per-security `position_contributions` to the source product and published wiki truth at `7bd5f03`; platform mesh mirror truth landed through `lotus-platform` PR #321. | Direct proof-pack enrichment when no selected alternative carries scenario context, CIO approval workflow, effective-period exception posture, and portfolio/mandate applicability remain future source depth. |
+| RFC40-WTBD-009 | Proof packs preserve selected-alternative `RegimeScenarioPackEvaluation:v1` context in `scenario_and_regime_evidence`, including source refs, source hashes, scenario pack id, worst-case loss, policy threshold, supportability state, and reason codes. They also accept generation-time direct source-owned `regime_stress_context` when the selected alternative does not already carry regime-stress authority. `lotus-risk` PR #116 adds optional reconciled per-security `position_contributions` to the source product and published wiki truth at `7bd5f03`; platform mesh mirror truth landed through `lotus-platform` PR #321. | CIO approval workflow, effective-period exception posture, and portfolio/mandate applicability remain future source depth. |
 | RFC40-WTBD-010 | Manage, Gateway, Workbench, Report, AI, and Archive now preserve first-wave portfolio-memory lineage across proof-pack, wave, outcome, report, AI, generated-document archive, supersession, correction, client-delivery reissue, and bounded PM quality score-run lineage flows. `lotus-archive` PR #25 exposes `GET /documents/{document_id}/source-events` for the `lotus-archive.generated_document_client_communication.v1` family, merged as `aa3a3a8f28b666cb85100c0859f77ff2dab9cede` and wiki-published as `d5e5918`. Manage now also publishes `source_event_family_posture` so supported manage/report/AI/archive/PM-quality families are named in the API contract, external OMS execution is visible as a `DEFERRED_SOURCE_OWNER` boundary, and persisted PM quality score runs with source-owned Core PM-book member evidence project bounded `PM_QUALITY_SCORE_RUN` lineage without raw score payloads or portfolio-level rankings. | The current portfolio-memory support claim is complete without hidden execution or scoring support. Future OMS execution, PM quality UI, and richer score-run analytics remain separate roadmap scope. Archive source events deliberately exclude raw document bytes, storage keys, raw report payloads, and raw client references. |
 
 Audit evidence:
@@ -1426,8 +1426,9 @@ First-wave realization now includes:
 The supported product claim remains bounded. `lotus-manage` may claim proof-pack authority and the
 first-wave product path for generation, review, report-input materialization, governed AI handoff,
 source-context preservation, archive client-communication source-event lineage, and portfolio-memory
-lineage. It must not claim external OMS execution, autonomous investment advice, PM scoring, direct scenario
-contribution approval, or unsupported source-owner methodology.
+lineage. It must not claim external OMS execution, autonomous investment advice, PM scoring,
+scenario contribution approval, CIO approval/applicability evidence, or unsupported source-owner
+methodology.
 
 Cross-app completion requirement:
 

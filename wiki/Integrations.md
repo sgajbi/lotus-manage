@@ -147,8 +147,11 @@ uses FX readiness and bounded policy context. Regime-stress-aware construction c
 is configured, and still accepts caller-supplied source-backed scenario-pack authority context.
 When a selected construction alternative carries that context, proof packs preserve it in
 `scenario_and_regime_evidence` with source refs, canonical source hash, scenario pack id,
-worst-case loss, policy threshold, supportability state, and bounded reason codes. Manage does not
-generate scenario methodology, contribution rows, or CIO approval evidence locally.
+worst-case loss, policy threshold, supportability state, and bounded reason codes. Proof-pack
+generation can also accept direct source-owned `regime_stress_context` when the selected
+alternative does not already carry regime-stress authority. Manage does not generate scenario
+methodology, contribution rows, CIO approval evidence, effective-period exceptions, or
+portfolio/mandate applicability evidence locally.
 ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
 `SustainabilityPreferenceProfile:v1` through the same stateful core-sourcing path. Manage can block
 candidate trades that violate hard client restrictions and can flag sustainability allocation or
