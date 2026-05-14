@@ -308,9 +308,12 @@ Current repository posture:
     platform mesh governance through `lotus-platform` PR #313
     (`4218d4319d5dac82e87106429fadb14247c36515`), and consumed by `lotus-manage` for bounded
     `RISK_EVENT` wave preview/create over caller-supplied candidate portfolios with
-    source-supplied exposure weights. Tactical house-view cohorts, implicit campaign cohorts,
-    Gateway/Workbench rendering of wave risk/performance analytics posture, and external OMS
-    execution remain unpromoted until owning implementations are live-proven.
+    source-supplied exposure weights. `BULK_REVIEW_CAMPAIGN` additionally preserves optional
+    Manage-owned approval, expiry, access-purpose, source-ref, and actor-entitlement governance
+    evidence without discovering source-owned cohorts. Tactical house-view cohorts, persisted
+    campaign definitions, global campaign discovery, Gateway/Workbench rendering of campaign or
+    wave risk/performance analytics posture, and external OMS execution remain unpromoted until
+    owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,

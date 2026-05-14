@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T00:28:23.161412+00:00",
+  "generatedAt": "2026-05-14T00:54:47.949263+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -28,8 +28,8 @@
       "semanticId": "lotus.access_purpose",
       "canonicalTerm": "access_purpose",
       "preferredName": "access_purpose",
-      "description": "Permitted purpose for this score run.",
-      "example": "PORTFOLIO_MANAGEMENT_REVIEW",
+      "description": "Bank access purpose preserved in campaign membership diagnostics.",
+      "example": "sample_access_purpose",
       "type": "string",
       "locations": [
         "body"
@@ -465,6 +465,20 @@
       ]
     },
     {
+      "semanticId": "lotus.approval_ref",
+      "canonicalTerm": "approval_ref",
+      "preferredName": "approval_ref",
+      "description": "Optional bank approval reference for this bulk-review campaign. When any approval field is supplied, all approval fields are required.",
+      "example": "approval_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.approval_required",
       "canonicalTerm": "approval_required",
       "preferredName": "approval_required",
@@ -506,6 +520,34 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.approved_at",
+      "canonicalTerm": "approved_at",
+      "preferredName": "approved_at",
+      "description": "Optional approval timestamp or business date from the bank control record.",
+      "example": "approved_at_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.approved_by",
+      "canonicalTerm": "approved_by",
+      "preferredName": "approved_by",
+      "description": "Optional approving actor or committee identifier.",
+      "example": "approved_by_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -1087,6 +1129,20 @@
       "example": {
         "sample_key": "sample_value"
       },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.campaign_governance",
+      "canonicalTerm": "campaign_governance",
+      "preferredName": "campaign_governance",
+      "description": "Optional Manage-owned governance evidence for `BULK_REVIEW_CAMPAIGN`, covering approval reference, expiry, actor entitlement, access purpose, and source refs. Manage validates this envelope but does not infer source-owned cohort facts.",
+      "example": "campaign_governance_example",
       "type": "object",
       "locations": [
         "body"
@@ -2512,6 +2568,22 @@
       ]
     },
     {
+      "semanticId": "lotus.entitled_actor_ids",
+      "canonicalTerm": "entitled_actor_ids",
+      "preferredName": "entitled_actor_ids",
+      "description": "Optional actor allow-list for this campaign. When supplied, actor_id must be listed.",
+      "example": [
+        "sample_entitled_actor_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.entity_id",
       "canonicalTerm": "entity_id",
       "preferredName": "entity_id",
@@ -2954,6 +3026,20 @@
       "example": {
         "sample_key": "sample_value"
       },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.expires_on",
+      "canonicalTerm": "expires_on",
+      "preferredName": "expires_on",
+      "description": "Optional campaign expiry date. Expired campaigns fail closed for preview/create.",
+      "example": "expires_on_example",
       "type": "object",
       "locations": [
         "body"
@@ -58493,6 +58579,118 @@
             "type": "array",
             "semanticId": "lotus.portfolio_types",
             "attributeRef": "#/attributeCatalog/lotus.portfolio_types"
+          },
+          {
+            "name": "campaign_governance",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_governance",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_governance"
+          },
+          {
+            "name": "campaign_governance.approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "campaign_governance.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "campaign_governance.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "campaign_governance.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "campaign_governance.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "campaign_governance.access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "campaign_governance.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "campaign_governance.source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "campaign_governance.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       },
@@ -59548,6 +59746,118 @@
             "type": "array",
             "semanticId": "lotus.portfolio_types",
             "attributeRef": "#/attributeCatalog/lotus.portfolio_types"
+          },
+          {
+            "name": "campaign_governance",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_governance",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_governance"
+          },
+          {
+            "name": "campaign_governance.approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "campaign_governance.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "campaign_governance.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "campaign_governance.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "campaign_governance.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "campaign_governance.access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "campaign_governance.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "campaign_governance.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "campaign_governance.source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "campaign_governance.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       },

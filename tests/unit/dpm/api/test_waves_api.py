@@ -242,6 +242,27 @@ def _bulk_review_campaign_request() -> dict[str, object]:
     }
 
 
+def _bulk_review_campaign_governance() -> dict[str, object]:
+    return {
+        "approval_ref": "BRC-APPROVAL-2026-05",
+        "approved_by": "cio_ops_committee",
+        "approved_at": "2026-05-09T09:30:00+08:00",
+        "expires_on": "2026-06-30",
+        "entitled_actor_ids": ["pm_001", "ops"],
+        "access_purpose": "SUPERVISORY_BULK_REVIEW",
+        "source_refs": [
+            {
+                "source_system": "lotus-manage",
+                "source_type": "BULK_REVIEW_CAMPAIGN_APPROVAL_RECORD",
+                "source_id": "brc-approval-2026-05",
+                "source_version": "1.0.0",
+                "supportability_state": "READY",
+                "content_hash": "sha256:bulk-review-approval",
+            }
+        ],
+    }
+
+
 def _pm_book_membership_payload(
     *,
     supportability_state: str = "READY",
@@ -1089,6 +1110,34 @@ def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> N
     assert item["diagnostics"]["eligible_portfolio_types"] == ["DISCRETIONARY"]
 
 
+def test_bulk_review_campaign_preview_preserves_governance_evidence() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    request = {
+        **_bulk_review_campaign_request(),
+        "campaign_governance": _bulk_review_campaign_governance(),
+    }
+
+    with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=request,
+            headers={"X-Correlation-Id": "corr-bulk-review-governance"},
+        )
+
+    assert response.status_code == 200
+    item = response.json()["wave"]["items"][0]
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "BulkReviewCampaignGovernance",
+        "BULK_REVIEW_CAMPAIGN_APPROVAL_RECORD",
+    }
+    assert item["diagnostics"]["campaign_governance_status"] == "APPROVED"
+    assert item["diagnostics"]["campaign_approval_ref"] == "BRC-APPROVAL-2026-05"
+    assert item["diagnostics"]["campaign_access_purpose"] == "SUPERVISORY_BULK_REVIEW"
+    assert item["diagnostics"]["campaign_expiry_state"] == "ACTIVE"
+    assert item["diagnostics"]["campaign_actor_entitlement_state"] == "AUTHORIZED"
+
+
 def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())
@@ -1116,6 +1165,36 @@ def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
             {"as_of_date": "2026/05/10"},
             422,
             "INVALID_AS_OF_DATE",
+        ),
+        (
+            {"campaign_governance": {"approval_ref": "BRC-APPROVAL-2026-05"}},
+            422,
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE",
+        ),
+        (
+            {"campaign_governance": {**_bulk_review_campaign_governance(), "expires_on": "bad"}},
+            422,
+            "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
+        ),
+        (
+            {
+                "campaign_governance": {
+                    **_bulk_review_campaign_governance(),
+                    "expires_on": "2026-05-09",
+                }
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_EXPIRED",
+        ),
+        (
+            {
+                "campaign_governance": {
+                    **_bulk_review_campaign_governance(),
+                    "entitled_actor_ids": ["other_actor"],
+                }
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED",
         ),
         (
             {"portfolios": []},
