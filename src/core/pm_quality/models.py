@@ -31,6 +31,15 @@ PmQualityAccessPurpose = Literal[
     "CLIENT_DEMO_EVIDENCE",
 ]
 
+PmQualityFairnessSegmentType = Literal[
+    "MANDATE_TYPE",
+    "REGION",
+    "BOOK_PROFILE",
+    "CLIENT_CONSTRAINT_PROFILE",
+    "MARKET_REGIME",
+    "CUSTOM_SOURCE_SEGMENT",
+]
+
 
 class DpmPmQualityWeight(BaseModel):
     """One configured scoring dimension for PM operating quality."""
@@ -300,4 +309,89 @@ class DpmPmOperatingQualityScoreRun(BaseModel):
     content_hash: str = Field(description="Canonical score-run content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
     generated_by: str = Field(description="Actor or service that generated the score run.")
+    correlation_id: str = Field(description="Correlation identifier.")
+
+
+class DpmPmQualityFairnessSegmentResult(BaseModel):
+    """Cross-segment fairness posture for one source-defined PM-quality cohort."""
+
+    segment_id: str = Field(description="Source-defined segment identifier.")
+    segment_type: PmQualityFairnessSegmentType = Field(
+        description="Source-defined segment dimension used for governance comparison."
+    )
+    display_name: str = Field(description="Operator-facing segment label.")
+    state: PmQualityState = Field(description="Segment fairness analysis state.")
+    score_run_count: int = Field(
+        ge=0,
+        description="Number of persisted PM operating quality score runs included.",
+    )
+    average_score: Decimal | None = Field(
+        default=None,
+        description="Average score for scorable runs in this segment, null when blocked.",
+    )
+    minimum_score: Decimal | None = Field(
+        default=None,
+        description="Minimum scorable run score in this segment, null when blocked.",
+    )
+    maximum_score: Decimal | None = Field(
+        default=None,
+        description="Maximum scorable run score in this segment, null when blocked.",
+    )
+    reason_codes: list[str] = Field(description="Bounded segment-level reason codes.")
+    score_run_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Score-run source refs included in this segment."
+    )
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Source refs proving the segment definition."
+    )
+
+
+class DpmPmQualityFairnessAnalysis(BaseModel):
+    """Bounded fairness analysis over source-defined PM operating quality segments."""
+
+    product_name: Literal["PmOperatingQualityFairnessAnalysis"] = Field(
+        default="PmOperatingQualityFairnessAnalysis",
+        description="Domain data product name emitted by lotus-manage.",
+    )
+    product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    fairness_analysis_id: str = Field(
+        description="Stable content-addressed fairness-analysis identifier."
+    )
+    policy_id: str = Field(description="Policy identifier shared by included score runs.")
+    policy_version: str = Field(description="Policy version shared by included score runs.")
+    as_of_date: str = Field(description="Analysis business as-of date.")
+    state: PmQualityState = Field(description="Overall fairness-analysis state.")
+    segment_results: list[DpmPmQualityFairnessSegmentResult] = Field(
+        description="Source-defined segment comparison results."
+    )
+    minimum_segment_score_run_count: int = Field(
+        ge=1,
+        description="Minimum scorable runs required before comparing a segment.",
+    )
+    maximum_average_score_spread: Decimal = Field(
+        ge=0,
+        le=100,
+        description="Bank-governed maximum average-score spread before review is required.",
+    )
+    observed_average_score_spread: Decimal | None = Field(
+        default=None,
+        description="Observed spread between ready segment average scores, null when blocked.",
+    )
+    reason_codes: list[str] = Field(description="Bounded analysis-level reason codes.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Deduplicated score-run and segment source refs used by the analysis."
+    )
+    forbidden_uses: list[str] = Field(
+        default_factory=lambda: [
+            "protected_class_inference",
+            "compensation_decision",
+            "hr_decision",
+            "conduct_enforcement",
+            "autonomous_pm_ranking",
+        ],
+        description="Uses explicitly outside this product contract.",
+    )
+    content_hash: str = Field(description="Canonical fairness-analysis content hash.")
+    generated_at: datetime = Field(description="UTC generation timestamp.")
+    generated_by: str = Field(description="Actor or service that generated the analysis.")
     correlation_id: str = Field(description="Correlation identifier.")

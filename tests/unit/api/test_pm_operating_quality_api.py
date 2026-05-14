@@ -15,6 +15,14 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityScoreRunRepository,
 )
+from src.core.pm_quality import (
+    DpmPmOperatingQualityPolicy,
+    DpmPmOperatingQualityScoreRun,
+    DpmPmQualityEvidenceItem,
+    DpmPmQualityGovernanceApproval,
+    DpmPmQualityWeight,
+    build_pm_operating_quality_score_run,
+)
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
@@ -93,6 +101,45 @@ def _request_with_policy_ref(outcome_review_id: str = "dor_001") -> dict:
     payload["policy_id"] = policy["policy_id"]
     payload["policy_version"] = policy["policy_version"]
     return payload
+
+
+def _source_only_score_run(
+    *, pm_id: str, score: Decimal, correlation_id: str = "corr"
+) -> DpmPmOperatingQualityScoreRun:
+    policy = DpmPmOperatingQualityPolicy(
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+        enabled=True,
+        as_of_date="2026-05-12",
+        access_purpose="SUPERVISORY_CONTROL_REVIEW",
+        weights=[
+            DpmPmQualityWeight(
+                indicator="SOURCE_QUALITY",
+                weight=Decimal("100"),
+                minimum_evidence_count=1,
+            )
+        ],
+        governance_approval=DpmPmQualityGovernanceApproval.model_validate(_governance_approval()),
+    )
+    return build_pm_operating_quality_score_run(
+        pm_id=pm_id,
+        book_id="sg_dpm_book",
+        as_of_date="2026-05-12",
+        policy=policy,
+        evidence_items=[
+            DpmPmQualityEvidenceItem(
+                indicator="SOURCE_QUALITY",
+                evidence_state="READY",
+                score=score,
+                source_system="lotus-risk",
+                source_type="RiskMetricsReport",
+                source_id=f"risk-{pm_id}",
+            )
+        ],
+        outcome_reviews=[],
+        generated_by="ops",
+        correlation_id=correlation_id,
+    )
 
 
 def _pm_book_membership_payload(
@@ -468,6 +515,156 @@ def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() 
     assert missing.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
 
 
+def test_pm_operating_quality_api_previews_source_segment_fairness_analysis() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    balanced_1 = _source_only_score_run(pm_id="pm_bal_001", score=Decimal("92"))
+    balanced_2 = _source_only_score_run(
+        pm_id="pm_bal_002", score=Decimal("88"), correlation_id="corr-balanced-2"
+    )
+    income_1 = _source_only_score_run(
+        pm_id="pm_inc_001", score=Decimal("60"), correlation_id="corr-income-1"
+    )
+    income_2 = _source_only_score_run(
+        pm_id="pm_inc_002", score=Decimal("58"), correlation_id="corr-income-2"
+    )
+    for score_run in [balanced_1, balanced_2, income_1, income_2]:
+        score_run_repository.save_score_run(score_run=score_run)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+                json={
+                    "policy_id": "pmq_sg_dpm",
+                    "policy_version": "2026.05",
+                    "as_of_date": "2026-05-12",
+                    "minimum_segment_score_run_count": 2,
+                    "maximum_average_score_spread": "15",
+                    "actor_id": "ops",
+                    "segments": [
+                        {
+                            "segment_id": "mandate_balanced",
+                            "segment_type": "MANDATE_TYPE",
+                            "display_name": "Balanced DPM Mandates",
+                            "score_run_ids": [
+                                balanced_1.score_run_id,
+                                balanced_2.score_run_id,
+                            ],
+                            "source_refs": [
+                                {
+                                    "source_system": "lotus-core",
+                                    "source_type": "MandateTypeSegment",
+                                    "source_id": "mandate_balanced",
+                                }
+                            ],
+                        },
+                        {
+                            "segment_id": "mandate_income",
+                            "segment_type": "MANDATE_TYPE",
+                            "display_name": "Income DPM Mandates",
+                            "score_run_ids": [income_1.score_run_id, income_2.score_run_id],
+                            "source_refs": [
+                                {
+                                    "source_system": "lotus-core",
+                                    "source_type": "MandateTypeSegment",
+                                    "source_id": "mandate_income",
+                                }
+                            ],
+                        },
+                    ],
+                },
+                headers={"X-Correlation-Id": "corr-pmq-fairness"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    fairness_analysis = response.json()["fairness_analysis"]
+    assert fairness_analysis["product_name"] == "PmOperatingQualityFairnessAnalysis"
+    assert fairness_analysis["state"] == "PENDING_REVIEW"
+    assert Decimal(fairness_analysis["observed_average_score_spread"]) == Decimal("31.00")
+    assert fairness_analysis["reason_codes"] == ["PM_QUALITY_FAIRNESS_SPREAD_REVIEW_REQUIRED"]
+    assert fairness_analysis["correlation_id"] == "corr-pmq-fairness"
+    assert "protected_class_inference" in fairness_analysis["forbidden_uses"]
+    assert {
+        result["segment_id"]: Decimal(result["average_score"])
+        for result in fairness_analysis["segment_results"]
+    } == {"mandate_balanced": Decimal("90.00"), "mandate_income": Decimal("59.00")}
+    assert any(
+        ref["source_type"] == "PmOperatingQualityScoreRun"
+        for ref in fairness_analysis["source_refs"]
+    )
+
+
+def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_runs() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    ready_run = _source_only_score_run(pm_id="pm_ready", score=Decimal("90"))
+    mismatched_run = _source_only_score_run(pm_id="pm_mismatch", score=Decimal("91")).model_copy(
+        update={"as_of_date": "2026-05-13"}
+    )
+    score_run_repository.save_score_run(score_run=ready_run)
+    score_run_repository.save_score_run(score_run=mismatched_run)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
+    try:
+        with TestClient(app) as client:
+            missing = client.post(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+                json={
+                    "policy_id": "pmq_sg_dpm",
+                    "policy_version": "2026.05",
+                    "as_of_date": "2026-05-12",
+                    "actor_id": "ops",
+                    "segments": [
+                        {
+                            "segment_id": "region_sg",
+                            "segment_type": "REGION",
+                            "display_name": "Singapore",
+                            "score_run_ids": [ready_run.score_run_id],
+                        },
+                        {
+                            "segment_id": "region_hk",
+                            "segment_type": "REGION",
+                            "display_name": "Hong Kong",
+                            "score_run_ids": ["missing"],
+                        },
+                    ],
+                },
+            )
+            blocked = client.post(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+                json={
+                    "policy_id": "pmq_sg_dpm",
+                    "policy_version": "2026.05",
+                    "as_of_date": "2026-05-12",
+                    "actor_id": "ops",
+                    "minimum_segment_score_run_count": 1,
+                    "segments": [
+                        {
+                            "segment_id": "region_sg",
+                            "segment_type": "REGION",
+                            "display_name": "Singapore",
+                            "score_run_ids": [ready_run.score_run_id],
+                        },
+                        {
+                            "segment_id": "region_hk",
+                            "segment_type": "REGION",
+                            "display_name": "Hong Kong",
+                            "score_run_ids": [mismatched_run.score_run_id],
+                        },
+                    ],
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
+    assert blocked.status_code == 200
+    fairness_analysis = blocked.json()["fairness_analysis"]
+    assert fairness_analysis["state"] == "BLOCKED"
+    assert "PM_QUALITY_FAIRNESS_AS_OF_DATE_MISMATCH" in fairness_analysis["reason_codes"]
+
+
 def test_pm_operating_quality_api_returns_disabled_score_run_without_score() -> None:
     payload = _request()
     payload["policy"] = _policy(enabled=False)
@@ -551,3 +748,10 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert "200" in schema["paths"][policy_get_path]["put"]["responses"]
     assert "200" in schema["paths"][policy_get_path]["get"]["responses"]
     assert "not compute PM scores" in schema["paths"][policy_list_path]["get"]["description"]
+
+    fairness_path = "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview"
+    assert fairness_path in schema["paths"]
+    assert "200" in schema["paths"][fairness_path]["post"]["responses"]
+    fairness_description = schema["paths"][fairness_path]["post"]["description"]
+    assert all(marker in fairness_description for marker in ["What:", "When:", "How:"])
+    assert "does not infer protected classes" in fairness_description

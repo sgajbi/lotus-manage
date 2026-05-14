@@ -938,10 +938,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "DpmOutcomeReportInput" in rfc
     assert "DpmOutcomeAiEvidenceInput" in rfc
     assert (
-        "PM operating quality policy and score-run lifecycle | Supported as separate Manage-owned "
-        "first-wave product"
+        "PM operating quality policy, score-run, and fairness-analysis lifecycle | Supported as "
+        "separate Manage-owned first-wave product"
     ) in rfc
     assert "PmOperatingQualityScoreRun:v1" in rfc
+    assert "PmOperatingQualityFairnessAnalysis:v1" in rfc
+    assert "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview" in rfc
     assert "/api/v1/rebalance/pm-operating-quality/score-runs/preview" in rfc
     assert "PortfolioManagerBookMembership:v1" in rfc
     assert "pm_book_scope" in rfc
@@ -1242,11 +1244,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are implemented"
+        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are implemented"
         in work_to_be_done
     )
     assert "book_scope_evidence" in work_to_be_done

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T08:27:43.393370+00:00",
+  "generatedAt": "2026-05-14T13:08:43.284972+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -807,6 +807,20 @@
       "preferredName": "average_cost_bps",
       "description": "Observed average cost in basis points; not a predictive execution quote.",
       "example": "average_cost_bps_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.average_score",
+      "canonicalTerm": "average_score",
+      "preferredName": "average_score",
+      "description": "Average score for scorable runs in this segment, null when blocked.",
+      "example": "average_score_example",
       "type": "object",
       "locations": [
         "body"
@@ -3365,6 +3379,36 @@
       ]
     },
     {
+      "semanticId": "lotus.fairness_analysis",
+      "canonicalTerm": "fairness_analysis",
+      "preferredName": "fairness_analysis",
+      "description": "Bounded fairness analysis over source-defined PM operating quality segments.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmPmQualityFairnessAnalysis",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmPmQualityFairnessAnalysis"
+      ]
+    },
+    {
+      "semanticId": "lotus.fairness_analysis_id",
+      "canonicalTerm": "fairness_analysis_id",
+      "preferredName": "fairness_analysis_id",
+      "description": "Stable content-addressed fairness-analysis identifier.",
+      "example": "FAIRNESS_ANALYSIS_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.fairness_review_ref",
       "canonicalTerm": "fairness_review_ref",
       "preferredName": "fairness_review_ref",
@@ -5476,11 +5520,40 @@
       ]
     },
     {
+      "semanticId": "lotus.maximum_average_score_spread",
+      "canonicalTerm": "maximum_average_score_spread",
+      "preferredName": "maximum_average_score_spread",
+      "description": "Bank-governed maximum average-score spread before review is required.",
+      "example": "maximum_average_score_spread_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object",
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.maximum_horizon_days",
       "canonicalTerm": "maximum_horizon_days",
       "preferredName": "maximum_horizon_days",
       "description": "authoritative liquidity reserve requirement field: maximum horizon days.",
       "example": "maximum_horizon_days_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.maximum_score",
+      "canonicalTerm": "maximum_score",
+      "preferredName": "maximum_score",
+      "description": "Maximum scorable run score in this segment, null when blocked.",
+      "example": "maximum_score_example",
       "type": "object",
       "locations": [
         "body"
@@ -5745,6 +5818,34 @@
       ],
       "observedTypes": [
         "number"
+      ]
+    },
+    {
+      "semanticId": "lotus.minimum_score",
+      "canonicalTerm": "minimum_score",
+      "preferredName": "minimum_score",
+      "description": "Minimum scorable run score in this segment, null when blocked.",
+      "example": "minimum_score_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.minimum_segment_score_run_count",
+      "canonicalTerm": "minimum_segment_score_run_count",
+      "preferredName": "minimum_segment_score_run_count",
+      "description": "Minimum scorable score runs required before a segment is comparable.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -6094,6 +6195,20 @@
       "preferredName": "observed_at",
       "description": "UTC timestamp when the source value was observed.",
       "example": "observed_at_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.observed_average_score_spread",
+      "canonicalTerm": "observed_average_score_spread",
+      "preferredName": "observed_average_score_spread",
+      "description": "Observed spread between ready segment average scores, null when blocked.",
+      "example": "observed_average_score_spread_example",
       "type": "object",
       "locations": [
         "body"
@@ -8614,6 +8729,20 @@
       ]
     },
     {
+      "semanticId": "lotus.score_run_count",
+      "canonicalTerm": "score_run_count",
+      "preferredName": "score_run_count",
+      "description": "Number of persisted PM operating quality score runs included.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.score_run_id",
       "canonicalTerm": "score_run_id",
       "preferredName": "score_run_id",
@@ -8626,6 +8755,38 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.score_run_ids",
+      "canonicalTerm": "score_run_ids",
+      "preferredName": "score_run_ids",
+      "description": "Persisted PM operating quality score runs assigned to this source segment.",
+      "example": [
+        "sample_score_run_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.score_run_refs",
+      "canonicalTerm": "score_run_refs",
+      "preferredName": "score_run_refs",
+      "description": "Score-run source refs included in this segment.",
+      "example": [
+        "score_run_refs_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -8746,6 +8907,66 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.segment_id",
+      "canonicalTerm": "segment_id",
+      "preferredName": "segment_id",
+      "description": "Source-defined segment identifier.",
+      "example": "SEGMENT_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.segment_results",
+      "canonicalTerm": "segment_results",
+      "preferredName": "segment_results",
+      "description": "Source-defined segment comparison results.",
+      "example": [
+        "segment_results_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.segment_type",
+      "canonicalTerm": "segment_type",
+      "preferredName": "segment_type",
+      "description": "Source-defined segment dimension used for governance comparison.",
+      "example": "MANDATE_TYPE",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.segments",
+      "canonicalTerm": "segments",
+      "preferredName": "segments",
+      "description": "Source-defined segments to compare. Manage does not infer protected classes or discover segments locally.",
+      "example": [
+        "segments_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -13672,6 +13893,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "x_correlation_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional correlation id.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_correlation_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
     },
     {
       "name": "policy_id",
@@ -86646,6 +86879,525 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "POST",
+      "path": "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+      "operationId": "preview_pm_quality_fairness_analysis_endpoint_api_v1_rebalance_pm_operating_quality_fairness_analyses_preview_post",
+      "summary": "Preview PM operating quality cross-segment fairness analysis",
+      "request": {
+        "fields": [
+          {
+            "name": "x-correlation-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "segments",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.segments",
+            "attributeRef": "#/attributeCatalog/lotus.segments"
+          },
+          {
+            "name": "segments[].segment_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_id",
+            "attributeRef": "#/attributeCatalog/lotus.segment_id"
+          },
+          {
+            "name": "segments[].segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "segments[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "segments[].score_run_ids",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.score_run_ids",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_ids"
+          },
+          {
+            "name": "segments[].source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "segments[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "segments[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "segments[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "segments[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "segments[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "minimum_segment_score_run_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_segment_score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_segment_score_run_count"
+          },
+          {
+            "name": "maximum_average_score_spread",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_average_score_spread"
+          },
+          {
+            "name": "actor_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "fairness_analysis",
+            "location": "body",
+            "required": true,
+            "type": "DpmPmQualityFairnessAnalysis",
+            "semanticId": "lotus.fairness_analysis",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis"
+          },
+          {
+            "name": "fairness_analysis.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "fairness_analysis.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "fairness_analysis.fairness_analysis_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_analysis_id",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis_id"
+          },
+          {
+            "name": "fairness_analysis.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "fairness_analysis.policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "fairness_analysis.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "fairness_analysis.state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analysis.segment_results",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.segment_results",
+            "attributeRef": "#/attributeCatalog/lotus.segment_results"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].segment_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_id",
+            "attributeRef": "#/attributeCatalog/lotus.segment_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_count"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].average_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.average_score",
+            "attributeRef": "#/attributeCatalog/lotus.average_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].minimum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_score",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].maximum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_score",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.score_run_refs",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_refs"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.minimum_segment_score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.minimum_segment_score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_segment_score_run_count"
+          },
+          {
+            "name": "fairness_analysis.maximum_average_score_spread",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.maximum_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_average_score_spread"
+          },
+          {
+            "name": "fairness_analysis.observed_average_score_spread",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.observed_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.observed_average_score_spread"
+          },
+          {
+            "name": "fairness_analysis.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analysis.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.forbidden_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.forbidden_uses",
+            "attributeRef": "#/attributeCatalog/lotus.forbidden_uses"
+          },
+          {
+            "name": "fairness_analysis.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          },
+          {
+            "name": "fairness_analysis.generated_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_by",
+            "attributeRef": "#/attributeCatalog/lotus.generated_by"
+          },
+          {
+            "name": "fairness_analysis.correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           }
         ]
       }

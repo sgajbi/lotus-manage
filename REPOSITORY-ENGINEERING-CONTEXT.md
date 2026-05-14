@@ -277,6 +277,14 @@ Current repository posture:
     source-owned lotus-core `PortfolioManagerBookMembership:v1` scope materialization.
     Portfolio memory now projects those persisted source-backed score runs as
     `PM_QUALITY_SCORE_RUN` lineage events for matching PM-book members only.
+    Manage also supports bounded PM operating quality fairness-analysis preview at
+    `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview` through
+    `PmOperatingQualityFairnessAnalysis:v1`: callers supply persisted score-run ids and
+    source-defined segment evidence for mandate type, region, book profile, client constraint
+    profile, market regime, or custom source segments; Manage validates common policy/as-of scope,
+    minimum scorable segment counts, and governed average-score spread without inferring protected
+    classes or creating PM rankings, HR, compensation, conduct, approval, client-contact,
+    execution, or OMS decisions.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy and score-run truth without Gateway-local scoring,
