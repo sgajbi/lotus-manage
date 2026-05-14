@@ -1647,9 +1647,10 @@ Functional coverage:
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can
   preserve source authority instead of reconstructing readiness,
-- unsupported tactical house-view trigger rejection with `NOT_SUPPORTED_TRIGGER` and source-product
-  gap reasons; tactical house-view ownership is decided for a future `lotus-advise`
-  `TacticalHouseViewAffectedCohort:v1`,
+- bounded source-owned tactical house-view consumption through lotus-advise
+  `TacticalHouseViewAffectedCohort:v1` over bank-authored tactical-view refs and caller-supplied
+  source-backed candidate portfolios, with fail-closed dependency handling and no Manage-local
+  house-view, holdings, exposure, alignment, or mandate calculation,
 - durable create with idempotent replay,
 - durable source-check from `CREATED` to `SOURCE_CHECKED`,
 - item classification as `SOURCE_READY`, `SOURCE_DEGRADED`, `REVIEW_REQUIRED`, or

@@ -25,20 +25,24 @@ composition.
    `RegimeScenarioPackEvaluation:v1` supports regime-stress-aware construction when configured;
    `RiskEventAffectedCohort:v1` supports fail-closed `RISK_EVENT` rebalance wave preview/create
    from caller-supplied candidate portfolios and source-supplied exposure weights.
-5. `lotus-manage` owns bounded `BulkReviewCampaignMembership:v1` for `BULK_REVIEW_CAMPAIGN`
+5. `lotus-manage` uses the bounded `lotus-advise` authority client for advisory/CIO tactical
+   house-view cohort evidence. `TacticalHouseViewAffectedCohort:v1` supports fail-closed
+   `TACTICAL_HOUSE_VIEW` rebalance wave preview/create from bank-authored tactical-view refs and
+   caller-supplied source-backed candidate portfolios.
+6. `lotus-manage` owns bounded `BulkReviewCampaignMembership:v1` for `BULK_REVIEW_CAMPAIGN`
    rebalance wave preview/create from source-backed candidate portfolios. Underlying holdings,
    risk, performance, advisory, tax, and restriction facts remain owned by their source apps.
-6. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
+7. `lotus-manage` accepts portfolio snapshots, market-data snapshots, model targets, shelf data, and
    options through request contracts. When those inputs are core-referenced, `lotus-core` remains the
    source-data authority.
-7. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
+8. `lotus-gateway` is the primary product-facing consumer of `lotus-manage` capabilities and workflow
    surfaces.
-8. Current downstream evidence for capability discovery flows through
+9. Current downstream evidence for capability discovery flows through
    `lotus-gateway/src/app/clients/dpm_client.py` against `GET /api/v1/integration/capabilities`; the
    canonical `lotus-manage` query contract remains snake_case `consumer_system` and `tenant_id`.
-9. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
+10. Downstream cleanup for stale Gateway capability and proposal-era DPM client behavior is tracked in
    `sgajbi/lotus-gateway#178`.
-10. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
+11. Downstream cleanup for Workbench proposal simulation ownership and documentation clarity is
    tracked in `sgajbi/lotus-workbench#135`.
 
 ## `lotus-core` Contract Family Posture
@@ -57,6 +61,12 @@ composition.
 | --- | --- | --- | --- | --- |
 | `REGIME_STRESS_AWARE` construction | `lotus-risk` owns scenario-pack evaluation and supportability | Analytics source product | preserve scenario-pack supportability, reason codes, and worst-case loss evidence in construction alternatives | manage may gate alternatives on source output, but must not own risk scenario methodology |
 | `RISK_EVENT` rebalance waves | `lotus-risk` owns risk-event affected-cohort evaluation over supplied candidate portfolios and exposure weights | Cohort membership source product | preview/create source-owned affected-portfolio waves from `RiskEventAffectedCohort:v1` | manage must fail closed on unavailable, rejected, incomplete, or empty source cohorts and must not compute risk-event impact locally |
+
+## `lotus-advise` Contract Family Posture
+
+| Manage surface | Upstream authority relationship | RFC-0082 family | Manage use | Boundary rule |
+| --- | --- | --- | --- | --- |
+| `TACTICAL_HOUSE_VIEW` rebalance waves | `lotus-advise` owns tactical house-view affected-cohort evaluation over bank-authored tactical-view refs and supplied source-backed candidate portfolios | Cohort membership source product | preview/create source-owned affected-portfolio waves from `TacticalHouseViewAffectedCohort:v1` | manage must fail closed on unavailable, rejected, incomplete, or empty source cohorts and must not compute advisory, house-view, holdings, exposure, alignment, or mandate facts locally |
 
 ## Manage-Owned Contract Families
 

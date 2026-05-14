@@ -52,16 +52,12 @@ SUPPORTED_CREATE_TRIGGER_TYPES = {
     "EXPLICIT_PORTFOLIO_LIST",
     "PM_BOOK_REVIEW",
     "CIO_MODEL_CHANGE",
+    "TACTICAL_HOUSE_VIEW",
     "RISK_EVENT",
     "BULK_REVIEW_CAMPAIGN",
 }
 
-UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES = {
-    "TACTICAL_HOUSE_VIEW": (
-        "Tactical house-view waves require a governed CIO or risk house-view cohort source "
-        "product before manage can preview or create them."
-    ),
-}
+UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES: dict[str, str] = {}
 
 
 class DpmWaveValidationError(ValueError):

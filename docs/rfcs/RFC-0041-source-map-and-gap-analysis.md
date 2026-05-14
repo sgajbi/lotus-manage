@@ -17,7 +17,7 @@ owner and reason codes.
 | --- | --- |
 | Existing source products, manage modules, repositories, migrations, APIs, and tests reviewed | Reviewed current `lotus-manage` RFC-0038 mandate, RFC-0039 construction, RFC-0040 proof-pack, run-support, workflow, source-sourcing, domain-data-product, telemetry, migration, RFC, and wiki surfaces. Reviewed relevant `lotus-core` RFC-0087 source products and portfolio query evidence. |
 | Every source dependency and feature claim classified | Classified below as `already sufficient`, `proven`, `must implement in owner`, `deferred with no support claim`, or `not applicable`. |
-| First-wave trigger subset defined | First implementation scope began with explicit portfolio-list waves. Source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohort discovery are now implementation-backed through lotus-core source products. Tactical house-view Manage consumption and richer bulk-campaign cohorts remain deferred until owning implementations exist. |
+| First-wave trigger subset defined | First implementation scope began with explicit portfolio-list waves. Source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohort discovery are now implementation-backed through lotus-core source products. Bounded `RISK_EVENT` and `TACTICAL_HOUSE_VIEW` cohorts are now consumed from their owning source products, and bounded `BULK_REVIEW_CAMPAIGN` membership is implemented in Manage over source-backed candidates. |
 | Unsupported trigger posture defined | Unsupported triggers must reject create/preview with `NOT_SUPPORTED_TRIGGER` or produce a degraded preview with no supported-feature claim, depending on endpoint semantics. They must not silently fall back to all portfolios, sample data, local hardcoded lists, or UI-only filters. |
 | State-machine transition matrix finalized | The Slice 0 transition matrix below is the implementation contract for Slice 3 and later API guards. |
 | Branch and evidence-output path decided | Implementation branch is `feat/rfc0041-implementation`; live evidence will be written under `output/rfc0041-wave-proof/<timestamp>/`. |
@@ -46,6 +46,7 @@ owner and reason codes.
 | PM-book portfolio membership | `lotus-core` | `PortfolioManagerBookMembership:v1` is implemented, validated, and consumed by manage for `PM_BOOK_REVIEW` preview/create. | Proven for source-owned PM-book discovery. | Support `PM_BOOK_REVIEW` only through lotus-core source evidence; reject caller-supplied portfolios for that trigger. |
 | CIO model-change affected portfolios | `lotus-core` model binding/event source | `CioModelChangeAffectedCohort:v1` is implemented, validated, and consumed by manage for `CIO_MODEL_CHANGE` preview/create. It returns approved model-version identity, deterministic model-change event id, affected mandate bindings, supportability, and lineage. | Proven for source-owned first-wave CIO model-change affected-mandate discovery. | Support `CIO_MODEL_CHANGE` only through lotus-core affected-cohort evidence; reject caller-supplied portfolios for that trigger. |
 | Risk-event affected portfolios | `lotus-risk` risk-event cohort source product | `RiskEventAffectedCohort:v1` is implemented in `lotus-risk`, mirrored in platform mesh governance, and consumed by manage for bounded `RISK_EVENT` preview/create over caller-supplied candidate portfolios with source-supplied exposure weights. | Proven for bounded source-owned risk-event affected-cohort discovery. | Support `RISK_EVENT` only through lotus-risk affected-cohort evidence; require caller-supplied candidates and exposure weights; fail closed when source authority is unavailable, rejected, incomplete, or empty. |
+| Tactical house-view affected portfolios | `lotus-advise` tactical house-view cohort source product | `TacticalHouseViewAffectedCohort:v1` is implemented in `lotus-advise` and consumed by manage for bounded `TACTICAL_HOUSE_VIEW` preview/create over caller-supplied source-backed candidate portfolios. | Proven for bounded source-owned tactical house-view affected-cohort consumption. | Support `TACTICAL_HOUSE_VIEW` only through lotus-advise affected-cohort evidence; require bank-authored tactical view refs, candidate source refs, source-owned portfolio type and discretionary mandate posture, eligible DPM portfolio types, and fail-closed source dependency handling. |
 | Mandate binding and model id per item | `lotus-core` and `lotus-manage` mandate twin | RFC-0087 mandate-binding product and RFC-0038 mandate twin exist. | Proven for per-portfolio checks. | Required for `READY`; missing or mismatched evidence blocks the item. |
 | Source readiness per item | `lotus-core` RFC-0087 source-readiness products | `DpmSourceReadiness:v1` is declared and implemented in `lotus-core`; manage currently has stateful source context but no wave source-check service. | Must implement in manage using existing owner product. | Slice 5 adds item source checks and preserves source refs, owner, product version, freshness, and reason codes. |
 | Mandate health and exceptions | `lotus-manage` RFC-0038 | Mandate health snapshots and monitoring exceptions exist. | Already sufficient. | Missing health degrades or blocks according to item policy; unresolved exceptions may make item `REVIEW_REQUIRED`. |
@@ -66,9 +67,9 @@ owner and reason codes.
 | `EXPLICIT_PORTFOLIO_LIST` | Supported first | Non-empty portfolio id list, trigger rationale, as-of date, actor/correlation context. | Reject empty or malformed list; source-check each item and preserve partial readiness. | Promote only after preview/create/source-check/simulate/approve/stage/handoff live proof with mixed item states. |
 | `PM_BOOK_REVIEW` | Supported for source-owned PM-book discovery | `portfolio_manager_id`, as-of date, optional tenant/booking-center filters, and eligible portfolio types. | Reject caller-supplied portfolios; return dependency failures for unavailable, incomplete, or empty source cohorts. | Promote only while lotus-core `PortfolioManagerBookMembership:v1` remains the source authority. |
 | `CIO_MODEL_CHANGE` | Supported for source-owned model-change affected-mandate discovery | `model_portfolio_id`, as-of date, optional tenant and booking-center filters. | Reject caller-supplied portfolios; return dependency failures for unavailable, incomplete, or empty source cohorts. | Promote only while lotus-core `CioModelChangeAffectedCohort:v1` remains the source authority. |
-| `TACTICAL_HOUSE_VIEW` | Deferred with no support claim | Future CIO/risk scenario or approved portfolio manifest. | `NOT_SUPPORTED_TRIGGER`. | Promote only after scenario/house-view authority exists or approved manifest rules are implemented. |
+| `TACTICAL_HOUSE_VIEW` | Supported for bounded source-owned tactical house-view affected-cohort consumption | Bank-authored tactical house-view payload with source refs, as-of date, candidate portfolios, source-owned `portfolio_type`, source-owned `discretionary_mandate`, candidate source refs, eligible portfolio types, and optional minimum tactical exposure weight. | Reject missing source evidence; return dependency failures for unavailable, rejected, incomplete, or empty source cohorts. | Promote only while lotus-advise `TacticalHouseViewAffectedCohort:v1` remains the source authority; manage must not compute house-view, holdings, exposure, alignment, or mandate facts locally. |
 | `RISK_EVENT` | Supported for bounded source-owned risk-event affected-cohort discovery | `risk_event_id`, as-of date, candidate portfolios, and source-supplied `exposure_weights`. | Reject missing selector/candidates/exposure weights; return dependency failures for unavailable, rejected, incomplete, or empty source cohorts. | Promote only while lotus-risk `RiskEventAffectedCohort:v1` remains the source authority; manage must not compute risk-event impact locally. |
-| `BULK_REVIEW_CAMPAIGN` | Deferred, except supplied manifest posture | Explicit portfolio ids and campaign rationale. | `NOT_SUPPORTED_TRIGGER` for implicit campaign discovery. | Promote only after campaign source and permissions are governed. |
+| `BULK_REVIEW_CAMPAIGN` | Supported for bounded Manage-owned campaign membership over supplied source-backed candidates | Source-backed candidate portfolios, source-owned `portfolio_type`, source refs, as-of date, eligible portfolio types, and optional governance evidence. | Reject missing candidate/source/governance evidence or empty eligible membership; no global discovery. | Promote only for the bounded membership envelope; global campaign discovery and downstream campaign UI remain future work. |
 
 ## State-Machine Transition Matrix
 
@@ -120,7 +121,7 @@ correlation id, idempotency key where applicable, expected version, and generate
 | Gap | Owner | Decision | Required future proof |
 | --- | --- | --- | --- |
 | Certified affected-portfolio discovery by PM book or portfolio manager | `lotus-core` | Implemented for first-wave PM-book discovery through `PortfolioManagerBookMembership:v1`; richer relationship-householding and entitlement hierarchy remain future source products. | Keep source-product tests, manage consumer tests, and supported-feature truth current. |
-| Certified affected-mandate discovery by model-change event | `lotus-core` | Implemented for first-wave CIO model-change discovery through `CioModelChangeAffectedCohort:v1`; tactical house-view, risk-event, and campaign cohorts remain future source products. | Keep source-product tests, manage consumer tests, and supported-feature truth current. |
+| Certified affected-mandate discovery by model-change event | `lotus-core` | Implemented for first-wave CIO model-change discovery through `CioModelChangeAffectedCohort:v1`; risk-event and tactical house-view cohorts are implemented through their owning source products; global campaign discovery remains future source/product depth. | Keep source-product tests, manage consumer tests, and supported-feature truth current. |
 | Wave domain-data product declaration | `lotus-manage` | Implement after wave API and persistence are stable. | Repo-native producer declaration, telemetry fixture, platform catalog regeneration, consumer dependencies. |
 | Wave trust telemetry | `lotus-manage` | Implement after producer declaration exists. | Validated telemetry snapshot and live evidence path. |
 | Gateway wave composition | `lotus-gateway` | Tighten or add downstream RFC in Slice 9 after manage API shape stabilizes. | Gateway RFC, typed client, OpenAPI tests, no-reconstruction tests, live gateway proof. |
@@ -489,9 +490,10 @@ Evidence:
 Production boundary:
 
 1. Slice 10 proves the manage backend authority, not the full front-office product experience.
-2. Gateway and Workbench remain unpromoted until their implementation RFCs are executed and proven.
-3. Automatic PM-book and CIO model-change cohort discovery remain deferred until source-owning
-   products expose implementation-backed source evidence.
+2. Gateway and Workbench remained unpromoted until their implementation RFCs were executed and
+   proven; first-wave command-center support is now implementation-backed in owning repos.
+3. Automatic PM-book and CIO model-change cohort discovery are now source-backed through lotus-core
+   products.
 4. RFC-0041 proceeded to Slice 11 hardening and Slice 12 final closure after live proof passed.
 
 ## Slice 11 Hardening Review Result
@@ -598,9 +600,8 @@ Closure result:
    endpoint certification, README/wiki governance, pre-merge gate, and front-office runtime skills
    were sufficient. No central context or AGENTS.md operating-contract update is required by this
    final closure slice.
-5. Remaining unpromoted capabilities are explicit: automatic PM-book discovery, automatic CIO
-   model-change affected-cohort discovery, Gateway composition implementation, Workbench command
-   center implementation, report materialization, AI memo generation, and external execution.
+5. Remaining unpromoted capabilities are explicit: global campaign discovery, downstream campaign
+   product surfaces, richer source-owner depth, and external execution.
 
 Validation:
 

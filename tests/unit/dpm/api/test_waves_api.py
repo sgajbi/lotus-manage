@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
+    get_advise_authority_client,
     get_campaign_definition_repository,
     get_construction_repository,
     get_mandate_repository,
@@ -48,6 +49,11 @@ from src.infrastructure.risk_authority import (
     LotusRiskAuthorityUnavailableError,
     RiskEventAffectedCohort,
     RiskEventAffectedPortfolio,
+)
+from src.infrastructure.advise_authority import (
+    LotusAdviseAuthorityUnavailableError,
+    TacticalHouseViewAffectedCohort,
+    TacticalHouseViewAffectedPortfolio,
 )
 from src.core.waves import (
     DpmWaveAlreadyExistsError,
@@ -189,6 +195,55 @@ def _risk_event_request() -> dict[str, object]:
                         "source_id": "source-readiness-001",
                         "source_version": "v1",
                         "supportability_state": "READY",
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _tactical_house_view_request() -> dict[str, object]:
+    return {
+        "trigger_type": "TACTICAL_HOUSE_VIEW",
+        "trigger_id": "tactical-house-view-20260514",
+        "rationale": "Review DPM portfolios affected by the US quality overweight.",
+        "as_of_date": "2026-05-14",
+        "actor_id": "cio_001",
+        "portfolio_types": ["DISCRETIONARY", "DPM"],
+        "min_tactical_exposure_weight": 0.05,
+        "tactical_house_view": {
+            "tactical_view_id": "THV_2026_Q2_US_QUALITY",
+            "tactical_view_version": "2026.05",
+            "theme_id": "US_QUALITY_EQUITIES",
+            "target_action": "INCREASE",
+            "rationale": "Increase US quality equity exposure for discretionary mandates.",
+            "source_refs": [
+                {
+                    "source_system": "lotus-advise",
+                    "source_type": "TACTICAL_HOUSE_VIEW_DECISION",
+                    "source_id": "thv-us-quality-2026-05",
+                    "source_version": "2026.05",
+                    "supportability_state": "READY",
+                    "content_hash": "sha256:tactical-house-view",
+                }
+            ],
+        },
+        "portfolios": [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "mandate_id": MANDATE_ID,
+                "portfolio_type": "DISCRETIONARY",
+                "discretionary_mandate": True,
+                "current_exposure_weight": 0.18,
+                "alignment_signal": "UNDERWEIGHT",
+                "source_refs": [
+                    {
+                        "source_system": "lotus-core",
+                        "source_type": "HoldingsAsOf",
+                        "source_id": "holdings-asof-pb-sg-global-bal-001",
+                        "source_version": "v1",
+                        "supportability_state": "READY",
+                        "content_hash": "sha256:holdings-thv",
                     }
                 ],
             }
@@ -480,6 +535,74 @@ class _RiskEventAuthority:
         )
 
 
+class _TacticalHouseViewAuthority:
+    def __init__(
+        self,
+        *,
+        supportability: str = "READY",
+        affected_portfolios: tuple[TacticalHouseViewAffectedPortfolio, ...] | None = None,
+        unavailable_error: str | None = None,
+    ) -> None:
+        self.supportability = supportability
+        self.affected_portfolios = affected_portfolios
+        self.unavailable_error = unavailable_error
+        self.calls: list[dict[str, object]] = []
+
+    def tactical_house_view_affected_cohort(
+        self,
+        **kwargs: object,
+    ) -> TacticalHouseViewAffectedCohort:
+        self.calls.append(kwargs)
+        if self.unavailable_error is not None:
+            raise LotusAdviseAuthorityUnavailableError(self.unavailable_error)
+        source_refs = (
+            {
+                "source_system": "lotus-advise",
+                "source_type": "TACTICAL_HOUSE_VIEW_DECISION",
+                "source_id": "thv-us-quality-2026-05",
+                "source_version": "2026.05",
+                "content_hash": "sha256:tactical-house-view",
+            },
+            {
+                "source_system": "lotus-core",
+                "source_type": "HoldingsAsOf",
+                "source_id": "holdings-asof-pb-sg-global-bal-001",
+                "source_version": "v1",
+                "content_hash": "sha256:holdings-thv",
+            },
+        )
+        return TacticalHouseViewAffectedCohort(
+            cohort_id="sha256:tactical-cohort",
+            tactical_view_id="THV_2026_Q2_US_QUALITY",
+            tactical_view_version="2026.05",
+            theme_id="US_QUALITY_EQUITIES",
+            as_of_date="2026-05-14",
+            target_action="INCREASE",
+            product_name="TacticalHouseViewAffectedCohort",
+            product_version="v1",
+            source_service="lotus-advise",
+            content_hash="sha256:tactical-cohort-content",
+            supportability_state=self.supportability,
+            supportability_reason_codes=("TACTICAL_HOUSE_VIEW_AFFECTED_COHORT_READY",),
+            affected_portfolios=(
+                self.affected_portfolios
+                if self.affected_portfolios is not None
+                else (
+                    TacticalHouseViewAffectedPortfolio(
+                        portfolio_id=PORTFOLIO_ID,
+                        mandate_id=MANDATE_ID,
+                        inclusion_reason_codes=(
+                            "TACTICAL_HOUSE_VIEW_PORTFOLIO_AFFECTED",
+                            "TACTICAL_HOUSE_VIEW_UNDERWEIGHT",
+                        ),
+                        source_refs=source_refs,
+                    ),
+                )
+            ),
+            source_refs=source_refs,
+        )
+
+
 def _rebalance_request(portfolio_id: str = PORTFOLIO_ID) -> dict[str, object]:
     return {
         "portfolio_snapshot": {
@@ -505,6 +628,7 @@ def _client(
     proof_pack_repository: InMemoryDpmProofPackRepository | None = None,
     outcome_review_repository: InMemoryDpmOutcomeReviewRepository | None = None,
     run_service: DpmRunSupportService | None = None,
+    advise_authority_client: object | None = None,
     risk_authority_client: object | None = None,
     campaign_definition_repository: InMemoryDpmBulkReviewCampaignDefinitionRepository | None = None,
 ) -> TestClient:
@@ -523,6 +647,7 @@ def _client(
         app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     if run_service is not None:
         app.dependency_overrides[get_dpm_run_support_service] = lambda: run_service
+    app.dependency_overrides[get_advise_authority_client] = lambda: advise_authority_client
     if risk_authority_client is not None:
         app.dependency_overrides[get_risk_authority_client] = lambda: risk_authority_client
     app.openapi_schema = None
@@ -1106,6 +1231,238 @@ def test_risk_event_wave_create_persists_resolved_source_owned_cohort() -> None:
     assert payload["wave"]["trigger"]["trigger_type"] == "RISK_EVENT"
     assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
     assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+def test_tactical_house_view_wave_preview_resolves_advise_owned_cohort() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    advise_authority = _TacticalHouseViewAuthority()
+
+    with _client(
+        mandate_repository,
+        InMemoryDpmWaveRepository(),
+        advise_authority_client=advise_authority,
+    ) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_tactical_house_view_request(),
+            headers={"X-Correlation-Id": "corr-tactical-house-view-preview"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["durable"] is False
+    assert payload["wave"]["trigger"]["trigger_type"] == "TACTICAL_HOUSE_VIEW"
+    assert payload["wave"]["trigger"]["source_refs"][0]["source_type"] == (
+        "TacticalHouseViewAffectedCohort"
+    )
+    item = payload["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert item["mandate_id"] == MANDATE_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "TacticalHouseViewAffectedCohort",
+        "TACTICAL_HOUSE_VIEW",
+        "TACTICAL_HOUSE_VIEW_AFFECTED_PORTFOLIO",
+        "HoldingsAsOf",
+        "MANDATE_DIGITAL_TWIN",
+    }
+    assert item["diagnostics"]["source_product"] == "TacticalHouseViewAffectedCohort:v1"
+    assert item["diagnostics"]["tactical_view_id"] == "THV_2026_Q2_US_QUALITY"
+    assert advise_authority.calls == [
+        {
+            "tactical_view": {
+                "tactical_view_id": "THV_2026_Q2_US_QUALITY",
+                "tactical_view_version": "2026.05",
+                "theme_id": "US_QUALITY_EQUITIES",
+                "as_of_date": "2026-05-14",
+                "target_action": "INCREASE",
+                "rationale": "Increase US quality equity exposure for discretionary mandates.",
+                "source_refs": [
+                    {
+                        "source_system": "lotus-advise",
+                        "source_type": "TACTICAL_HOUSE_VIEW_DECISION",
+                        "source_id": "thv-us-quality-2026-05",
+                        "source_version": "2026.05",
+                        "supportability_state": "READY",
+                        "content_hash": "sha256:tactical-house-view",
+                    }
+                ],
+                "reason_codes": ["TACTICAL_HOUSE_VIEW_BANK_AUTHORED"],
+            },
+            "candidate_portfolios": [
+                {
+                    "portfolio_id": PORTFOLIO_ID,
+                    "mandate_id": MANDATE_ID,
+                    "portfolio_type": "DISCRETIONARY",
+                    "discretionary_mandate": True,
+                    "current_exposure_weight": "0.18",
+                    "alignment_signal": "UNDERWEIGHT",
+                    "source_refs": [
+                        {
+                            "source_system": "lotus-core",
+                            "source_type": "HoldingsAsOf",
+                            "source_id": "holdings-asof-pb-sg-global-bal-001",
+                            "source_version": "v1",
+                            "supportability_state": "READY",
+                            "content_hash": "sha256:holdings-thv",
+                        }
+                    ],
+                    "reason_codes": ["TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_BACKED"],
+                }
+            ],
+            "eligible_portfolio_types": ["DISCRETIONARY", "DPM"],
+            "min_exposure_weight": Decimal("0.05"),
+            "correlation_id": "corr-tactical-house-view-preview",
+        }
+    ]
+
+
+def test_tactical_house_view_wave_create_persists_resolved_advise_owned_cohort() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        advise_authority_client=_TacticalHouseViewAuthority(),
+    ) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves",
+            json=_tactical_house_view_request(),
+            headers={"Idempotency-Key": "idem-tactical-house-view-wave"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["durable"] is True
+    assert payload["wave"]["trigger"]["trigger_type"] == "TACTICAL_HOUSE_VIEW"
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+@pytest.mark.parametrize(
+    ("request_patch", "expected_status", "expected_code"),
+    [
+        ({"as_of_date": "2026/05/14"}, 422, "INVALID_AS_OF_DATE"),
+        ({"tactical_house_view": None}, 422, "TACTICAL_HOUSE_VIEW_REQUIRED"),
+        ({"portfolios": []}, 422, "TACTICAL_HOUSE_VIEW_CANDIDATE_PORTFOLIOS_REQUIRED"),
+        ({"portfolio_types": [" "]}, 422, "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED"),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "discretionary_mandate": True,
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-core",
+                                "source_type": "HoldingsAsOf",
+                                "source_id": "holdings-asof-pb-sg-global-bal-001",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPE_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-core",
+                                "source_type": "HoldingsAsOf",
+                                "source_id": "holdings-asof-pb-sg-global-bal-001",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "TACTICAL_HOUSE_VIEW_DISCRETIONARY_MANDATE_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "discretionary_mandate": True,
+                        "source_refs": [],
+                    }
+                ]
+            },
+            422,
+            "TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_REFS_REQUIRED",
+        ),
+    ],
+)
+def test_tactical_house_view_wave_preview_rejects_invalid_source_evidence(
+    request_patch: dict[str, object],
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    request = {**_tactical_house_view_request(), **request_patch}
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        advise_authority_client=_TacticalHouseViewAuthority(),
+    ) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+
+
+@pytest.mark.parametrize(
+    ("authority", "expected_status", "expected_code"),
+    [
+        (None, 503, "DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE"),
+        (
+            _TacticalHouseViewAuthority(
+                unavailable_error="LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED"
+            ),
+            424,
+            "LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED",
+        ),
+        (
+            _TacticalHouseViewAuthority(supportability="EMPTY", affected_portfolios=()),
+            424,
+            "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+        ),
+        (
+            _TacticalHouseViewAuthority(supportability="BLOCKED", affected_portfolios=()),
+            424,
+            "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
+        ),
+    ],
+)
+def test_tactical_house_view_wave_preview_maps_advise_source_failures(
+    authority: object | None,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        advise_authority_client=authority,
+    ) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_tactical_house_view_request(),
+        )
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
 
 
 def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> None:
@@ -3386,28 +3743,6 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
     assert "cannot propagate external execution claims" in report_input.json()["detail"]["message"]
 
 
-def test_wave_preview_and_create_reject_source_owner_triggers_without_fallback() -> None:
-    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
-        tactical_preview = client.post(
-            "/api/v1/rebalance/waves/preview",
-            json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
-        )
-        tactical_create = client.post(
-            "/api/v1/rebalance/waves",
-            headers={"Idempotency-Key": "tactical-wave-unsupported"},
-            json={**_request(), "trigger_type": "TACTICAL_HOUSE_VIEW"},
-        )
-
-    for response in [tactical_preview, tactical_create]:
-        assert response.status_code == 422
-        assert response.json()["detail"]["code"] == "NOT_SUPPORTED_TRIGGER"
-
-    assert (
-        "governed CIO or risk house-view cohort source product"
-        in (tactical_preview.json()["detail"]["message"])
-    )
-
-
 def test_wave_openapi_documents_preview_and_create() -> None:
     with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
         openapi = client.get("/openapi.json").json()
@@ -3446,30 +3781,8 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     )
     assert "422" in preview["responses"]
     assert "409" in create["responses"]
-    assert (
-        "TACTICAL_HOUSE_VIEW"
-        in (
-            preview["responses"]["422"]["content"]["application/json"]["example"]["detail"][
-                "message"
-            ]
-        )
-    )
-    assert (
-        "governed CIO or risk house-view cohort source product"
-        in (
-            preview["responses"]["422"]["content"]["application/json"]["example"]["detail"][
-                "message"
-            ]
-        )
-    )
-    assert (
-        "TACTICAL_HOUSE_VIEW"
-        in (
-            create["responses"]["422"]["content"]["application/json"]["example"]["detail"][
-                "message"
-            ]
-        )
-    )
+    assert "TACTICAL_HOUSE_VIEW" in preview["description"]
+    assert "TacticalHouseViewAffectedCohort:v1" in create["description"]
     assert "durable RFC-0041 waves" in search["description"]
     assert "does not regenerate downstream" in detail["description"]
     assert "without UI-side recomputation" in items["description"]
