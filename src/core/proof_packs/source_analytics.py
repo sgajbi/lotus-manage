@@ -54,6 +54,16 @@ def source_analytics_for_alternative(
         return None
     authority_context = _mapping(alternative.diagnostics.get("authority_context"))
     source_context = _mapping(authority_context.get(f"{family}_context"))
+    return source_analytics_for_context(source_context=source_context, family=family)
+
+
+def source_analytics_for_context(
+    *,
+    source_context: dict[str, Any],
+    family: ProofPackAnalyticsFamily,
+) -> ProofPackSourceAnalytics | None:
+    """Return source-owned analytics from an explicit authority context payload."""
+
     if not source_context:
         return None
     if family == "risk":

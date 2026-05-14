@@ -728,6 +728,52 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
     )
 
 
+def test_selected_alternative_proof_pack_accepts_direct_regime_scenario_pack_source() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_direct_regime_scenario_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    pack = build_proof_pack_from_selected_alternative(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        run=_run_record(result=result),
+        created_by="pm_001",
+        reason="Attach source-owned scenario-pack evidence directly to the proof pack.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+        direct_regime_stress_context=AuthoritativeRegimeStressContext(
+            supportability_status="READY",
+            source_system="lotus-risk",
+            scenario_pack_id="CIO_REGIME_2026_Q3",
+            worst_case_loss_pct=Decimal("0.0700"),
+            maximum_allowed_loss_pct=Decimal("0.1200"),
+            reason_codes=["REGIME_SCENARIO_WITHIN_POLICY"],
+        ),
+    )
+
+    scenario = _section(pack, "scenario_and_regime_evidence")
+
+    assert scenario.state == "READY"
+    assert scenario.facts["source_system"] == "lotus-risk"
+    assert scenario.facts["source_product_name"] == "RegimeScenarioPackEvaluation"
+    assert scenario.facts["scenario_pack_id"] == "CIO_REGIME_2026_Q3"
+    assert scenario.metrics["worst_case_loss_pct"] == "0.0700"
+    assert scenario.metrics["maximum_allowed_loss_pct"] == "0.1200"
+    assert scenario.reason_codes == ["REGIME_SCENARIO_WITHIN_POLICY"]
+    assert pack.source_hashes["regime_stress_context"].startswith("sha256:")
+    assert any(
+        ref.source_system == "lotus-risk"
+        and ref.source_type == "RegimeScenarioPackEvaluation"
+        and ref.source_id == "CIO_REGIME_2026_Q3"
+        for ref in pack.sections[0].source_refs
+    )
+
+
 def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
     result = _ready_rebalance_result()
     authority_context = ConstructionAuthorityContext(

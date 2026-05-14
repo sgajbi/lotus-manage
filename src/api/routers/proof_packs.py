@@ -15,6 +15,7 @@ from src.api.dependencies import (
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import proof_pack_service
+from src.core.construction.models import AuthoritativeRegimeStressContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs import render_proof_pack_markdown
@@ -92,6 +93,15 @@ class DpmProofPackGenerateRequest(BaseModel):
         default=None,
         description="Mandate identifier when available.",
         examples=["mandate_001"],
+    )
+    regime_stress_context: AuthoritativeRegimeStressContext | None = Field(
+        default=None,
+        description=(
+            "Optional source-owned `RegimeScenarioPackEvaluation:v1` context for direct "
+            "proof-pack scenario/regime enrichment. It is used only when the selected "
+            "construction alternative does not already carry regime-stress authority context; "
+            "Manage preserves the source evidence and does not calculate scenario methodology."
+        ),
     )
 
 
@@ -185,6 +195,7 @@ def generate_proof_pack(
                 run_service=run_service,
                 mandate_repository=mandate_repository,
                 proof_pack_repository=proof_pack_repository,
+                direct_regime_stress_context=request.regime_stress_context,
             )
         else:
             if not request.alternative_set_id or not request.selected_alternative_id:
@@ -204,6 +215,7 @@ def generate_proof_pack(
                 run_service=run_service,
                 mandate_repository=mandate_repository,
                 proof_pack_repository=proof_pack_repository,
+                direct_regime_stress_context=request.regime_stress_context,
             )
         proof_pack = proof_pack_service.ensure_handoff_refs(
             proof_pack=proof_pack,

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T13:08:43.284972+00:00",
+  "generatedAt": "2026-05-14T13:54:20.854067+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -56112,6 +56112,62 @@
             "type": "object",
             "semanticId": "lotus.mandate_id",
             "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+          },
+          {
+            "name": "regime_stress_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.regime_stress_context",
+            "attributeRef": "#/attributeCatalog/lotus.regime_stress_context"
+          },
+          {
+            "name": "regime_stress_context.supportability_status",
+            "location": "body",
+            "required": true,
+            "type": "ConstructionMethodStatus",
+            "semanticId": "lotus.supportability_status",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_status"
+          },
+          {
+            "name": "regime_stress_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "regime_stress_context.scenario_pack_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.scenario_pack_id",
+            "attributeRef": "#/attributeCatalog/lotus.scenario_pack_id"
+          },
+          {
+            "name": "regime_stress_context.worst_case_loss_pct",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.worst_case_loss_pct",
+            "attributeRef": "#/attributeCatalog/lotus.worst_case_loss_pct"
+          },
+          {
+            "name": "regime_stress_context.maximum_allowed_loss_pct",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.maximum_allowed_loss_pct",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_allowed_loss_pct"
+          },
+          {
+            "name": "regime_stress_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
           }
         ]
       },

@@ -349,10 +349,12 @@ Operationally important truths:
 5. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to 400 days so low-turnover private-banking
    portfolios can consume observed booked-fee evidence without treating it as predictive execution
    cost, venue, or market-impact methodology.
-6. selected-alternative proof packs preserve `RegimeScenarioPackEvaluation:v1` evidence only when
-   source-backed scenario context is carried by the chosen construction alternative. Manage records
+6. proof packs preserve source-owned `RegimeScenarioPackEvaluation:v1` evidence when scenario
+   context is carried by the chosen construction alternative or supplied directly at generation
+   time as `regime_stress_context`. Selected-alternative evidence takes precedence. Manage records
    scenario pack id, worst-case loss, policy threshold, supportability, lineage, and reason codes;
-   it does not generate scenario methodology, contribution rows, or CIO approval evidence locally.
+   it does not generate scenario methodology, contribution rows, CIO approval evidence,
+   effective-period exceptions, or portfolio/mandate applicability evidence locally.
 7. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
