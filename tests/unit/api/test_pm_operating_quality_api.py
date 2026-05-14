@@ -220,6 +220,10 @@ def test_pm_operating_quality_api_materializes_pm_book_scope(monkeypatch) -> Non
     score_run = response.json()["score_run"]
     assert score_run["book_scope_evidence"]["source_id"] == "pm-book-snapshot-20260512"
     assert score_run["book_scope_evidence"]["returned_portfolio_count"] == 2
+    assert score_run["book_scope_evidence"]["member_portfolio_ids"] == [
+        "PB_SG_GLOBAL_BAL_001",
+        "PB_SG_GLOBAL_INC_002",
+    ]
     assert score_run["book_scope_evidence"]["filters_applied"]["portfolio_types"] == ["DPM"]
     assert any(
         ref["source_type"] == "PortfolioManagerBookMembership" for ref in score_run["source_refs"]

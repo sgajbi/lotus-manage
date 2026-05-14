@@ -1892,9 +1892,8 @@ Functional behavior:
 - publishes aggregate and event-level retention, redaction, access, and audit policy:
   `DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y`, `NO_RAW_PAYLOADS`,
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
-- publishes `source_event_family_posture` for supported manage, report, AI, and archive families
-  plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution and
-  `SEPARATE_PRODUCT_NO_EVENT_FAMILY` posture for PM operating quality score-run lifecycle,
+- publishes `source_event_family_posture` for supported manage, report, AI, archive, and PM quality
+  score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1909,8 +1908,9 @@ Non-functional posture:
   when present.
 - Future OMS execution remains roadmap scope and is visible as deferred posture rather than hidden
   portfolio-memory functionality. Persisted PM operating quality score runs are implemented
-  separately at `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` remains pinned as
-  no projected portfolio-memory events until a separate event family is governed.
+  separately at `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` projects only
+  bounded `PM_QUALITY_SCORE_RUN` lineage for score runs whose source-owned Core PM-book evidence
+  includes the requested portfolio.
 
 ```mermaid
 flowchart LR
@@ -2013,17 +2013,18 @@ Functional coverage:
 - persisted outcome reviews can be included as source-backed outcome-discipline and source-quality
   evidence,
 - optional PM-book scope resolves from lotus-core, records returned portfolio count,
-  source-applied filters, source refs, and fail-closed source readiness,
+  bounded member portfolio ids, source-applied filters, source refs, and fail-closed source
+  readiness,
 - every score run returns decomposed indicator results, reason codes, source refs, generated
   content hash, correlation id, and forbidden-use posture,
-- portfolio memory advertises PM scoring as a separate product with no projected score events.
+- portfolio memory advertises PM scoring as a separate product and projects only bounded
+  source-backed score-run lineage events without numeric score metadata.
 
 Non-functional posture:
 
 - The endpoint does not create HR, compensation, conduct-enforcement, autonomous-ranking,
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
-- Downstream UI, portfolio-memory score-event projection, and advanced cross-segment fairness
-  analytics remain future expansion.
+- Downstream UI and advanced cross-segment fairness analytics remain future expansion.
 
 Evidence commands:
 

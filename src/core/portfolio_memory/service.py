@@ -11,6 +11,8 @@ from src.core.mandates import (
     DpmSourceProductLineage,
 )
 from src.core.outcomes.models import DpmOutcomeEvent, DpmOutcomeSourceRef, DpmPostTradeOutcomeReview
+from src.core.pm_quality.models import DpmPmOperatingQualityScoreRun
+from src.core.pm_quality.repository import DpmPmQualityScoreRunRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
@@ -48,6 +50,7 @@ def build_portfolio_memory(
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
     mandate_repository: DpmMandateRepository | None = None,
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
     limit: int = 100,
     generated_at: datetime | None = None,
 ) -> DpmPortfolioMemory:
@@ -84,6 +87,15 @@ def build_portfolio_memory(
             outcome_review_id=review.outcome_review_id
         )
         events.extend(_outcome_review_events(review=review, persisted_events=persisted_events))
+
+    if pm_quality_score_run_repository is not None:
+        events.extend(
+            _pm_quality_score_run_events(
+                portfolio_id=portfolio_id,
+                score_run_repository=pm_quality_score_run_repository,
+                limit=limit,
+            )
+        )
 
     events = _dedupe_and_sort(events)[:limit]
     event_type_counts = _counts(event.event_type for event in events)
@@ -241,14 +253,16 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
             family_key="pm_scoring",
             source_system="lotus-manage",
             owner="lotus-manage PM operating quality product",
-            support_status="SEPARATE_PRODUCT_NO_EVENT_FAMILY",
-            event_types=[],
+            support_status="SUPPORTED",
+            event_types=["PM_QUALITY_SCORE_RUN"],
             route="/api/v1/rebalance/pm-operating-quality/score-runs",
-            reason_code="PM_QUALITY_SCORE_RUN_SUPPORTED_SEPARATELY",
+            reason_code="PM_QUALITY_SCORE_RUN_SOURCE_EVENTS_SUPPORTED",
             summary=(
                 "Persisted PM operating quality score runs are supported as a separate explicit "
                 "Manage product with bank-supplied policy and source-backed evidence; portfolio "
-                "memory projects no PM-scoring events until a separate event family is governed."
+                "memory projects only source-backed score-run lineage for portfolios included in "
+                "Core PM-book membership evidence and does not copy raw score payloads or create "
+                "portfolio-level rankings."
             ),
         ),
     ]
@@ -589,6 +603,84 @@ def _outcome_review_events(
             )
         )
     return events
+
+
+def _pm_quality_score_run_events(
+    *,
+    portfolio_id: str,
+    score_run_repository: DpmPmQualityScoreRunRepository,
+    limit: int,
+) -> list[DpmPortfolioMemoryEvent]:
+    score_runs = score_run_repository.list_score_runs(limit=limit)
+    return [
+        _pm_quality_score_run_event(score_run)
+        for score_run in score_runs
+        if _score_run_includes_portfolio(score_run=score_run, portfolio_id=portfolio_id)
+    ]
+
+
+def _pm_quality_score_run_event(
+    score_run: DpmPmOperatingQualityScoreRun,
+) -> DpmPortfolioMemoryEvent:
+    source_refs = sorted(
+        [_from_outcome_source_ref(ref) for ref in score_run.source_refs],
+        key=lambda ref: (ref.source_system, ref.source_type, ref.source_id),
+    )
+    return DpmPortfolioMemoryEvent(
+        event_id=f"memory:pm_quality:{score_run.score_run_id}",
+        event_type="PM_QUALITY_SCORE_RUN",
+        event_time=score_run.generated_at.isoformat(),
+        actor=score_run.generated_by,
+        source_system="lotus-manage",
+        source_type="DPM_PM_OPERATING_QUALITY_SCORE_RUN",
+        source_id=score_run.score_run_id,
+        status=score_run.state,
+        supportability_state=_state(score_run.state),
+        summary=(
+            f"PM operating quality score run {score_run.score_run_id} is available for "
+            f"PM {score_run.pm_id} under policy {score_run.policy_id}:{score_run.policy_version}."
+        ),
+        reason_codes=score_run.reason_codes,
+        source_refs=source_refs,
+        artifact_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="PmOperatingQualityScoreRun",
+                source_id=score_run.score_run_id,
+                source_version=score_run.product_version,
+                content_hash=score_run.content_hash,
+            )
+        ],
+        content_hash=score_run.content_hash,
+        metadata={
+            "pm_id": score_run.pm_id,
+            "book_id": score_run.book_id,
+            "as_of_date": score_run.as_of_date,
+            "policy_id": score_run.policy_id,
+            "policy_version": score_run.policy_version,
+            "score_state": score_run.state,
+            "indicator_count": len(score_run.indicator_results),
+            "numeric_score_projected": False,
+            "portfolio_scope_source": "PortfolioManagerBookMembership:v1",
+            "forbidden_uses": score_run.forbidden_uses,
+        },
+    )
+
+
+def _score_run_includes_portfolio(
+    *,
+    score_run: DpmPmOperatingQualityScoreRun,
+    portfolio_id: str,
+) -> bool:
+    if score_run.book_scope_evidence is None:
+        return False
+    if portfolio_id in score_run.book_scope_evidence.member_portfolio_ids:
+        return True
+    return any(
+        ref.source_type == "PORTFOLIO_MANAGER_BOOK_MEMBER"
+        and (ref.source_id == portfolio_id or ref.source_id.endswith(f":{portfolio_id}"))
+        for ref in score_run.book_scope_evidence.source_refs
+    )
 
 
 def _waves_for_portfolio(

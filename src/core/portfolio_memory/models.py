@@ -14,6 +14,7 @@ PortfolioMemoryEventType = Literal[
     "WAVE_HANDOFF_READY",
     "OUTCOME_REVIEW_CREATED",
     "OUTCOME_REVIEW_EVENT",
+    "PM_QUALITY_SCORE_RUN",
 ]
 
 PortfolioMemorySupportabilityState = Literal[
@@ -26,7 +27,6 @@ PortfolioMemorySupportabilityState = Literal[
 PortfolioMemorySourceEventFamilyStatus = Literal[
     "SUPPORTED",
     "DEFERRED_SOURCE_OWNER",
-    "SEPARATE_PRODUCT_NO_EVENT_FAMILY",
 ]
 
 PORTFOLIO_MEMORY_EVENT_IDENTITY_SCHEME = (
@@ -168,7 +168,7 @@ class DpmPortfolioMemory(BaseModel):
         default_factory=list,
         description=(
             "Supported and deferred source-event families in the portfolio-memory contract, "
-            "including explicit OMS and PM-scoring no-claim boundaries."
+            "including explicit OMS deferred-source-owner and PM-quality projection boundaries."
         ),
     )
     events: list[DpmPortfolioMemoryEvent] = Field(

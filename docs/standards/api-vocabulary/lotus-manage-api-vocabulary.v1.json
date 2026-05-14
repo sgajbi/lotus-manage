@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T02:25:52.969029+00:00",
+  "generatedAt": "2026-05-14T02:54:39.203993+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5390,6 +5390,22 @@
       ]
     },
     {
+      "semanticId": "lotus.member_portfolio_ids",
+      "canonicalTerm": "member_portfolio_ids",
+      "preferredName": "member_portfolio_ids",
+      "description": "Bounded portfolio identifiers returned by Core for portfolio-memory lineage projection. Empty means member identity was not retained in this score-run record.",
+      "example": [
+        "sample_member_portfolio_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.message",
       "canonicalTerm": "message",
       "preferredName": "message",
@@ -8940,7 +8956,7 @@
       "semanticId": "lotus.source_event_family_posture",
       "canonicalTerm": "source_event_family_posture",
       "preferredName": "source_event_family_posture",
-      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit OMS and PM-scoring no-claim boundaries.",
+      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit OMS deferred-source-owner and PM-quality projection boundaries.",
       "example": [
         "source_event_family_posture_item_example"
       ],
@@ -83630,6 +83646,14 @@
             "attributeRef": "#/attributeCatalog/lotus.returned_portfolio_count"
           },
           {
+            "name": "score_run.book_scope_evidence.member_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.member_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.member_portfolio_ids"
+          },
+          {
             "name": "score_run.book_scope_evidence.filters_applied",
             "location": "body",
             "required": false,
@@ -84621,6 +84645,14 @@
             "attributeRef": "#/attributeCatalog/lotus.returned_portfolio_count"
           },
           {
+            "name": "score_run.book_scope_evidence.member_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.member_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.member_portfolio_ids"
+          },
+          {
             "name": "score_run.book_scope_evidence.filters_applied",
             "location": "body",
             "required": false,
@@ -85226,6 +85258,14 @@
             "type": "integer",
             "semanticId": "lotus.returned_portfolio_count",
             "attributeRef": "#/attributeCatalog/lotus.returned_portfolio_count"
+          },
+          {
+            "name": "score_runs[].book_scope_evidence.member_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.member_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.member_portfolio_ids"
           },
           {
             "name": "score_runs[].book_scope_evidence.filters_applied",
@@ -86822,6 +86862,14 @@
             "type": "integer",
             "semanticId": "lotus.returned_portfolio_count",
             "attributeRef": "#/attributeCatalog/lotus.returned_portfolio_count"
+          },
+          {
+            "name": "score_run.book_scope_evidence.member_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.member_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.member_portfolio_ids"
           },
           {
             "name": "score_run.book_scope_evidence.filters_applied",

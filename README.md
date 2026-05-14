@@ -95,8 +95,9 @@ also records a canonical front-office risk-drawdown `partial` boundary tracked a
 `sgajbi/lotus-gateway#182`, so no unsupported proof-pack source enrichment is claimed here.
 The portfolio-memory API now publishes source-event family posture for supported manage, report,
 AI, and archive families, explicitly marks OMS execution as deferred, and points PM scoring to the
-separate Manage-owned PM operating quality score-run lifecycle product rather than inventing hidden
-portfolio-memory scoring events.
+separate Manage-owned PM operating quality score-run lifecycle product. Persisted PM quality score
+runs with source-owned Core PM-book membership now project bounded portfolio-memory lineage events
+for matching portfolios without copying raw score payloads or creating portfolio-level rankings.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
@@ -144,9 +145,11 @@ closed for missing required evidence, invalid or expired governance approval, an
 actors, and prohibited HR, compensation, conduct-enforcement, and autonomous-ranking uses remain
 outside the product contract.
 When `pm_book_scope` is supplied, score-run preview/create materializes source-owned lotus-core
-`PortfolioManagerBookMembership:v1` evidence, records `book_scope_evidence`, and fails closed for
-unavailable, incomplete, degraded, or empty PM-book membership. Downstream UI, portfolio-memory
-score-event projection, and advanced cross-segment fairness analytics remain future expansion.
+`PortfolioManagerBookMembership:v1` evidence, records `book_scope_evidence` including bounded
+member portfolio ids, and fails closed for unavailable, incomplete, degraded, or empty PM-book
+membership. Persisted source-backed score runs are visible in portfolio memory as
+`PM_QUALITY_SCORE_RUN` lineage events only; downstream UI and advanced cross-segment fairness
+analytics remain future expansion.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).

@@ -5,11 +5,13 @@ from fastapi import APIRouter, Depends, Query
 from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
+    get_pm_quality_score_run_repository,
     get_proof_pack_repository,
     get_wave_repository,
 )
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
+from src.core.pm_quality.repository import DpmPmQualityScoreRunRepository
 from src.core.portfolio_memory import DpmPortfolioMemory
 from src.core.portfolio_memory.service import build_portfolio_memory
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -35,8 +37,8 @@ router = APIRouter(
         "How: The endpoint composes persisted RFC-0038, RFC-0040, RFC-0041, and RFC-0042 records. "
         "It preserves source refs, hashes, states, and reason codes, and publishes source-event "
         "family posture for supported and deferred source owners; it does not compute risk, "
-        "performance, execution, tax, cash, mandate-health, PM scoring, or external order truth "
-        "locally."
+        "performance, execution, tax, cash, mandate-health, PM quality scores, or external order "
+        "truth locally."
     ),
 )
 def get_portfolio_memory(
@@ -46,6 +48,9 @@ def get_portfolio_memory(
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
 ) -> DpmPortfolioMemory:
     return build_portfolio_memory(
         portfolio_id=portfolio_id,
@@ -53,5 +58,6 @@ def get_portfolio_memory(
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        pm_quality_score_run_repository=pm_quality_score_run_repository,
         limit=limit,
     )

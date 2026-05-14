@@ -216,6 +216,13 @@ class DpmPmQualityBookScopeEvidence(BaseModel):
         ge=1,
         description="Number of portfolios returned by the source-owned PM-book membership product.",
     )
+    member_portfolio_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Bounded portfolio identifiers returned by Core for portfolio-memory lineage "
+            "projection. Empty means member identity was not retained in this score-run record."
+        ),
+    )
     filters_applied: dict[str, object] = Field(
         default_factory=dict,
         description="Source-applied filters returned by lotus-core for replay and audit.",
