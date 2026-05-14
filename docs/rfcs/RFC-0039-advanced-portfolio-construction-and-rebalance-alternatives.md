@@ -312,8 +312,8 @@ Purpose:
 1. reduce realized gains within mandate or policy tax budget,
 2. use tax-lot windows from `lotus-core`,
 3. flag missing tax lots explicitly,
-4. preserve the boundary that future client-tax-aware construction requires `lotus-core`
-   `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1` products before any jurisdiction-specific tax
+4. preserve the boundary that client-tax-aware construction requires source-owned `lotus-core`
+   `ClientTaxProfile:v1` and `ClientTaxRuleSet:v1` evidence before any jurisdiction-specific tax
    treatment, tax-loss harvesting suitability, or after-tax optimization support claim.
 
 Lot-selection posture:
