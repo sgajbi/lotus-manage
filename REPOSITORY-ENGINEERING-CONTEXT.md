@@ -277,6 +277,11 @@ Current repository posture:
     source-owned lotus-core `PortfolioManagerBookMembership:v1` scope materialization.
     Portfolio memory now projects those persisted source-backed score runs as
     `PM_QUALITY_SCORE_RUN` lineage events for matching PM-book members only.
+    `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
+    `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
+    `a4c9db9`, preserving Manage policy and score-run truth without Gateway-local scoring,
+    ranking, policy administration, HR, compensation, conduct, approval, client-contact,
+    execution, or OMS claims. Workbench PM-quality UI remains future owner scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,

@@ -161,6 +161,11 @@ member portfolio ids, and fails closed for unavailable, incomplete, degraded, or
 membership. Persisted source-backed score runs are visible in portfolio memory as
 `PM_QUALITY_SCORE_RUN` lineage events only; downstream UI and advanced cross-segment fairness
 analytics remain future expansion.
+`lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
+`/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
+payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,
+compensation, conduct, approval, client-contact, execution, or OMS decisions. Workbench PM-quality
+UI remains future owner scope and must consume Gateway only.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
