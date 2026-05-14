@@ -1980,7 +1980,7 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: PM operating quality policy and score-run lifecycle
+## Certified endpoint: PM operating quality policy, score-run, and fairness-analysis lifecycle
 
 Route:
 
@@ -1991,6 +1991,7 @@ Route:
 - `POST /api/v1/rebalance/pm-operating-quality/score-runs`
 - `GET /api/v1/rebalance/pm-operating-quality/score-runs`
 - `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`
+- `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`
 
 Purpose:
 
@@ -2000,7 +2001,9 @@ source-backed evidence signals, and optional persisted outcome reviews. The rout
 bounded first implementation of RFC42-WTBD-008. Optional `pm_book_scope` materializes source-owned
 lotus-core `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`.
 Enabled policies require bank approval and fairness-review evidence; score-run preview/create emits
-`governance_evidence`.
+`governance_evidence`. The fairness-analysis preview route emits bounded
+`PmOperatingQualityFairnessAnalysis:v1` from persisted score-run ids and source-defined operating
+segments for governance review.
 
 Functional coverage:
 
@@ -2018,6 +2021,9 @@ Functional coverage:
   readiness,
 - every score run returns decomposed indicator results, reason codes, source refs, generated
   content hash, correlation id, and forbidden-use posture,
+- fairness-analysis preview validates common policy/as-of scope, minimum scorable segment counts,
+  source-defined segment refs, governed average-score spread posture, correlation id, generated
+  content hash, and forbidden-use posture,
 - portfolio memory advertises PM scoring as a separate product and projects only bounded
   source-backed score-run lineage events without numeric score metadata.
 
@@ -2025,7 +2031,10 @@ Non-functional posture:
 
 - The endpoint does not create HR, compensation, conduct-enforcement, autonomous-ranking,
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
-- Downstream UI and advanced cross-segment fairness analytics remain future expansion.
+- Fairness-analysis preview does not infer protected classes, discover segments locally, rank PMs,
+  or create HR, compensation, conduct, approval, client-contact, execution, or OMS decisions.
+- Downstream UI and Gateway/Workbench fairness-analysis product realization remain future
+  expansion.
 
 Evidence commands:
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
@@ -17,6 +18,8 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
+    DpmPmQualityFairnessAnalysis,
+    DpmPmQualityFairnessSegmentInput,
     DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityPolicyConflictError,
@@ -24,6 +27,8 @@ from src.core.pm_quality import (
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
     DpmPmQualityValidationError,
+    PmQualityFairnessSegmentType,
+    build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
@@ -133,6 +138,86 @@ class DpmPmOperatingQualityScoreRunListResponse(BaseModel):
     offset: int = Field(description="Requested page offset.")
 
 
+class DpmPmQualityFairnessSegmentRequest(BaseModel):
+    segment_id: str = Field(
+        description="Source-defined segment identifier.",
+        examples=["mandate_balanced"],
+    )
+    segment_type: PmQualityFairnessSegmentType = Field(
+        description="Source-defined segment dimension used for governance comparison.",
+        examples=["MANDATE_TYPE"],
+    )
+    display_name: str = Field(
+        description="Operator-facing segment label.",
+        examples=["Balanced DPM Mandates"],
+    )
+    score_run_ids: list[str] = Field(
+        min_length=1,
+        max_length=100,
+        description="Persisted PM operating quality score runs assigned to this source segment.",
+        examples=[["pmq_001", "pmq_002"]],
+    )
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description=(
+            "Source refs proving the segment definition. These should come from mandate, region, "
+            "book-profile, client-constraint, or market-regime source products."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_segment(self) -> "DpmPmQualityFairnessSegmentRequest":
+        deduped_ids = [
+            score_run_id.strip() for score_run_id in self.score_run_ids if score_run_id.strip()
+        ]
+        if not deduped_ids:
+            raise ValueError("segment.score_run_ids must contain at least one value")
+        if len(set(deduped_ids)) != len(deduped_ids):
+            raise ValueError("segment.score_run_ids must be unique")
+        self.score_run_ids = deduped_ids
+        return self
+
+
+class DpmPmQualityFairnessPreviewRequest(BaseModel):
+    policy_id: str = Field(description="PM operating quality policy id shared by score runs.")
+    policy_version: str = Field(description="PM operating quality policy version.")
+    as_of_date: str = Field(description="Fairness-analysis business as-of date.")
+    segments: list[DpmPmQualityFairnessSegmentRequest] = Field(
+        min_length=2,
+        max_length=20,
+        description=(
+            "Source-defined segments to compare. Manage does not infer protected classes or "
+            "discover segments locally."
+        ),
+    )
+    minimum_segment_score_run_count: int = Field(
+        default=2,
+        ge=1,
+        le=100,
+        description="Minimum scorable score runs required before a segment is comparable.",
+    )
+    maximum_average_score_spread: Decimal = Field(
+        default=Decimal("15"),
+        ge=0,
+        le=100,
+        description="Bank-governed maximum average-score spread before review is required.",
+    )
+    actor_id: str = Field(description="Actor or service requesting the analysis.")
+
+    @model_validator(mode="after")
+    def validate_segments(self) -> "DpmPmQualityFairnessPreviewRequest":
+        segment_ids = [segment.segment_id for segment in self.segments]
+        if len(set(segment_ids)) != len(segment_ids):
+            raise ValueError("segments.segment_id values must be unique")
+        return self
+
+
+class DpmPmQualityFairnessPreviewResponse(BaseModel):
+    fairness_analysis: DpmPmQualityFairnessAnalysis = Field(
+        description="Bounded source-segment fairness analysis output."
+    )
+
+
 class DpmPmOperatingQualityPolicyListResponse(BaseModel):
     policies: list[DpmPmOperatingQualityPolicy] = Field(
         description="Bounded page of persisted PM operating quality policy versions."
@@ -226,6 +311,71 @@ def create_pm_operating_quality_score_run_endpoint(
             detail=str(exc),
         ) from exc
     return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)
+
+
+@router.post(
+    "/fairness-analyses/preview",
+    response_model=DpmPmQualityFairnessPreviewResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Preview PM operating quality cross-segment fairness analysis",
+    description=(
+        "What: Build a bounded cross-segment fairness analysis from persisted PM operating "
+        "quality score runs and source-defined segment assignments.\n"
+        "When: Use for bank model-risk, fairness, supervisory-control, or governance review "
+        "after score runs have been created under one approved policy.\n"
+        "How: Supply two or more source-defined segments with persisted score-run ids and segment "
+        "source refs. Manage validates the score runs share policy and as-of date, requires a "
+        "minimum scorable count per segment, compares segment average scores against a governed "
+        "spread threshold, and returns review-required posture when the spread exceeds policy. "
+        "This endpoint does not infer protected classes, rank PMs, administer compensation or HR "
+        "decisions, perform conduct enforcement, or calculate source-owned risk/performance facts."
+    ),
+)
+def preview_pm_quality_fairness_analysis_endpoint(
+    request: DpmPmQualityFairnessPreviewRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(description="Optional correlation id.", examples=["corr-pmq-fairness-001"]),
+    ] = None,
+    repository: DpmPmQualityScoreRunRepository = Depends(get_pm_quality_score_run_repository),
+) -> DpmPmQualityFairnessPreviewResponse:
+    segments = []
+    for segment_request in request.segments:
+        score_runs = []
+        for score_run_id in segment_request.score_run_ids:
+            score_run = repository.get_score_run(score_run_id=score_run_id)
+            if score_run is None:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{score_run_id}",
+                )
+            score_runs.append(score_run)
+        segments.append(
+            DpmPmQualityFairnessSegmentInput(
+                segment_id=segment_request.segment_id,
+                segment_type=segment_request.segment_type,
+                display_name=segment_request.display_name,
+                score_runs=score_runs,
+                source_refs=segment_request.source_refs,
+            )
+        )
+    try:
+        fairness_analysis = build_pm_operating_quality_fairness_analysis(
+            policy_id=request.policy_id,
+            policy_version=request.policy_version,
+            as_of_date=request.as_of_date,
+            segments=segments,
+            minimum_segment_score_run_count=request.minimum_segment_score_run_count,
+            maximum_average_score_spread=request.maximum_average_score_spread,
+            generated_by=request.actor_id,
+            correlation_id=x_correlation_id or request.actor_id,
+        )
+    except DpmPmQualityValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
+    return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)
 
 
 @router.put(
