@@ -50,6 +50,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
         "RiskEventAffectedCohort",
+        "TacticalHouseViewAffectedCohort",
         "PortfolioManagerBookMembership",
     }
     assert (
@@ -67,6 +68,9 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["RiskEventAffectedCohort"]["producer_repository"] == "lotus-risk"
     assert by_name["RiskEventAffectedCohort"]["consumption_mode"] == "api_read"
     assert by_name["RiskEventAffectedCohort"]["failure_posture"] == "fail_closed"
+    assert by_name["TacticalHouseViewAffectedCohort"]["producer_repository"] == "lotus-advise"
+    assert by_name["TacticalHouseViewAffectedCohort"]["consumption_mode"] == "api_read"
+    assert by_name["TacticalHouseViewAffectedCohort"]["failure_posture"] == "fail_closed"
     assert by_name["PortfolioManagerBookMembership"]["producer_repository"] == "lotus-core"
     assert by_name["PortfolioManagerBookMembership"]["consumption_mode"] == "api_read"
     assert by_name["PortfolioManagerBookMembership"]["failure_posture"] == "fail_closed"

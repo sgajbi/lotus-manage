@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from src.api.observability import record_wave_supportability
 from src.api.dependencies import (
+    get_advise_authority_client,
     get_campaign_definition_repository,
     get_construction_repository,
     get_mandate_repository,
@@ -48,6 +49,10 @@ from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolv
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
     LotusRiskAuthorityUnavailableError,
+)
+from src.infrastructure.advise_authority import (
+    LotusAdviseAuthorityClient,
+    LotusAdviseAuthorityUnavailableError,
 )
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
@@ -190,10 +195,33 @@ class DpmWavePortfolioInput(BaseModel):
     portfolio_type: str | None = Field(
         default=None,
         description=(
-            "Source-owned portfolio type used by `BULK_REVIEW_CAMPAIGN` to filter DPM "
-            "operating campaigns. Manage does not infer this value."
+            "Source-owned portfolio type used by `BULK_REVIEW_CAMPAIGN` and "
+            "`TACTICAL_HOUSE_VIEW` to filter DPM operating cohorts. Manage does not infer this "
+            "value."
         ),
         examples=["DISCRETIONARY"],
+    )
+    discretionary_mandate: bool | None = Field(
+        default=None,
+        description=(
+            "Required for `TACTICAL_HOUSE_VIEW`. Source-owned indicator that the candidate is "
+            "managed/discretionary; Manage forwards it to lotus-advise and does not infer it."
+        ),
+        examples=[True],
+    )
+    current_exposure_weight: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Optional source-owned tactical-theme exposure weight for `TACTICAL_HOUSE_VIEW`."
+        ),
+        examples=[0.18],
+    )
+    alignment_signal: Literal["OVERWEIGHT", "UNDERWEIGHT", "ALIGNED", "UNKNOWN"] = Field(
+        default="UNKNOWN",
+        description="Source-owned tactical house-view alignment posture for the candidate.",
+        examples=["UNDERWEIGHT"],
     )
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
@@ -202,6 +230,29 @@ class DpmWavePortfolioInput(BaseModel):
             "manage attempts to attach an existing mandate digital-twin ref; otherwise the item "
             "is blocked rather than treated as source-ready."
         ),
+    )
+
+
+class DpmTacticalHouseViewInput(BaseModel):
+    tactical_view_id: str = Field(
+        description="Bank tactical house-view identifier.",
+        examples=["THV_2026_Q2_US_QUALITY"],
+    )
+    tactical_view_version: str = Field(
+        description="Immutable tactical house-view version.",
+        examples=["2026.05"],
+    )
+    theme_id: str = Field(
+        description="Tactical theme or recommendation identifier.",
+        examples=["US_QUALITY_EQUITIES"],
+    )
+    target_action: Literal["INCREASE", "REDUCE", "REVIEW", "EXCLUDE"] = Field(
+        description="Bank tactical action evaluated by lotus-advise.",
+        examples=["INCREASE"],
+    )
+    rationale: str = Field(description="Bank-authored tactical house-view rationale.")
+    source_refs: list[DpmWaveSourceRef] = Field(
+        description="Governed source refs for the bank-authored tactical house-view decision."
     )
 
 
@@ -335,6 +386,14 @@ class DpmWavePreviewRequest(BaseModel):
         ),
         examples=["RISK_EVENT_2026_Q2_RATES_UP"],
     )
+    tactical_house_view: DpmTacticalHouseViewInput | None = Field(
+        default=None,
+        description=(
+            "Required for `TACTICAL_HOUSE_VIEW`. Manage forwards this bank-authored house-view "
+            "instruction and source-backed candidate portfolios to lotus-advise "
+            "`TacticalHouseViewAffectedCohort:v1`."
+        ),
+    )
     campaign_definition_id: str | None = Field(
         default=None,
         description=(
@@ -352,6 +411,16 @@ class DpmWavePreviewRequest(BaseModel):
         default=0.05,
         ge=0.0,
         description="Minimum source-owned risk-event impact score required for cohort inclusion.",
+        examples=[0.05],
+    )
+    min_tactical_exposure_weight: float | None = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Optional minimum source-owned tactical-theme exposure weight forwarded to "
+            "lotus-advise for `TACTICAL_HOUSE_VIEW` cohort evaluation."
+        ),
         examples=[0.05],
     )
     tenant_id: str | None = Field(
@@ -684,6 +753,7 @@ def _portfolio_inputs_for_request(
     *,
     request: DpmWavePreviewRequest,
     correlation_id: str,
+    advise_authority_client: LotusAdviseAuthorityClient | None,
     risk_authority_client: LotusRiskAuthorityClient | None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> list[dict[str, object]]:
@@ -701,6 +771,12 @@ def _portfolio_inputs_for_request(
             request=request,
             correlation_id=correlation_id,
             risk_authority_client=risk_authority_client,
+        )
+    if request.trigger_type == "TACTICAL_HOUSE_VIEW":
+        return _resolve_tactical_house_view_portfolios(
+            request=request,
+            correlation_id=correlation_id,
+            advise_authority_client=advise_authority_client,
         )
     if request.trigger_type == "BULK_REVIEW_CAMPAIGN":
         resolved_request = _request_with_campaign_definition(
@@ -969,6 +1045,186 @@ def _resolve_cio_model_change_portfolios(
             ],
         }
         for mandate in cohort.affected_mandates
+    ]
+
+
+def _resolve_tactical_house_view_portfolios(
+    *,
+    request: DpmWavePreviewRequest,
+    correlation_id: str,
+    advise_authority_client: LotusAdviseAuthorityClient | None,
+) -> list[dict[str, object]]:
+    tactical_view = request.tactical_house_view
+    if tactical_view is None:
+        raise wave_service.DpmWaveValidationError(
+            "TACTICAL_HOUSE_VIEW_REQUIRED",
+            "TACTICAL_HOUSE_VIEW requires tactical_house_view source evidence.",
+        )
+    if not request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "TACTICAL_HOUSE_VIEW_CANDIDATE_PORTFOLIOS_REQUIRED",
+            "TACTICAL_HOUSE_VIEW requires source-backed candidate portfolios.",
+        )
+    if not tactical_view.source_refs:
+        raise wave_service.DpmWaveValidationError(
+            "TACTICAL_HOUSE_VIEW_SOURCE_REFS_REQUIRED",
+            "TACTICAL_HOUSE_VIEW requires tactical house-view source_refs.",
+        )
+    if advise_authority_client is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE",
+                "message": "DPM_ADVISE_BASE_URL is not configured.",
+            },
+        )
+    try:
+        as_of_date = date.fromisoformat(request.as_of_date)
+    except ValueError as exc:
+        raise wave_service.DpmWaveValidationError(
+            "INVALID_AS_OF_DATE",
+            "as_of_date must be an ISO date.",
+        ) from exc
+    eligible_portfolio_types = [
+        value.strip().upper() for value in request.portfolio_types if value.strip()
+    ]
+    if not eligible_portfolio_types:
+        raise wave_service.DpmWaveValidationError(
+            "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED",
+            "TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
+        )
+
+    candidate_payloads: list[dict[str, object]] = []
+    for candidate in request.portfolios:
+        portfolio_type = (candidate.portfolio_type or "").strip().upper()
+        if not portfolio_type:
+            raise wave_service.DpmWaveValidationError(
+                "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPE_REQUIRED",
+                "TACTICAL_HOUSE_VIEW candidate portfolios require source-owned portfolio_type.",
+            )
+        if candidate.discretionary_mandate is None:
+            raise wave_service.DpmWaveValidationError(
+                "TACTICAL_HOUSE_VIEW_DISCRETIONARY_MANDATE_REQUIRED",
+                "TACTICAL_HOUSE_VIEW candidate portfolios require source-owned discretionary_mandate.",
+            )
+        if not candidate.source_refs:
+            raise wave_service.DpmWaveValidationError(
+                "TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_REFS_REQUIRED",
+                "TACTICAL_HOUSE_VIEW candidate portfolios require source_refs.",
+            )
+        candidate_payloads.append(
+            {
+                "portfolio_id": candidate.portfolio_id,
+                "mandate_id": candidate.mandate_id,
+                "portfolio_type": portfolio_type,
+                "discretionary_mandate": candidate.discretionary_mandate,
+                "current_exposure_weight": (
+                    str(candidate.current_exposure_weight)
+                    if candidate.current_exposure_weight is not None
+                    else None
+                ),
+                "alignment_signal": candidate.alignment_signal,
+                "source_refs": [ref.model_dump(mode="json") for ref in candidate.source_refs],
+                "reason_codes": ["TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_BACKED"],
+            }
+        )
+
+    try:
+        cohort = advise_authority_client.tactical_house_view_affected_cohort(
+            tactical_view={
+                "tactical_view_id": tactical_view.tactical_view_id,
+                "tactical_view_version": tactical_view.tactical_view_version,
+                "theme_id": tactical_view.theme_id,
+                "as_of_date": as_of_date.isoformat(),
+                "target_action": tactical_view.target_action,
+                "rationale": tactical_view.rationale,
+                "source_refs": [ref.model_dump(mode="json") for ref in tactical_view.source_refs],
+                "reason_codes": ["TACTICAL_HOUSE_VIEW_BANK_AUTHORED"],
+            },
+            candidate_portfolios=candidate_payloads,
+            eligible_portfolio_types=eligible_portfolio_types,
+            min_exposure_weight=(
+                Decimal(str(request.min_tactical_exposure_weight))
+                if request.min_tactical_exposure_weight is not None
+                else None
+            ),
+            correlation_id=correlation_id,
+        )
+    except LotusAdviseAuthorityUnavailableError as exc:
+        error_code = str(exc) or "DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE"
+        status_code = (
+            status.HTTP_424_FAILED_DEPENDENCY
+            if error_code == "LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED"
+            else status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+        raise HTTPException(status_code=status_code, detail={"code": error_code}) from exc
+
+    if cohort.supportability_state != "READY":
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY"
+                if cohort.supportability_state == "EMPTY"
+                else "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
+                "message": "Tactical house-view affected cohort is not source-ready.",
+                "reason_codes": list(cohort.supportability_reason_codes),
+            },
+        )
+    if not cohort.affected_portfolios:
+        raise HTTPException(
+            status_code=status.HTTP_424_FAILED_DEPENDENCY,
+            detail={
+                "code": "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+                "message": "Tactical house-view cohort returned no affected portfolios.",
+            },
+        )
+
+    cohort_ref = {
+        "source_system": cohort.source_service,
+        "source_type": cohort.product_name,
+        "source_id": cohort.cohort_id,
+        "source_version": cohort.product_version,
+        "supportability_state": cohort.supportability_state,
+        "content_hash": cohort.content_hash,
+    }
+    house_view_ref = {
+        "source_system": cohort.source_service,
+        "source_type": "TACTICAL_HOUSE_VIEW",
+        "source_id": cohort.tactical_view_id,
+        "source_version": cohort.tactical_view_version,
+        "supportability_state": cohort.supportability_state,
+        "content_hash": cohort.content_hash,
+    }
+    return [
+        {
+            "portfolio_id": affected.portfolio_id,
+            "mandate_id": affected.mandate_id,
+            "source_refs": [
+                cohort_ref,
+                house_view_ref,
+                {
+                    "source_system": cohort.source_service,
+                    "source_type": "TACTICAL_HOUSE_VIEW_AFFECTED_PORTFOLIO",
+                    "source_id": f"{cohort.cohort_id}:{affected.portfolio_id}",
+                    "source_version": cohort.product_version,
+                    "supportability_state": cohort.supportability_state,
+                    "content_hash": cohort.content_hash,
+                },
+                *affected.source_refs,
+            ],
+            "diagnostics": {
+                "source_owner": cohort.source_service,
+                "source_product": f"{cohort.product_name}:{cohort.product_version}",
+                "tactical_view_id": cohort.tactical_view_id,
+                "tactical_view_version": cohort.tactical_view_version,
+                "theme_id": cohort.theme_id,
+                "target_action": cohort.target_action,
+                "cohort_supportability_state": cohort.supportability_state,
+                "cohort_reason_codes": list(cohort.supportability_reason_codes),
+                "inclusion_reason_codes": list(affected.inclusion_reason_codes),
+            },
+        }
+        for affected in cohort.affected_portfolios
     ]
 
 
@@ -1462,10 +1718,13 @@ def get_bulk_review_campaign_definition(
         "`PortfolioManagerBookMembership:v1` source product. `CIO_MODEL_CHANGE` resolves the "
         "cohort from lotus-core `CioModelChangeAffectedCohort:v1`. `RISK_EVENT` evaluates the "
         "candidate set through lotus-risk `RiskEventAffectedCohort:v1` and preserves source-owned "
-        "membership evidence. `BULK_REVIEW_CAMPAIGN` builds the Manage-owned "
+        "membership evidence. `TACTICAL_HOUSE_VIEW` evaluates the candidate set through "
+        "lotus-advise `TacticalHouseViewAffectedCohort:v1` and preserves source-owned "
+        "house-view/candidate evidence. `BULK_REVIEW_CAMPAIGN` builds the Manage-owned "
         "`BulkReviewCampaignMembership:v1` envelope from source-backed candidate portfolios and "
         "DPM portfolio-type filters. Unsupported trigger types remain blocked; the endpoint does "
-        "not perform simulation, approval, staging, or operations handoff."
+        "not recompute house-view, holdings, risk, performance, simulation, approval, staging, or "
+        "operations handoff."
     ),
     responses={
         200: {
@@ -1473,17 +1732,13 @@ def get_bulk_review_campaign_definition(
             "content": {"application/json": {"example": WAVE_EXAMPLE}},
         },
         422: {
-            "description": "Unsupported trigger or invalid request.",
+            "description": "Unsupported trigger, missing source evidence, or invalid request.",
             "content": {
                 "application/json": {
                     "example": {
                         "detail": {
-                            "code": "NOT_SUPPORTED_TRIGGER",
-                            "message": (
-                                "Trigger type TACTICAL_HOUSE_VIEW is not supported. Tactical "
-                                "house-view waves require a governed CIO or risk house-view "
-                                "cohort source product before manage can preview or create them."
-                            ),
+                            "code": "TACTICAL_HOUSE_VIEW_REQUIRED",
+                            "message": "TACTICAL_HOUSE_VIEW requires tactical_house_view source evidence.",
                         }
                     }
                 }
@@ -1500,6 +1755,9 @@ def preview_wave(
         ),
     ] = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
+        get_advise_authority_client
+    ),
     risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -1510,6 +1768,7 @@ def preview_wave(
         portfolios = _portfolio_inputs_for_request(
             request=request,
             correlation_id=correlation_id,
+            advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
             campaign_definition_repository=campaign_definition_repository,
         )
@@ -1540,10 +1799,12 @@ def preview_wave(
         "Creates a durable RFC-0041 rebalance wave. `EXPLICIT_PORTFOLIO_LIST` uses caller-supplied "
         "affected portfolios, while `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` resolve cohorts from "
         "lotus-core source products and `RISK_EVENT` evaluates the candidate set through "
-        "lotus-risk `RiskEventAffectedCohort:v1` before persistence. `BULK_REVIEW_CAMPAIGN` "
-        "persists a Manage-owned campaign membership wave from source-backed candidates. Required "
-        "header: `Idempotency-Key`. Unsupported trigger types are rejected and missing source "
-        "evidence produces blocked items, not false readiness."
+        "lotus-risk `RiskEventAffectedCohort:v1` before persistence. `TACTICAL_HOUSE_VIEW` "
+        "evaluates the candidate set through lotus-advise "
+        "`TacticalHouseViewAffectedCohort:v1` before persistence. `BULK_REVIEW_CAMPAIGN` persists "
+        "a Manage-owned campaign membership wave from source-backed candidates. Required header: "
+        "`Idempotency-Key`. Unsupported trigger types are rejected and missing source evidence "
+        "produces blocked items, not false readiness."
     ),
     responses={
         201: {
@@ -1564,17 +1825,13 @@ def preview_wave(
             },
         },
         422: {
-            "description": "Unsupported trigger or invalid request.",
+            "description": "Unsupported trigger, missing source evidence, or invalid request.",
             "content": {
                 "application/json": {
                     "example": {
                         "detail": {
-                            "code": "NOT_SUPPORTED_TRIGGER",
-                            "message": (
-                                "Trigger type TACTICAL_HOUSE_VIEW is not supported. Tactical "
-                                "house-view waves require a governed CIO or risk house-view "
-                                "cohort source product before manage can preview or create them."
-                            ),
+                            "code": "TACTICAL_HOUSE_VIEW_REQUIRED",
+                            "message": "TACTICAL_HOUSE_VIEW requires tactical_house_view source evidence.",
                         }
                     }
                 }
@@ -1599,6 +1856,9 @@ def create_wave(
     ] = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
+        get_advise_authority_client
+    ),
     risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -1609,6 +1869,7 @@ def create_wave(
         portfolios = _portfolio_inputs_for_request(
             request=request,
             correlation_id=correlation_id,
+            advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
             campaign_definition_repository=campaign_definition_repository,
         )

@@ -1,6 +1,10 @@
 import os
 from typing import AsyncIterator
 
+from src.infrastructure.advise_authority import (
+    LotusAdviseAuthorityClient,
+    LotusAdviseAuthorityConfig,
+)
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -174,6 +178,15 @@ def get_risk_authority_client() -> LotusRiskAuthorityClient | None:
     if not base_url:
         return None
     return LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url=base_url))
+
+
+def get_advise_authority_client() -> LotusAdviseAuthorityClient | None:
+    """Return a lotus-advise authority client when advisory source integration is configured."""
+
+    base_url = os.getenv("DPM_ADVISE_BASE_URL", "").strip()
+    if not base_url:
+        return None
+    return LotusAdviseAuthorityClient(config=LotusAdviseAuthorityConfig(base_url=base_url))
 
 
 def _repository_dsn(primary_env_name: str) -> str:

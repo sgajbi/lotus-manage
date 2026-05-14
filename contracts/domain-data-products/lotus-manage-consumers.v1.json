@@ -110,6 +110,29 @@
       "failure_posture": "fail_closed"
     },
     {
+      "product_name": "TacticalHouseViewAffectedCohort",
+      "producer_repository": "lotus-advise",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "cohort_id",
+        "content_hash",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "api_read",
+      "business_purpose": "Resolve Advise-owned tactical house-view affected cohorts for discretionary rebalance wave preview and creation while preserving lotus-advise house-view, candidate, supportability, content hash, and source refs without recomputing advisory, house-view, holdings, exposure, alignment, or mandate facts in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
       "product_name": "PortfolioManagerBookMembership",
       "producer_repository": "lotus-core",
       "required_product_version": "v1",

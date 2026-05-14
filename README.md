@@ -118,9 +118,12 @@ membership is implemented for `BULK_REVIEW_CAMPAIGN` through Manage-owned
 portfolio type, DPM portfolio-type filtering, deterministic membership refs, optional
 approval/expiry/actor-entitlement governance evidence, immutable
 `BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, and fail-closed
-validation. Tactical house-view cohorts, global campaign discovery, downstream campaign product
-surfaces, richer owning-service risk/performance aggregate enrichment, and external OMS execution
-remain unpromoted.
+validation. Tactical house-view wave discovery is implemented for `TACTICAL_HOUSE_VIEW` through
+lotus-advise `TacticalHouseViewAffectedCohort:v1` over caller-supplied source-backed candidate
+portfolios; Manage preserves Advise cohort refs and fails closed without recomputing house-view,
+holdings, exposure, alignment, or mandate facts. Global campaign discovery, downstream campaign
+product surfaces, richer owning-service risk/performance aggregate enrichment, and external OMS
+execution remain unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
 `dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,

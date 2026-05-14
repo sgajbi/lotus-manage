@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T02:54:39.203993+00:00",
+  "generatedAt": "2026-05-14T04:27:50.382825+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -217,6 +217,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.alignment_signal",
+      "canonicalTerm": "alignment_signal",
+      "preferredName": "alignment_signal",
+      "description": "Source-owned tactical house-view alignment posture for the candidate.",
+      "example": "OVERWEIGHT",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -1881,6 +1895,20 @@
       ]
     },
     {
+      "semanticId": "lotus.current_exposure_weight",
+      "canonicalTerm": "current_exposure_weight",
+      "preferredName": "current_exposure_weight",
+      "description": "Optional source-owned tactical-theme exposure weight for `TACTICAL_HOUSE_VIEW`.",
+      "example": "current_exposure_weight_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.current_value",
       "canonicalTerm": "current_value",
       "preferredName": "current_value",
@@ -2402,6 +2430,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.discretionary_mandate",
+      "canonicalTerm": "discretionary_mandate",
+      "preferredName": "discretionary_mandate",
+      "description": "Required for `TACTICAL_HOUSE_VIEW`. Source-owned indicator that the candidate is managed/discretionary; Manage forwards it to lotus-advise and does not infer it.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -5527,6 +5569,20 @@
       "preferredName": "min_notional",
       "description": "Optional per-instrument minimum trade notional.",
       "example": "min_notional_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.min_tactical_exposure_weight",
+      "canonicalTerm": "min_tactical_exposure_weight",
+      "preferredName": "min_tactical_exposure_weight",
+      "description": "Optional minimum source-owned tactical-theme exposure weight forwarded to lotus-advise for `TACTICAL_HOUSE_VIEW` cohort evaluation.",
+      "example": "min_tactical_exposure_weight_example",
       "type": "object",
       "locations": [
         "body"
@@ -9736,6 +9792,48 @@
       ]
     },
     {
+      "semanticId": "lotus.tactical_house_view",
+      "canonicalTerm": "tactical_house_view",
+      "preferredName": "tactical_house_view",
+      "description": "Required for `TACTICAL_HOUSE_VIEW`. Manage forwards this bank-authored house-view instruction and source-backed candidate portfolios to lotus-advise `TacticalHouseViewAffectedCohort:v1`.",
+      "example": "tactical_house_view_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.tactical_view_id",
+      "canonicalTerm": "tactical_view_id",
+      "preferredName": "tactical_view_id",
+      "description": "Bank tactical house-view identifier.",
+      "example": "TACTICAL_VIEW_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.tactical_view_version",
+      "canonicalTerm": "tactical_view_version",
+      "preferredName": "tactical_view_version",
+      "description": "Immutable tactical house-view version.",
+      "example": "sample_tactical_view_version",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.tags",
       "canonicalTerm": "tags",
       "preferredName": "tags",
@@ -9765,6 +9863,20 @@
       ],
       "observedTypes": [
         "TargetData"
+      ]
+    },
+    {
+      "semanticId": "lotus.target_action",
+      "canonicalTerm": "target_action",
+      "preferredName": "target_action",
+      "description": "Bank tactical action evaluated by lotus-advise.",
+      "example": "INCREASE",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -9974,6 +10086,20 @@
       ],
       "observedTypes": [
         "ConstructionTraceTerm"
+      ]
+    },
+    {
+      "semanticId": "lotus.theme_id",
+      "canonicalTerm": "theme_id",
+      "preferredName": "theme_id",
+      "description": "Tactical theme or recommendation identifier.",
+      "example": "THEME_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -60460,6 +60586,30 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_type"
           },
           {
+            "name": "portfolios[].discretionary_mandate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.discretionary_mandate",
+            "attributeRef": "#/attributeCatalog/lotus.discretionary_mandate"
+          },
+          {
+            "name": "portfolios[].current_exposure_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.current_exposure_weight",
+            "attributeRef": "#/attributeCatalog/lotus.current_exposure_weight"
+          },
+          {
+            "name": "portfolios[].alignment_signal",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.alignment_signal",
+            "attributeRef": "#/attributeCatalog/lotus.alignment_signal"
+          },
+          {
             "name": "portfolios[].source_refs",
             "location": "body",
             "required": false,
@@ -60540,6 +60690,110 @@
             "attributeRef": "#/attributeCatalog/lotus.risk_event_id"
           },
           {
+            "name": "tactical_house_view",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tactical_house_view",
+            "attributeRef": "#/attributeCatalog/lotus.tactical_house_view"
+          },
+          {
+            "name": "tactical_house_view.tactical_view_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tactical_view_id",
+            "attributeRef": "#/attributeCatalog/lotus.tactical_view_id"
+          },
+          {
+            "name": "tactical_house_view.tactical_view_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tactical_view_version",
+            "attributeRef": "#/attributeCatalog/lotus.tactical_view_version"
+          },
+          {
+            "name": "tactical_house_view.theme_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.theme_id",
+            "attributeRef": "#/attributeCatalog/lotus.theme_id"
+          },
+          {
+            "name": "tactical_house_view.target_action",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.target_action",
+            "attributeRef": "#/attributeCatalog/lotus.target_action"
+          },
+          {
+            "name": "tactical_house_view.rationale",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.rationale",
+            "attributeRef": "#/attributeCatalog/lotus.rationale"
+          },
+          {
+            "name": "tactical_house_view.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "campaign_definition_id",
             "location": "body",
             "required": false,
@@ -60562,6 +60816,14 @@
             "type": "number",
             "semanticId": "lotus.minimum_impact_score",
             "attributeRef": "#/attributeCatalog/lotus.minimum_impact_score"
+          },
+          {
+            "name": "min_tactical_exposure_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.min_tactical_exposure_weight",
+            "attributeRef": "#/attributeCatalog/lotus.min_tactical_exposure_weight"
           },
           {
             "name": "tenant_id",
@@ -61643,6 +61905,30 @@
             "attributeRef": "#/attributeCatalog/lotus.portfolio_type"
           },
           {
+            "name": "portfolios[].discretionary_mandate",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.discretionary_mandate",
+            "attributeRef": "#/attributeCatalog/lotus.discretionary_mandate"
+          },
+          {
+            "name": "portfolios[].current_exposure_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.current_exposure_weight",
+            "attributeRef": "#/attributeCatalog/lotus.current_exposure_weight"
+          },
+          {
+            "name": "portfolios[].alignment_signal",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.alignment_signal",
+            "attributeRef": "#/attributeCatalog/lotus.alignment_signal"
+          },
+          {
             "name": "portfolios[].source_refs",
             "location": "body",
             "required": false,
@@ -61723,6 +62009,110 @@
             "attributeRef": "#/attributeCatalog/lotus.risk_event_id"
           },
           {
+            "name": "tactical_house_view",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.tactical_house_view",
+            "attributeRef": "#/attributeCatalog/lotus.tactical_house_view"
+          },
+          {
+            "name": "tactical_house_view.tactical_view_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tactical_view_id",
+            "attributeRef": "#/attributeCatalog/lotus.tactical_view_id"
+          },
+          {
+            "name": "tactical_house_view.tactical_view_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.tactical_view_version",
+            "attributeRef": "#/attributeCatalog/lotus.tactical_view_version"
+          },
+          {
+            "name": "tactical_house_view.theme_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.theme_id",
+            "attributeRef": "#/attributeCatalog/lotus.theme_id"
+          },
+          {
+            "name": "tactical_house_view.target_action",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.target_action",
+            "attributeRef": "#/attributeCatalog/lotus.target_action"
+          },
+          {
+            "name": "tactical_house_view.rationale",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.rationale",
+            "attributeRef": "#/attributeCatalog/lotus.rationale"
+          },
+          {
+            "name": "tactical_house_view.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "campaign_definition_id",
             "location": "body",
             "required": false,
@@ -61745,6 +62135,14 @@
             "type": "number",
             "semanticId": "lotus.minimum_impact_score",
             "attributeRef": "#/attributeCatalog/lotus.minimum_impact_score"
+          },
+          {
+            "name": "min_tactical_exposure_weight",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.min_tactical_exposure_weight",
+            "attributeRef": "#/attributeCatalog/lotus.min_tactical_exposure_weight"
           },
           {
             "name": "tenant_id",
