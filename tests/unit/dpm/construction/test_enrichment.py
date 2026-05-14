@@ -28,7 +28,10 @@ from src.core.construction.repository import (
 )
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import (
+    DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreClientRestrictionProfileResponse,
+    DpmCoreLiquidityReserveRequirementResponse,
+    DpmCorePlannedWithdrawalScheduleResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
     DpmResolvedSourceContext,
 )
@@ -621,6 +624,137 @@ def test_source_context_lifts_client_restriction_and_sustainability_profiles() -
         construction_service._source_status_to_method_status("INCOMPLETE")
         == ConstructionMethodStatus.BLOCKED
     )
+
+
+def test_source_context_lifts_income_reserve_and_withdrawal_sources() -> None:
+    income_schedule = DpmCoreClientIncomeNeedsScheduleResponse.model_validate(
+        {
+            "product_name": "ClientIncomeNeedsSchedule",
+            "product_version": "v1",
+            "portfolio_id": "pf_liquidity_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "schedules": [
+                {
+                    "schedule_id": "income-1",
+                    "need_type": "RETIREMENT_INCOME",
+                    "need_status": "ACTIVE",
+                    "amount": "12000.00",
+                    "currency": "USD",
+                    "frequency": "MONTHLY",
+                    "start_date": "2026-05-01",
+                    "priority": 1,
+                    "funding_policy": "BANK_POLICY_REF",
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "CLIENT_INCOME_NEEDS_READY",
+                "schedule_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"source_batch_fingerprint": "income-source-hash"},
+        }
+    )
+    reserve_requirement = DpmCoreLiquidityReserveRequirementResponse.model_validate(
+        {
+            "product_name": "LiquidityReserveRequirement",
+            "product_version": "v1",
+            "portfolio_id": "pf_liquidity_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "requirements": [
+                {
+                    "reserve_requirement_id": "reserve-1",
+                    "reserve_type": "CLIENT_RESERVE",
+                    "reserve_status": "ACTIVE",
+                    "required_amount": "50000.00",
+                    "currency": "USD",
+                    "horizon_days": 90,
+                    "priority": 1,
+                    "policy_source": "BANK_POLICY_REF",
+                    "effective_from": "2026-05-01",
+                    "requirement_version": 1,
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "LIQUIDITY_RESERVE_READY",
+                "requirement_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"source_batch_fingerprint": "reserve-source-hash"},
+        }
+    )
+    planned_withdrawals = DpmCorePlannedWithdrawalScheduleResponse.model_validate(
+        {
+            "product_name": "PlannedWithdrawalSchedule",
+            "product_version": "v1",
+            "portfolio_id": "pf_liquidity_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "horizon_days": 365,
+            "withdrawals": [
+                {
+                    "withdrawal_schedule_id": "wd-1",
+                    "withdrawal_type": "CLIENT_DISTRIBUTION",
+                    "withdrawal_status": "ACTIVE",
+                    "amount": "25000.00",
+                    "currency": "USD",
+                    "scheduled_date": "2026-06-15",
+                    "purpose_code": "CLIENT_REQUEST",
+                }
+            ],
+            "supportability": {
+                "state": "READY",
+                "reason": "PLANNED_WITHDRAWALS_READY",
+                "withdrawal_count": 1,
+                "missing_data_families": [],
+            },
+            "lineage": {"source_batch_fingerprint": "withdrawal-source-hash"},
+        }
+    )
+    source_context = DpmResolvedSourceContext.model_construct(
+        input_mode="stateful",
+        source_system="lotus-core",
+        stateful_context_hash="source-context-hash",
+        context=SimpleNamespace(
+            transaction_cost_curve=None,
+            portfolio_cashflow_projection=None,
+            client_income_needs_schedule=income_schedule,
+            liquidity_reserve_requirement=reserve_requirement,
+            planned_withdrawal_schedule=planned_withdrawals,
+            client_restriction_profile=None,
+            sustainability_preference_profile=None,
+        ),
+    )
+
+    context = construction_service._authority_context_with_source_products(
+        authority_context=ConstructionAuthorityContext(),
+        source_context=source_context,
+    )
+
+    liquidity_context = context.liquidity_context
+    assert liquidity_context is not None
+    assert liquidity_context.client_income_needs_schedule is not None
+    assert liquidity_context.client_income_needs_schedule.schedule_count == 1
+    assert liquidity_context.liquidity_reserve_requirement is not None
+    assert liquidity_context.liquidity_reserve_requirement.maximum_horizon_days == 90
+    assert liquidity_context.planned_withdrawal_schedule is not None
+    assert liquidity_context.planned_withdrawal_schedule.withdrawal_count == 1
+    reason_codes = summarize_enrichment_posture(
+        result=_trade_result(),
+        tax_required=False,
+        risk_required=False,
+        performance_required=False,
+        liquidity_context=liquidity_context,
+    ).reason_codes
+    assert "CLIENT_INCOME_NEEDS_CONTEXT_PRESENT" in reason_codes
+    assert "LIQUIDITY_RESERVE_CONTEXT_PRESENT" in reason_codes
+    assert "PLANNED_WITHDRAWAL_CONTEXT_PRESENT" in reason_codes
 
 
 def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:

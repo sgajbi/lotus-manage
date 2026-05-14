@@ -8,12 +8,15 @@ import httpx
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
+    DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreCioModelChangeAffectedCohortResponse,
     DpmCoreExecutionContext,
     DpmCoreInstrumentEligibilityBulkResponse,
+    DpmCoreLiquidityReserveRequirementResponse,
     DpmCoreMandateBindingResponse,
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
+    DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
     DpmCorePortfolioTaxLotWindowResponse,
@@ -70,6 +73,15 @@ class DpmCoreResolverConfig:
     )
     portfolio_cashflow_projection_path_template: str = (
         "/portfolios/{portfolio_id}/cashflow-projection"
+    )
+    client_income_needs_schedule_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/client-income-needs-schedule"
+    )
+    liquidity_reserve_requirement_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/liquidity-reserve-requirement"
+    )
+    planned_withdrawal_schedule_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/planned-withdrawal-schedule"
     )
     transaction_cost_lookback_days: int = 400
     client_restriction_profile_path_template: str = (
@@ -175,6 +187,30 @@ class DpmCoreResolverConfig:
         if not path_template:
             raise DpmCoreResolverUnavailableError("DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE")
         base = (self.query_base_url or self.base_url).rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_client_income_needs_schedule_url(self, portfolio_id: str) -> str:
+        path_template = self.client_income_needs_schedule_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_INCOME_NEEDS_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_liquidity_reserve_requirement_url(self, portfolio_id: str) -> str:
+        path_template = self.liquidity_reserve_requirement_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_LIQUIDITY_RESERVE_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_planned_withdrawal_schedule_url(self, portfolio_id: str) -> str:
+        path_template = self.planned_withdrawal_schedule_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_PLANNED_WITHDRAWAL_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
 
@@ -365,6 +401,28 @@ class DpmCoreResolverClient:
             include_projected=True,
             correlation_id=correlation_id,
         )
+        client_income_needs_schedule = self._try_resolve_client_income_needs_schedule(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            correlation_id=correlation_id,
+        )
+        liquidity_reserve_requirement = self._try_resolve_liquidity_reserve_requirement(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            correlation_id=correlation_id,
+        )
+        planned_withdrawal_schedule = self._try_resolve_planned_withdrawal_schedule(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            horizon_days=365,
+            correlation_id=correlation_id,
+        )
         client_restriction_profile = self._try_resolve_client_restriction_profile(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -419,6 +477,9 @@ class DpmCoreResolverClient:
             ),
             transaction_cost_curve=transaction_cost_curve,
             portfolio_cashflow_projection=portfolio_cashflow_projection,
+            client_income_needs_schedule=client_income_needs_schedule,
+            liquidity_reserve_requirement=liquidity_reserve_requirement,
+            planned_withdrawal_schedule=planned_withdrawal_schedule,
             client_restriction_profile=client_restriction_profile,
             sustainability_preference_profile=sustainability_preference_profile,
         )
@@ -722,6 +783,86 @@ class DpmCoreResolverClient:
         )
         return DpmCorePortfolioCashflowProjectionResponse.model_validate(response)
 
+    def resolve_client_income_needs_schedule(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        include_inactive_schedules: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCoreClientIncomeNeedsScheduleResponse:
+        url = self._config.resolve_client_income_needs_schedule_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "include_inactive_schedules": include_inactive_schedules,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_INCOME_NEEDS_UNAVAILABLE",
+            incomplete_code="DPM_CORE_INCOME_NEEDS_INCOMPLETE",
+        )
+        return DpmCoreClientIncomeNeedsScheduleResponse.model_validate(response)
+
+    def resolve_liquidity_reserve_requirement(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        include_inactive_requirements: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCoreLiquidityReserveRequirementResponse:
+        url = self._config.resolve_liquidity_reserve_requirement_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "include_inactive_requirements": include_inactive_requirements,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_LIQUIDITY_RESERVE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_LIQUIDITY_RESERVE_INCOMPLETE",
+        )
+        return DpmCoreLiquidityReserveRequirementResponse.model_validate(response)
+
+    def resolve_planned_withdrawal_schedule(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        horizon_days: int = 365,
+        include_inactive_withdrawals: bool = False,
+        correlation_id: Optional[str],
+    ) -> DpmCorePlannedWithdrawalScheduleResponse:
+        url = self._config.resolve_planned_withdrawal_schedule_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "horizon_days": horizon_days,
+            "include_inactive_withdrawals": include_inactive_withdrawals,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_PLANNED_WITHDRAWAL_UNAVAILABLE",
+            incomplete_code="DPM_CORE_PLANNED_WITHDRAWAL_INCOMPLETE",
+        )
+        return DpmCorePlannedWithdrawalScheduleResponse.model_validate(response)
+
     def resolve_client_restriction_profile(
         self,
         *,
@@ -816,6 +957,71 @@ class DpmCoreResolverClient:
                 as_of_date=as_of_date,
                 horizon_days=horizon_days,
                 include_projected=include_projected,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_client_income_needs_schedule(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreClientIncomeNeedsScheduleResponse | None:
+        try:
+            return self.resolve_client_income_needs_schedule(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                include_inactive_schedules=False,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_liquidity_reserve_requirement(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreLiquidityReserveRequirementResponse | None:
+        try:
+            return self.resolve_liquidity_reserve_requirement(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                include_inactive_requirements=False,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_planned_withdrawal_schedule(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        horizon_days: int,
+        correlation_id: Optional[str],
+    ) -> DpmCorePlannedWithdrawalScheduleResponse | None:
+        try:
+            return self.resolve_planned_withdrawal_schedule(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                horizon_days=horizon_days,
+                include_inactive_withdrawals=False,
                 correlation_id=correlation_id,
             )
         except DpmCoreResolverError:

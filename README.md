@@ -82,9 +82,13 @@ is enabled: hard client restrictions can block candidate trades, sustainability 
 preferences can trigger pending review, and profile source lineage is preserved for proof packs.
 Construction alternatives also carry bounded `proposed_changes` diagnostics from generated
 security trade intents so wave simulation can show PM-reviewable proposed changes without claiming
-order execution, venue routing, execution price, or OMS handoff.
-Security-level sustainability classification evidence remains an explicit pending-review boundary;
-client income-need planning is still deferred until an owning source product exists. Postgres
+order execution, venue routing, execution price, or OMS handoff. Stateful core sourcing now also
+preserves optional `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and
+`PlannedWithdrawalSchedule:v1` evidence in liquidity-aware construction diagnostics and
+mandate-health lineage. Security-level sustainability classification evidence remains an explicit
+pending-review boundary; Manage does not turn income needs, reserve requirements, or withdrawals
+into financial-planning advice, funding recommendations, client liability planning, OMS
+instructions, or treasury actions. Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.
 RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable

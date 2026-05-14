@@ -204,6 +204,55 @@ def refresh_mandate_from_core(
         unavailable_family=unavailable_cashflow_projection,
         family_name="PORTFOLIO_CASHFLOW_PROJECTION",
     )
+    client_income_needs_schedule, unavailable_income_needs = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_client_income_needs_schedule",
+        family_name="CLIENT_INCOME_NEEDS_SCHEDULE",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        tenant_id=tenant_id,
+        mandate_id=mandate_id,
+        include_inactive_schedules=False,
+        correlation_id=correlation_id,
+    )
+    client_income_needs_schedule, unavailable_income_needs = _ready_optional_source(
+        source=client_income_needs_schedule,
+        unavailable_family=unavailable_income_needs,
+        family_name="CLIENT_INCOME_NEEDS_SCHEDULE",
+    )
+    liquidity_reserve_requirement, unavailable_liquidity_reserve = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_liquidity_reserve_requirement",
+        family_name="LIQUIDITY_RESERVE_REQUIREMENT",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        tenant_id=tenant_id,
+        mandate_id=mandate_id,
+        include_inactive_requirements=False,
+        correlation_id=correlation_id,
+    )
+    liquidity_reserve_requirement, unavailable_liquidity_reserve = _ready_optional_source(
+        source=liquidity_reserve_requirement,
+        unavailable_family=unavailable_liquidity_reserve,
+        family_name="LIQUIDITY_RESERVE_REQUIREMENT",
+    )
+    planned_withdrawal_schedule, unavailable_planned_withdrawal = _try_resolve_optional_source(
+        resolver=core_resolver,
+        method_name="resolve_planned_withdrawal_schedule",
+        family_name="PLANNED_WITHDRAWAL_SCHEDULE",
+        portfolio_id=portfolio_id,
+        as_of_date=as_of_date,
+        tenant_id=tenant_id,
+        mandate_id=mandate_id,
+        horizon_days=365,
+        include_inactive_withdrawals=False,
+        correlation_id=correlation_id,
+    )
+    planned_withdrawal_schedule, unavailable_planned_withdrawal = _ready_optional_source(
+        source=planned_withdrawal_schedule,
+        unavailable_family=unavailable_planned_withdrawal,
+        family_name="PLANNED_WITHDRAWAL_SCHEDULE",
+    )
     benchmark_assignment, unavailable_benchmark_assignment = _try_resolve_optional_source(
         resolver=core_resolver,
         method_name="resolve_benchmark_assignment",
@@ -224,6 +273,9 @@ def refresh_mandate_from_core(
             unavailable_client_restrictions,
             unavailable_sustainability_preferences,
             unavailable_cashflow_projection,
+            unavailable_income_needs,
+            unavailable_liquidity_reserve,
+            unavailable_planned_withdrawal,
             unavailable_benchmark_assignment,
         )
         if family is not None
@@ -237,6 +289,9 @@ def refresh_mandate_from_core(
         client_restriction_profile=client_restriction_profile,
         sustainability_preference_profile=sustainability_preference_profile,
         portfolio_cashflow_projection=portfolio_cashflow_projection,
+        client_income_needs_schedule=client_income_needs_schedule,
+        liquidity_reserve_requirement=liquidity_reserve_requirement,
+        planned_withdrawal_schedule=planned_withdrawal_schedule,
         benchmark_assignment=benchmark_assignment,
     )
     health_input = build_health_input_from_core_sources(

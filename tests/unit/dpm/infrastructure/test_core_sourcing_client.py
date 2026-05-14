@@ -630,6 +630,9 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/market-data/coverage",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/transaction-cost-curve",
         "https://core.example.test/portfolios/PB_SG_GLOBAL_BAL_001/cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-income-needs-schedule",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/liquidity-reserve-requirement",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/planned-withdrawal-schedule",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
     ]
@@ -640,8 +643,12 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"window":{"start_date":"2025-02-18","end_date":"2026-03-25"}' in seen[6][2]
     assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
     assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[8][2]
-    assert b'"include_inactive_restrictions":false' in seen[8][2]
-    assert b'"include_inactive_preferences":false' in seen[9][2]
+    assert b'"include_inactive_schedules":false' in seen[8][2]
+    assert b'"include_inactive_requirements":false' in seen[9][2]
+    assert b'"horizon_days":365' in seen[10][2]
+    assert b'"include_inactive_withdrawals":false' in seen[10][2]
+    assert b'"include_inactive_restrictions":false' in seen[11][2]
+    assert b'"include_inactive_preferences":false' in seen[12][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"

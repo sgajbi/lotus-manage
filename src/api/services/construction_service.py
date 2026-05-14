@@ -18,11 +18,14 @@ from src.core.construction.alternative_engine import (
 from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction.method_registry import classify_solver_failure, resolve_method_plan
 from src.core.construction.models import (
+    AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
+    AuthoritativeLiquidityReserveRequirement,
+    AuthoritativePlannedWithdrawalSchedule,
     AuthoritativeRegimeStressContext,
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
@@ -617,6 +620,21 @@ def _authority_context_with_source_products(
             )
     if authority_context.liquidity_context is None:
         cashflow_projection = source_context.context.portfolio_cashflow_projection
+        income_needs = getattr(source_context.context, "client_income_needs_schedule", None)
+        reserve_requirement = getattr(source_context.context, "liquidity_reserve_requirement", None)
+        planned_withdrawals = getattr(source_context.context, "planned_withdrawal_schedule", None)
+        source_reason_codes = ["LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"]
+        cashflow_context = None
+        income_context = None
+        reserve_context = None
+        withdrawal_context = None
+        if (
+            cashflow_projection is not None
+            or income_needs is not None
+            or reserve_requirement is not None
+            or planned_withdrawals is not None
+        ):
+            source_reason_codes.append("CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT")
         if cashflow_projection is not None:
             payload = cashflow_projection.model_dump(mode="json", exclude_none=True)
             source_hash = hash_canonical_payload(payload)
@@ -625,31 +643,115 @@ def _authority_context_with_source_products(
                 if cashflow_projection.data_quality_status in {"READY", "DEGRADED", "INCOMPLETE"}
                 else "READY"
             )
+            cashflow_context = AuthoritativeLiquidityCashflowProjection(
+                source_product_name=cashflow_projection.product_name,
+                source_product_version=cashflow_projection.product_version,
+                source_system="lotus-core",
+                total_net_cashflow=Money(
+                    amount=cashflow_projection.total_net_cashflow,
+                    currency=cashflow_projection.portfolio_currency,
+                ),
+                projection_start=cashflow_projection.range_start_date,
+                projection_end=cashflow_projection.range_end_date,
+                include_projected=cashflow_projection.include_projected,
+                latest_evidence_timestamp=cashflow_projection.latest_evidence_timestamp,
+                source_batch_fingerprint=cashflow_projection.source_batch_fingerprint
+                or cashflow_projection.lineage.get("source_batch_fingerprint")
+                or source_hash,
+                data_quality_status=_source_status_to_method_status(status),
+                reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
+            )
+        if income_needs is not None:
+            payload = income_needs.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            income_context = AuthoritativeClientIncomeNeedsSchedule(
+                source_product_name=income_needs.product_name,
+                source_product_version=income_needs.product_version,
+                source_system="lotus-core",
+                source_id=income_needs.source_batch_fingerprint
+                or income_needs.lineage.get("source_batch_fingerprint")
+                or source_hash,
+                content_hash=source_hash,
+                schedule_count=income_needs.supportability.schedule_count,
+                currencies=sorted({entry.currency for entry in income_needs.schedules}),
+                highest_priority=(
+                    min(entry.priority for entry in income_needs.schedules)
+                    if income_needs.schedules
+                    else None
+                ),
+                supportability_status=_source_status_to_method_status(
+                    income_needs.supportability.state
+                ),
+                reason_codes=[income_needs.supportability.reason, "CORE_INCOME_NEEDS_PRESENT"],
+            )
+            source_reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
+        if reserve_requirement is not None:
+            payload = reserve_requirement.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            reserve_context = AuthoritativeLiquidityReserveRequirement(
+                source_product_name=reserve_requirement.product_name,
+                source_product_version=reserve_requirement.product_version,
+                source_system="lotus-core",
+                source_id=reserve_requirement.source_batch_fingerprint
+                or reserve_requirement.lineage.get("source_batch_fingerprint")
+                or source_hash,
+                content_hash=source_hash,
+                requirement_count=reserve_requirement.supportability.requirement_count,
+                currencies=sorted({entry.currency for entry in reserve_requirement.requirements}),
+                maximum_horizon_days=(
+                    max(entry.horizon_days for entry in reserve_requirement.requirements)
+                    if reserve_requirement.requirements
+                    else None
+                ),
+                supportability_status=_source_status_to_method_status(
+                    reserve_requirement.supportability.state
+                ),
+                reason_codes=[
+                    reserve_requirement.supportability.reason,
+                    "CORE_LIQUIDITY_RESERVE_PRESENT",
+                ],
+            )
+            source_reason_codes.append("LIQUIDITY_RESERVE_SOURCE_PRESENT")
+        if planned_withdrawals is not None:
+            payload = planned_withdrawals.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            withdrawal_context = AuthoritativePlannedWithdrawalSchedule(
+                source_product_name=planned_withdrawals.product_name,
+                source_product_version=planned_withdrawals.product_version,
+                source_system="lotus-core",
+                source_id=planned_withdrawals.source_batch_fingerprint
+                or planned_withdrawals.lineage.get("source_batch_fingerprint")
+                or source_hash,
+                content_hash=source_hash,
+                withdrawal_count=planned_withdrawals.supportability.withdrawal_count,
+                currencies=sorted({entry.currency for entry in planned_withdrawals.withdrawals}),
+                horizon_days=planned_withdrawals.horizon_days,
+                supportability_status=_source_status_to_method_status(
+                    planned_withdrawals.supportability.state
+                ),
+                reason_codes=[
+                    planned_withdrawals.supportability.reason,
+                    "CORE_PLANNED_WITHDRAWALS_PRESENT",
+                ],
+            )
+            source_reason_codes.append("PLANNED_WITHDRAWAL_SOURCE_PRESENT")
+        if (
+            cashflow_projection is not None
+            or income_needs is not None
+            or reserve_requirement is not None
+            or planned_withdrawals is not None
+        ):
             context_updates["liquidity_context"] = AuthoritativeLiquidityContext(
                 supportability_status=ConstructionMethodStatus.READY,
                 source_system="lotus-manage-settlement-engine",
                 policy_id="manage-liquidity-policy.v1",
                 minimum_cash_weight=Decimal("0.02"),
                 allowed_liquidity_tiers=["L1", "L2", "L3"],
-                cashflow_projection=AuthoritativeLiquidityCashflowProjection(
-                    source_product_name=cashflow_projection.product_name,
-                    source_product_version=cashflow_projection.product_version,
-                    source_system="lotus-core",
-                    total_net_cashflow=Money(
-                        amount=cashflow_projection.total_net_cashflow,
-                        currency=cashflow_projection.portfolio_currency,
-                    ),
-                    projection_start=cashflow_projection.range_start_date,
-                    projection_end=cashflow_projection.range_end_date,
-                    include_projected=cashflow_projection.include_projected,
-                    latest_evidence_timestamp=cashflow_projection.latest_evidence_timestamp,
-                    source_batch_fingerprint=cashflow_projection.source_batch_fingerprint
-                    or cashflow_projection.lineage.get("source_batch_fingerprint")
-                    or source_hash,
-                    data_quality_status=_source_status_to_method_status(status),
-                    reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
-                ),
-                reason_codes=["LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"],
+                cashflow_projection=cashflow_context,
+                client_income_needs_schedule=income_context,
+                liquidity_reserve_requirement=reserve_context,
+                planned_withdrawal_schedule=withdrawal_context,
+                reason_codes=source_reason_codes,
             )
     if authority_context.client_restriction_context is None:
         restriction_profile = source_context.context.client_restriction_profile
