@@ -193,13 +193,15 @@ Current repository posture:
     `105b716`), rolling volatility methodology slice from PR #117
     (`8f04b24276bd73dd34ef5ce3edf59e81453858ae`, wiki `c6eef3c`), rolling Sharpe
     methodology slice from PR #118 (`3f4bbfe6d536a1f3d68b773f917a3f059987db51`, wiki
-    `0b96201`), and rolling beta methodology slice from PR #119
-    (`ffcfddbc24484811152c85582398528c0c879d98`, wiki `bcccb0c`) for
-    `RollingRiskMetricsReport:v1`; they pin pp-to-decimal conversion, `ddof=1`, annualized
-    decimal volatility output, annualized decimal tracking-error output, dimensionless Sharpe,
-    beta, and information-ratio output, warm-up/null behavior, source-owned risk-free/benchmark
-    alignment posture, no-aligned dependency posture, zero-excess-volatility Sharpe flagging,
-    zero-benchmark-variance beta flagging, and zero-tracking-error information-ratio flagging.
+    `0b96201`), rolling beta methodology slice from PR #119
+    (`ffcfddbc24484811152c85582398528c0c879d98`, wiki `bcccb0c`), and rolling maximum drawdown
+    methodology slice from PR #120 (`2c205372a5ac3bfc024a7eb61c0bd44383895078`, wiki
+    `429e284`) for `RollingRiskMetricsReport:v1`; they pin pp-to-decimal conversion, `ddof=1`,
+    annualized decimal volatility output, annualized decimal tracking-error output, dimensionless
+    Sharpe, beta, and information-ratio output, decimal drawdown-ratio output, warm-up/null
+    behavior, source-owned risk-free/benchmark alignment posture, no-aligned dependency posture,
+    zero-excess-volatility Sharpe flagging, zero-benchmark-variance beta flagging, and
+    zero-tracking-error information-ratio flagging.
     It also includes the merged and wiki-published `lotus-performance`
     `currency_attribution_totals` source-product slice from PR #164
     (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
