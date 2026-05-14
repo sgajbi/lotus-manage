@@ -10,6 +10,7 @@ from src.core.pm_quality.repository import (
     DpmPmQualityScoreRunRepository,
 )
 from src.core.waves.repository import DpmWaveRepository
+from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.construction import PostgresConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository, PostgresDpmMandateRepository
@@ -28,7 +29,12 @@ from src.infrastructure.pm_quality import (
     PostgresDpmPmQualityScoreRunRepository,
 )
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
-from src.infrastructure.waves import InMemoryDpmWaveRepository, PostgresDpmWaveRepository
+from src.infrastructure.waves import (
+    InMemoryDpmBulkReviewCampaignDefinitionRepository,
+    InMemoryDpmWaveRepository,
+    PostgresDpmBulkReviewCampaignDefinitionRepository,
+    PostgresDpmWaveRepository,
+)
 
 
 _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
@@ -38,6 +44,7 @@ _OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
 _PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
+_CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
 _POSTGRES_CONSTRUCTION_REPOSITORY: PostgresConstructionRepository | None = None
 _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
@@ -45,6 +52,9 @@ _POSTGRES_OUTCOME_REVIEW_REPOSITORY: PostgresDpmOutcomeReviewRepository | None =
 _POSTGRES_PM_QUALITY_POLICY_REPOSITORY: PostgresDpmPmQualityPolicyRepository | None = None
 _POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY: PostgresDpmPmQualityScoreRunRepository | None = None
 _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
+_POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY: (
+    PostgresDpmBulkReviewCampaignDefinitionRepository | None
+) = None
 
 
 async def get_db_session() -> AsyncIterator[None]:
@@ -141,6 +151,20 @@ def get_wave_repository() -> DpmWaveRepository:
             _POSTGRES_WAVE_REPOSITORY = PostgresDpmWaveRepository(dsn=dsn)
         return _POSTGRES_WAVE_REPOSITORY
     return _WAVE_REPOSITORY
+
+
+def get_campaign_definition_repository() -> DpmBulkReviewCampaignDefinitionRepository:
+    """Return the Manage-owned bulk-review campaign definition repository."""
+
+    dsn = _repository_dsn("DPM_CAMPAIGN_DEFINITION_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY
+        if _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY is None:
+            _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY = (
+                PostgresDpmBulkReviewCampaignDefinitionRepository(dsn=dsn)
+            )
+        return _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY
+    return _CAMPAIGN_DEFINITION_REPOSITORY
 
 
 def get_risk_authority_client() -> LotusRiskAuthorityClient | None:

@@ -96,12 +96,14 @@
       ],
       "serving_plane": "query_control_plane_service",
       "current_routes": [
+        "/api/v1/rebalance/waves/campaign-definitions",
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves"
       ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Bulk review campaign membership is generated from the source-backed candidate set and optional governance evidence supplied for the requested campaign as-of date."
+        "max_allowed_age_description": "Bulk review campaign membership is generated from the source-backed candidate set supplied inline or through an immutable BulkReviewCampaignDefinition:v1 definition plus optional governance evidence for the requested campaign as-of date."
       },
       "completeness_policy": {
         "default_status": "complete",

@@ -1277,7 +1277,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "optional approval/expiry/actor-entitlement governance evidence" in work_to_be_done
     assert "BulkReviewCampaignGovernance" in work_to_be_done
-    assert "persisted campaign definitions, global discovery" in work_to_be_done
+    assert "BulkReviewCampaignDefinition:v1" in work_to_be_done
+    assert "Global discovery and downstream Gateway/Workbench campaign product surfaces" in (
+        work_to_be_done
+    )
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
