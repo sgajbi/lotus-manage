@@ -1992,7 +1992,8 @@ Purpose:
 Persists immutable bank-owned `PmOperatingQualityPolicy` versions and builds or persists
 deterministic `PmOperatingQualityScoreRun:v1` evidence from explicit bank-owned policy,
 source-backed evidence signals, and optional persisted outcome reviews. The route family is the
-bounded first implementation of RFC42-WTBD-008.
+bounded first implementation of RFC42-WTBD-008. Optional `pm_book_scope` materializes source-owned
+lotus-core `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`.
 
 Functional coverage:
 
@@ -2002,6 +2003,8 @@ Functional coverage:
 - enabled policies require configured weights and fail closed for missing required evidence,
 - persisted outcome reviews can be included as source-backed outcome-discipline and source-quality
   evidence,
+- optional PM-book scope resolves from lotus-core, records returned portfolio count,
+  source-applied filters, source refs, and fail-closed source readiness,
 - every score run returns decomposed indicator results, reason codes, source refs, generated
   content hash, correlation id, and forbidden-use posture,
 - portfolio memory advertises PM scoring as a separate product with no projected score events.
@@ -2010,8 +2013,8 @@ Non-functional posture:
 
 - The endpoint does not create HR, compensation, conduct-enforcement, autonomous-ranking,
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
-- PM-book materialization, downstream UI, portfolio-memory score-event projection, and advanced
-  fairness analytics remain future expansion.
+- Downstream UI, portfolio-memory score-event projection, and advanced fairness analytics remain
+  future expansion.
 
 Evidence commands:
 

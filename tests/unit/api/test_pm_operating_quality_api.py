@@ -7,6 +7,9 @@ from src.api.dependencies import get_outcome_review_repository
 from src.api.dependencies import get_pm_quality_policy_repository
 from src.api.dependencies import get_pm_quality_score_run_repository
 from src.api.main import app
+from src.api.routers import pm_operating_quality as pmq_router
+from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityPolicyRepository,
@@ -67,6 +70,74 @@ def _request_with_policy_ref(outcome_review_id: str = "dor_001") -> dict:
     return payload
 
 
+def _pm_book_membership_payload(
+    *, supportability_state: str = "READY", members: list | None = None
+):
+    return {
+        "product_name": "PortfolioManagerBookMembership",
+        "product_version": "v1",
+        "as_of_date": "2026-05-12",
+        "tenant_id": "tenant-sg",
+        "portfolio_manager_id": "pm_001",
+        "booking_center_code": "Singapore",
+        "members": members
+        if members is not None
+        else [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "client_id": "client_001",
+                "booking_center_code": "Singapore",
+                "portfolio_type": "DPM",
+                "status": "ACTIVE",
+                "open_date": "2023-01-03",
+                "base_currency": "USD",
+                "source_record_id": "pm-book:001",
+            },
+            {
+                "portfolio_id": "PB_SG_GLOBAL_INC_002",
+                "client_id": "client_002",
+                "booking_center_code": "Singapore",
+                "portfolio_type": "DPM",
+                "status": "ACTIVE",
+                "open_date": "2023-02-03",
+                "base_currency": "USD",
+                "source_record_id": "pm-book:002",
+            },
+        ],
+        "supportability": {
+            "state": supportability_state,
+            "reason": "DPM_CORE_PM_BOOK_READY"
+            if supportability_state == "READY"
+            else "DPM_CORE_PM_BOOK_INCOMPLETE",
+            "returned_portfolio_count": 2 if members is None else len(members),
+            "filters_applied": {"portfolio_types": ["DPM"], "include_inactive": False},
+        },
+        "lineage": {"source_system": "relationship_book", "contract_version": "rfc_041_v1"},
+        "source_batch_fingerprint": "sha256:pm-book",
+        "snapshot_id": "pm-book-snapshot-20260512",
+    }
+
+
+class _PmBookResolver:
+    def __init__(self, payload: dict):
+        self.payload = payload
+        self.calls: list[dict[str, object]] = []
+
+    def resolve_portfolio_manager_book_membership(self, **kwargs: object):
+        self.calls.append(kwargs)
+        return DpmCorePortfolioManagerBookMembershipResponse.model_validate(self.payload)
+
+
+class _UnavailablePmBookResolver:
+    def resolve_portfolio_manager_book_membership(self, **_kwargs: object):
+        raise DpmCoreResolverUnavailableError("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE")
+
+
+class _IncompletePmBookResolver:
+    def resolve_portfolio_manager_book_membership(self, **_kwargs: object):
+        raise DpmCoreResolverError("DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE")
+
+
 def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> None:
     repository = InMemoryDpmOutcomeReviewRepository()
     repository.save_outcome_review(review=_review(), retention_expires_at=None)
@@ -88,6 +159,101 @@ def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> 
     assert score_run["correlation_id"] == "corr-pmq-001"
     assert any(ref["source_type"] == "PostTradeOutcomeReview" for ref in score_run["source_refs"])
     assert "autonomous_pm_ranking" in score_run["forbidden_uses"]
+
+
+def test_pm_operating_quality_api_materializes_pm_book_scope(monkeypatch) -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    repository.save_outcome_review(review=_review(), retention_expires_at=None)
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    monkeypatch.setattr(pmq_router, "build_core_resolver_client", lambda: resolver)
+    payload = {
+        **_request(),
+        "pm_book_scope": {
+            "tenant_id": "tenant-sg",
+            "booking_center_code": "Singapore",
+            "portfolio_types": ["dpm"],
+        },
+    }
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json=payload,
+                headers={"X-Correlation-Id": "corr-pmq-book"},
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    score_run = response.json()["score_run"]
+    assert score_run["book_scope_evidence"]["source_id"] == "pm-book-snapshot-20260512"
+    assert score_run["book_scope_evidence"]["returned_portfolio_count"] == 2
+    assert score_run["book_scope_evidence"]["filters_applied"]["portfolio_types"] == ["DPM"]
+    assert any(
+        ref["source_type"] == "PortfolioManagerBookMembership" for ref in score_run["source_refs"]
+    )
+    assert len(resolver.calls) == 1
+    call = resolver.calls[0]
+    assert call["portfolio_manager_id"] == "pm_001"
+    assert str(call["as_of_date"]) == "2026-05-12"
+    assert call["tenant_id"] == "tenant-sg"
+    assert call["booking_center_code"] == "Singapore"
+    assert call["portfolio_types"] == ["DPM"]
+    assert call["include_inactive"] is False
+    assert call["correlation_id"] == "corr-pmq-book"
+
+
+@pytest.mark.parametrize(
+    ("resolver", "expected_status", "expected_code"),
+    [
+        (
+            _PmBookResolver(_pm_book_membership_payload(supportability_state="INCOMPLETE")),
+            424,
+            "DPM_CORE_PM_BOOK_INCOMPLETE",
+        ),
+        (
+            _PmBookResolver(_pm_book_membership_payload(members=[])),
+            424,
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+        ),
+        (
+            _UnavailablePmBookResolver(),
+            503,
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
+        ),
+        (
+            _IncompletePmBookResolver(),
+            424,
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
+        ),
+    ],
+)
+def test_pm_operating_quality_api_fails_closed_for_pm_book_scope(
+    monkeypatch,
+    resolver,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    repository.save_outcome_review(review=_review(), retention_expires_at=None)
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    monkeypatch.setattr(pmq_router, "build_core_resolver_client", lambda: resolver)
+    payload = {
+        **_request(),
+        "pm_book_scope": {"booking_center_code": "Singapore", "portfolio_types": ["DPM"]},
+    }
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json=payload,
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
 
 
 def test_pm_operating_quality_api_administers_policies_and_uses_policy_refs() -> None:

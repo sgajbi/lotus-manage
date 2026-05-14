@@ -108,6 +108,28 @@
         "pr-merge"
       ],
       "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "PortfolioManagerBookMembership",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "source_batch_fingerprint",
+        "snapshot_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "api_read",
+      "business_purpose": "Resolve source-owned PM-book scope for rebalance-wave discovery and optional PM operating quality score-run materialization without inferring book membership in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
     }
   ]
 }

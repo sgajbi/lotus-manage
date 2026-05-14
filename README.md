@@ -140,8 +140,10 @@ bank policy versions for reuse. `POST /score-runs`, `GET /score-runs`, and
 `GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence. Scoring is
 disabled by default, enabled policies fail closed for missing required evidence, and prohibited HR,
 compensation, conduct-enforcement, and autonomous-ranking uses remain outside the product contract.
-PM-book materialization, downstream UI, portfolio-memory score-event projection, and advanced
-fairness analytics remain future expansion.
+When `pm_book_scope` is supplied, score-run preview/create materializes source-owned lotus-core
+`PortfolioManagerBookMembership:v1` evidence, records `book_scope_evidence`, and fails closed for
+unavailable, incomplete, degraded, or empty PM-book membership. Downstream UI, portfolio-memory
+score-event projection, and advanced fairness analytics remain future expansion.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).

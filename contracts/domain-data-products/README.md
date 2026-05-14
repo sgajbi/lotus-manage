@@ -15,7 +15,9 @@ Current declarations:
    `ClientRestrictionProfile:v1` / `SustainabilityPreferenceProfile:v1` dependencies used by
    ESG/restriction-aware construction and proof-pack source preservation, and the
    `lotus-risk:RiskEventAffectedCohort:v1` API-read dependency used by source-owned
-   risk-event rebalance waves.
+   risk-event rebalance waves. It also declares the `lotus-core:PortfolioManagerBookMembership:v1`
+   API-read dependency used by PM-book rebalance-wave discovery and optional PM operating quality
+   score-run scope materialization.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
    implemented rebalance supportability, artifact, and workflow route families, and
@@ -23,7 +25,8 @@ Current declarations:
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
    with optional approval/expiry/actor-entitlement governance evidence,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
-   quality policy administration, preview, and create/read/list score-run lifecycle routes.
+   quality policy administration, optional source-owned PM-book scope evidence, preview, and
+   create/read/list score-run lifecycle routes.
 
 Local validation:
 

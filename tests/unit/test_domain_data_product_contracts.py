@@ -50,6 +50,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
         "RiskEventAffectedCohort",
+        "PortfolioManagerBookMembership",
     }
     assert (
         by_name["PortfolioStateSnapshot"]["consumption_mode"] == "caller_supplied_contract_payload"
@@ -66,6 +67,9 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["RiskEventAffectedCohort"]["producer_repository"] == "lotus-risk"
     assert by_name["RiskEventAffectedCohort"]["consumption_mode"] == "api_read"
     assert by_name["RiskEventAffectedCohort"]["failure_posture"] == "fail_closed"
+    assert by_name["PortfolioManagerBookMembership"]["producer_repository"] == "lotus-core"
+    assert by_name["PortfolioManagerBookMembership"]["consumption_mode"] == "api_read"
+    assert by_name["PortfolioManagerBookMembership"]["failure_posture"] == "fail_closed"
 
     request_models = REQUEST_MODELS_PATH.read_text(encoding="utf-8")
     assert "portfolio_snapshot: PortfolioSnapshot" in request_models
@@ -160,6 +164,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
     ]
     assert pm_quality["lineage_policy"]["lineage_required"] is True
+    assert "portfolio_id" in pm_quality["identifier_refs"]
 
 
 def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() -> None:

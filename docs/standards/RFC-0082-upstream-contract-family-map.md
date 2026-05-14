@@ -19,7 +19,8 @@ composition.
    execution-context product API-read dependency while the complete product set remains unavailable.
    Dedicated client methods currently exist for `DpmModelPortfolioTarget:v1`,
    `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`,
-   `ClientRestrictionProfile:v1`, and `SustainabilityPreferenceProfile:v1`.
+   `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and
+   `PortfolioManagerBookMembership:v1`.
 4. `lotus-manage` uses the bounded `lotus-risk` authority client for risk-owned analytics products.
    `RegimeScenarioPackEvaluation:v1` supports regime-stress-aware construction when configured;
    `RiskEventAffectedCohort:v1` supports fail-closed `RISK_EVENT` rebalance wave preview/create
@@ -48,6 +49,7 @@ composition.
 | `market_data_snapshot` request payloads | prices and FX should remain core-governed source data when populated from platform state | Operational Read input / Analytics Input watchlist | valuation, settlement, tax, and rebalance execution support | manage may use inputs for execution, but source truth remains upstream |
 | `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | disabled by default in capabilities until a governed state resolver is configured | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
+| PM-book membership | `lotus-core` owns portfolio-manager book membership, source records, filters, supportability, and source-batch fingerprint | Cohort membership source product | PM-book rebalance-wave discovery and optional PM operating quality score-run scope materialization from `PortfolioManagerBookMembership:v1` | manage must fail closed on unavailable, incomplete, degraded, or empty PM-book source posture and must not infer membership locally |
 
 ## `lotus-risk` Contract Family Posture
 
@@ -67,6 +69,7 @@ composition.
 | policy-pack supportability | `/api/v1/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
 | integration capabilities | `/api/v1/integration/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
 | bulk-review campaign membership | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves` with `trigger_type=BULK_REVIEW_CAMPAIGN` | `lotus-manage` | owns the DPM operating campaign membership envelope, deterministic membership refs, optional approval/expiry/actor-entitlement governance evidence, and wave persistence; does not own underlying source facts, persisted campaign definitions, global campaign discovery, downstream campaign UI, or OMS execution |
+| PM operating quality score runs | `/api/v1/rebalance/pm-operating-quality/*` | `lotus-manage` | owns bank policy administration, score-run lifecycle, evidence decomposition, forbidden-use posture, and optional source-backed PM-book scope evidence; does not own HR, compensation, conduct enforcement, autonomous ranking, AI-generated scoring, or source-owner risk/performance/tax/execution methodology |
 
 ## Split-Boundary Posture
 
