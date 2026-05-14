@@ -251,4 +251,30 @@ def _diagnostic_summary(result: RebalanceResult) -> dict[str, object]:
             key: list(values) for key, values in result.diagnostics.data_quality.items()
         },
         "rule_result_count": len(result.rule_results),
+        "proposed_changes": _proposed_changes(result),
     }
+
+
+def _proposed_changes(result: RebalanceResult) -> list[dict[str, object]]:
+    changes: list[dict[str, object]] = []
+    for intent in result.intents:
+        if not isinstance(intent, SecurityTradeIntent):
+            continue
+        notional = intent.notional_base or intent.notional
+        row: dict[str, object] = {
+            "intent_id": intent.intent_id,
+            "security_id": intent.instrument_id,
+            "action": intent.side.upper(),
+        }
+        if intent.quantity is not None:
+            row["quantity"] = str(abs(intent.quantity))
+        if notional is not None:
+            row["estimated_value"] = str(abs(notional.amount))
+            row["currency"] = notional.currency
+        if intent.rationale is not None:
+            row["reason"] = intent.rationale.message
+            row["reason_code"] = intent.rationale.code
+        if intent.constraints_applied:
+            row["constraints_applied"] = list(intent.constraints_applied)
+        changes.append(row)
+    return changes

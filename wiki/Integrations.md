@@ -167,7 +167,7 @@ Risk-event rebalance waves consume `lotus-risk` `RiskEventAffectedCohort:v1` thr
 risk-authority client when `DPM_RISK_BASE_URL` is configured. Manage requires caller-supplied
 candidate portfolios and source-supplied exposure weights, preserves lotus-risk cohort/event/member
 lineage, and fails closed instead of calculating risk-event impact or full-book membership locally.
-Tactical house-view and implicit campaign cohorts remain unpromoted until their source owners
+Tactical house-view Manage consumption and implicit campaign cohorts remain unpromoted until their owning implementations
 publish governed cohort products.
 
 ```mermaid

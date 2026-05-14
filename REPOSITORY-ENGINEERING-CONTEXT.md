@@ -282,7 +282,9 @@ Current repository posture:
     `ConstructionAuthorityContext`, `RISK_AWARE` can consume configured lotus-risk concentration
     authority, and `aggregate_metrics.source_analytics` preserves source-family, supportability,
     lineage refs, reason codes, and source-emitted scalar values without manage-local risk or
-    performance methodology. Wave report materialization is now implemented in
+    performance methodology. Wave simulation item diagnostics now preserve bounded
+    `proposed_changes` from construction alternatives as PM-review evidence only, with no order,
+    execution, fill, venue-routing, or OMS claim. Wave report materialization is now implemented in
     owning repositories through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render`
     PR #12, and `lotus-archive` PR #24: manage remains deterministic wave report-input authority,
     while report/render/archive own job materialization, the `rebalance-wave` template, generated

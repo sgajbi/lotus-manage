@@ -966,6 +966,7 @@ def _simulate_item(
                 **item.diagnostics,
                 "construction_state": alternative_set.status.value,
                 "alternative_count": len(alternative_set.alternatives),
+                "proposed_changes": _proposed_changes_from_alternative_set(alternative_set),
                 "source_analytics": _source_analytics_from_alternative_set(alternative_set),
             },
         },
@@ -1437,6 +1438,16 @@ def _source_analytics_from_alternative_set(
         if candidates:
             summaries[family] = _merge_item_source_analytics(candidates)
     return summaries
+
+
+def _proposed_changes_from_alternative_set(
+    alternative_set: ConstructionAlternativeSet,
+) -> list[dict[str, object]]:
+    for alternative in alternative_set.alternatives:
+        changes = alternative.diagnostics.get("proposed_changes")
+        if isinstance(changes, list) and changes:
+            return [change for change in changes if isinstance(change, dict)]
+    return []
 
 
 def _source_analytics_from_alternative(
