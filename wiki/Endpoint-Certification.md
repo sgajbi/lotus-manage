@@ -1975,10 +1975,13 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: PM operating quality score-run lifecycle
+## Certified endpoint: PM operating quality policy and score-run lifecycle
 
 Route:
 
+- `PUT /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`
+- `GET /api/v1/rebalance/pm-operating-quality/policies`
+- `GET /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`
 - `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview`
 - `POST /api/v1/rebalance/pm-operating-quality/score-runs`
 - `GET /api/v1/rebalance/pm-operating-quality/score-runs`
@@ -1986,13 +1989,16 @@ Route:
 
 Purpose:
 
-Builds and optionally persists deterministic `PmOperatingQualityScoreRun:v1` evidence from explicit
-bank-owned policy, source-backed evidence signals, and optional persisted outcome reviews. The
-route family is the bounded first implementation of RFC42-WTBD-008.
+Persists immutable bank-owned `PmOperatingQualityPolicy` versions and builds or persists
+deterministic `PmOperatingQualityScoreRun:v1` evidence from explicit bank-owned policy,
+source-backed evidence signals, and optional persisted outcome reviews. The route family is the
+bounded first implementation of RFC42-WTBD-008.
 
 Functional coverage:
 
 - disabled-by-default policy posture returns `DISABLED` with no score,
+- immutable policy versions can be created, listed, retrieved, and referenced by score-run
+  preview/create requests,
 - enabled policies require configured weights and fail closed for missing required evidence,
 - persisted outcome reviews can be included as source-backed outcome-discipline and source-quality
   evidence,
@@ -2004,8 +2010,8 @@ Non-functional posture:
 
 - The endpoint does not create HR, compensation, conduct-enforcement, autonomous-ranking,
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
-- Persisted policy administration, PM-book materialization, downstream UI, portfolio-memory
-  score-event projection, and advanced fairness analytics remain future expansion.
+- PM-book materialization, downstream UI, portfolio-memory score-event projection, and advanced
+  fairness analytics remain future expansion.
 
 Evidence commands:
 

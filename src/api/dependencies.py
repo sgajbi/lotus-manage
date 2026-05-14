@@ -5,7 +5,10 @@ from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.core.pm_quality.repository import DpmPmQualityScoreRunRepository
+from src.core.pm_quality.repository import (
+    DpmPmQualityPolicyRepository,
+    DpmPmQualityScoreRunRepository,
+)
 from src.core.waves.repository import DpmWaveRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.construction import PostgresConstructionRepository
@@ -19,7 +22,9 @@ from src.infrastructure.outcomes import (
     PostgresDpmOutcomeReviewRepository,
 )
 from src.infrastructure.pm_quality import (
+    InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    PostgresDpmPmQualityPolicyRepository,
     PostgresDpmPmQualityScoreRunRepository,
 )
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
@@ -30,12 +35,14 @@ _MANDATE_REPOSITORY = InMemoryDpmMandateRepository()
 _CONSTRUCTION_REPOSITORY = InMemoryConstructionRepository()
 _PROOF_PACK_REPOSITORY = InMemoryDpmProofPackRepository()
 _OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
+_PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
 _POSTGRES_CONSTRUCTION_REPOSITORY: PostgresConstructionRepository | None = None
 _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
 _POSTGRES_OUTCOME_REVIEW_REPOSITORY: PostgresDpmOutcomeReviewRepository | None = None
+_POSTGRES_PM_QUALITY_POLICY_REPOSITORY: PostgresDpmPmQualityPolicyRepository | None = None
 _POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY: PostgresDpmPmQualityScoreRunRepository | None = None
 _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
 
@@ -110,6 +117,18 @@ def get_pm_quality_score_run_repository() -> DpmPmQualityScoreRunRepository:
             )
         return _POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY
     return _PM_QUALITY_SCORE_RUN_REPOSITORY
+
+
+def get_pm_quality_policy_repository() -> DpmPmQualityPolicyRepository:
+    """Return the PM operating quality policy repository for local and test runtimes."""
+
+    dsn = _repository_dsn("DPM_PM_QUALITY_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_PM_QUALITY_POLICY_REPOSITORY
+        if _POSTGRES_PM_QUALITY_POLICY_REPOSITORY is None:
+            _POSTGRES_PM_QUALITY_POLICY_REPOSITORY = PostgresDpmPmQualityPolicyRepository(dsn=dsn)
+        return _POSTGRES_PM_QUALITY_POLICY_REPOSITORY
+    return _PM_QUALITY_POLICY_REPOSITORY
 
 
 def get_wave_repository() -> DpmWaveRepository:

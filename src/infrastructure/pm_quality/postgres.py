@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from contextlib import closing
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
-from src.core.pm_quality.models import DpmPmOperatingQualityScoreRun
-from src.core.pm_quality.repository import DpmPmQualityScoreRunConflictError
+from src.core.pm_quality.models import DpmPmOperatingQualityPolicy, DpmPmOperatingQualityScoreRun
+from src.core.pm_quality.repository import (
+    DpmPmQualityPolicyConflictError,
+    DpmPmQualityScoreRunConflictError,
+)
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
@@ -125,6 +129,112 @@ class PostgresDpmPmQualityScoreRunRepository:
             apply_postgres_migrations(connection=connection, namespace="dpm")
 
 
+class PostgresDpmPmQualityPolicyRepository:
+    def __init__(self, *, dsn: str) -> None:
+        if not dsn:
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED")
+        if not has_psycopg():
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING")
+        self._dsn = dsn
+        self._init_db()
+
+    def save_policy(self, *, policy: DpmPmOperatingQualityPolicy) -> None:
+        payload = dump_model_json(policy)
+        content_hash = _content_hash(payload)
+        with closing(self._connect()) as connection:
+            connection.execute(
+                """
+                INSERT INTO dpm_pm_quality_policies (
+                    policy_id, policy_version, enabled, as_of_date, access_purpose,
+                    content_hash, payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (policy_id, policy_version) DO NOTHING
+                """,
+                (
+                    policy.policy_id,
+                    policy.policy_version,
+                    policy.enabled,
+                    policy.as_of_date,
+                    policy.access_purpose,
+                    content_hash,
+                    payload,
+                ),
+            )
+            persisted = connection.execute(
+                """
+                SELECT content_hash
+                FROM dpm_pm_quality_policies
+                WHERE policy_id = %s AND policy_version = %s
+                """,
+                (policy.policy_id, policy.policy_version),
+            ).fetchone()
+            if persisted is None or persisted["content_hash"] != content_hash:
+                connection.rollback()
+                raise DpmPmQualityPolicyConflictError("PM_QUALITY_POLICY_IMMUTABLE_CONFLICT")
+            connection.commit()
+
+    def get_policy(
+        self,
+        *,
+        policy_id: str,
+        policy_version: str,
+    ) -> DpmPmOperatingQualityPolicy | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM dpm_pm_quality_policies
+                WHERE policy_id = %s AND policy_version = %s
+                """,
+                (policy_id, policy_version),
+            ).fetchone()
+        if row is None:
+            return None
+        return load_model_json(DpmPmOperatingQualityPolicy, _payload(row))
+
+    def list_policies(
+        self,
+        *,
+        policy_id: str | None = None,
+        enabled: bool | None = None,
+        as_of_date: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmOperatingQualityPolicy]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        for column, value in (
+            ("policy_id", policy_id),
+            ("enabled", enabled),
+            ("as_of_date", as_of_date),
+        ):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                args.append(value)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT payload_json
+                FROM dpm_pm_quality_policies
+                {where}
+                ORDER BY as_of_date DESC, policy_id DESC, policy_version DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(args),
+            ).fetchall()
+        return [load_model_json(DpmPmOperatingQualityPolicy, _payload(row)) for row in rows]
+
+    def _connect(self) -> Any:
+        psycopg, dict_row = _import_psycopg()
+        return psycopg.connect(self._dsn, row_factory=dict_row)
+
+    def _init_db(self) -> None:
+        with closing(self._connect()) as connection:
+            apply_postgres_migrations(connection=connection, namespace="dpm")
+
+
 def _payload(row: Any) -> str | dict[str, Any]:
     payload = row["payload_json"]
     if isinstance(payload, dict):
@@ -132,6 +242,10 @@ def _payload(row: Any) -> str | dict[str, Any]:
     if not isinstance(payload, str):
         return json.dumps(payload, default=str)
     return payload
+
+
+def _content_hash(payload: str) -> str:
+    return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _import_psycopg() -> tuple[Any, Any]:

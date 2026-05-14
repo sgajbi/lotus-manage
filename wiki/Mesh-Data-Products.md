@@ -26,10 +26,12 @@
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 
 - Product ID: `lotus-manage:PmOperatingQualityScoreRun:v1`
-- Product role: governed PM operating quality score-run preview and immutable persisted
-  lifecycle generated from explicit bank policy, source-backed evidence, and optional
-  persisted outcome reviews.
+- Product role: governed PM operating quality policy administration, score-run preview, and
+  immutable persisted lifecycle generated from explicit bank policy, source-backed evidence, and
+  optional persisted outcome reviews.
 - Implemented route families:
+  - `/api/v1/rebalance/pm-operating-quality/policies`
+  - `/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`
   - `/api/v1/rebalance/pm-operating-quality/score-runs/preview`
   - `/api/v1/rebalance/pm-operating-quality/score-runs`
   - `/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`

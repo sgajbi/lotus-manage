@@ -937,7 +937,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "DpmOutcomeReportInput" in rfc
     assert "DpmOutcomeAiEvidenceInput" in rfc
     assert (
-        "PM operating quality score-run lifecycle | Supported as separate Manage-owned "
+        "PM operating quality policy and score-run lifecycle | Supported as separate Manage-owned "
         "first-wave product"
     ) in rfc
     assert "PmOperatingQualityScoreRun:v1" in rfc
@@ -1233,11 +1233,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality preview plus persisted score-run lifecycle are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, and persisted score-run lifecycle are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded score-run preview plus immutable create/read/list score-run lifecycle implemented"
+        "First bounded policy administration, score-run preview, and immutable create/read/list score-run lifecycle implemented"
         in work_to_be_done
     )
     assert "PmOperatingQualityScoreRun:v1" in work_to_be_done

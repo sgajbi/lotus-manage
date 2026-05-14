@@ -1,13 +1,64 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from copy import deepcopy
 from threading import Lock
 
-from src.core.pm_quality.models import DpmPmOperatingQualityScoreRun
+from src.core.pm_quality.models import DpmPmOperatingQualityPolicy, DpmPmOperatingQualityScoreRun
 from src.core.pm_quality.repository import (
+    DpmPmQualityPolicyConflictError,
+    DpmPmQualityPolicyRepository,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
 )
+
+
+class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
+    def __init__(self) -> None:
+        self._lock = Lock()
+        self._policies: dict[tuple[str, str], DpmPmOperatingQualityPolicy] = {}
+
+    def save_policy(self, *, policy: DpmPmOperatingQualityPolicy) -> None:
+        key = (policy.policy_id, policy.policy_version)
+        with self._lock:
+            existing = self._policies.get(key)
+            if existing is not None and _policy_hash(existing) != _policy_hash(policy):
+                raise DpmPmQualityPolicyConflictError("PM_QUALITY_POLICY_IMMUTABLE_CONFLICT")
+            self._policies[key] = deepcopy(policy)
+
+    def get_policy(
+        self,
+        *,
+        policy_id: str,
+        policy_version: str,
+    ) -> DpmPmOperatingQualityPolicy | None:
+        with self._lock:
+            policy = self._policies.get((policy_id, policy_version))
+            return deepcopy(policy) if policy is not None else None
+
+    def list_policies(
+        self,
+        *,
+        policy_id: str | None = None,
+        enabled: bool | None = None,
+        as_of_date: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmOperatingQualityPolicy]:
+        with self._lock:
+            policies = [
+                policy
+                for policy in self._policies.values()
+                if (policy_id is None or policy.policy_id == policy_id)
+                and (enabled is None or policy.enabled == enabled)
+                and (as_of_date is None or policy.as_of_date == as_of_date)
+            ]
+            policies.sort(
+                key=lambda policy: (policy.as_of_date, policy.policy_id, policy.policy_version),
+                reverse=True,
+            )
+            return deepcopy(policies[offset : offset + limit])
 
 
 class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
@@ -57,3 +108,8 @@ class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
                 reverse=True,
             )
             return deepcopy(score_runs[offset : offset + limit])
+
+
+def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:
+    canonical = json.dumps(policy.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
