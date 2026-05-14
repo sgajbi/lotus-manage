@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T01:15:15.353616+00:00",
+  "generatedAt": "2026-05-14T02:07:34.406285+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -88,6 +88,20 @@
       "preferredName": "actor",
       "description": "Actor or service responsible for the event.",
       "example": "sample_actor",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.actor_entitlement_state",
+      "canonicalTerm": "actor_entitlement_state",
+      "preferredName": "actor_entitlement_state",
+      "description": "Actor entitlement posture applied to this run.",
+      "example": "AUTHORIZED",
       "type": "string",
       "locations": [
         "body"
@@ -475,7 +489,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -533,7 +548,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -547,7 +563,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -3156,6 +3173,48 @@
       ]
     },
     {
+      "semanticId": "lotus.fairness_review_ref",
+      "canonicalTerm": "fairness_review_ref",
+      "preferredName": "fairness_review_ref",
+      "description": "Reference for the bank fairness/access governance review.",
+      "example": "sample_fairness_review_ref",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.fairness_reviewed_at",
+      "canonicalTerm": "fairness_reviewed_at",
+      "preferredName": "fairness_reviewed_at",
+      "description": "Fairness review timestamp.",
+      "example": "sample_fairness_reviewed_at",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.fairness_reviewed_by",
+      "canonicalTerm": "fairness_reviewed_by",
+      "preferredName": "fairness_reviewed_by",
+      "description": "Fairness reviewer or committee identifier.",
+      "example": "sample_fairness_reviewed_by",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.family_key",
       "canonicalTerm": "family_key",
       "preferredName": "family_key",
@@ -3611,6 +3670,34 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.governance_approval",
+      "canonicalTerm": "governance_approval",
+      "preferredName": "governance_approval",
+      "description": "Required bank approval and fairness-review evidence when the policy is enabled. Disabled policies may omit it.",
+      "example": "governance_approval_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.governance_evidence",
+      "canonicalTerm": "governance_evidence",
+      "preferredName": "governance_evidence",
+      "description": "Governance approval and fairness-review evidence applied to the score run.",
+      "example": "governance_evidence_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -81179,6 +81266,126 @@
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
           },
           {
+            "name": "policy.governance_approval",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_approval",
+            "attributeRef": "#/attributeCatalog/lotus.governance_approval"
+          },
+          {
+            "name": "policy.governance_approval.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "policy.governance_approval.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "policy.governance_approval.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "policy.governance_approval.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "policy.governance_approval.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "policy.governance_approval.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "policy.governance_approval.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "policy.governance_approval.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "policy.governance_approval.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "policy_id",
             "location": "body",
             "required": false,
@@ -81632,6 +81839,134 @@
           },
           {
             "name": "score_run.book_scope_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.governance_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.governance_evidence"
+          },
+          {
+            "name": "score_run.governance_evidence.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "score_run.governance_evidence.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "score_run.governance_evidence.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "score_run.governance_evidence.expires_on",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "score_run.governance_evidence.actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "score_run.governance_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -81922,6 +82257,126 @@
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
           },
           {
+            "name": "policy.governance_approval",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_approval",
+            "attributeRef": "#/attributeCatalog/lotus.governance_approval"
+          },
+          {
+            "name": "policy.governance_approval.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "policy.governance_approval.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "policy.governance_approval.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "policy.governance_approval.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "policy.governance_approval.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "policy.governance_approval.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "policy.governance_approval.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "policy.governance_approval.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "policy.governance_approval.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policy.governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "policy_id",
             "location": "body",
             "required": false,
@@ -82375,6 +82830,134 @@
           },
           {
             "name": "score_run.book_scope_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.governance_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.governance_evidence"
+          },
+          {
+            "name": "score_run.governance_evidence.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "score_run.governance_evidence.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "score_run.governance_evidence.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "score_run.governance_evidence.expires_on",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "score_run.governance_evidence.actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "score_run.governance_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -82861,6 +83444,134 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "score_runs[].governance_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.governance_evidence"
+          },
+          {
+            "name": "score_runs[].governance_evidence.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "score_runs[].governance_evidence.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "score_runs[].governance_evidence.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "score_runs[].governance_evidence.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "score_runs[].governance_evidence.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "score_runs[].governance_evidence.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "score_runs[].governance_evidence.expires_on",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "score_runs[].governance_evidence.actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "score_runs[].governance_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_runs[].governance_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_runs[].governance_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_runs[].governance_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_runs[].governance_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_runs[].governance_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_runs[].governance_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "score_runs[].reason_codes",
             "location": "body",
             "required": true,
@@ -83102,6 +83813,126 @@
             "type": "array",
             "semanticId": "lotus.allowed_uses",
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "governance_approval",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_approval",
+            "attributeRef": "#/attributeCatalog/lotus.governance_approval"
+          },
+          {
+            "name": "governance_approval.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "governance_approval.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "governance_approval.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "governance_approval.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "governance_approval.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "governance_approval.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "governance_approval.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "governance_approval.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "governance_approval.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       },
@@ -83202,6 +84033,126 @@
             "type": "array",
             "semanticId": "lotus.allowed_uses",
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "governance_approval",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_approval",
+            "attributeRef": "#/attributeCatalog/lotus.governance_approval"
+          },
+          {
+            "name": "governance_approval.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "governance_approval.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "governance_approval.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "governance_approval.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "governance_approval.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "governance_approval.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "governance_approval.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "governance_approval.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "governance_approval.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       }
@@ -83329,6 +84280,126 @@
             "type": "array",
             "semanticId": "lotus.allowed_uses",
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "governance_approval",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_approval",
+            "attributeRef": "#/attributeCatalog/lotus.governance_approval"
+          },
+          {
+            "name": "governance_approval.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "governance_approval.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "governance_approval.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "governance_approval.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "governance_approval.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "governance_approval.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "governance_approval.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "governance_approval.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "governance_approval.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "governance_approval.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       }
@@ -83488,6 +84559,126 @@
             "type": "array",
             "semanticId": "lotus.allowed_uses",
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "policies[].governance_approval",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_approval",
+            "attributeRef": "#/attributeCatalog/lotus.governance_approval"
+          },
+          {
+            "name": "policies[].governance_approval.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "policies[].governance_approval.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "policies[].governance_approval.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "policies[].governance_approval.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "policies[].governance_approval.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "policies[].governance_approval.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "policies[].governance_approval.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "policies[].governance_approval.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "policies[].governance_approval.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policies[].governance_approval.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policies[].governance_approval.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policies[].governance_approval.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policies[].governance_approval.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policies[].governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
             "name": "count",
@@ -83842,6 +85033,134 @@
           },
           {
             "name": "score_run.book_scope_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.governance_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.governance_evidence"
+          },
+          {
+            "name": "score_run.governance_evidence.approval_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "score_run.governance_evidence.approved_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "score_run.governance_evidence.approved_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_review_ref",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_review_ref",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_review_ref"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_reviewed_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_by",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_by"
+          },
+          {
+            "name": "score_run.governance_evidence.fairness_reviewed_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_reviewed_at",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_reviewed_at"
+          },
+          {
+            "name": "score_run.governance_evidence.expires_on",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "score_run.governance_evidence.actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "score_run.governance_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.governance_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",

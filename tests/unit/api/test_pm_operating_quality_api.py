@@ -29,7 +29,7 @@ def _pm_quality_policy_repository_override():
 
 
 def _policy(enabled: bool = True) -> dict:
-    return {
+    payload = {
         "policy_id": "pmq_sg_dpm",
         "policy_version": "2026.05",
         "enabled": enabled,
@@ -46,6 +46,31 @@ def _policy(enabled: bool = True) -> dict:
                 "weight": "30",
                 "minimum_evidence_count": 1,
             },
+        ],
+    }
+    if enabled:
+        payload["governance_approval"] = _governance_approval()
+    return payload
+
+
+def _governance_approval() -> dict:
+    return {
+        "approval_ref": "PMQ-APPROVAL-2026-05",
+        "approved_by": "pm_quality_committee",
+        "approved_at": "2026-05-10T09:00:00Z",
+        "fairness_review_ref": "FAIRNESS-PMQ-2026-05",
+        "fairness_reviewed_by": "model_risk_governance",
+        "fairness_reviewed_at": "2026-05-10T10:00:00Z",
+        "expires_on": "2026-06-30",
+        "entitled_actor_ids": ["ops"],
+        "source_refs": [
+            {
+                "source_system": "bank-governance",
+                "source_type": "PM_QUALITY_POLICY_APPROVAL",
+                "source_id": "PMQ-APPROVAL-2026-05",
+                "source_version": "2026.05",
+                "content_hash": "sha256:pmq-approval",
+            }
         ],
     }
 
@@ -157,7 +182,13 @@ def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> 
     assert score_run["state"] == "READY"
     assert Decimal(score_run["score"]) == Decimal("100.00")
     assert score_run["correlation_id"] == "corr-pmq-001"
+    assert score_run["governance_evidence"]["approval_ref"] == "PMQ-APPROVAL-2026-05"
+    assert score_run["governance_evidence"]["fairness_review_ref"] == "FAIRNESS-PMQ-2026-05"
+    assert score_run["governance_evidence"]["actor_entitlement_state"] == "AUTHORIZED"
     assert any(ref["source_type"] == "PostTradeOutcomeReview" for ref in score_run["source_refs"])
+    assert any(
+        ref["source_type"] == "PM_QUALITY_POLICY_APPROVAL" for ref in score_run["source_refs"]
+    )
     assert "autonomous_pm_ranking" in score_run["forbidden_uses"]
 
 
@@ -350,6 +381,51 @@ def test_pm_operating_quality_api_rejects_policy_admin_conflicts_and_bad_refs() 
     assert missing_policy_ref.json()["detail"] == "PM_QUALITY_POLICY_NOT_FOUND:pmq_missing:2026.05"
     assert missing_ref.status_code == 404
     assert missing_ref.json()["detail"] == "OUTCOME_REVIEW_NOT_FOUND:dor_001"
+
+
+@pytest.mark.parametrize(
+    ("policy_patch", "actor_id", "expected_detail"),
+    [
+        ({"governance_approval": None}, "ops", "PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED"),
+        (
+            {"governance_approval": {**_governance_approval(), "expires_on": "2026-05-01"}},
+            "ops",
+            "PM_QUALITY_GOVERNANCE_EXPIRED",
+        ),
+        (
+            {"governance_approval": {**_governance_approval(), "expires_on": "bad"}},
+            "ops",
+            "PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID",
+        ),
+        (
+            {"governance_approval": {**_governance_approval(), "entitled_actor_ids": ["ops_2"]}},
+            "ops",
+            "PM_QUALITY_ACTOR_NOT_ENTITLED",
+        ),
+    ],
+)
+def test_pm_operating_quality_api_fails_closed_for_invalid_governance(
+    policy_patch: dict,
+    actor_id: str,
+    expected_detail: str,
+) -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    repository.save_outcome_review(review=_review(), retention_expires_at=None)
+    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
+    request = _request()
+    request["actor_id"] = actor_id
+    request["policy"] = {**_policy(), **policy_patch}
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json=request,
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 422
+    assert expected_detail in str(response.json()["detail"])
 
 
 def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() -> None:

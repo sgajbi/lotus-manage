@@ -165,6 +165,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     ]
     assert pm_quality["lineage_policy"]["lineage_required"] is True
     assert "portfolio_id" in pm_quality["identifier_refs"]
+    assert (
+        "bank approval and fairness-review evidence"
+        in (pm_quality["freshness_policy"]["max_allowed_age_description"])
+    )
 
 
 def test_manage_consumer_declaration_keeps_stateful_core_context_on_watchlist() -> None:

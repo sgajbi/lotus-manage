@@ -5,9 +5,9 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Mapping
+from typing import Any, Literal, Mapping
 from uuid import uuid5, NAMESPACE_URL
 
 from src.core.outcomes import DpmOutcomeSourceRef, DpmPostTradeOutcomeReview
@@ -15,6 +15,7 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityBookScopeEvidence,
+    DpmPmQualityGovernanceEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityIndicatorResult,
     DpmPmQualityWeight,
@@ -64,6 +65,11 @@ def build_pm_operating_quality_score_run(
             correlation_id=correlation_id,
         )
 
+    governance_evidence = _governance_evidence(
+        policy=policy,
+        as_of_date=as_of_date,
+        generated_by=generated_by,
+    )
     signals = [
         *_signals_from_evidence(evidence_items),
         *_signals_from_outcome_reviews(outcome_reviews),
@@ -90,6 +96,7 @@ def build_pm_operating_quality_score_run(
         score=score,
         indicator_results=results,
         book_scope_evidence=book_scope_evidence,
+        governance_evidence=governance_evidence,
         reason_codes=reason_codes,
         generated_at=generated_at,
         generated_by=generated_by,
@@ -117,6 +124,7 @@ def _disabled_score_run(
         score=None,
         indicator_results=[],
         book_scope_evidence=book_scope_evidence,
+        governance_evidence=None,
         reason_codes=["PM_QUALITY_POLICY_DISABLED"],
         generated_at=generated_at,
         generated_by=generated_by,
@@ -290,14 +298,18 @@ def _score_run(
     score: Decimal | None,
     indicator_results: list[DpmPmQualityIndicatorResult],
     book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
+    governance_evidence: DpmPmQualityGovernanceEvidence | None,
     reason_codes: list[str],
     generated_at: datetime,
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
     scope_refs = book_scope_evidence.source_refs if book_scope_evidence is not None else []
+    governance_refs = governance_evidence.source_refs if governance_evidence is not None else []
     source_refs = _dedupe_refs(
-        [ref for result in indicator_results for ref in result.source_refs] + scope_refs
+        [ref for result in indicator_results for ref in result.source_refs]
+        + scope_refs
+        + governance_refs
     )
     hash_payload = {
         "pm_id": pm_id,
@@ -309,6 +321,9 @@ def _score_run(
         "indicator_results": [result.model_dump(mode="json") for result in indicator_results],
         "book_scope_evidence": (
             book_scope_evidence.model_dump(mode="json") if book_scope_evidence is not None else None
+        ),
+        "governance_evidence": (
+            governance_evidence.model_dump(mode="json") if governance_evidence is not None else None
         ),
         "reason_codes": reason_codes,
         "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
@@ -325,12 +340,58 @@ def _score_run(
         score=score,
         indicator_results=indicator_results,
         book_scope_evidence=book_scope_evidence,
+        governance_evidence=governance_evidence,
         reason_codes=reason_codes,
         source_refs=source_refs,
         content_hash=content_hash,
         generated_at=generated_at,
         generated_by=generated_by,
         correlation_id=correlation_id,
+    )
+
+
+def _governance_evidence(
+    *,
+    policy: DpmPmOperatingQualityPolicy,
+    as_of_date: str,
+    generated_by: str,
+) -> DpmPmQualityGovernanceEvidence:
+    governance = policy.governance_approval
+    if governance is None:
+        raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED")
+
+    reason_codes = ["PM_QUALITY_GOVERNANCE_APPROVED", "PM_QUALITY_FAIRNESS_REVIEWED"]
+    if governance.expires_on is not None:
+        try:
+            expires_on = date.fromisoformat(governance.expires_on)
+            run_as_of = date.fromisoformat(as_of_date)
+        except ValueError as exc:
+            raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID") from exc
+        if expires_on < run_as_of:
+            raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_EXPIRED")
+        reason_codes.append("PM_QUALITY_GOVERNANCE_ACTIVE")
+
+    actor_entitlement_state: Literal["AUTHORIZED", "NOT_SUPPLIED"] = "NOT_SUPPLIED"
+    entitled_actor_ids = {
+        actor_id.strip() for actor_id in governance.entitled_actor_ids if actor_id.strip()
+    }
+    if entitled_actor_ids:
+        if generated_by not in entitled_actor_ids:
+            raise DpmPmQualityValidationError("PM_QUALITY_ACTOR_NOT_ENTITLED")
+        actor_entitlement_state = "AUTHORIZED"
+        reason_codes.append("PM_QUALITY_ACTOR_AUTHORIZED")
+
+    return DpmPmQualityGovernanceEvidence(
+        approval_ref=governance.approval_ref,
+        approved_by=governance.approved_by,
+        approved_at=governance.approved_at,
+        fairness_review_ref=governance.fairness_review_ref,
+        fairness_reviewed_by=governance.fairness_reviewed_by,
+        fairness_reviewed_at=governance.fairness_reviewed_at,
+        expires_on=governance.expires_on,
+        actor_entitlement_state=actor_entitlement_state,
+        reason_codes=reason_codes,
+        source_refs=governance.source_refs,
     )
 
 

@@ -162,7 +162,7 @@
       ],
       "freshness_policy": {
         "freshness_class": "intraday",
-        "max_allowed_age_description": "PM operating quality score runs are generated from explicit bank policy, current source-backed evidence supplied or referenced by the request, and optional lotus-core PortfolioManagerBookMembership:v1 scope materialization."
+        "max_allowed_age_description": "PM operating quality score runs are generated from explicit bank policy, bank approval and fairness-review evidence, current source-backed evidence supplied or referenced by the request, and optional lotus-core PortfolioManagerBookMembership:v1 scope materialization."
       },
       "completeness_policy": {
         "default_status": "complete",

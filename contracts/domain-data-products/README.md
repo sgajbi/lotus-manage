@@ -25,8 +25,8 @@ Current declarations:
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
    with optional approval/expiry/actor-entitlement governance evidence,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
-   quality policy administration, optional source-owned PM-book scope evidence, preview, and
-   create/read/list score-run lifecycle routes.
+   quality policy administration, bank approval and fairness-review governance evidence, optional
+   source-owned PM-book scope evidence, preview, and create/read/list score-run lifecycle routes.
 
 Local validation:
 
