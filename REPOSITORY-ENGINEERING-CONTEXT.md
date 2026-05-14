@@ -338,9 +338,11 @@ Current repository posture:
     Manage-owned approval, expiry, access-purpose, source-ref, and actor-entitlement governance
     evidence without discovering source-owned cohorts. Gateway campaign-definition BFF composition
     is merged through `lotus-gateway` PR #212 for list/get/upsert of Manage-owned campaign
-    definitions without Gateway-local cohort or membership calculation. Persisted global campaign
-    discovery, Workbench rendering of campaign UI or wave risk/performance analytics posture, and
-    external OMS execution remain unpromoted until owning implementations are live-proven.
+    definitions without Gateway-local cohort or membership calculation. Workbench PR #184 renders
+    the first-wave active campaign-definition list through Gateway/BFF without browser-side cohort
+    or membership calculation. Persisted global campaign discovery, broader campaign workflow
+    surfaces, wave risk/performance analytics posture, and external OMS execution remain unpromoted
+    until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
