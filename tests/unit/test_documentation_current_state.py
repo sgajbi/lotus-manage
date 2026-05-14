@@ -1478,6 +1478,18 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`PortfolioTaxLotWindow:v1` methodology" in work_to_be_done
     assert "empty full-portfolio" in work_to_be_done
     assert "jurisdiction-specific tax advice" in work_to_be_done
+    assert "Latest WTBD-006 core portfolio-realized-tax-summary methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-core` PR #363" in work_to_be_done
+    assert "`a349dc0cefc2d254c539d240073f5a5aa44a0a00`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `1170afd`" in work_to_be_done
+    assert "`lotus-platform` PR #331" in work_to_be_done
+    assert "`500a1b83dddb85842b79e6218595bd13f237d949`" in work_to_be_done
+    assert "`PortfolioRealizedTaxSummary:v1` methodology" in work_to_be_done
+    assert "withholding-tax and other-interest-deduction aggregation" in work_to_be_done
+    assert "explicit realized-tax aggregation" in work_to_be_done
+    assert "tax-reporting certification" in work_to_be_done
     assert "Latest WTBD-006 core transaction-cost-curve methodology proof" in work_to_be_done
     assert "`lotus-core` PR #345" in work_to_be_done
     assert "`83d791d0e599f06a2c0caab6eaba647f717d4658`" in work_to_be_done
@@ -1543,9 +1555,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "market-data coverage, DPM source-readiness" in supported_features
     assert "transaction-ledger row measures" in supported_features
     assert (
-        "cashflow projection totals, liquidity-ladder buckets, tax lots, and observed "
-        "transaction-cost evidence"
+        "cashflow projection totals, liquidity-ladder buckets, tax lots, observed "
+        "transaction-cost evidence, client tax profile/rule evidence, and portfolio-level "
+        "realized-tax summary evidence"
     ) in supported_features
+    assert "`PortfolioRealizedTaxSummary:v1` source-product truth through `lotus-core` PR #363" in (
+        supported_features
+    )
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features
     )

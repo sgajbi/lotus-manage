@@ -196,8 +196,8 @@ Current repository posture:
     versus projected mode behavior, latest-cashflow-row selection, settlement-dated external
     `DEPOSIT`/`WITHDRAWAL` inclusion, same-day booked/projected additivity, portfolio-base-currency
     output, and explicit non-claims for tax methodology, performance returns, market impact, and
-    OMS execution forecasting while still leaving aggregated tax, FX, execution, and broader
-    methodology depth to future source-owner work. The
+    OMS execution forecasting while still leaving FX, execution, and broader methodology depth to
+    future source-owner work. The
     record also includes the merged and wiki-published `lotus-core`
     `PortfolioLiquidityLadder:v1` methodology slice from PR #356
     (`d47eb716e2992ea0988ddbb92e402594d4193dec`, wiki `28c4ae2`), which pins opening cash,
@@ -205,6 +205,17 @@ Current repository posture:
     asset-liquidity-tier exposure, source-product catalog/security posture, and explicit
     non-claims for advice, funding recommendations, income-needs planning, tax methodology,
     FX attribution, market impact, best execution, venue routing, and OMS acknowledgement. The
+    record also includes the merged and wiki-published `lotus-core`
+    `PortfolioRealizedTaxSummary:v1` methodology slice from PR #363
+    (`a349dc0cefc2d254c539d240073f5a5aa44a0a00`, wiki `1170afd`), which pins
+    portfolio-level explicit realized-tax evidence, withholding-tax and other-interest-deduction
+    aggregation by ledger currency, optional reporting-currency restatement, lineage/supportability
+    posture, source-product catalog/security profiles, and explicit non-claims for tax advice,
+    after-tax optimization, tax-loss harvesting suitability, jurisdiction-specific recommendation,
+    client-tax approval, tax-reporting certification, FX attribution, execution quality, and OMS
+    acknowledgement. The matching `lotus-platform` PR #331
+    (`500a1b83dddb85842b79e6218595bd13f237d949`) mirrors the source product into platform mesh
+    discovery and certification artifacts. The
     canonical current-horizon cashflow/liquidity proof from PR #360
     (`e83f0c85ac0bdaa738af831a8224709e1b29a7fd`, wiki `3956cb6`) keeps
     `PB_SG_GLOBAL_BAL_001` seeded with a deterministic projected withdrawal so Core, Gateway, and
