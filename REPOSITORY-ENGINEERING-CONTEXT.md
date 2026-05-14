@@ -190,12 +190,14 @@ Current repository posture:
     wiki-published `lotus-risk` rolling tracking-error methodology slice from PR #113
     (`e00ece9279082a96071bd9e745b7211232b82db6`, wiki `d1330ee`), rolling information-ratio
     methodology slice from PR #114 (`ffa881e3266c09a4d48044b50df5bb2db43bd489`, wiki
-    `105b716`), and rolling volatility methodology slice from PR #117
-    (`8f04b24276bd73dd34ef5ce3edf59e81453858ae`, wiki `c6eef3c`) for
-    `RollingRiskMetricsReport:v1`; they pin pp-to-decimal conversion, `ddof=1`, annualized
-    decimal volatility output, annualized decimal tracking-error output, dimensionless
-    information-ratio output, warm-up/null behavior, no-aligned-benchmark posture, and
-    zero-tracking-error flagging.
+    `105b716`), rolling volatility methodology slice from PR #117
+    (`8f04b24276bd73dd34ef5ce3edf59e81453858ae`, wiki `c6eef3c`), and rolling Sharpe
+    methodology slice from PR #118 (`3f4bbfe6d536a1f3d68b773f917a3f059987db51`, wiki
+    `0b96201`) for `RollingRiskMetricsReport:v1`; they pin pp-to-decimal conversion, `ddof=1`,
+    annualized decimal volatility output, annualized decimal tracking-error output, dimensionless
+    Sharpe and information-ratio output, warm-up/null behavior, source-owned risk-free/benchmark
+    alignment posture, no-aligned dependency posture, zero-excess-volatility Sharpe flagging, and
+    zero-tracking-error information-ratio flagging.
     It also includes the merged and wiki-published `lotus-performance`
     `currency_attribution_totals` source-product slice from PR #164
     (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
