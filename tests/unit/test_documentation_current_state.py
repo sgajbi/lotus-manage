@@ -1181,6 +1181,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "rolling volatility methodology truth" in supported_features
     assert "`lotus-risk` PR #117" in supported_features
     assert "wiki `c6eef3c`" in supported_features
+    assert "rolling Sharpe methodology truth" in supported_features
+    assert "`lotus-risk` PR #118" in supported_features
+    assert "wiki `0b96201`" in supported_features
     assert "`PortfolioCashflowProjection:v1` methodology truth" in supported_features
     assert "`lotus-core` PR #344" in supported_features
     assert "wiki `231bd75`" in supported_features
@@ -1422,6 +1425,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`ROLLING_VOLATILITY` source-owner methodology" in work_to_be_done
     assert "constant-return zero-volatility behavior" in work_to_be_done
     assert "source-owner proof passed locally with `318` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk rolling-Sharpe methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #118" in work_to_be_done
+    assert "`3f4bbfe6d536a1f3d68b773f917a3f059987db51`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `0b96201`" in work_to_be_done
+    assert "`ROLLING_SHARPE` source-owner methodology" in work_to_be_done
+    assert "zero-excess-volatility flagging" in work_to_be_done
+    assert "source-owner proof passed locally with `320` unit tests" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
