@@ -133,12 +133,14 @@ exception-summary invocation are merged, validated, and wiki-published. Full cop
 additional future product surfaces, and unsupported autonomous advice remain future owner work.
 RFC42-WTBD-008 now has a bounded Manage-owned PM operating quality backend foundation:
 `POST /api/v1/rebalance/pm-operating-quality/score-runs/preview` previews
-`PmOperatingQualityScoreRun:v1`, while `POST /score-runs`, `GET /score-runs`, and
+`PmOperatingQualityScoreRun:v1`, while `PUT /policies/{policy_id}/versions/{policy_version}`,
+`GET /policies`, and `GET /policies/{policy_id}/versions/{policy_version}` administer immutable
+bank policy versions for reuse. `POST /score-runs`, `GET /score-runs`, and
 `GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence. Scoring is
 disabled by default, enabled policies fail closed for missing required evidence, and prohibited HR,
 compensation, conduct-enforcement, and autonomous-ranking uses remain outside the product contract.
-Persisted policy administration, PM-book materialization, downstream UI, and advanced fairness
-analytics remain future expansion.
+PM-book materialization, downstream UI, portfolio-memory score-event projection, and advanced
+fairness analytics remain future expansion.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).

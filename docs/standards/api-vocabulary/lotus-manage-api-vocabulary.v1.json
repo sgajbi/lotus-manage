@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-13T23:28:37.164960+00:00",
+  "generatedAt": "2026-05-14T00:28:23.161412+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2474,10 +2474,12 @@
       "example": true,
       "type": "boolean",
       "locations": [
-        "body"
+        "body",
+        "query"
       ],
       "observedTypes": [
-        "boolean"
+        "boolean",
+        "object"
       ]
     },
     {
@@ -6057,19 +6059,33 @@
       ]
     },
     {
-      "semanticId": "lotus.policy",
-      "canonicalTerm": "policy",
-      "preferredName": "policy",
-      "description": "Bank-owned PM operating quality policy supplied to a score run.",
-      "example": {
-        "key": "value"
-      },
-      "type": "DpmPmOperatingQualityPolicy",
+      "semanticId": "lotus.policies",
+      "canonicalTerm": "policies",
+      "preferredName": "policies",
+      "description": "Bounded page of persisted PM operating quality policy versions.",
+      "example": [
+        "policies_item_example"
+      ],
+      "type": "array",
       "locations": [
         "body"
       ],
       "observedTypes": [
-        "DpmPmOperatingQualityPolicy"
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.policy",
+      "canonicalTerm": "policy",
+      "preferredName": "policy",
+      "description": "Explicit bank-owned PM operating quality policy for this run. Supply either this inline policy or a persisted policy id and version.",
+      "example": "policy_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -6081,7 +6097,8 @@
       "type": "string",
       "locations": [
         "body",
-        "query"
+        "query",
+        "path"
       ],
       "observedTypes": [
         "string",
@@ -6112,10 +6129,12 @@
       "example": "sample_policy_version",
       "type": "string",
       "locations": [
-        "body"
+        "body",
+        "path"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -6792,7 +6811,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -10277,7 +10297,8 @@
         "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -12855,6 +12876,114 @@
       "allowedValues": [],
       "semanticId": "lotus.state",
       "attributeRef": "#/attributeCatalog/lotus.state"
+    },
+    {
+      "name": "limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Maximum rows to return.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.limit",
+      "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "offset",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Rows to skip.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.offset",
+      "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "policy_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical policy id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_id",
+      "attributeRef": "#/attributeCatalog/lotus.policy_id"
+    },
+    {
+      "name": "policy_version",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical policy version used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_version",
+      "attributeRef": "#/attributeCatalog/lotus.policy_version"
+    },
+    {
+      "name": "policy_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical policy id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_id",
+      "attributeRef": "#/attributeCatalog/lotus.policy_id"
+    },
+    {
+      "name": "policy_version",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical policy version used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_version",
+      "attributeRef": "#/attributeCatalog/lotus.policy_version"
+    },
+    {
+      "name": "policy_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by policy id.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_id",
+      "attributeRef": "#/attributeCatalog/lotus.policy_id"
+    },
+    {
+      "name": "enabled",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by policy enabled flag.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.enabled",
+      "attributeRef": "#/attributeCatalog/lotus.enabled"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by policy as-of date.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
     },
     {
       "name": "limit",
@@ -80526,8 +80655,8 @@
           {
             "name": "policy",
             "location": "body",
-            "required": true,
-            "type": "DpmPmOperatingQualityPolicy",
+            "required": false,
+            "type": "object",
             "semanticId": "lotus.policy",
             "attributeRef": "#/attributeCatalog/lotus.policy"
           },
@@ -80626,6 +80755,22 @@
             "type": "array",
             "semanticId": "lotus.allowed_uses",
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
           },
           {
             "name": "evidence_items",
@@ -81093,8 +81238,8 @@
           {
             "name": "policy",
             "location": "body",
-            "required": true,
-            "type": "DpmPmOperatingQualityPolicy",
+            "required": false,
+            "type": "object",
             "semanticId": "lotus.policy",
             "attributeRef": "#/attributeCatalog/lotus.policy"
           },
@@ -81193,6 +81338,22 @@
             "type": "array",
             "semanticId": "lotus.allowed_uses",
             "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          },
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
           },
           {
             "name": "evidence_items",
@@ -81972,6 +82133,539 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.count",
+            "attributeRef": "#/attributeCatalog/lotus.count"
+          },
+          {
+            "name": "limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "PUT",
+      "path": "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
+      "operationId": "put_pm_operating_quality_policy_endpoint_api_v1_rebalance_pm_operating_quality_policies__policy_id__versions__policy_version__put",
+      "summary": "Persist PM operating quality policy version",
+      "request": {
+        "fields": [
+          {
+            "name": "policy_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "enabled",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.enabled",
+            "attributeRef": "#/attributeCatalog/lotus.enabled"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "access_purpose",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "weights",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.weights",
+            "attributeRef": "#/attributeCatalog/lotus.weights"
+          },
+          {
+            "name": "weights[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "weights[].weight",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.weight",
+            "attributeRef": "#/attributeCatalog/lotus.weight"
+          },
+          {
+            "name": "weights[].minimum_evidence_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_evidence_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_evidence_count"
+          },
+          {
+            "name": "ready_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.ready_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.ready_threshold"
+          },
+          {
+            "name": "watch_threshold",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.watch_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.watch_threshold"
+          },
+          {
+            "name": "allowed_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.allowed_uses",
+            "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "enabled",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.enabled",
+            "attributeRef": "#/attributeCatalog/lotus.enabled"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "access_purpose",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "weights",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.weights",
+            "attributeRef": "#/attributeCatalog/lotus.weights"
+          },
+          {
+            "name": "weights[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "weights[].weight",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.weight",
+            "attributeRef": "#/attributeCatalog/lotus.weight"
+          },
+          {
+            "name": "weights[].minimum_evidence_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_evidence_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_evidence_count"
+          },
+          {
+            "name": "ready_threshold",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.ready_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.ready_threshold"
+          },
+          {
+            "name": "watch_threshold",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.watch_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.watch_threshold"
+          },
+          {
+            "name": "allowed_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.allowed_uses",
+            "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "GET",
+      "path": "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
+      "operationId": "get_pm_operating_quality_policy_endpoint_api_v1_rebalance_pm_operating_quality_policies__policy_id__versions__policy_version__get",
+      "summary": "Get persisted PM operating quality policy version",
+      "request": {
+        "fields": [
+          {
+            "name": "policy_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "enabled",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.enabled",
+            "attributeRef": "#/attributeCatalog/lotus.enabled"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "access_purpose",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "weights",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.weights",
+            "attributeRef": "#/attributeCatalog/lotus.weights"
+          },
+          {
+            "name": "weights[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "weights[].weight",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.weight",
+            "attributeRef": "#/attributeCatalog/lotus.weight"
+          },
+          {
+            "name": "weights[].minimum_evidence_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_evidence_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_evidence_count"
+          },
+          {
+            "name": "ready_threshold",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.ready_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.ready_threshold"
+          },
+          {
+            "name": "watch_threshold",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.watch_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.watch_threshold"
+          },
+          {
+            "name": "allowed_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.allowed_uses",
+            "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "GET",
+      "path": "/api/v1/rebalance/pm-operating-quality/policies",
+      "operationId": "list_pm_operating_quality_policies_endpoint_api_v1_rebalance_pm_operating_quality_policies_get",
+      "summary": "List persisted PM operating quality policies",
+      "request": {
+        "fields": [
+          {
+            "name": "policy_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "enabled",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.enabled",
+            "attributeRef": "#/attributeCatalog/lotus.enabled"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "policies",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.policies",
+            "attributeRef": "#/attributeCatalog/lotus.policies"
+          },
+          {
+            "name": "policies[].policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policies[].policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "policies[].enabled",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.enabled",
+            "attributeRef": "#/attributeCatalog/lotus.enabled"
+          },
+          {
+            "name": "policies[].as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "policies[].access_purpose",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "policies[].weights",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.weights",
+            "attributeRef": "#/attributeCatalog/lotus.weights"
+          },
+          {
+            "name": "policies[].weights[].indicator",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.indicator",
+            "attributeRef": "#/attributeCatalog/lotus.indicator"
+          },
+          {
+            "name": "policies[].weights[].weight",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.weight",
+            "attributeRef": "#/attributeCatalog/lotus.weight"
+          },
+          {
+            "name": "policies[].weights[].minimum_evidence_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_evidence_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_evidence_count"
+          },
+          {
+            "name": "policies[].ready_threshold",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.ready_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.ready_threshold"
+          },
+          {
+            "name": "policies[].watch_threshold",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.watch_threshold",
+            "attributeRef": "#/attributeCatalog/lotus.watch_threshold"
+          },
+          {
+            "name": "policies[].allowed_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.allowed_uses",
+            "attributeRef": "#/attributeCatalog/lotus.allowed_uses"
           },
           {
             "name": "count",

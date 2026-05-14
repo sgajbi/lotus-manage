@@ -255,8 +255,8 @@ Current repository posture:
     `/documents/{document_id}/source-events` for generated-document archive, supersession,
     correction, and client-delivery reissue lineage without raw document bytes, storage keys, raw
     report payloads, or raw client references. Future OMS remains downstream source-owner scope,
-    while PM operating quality score-run preview/create/read/list is supported separately by
-    `lotus-manage` with bank-supplied policy and source-backed evidence.
+    while PM operating quality policy administration and score-run preview/create/read/list is
+    supported separately by `lotus-manage` with bank-supplied policy and source-backed evidence.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,

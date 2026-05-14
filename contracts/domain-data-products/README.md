@@ -21,8 +21,8 @@ Current declarations:
    implemented rebalance supportability, artifact, and workflow route families, and
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios,
-   and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through explicit bank-policy PM
-   operating quality preview plus immutable create/read/list score-run lifecycle routes.
+   and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
+   quality policy administration, preview, and create/read/list score-run lifecycle routes.
 
 Local validation:
 
