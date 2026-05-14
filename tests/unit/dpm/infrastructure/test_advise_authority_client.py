@@ -14,6 +14,28 @@ from src.infrastructure.advise_authority.client import (
 )
 
 
+class _OwnedClientStub:
+    def __init__(self, *, timeout: float) -> None:
+        self.timeout = timeout
+        self.closed = False
+
+    def post(
+        self,
+        url: str,
+        *,
+        json: dict[str, object],
+        headers: dict[str, str],
+    ) -> httpx.Response:
+        assert self.timeout == 2.0
+        assert url == "http://advise.test/advisory/tactical-house-view/cohorts/evaluate"
+        assert json["correlation_id"] == "corr-tactical"
+        assert headers == {"X-Correlation-Id": "corr-tactical"}
+        return httpx.Response(200, json=_cohort_response())
+
+    def close(self) -> None:
+        self.closed = True
+
+
 def _cohort_response() -> dict[str, object]:
     return {
         "product_name": "TacticalHouseViewAffectedCohort",
@@ -154,3 +176,193 @@ def test_lotus_advise_authority_client_maps_http_failures_to_dependency_errors()
             min_exposure_weight=None,
             correlation_id="corr-tactical",
         )
+
+
+def test_lotus_advise_authority_client_retries_transient_source_failures() -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise httpx.ConnectTimeout("temporary timeout")
+        return httpx.Response(200, json=_cohort_response())
+
+    client = LotusAdviseAuthorityClient(
+        config=LotusAdviseAuthorityConfig(base_url="http://advise.test", max_attempts=2),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    cohort = client.tactical_house_view_affected_cohort(
+        tactical_view={},
+        candidate_portfolios=[],
+        eligible_portfolio_types=[],
+        min_exposure_weight=None,
+        correlation_id="",
+    )
+
+    assert calls == 2
+    assert cohort.cohort_id == "sha256:tactical-cohort"
+
+
+def test_lotus_advise_authority_client_retries_retryable_http_status() -> None:
+    calls = 0
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return httpx.Response(503)
+        return httpx.Response(200, json=_cohort_response())
+
+    client = LotusAdviseAuthorityClient(
+        config=LotusAdviseAuthorityConfig(base_url="http://advise.test", max_attempts=2),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    cohort = client.tactical_house_view_affected_cohort(
+        tactical_view={},
+        candidate_portfolios=[],
+        eligible_portfolio_types=[],
+        min_exposure_weight=None,
+        correlation_id="corr-tactical",
+    )
+
+    assert calls == 2
+    assert cohort.supportability_state == "READY"
+
+
+def test_lotus_advise_authority_client_owns_and_closes_default_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clients: list[_OwnedClientStub] = []
+
+    def client_factory(*, timeout: float) -> _OwnedClientStub:
+        client = _OwnedClientStub(timeout=timeout)
+        clients.append(client)
+        return client
+
+    monkeypatch.setattr(
+        "src.infrastructure.advise_authority.client.httpx.Client",
+        client_factory,
+    )
+    client = LotusAdviseAuthorityClient(
+        config=LotusAdviseAuthorityConfig(base_url="http://advise.test"),
+    )
+
+    cohort = client.tactical_house_view_affected_cohort(
+        tactical_view={},
+        candidate_portfolios=[],
+        eligible_portfolio_types=[],
+        min_exposure_weight=None,
+        correlation_id="corr-tactical",
+    )
+
+    assert cohort.cohort_id == "sha256:tactical-cohort"
+    assert len(clients) == 1
+    assert clients[0].closed is True
+
+
+def test_lotus_advise_authority_client_closes_owned_existing_client() -> None:
+    client = LotusAdviseAuthorityClient(
+        config=LotusAdviseAuthorityConfig(base_url="http://advise.test"),
+    )
+    owned_client = httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200)))
+    client._client = owned_client
+
+    client.close()
+
+    assert owned_client.is_closed is True
+
+
+@pytest.mark.parametrize(
+    ("response", "expected_code"),
+    [
+        (httpx.Response(500), "LOTUS_ADVISE_UNAVAILABLE"),
+        (httpx.Response(200, content=b"not-json"), "LOTUS_ADVISE_INVALID_RESPONSE"),
+        (httpx.Response(200, json=["not-an-object"]), "LOTUS_ADVISE_INVALID_RESPONSE"),
+    ],
+)
+def test_lotus_advise_authority_client_rejects_source_failure_shapes(
+    response: httpx.Response,
+    expected_code: str,
+) -> None:
+    client = LotusAdviseAuthorityClient(
+        config=LotusAdviseAuthorityConfig(base_url="http://advise.test"),
+        client=httpx.Client(transport=httpx.MockTransport(lambda _: response)),
+    )
+
+    with pytest.raises(LotusAdviseAuthorityUnavailableError, match=expected_code):
+        client.tactical_house_view_affected_cohort(
+            tactical_view={},
+            candidate_portfolios=[],
+            eligible_portfolio_types=[],
+            min_exposure_weight=None,
+            correlation_id="corr-tactical",
+        )
+
+
+def test_lotus_advise_authority_client_rejects_final_transport_failure() -> None:
+    client = LotusAdviseAuthorityClient(
+        config=LotusAdviseAuthorityConfig(base_url="http://advise.test", max_attempts=1),
+        client=httpx.Client(
+            transport=httpx.MockTransport(
+                lambda _: (_ for _ in ()).throw(httpx.ConnectTimeout("timeout"))
+            )
+        ),
+    )
+
+    with pytest.raises(LotusAdviseAuthorityUnavailableError, match="LOTUS_ADVISE_UNAVAILABLE"):
+        client.tactical_house_view_affected_cohort(
+            tactical_view={},
+            candidate_portfolios=[],
+            eligible_portfolio_types=[],
+            min_exposure_weight=None,
+            correlation_id="corr-tactical",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("source_refs", "not-a-list"),
+        ("source_refs", ["not-an-object"]),
+        ("affected_portfolios", [{"portfolio_id": "PB_SG_GLOBAL_BAL_001", "source_refs": ["bad"]}]),
+    ],
+)
+def test_tactical_house_view_response_parser_rejects_invalid_source_ref_shapes(
+    field: str,
+    value: object,
+) -> None:
+    body = _cohort_response()
+    body[field] = value
+
+    with pytest.raises(LotusAdviseAuthorityUnavailableError, match="LOTUS_ADVISE_INVALID_RESPONSE"):
+        _tactical_house_view_cohort_from_response(body)
+
+
+def test_tactical_house_view_response_parser_defaults_optional_source_fields() -> None:
+    body = _cohort_response()
+    body.pop("product_name")
+    body.pop("product_version")
+    body.pop("content_hash")
+    body["supportability"] = {"state": None}
+    body["affected_portfolios"] = [
+        {
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "mandate_id": None,
+            "source_refs": [],
+        }
+    ]
+
+    cohort = _tactical_house_view_cohort_from_response(body)
+
+    assert cohort.product_name == "TacticalHouseViewAffectedCohort"
+    assert cohort.product_version == "v1"
+    assert cohort.content_hash == ""
+    assert cohort.supportability_state == "BLOCKED"
+    assert cohort.supportability_reason_codes == (
+        "TACTICAL_HOUSE_VIEW_SUPPORTABILITY_REASON_CODES_MISSING",
+    )
+    assert cohort.affected_portfolios[0].mandate_id is None
+    assert cohort.affected_portfolios[0].inclusion_reason_codes == ()

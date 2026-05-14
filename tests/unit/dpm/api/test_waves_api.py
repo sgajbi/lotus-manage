@@ -56,6 +56,7 @@ from src.infrastructure.advise_authority import (
     TacticalHouseViewAffectedPortfolio,
 )
 from src.core.waves import (
+    DpmBulkReviewCampaignDefinition,
     DpmWaveAlreadyExistsError,
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
@@ -1350,6 +1351,16 @@ def test_tactical_house_view_wave_create_persists_resolved_advise_owned_cohort()
         ({"portfolio_types": [" "]}, 422, "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED"),
         (
             {
+                "tactical_house_view": {
+                    **_tactical_house_view_request()["tactical_house_view"],
+                    "source_refs": [],
+                }
+            },
+            422,
+            "TACTICAL_HOUSE_VIEW_SOURCE_REFS_REQUIRED",
+        ),
+        (
+            {
                 "portfolios": [
                     {
                         "portfolio_id": PORTFOLIO_ID,
@@ -1444,6 +1455,11 @@ def test_tactical_house_view_wave_preview_rejects_invalid_source_evidence(
             424,
             "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
         ),
+        (
+            _TacticalHouseViewAuthority(supportability="READY", affected_portfolios=()),
+            424,
+            "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+        ),
     ],
 )
 def test_tactical_house_view_wave_preview_maps_advise_source_failures(
@@ -1462,6 +1478,70 @@ def test_tactical_house_view_wave_preview_maps_advise_source_failures(
         )
 
     assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
+
+
+@pytest.mark.parametrize(
+    ("request_patch", "expected_code"),
+    [
+        (
+            {
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": None,
+            },
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_REF_INCOMPLETE",
+        ),
+        (
+            {
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": "2026.05",
+            },
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_REJECTS_CALLER_PORTFOLIOS",
+        ),
+        (
+            {
+                "campaign_definition_id": "missing-campaign",
+                "campaign_definition_version": "2026.05",
+                "portfolios": [],
+            },
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+        ),
+        (
+            {
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": "2026.05",
+                "as_of_date": "2026-05-11",
+                "portfolios": [],
+            },
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_AS_OF_DATE_MISMATCH",
+        ),
+    ],
+)
+def test_bulk_review_campaign_definition_reference_validation(
+    request_patch: dict[str, object],
+    expected_code: str,
+) -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition_request = waves_router.DpmBulkReviewCampaignDefinitionRequest.model_validate(
+        _bulk_review_campaign_definition_request()
+    )
+    campaign_repository.save_definition(
+        definition=DpmBulkReviewCampaignDefinition(
+            campaign_id="campaign-holdings-apple-tesla-20260510",
+            campaign_version="2026.05",
+            **definition_request.model_dump(),
+        )
+    )
+    request = {**_bulk_review_campaign_request(), **request_patch}
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == 422
     assert response.json()["detail"]["code"] == expected_code
 
 
@@ -1592,6 +1672,9 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
         conflict = client.put(route, json=second_payload)
         listed = client.get("/api/v1/rebalance/waves/campaign-definitions")
         fetched = client.get(route)
+        missing = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/versions/2026.05"
+        )
 
     assert first.status_code == 200
     assert conflict.status_code == 409
@@ -1602,6 +1685,29 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
     assert listed.json()["count"] == 1
     assert fetched.status_code == 200
     assert fetched.json()["campaign_version"] == "2026.05"
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+
+
+def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> None:
+    request = {
+        **_bulk_review_campaign_definition_request(),
+        "eligible_portfolio_types": [" "],
+    }
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=InMemoryDpmBulkReviewCampaignDefinitionRepository(),
+    ) as client:
+        response = client.put(
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05",
+            json=request,
+        )
+
+    assert response.status_code == 422
+    assert "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED" in response.json()["detail"]["code"]
 
 
 def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
