@@ -336,10 +336,11 @@ Current repository posture:
     fails closed without recomputing advisory, house-view, holdings, exposure, alignment, or mandate
     facts. `BULK_REVIEW_CAMPAIGN` additionally preserves optional
     Manage-owned approval, expiry, access-purpose, source-ref, and actor-entitlement governance
-    evidence without discovering source-owned cohorts. Persisted global campaign discovery,
-    Gateway/Workbench rendering of campaign or
-    wave risk/performance analytics posture, and external OMS execution remain unpromoted until
-    owning implementations are live-proven.
+    evidence without discovering source-owned cohorts. Gateway campaign-definition BFF composition
+    is merged through `lotus-gateway` PR #212 for list/get/upsert of Manage-owned campaign
+    definitions without Gateway-local cohort or membership calculation. Persisted global campaign
+    discovery, Workbench rendering of campaign UI or wave risk/performance analytics posture, and
+    external OMS execution remain unpromoted until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
