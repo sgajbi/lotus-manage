@@ -1205,6 +1205,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "concentration position-HHI methodology truth" in supported_features
     assert "`lotus-risk` PR #133" in supported_features
     assert "wiki `1e2f926`" in supported_features
+    assert "top-position weight methodology truth through `lotus-risk` PR #134" in (
+        supported_features
+    )
+    assert "wiki `dd25844`" in supported_features
+    assert "decimal `0..1` top-position weight" in supported_features
     assert "`ConcentrationRiskReport:v1`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
@@ -1545,6 +1550,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "conventional `0..10000` Herfindahl-Hirschman" in work_to_be_done
     assert "issuer-enrichment isolation from `risk_proxy.hhi_*` outputs" in work_to_be_done
     assert "source-owner proof passed locally with `350` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk concentration top-position methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #134" in work_to_be_done
+    assert "`21ef697a1c308a3d8ea7c8e40e06019544be7e93`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `dd25844`" in work_to_be_done
+    assert "`TOP_POSITION_WEIGHT`" in work_to_be_done
+    assert "decimal `0..1` top-position weight output" in work_to_be_done
+    assert "deterministic top-position driver selection" in work_to_be_done
+    assert "issuer-enrichment isolation from" in work_to_be_done
+    assert "`single_position_concentration.top_position_*` outputs" in work_to_be_done
+    assert "source-owner proof passed locally with `352` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
