@@ -202,6 +202,13 @@ Current repository posture:
     behavior, source-owned risk-free/benchmark alignment posture, no-aligned dependency posture,
     zero-excess-volatility Sharpe flagging, zero-benchmark-variance beta flagging, and
     zero-tracking-error information-ratio flagging.
+    It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
+    from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
+    transformation, frequency compounding before volatility, `ddof=1` sample standard deviation,
+    decimal `details.standard_deviation`, annualized percentage-point
+    `metrics.VOLATILITY.value`, annualization-factor resolution, no benchmark or risk-free
+    dependency posture, no-denominator posture, and insufficient-data failure behavior.
     It also includes the merged and wiki-published `lotus-performance`
     `currency_attribution_totals` source-product slice from PR #164
     (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
