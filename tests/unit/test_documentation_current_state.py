@@ -1210,6 +1210,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "wiki `dd25844`" in supported_features
     assert "decimal `0..1` top-position weight" in supported_features
+    assert "top-N cumulative weight methodology truth through `lotus-risk` PR #135" in (
+        supported_features
+    )
+    assert "wiki `59277e5`" in supported_features
+    assert "decimal `0..1` top-N cumulative weight" in supported_features
     assert "`ConcentrationRiskReport:v1`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
@@ -1560,6 +1565,20 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "issuer-enrichment isolation from" in work_to_be_done
     assert "`single_position_concentration.top_position_*` outputs" in work_to_be_done
     assert "source-owner proof passed locally with `352` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk concentration top-N cumulative methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-risk` PR #135" in work_to_be_done
+    assert "`02352279c4a990f386ec582e8f839fc3c359437f`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `59277e5`" in work_to_be_done
+    assert "`TOP_N_CUMULATIVE_WEIGHT`" in work_to_be_done
+    assert "decimal" in work_to_be_done
+    assert "`0..1` top-N cumulative weight output" in work_to_be_done
+    assert "request-contract" in work_to_be_done
+    assert "`top_n` bounds" in work_to_be_done
+    assert "top-N sorted-weight summation" in work_to_be_done
+    assert "`single_position_concentration.top_n_cumulative_weight_*` outputs" in work_to_be_done
+    assert "source-owner proof passed locally with `354` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
