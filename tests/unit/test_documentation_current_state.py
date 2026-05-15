@@ -1215,6 +1215,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "wiki `59277e5`" in supported_features
     assert "decimal `0..1` top-N cumulative weight" in supported_features
+    assert "issuer-HHI methodology truth through `lotus-risk` PR #136" in supported_features
+    assert "wiki `3dc7293`" in supported_features
+    assert "conventional `0..10000` issuer-HHI output" in supported_features
     assert "`ConcentrationRiskReport:v1`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
@@ -1579,6 +1582,19 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "top-N sorted-weight summation" in work_to_be_done
     assert "`single_position_concentration.top_n_cumulative_weight_*` outputs" in work_to_be_done
     assert "source-owner proof passed locally with `354` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk concentration issuer-HHI methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #136" in work_to_be_done
+    assert "`ed9dba4663b718ae86c326f7d1f7ae591177e322`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `3dc7293`" in work_to_be_done
+    assert "`ISSUER_HHI`" in work_to_be_done
+    assert "conventional" in work_to_be_done
+    assert "`0..10000` issuer-HHI output" in work_to_be_done
+    assert "covered-subset issuer aggregation" in work_to_be_done
+    assert "legal versus" in work_to_be_done
+    assert "ultimate-parent issuer grouping" in work_to_be_done
+    assert "issuer coverage/supportability" in work_to_be_done
+    assert "`single_position_concentration.*` outputs" in work_to_be_done
+    assert "source-owner proof passed locally with `356` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
