@@ -225,6 +225,15 @@ Current repository posture:
     `details.benchmark_variance`, dimensionless slope `metrics.BETA.value`, no risk-free
     dependency posture, zero-benchmark-variance fail-closed posture, and
     insufficient-aligned-observation failure behavior.
+    It also includes the merged and wiki-published `lotus-risk` `TRACKING_ERROR` methodology
+    slice from PR #124 (`46eddb4dc332bb1e4a79c22b1bd557f2b2db2cb9`, wiki `a1d8898`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
+    transformation, frequency compounding before tracking error, strict inner date alignment,
+    `ddof=1` sample active-return standard deviation, decimal
+    `details.active_volatility` and `details.annualized_tracking_error`, annualized
+    percentage-point `metrics.TRACKING_ERROR.value`, no risk-free dependency posture,
+    no-denominator posture, constant-active-return zero tracking-error posture, and
+    insufficient-aligned-observation failure behavior.
     It also includes the merged and wiki-published `lotus-performance`
     `currency_attribution_totals` source-product slice from PR #164
     (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
