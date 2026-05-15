@@ -257,6 +257,15 @@ Current repository posture:
     values are unavailable, top-N sorted-weight summation, input-universe option boundaries, and
     issuer-enrichment isolation from
     `single_position_concentration.top_n_cumulative_weight_*` outputs.
+    It also includes the merged and wiki-published `lotus-risk` `ISSUER_HHI` methodology slice
+    from PR #136 (`ed9dba4663b718ae86c326f7d1f7ae591177e322`, wiki `3dc7293`) for
+    `ConcentrationRiskReport:v1`; it pins stateless, stateful, and simulation source paths,
+    positive numeric position-value extraction, market-value versus quantity fallback precedence,
+    conventional `0..10000` issuer-HHI output, six-decimal response rounding, proposed-state
+    fallback to current issuer HHI when projected issuer buckets are unavailable, covered-subset
+    issuer aggregation, legal versus ultimate-parent issuer grouping, issuer-enrichment
+    precedence, issuer coverage/supportability posture, and isolation from `risk_proxy.hhi_*` and
+    `single_position_concentration.*` outputs.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
