@@ -224,6 +224,14 @@ Current repository posture:
     observations, empty-period insufficient-data posture, never-underwater zero-drawdown posture,
     duration-unit day-counter isolation, and episode-list filter isolation from the summary
     ulcer-index value.
+    It also includes the merged and wiki-published `lotus-risk` `TIME_UNDER_WATER_DAYS`
+    methodology slice from PR #132 (`d44aae1ec899c59565169b5fd4434cdedb00f76d`, wiki
+    `8a7e507`) for `DrawdownAnalyticsReport:v1`; it pins percentage-point input conventions,
+    decimal cumulative-wealth and running-peak drawdown behavior, observation-count
+    `summary.time_under_water_days`, strictly-underwater observation counting, explicit
+    non-duration posture for calendar/business-day settings, empty-period insufficient-data
+    posture, never-underwater zero posture, duration-unit day-counter isolation, and episode-list
+    filter isolation.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
@@ -472,7 +480,7 @@ Current repository posture:
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
     `lotus-risk` `RiskMetricsReport:v1`, drawdown analytics maximum drawdown, average drawdown,
-    and ulcer index, concentration response selected measures, rolling metrics selected
+    ulcer index, and time under water, concentration response selected measures, rolling metrics selected
     metric/statistic/window measures, and historical attribution selected set/contributor measures,
     `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
