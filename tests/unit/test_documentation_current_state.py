@@ -1193,6 +1193,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "drawdown analytics maximum-drawdown methodology truth" in supported_features
     assert "`lotus-risk` PR #129" in supported_features
     assert "wiki `3f2e37a`" in supported_features
+    assert "drawdown analytics average-drawdown methodology truth" in supported_features
+    assert "`lotus-risk` PR #130" in supported_features
+    assert "wiki `01d181b`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
     assert "`lotus-risk` PR #121" in supported_features
@@ -1491,6 +1494,17 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "decimal `summary.max_drawdown` output" in work_to_be_done
     assert "episode-list filter isolation" in work_to_be_done
     assert "source-owner proof passed locally with `342` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk drawdown analytics average-drawdown methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-risk` PR #130" in work_to_be_done
+    assert "`d96651d0c34e2414f61fb70c2e1a3106134c3632`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `01d181b`" in work_to_be_done
+    assert "`AVERAGE_DRAWDOWN`" in work_to_be_done
+    assert "`summary.average_drawdown` output" in work_to_be_done
+    assert "strictly-underwater observation inclusion" in work_to_be_done
+    assert "source-owner proof passed locally with `344` unit tests" in work_to_be_done
+    assert "full `tests/e2e` proof with `24` tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
