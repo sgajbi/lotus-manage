@@ -1218,6 +1218,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "issuer-HHI methodology truth through `lotus-risk` PR #136" in supported_features
     assert "wiki `3dc7293`" in supported_features
     assert "conventional `0..10000` issuer-HHI output" in supported_features
+    assert "top-issuer weight methodology truth through `lotus-risk` PR #137" in (
+        supported_features
+    )
+    assert "wiki `1e1eb14`" in supported_features
+    assert "decimal `0..1` top-issuer weight" in supported_features
     assert "`ConcentrationRiskReport:v1`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
@@ -1595,6 +1600,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "issuer coverage/supportability" in work_to_be_done
     assert "`single_position_concentration.*` outputs" in work_to_be_done
     assert "source-owner proof passed locally with `356` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk concentration top-issuer methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #137" in work_to_be_done
+    assert "`2da6e3a8346d5a188484750436a0258776918620`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `1e1eb14`" in work_to_be_done
+    assert "`TOP_ISSUER_WEIGHT`" in work_to_be_done
+    assert "`0..1` top-issuer weight output" in work_to_be_done
+    assert "deterministic top-issuer driver" in work_to_be_done
+    assert "proposed-state fallback to current top issuer" in work_to_be_done
+    assert "source-owner proof passed locally with `358` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
