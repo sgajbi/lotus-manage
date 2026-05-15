@@ -1196,6 +1196,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "drawdown analytics average-drawdown methodology truth" in supported_features
     assert "`lotus-risk` PR #130" in supported_features
     assert "wiki `01d181b`" in supported_features
+    assert "drawdown analytics ulcer-index methodology truth" in supported_features
+    assert "`lotus-risk` PR #131" in supported_features
+    assert "wiki `6f244d1`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
     assert "`lotus-risk` PR #121" in supported_features
@@ -1505,6 +1508,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "strictly-underwater observation inclusion" in work_to_be_done
     assert "source-owner proof passed locally with `344` unit tests" in work_to_be_done
     assert "full `tests/e2e` proof with `24` tests" in work_to_be_done
+    assert "Latest WTBD-006 risk drawdown analytics ulcer-index methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-risk` PR #131" in work_to_be_done
+    assert "`ce129e4ba52ff20f6e620df837238a852d7a522c`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `6f244d1`" in work_to_be_done
+    assert "`ULCER_INDEX`" in work_to_be_done
+    assert "`summary.ulcer_index` output" in work_to_be_done
+    assert "full-path squared drawdown inclusion" in work_to_be_done
+    assert "source-owner proof passed locally with `346` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
