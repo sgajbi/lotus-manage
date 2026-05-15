@@ -1193,6 +1193,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "risk volatility methodology truth" in supported_features
     assert "`lotus-risk` PR #121" in supported_features
     assert "wiki `2c09ab2`" in supported_features
+    assert "risk Sharpe methodology truth" in supported_features
+    assert "`lotus-risk` PR #122" in supported_features
+    assert "wiki `cdb25df`" in supported_features
     assert "`PortfolioCashflowProjection:v1` methodology truth" in supported_features
     assert "`lotus-core` PR #344" in supported_features
     assert "wiki `231bd75`" in supported_features
@@ -1463,6 +1466,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "annualized percentage-point `metrics.VOLATILITY.value`" in work_to_be_done
     assert "source-owner proof passed locally with `326` unit tests" in work_to_be_done
     assert "test-pyramid gate passed with `23` e2e tests" in work_to_be_done
+    assert "Latest WTBD-006 risk Sharpe methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #122" in work_to_be_done
+    assert "`932600162df7482a6d9c01a7470760238cab57ce`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `cdb25df`" in work_to_be_done
+    assert "`SHARPE` source-owner methodology" in work_to_be_done
+    assert "dimensionless annualized `metrics.SHARPE.value`" in work_to_be_done
+    assert "source-owner proof passed locally with `328` unit tests" in work_to_be_done
+    assert "test-pyramid proof with `23` e2e tests" in work_to_be_done
     assert "RFC41-WTBD-006 - Workbench Wave Command Center" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #196" in (
         work_to_be_done
