@@ -234,6 +234,17 @@ Current repository posture:
     percentage-point `metrics.TRACKING_ERROR.value`, no risk-free dependency posture,
     no-denominator posture, constant-active-return zero tracking-error posture, and
     insufficient-aligned-observation failure behavior.
+    It also includes the merged and wiki-published `lotus-risk` `INFORMATION_RATIO` methodology
+    slice from PR #125 (`7ccf5667e6676b8f1865ebd9768b8913262d3d3b`, wiki `7a0aa9e`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
+    transformation, frequency compounding before information ratio, strict inner date alignment,
+    active-return construction, `ddof=1` sample active-return standard deviation, decimal
+    `details.portfolio_mean_return`, `details.benchmark_mean_return`,
+    `details.active_mean_return`, `details.tracking_error`,
+    `details.annualized_active_return`, and `details.annualized_tracking_error`, dimensionless
+    annualized `metrics.INFORMATION_RATIO.value`, no risk-free dependency posture,
+    zero-tracking-error fail-closed denominator posture, and insufficient-aligned-observation
+    failure behavior.
     It also includes the merged and wiki-published `lotus-performance`
     `currency_attribution_totals` source-product slice from PR #164
     (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
