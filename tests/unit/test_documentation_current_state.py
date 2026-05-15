@@ -1196,6 +1196,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "risk Sharpe methodology truth" in supported_features
     assert "`lotus-risk` PR #122" in supported_features
     assert "wiki `cdb25df`" in supported_features
+    assert "risk Sortino methodology truth" in supported_features
+    assert "`lotus-risk` PR #126" in supported_features
+    assert "wiki `81f787e`" in supported_features
     assert "risk beta methodology truth" in supported_features
     assert "`lotus-risk` PR #123" in supported_features
     assert "wiki `7738cac`" in supported_features
@@ -1483,6 +1486,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "dimensionless annualized `metrics.SHARPE.value`" in work_to_be_done
     assert "source-owner proof passed locally with `328` unit tests" in work_to_be_done
     assert "test-pyramid proof with `23` e2e tests" in work_to_be_done
+    assert "Latest WTBD-006 risk Sortino methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #126" in work_to_be_done
+    assert "`dbe16b647f972ff626a8b6eb11e06041b6e0f46a`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `81f787e`" in work_to_be_done
+    assert "`SORTINO` source-owner methodology" in work_to_be_done
+    assert "dimensionless annualized `metrics.SORTINO.value`" in work_to_be_done
+    assert "source-owner proof passed locally with `336` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk beta methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #123" in work_to_be_done
     assert "`d6c50e126fa81250ab16f0299380fb0ad9022619`" in work_to_be_done

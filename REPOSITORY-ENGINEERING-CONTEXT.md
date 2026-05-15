@@ -217,6 +217,16 @@ Current repository posture:
     `details.periodic_risk_free_rate`, dimensionless annualized `metrics.SHARPE.value`,
     annualization-factor resolution, no benchmark dependency posture, zero-volatility fail-closed
     posture, and insufficient-data failure behavior.
+    It also includes the merged and wiki-published `lotus-risk` `SORTINO` methodology slice from
+    PR #126 (`dbe16b647f972ff626a8b6eb11e06041b6e0f46a`, wiki `81f787e`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
+    transformation, frequency compounding before Sortino, annual-to-periodic MAR conversion,
+    full-sample mean excess return, downside-only root-mean-square denominator, decimal
+    `details.periodic_mar`, `details.mean_return`, `details.excess_return`,
+    `details.annualized_excess_return`, and `details.downside_deviation`, dimensionless
+    annualized `metrics.SORTINO.value`, no benchmark dependency posture, no risk-free
+    dependency posture, no-downside-observation fail-closed posture, and insufficient-data
+    failure behavior.
     It also includes the merged and wiki-published `lotus-risk` `BETA` methodology slice from
     PR #123 (`d6c50e126fa81250ab16f0299380fb0ad9022619`, wiki `7738cac`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
