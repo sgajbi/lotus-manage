@@ -227,6 +227,14 @@ Current repository posture:
     annualized `metrics.SORTINO.value`, no benchmark dependency posture, no risk-free
     dependency posture, no-downside-observation fail-closed posture, and insufficient-data
     failure behavior.
+    It also includes the merged and wiki-published `lotus-risk` `DRAWDOWN` methodology slice from
+    PR #128 (`4784839067027d991500ff2d19c728122e227466`, wiki `edde5df`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, frequency compounding
+    before drawdown, explicit no-log-return posture, cumulative-wealth and running-peak behavior,
+    signed percentage-point `metrics.DRAWDOWN.value`, signed `details.max_drawdown`,
+    peak/trough/recovery episode timing details, no benchmark dependency posture, no risk-free
+    dependency posture, no annualization-factor posture, no-denominator posture beyond the running
+    peak wealth path, and insufficient-data failure behavior.
     It also includes the merged and wiki-published `lotus-risk` `VAR` methodology slice from
     PR #127 (`957d1a4d37e75e70a9915e65584fc41e7328f082`, wiki `85116ab`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return

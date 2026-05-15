@@ -1199,6 +1199,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "risk Sortino methodology truth" in supported_features
     assert "`lotus-risk` PR #126" in supported_features
     assert "wiki `81f787e`" in supported_features
+    assert "risk drawdown methodology truth" in supported_features
+    assert "`lotus-risk` PR #128" in supported_features
+    assert "wiki `edde5df`" in supported_features
     assert "risk VaR methodology truth" in supported_features
     assert "`lotus-risk` PR #127" in supported_features
     assert "wiki `85116ab`" in supported_features
@@ -1496,6 +1499,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`SORTINO` source-owner methodology" in work_to_be_done
     assert "dimensionless annualized `metrics.SORTINO.value`" in work_to_be_done
     assert "source-owner proof passed locally with `336` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk drawdown methodology proof" in work_to_be_done
+    assert "`lotus-risk` PR #128" in work_to_be_done
+    assert "`4784839067027d991500ff2d19c728122e227466`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `edde5df`" in work_to_be_done
+    assert "`DRAWDOWN` source-owner methodology" in work_to_be_done
+    assert "`metrics.DRAWDOWN.value`" in work_to_be_done
+    assert "cumulative-wealth and running-peak behavior" in work_to_be_done
+    assert "source-owner proof passed locally with `340` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk VaR methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #127" in work_to_be_done
     assert "`957d1a4d37e75e70a9915e65584fc41e7328f082`" in work_to_be_done
