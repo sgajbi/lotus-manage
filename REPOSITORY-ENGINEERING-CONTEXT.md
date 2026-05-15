@@ -209,6 +209,13 @@ Current repository posture:
     episode peak/trough/recovery semantics, empty-period insufficient-data posture,
     never-underwater zero-drawdown posture, duration-unit day-counter behavior, and episode-list
     filter isolation from the summary maximum-drawdown value.
+    It also includes the merged and wiki-published `lotus-risk` `AVERAGE_DRAWDOWN` methodology
+    slice from PR #130 (`d96651d0c34e2414f61fb70c2e1a3106134c3632`, wiki `01d181b`) for
+    `DrawdownAnalyticsReport:v1`; it pins percentage-point input conventions, decimal
+    cumulative-wealth and running-peak drawdown behavior, decimal `summary.average_drawdown`
+    output, strictly-underwater observation inclusion, empty-period insufficient-data posture,
+    never-underwater zero-drawdown posture, duration-unit day-counter isolation, and episode-list
+    filter isolation from the summary average-drawdown value.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
