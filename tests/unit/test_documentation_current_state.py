@@ -1190,6 +1190,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "rolling maximum drawdown methodology truth" in supported_features
     assert "`lotus-risk` PR #120" in supported_features
     assert "wiki `429e284`" in supported_features
+    assert "drawdown analytics maximum-drawdown methodology truth" in supported_features
+    assert "`lotus-risk` PR #129" in supported_features
+    assert "wiki `3f2e37a`" in supported_features
+    assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
     assert "`lotus-risk` PR #121" in supported_features
     assert "wiki `2c09ab2`" in supported_features
@@ -1476,6 +1480,17 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`ROLLING_MAX_DRAWDOWN` source-owner methodology" in work_to_be_done
     assert "decimal drawdown-ratio output mapping" in work_to_be_done
     assert "source-owner proof passed locally with `324` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk drawdown analytics maximum-drawdown methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-risk` PR #129" in work_to_be_done
+    assert "`6ac31ac860275561cb5770a49f1c2d7aeb7440e6`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `3f2e37a`" in work_to_be_done
+    assert "`MAX_DRAWDOWN` source-owner" in work_to_be_done
+    assert "`DrawdownAnalyticsReport:v1`" in work_to_be_done
+    assert "decimal `summary.max_drawdown` output" in work_to_be_done
+    assert "episode-list filter isolation" in work_to_be_done
+    assert "source-owner proof passed locally with `342` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done

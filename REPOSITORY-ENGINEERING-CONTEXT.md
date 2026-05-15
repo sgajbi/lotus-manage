@@ -202,6 +202,13 @@ Current repository posture:
     behavior, source-owned risk-free/benchmark alignment posture, no-aligned dependency posture,
     zero-excess-volatility Sharpe flagging, zero-benchmark-variance beta flagging, and
     zero-tracking-error information-ratio flagging.
+    It also includes the merged and wiki-published `lotus-risk` `MAX_DRAWDOWN` methodology slice
+    from PR #129 (`6ac31ac860275561cb5770a49f1c2d7aeb7440e6`, wiki `3f2e37a`) for
+    `DrawdownAnalyticsReport:v1`; it pins percentage-point input conventions, decimal
+    cumulative-wealth and running-peak drawdown behavior, decimal `summary.max_drawdown` output,
+    episode peak/trough/recovery semantics, empty-period insufficient-data posture,
+    never-underwater zero-drawdown posture, duration-unit day-counter behavior, and episode-list
+    filter isolation from the summary maximum-drawdown value.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
