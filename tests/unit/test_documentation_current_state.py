@@ -1199,6 +1199,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "drawdown analytics ulcer-index methodology truth" in supported_features
     assert "`lotus-risk` PR #131" in supported_features
     assert "wiki `6f244d1`" in supported_features
+    assert "drawdown analytics time-under-water methodology truth" in supported_features
+    assert "`lotus-risk` PR #132" in supported_features
+    assert "wiki `8a7e507`" in supported_features
     assert "`DrawdownAnalyticsReport:v1`" in supported_features
     assert "risk volatility methodology truth" in supported_features
     assert "`lotus-risk` PR #121" in supported_features
@@ -1518,6 +1521,17 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`summary.ulcer_index` output" in work_to_be_done
     assert "full-path squared drawdown inclusion" in work_to_be_done
     assert "source-owner proof passed locally with `346` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 risk drawdown analytics time-under-water methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-risk` PR #132" in work_to_be_done
+    assert "`d44aae1ec899c59565169b5fd4434cdedb00f76d`" in work_to_be_done
+    assert "`lotus-risk.wiki` commit `8a7e507`" in work_to_be_done
+    assert "`TIME_UNDER_WATER_DAYS`" in work_to_be_done
+    assert "`summary.time_under_water_days` output" in work_to_be_done
+    assert "strictly-underwater observation counting" in work_to_be_done
+    assert "explicit non-duration posture for calendar/business-day settings" in work_to_be_done
+    assert "source-owner proof passed locally with `348` unit tests" in work_to_be_done
     assert "Latest WTBD-006 risk volatility methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #121" in work_to_be_done
     assert "`457f28dedea2a9db386192f5d00a6905e2f1c49a`" in work_to_be_done
