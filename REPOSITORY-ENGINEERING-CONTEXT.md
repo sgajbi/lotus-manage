@@ -227,6 +227,15 @@ Current repository posture:
     annualized `metrics.SORTINO.value`, no benchmark dependency posture, no risk-free
     dependency posture, no-downside-observation fail-closed posture, and insufficient-data
     failure behavior.
+    It also includes the merged and wiki-published `lotus-risk` `VAR` methodology slice from
+    PR #127 (`957d1a4d37e75e70a9915e65584fc41e7328f082`, wiki `85116ab`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
+    transformation, frequency compounding before VaR, historical, Gaussian, and Cornish-Fisher
+    method behavior, signed return-threshold output in percentage points, square-root-of-time
+    horizon scaling, optional expected-shortfall calculation, signed `details.base_var`,
+    `details.base_expected_shortfall`, and `details.expected_shortfall`, no benchmark dependency
+    posture, no risk-free dependency posture, no annualization-factor posture, and
+    insufficient-data failure behavior.
     It also includes the merged and wiki-published `lotus-risk` `BETA` methodology slice from
     PR #123 (`d6c50e126fa81250ab16f0299380fb0ad9022619`, wiki `7738cac`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
