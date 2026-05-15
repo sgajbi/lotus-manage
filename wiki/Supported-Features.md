@@ -322,6 +322,13 @@ deterministic top-position driver selection, and issuer-enrichment isolation fro
 `single_position_concentration.top_position_*` outputs rather than recomputing concentration
 locally.
 
+Current risk concentration source-owner proof additionally includes `ConcentrationRiskReport:v1`
+top-N cumulative weight methodology truth through `lotus-risk` PR #135 / wiki `59277e5`.
+Downstream services must preserve the decimal `0..1` top-N cumulative weight, request-contract
+`top_n` bounds, proposed-state fallback, sorted-weight summation, and issuer-enrichment isolation
+from `single_position_concentration.top_n_cumulative_weight_*` outputs rather than recomputing
+concentration locally.
+
 Roadmap boundaries:
 
 1. Unsupported source products remain explicit gaps; do not fill them with local placeholders.
