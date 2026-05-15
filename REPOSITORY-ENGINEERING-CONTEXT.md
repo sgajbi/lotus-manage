@@ -217,6 +217,14 @@ Current repository posture:
     `details.periodic_risk_free_rate`, dimensionless annualized `metrics.SHARPE.value`,
     annualization-factor resolution, no benchmark dependency posture, zero-volatility fail-closed
     posture, and insufficient-data failure behavior.
+    It also includes the merged and wiki-published `lotus-risk` `BETA` methodology slice from
+    PR #123 (`d6c50e126fa81250ab16f0299380fb0ad9022619`, wiki `7738cac`) for
+    `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
+    transformation, frequency compounding before beta, strict inner date alignment, `ddof=1`
+    sample covariance and benchmark variance, percentage-point-squared `details.covariance` and
+    `details.benchmark_variance`, dimensionless slope `metrics.BETA.value`, no risk-free
+    dependency posture, zero-benchmark-variance fail-closed posture, and
+    insufficient-aligned-observation failure behavior.
     It also includes the merged and wiki-published `lotus-performance`
     `currency_attribution_totals` source-product slice from PR #164
     (`cbda83fcd8fbabf957c187b19ca98247a11a9812`, wiki `f76a954`), which pins
