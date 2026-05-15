@@ -240,6 +240,14 @@ Current repository posture:
     six-decimal response rounding, proposed-state fallback to current HHI when projected values
     are unavailable, input-universe option boundaries, and issuer-enrichment isolation from
     `risk_proxy.hhi_*` outputs.
+    It also includes the merged and wiki-published `lotus-risk` `TOP_POSITION_WEIGHT` methodology
+    slice from PR #134 (`21ef697a1c308a3d8ea7c8e40e06019544be7e93`, wiki `dd25844`) for
+    `ConcentrationRiskReport:v1`; it pins stateless, stateful, and simulation source paths,
+    positive numeric position-value extraction, market-value versus quantity fallback precedence,
+    decimal `0..1` top-position weight output, six-decimal response rounding, proposed-state
+    fallback to current top-position weight when projected values are unavailable, deterministic
+    top-position driver selection, input-universe option boundaries, and issuer-enrichment
+    isolation from `single_position_concentration.top_position_*` outputs.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
