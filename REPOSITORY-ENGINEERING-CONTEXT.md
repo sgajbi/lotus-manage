@@ -232,6 +232,14 @@ Current repository posture:
     non-duration posture for calendar/business-day settings, empty-period insufficient-data
     posture, never-underwater zero posture, duration-unit day-counter isolation, and episode-list
     filter isolation.
+    It also includes the merged and wiki-published `lotus-risk` `POSITION_HHI` methodology slice
+    from PR #133 (`dea20b5a6f99403a9b8e974ac9da823c691c5465`, wiki `1e2f926`) for
+    `ConcentrationRiskReport:v1`; it pins stateless, stateful, and simulation source paths,
+    positive numeric position-value extraction, market-value versus quantity fallback precedence,
+    decimal position-weight construction, conventional `0..10000` Herfindahl-Hirschman scaling,
+    six-decimal response rounding, proposed-state fallback to current HHI when projected values
+    are unavailable, input-universe option boundaries, and issuer-enrichment isolation from
+    `risk_proxy.hhi_*` outputs.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
@@ -480,7 +488,7 @@ Current repository posture:
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
     `lotus-risk` `RiskMetricsReport:v1`, drawdown analytics maximum drawdown, average drawdown,
-    ulcer index, and time under water, concentration response selected measures, rolling metrics selected
+    ulcer index, and time under water, concentration response position HHI and selected measures, rolling metrics selected
     metric/statistic/window measures, and historical attribution selected set/contributor measures,
     `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
