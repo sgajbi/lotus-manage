@@ -216,6 +216,14 @@ Current repository posture:
     output, strictly-underwater observation inclusion, empty-period insufficient-data posture,
     never-underwater zero-drawdown posture, duration-unit day-counter isolation, and episode-list
     filter isolation from the summary average-drawdown value.
+    It also includes the merged and wiki-published `lotus-risk` `ULCER_INDEX` methodology slice
+    from PR #131 (`ce129e4ba52ff20f6e620df837238a852d7a522c`, wiki `6f244d1`) for
+    `DrawdownAnalyticsReport:v1`; it pins percentage-point input conventions, decimal
+    cumulative-wealth and running-peak drawdown behavior, non-negative decimal
+    `summary.ulcer_index` output, full-path squared drawdown inclusion including zero peak
+    observations, empty-period insufficient-data posture, never-underwater zero-drawdown posture,
+    duration-unit day-counter isolation, and episode-list filter isolation from the summary
+    ulcer-index value.
     It also includes the merged and wiki-published `lotus-risk` `VOLATILITY` methodology slice
     from PR #121 (`457f28dedea2a9db386192f5d00a6905e2f1c49a`, wiki `2c09ab2`) for
     `RiskMetricsReport:v1`; it pins percentage-point input conventions, optional log-return
@@ -463,9 +471,9 @@ Current repository posture:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
-    `lotus-risk` `RiskMetricsReport:v1`, drawdown response max drawdown, concentration
-    response selected measures, rolling metrics selected metric/statistic/window measures, and
-    historical attribution selected set/contributor measures,
+    `lotus-risk` `RiskMetricsReport:v1`, drawdown analytics maximum drawdown, average drawdown,
+    and ulcer index, concentration response selected measures, rolling metrics selected
+    metric/statistic/window measures, and historical attribution selected set/contributor measures,
     `lotus-performance` workspace-summary TWR/active/MWR returns,
     contribution selected measures, and attribution reconciliation/level/currency selected
     measures, and `lotus-core` `HoldingsAsOf:v1` cash totals plus
