@@ -484,6 +484,34 @@ class AuthoritativeCurrencyOverlayContext(BaseModel):
         default_factory=list,
         description="Source-owned external treasury readiness checks, when available.",
     )
+    external_currency_exposure_source_product_name: str | None = Field(
+        default=None,
+        description="Source-owned external currency exposure product name, when available.",
+    )
+    external_currency_exposure_source_product_version: str | None = Field(
+        default=None,
+        description="Source-owned external currency exposure product version, when available.",
+    )
+    external_currency_exposure_source_id: str | None = Field(
+        default=None,
+        description="Source-owned deterministic external currency exposure evidence identifier.",
+    )
+    external_currency_exposure_content_hash: str | None = Field(
+        default=None,
+        description="Hash of the external currency exposure payload preserved for audit.",
+    )
+    external_currency_exposure_count: int = Field(
+        default=0,
+        ge=0,
+        description="Source-owned external currency exposure row count.",
+    )
+    external_currency_exposure_rows: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "Source-owned external currency exposure rows. Empty while bank-owned treasury "
+            "ingestion is unavailable; these rows are never FX attribution or hedge advice."
+        ),
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Currency-overlay bounded reason codes.",
