@@ -1178,6 +1178,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in roadmap
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in roadmap
     assert "Remaining roadmap work is source-owner methodology enrichment" in roadmap
+    assert "2026-05-16 source-owner FX attribution update" in roadmap
+    assert "`lotus-performance` PR #167 (`16261c9`, wiki\n`41bdaa3`)" in roadmap
     assert "rolling tracking-error methodology truth" in supported_features
     assert "`lotus-risk` PR #113" in supported_features
     assert "wiki `d1330ee`" in supported_features
@@ -1863,6 +1865,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "stateful lotus-core portfolio/position, benchmark, and source-currency normalization"
         in (work_to_be_done)
     )
+    assert "Latest WTBD-006 performance currency-attribution totals aggregation proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-performance` PR #167" in work_to_be_done
+    assert "`16261c9`" in work_to_be_done
+    assert "`41bdaa3`" in work_to_be_done
+    assert "weight-averaged local/FX returns" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
     assert "does not calculate risk or performance methodology locally" in work_to_be_done
@@ -1918,6 +1927,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "`lotus-performance` PR #165 (`191a405`, wiki `46a9124`)" in supported_features
+    assert "`lotus-performance` PR\n#167 / wiki `41bdaa3`" in supported_features
+    assert "weight-averaged local/FX returns before Karnosky-Singer effects" in (supported_features)
     assert "`lotus-risk` PR #138 (`8ae3e4a`, wiki `616a10c`)" in supported_features
     assert "stateful\n`ACTIVE_RISK + ISSUER` historical attribution" in supported_features
     assert "performs no local benchmark issuer exposure, covariance, tracking-error" in (

@@ -114,6 +114,13 @@ Partial / in-progress items:
 
 Next bank-buyable product-readiness priorities:
 
+2026-05-16 source-owner FX attribution update: `lotus-performance` PR #167 (`16261c9`, wiki
+`41bdaa3`) tightens the existing source-owned portfolio-level `currency_attribution_totals` path.
+Grouped requests that include `currency` plus another dimension now recompute a date/currency panel
+from summed weights and weight-averaged local/FX returns before applying Karnosky-Singer formulas.
+This advances RFC42-WTBD-006 source-owner FX methodology depth without adding any Manage-local FX
+attribution calculation, tax, execution, OMS, or Workbench product claim.
+
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` non-rolling volatility, non-rolling drawdown, non-rolling Sharpe, non-rolling Sortino, non-rolling VaR, non-rolling beta, non-rolling tracking-error, non-rolling information-ratio, rolling volatility, rolling Sharpe, rolling beta, rolling maximum drawdown, rolling tracking-error, rolling information-ratio, drawdown analytics maximum-drawdown, average-drawdown, ulcer-index, and time-under-water methodology/wiki truth, and concentration position-HHI, top-position weight, top-N cumulative weight, issuer-HHI, and top-issuer weight methodology/wiki truth, `lotus-core` holdings-as-of, market-data coverage, DPM source-readiness, transaction-ledger window, cashflow-projection, liquidity-ladder, tax-lot window, client-tax profile/rule, portfolio realized-tax summary, and observed transaction-cost curve methodology/wiki truth, and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct `RiskMetricsReport:v1` volatility, drawdown, Sharpe, Sortino, VaR, beta, tracking error, or information ratio, rolling active-risk, rolling excess-return risk-adjusted performance, rolling benchmark sensitivity, rolling window maximum drawdown, drawdown analytics maximum drawdown, average drawdown, ulcer index, or time under water, concentration position HHI, concentration top-position weight, concentration top-N cumulative weight, concentration issuer HHI, concentration top issuer weight, rolling portfolio volatility, holdings snapshot selection, position weighting, cash-balance restatement, market price/FX freshness classification, DPM readiness family precedence, transaction row windowing/restatement, operational cash movement, cash-flow schedules, liquidity buckets, lot/cost-basis selection, explicit realized-tax aggregation, observed booked-fee cost curves, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
@@ -5489,6 +5496,29 @@ Latest WTBD-006 performance currency-attribution fail-closed proof:
    implemented performance attribution path, predictive execution, OMS acknowledgements,
    income-needs planning, tax advice, tax optimization, and broader live portfolio-archetype
    validation remain source-owner or future-RFC work.
+
+Latest WTBD-006 performance currency-attribution totals aggregation proof:
+
+1. `lotus-performance` PR #167 was merged to `main` as `16261c9` and published wiki commit
+   `41bdaa3`; it tightens source-owned portfolio-level `currency_attribution_totals` so grouped
+   attribution requests that include `currency` plus another dimension recompute a date/currency
+   panel from summed weights and weight-averaged local/FX returns before applying Karnosky-Singer
+   formulas,
+2. the regression proves totals are invariant when a caller requests `group_by=["currency",
+   "sector"]` rather than only `currency`, preventing visible-row granularity from distorting
+   portfolio-level FX attribution evidence,
+3. performance local proof passed focused attribution/docs tests, `make lint`, `make typecheck`,
+   `make openapi-gate`, `make api-vocabulary-gate`, `make domain-product-validate`,
+   `make no-alias-gate`, `make test-unit`, and full `make ci` including migration smoke,
+   dependency/security audit with zero known vulnerabilities, unit/integration/e2e, coverage, and
+   Docker; GitHub Feature Lane and PR Merge Gate were green before merge,
+4. manage consumes this as source-owner methodology truth only: no Karnosky-Singer, FX
+   attribution, local/FX return, benchmark-currency, or portfolio-level currency-effect
+   calculation is implemented or duplicated in manage,
+5. this advances RFC42-WTBD-006 but does not close it: broader FX methodology beyond the
+   implemented performance attribution path, predictive execution, OMS acknowledgements,
+   tax advice, tax optimization, and broader live portfolio-archetype validation remain
+   source-owner or future-RFC work.
 
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
 

@@ -363,6 +363,11 @@ Current repository posture:
     `currency_attribution_totals` both fail closed unless `currency_mode=BOTH`, required local/FX
     columns, and a real `currency` grouping key are present; Manage records this posture but does
     not calculate Karnosky-Singer effects or infer missing FX attribution.
+    The related `lotus-performance` PR #167 (`16261c9`, wiki `41bdaa3`) tightens portfolio-level
+    `currency_attribution_totals` again so grouped requests that include `currency` plus another
+    dimension recompute the date/currency panel from summed weights and weight-averaged local/FX
+    returns before applying Karnosky-Singer formulas. Manage consumes that as source-owner
+    methodology truth only and still does not reconstruct FX attribution from visible rows.
     It also includes the merged and wiki-published `lotus-core`
     `PortfolioCashflowProjection:v1` methodology slice from PR #344
     (`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`, wiki `231bd75`), which pins booked-only
