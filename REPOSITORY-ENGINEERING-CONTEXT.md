@@ -375,6 +375,14 @@ Current repository posture:
     posture, source-product catalog/security profiles, and explicit non-claims for tax advice,
     after-tax optimization, tax-loss harvesting suitability, jurisdiction-specific recommendation,
     client-tax approval, tax-reporting certification, FX attribution, execution quality, and OMS
+    acknowledgement. It also includes the merged and wiki-published `lotus-core`
+    `PortfolioCashMovementSummary:v1` methodology slice from PR #364
+    (`486136affef18d7c9d51886be1d52a804cfd2867`, wiki `ad67cf6`), which pins latest cashflow row
+    selection per transaction, grouping by classification/timing/currency/position-flow/
+    portfolio-flow posture, signed cash movement totals, movement direction, evidence timestamp,
+    data-quality posture, source-product catalog/security profiles, and explicit non-claims for
+    cashflow forecasting, liquidity advice, income-needs planning, funding recommendations,
+    treasury instructions, tax methodology, predictive execution, execution quality, and OMS
     acknowledgement. The matching `lotus-platform` PR #331
     (`500a1b83dddb85842b79e6218595bd13f237d949`) mirrors the source product into platform mesh
     discovery and certification artifacts. The
@@ -390,7 +398,7 @@ Current repository posture:
     portfolio/instrument/security/transaction type/FX-event/date-window filters, joined
     transaction-cost and linked-cashflow row preservation, optional reporting-currency
     restatement, empty/complete/paged data-quality posture, and explicit non-claims for tax
-    advice, FX attribution, cash movement aggregation, transaction-cost methodology,
+    advice, FX attribution, transaction-cost methodology,
     execution-quality assessment, and OMS acknowledgement; the merged and wiki-published
     `lotus-core`
     `PortfolioTaxLotWindow:v1` methodology slice from PR #346
