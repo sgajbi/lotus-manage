@@ -1778,6 +1778,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "signed cash movement bucket evidence" in work_to_be_done
     assert "latest-cashflow-row selection per transaction" in work_to_be_done
     assert "cashflow forecasting" in work_to_be_done
+    assert "Latest WTBD-006 risk/performance issuer active-risk proof" in work_to_be_done
+    assert "`lotus-performance` PR #165" in work_to_be_done
+    assert "`191a405`" in work_to_be_done
+    assert "`46a9124`" in work_to_be_done
+    assert "`lotus-risk` PR #138" in work_to_be_done
+    assert "`8ae3e4a`" in work_to_be_done
+    assert "`616a10c`" in work_to_be_done
+    assert "stateful `ACTIVE_RISK + ISSUER` historical attribution" in work_to_be_done
+    assert "benchmark issuer exposure, active-risk decomposition, covariance" in work_to_be_done
     assert "Latest WTBD-006 core transaction-cost-curve methodology proof" in work_to_be_done
     assert "`lotus-core` PR #345" in work_to_be_done
     assert "`83d791d0e599f06a2c0caab6eaba647f717d4658`" in work_to_be_done
@@ -1870,6 +1879,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "`TransactionCostCurve:v1` methodology truth through `lotus-core` PR #345" in (
+        supported_features
+    )
+    assert "`lotus-performance` PR #165 (`191a405`, wiki `46a9124`)" in supported_features
+    assert "`lotus-risk` PR #138 (`8ae3e4a`, wiki `616a10c`)" in supported_features
+    assert "stateful\n`ACTIVE_RISK + ISSUER` historical attribution" in supported_features
+    assert "performs no local benchmark issuer exposure, covariance, tracking-error" in (
         supported_features
     )
     assert (

@@ -5399,6 +5399,34 @@ Latest WTBD-006 performance RFC-046 TWR live-audit proof:
    source-owned portfolio-level `currency_attribution_totals` for the implemented performance
    attribution path.
 
+Latest WTBD-006 risk/performance issuer active-risk proof:
+
+1. `lotus-performance` PR #165 was merged to `main` as `191a405` and published wiki commit
+   `46a9124`; it ungates `ISSUER` for `POST /integration/benchmarks/exposure-context`, maps
+   issuer rows from lotus-core index-catalog `classification_labels.issuer_id` and `issuer_name`,
+   updates integration capability copy and API vocabulary, and keeps lotus-core as the benchmark
+   composition/classification system of record,
+2. performance local proof passed `make lint`, `make typecheck`, `make openapi-gate`,
+   `make api-vocabulary-gate`, `make domain-product-validate`, `make no-alias-gate`, focused
+   endpoint/doc tests with `88` passed, and `make test-unit` with `1270` passed; GitHub Feature
+   Lane and PR Merge Gate were green before merge,
+3. `lotus-risk` PR #138 was merged to `main` as `8ae3e4a` and published wiki commit `616a10c`;
+   it enables stateful `ACTIVE_RISK + ISSUER` historical attribution by consuming
+   lotus-performance benchmark exposure context issuer rows and publishes an empty
+   `stateful_active_risk_gated_grouping_dimensions` list,
+4. risk local proof passed `make lint`, `make no-alias-gate`, `make typecheck`,
+   `make openapi-gate`, `make api-vocabulary-gate`, `make domain-data-product-gate`,
+   `make test-unit` with `358` passed, `make test-integration` with `80` passed and `14`
+   skipped, `make test-e2e` with `24` passed, `make test-pyramid-gate`, and the final GitHub
+   Feature Lane and PR Merge Gate were green before merge,
+5. manage consumes this as source-owner truth for outcome-review and proof-pack posture only: no
+   benchmark issuer exposure, active-risk decomposition, covariance, tracking-error,
+   issuer-enrichment, or benchmark classification logic is implemented or duplicated in manage,
+6. this advances RFC42-WTBD-006 but does not close it: broader FX methodology beyond
+   performance-owned Karnosky-Singer totals, predictive execution, OMS acknowledgements,
+   income-needs planning, financial-planning advice, tax advice, tax optimization, and broader
+   live portfolio-archetype validation remain source-owner or future-RFC work.
+
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
 
 Target business outcome:
