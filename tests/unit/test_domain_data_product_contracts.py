@@ -52,6 +52,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "ClientIncomeNeedsSchedule",
         "LiquidityReserveRequirement",
         "PlannedWithdrawalSchedule",
+        "ExternalHedgeExecutionReadiness",
         "RiskEventAffectedCohort",
         "TacticalHouseViewAffectedCohort",
         "PortfolioManagerBookMembership",
@@ -74,6 +75,11 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["LiquidityReserveRequirement"]["failure_posture"] == "degrade_or_pending_review"
     assert by_name["PlannedWithdrawalSchedule"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["PlannedWithdrawalSchedule"]["failure_posture"] == "degrade_or_pending_review"
+    assert by_name["ExternalHedgeExecutionReadiness"]["producer_repository"] == "lotus-core"
+    assert (
+        by_name["ExternalHedgeExecutionReadiness"]["consumption_mode"] == "stateful_core_sourcing"
+    )
+    assert by_name["ExternalHedgeExecutionReadiness"]["failure_posture"] == "fail_closed"
     assert by_name["RiskEventAffectedCohort"]["producer_repository"] == "lotus-risk"
     assert by_name["RiskEventAffectedCohort"]["consumption_mode"] == "api_read"
     assert by_name["RiskEventAffectedCohort"]["failure_posture"] == "fail_closed"
@@ -104,6 +110,7 @@ def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profil
         "ClientIncomeNeedsSchedule",
         "LiquidityReserveRequirement",
         "PlannedWithdrawalSchedule",
+        "ExternalHedgeExecutionReadiness",
     }
     assert "modeled, feature-gated outbound resolver seam" in upstream_family_map
     assert (

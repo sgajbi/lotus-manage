@@ -30,6 +30,7 @@ from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import (
     DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreClientRestrictionProfileResponse,
+    DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreLiquidityReserveRequirementResponse,
     DpmCorePlannedWithdrawalScheduleResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
@@ -776,6 +777,65 @@ def test_source_context_lifts_income_reserve_and_withdrawal_sources() -> None:
     assert "CLIENT_INCOME_NEEDS_CONTEXT_PRESENT" in reason_codes
     assert "LIQUIDITY_RESERVE_CONTEXT_PRESENT" in reason_codes
     assert "PLANNED_WITHDRAWAL_CONTEXT_PRESENT" in reason_codes
+
+
+def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_context() -> None:
+    readiness = DpmCoreExternalHedgeExecutionReadinessResponse.model_validate(
+        {
+            "product_name": "ExternalHedgeExecutionReadiness",
+            "product_version": "v1",
+            "portfolio_id": "pf_fx_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "reporting_currency": "USD",
+            "exposure_currencies": ["EUR"],
+            "readiness_checks": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+                "missing_data_families": [
+                    "external_currency_exposure",
+                    "external_hedge_policy",
+                ],
+                "blocked_capabilities": ["hedge_advice", "oms_acknowledgement"],
+            },
+            "lineage": {"runtime_posture": "fail_closed"},
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-hedge-readiness",
+        }
+    )
+    source_context = DpmResolvedSourceContext.model_construct(
+        input_mode="stateful",
+        source_system="lotus-core",
+        stateful_context_hash="source-context-hash",
+        context=SimpleNamespace(
+            transaction_cost_curve=None,
+            portfolio_cashflow_projection=None,
+            client_income_needs_schedule=None,
+            liquidity_reserve_requirement=None,
+            planned_withdrawal_schedule=None,
+            external_hedge_execution_readiness=readiness,
+            client_restriction_profile=None,
+            sustainability_preference_profile=None,
+        ),
+    )
+
+    context = construction_service._authority_context_with_source_products(
+        authority_context=ConstructionAuthorityContext(),
+        source_context=source_context,
+    )
+
+    currency_context = context.currency_overlay_context
+    assert currency_context is not None
+    assert currency_context.supportability_status == ConstructionMethodStatus.BLOCKED
+    assert currency_context.source_system == "lotus-core"
+    assert currency_context.source_product_name == "ExternalHedgeExecutionReadiness"
+    assert currency_context.source_id == "sha256:external-hedge-readiness"
+    assert currency_context.eligible_currencies == ["EUR"]
+    assert "external_hedge_policy" in currency_context.missing_data_families
+    assert "oms_acknowledgement" in currency_context.blocked_capabilities
+    assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in currency_context.reason_codes
 
 
 def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:

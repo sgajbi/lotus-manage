@@ -20,7 +20,7 @@ composition.
    Dedicated client methods currently exist for `DpmModelPortfolioTarget:v1`,
    `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`,
    `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`, and
-   `PortfolioManagerBookMembership:v1`.
+   `ExternalHedgeExecutionReadiness:v1`, and `PortfolioManagerBookMembership:v1`.
 4. `lotus-manage` uses the bounded `lotus-risk` authority client for risk-owned analytics products.
    `RegimeScenarioPackEvaluation:v1` supports regime-stress-aware construction when configured;
    `RiskEventAffectedCohort:v1` supports fail-closed `RISK_EVENT` rebalance wave preview/create
@@ -54,6 +54,7 @@ composition.
 | `portfolio_id` capability mode | references platform-owned state rather than accepting a full inline bundle | Snapshot and simulation input | disabled by default in capabilities until a governed state resolver is configured | future stateful resolution must use governed core contracts rather than ad hoc reads |
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
 | PM-book membership | `lotus-core` owns portfolio-manager book membership, source records, filters, supportability, and source-batch fingerprint | Cohort membership source product | PM-book rebalance-wave discovery and optional PM operating quality score-run scope materialization from `PortfolioManagerBookMembership:v1` | manage must fail closed on unavailable, incomplete, degraded, or empty PM-book source posture and must not infer membership locally |
+| external hedge execution readiness | `lotus-core` owns fail-closed external treasury readiness posture over bank-owned treasury source ingestion | External treasury source product | preserve `ExternalHedgeExecutionReadiness:v1` unavailable posture, missing data families, blocked capabilities, lineage, and source hash in currency-overlay construction diagnostics | manage must block hedge realization while external treasury ingestion is unavailable and must not claim hedge advice, forward pricing, counterparty selection, best execution, OMS acknowledgement, fills, settlement, or autonomous treasury action |
 
 ## `lotus-risk` Contract Family Posture
 

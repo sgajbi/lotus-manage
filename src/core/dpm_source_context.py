@@ -939,6 +939,47 @@ class DpmCorePlannedWithdrawalScheduleResponse(BaseModel):
     source_batch_fingerprint: Optional[str] = Field(default=None)
 
 
+class DpmCoreExternalHedgeExecutionReadinessSupportability(BaseModel):
+    state: Literal["UNAVAILABLE"] = Field(
+        description="Core readiness state for external treasury hedge execution readiness."
+    )
+    reason: Literal["EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"] = Field(
+        description="Bounded core fail-closed reason code."
+    )
+    missing_data_families: list[str] = Field(
+        default_factory=list,
+        description="External treasury source families required before readiness is usable.",
+    )
+    blocked_capabilities: list[str] = Field(
+        default_factory=list,
+        description="Treasury, OMS, execution, and autonomous-action capabilities blocked.",
+    )
+
+
+class DpmCoreExternalHedgeExecutionReadinessResponse(BaseModel):
+    product_name: Literal["ExternalHedgeExecutionReadiness"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    mandate_id: Optional[str] = Field(default=None, description="Optional mandate identifier.")
+    as_of_date: date = Field(description="Business date used to resolve readiness posture.")
+    reporting_currency: Optional[str] = Field(default=None)
+    exposure_currencies: list[str] = Field(default_factory=list)
+    readiness_checks: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="External treasury readiness checks emitted by core.",
+    )
+    supportability: DpmCoreExternalHedgeExecutionReadinessSupportability = Field(
+        description="Fail-closed external treasury supportability posture."
+    )
+    lineage: dict[str, str] = Field(default_factory=dict)
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(default=None)
+
+
 class DpmCoreClientRestrictionEntry(BaseModel):
     restriction_scope: str = Field(description="Source-owned restriction scope.")
     restriction_code: str = Field(description="Bounded restriction code.")
@@ -1084,6 +1125,16 @@ class DpmCoreExecutionContext(BaseModel):
             "Optional source-owned planned-withdrawal evidence from "
             "PlannedWithdrawalSchedule:v1. This is not an OMS instruction or forecast."
         ),
+    )
+    external_hedge_execution_readiness: Optional[DpmCoreExternalHedgeExecutionReadinessResponse] = (
+        Field(
+            default=None,
+            description=(
+                "Optional lotus-core ExternalHedgeExecutionReadiness:v1 posture. Manage preserves "
+                "this as fail-closed external treasury readiness evidence and does not turn it into "
+                "hedge advice, pricing, counterparty, execution, OMS, fill, or settlement truth."
+            ),
+        )
     )
     client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = Field(
         default=None,

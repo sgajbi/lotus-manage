@@ -101,9 +101,11 @@ Current repository posture:
     source-product boundaries for `ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
     `ExternalFXForwardCurve:v1`, and `ExternalEligibleHedgeInstrument:v1`. `lotus-core` PR #366
     (`9e86df3b`, wiki `617e4e6`) now exposes `ExternalHedgeExecutionReadiness:v1` as an active
-    fail-closed `UNAVAILABLE` route. Manage does not consume this route yet and must continue to
-    avoid hedge advice, forward pricing, counterparty selection, treasury instruction,
-    best-execution, OMS, fill, and settlement claims.
+    fail-closed `UNAVAILABLE` route. Manage now consumes this route through stateful core sourcing,
+    preserves missing external treasury data families and blocked capabilities in currency-overlay
+    construction diagnostics, and blocks hedge realization while continuing to avoid hedge advice,
+    forward pricing, counterparty selection, treasury instruction, best-execution, OMS, fill, and
+    settlement claims.
     RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
     `SustainabilityPreferenceProfile:v1`, `PortfolioCashflowProjection:v1`,
     `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and
