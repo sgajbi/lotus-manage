@@ -1,6 +1,7 @@
 from src.core.dpm_source_context import (
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreExternalCurrencyExposureResponse,
+    DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
@@ -20,6 +21,7 @@ __all__ = [
     "DpmCoreResolverUnavailableError",
     "DpmCoreClientRestrictionProfileResponse",
     "DpmCoreExternalCurrencyExposureResponse",
+    "DpmCoreExternalFXForwardCurveResponse",
     "DpmCoreExternalHedgeExecutionReadinessResponse",
     "DpmCorePortfolioCashflowProjectionResponse",
     "DpmCoreSustainabilityPreferenceProfileResponse",

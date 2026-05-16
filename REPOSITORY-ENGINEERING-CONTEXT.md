@@ -104,14 +104,17 @@ Current repository posture:
     fail-closed `UNAVAILABLE` route. `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) also
     exposes `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route, and
     `lotus-core` PR #368 (`763db4c1`, wiki `50fff30`) exposes `ExternalHedgePolicy:v1` as an
-    active fail-closed `UNAVAILABLE` route. `lotus-platform` PR #333 (`c46d581`) and PR #334
-    (`ae4f707`) mirror those active source-product postures. Manage now consumes the readiness,
-    currency-exposure, and hedge-policy routes through stateful core sourcing, preserves empty
-    exposure/policy rows, exposure count, policy-rule count, missing external treasury data
-    families, blocked capabilities, lineage, and source hashes in currency-overlay construction
-    diagnostics, and blocks hedge realization while continuing to avoid FX attribution,
-    hedge-policy approval, hedge advice, forward pricing, counterparty selection, treasury
-    instruction, best-execution, OMS, fill, and settlement claims.
+    active fail-closed `UNAVAILABLE` route, and `lotus-core` PR #369 (`89225766`, wiki `72dc91d`)
+    exposes `ExternalFXForwardCurve:v1` as an active fail-closed `UNAVAILABLE` route.
+    `lotus-platform` PR #333 (`c46d581`), PR #334 (`ae4f707`), and PR #335 (`72be854`) mirror those
+    active source-product postures. Manage now consumes the readiness, currency-exposure,
+    hedge-policy, and FX forward-curve routes through stateful core sourcing, preserves empty
+    exposure/policy/forward-curve rows, exposure count, policy-rule count, curve-point count,
+    missing external treasury data families, blocked capabilities, lineage, and source hashes in
+    currency-overlay construction diagnostics, and blocks hedge realization while continuing to
+    avoid FX attribution, hedge-policy approval, hedge advice, forward pricing, FX valuation
+    methodology, counterparty selection, treasury instruction, best-execution, OMS, fill, and
+    settlement claims.
     RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
     `SustainabilityPreferenceProfile:v1`, `PortfolioCashflowProjection:v1`,
     `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and

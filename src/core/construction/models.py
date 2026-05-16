@@ -540,6 +540,35 @@ class AuthoritativeCurrencyOverlayContext(BaseModel):
             "is unavailable; these rows are never hedge-policy approval or hedge advice."
         ),
     )
+    external_fx_forward_curve_source_product_name: str | None = Field(
+        default=None,
+        description="Source-owned external FX forward-curve product name, when available.",
+    )
+    external_fx_forward_curve_source_product_version: str | None = Field(
+        default=None,
+        description="Source-owned external FX forward-curve product version, when available.",
+    )
+    external_fx_forward_curve_source_id: str | None = Field(
+        default=None,
+        description="Source-owned deterministic external FX forward-curve evidence identifier.",
+    )
+    external_fx_forward_curve_content_hash: str | None = Field(
+        default=None,
+        description="Hash of the external FX forward-curve payload preserved for audit.",
+    )
+    external_fx_forward_curve_point_count: int = Field(
+        default=0,
+        ge=0,
+        description="Source-owned external FX forward-curve point count.",
+    )
+    external_fx_forward_curve_points: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "Source-owned external FX forward-curve points. Empty while bank-owned treasury "
+            "ingestion is unavailable; these rows are never forward pricing, hedge advice, "
+            "or valuation methodology."
+        ),
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Currency-overlay bounded reason codes.",
