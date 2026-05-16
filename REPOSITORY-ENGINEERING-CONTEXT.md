@@ -358,6 +358,11 @@ Current repository posture:
     currency selection, total effect, and currency-count output in the source-owned attribution
     response without requiring Manage, Gateway, Workbench, or reporting consumers to reconstruct
     portfolio-level FX attribution from rendered currency rows.
+    The related `lotus-performance` PR #166 (`643226d`, wiki `a48035b`) tightens the same
+    source-owned currency-attribution path so supportability evidence and emitted
+    `currency_attribution_totals` both fail closed unless `currency_mode=BOTH`, required local/FX
+    columns, and a real `currency` grouping key are present; Manage records this posture but does
+    not calculate Karnosky-Singer effects or infer missing FX attribution.
     It also includes the merged and wiki-published `lotus-core`
     `PortfolioCashflowProjection:v1` methodology slice from PR #344
     (`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`, wiki `231bd75`), which pins booked-only
