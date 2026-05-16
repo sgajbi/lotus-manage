@@ -234,6 +234,7 @@ def _core_execution_context(
     include_transaction_cost_curve: bool = False,
     include_cashflow_projection: bool = False,
     include_external_hedge_readiness: bool = False,
+    include_external_currency_exposure: bool = False,
     cashflow_data_quality_status: str = "COMPLETE",
 ) -> DpmCoreExecutionContext:
     payload = {
@@ -381,6 +382,48 @@ def _core_execution_context(
             "data_quality_status": "MISSING",
             "source_batch_fingerprint": "sha256:external-hedge-readiness",
         }
+    if include_external_currency_exposure:
+        payload["external_currency_exposure"] = {
+            "product_name": "ExternalCurrencyExposure",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "reporting_currency": "SGD",
+            "exposure_currencies": ["USD"],
+            "exposures": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+                "exposure_count": 0,
+                "missing_data_families": [
+                    "external_currency_exposure",
+                    "external_hedge_policy",
+                    "external_fx_forward_curve",
+                    "external_eligible_hedge_instrument",
+                ],
+                "blocked_capabilities": [
+                    "fx_attribution",
+                    "hedge_advice",
+                    "treasury_instruction",
+                    "execution_readiness",
+                    "oms_acknowledgement",
+                    "fills",
+                    "settlement",
+                    "autonomous_treasury_action",
+                ],
+            },
+            "lineage": {
+                "source_system": "external-bank-treasury",
+                "source_table": "not_ingested",
+                "contract_version": "rfc_039_external_currency_exposure_v1",
+                "integration_status": "not_ingested",
+                "runtime_posture": "fail_closed",
+            },
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-currency-exposure",
+        }
     return DpmCoreExecutionContext.model_validate(payload)
 
 
@@ -412,6 +455,7 @@ class _ExternalHedgeReadinessCoreResolver:
         return _core_execution_context(
             supportability_state="READY",
             include_external_hedge_readiness=True,
+            include_external_currency_exposure=True,
         )
 
 
@@ -1076,11 +1120,23 @@ def test_stateful_currency_overlay_preserves_external_hedge_readiness_fail_close
     assert alternative["method_status"] == "BLOCKED"
     assert currency_context["source_system"] == "lotus-core"
     assert currency_context["source_product_name"] == "ExternalHedgeExecutionReadiness"
+    assert (
+        currency_context["external_currency_exposure_source_product_name"]
+        == "ExternalCurrencyExposure"
+    )
     assert currency_context["supportability_status"] == "BLOCKED"
     assert "external_hedge_policy" in currency_context["missing_data_families"]
+    assert "external_currency_exposure" in currency_context["missing_data_families"]
+    assert currency_context["external_currency_exposure_count"] == 0
+    assert currency_context["external_currency_exposure_rows"] == []
+    assert currency_context["external_currency_exposure_source_id"] == (
+        "sha256:external-currency-exposure"
+    )
+    assert "fx_attribution" in currency_context["blocked_capabilities"]
     assert "oms_acknowledgement" in currency_context["blocked_capabilities"]
     assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in reason_codes
     assert "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED" in reason_codes
+    assert "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED" in reason_codes
     assert "CURRENCY_OVERLAY_CONTEXT_BLOCKED" in reason_codes
 
 

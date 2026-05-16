@@ -104,10 +104,12 @@ Current repository posture:
     fail-closed `UNAVAILABLE` route. `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) also
     exposes `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route, with
     `lotus-platform` PR #333 (`c46d581`) mirroring that active source-product posture. Manage now
-    consumes the readiness route through stateful core sourcing, preserves missing external
-    treasury data families and blocked capabilities in currency-overlay construction diagnostics,
-    and blocks hedge realization while continuing to avoid hedge advice, forward pricing,
-    counterparty selection, treasury instruction, best-execution, OMS, fill, and settlement claims.
+    consumes the readiness and currency-exposure routes through stateful core sourcing, preserves
+    empty exposure rows, exposure count, missing external treasury data families, blocked
+    capabilities, lineage, and source hashes in currency-overlay construction diagnostics, and
+    blocks hedge realization while continuing to avoid FX attribution, hedge advice, forward
+    pricing, counterparty selection, treasury instruction, best-execution, OMS, fill, and
+    settlement claims.
     RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
     `SustainabilityPreferenceProfile:v1`, `PortfolioCashflowProjection:v1`,
     `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and

@@ -159,6 +159,30 @@
       "failure_posture": "degrade_or_pending_review"
     },
     {
+      "product_name": "ExternalCurrencyExposure",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve fail-closed external treasury currency exposure posture in currency-overlay construction diagnostics so unavailable bank-owned treasury ingestion blocks hedge realization without claiming FX attribution, hedge advice, treasury instruction, execution readiness, OMS acknowledgement, fills, settlement, or autonomous treasury action.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
       "product_name": "ExternalHedgeExecutionReadiness",
       "producer_repository": "lotus-core",
       "required_product_version": "v1",

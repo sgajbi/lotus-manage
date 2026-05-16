@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T09:41:59.399575+00:00",
+  "generatedAt": "2026-05-16T11:05:29.625002+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3399,6 +3399,94 @@
       "example": {
         "sample_key": "sample_value"
       },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_currency_exposure_content_hash",
+      "canonicalTerm": "external_currency_exposure_content_hash",
+      "preferredName": "external_currency_exposure_content_hash",
+      "description": "Hash of the external currency exposure payload preserved for audit.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_currency_exposure_count",
+      "canonicalTerm": "external_currency_exposure_count",
+      "preferredName": "external_currency_exposure_count",
+      "description": "Source-owned external currency exposure row count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_currency_exposure_rows",
+      "canonicalTerm": "external_currency_exposure_rows",
+      "preferredName": "external_currency_exposure_rows",
+      "description": "Source-owned external currency exposure rows. Empty while bank-owned treasury ingestion is unavailable; these rows are never FX attribution or hedge advice.",
+      "example": [
+        {
+          "sample_key": "sample_value"
+        }
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_currency_exposure_source_id",
+      "canonicalTerm": "external_currency_exposure_source_id",
+      "preferredName": "external_currency_exposure_source_id",
+      "description": "Source-owned deterministic external currency exposure evidence identifier.",
+      "example": "EXTERNAL_CURRENCY_EXPOSURE_SOURCE_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_currency_exposure_source_product_name",
+      "canonicalTerm": "external_currency_exposure_source_product_name",
+      "preferredName": "external_currency_exposure_source_product_name",
+      "description": "Source-owned external currency exposure product name, when available.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_currency_exposure_source_product_version",
+      "canonicalTerm": "external_currency_exposure_source_product_version",
+      "preferredName": "external_currency_exposure_source_product_version",
+      "description": "Source-owned external currency exposure product version, when available.",
+      "example": "USD",
       "type": "object",
       "locations": [
         "body"
@@ -56058,6 +56146,54 @@
             "attributeRef": "#/attributeCatalog/lotus.readiness_checks"
           },
           {
+            "name": "authority_context.currency_overlay_context.external_currency_exposure_source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_source_product_name"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_currency_exposure_source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_source_product_version"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_currency_exposure_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_source_id"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_currency_exposure_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_content_hash"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_currency_exposure_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.external_currency_exposure_count",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_count"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_currency_exposure_rows",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.external_currency_exposure_rows",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_rows"
+          },
+          {
             "name": "authority_context.currency_overlay_context.reason_codes",
             "location": "body",
             "required": false,
@@ -71162,6 +71298,54 @@
             "type": "array",
             "semanticId": "lotus.readiness_checks",
             "attributeRef": "#/attributeCatalog/lotus.readiness_checks"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_currency_exposure_source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_currency_exposure_source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_currency_exposure_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_currency_exposure_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_currency_exposure_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_currency_exposure_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.external_currency_exposure_count",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_currency_exposure_rows",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.external_currency_exposure_rows",
+            "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_rows"
           },
           {
             "name": "item_inputs[].authority_context.currency_overlay_context.reason_codes",

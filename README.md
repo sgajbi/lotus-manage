@@ -95,10 +95,11 @@ exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILAB
 `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) now also exposes
 `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route and `lotus-platform`
 PR #333 (`c46d581`) mirrors that active source-product posture. Manage now consumes the readiness
-posture through stateful core sourcing and preserves it in currency-overlay construction
-diagnostics as blocked external treasury readiness evidence. Manage still makes no hedge advice,
-forward-pricing, counterparty-selection, treasury-instruction, best-execution, OMS, fill, or
-settlement claim.
+and currency-exposure postures through stateful core sourcing and preserves them in
+currency-overlay construction diagnostics as blocked external treasury evidence, including empty
+exposure rows, exposure count, missing data families, blocked capabilities, lineage, and source
+hashes. Manage still makes no FX-attribution, hedge advice, forward-pricing,
+counterparty-selection, treasury-instruction, best-execution, OMS, fill, or settlement claim.
 Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.

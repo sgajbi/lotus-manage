@@ -30,6 +30,7 @@ from src.core.construction.vocabulary import ConstructionMethod
 from src.core.dpm_source_context import (
     DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreClientRestrictionProfileResponse,
+    DpmCoreExternalCurrencyExposureResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreLiquidityReserveRequirementResponse,
     DpmCorePlannedWithdrawalScheduleResponse,
@@ -805,6 +806,32 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
             "source_batch_fingerprint": "sha256:external-hedge-readiness",
         }
     )
+    exposure = DpmCoreExternalCurrencyExposureResponse.model_validate(
+        {
+            "product_name": "ExternalCurrencyExposure",
+            "product_version": "v1",
+            "portfolio_id": "pf_fx_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "reporting_currency": "USD",
+            "exposure_currencies": ["EUR"],
+            "exposures": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+                "exposure_count": 0,
+                "missing_data_families": [
+                    "external_currency_exposure",
+                    "external_hedge_policy",
+                ],
+                "blocked_capabilities": ["fx_attribution", "treasury_instruction"],
+            },
+            "lineage": {"runtime_posture": "fail_closed"},
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-currency-exposure",
+        }
+    )
     source_context = DpmResolvedSourceContext.model_construct(
         input_mode="stateful",
         source_system="lotus-core",
@@ -816,6 +843,7 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
             liquidity_reserve_requirement=None,
             planned_withdrawal_schedule=None,
             external_hedge_execution_readiness=readiness,
+            external_currency_exposure=exposure,
             client_restriction_profile=None,
             sustainability_preference_profile=None,
         ),
@@ -834,8 +862,19 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
     assert currency_context.source_id == "sha256:external-hedge-readiness"
     assert currency_context.eligible_currencies == ["EUR"]
     assert "external_hedge_policy" in currency_context.missing_data_families
+    assert "external_currency_exposure" in currency_context.missing_data_families
     assert "oms_acknowledgement" in currency_context.blocked_capabilities
+    assert "fx_attribution" in currency_context.blocked_capabilities
+    assert currency_context.external_currency_exposure_source_product_name == (
+        "ExternalCurrencyExposure"
+    )
+    assert currency_context.external_currency_exposure_source_id == (
+        "sha256:external-currency-exposure"
+    )
+    assert currency_context.external_currency_exposure_count == 0
+    assert currency_context.external_currency_exposure_rows == []
     assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in currency_context.reason_codes
+    assert "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED" in currency_context.reason_codes
 
 
 def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:

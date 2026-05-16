@@ -53,7 +53,11 @@ from src.core.construction.vocabulary import (
     ConstructionTraceTerm,
     FIRST_WAVE_CONSTRUCTION_METHODS,
 )
-from src.core.dpm_source_context import DpmResolvedSourceContext
+from src.core.dpm_source_context import (
+    DpmCoreExternalCurrencyExposureResponse,
+    DpmCoreExternalHedgeExecutionReadinessResponse,
+    DpmResolvedSourceContext,
+)
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
 from src.core.models import Money, SecurityTradeIntent, ShelfEntry
 from src.core.rebalance.engine import run_simulation
@@ -569,6 +573,111 @@ def _authority_context_for_method(
     )
 
 
+def _external_treasury_currency_overlay_context(
+    *,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+) -> AuthoritativeCurrencyOverlayContext | None:
+    if hedge_readiness is None and currency_exposure is None:
+        return None
+
+    readiness_payload = (
+        hedge_readiness.model_dump(mode="json", exclude_none=True)
+        if hedge_readiness is not None
+        else None
+    )
+    exposure_payload = (
+        currency_exposure.model_dump(mode="json", exclude_none=True)
+        if currency_exposure is not None
+        else None
+    )
+    source_hash = hash_canonical_payload(
+        {
+            "external_hedge_execution_readiness": readiness_payload,
+            "external_currency_exposure": exposure_payload,
+        }
+    )
+    if hedge_readiness is not None:
+        supportability_state = hedge_readiness.supportability.state
+        supportability_reason = hedge_readiness.supportability.reason
+        exposure_currencies = hedge_readiness.exposure_currencies
+    else:
+        assert currency_exposure is not None
+        supportability_state = currency_exposure.supportability.state
+        supportability_reason = currency_exposure.supportability.reason
+        exposure_currencies = currency_exposure.exposure_currencies
+
+    exposure_source_hash = (
+        hash_canonical_payload(exposure_payload) if exposure_payload is not None else None
+    )
+    readiness_missing = (
+        hedge_readiness.supportability.missing_data_families if hedge_readiness is not None else []
+    )
+    exposure_missing = (
+        currency_exposure.supportability.missing_data_families
+        if currency_exposure is not None
+        else []
+    )
+    readiness_blocked = (
+        hedge_readiness.supportability.blocked_capabilities if hedge_readiness is not None else []
+    )
+    exposure_blocked = (
+        currency_exposure.supportability.blocked_capabilities
+        if currency_exposure is not None
+        else []
+    )
+    reason_codes: list[str] = [supportability_reason]
+    if hedge_readiness is not None:
+        reason_codes.append("EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED")
+    if currency_exposure is not None:
+        reason_codes.append("EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED")
+
+    return AuthoritativeCurrencyOverlayContext(
+        supportability_status=_source_status_to_method_status(supportability_state),
+        source_system="lotus-core",
+        policy_id="external-hedge-execution-readiness.v1",
+        hedge_ratio_min=Decimal("0.00"),
+        hedge_ratio_max=Decimal("0.00"),
+        eligible_currencies=exposure_currencies,
+        source_product_name=hedge_readiness.product_name if hedge_readiness is not None else None,
+        source_product_version=(
+            hedge_readiness.product_version if hedge_readiness is not None else None
+        ),
+        source_id=(
+            hedge_readiness.source_batch_fingerprint
+            or hedge_readiness.lineage.get("source_batch_fingerprint")
+            or source_hash
+            if hedge_readiness is not None
+            else source_hash
+        ),
+        content_hash=source_hash,
+        missing_data_families=sorted({*readiness_missing, *exposure_missing}),
+        blocked_capabilities=sorted({*readiness_blocked, *exposure_blocked}),
+        readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
+        external_currency_exposure_source_product_name=(
+            currency_exposure.product_name if currency_exposure is not None else None
+        ),
+        external_currency_exposure_source_product_version=(
+            currency_exposure.product_version if currency_exposure is not None else None
+        ),
+        external_currency_exposure_source_id=(
+            currency_exposure.source_batch_fingerprint
+            or currency_exposure.lineage.get("source_batch_fingerprint")
+            or exposure_source_hash
+            if currency_exposure is not None
+            else None
+        ),
+        external_currency_exposure_content_hash=exposure_source_hash,
+        external_currency_exposure_count=(
+            currency_exposure.supportability.exposure_count if currency_exposure is not None else 0
+        ),
+        external_currency_exposure_rows=(
+            currency_exposure.exposures if currency_exposure is not None else []
+        ),
+        reason_codes=reason_codes,
+    )
+
+
 def _authority_context_with_source_products(
     *,
     authority_context: ConstructionAuthorityContext,
@@ -759,32 +868,17 @@ def _authority_context_with_source_products(
             "external_hedge_execution_readiness",
             None,
         )
-        if hedge_readiness is not None:
-            payload = hedge_readiness.model_dump(mode="json", exclude_none=True)
-            source_hash = hash_canonical_payload(payload)
-            context_updates["currency_overlay_context"] = AuthoritativeCurrencyOverlayContext(
-                supportability_status=_source_status_to_method_status(
-                    hedge_readiness.supportability.state
-                ),
-                source_system="lotus-core",
-                policy_id="external-hedge-execution-readiness.v1",
-                hedge_ratio_min=Decimal("0.00"),
-                hedge_ratio_max=Decimal("0.00"),
-                eligible_currencies=hedge_readiness.exposure_currencies,
-                source_product_name=hedge_readiness.product_name,
-                source_product_version=hedge_readiness.product_version,
-                source_id=hedge_readiness.source_batch_fingerprint
-                or hedge_readiness.lineage.get("source_batch_fingerprint")
-                or source_hash,
-                content_hash=source_hash,
-                missing_data_families=hedge_readiness.supportability.missing_data_families,
-                blocked_capabilities=hedge_readiness.supportability.blocked_capabilities,
-                readiness_checks=hedge_readiness.readiness_checks,
-                reason_codes=[
-                    hedge_readiness.supportability.reason,
-                    "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED",
-                ],
-            )
+        currency_exposure = getattr(
+            source_context.context,
+            "external_currency_exposure",
+            None,
+        )
+        currency_context = _external_treasury_currency_overlay_context(
+            hedge_readiness=hedge_readiness,
+            currency_exposure=currency_exposure,
+        )
+        if currency_context is not None:
+            context_updates["currency_overlay_context"] = currency_context
     if authority_context.client_restriction_context is None:
         restriction_profile = source_context.context.client_restriction_profile
         if restriction_profile is not None:

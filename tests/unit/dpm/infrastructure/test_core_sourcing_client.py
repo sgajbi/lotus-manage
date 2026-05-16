@@ -711,6 +711,51 @@ def _external_hedge_execution_readiness_payload() -> dict:
     }
 
 
+def _external_currency_exposure_payload() -> dict:
+    return {
+        "product_name": "ExternalCurrencyExposure",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "reporting_currency": "SGD",
+        "exposure_currencies": ["USD"],
+        "exposures": [],
+        "supportability": {
+            "state": "UNAVAILABLE",
+            "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            "exposure_count": 0,
+            "missing_data_families": [
+                "external_currency_exposure",
+                "external_hedge_policy",
+                "external_fx_forward_curve",
+                "external_eligible_hedge_instrument",
+            ],
+            "blocked_capabilities": [
+                "fx_attribution",
+                "hedge_advice",
+                "treasury_instruction",
+                "execution_readiness",
+                "oms_acknowledgement",
+                "fills",
+                "settlement",
+                "autonomous_treasury_action",
+            ],
+        },
+        "lineage": {
+            "source_system": "external-bank-treasury",
+            "source_table": "not_ingested",
+            "contract_version": "rfc_039_external_currency_exposure_v1",
+            "integration_status": "not_ingested",
+            "runtime_posture": "fail_closed",
+        },
+        "data_quality_status": "MISSING",
+        "latest_evidence_timestamp": None,
+        "source_batch_fingerprint": "sha256:external-currency-exposure",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -748,6 +793,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_planned_withdrawal_schedule_payload())
     if path.endswith("/external-hedge-execution-readiness"):
         return httpx.Response(200, json=_external_hedge_execution_readiness_payload())
+    if path.endswith("/external-currency-exposure"):
+        return httpx.Response(200, json=_external_currency_exposure_payload())
     if path.endswith("/client-restriction-profile"):
         return httpx.Response(200, json=_client_restriction_profile_payload())
     if path.endswith("/sustainability-preference-profile"):
@@ -793,6 +840,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/liquidity-reserve-requirement",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/planned-withdrawal-schedule",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-hedge-execution-readiness",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-currency-exposure",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
     ]
@@ -809,8 +857,10 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"include_inactive_withdrawals":false' in seen[10][2]
     assert b'"reporting_currency":"SGD"' in seen[11][2]
     assert b'"exposure_currencies":["USD"]' in seen[11][2]
-    assert b'"include_inactive_restrictions":false' in seen[12][2]
-    assert b'"include_inactive_preferences":false' in seen[13][2]
+    assert b'"reporting_currency":"SGD"' in seen[12][2]
+    assert b'"exposure_currencies":["USD"]' in seen[12][2]
+    assert b'"include_inactive_restrictions":false' in seen[13][2]
+    assert b'"include_inactive_preferences":false' in seen[14][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
@@ -830,6 +880,12 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert (
         "oms_acknowledgement"
         in context.external_hedge_execution_readiness.supportability.blocked_capabilities
+    )
+    assert context.external_currency_exposure is not None
+    assert context.external_currency_exposure.supportability.state == "UNAVAILABLE"
+    assert context.external_currency_exposure.supportability.exposure_count == 0
+    assert (
+        "fx_attribution" in context.external_currency_exposure.supportability.blocked_capabilities
     )
     assert context.client_restriction_profile is not None
     assert context.client_restriction_profile.supportability.state == "READY"
@@ -1416,6 +1472,46 @@ def test_core_resolver_fetches_external_hedge_execution_readiness_from_dedicated
     assert response.product_name == "ExternalHedgeExecutionReadiness"
     assert response.supportability.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
     assert "hedge_advice" in response.supportability.blocked_capabilities
+
+
+def test_core_resolver_fetches_external_currency_exposure_from_dedicated_route():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_external_currency_exposure_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_external_currency_exposure(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        reporting_currency="SGD",
+        exposure_currencies=["USD"],
+        correlation_id="corr-currency-exposure-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolios/"
+        "PB_SG_GLOBAL_BAL_001/external-currency-exposure"
+    )
+    assert seen["correlation_id"] == "corr-currency-exposure-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"mandate_id":"MANDATE_PB_SG_GLOBAL_BAL_001"' in seen["payload"]
+    assert b'"reporting_currency":"SGD"' in seen["payload"]
+    assert b'"exposure_currencies":["USD"]' in seen["payload"]
+    assert response.product_name == "ExternalCurrencyExposure"
+    assert response.supportability.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
+    assert response.supportability.exposure_count == 0
+    assert response.exposures == []
+    assert "fx_attribution" in response.supportability.blocked_capabilities
 
 
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
