@@ -1978,6 +1978,100 @@ def test_bulk_review_campaign_definition_supersession_blocks_old_version() -> No
     )
 
 
+def test_bulk_review_campaign_definition_lifecycle_events_project_audit_posture() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        active_events = client.get(f"{route}/lifecycle-events")
+        retire_response = client.post(
+            f"{route}/retire",
+            json={
+                "retired_by": "ops",
+                "retirement_reason": "Campaign completed and closed to new waves.",
+                "correlation_id": "corr-campaign-definition-retire-001",
+            },
+        )
+        retired_events = client.get(f"{route}/lifecycle-events")
+        missing_events = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/"
+            "versions/2026.05/lifecycle-events"
+        )
+
+    assert put_response.status_code == 200
+    assert active_events.status_code == 200
+    active_payload = active_events.json()
+    assert active_payload["count"] == 1
+    assert active_payload["items"][0]["event_type"] == "CREATED"
+    assert active_payload["items"][0]["status_after"] == "ACTIVE"
+    assert active_payload["items"][0]["correlation_id"] == "corr-campaign-definition-001"
+    assert retire_response.status_code == 200
+    assert retired_events.status_code == 200
+    retired_payload = retired_events.json()
+    assert retired_payload["count"] == 2
+    assert [event["event_type"] for event in retired_payload["items"]] == ["CREATED", "RETIRED"]
+    assert retired_payload["items"][1]["actor_id"] == "ops"
+    assert retired_payload["items"][1]["reason"] == "Campaign completed and closed to new waves."
+    assert missing_events.status_code == 404
+    assert missing_events.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+
+
+def test_bulk_review_campaign_definition_lifecycle_events_include_supersession_lineage() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        original_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        replacement_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.06"
+        )
+        client.put(original_route, json=_bulk_review_campaign_definition_request())
+        replacement_put = client.put(
+            replacement_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Refreshed Apple and Tesla holdings review",
+                "correlation_id": "corr-campaign-definition-002",
+            },
+        )
+        supersede_response = client.post(
+            f"{original_route}/supersede",
+            json={
+                "superseded_by_campaign_version": "2026.06",
+                "superseded_by": "ops",
+                "supersession_reason": "Campaign candidate set refreshed.",
+                "correlation_id": "corr-campaign-definition-supersede-001",
+            },
+        )
+        events = client.get(f"{original_route}/lifecycle-events")
+
+    assert replacement_put.status_code == 200
+    assert supersede_response.status_code == 200
+    assert events.status_code == 200
+    payload = events.json()
+    assert payload["count"] == 2
+    assert [event["event_type"] for event in payload["items"]] == ["CREATED", "SUPERSEDED"]
+    supersession_event = payload["items"][1]
+    assert supersession_event["replacement_campaign_version"] == "2026.06"
+    assert supersession_event["replacement_content_hash"] == replacement_put.json()["content_hash"]
+    assert supersession_event["correlation_id"] == "corr-campaign-definition-supersede-001"
+
+
 def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> None:
     request = {
         **_bulk_review_campaign_definition_request(),

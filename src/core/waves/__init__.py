@@ -18,6 +18,11 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
 )
+from src.core.waves.campaign_definition_events import (
+    DpmBulkReviewCampaignDefinitionLifecycleEvent,
+    DpmBulkReviewCampaignDefinitionLifecycleEventPage,
+    build_bulk_review_campaign_definition_lifecycle_events,
+)
 from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -53,6 +58,8 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionCandidate",
     "DpmBulkReviewCampaignDefinitionConflictError",
     "DpmBulkReviewCampaignDefinitionGovernance",
+    "DpmBulkReviewCampaignDefinitionLifecycleEvent",
+    "DpmBulkReviewCampaignDefinitionLifecycleEventPage",
     "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
     "DpmWaveHandoffRef",
@@ -75,6 +82,7 @@ __all__ = [
     "WaveState",
     "WaveTriggerType",
     "apply_wave_transition",
+    "build_bulk_review_campaign_definition_lifecycle_events",
     "build_wave_report_input",
     "classify_wave_item_source_readiness",
     "validate_wave_transition",

@@ -135,8 +135,11 @@ retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
 and superseding older definitions with active replacement versions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`;
-retired and superseded definitions stay auditable in list/get/discovery results but fail closed for
-new preview/create requests. Broader campaign workflow surfaces beyond these bounded lifecycle controls,
+and projecting lifecycle events at
+`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`;
+retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
+fail closed for new preview/create requests. Broader campaign workflow surfaces beyond these
+bounded lifecycle controls,
 richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
 unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,

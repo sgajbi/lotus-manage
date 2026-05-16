@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T03:25:37.763696+00:00",
+  "generatedAt": "2026-05-16T03:41:07.977734+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -6407,6 +6407,20 @@
       ]
     },
     {
+      "semanticId": "lotus.occurred_at",
+      "canonicalTerm": "occurred_at",
+      "preferredName": "occurred_at",
+      "description": "Event timestamp in ISO-8601 format.",
+      "example": "sample_occurred_at",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.offset",
       "canonicalTerm": "offset",
       "preferredName": "offset",
@@ -8088,6 +8102,48 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.replacement_campaign_id",
+      "canonicalTerm": "replacement_campaign_id",
+      "preferredName": "replacement_campaign_id",
+      "description": "Replacement campaign id for supersession events.",
+      "example": "REPLACEMENT_CAMPAIGN_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.replacement_campaign_version",
+      "canonicalTerm": "replacement_campaign_version",
+      "preferredName": "replacement_campaign_version",
+      "description": "Replacement campaign version for supersession events.",
+      "example": "replacement_campaign_version_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.replacement_content_hash",
+      "canonicalTerm": "replacement_content_hash",
+      "preferredName": "replacement_content_hash",
+      "description": "Replacement definition content hash for supersession events.",
+      "example": "replacement_content_hash_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -10214,6 +10270,20 @@
       "observedTypes": [
         "string",
         "ConstructionMethodStatus"
+      ]
+    },
+    {
+      "semanticId": "lotus.status_after",
+      "canonicalTerm": "status_after",
+      "preferredName": "status_after",
+      "description": "Campaign-definition status after the lifecycle event.",
+      "example": "ACTIVE",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -13794,6 +13864,30 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "campaign_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical campaign id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_id",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+    },
+    {
+      "name": "campaign_version",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical campaign version used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_version",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_version"
     },
     {
       "name": "x_correlation_id",
@@ -63414,6 +63508,165 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.count",
+            "attributeRef": "#/attributeCatalog/lotus.count"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_rebalance_waves",
+      "method": "GET",
+      "path": "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events",
+      "operationId": "list_bulk_review_campaign_definition_lifecycle_events_api_v1_rebalance_waves_campaign_definitions__campaign_id__versions__campaign_version__lifecycle_events_get",
+      "summary": "List bulk-review campaign definition lifecycle events",
+      "request": {
+        "fields": [
+          {
+            "name": "campaign_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_version",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "items",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.items",
+            "attributeRef": "#/attributeCatalog/lotus.items"
+          },
+          {
+            "name": "items[].product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].event_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_type",
+            "attributeRef": "#/attributeCatalog/lotus.event_type"
+          },
+          {
+            "name": "items[].campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].occurred_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.occurred_at",
+            "attributeRef": "#/attributeCatalog/lotus.occurred_at"
+          },
+          {
+            "name": "items[].actor_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].reason",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.reason",
+            "attributeRef": "#/attributeCatalog/lotus.reason"
+          },
+          {
+            "name": "items[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "items[].status_after",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.status_after",
+            "attributeRef": "#/attributeCatalog/lotus.status_after"
+          },
+          {
+            "name": "items[].content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].replacement_campaign_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.replacement_campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.replacement_campaign_id"
+          },
+          {
+            "name": "items[].replacement_campaign_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.replacement_campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.replacement_campaign_version"
+          },
+          {
+            "name": "items[].replacement_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.replacement_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.replacement_content_hash"
           },
           {
             "name": "count",

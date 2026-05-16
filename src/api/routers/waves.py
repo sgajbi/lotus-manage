@@ -50,6 +50,10 @@ from src.core.waves.campaign_definition_lifecycle import (
     retire_bulk_review_campaign_definition as retire_campaign_definition,
     supersede_bulk_review_campaign_definition as supersede_campaign_definition,
 )
+from src.core.waves.campaign_definition_events import (
+    DpmBulkReviewCampaignDefinitionLifecycleEventPage,
+    build_bulk_review_campaign_definition_lifecycle_events,
+)
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
@@ -1961,6 +1965,41 @@ def get_bulk_review_campaign_definition(
             },
         )
     return definition
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events",
+    response_model=DpmBulkReviewCampaignDefinitionLifecycleEventPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign definition lifecycle events",
+    description=(
+        "Projects bounded lifecycle events for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. Events are derived from the immutable definition "
+        "record and show create, retire, and supersede posture without discovering the global "
+        "portfolio universe, recalculating campaign membership, running maker-checker workflow, "
+        "or claiming OMS execution."
+    ),
+)
+def list_bulk_review_campaign_definition_lifecycle_events(
+    campaign_id: str,
+    campaign_version: str,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
+    definition = repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if definition is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return build_bulk_review_campaign_definition_lifecycle_events(definition=definition)
 
 
 def _parse_optional_campaign_discovery_date(
