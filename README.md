@@ -93,13 +93,16 @@ external treasury source-product contract boundaries for currency exposure, hedg
 forward curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`)
 exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route.
 `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) now also exposes
-`ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route and `lotus-platform`
-PR #333 (`c46d581`) mirrors that active source-product posture. Manage now consumes the readiness
-and currency-exposure postures through stateful core sourcing and preserves them in
-currency-overlay construction diagnostics as blocked external treasury evidence, including empty
-exposure rows, exposure count, missing data families, blocked capabilities, lineage, and source
-hashes. Manage still makes no FX-attribution, hedge advice, forward-pricing,
-counterparty-selection, treasury-instruction, best-execution, OMS, fill, or settlement claim.
+`ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route and `lotus-core` PR
+#368 (`763db4c1`, wiki `50fff30`) exposes `ExternalHedgePolicy:v1` as an active fail-closed
+`UNAVAILABLE` route. `lotus-platform` PR #333 (`c46d581`) and PR #334 (`ae4f707`) mirror those
+active source-product postures. Manage now consumes the readiness, currency-exposure, and
+hedge-policy postures through stateful core sourcing and preserves them in currency-overlay
+construction diagnostics as blocked external treasury evidence, including empty exposure/policy
+rows, exposure and policy-rule counts, missing data families, blocked capabilities, lineage, and
+source hashes. Manage still makes no FX-attribution, hedge-policy approval, hedge advice,
+forward-pricing, counterparty-selection, treasury-instruction, best-execution, OMS, fill, or
+settlement claim.
 Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.

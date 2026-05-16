@@ -19,9 +19,9 @@ Current declarations:
    API-read dependency used by Advise-owned tactical house-view rebalance waves. It also declares
    the `lotus-core:PortfolioManagerBookMembership:v1` API-read dependency used by PM-book
    rebalance-wave discovery and optional PM operating quality score-run scope materialization, and
-   the stateful `lotus-core:ExternalCurrencyExposure:v1` and
+   the stateful `lotus-core:ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`, and
    `ExternalHedgeExecutionReadiness:v1` dependencies used to preserve fail-closed external treasury
-   exposure/readiness posture in currency-overlay diagnostics.
+   exposure, policy, and readiness posture in currency-overlay diagnostics.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
    implemented rebalance supportability, artifact, and workflow route families, and

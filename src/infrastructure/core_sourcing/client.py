@@ -9,6 +9,7 @@ from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreExternalCurrencyExposureResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
+    DpmCoreExternalHedgePolicyResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreCioModelChangeAffectedCohortResponse,
@@ -90,6 +91,9 @@ class DpmCoreResolverConfig:
     )
     external_currency_exposure_path_template: str = (
         "/integration/portfolios/{portfolio_id}/external-currency-exposure"
+    )
+    external_hedge_policy_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/external-hedge-policy"
     )
     transaction_cost_lookback_days: int = 400
     client_restriction_profile_path_template: str = (
@@ -234,6 +238,14 @@ class DpmCoreResolverConfig:
         path_template = self.external_currency_exposure_path_template.strip()
         if not path_template:
             raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_CURRENCY_EXPOSURE_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_external_hedge_policy_url(self, portfolio_id: str) -> str:
+        path_template = self.external_hedge_policy_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_HEDGE_POLICY_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
@@ -474,6 +486,15 @@ class DpmCoreResolverClient:
             exposure_currencies=exposure_currencies,
             correlation_id=correlation_id,
         )
+        external_hedge_policy = self._try_resolve_external_hedge_policy(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            reporting_currency=portfolio_snapshot.base_currency,
+            exposure_currencies=exposure_currencies,
+            correlation_id=correlation_id,
+        )
         client_restriction_profile = self._try_resolve_client_restriction_profile(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -533,6 +554,7 @@ class DpmCoreResolverClient:
             planned_withdrawal_schedule=planned_withdrawal_schedule,
             external_hedge_execution_readiness=external_hedge_execution_readiness,
             external_currency_exposure=external_currency_exposure,
+            external_hedge_policy=external_hedge_policy,
             client_restriction_profile=client_restriction_profile,
             sustainability_preference_profile=sustainability_preference_profile,
         )
@@ -972,6 +994,34 @@ class DpmCoreResolverClient:
         )
         return DpmCoreExternalCurrencyExposureResponse.model_validate(response)
 
+    def resolve_external_hedge_policy(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        reporting_currency: Optional[str] = None,
+        exposure_currencies: Optional[list[str]] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCoreExternalHedgePolicyResponse:
+        url = self._config.resolve_external_hedge_policy_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "reporting_currency": reporting_currency,
+            "exposure_currencies": exposure_currencies or [],
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_EXTERNAL_HEDGE_POLICY_UNAVAILABLE",
+            incomplete_code="DPM_CORE_EXTERNAL_HEDGE_POLICY_INCOMPLETE",
+        )
+        return DpmCoreExternalHedgePolicyResponse.model_validate(response)
+
     def resolve_client_restriction_profile(
         self,
         *,
@@ -1173,6 +1223,30 @@ class DpmCoreResolverClient:
     ) -> DpmCoreExternalCurrencyExposureResponse | None:
         try:
             return self.resolve_external_currency_exposure(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                reporting_currency=reporting_currency,
+                exposure_currencies=exposure_currencies,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_external_hedge_policy(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        reporting_currency: Optional[str],
+        exposure_currencies: list[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreExternalHedgePolicyResponse | None:
+        try:
+            return self.resolve_external_hedge_policy(
                 portfolio_id=portfolio_id,
                 as_of_date=as_of_date,
                 tenant_id=tenant_id,

@@ -1025,6 +1025,54 @@ class DpmCoreExternalCurrencyExposureResponse(BaseModel):
     source_batch_fingerprint: Optional[str] = Field(default=None)
 
 
+class DpmCoreExternalHedgePolicySupportability(BaseModel):
+    state: Literal["UNAVAILABLE"] = Field(
+        description="Core readiness state for external treasury hedge policy."
+    )
+    reason: Literal["EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"] = Field(
+        description="Bounded core fail-closed reason code."
+    )
+    policy_rule_count: int = Field(
+        ge=0,
+        description="External hedge policy rule count emitted by core.",
+    )
+    missing_data_families: list[str] = Field(
+        default_factory=list,
+        description="External treasury source families required before policy rules are usable.",
+    )
+    blocked_capabilities: list[str] = Field(
+        default_factory=list,
+        description="Hedge-policy, treasury, OMS, execution, and autonomous-action capabilities blocked.",
+    )
+
+
+class DpmCoreExternalHedgePolicyResponse(BaseModel):
+    product_name: Literal["ExternalHedgePolicy"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    mandate_id: Optional[str] = Field(default=None, description="Optional mandate identifier.")
+    as_of_date: date = Field(description="Business date used to resolve hedge-policy posture.")
+    reporting_currency: Optional[str] = Field(default=None)
+    exposure_currencies: list[str] = Field(default_factory=list)
+    policy_rules: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "External treasury hedge-policy rows, empty while source ingestion is unavailable. "
+            "Manage preserves these as evidence only and never as hedge-policy approval."
+        ),
+    )
+    supportability: DpmCoreExternalHedgePolicySupportability = Field(
+        description="Fail-closed external treasury hedge-policy supportability posture."
+    )
+    lineage: dict[str, str] = Field(default_factory=dict)
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(default=None)
+
+
 class DpmCoreClientRestrictionEntry(BaseModel):
     restriction_scope: str = Field(description="Source-owned restriction scope.")
     restriction_code: str = Field(description="Bounded restriction code.")
@@ -1187,6 +1235,15 @@ class DpmCoreExecutionContext(BaseModel):
             "Optional lotus-core ExternalCurrencyExposure:v1 posture. Manage preserves this as "
             "fail-closed external treasury exposure evidence and does not turn it into FX "
             "attribution, hedge advice, treasury instruction, execution readiness, OMS, fill, or "
+            "settlement truth."
+        ),
+    )
+    external_hedge_policy: Optional[DpmCoreExternalHedgePolicyResponse] = Field(
+        default=None,
+        description=(
+            "Optional lotus-core ExternalHedgePolicy:v1 posture. Manage preserves this as "
+            "fail-closed external treasury policy evidence and does not turn it into hedge-policy "
+            "approval, hedge advice, treasury instruction, counterparty selection, OMS, fill, or "
             "settlement truth."
         ),
     )

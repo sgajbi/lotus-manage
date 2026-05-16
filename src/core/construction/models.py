@@ -512,6 +512,34 @@ class AuthoritativeCurrencyOverlayContext(BaseModel):
             "ingestion is unavailable; these rows are never FX attribution or hedge advice."
         ),
     )
+    external_hedge_policy_source_product_name: str | None = Field(
+        default=None,
+        description="Source-owned external hedge policy product name, when available.",
+    )
+    external_hedge_policy_source_product_version: str | None = Field(
+        default=None,
+        description="Source-owned external hedge policy product version, when available.",
+    )
+    external_hedge_policy_source_id: str | None = Field(
+        default=None,
+        description="Source-owned deterministic external hedge policy evidence identifier.",
+    )
+    external_hedge_policy_content_hash: str | None = Field(
+        default=None,
+        description="Hash of the external hedge policy payload preserved for audit.",
+    )
+    external_hedge_policy_rule_count: int = Field(
+        default=0,
+        ge=0,
+        description="Source-owned external hedge policy rule count.",
+    )
+    external_hedge_policy_rules: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "Source-owned external hedge policy rows. Empty while bank-owned treasury ingestion "
+            "is unavailable; these rows are never hedge-policy approval or hedge advice."
+        ),
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Currency-overlay bounded reason codes.",

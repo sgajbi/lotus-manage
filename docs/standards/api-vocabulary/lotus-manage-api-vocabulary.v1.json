@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T11:05:29.625002+00:00",
+  "generatedAt": "2026-05-16T12:15:33.718156+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3507,6 +3507,94 @@
       ],
       "observedTypes": [
         "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_hedge_policy_content_hash",
+      "canonicalTerm": "external_hedge_policy_content_hash",
+      "preferredName": "external_hedge_policy_content_hash",
+      "description": "Hash of the external hedge policy payload preserved for audit.",
+      "example": "external_hedge_policy_content_hash_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_hedge_policy_rule_count",
+      "canonicalTerm": "external_hedge_policy_rule_count",
+      "preferredName": "external_hedge_policy_rule_count",
+      "description": "Source-owned external hedge policy rule count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_hedge_policy_rules",
+      "canonicalTerm": "external_hedge_policy_rules",
+      "preferredName": "external_hedge_policy_rules",
+      "description": "Source-owned external hedge policy rows. Empty while bank-owned treasury ingestion is unavailable; these rows are never hedge-policy approval or hedge advice.",
+      "example": [
+        {
+          "sample_key": "sample_value"
+        }
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_hedge_policy_source_id",
+      "canonicalTerm": "external_hedge_policy_source_id",
+      "preferredName": "external_hedge_policy_source_id",
+      "description": "Source-owned deterministic external hedge policy evidence identifier.",
+      "example": "EXTERNAL_HEDGE_POLICY_SOURCE_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_hedge_policy_source_product_name",
+      "canonicalTerm": "external_hedge_policy_source_product_name",
+      "preferredName": "external_hedge_policy_source_product_name",
+      "description": "Source-owned external hedge policy product name, when available.",
+      "example": "external_hedge_policy_source_product_name_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_hedge_policy_source_product_version",
+      "canonicalTerm": "external_hedge_policy_source_product_version",
+      "preferredName": "external_hedge_policy_source_product_version",
+      "description": "Source-owned external hedge policy product version, when available.",
+      "example": "external_hedge_policy_source_product_version_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -56194,6 +56282,54 @@
             "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_rows"
           },
           {
+            "name": "authority_context.currency_overlay_context.external_hedge_policy_source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_source_product_name"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_hedge_policy_source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_source_product_version"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_hedge_policy_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_source_id"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_hedge_policy_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_content_hash"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_hedge_policy_rule_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.external_hedge_policy_rule_count",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_rule_count"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_hedge_policy_rules",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.external_hedge_policy_rules",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_rules"
+          },
+          {
             "name": "authority_context.currency_overlay_context.reason_codes",
             "location": "body",
             "required": false,
@@ -71346,6 +71482,54 @@
             "type": "array",
             "semanticId": "lotus.external_currency_exposure_rows",
             "attributeRef": "#/attributeCatalog/lotus.external_currency_exposure_rows"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_hedge_policy_source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_hedge_policy_source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_hedge_policy_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_hedge_policy_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_hedge_policy_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_hedge_policy_rule_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.external_hedge_policy_rule_count",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_rule_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_hedge_policy_rules",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.external_hedge_policy_rules",
+            "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_rules"
           },
           {
             "name": "item_inputs[].authority_context.currency_overlay_context.reason_codes",
