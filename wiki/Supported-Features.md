@@ -343,6 +343,13 @@ legal versus ultimate-parent grouping, issuer-enrichment precedence, determinist
 driver selection, issuer coverage/supportability posture, and isolation from `risk_proxy.hhi_*` and
 `single_position_concentration.*` outputs rather than recomputing concentration locally.
 
+Current risk/performance issuer active-risk source-owner proof additionally includes
+`lotus-performance` PR #165 (`191a405`, wiki `46a9124`) for benchmark exposure context `ISSUER`
+grouping and `lotus-risk` PR #138 (`8ae3e4a`, wiki `616a10c`) for stateful
+`ACTIVE_RISK + ISSUER` historical attribution. Manage treats those outputs as source-owner
+evidence only and performs no local benchmark issuer exposure, covariance, tracking-error, or
+issuer-attribution calculation.
+
 Roadmap boundaries:
 
 1. Unsupported source products remain explicit gaps; do not fill them with local placeholders.

@@ -166,7 +166,13 @@ Current repository posture:
     internal handoff refs, and RFC-0042 outcome-review events into a deterministic, source-backed,
     hashable timeline without reconstructing mandate health, risk, performance, execution, tax,
     cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
-    includes the merged and wiki-published `lotus-core`
+    includes merged and wiki-published issuer active-risk source truth through `lotus-performance`
+    PR #165 (`191a405`, wiki `46a9124`) and `lotus-risk` PR #138 (`8ae3e4a`, wiki
+    `616a10c`): performance owns benchmark issuer exposure context from lotus-core index-catalog
+    issuer labels, and risk owns stateful `ACTIVE_RISK + ISSUER` historical attribution
+    consumption. Manage records the proof posture only and does not reconstruct benchmark issuer
+    exposure, covariance, tracking-error, or issuer attribution locally. It also includes the
+    merged and wiki-published `lotus-core`
     `HoldingsAsOf:v1` methodology slice from PR #348
     (`0a8785e0a4be7ea737b40eded07bd9c7f8002f25`, wiki `2a428eb`), which pins booked holdings,
     explicit as-of holdings, projected-inclusive holdings, cash-balance reads,
