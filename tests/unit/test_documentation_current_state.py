@@ -1368,7 +1368,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         work_to_be_done
     )
     assert "published Workbench wiki commit `694d9cd`" in work_to_be_done
-    assert "Global campaign discovery and broader campaign workflow surfaces" in (work_to_be_done)
+    assert "BulkReviewCampaignDiscovery:v1" in work_to_be_done
+    assert "`GET /api/v1/rebalance/waves/campaign-discovery`" in work_to_be_done
+    assert (
+        "broader campaign workflow surfaces and global\nportfolio-universe campaign discovery"
+        in (work_to_be_done)
+    )
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -1923,6 +1928,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0040-proof/20260507-230235/manifest.json" in supported_features
     assert "output/rfc0040-proof/20260507-230235/critical-review.json" in supported_features
     assert "Explicit portfolio-list waves" in supported_features
+    assert "`GET /api/v1/rebalance/waves/campaign-discovery`" in supported_features
+    assert "`BulkReviewCampaignDiscovery:v1` summaries" in supported_features
+    assert "without discovering the global portfolio universe or recalculating membership" in (
+        supported_features
+    )
     assert "`aggregate_metrics.source_analytics`" in supported_features
     assert "manage does not recalculate risk or performance" in supported_features
     assert "governed rebalance-wave report materialization in report/render/archive" in (

@@ -529,9 +529,14 @@ Current repository posture:
     is merged through `lotus-gateway` PR #212 for list/get/upsert of Manage-owned campaign
     definitions without Gateway-local cohort or membership calculation. Workbench PR #184 renders
     the first-wave active campaign-definition list through Gateway/BFF without browser-side cohort
-    or membership calculation. Persisted global campaign discovery, broader campaign workflow
-    surfaces, wave risk/performance analytics posture, and external OMS execution remain unpromoted
-    until owning implementations are live-proven.
+    or membership calculation. Persisted campaign discovery is now implemented at
+    `GET /api/v1/rebalance/waves/campaign-discovery` as a Manage-owned
+    `BulkReviewCampaignDiscovery:v1` read model over immutable `BulkReviewCampaignDefinition:v1`
+    records; it exposes campaign identity, governance posture, expiry posture, source-ref count,
+    source-backed candidate counts, and preview references without discovering the global portfolio
+    universe, recalculating campaign membership, or owning source facts. Broader campaign workflow
+    surfaces, wave risk/performance analytics posture, and external OMS execution remain
+    unpromoted until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
