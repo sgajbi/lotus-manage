@@ -10,6 +10,7 @@ from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality.repository import (
+    DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityPolicyRepository,
     DpmPmQualityScoreRunRepository,
 )
@@ -27,8 +28,10 @@ from src.infrastructure.outcomes import (
     PostgresDpmOutcomeReviewRepository,
 )
 from src.infrastructure.pm_quality import (
+    InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    PostgresDpmPmQualityFairnessAnalysisRepository,
     PostgresDpmPmQualityPolicyRepository,
     PostgresDpmPmQualityScoreRunRepository,
 )
@@ -47,6 +50,7 @@ _PROOF_PACK_REPOSITORY = InMemoryDpmProofPackRepository()
 _OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
 _PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
+_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY = InMemoryDpmPmQualityFairnessAnalysisRepository()
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
@@ -55,6 +59,9 @@ _POSTGRES_PROOF_PACK_REPOSITORY: PostgresDpmProofPackRepository | None = None
 _POSTGRES_OUTCOME_REVIEW_REPOSITORY: PostgresDpmOutcomeReviewRepository | None = None
 _POSTGRES_PM_QUALITY_POLICY_REPOSITORY: PostgresDpmPmQualityPolicyRepository | None = None
 _POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY: PostgresDpmPmQualityScoreRunRepository | None = None
+_POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY: (
+    PostgresDpmPmQualityFairnessAnalysisRepository | None
+) = None
 _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
 _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY: (
     PostgresDpmBulkReviewCampaignDefinitionRepository | None
@@ -143,6 +150,20 @@ def get_pm_quality_policy_repository() -> DpmPmQualityPolicyRepository:
             _POSTGRES_PM_QUALITY_POLICY_REPOSITORY = PostgresDpmPmQualityPolicyRepository(dsn=dsn)
         return _POSTGRES_PM_QUALITY_POLICY_REPOSITORY
     return _PM_QUALITY_POLICY_REPOSITORY
+
+
+def get_pm_quality_fairness_analysis_repository() -> DpmPmQualityFairnessAnalysisRepository:
+    """Return the PM operating quality fairness-analysis repository for local and test runtimes."""
+
+    dsn = _repository_dsn("DPM_PM_QUALITY_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY
+        if _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY is None:
+            _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY = (
+                PostgresDpmPmQualityFairnessAnalysisRepository(dsn=dsn)
+            )
+        return _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY
+    return _PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY
 
 
 def get_wave_repository() -> DpmWaveRepository:

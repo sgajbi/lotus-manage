@@ -2006,6 +2006,9 @@ Route:
 - `GET /api/v1/rebalance/pm-operating-quality/score-runs`
 - `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`
 - `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`
+- `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`
+- `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses`
+- `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`
 
 Purpose:
 
@@ -2015,7 +2018,7 @@ source-backed evidence signals, and optional persisted outcome reviews. The rout
 bounded first implementation of RFC42-WTBD-008. Optional `pm_book_scope` materializes source-owned
 lotus-core `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`.
 Enabled policies require bank approval and fairness-review evidence; score-run preview/create emits
-`governance_evidence`. The fairness-analysis preview route emits bounded
+`governance_evidence`. The fairness-analysis route family emits and persists bounded
 `PmOperatingQualityFairnessAnalysis:v1` from persisted score-run ids and source-defined operating
 segments for governance review.
 
@@ -2038,9 +2041,11 @@ Functional coverage:
   readiness,
 - every score run returns decomposed indicator results, reason codes, source refs, generated
   content hash, correlation id, and forbidden-use posture,
-- fairness-analysis preview validates common policy/as-of scope, minimum scorable segment counts,
-  source-defined segment refs, governed average-score spread posture, correlation id, generated
-  content hash, and forbidden-use posture,
+- fairness-analysis preview/create validates common policy/as-of scope, minimum scorable segment
+  counts, source-defined segment refs, governed average-score spread posture, correlation id,
+  generated content hash, and forbidden-use posture,
+- persisted fairness analyses are immutable, content-addressed, listable by policy/as-of/state,
+  and retrievable without recomputing score runs or segment posture,
 - portfolio memory advertises PM scoring as a separate product and projects only bounded
   source-backed score-run lineage events without numeric score metadata.
 
@@ -2050,8 +2055,9 @@ Non-functional posture:
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
 - Peer-group and lookback-window materialization records bank-defined comparison context only; it
   does not discover peers locally, rank PMs, or own source methodology.
-- Fairness-analysis preview does not infer protected classes, discover segments locally, rank PMs,
-  or create HR, compensation, conduct, approval, client-contact, execution, or OMS decisions.
+- Fairness-analysis preview/create/read/list does not infer protected classes, discover segments
+  locally, rank PMs, or create HR, compensation, conduct, approval, client-contact, execution, or
+  OMS decisions.
 - Downstream UI and Gateway/Workbench fairness-analysis product realization remain future
   expansion.
 

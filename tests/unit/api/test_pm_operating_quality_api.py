@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_outcome_review_repository
+from src.api.dependencies import get_pm_quality_fairness_analysis_repository
 from src.api.dependencies import get_pm_quality_policy_repository
 from src.api.dependencies import get_pm_quality_score_run_repository
 from src.api.main import app
@@ -12,6 +13,7 @@ from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipRes
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.pm_quality import (
+    InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityScoreRunRepository,
 )
@@ -714,6 +716,91 @@ def test_pm_operating_quality_api_previews_source_segment_fairness_analysis() ->
     )
 
 
+def test_pm_operating_quality_api_creates_gets_and_lists_fairness_analyses() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
+    balanced_1 = _source_only_score_run(pm_id="pm_bal_001", score=Decimal("92"))
+    balanced_2 = _source_only_score_run(
+        pm_id="pm_bal_002", score=Decimal("88"), correlation_id="corr-balanced-2"
+    )
+    income_1 = _source_only_score_run(
+        pm_id="pm_inc_001", score=Decimal("60"), correlation_id="corr-income-1"
+    )
+    income_2 = _source_only_score_run(
+        pm_id="pm_inc_002", score=Decimal("58"), correlation_id="corr-income-2"
+    )
+    for score_run in [balanced_1, balanced_2, income_1, income_2]:
+        score_run_repository.save_score_run(score_run=score_run)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
+    app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
+        fairness_repository
+    )
+    request = {
+        "policy_id": "pmq_sg_dpm",
+        "policy_version": "2026.05",
+        "as_of_date": "2026-05-12",
+        "minimum_segment_score_run_count": 2,
+        "maximum_average_score_spread": "15",
+        "actor_id": "ops",
+        "segments": [
+            {
+                "segment_id": "mandate_balanced",
+                "segment_type": "MANDATE_TYPE",
+                "display_name": "Balanced DPM Mandates",
+                "score_run_ids": [balanced_1.score_run_id, balanced_2.score_run_id],
+                "source_refs": [
+                    {
+                        "source_system": "lotus-core",
+                        "source_type": "MandateTypeSegment",
+                        "source_id": "mandate_balanced",
+                    }
+                ],
+            },
+            {
+                "segment_id": "mandate_income",
+                "segment_type": "MANDATE_TYPE",
+                "display_name": "Income DPM Mandates",
+                "score_run_ids": [income_1.score_run_id, income_2.score_run_id],
+                "source_refs": [
+                    {
+                        "source_system": "lotus-core",
+                        "source_type": "MandateTypeSegment",
+                        "source_id": "mandate_income",
+                    }
+                ],
+            },
+        ],
+    }
+    try:
+        with TestClient(app) as client:
+            created = client.post(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+                json=request,
+                headers={"X-Correlation-Id": "corr-pmq-fairness-create"},
+            )
+            fairness_analysis_id = created.json()["fairness_analysis"]["fairness_analysis_id"]
+            fetched = client.get(
+                f"/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}"
+            )
+            listed = client.get(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+                params={"policy_id": "pmq_sg_dpm", "state": "PENDING_REVIEW"},
+            )
+            missing = client.get("/api/v1/rebalance/pm-operating-quality/fairness-analyses/missing")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert created.status_code == 201
+    assert created.json()["fairness_analysis"]["correlation_id"] == "corr-pmq-fairness-create"
+    assert fetched.status_code == 200
+    assert fetched.json()["fairness_analysis"]["fairness_analysis_id"] == fairness_analysis_id
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+    assert listed.json()["fairness_analyses"][0]["fairness_analysis_id"] == fairness_analysis_id
+    assert missing.status_code == 404
+    assert missing.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:missing"
+
+
 def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_runs() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     ready_run = _source_only_score_run(pm_id="pm_ready", score=Decimal("90"))
@@ -873,3 +960,20 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     fairness_description = schema["paths"][fairness_path]["post"]["description"]
     assert all(marker in fairness_description for marker in ["What:", "When:", "How:"])
     assert "does not infer protected classes" in fairness_description
+
+    fairness_create_path = "/api/v1/rebalance/pm-operating-quality/fairness-analyses"
+    fairness_get_path = (
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}"
+    )
+    assert fairness_create_path in schema["paths"]
+    assert fairness_get_path in schema["paths"]
+    assert "201" in schema["paths"][fairness_create_path]["post"]["responses"]
+    assert "200" in schema["paths"][fairness_create_path]["get"]["responses"]
+    assert (
+        "stored fairness-analysis evidence"
+        in schema["paths"][fairness_create_path]["get"]["description"]
+    )
+    assert "200" in schema["paths"][fairness_get_path]["get"]["responses"]
+    assert (
+        "does not recompute score runs" in schema["paths"][fairness_get_path]["get"]["description"]
+    )

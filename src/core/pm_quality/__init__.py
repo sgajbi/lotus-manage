@@ -20,6 +20,8 @@ from src.core.pm_quality.models import (
     PmQualityState,
 )
 from src.core.pm_quality.repository import (
+    DpmPmQualityFairnessAnalysisConflictError,
+    DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
     DpmPmQualityScoreRunConflictError,
@@ -37,6 +39,8 @@ __all__ = [
     "DpmPmOperatingQualityScoreRun",
     "DpmPmQualityBookScopeEvidence",
     "DpmPmQualityFairnessAnalysis",
+    "DpmPmQualityFairnessAnalysisConflictError",
+    "DpmPmQualityFairnessAnalysisRepository",
     "DpmPmQualityFairnessSegmentInput",
     "DpmPmQualityFairnessSegmentResult",
     "DpmPmQualityEvidenceItem",

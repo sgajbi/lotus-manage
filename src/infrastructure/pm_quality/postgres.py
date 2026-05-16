@@ -6,8 +6,13 @@ from contextlib import closing
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
-from src.core.pm_quality.models import DpmPmOperatingQualityPolicy, DpmPmOperatingQualityScoreRun
+from src.core.pm_quality.models import (
+    DpmPmOperatingQualityPolicy,
+    DpmPmOperatingQualityScoreRun,
+    DpmPmQualityFairnessAnalysis,
+)
 from src.core.pm_quality.repository import (
+    DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityScoreRunConflictError,
 )
@@ -225,6 +230,120 @@ class PostgresDpmPmQualityPolicyRepository:
                 tuple(args),
             ).fetchall()
         return [load_model_json(DpmPmOperatingQualityPolicy, _payload(row)) for row in rows]
+
+    def _connect(self) -> Any:
+        psycopg, dict_row = _import_psycopg()
+        return psycopg.connect(self._dsn, row_factory=dict_row)
+
+    def _init_db(self) -> None:
+        with closing(self._connect()) as connection:
+            apply_postgres_migrations(connection=connection, namespace="dpm")
+
+
+class PostgresDpmPmQualityFairnessAnalysisRepository:
+    def __init__(self, *, dsn: str) -> None:
+        if not dsn:
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED")
+        if not has_psycopg():
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING")
+        self._dsn = dsn
+        self._init_db()
+
+    def save_fairness_analysis(self, *, analysis: DpmPmQualityFairnessAnalysis) -> None:
+        with closing(self._connect()) as connection:
+            connection.execute(
+                """
+                INSERT INTO dpm_pm_quality_fairness_analyses (
+                    fairness_analysis_id, policy_id, policy_version, as_of_date,
+                    state, observed_average_score_spread, content_hash, generated_at,
+                    generated_by, correlation_id, payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (fairness_analysis_id) DO NOTHING
+                """,
+                (
+                    analysis.fairness_analysis_id,
+                    analysis.policy_id,
+                    analysis.policy_version,
+                    analysis.as_of_date,
+                    analysis.state,
+                    str(analysis.observed_average_score_spread)
+                    if analysis.observed_average_score_spread is not None
+                    else None,
+                    analysis.content_hash,
+                    analysis.generated_at.isoformat(),
+                    analysis.generated_by,
+                    analysis.correlation_id,
+                    dump_model_json(analysis),
+                ),
+            )
+            persisted = connection.execute(
+                """
+                SELECT content_hash
+                FROM dpm_pm_quality_fairness_analyses
+                WHERE fairness_analysis_id = %s
+                """,
+                (analysis.fairness_analysis_id,),
+            ).fetchone()
+            if persisted is None or persisted["content_hash"] != analysis.content_hash:
+                connection.rollback()
+                raise DpmPmQualityFairnessAnalysisConflictError(
+                    "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
+                )
+            connection.commit()
+
+    def get_fairness_analysis(
+        self,
+        *,
+        fairness_analysis_id: str,
+    ) -> DpmPmQualityFairnessAnalysis | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM dpm_pm_quality_fairness_analyses
+                WHERE fairness_analysis_id = %s
+                """,
+                (fairness_analysis_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return load_model_json(DpmPmQualityFairnessAnalysis, _payload(row))
+
+    def list_fairness_analyses(
+        self,
+        *,
+        policy_id: str | None = None,
+        policy_version: str | None = None,
+        as_of_date: str | None = None,
+        state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityFairnessAnalysis]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        for column, value in (
+            ("policy_id", policy_id),
+            ("policy_version", policy_version),
+            ("as_of_date", as_of_date),
+            ("state", state),
+        ):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                args.append(value)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT payload_json
+                FROM dpm_pm_quality_fairness_analyses
+                {where}
+                ORDER BY generated_at DESC, fairness_analysis_id DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(args),
+            ).fetchall()
+        return [load_model_json(DpmPmQualityFairnessAnalysis, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()
