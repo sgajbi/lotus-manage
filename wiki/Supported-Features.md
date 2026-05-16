@@ -329,6 +329,13 @@ weight-averaged local/FX returns before Karnosky-Singer effects are applied. Man
 Workbench, reporting, and AI consumers must preserve this source-owned total rather than
 reconstructing FX attribution from visible rows.
 
+Current risk historical-attribution supportability proof additionally includes `lotus-risk` PR
+#139 / wiki `421ae79`, which makes `HistoricalRiskAttributionReport:v1` degrade response-level
+calculation supportability when any attribution set emits source-owned quality flags. Manage,
+Gateway, Workbench, reporting, and AI consumers must preserve missing grouping data, empty
+active-risk alignment, and unsupported attribution combinations as degraded source truth rather
+than promoting them as ready analytics or recalculating risk attribution locally.
+
 Current risk concentration source-owner proof additionally includes `ConcentrationRiskReport:v1`
 top-position weight methodology truth through `lotus-risk` PR #134 / wiki `dd25844`. Downstream
 services must preserve the decimal `0..1` top-position weight, proposed-state fallback,

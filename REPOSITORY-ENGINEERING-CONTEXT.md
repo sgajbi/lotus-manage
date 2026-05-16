@@ -368,6 +368,12 @@ Current repository posture:
     dimension recompute the date/currency panel from summed weights and weight-averaged local/FX
     returns before applying Karnosky-Singer formulas. Manage consumes that as source-owner
     methodology truth only and still does not reconstruct FX attribution from visible rows.
+    The related `lotus-risk` PR #139 (`40ac7a5`, wiki `421ae79`) tightens
+    `HistoricalRiskAttributionReport:v1` supportability so any attribution set with source-owned
+    quality flags degrades response-level `metadata.calculation_supportability`. Manage preserves
+    that source-owned degraded posture for outcome-review evidence and does not promote missing
+    grouping data, empty active-risk alignment, or unsupported attribution combinations as ready
+    risk methodology.
     It also includes the merged and wiki-published `lotus-core`
     `PortfolioCashflowProjection:v1` methodology slice from PR #344
     (`3a29c3ea92fce92d39fbc91f325bd04cb1157d20`, wiki `231bd75`), which pins booked-only
