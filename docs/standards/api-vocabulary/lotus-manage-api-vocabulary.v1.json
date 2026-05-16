@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T03:41:07.977734+00:00",
+  "generatedAt": "2026-05-16T09:41:59.399575+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -992,6 +992,22 @@
       ],
       "observedTypes": [
         "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.blocked_capabilities",
+      "canonicalTerm": "blocked_capabilities",
+      "preferredName": "blocked_capabilities",
+      "description": "Capabilities explicitly blocked by external treasury readiness posture.",
+      "example": [
+        "sample_blocked_capabilities_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -7686,6 +7702,24 @@
       "observedTypes": [
         "object",
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.readiness_checks",
+      "canonicalTerm": "readiness_checks",
+      "preferredName": "readiness_checks",
+      "description": "Source-owned external treasury readiness checks, when available.",
+      "example": [
+        {
+          "sample_key": "sample_value"
+        }
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -55968,6 +56002,62 @@
             "attributeRef": "#/attributeCatalog/lotus.eligible_currencies"
           },
           {
+            "name": "authority_context.currency_overlay_context.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.missing_data_families",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.missing_data_families",
+            "attributeRef": "#/attributeCatalog/lotus.missing_data_families"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.blocked_capabilities",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.readiness_checks",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.readiness_checks",
+            "attributeRef": "#/attributeCatalog/lotus.readiness_checks"
+          },
+          {
             "name": "authority_context.currency_overlay_context.reason_codes",
             "location": "body",
             "required": false,
@@ -71016,6 +71106,62 @@
             "type": "array",
             "semanticId": "lotus.eligible_currencies",
             "attributeRef": "#/attributeCatalog/lotus.eligible_currencies"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.missing_data_families",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.missing_data_families",
+            "attributeRef": "#/attributeCatalog/lotus.missing_data_families"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.blocked_capabilities",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.readiness_checks",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.readiness_checks",
+            "attributeRef": "#/attributeCatalog/lotus.readiness_checks"
           },
           {
             "name": "item_inputs[].authority_context.currency_overlay_context.reason_codes",

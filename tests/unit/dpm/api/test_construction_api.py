@@ -233,6 +233,7 @@ def _core_execution_context(
     supportability_state: str = "DEGRADED",
     include_transaction_cost_curve: bool = False,
     include_cashflow_projection: bool = False,
+    include_external_hedge_readiness: bool = False,
     cashflow_data_quality_status: str = "COMPLETE",
 ) -> DpmCoreExecutionContext:
     payload = {
@@ -340,6 +341,46 @@ def _core_execution_context(
             "latest_evidence_timestamp": "2026-05-03T09:00:00Z",
             "source_batch_fingerprint": "sha256:cashflow-projection",
         }
+    if include_external_hedge_readiness:
+        payload["external_hedge_execution_readiness"] = {
+            "product_name": "ExternalHedgeExecutionReadiness",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "reporting_currency": "SGD",
+            "exposure_currencies": ["USD"],
+            "readiness_checks": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+                "missing_data_families": [
+                    "external_currency_exposure",
+                    "external_hedge_policy",
+                    "external_fx_forward_curve",
+                    "external_eligible_hedge_instrument",
+                    "external_hedge_execution_readiness",
+                ],
+                "blocked_capabilities": [
+                    "hedge_advice",
+                    "forward_pricing",
+                    "counterparty_selection",
+                    "best_execution",
+                    "oms_acknowledgement",
+                    "fills",
+                    "settlement",
+                    "autonomous_treasury_action",
+                ],
+            },
+            "lineage": {
+                "source_system": "external-bank-treasury",
+                "integration_status": "not_ingested",
+                "runtime_posture": "fail_closed",
+            },
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-hedge-readiness",
+        }
     return DpmCoreExecutionContext.model_validate(payload)
 
 
@@ -363,6 +404,14 @@ class _DegradedCashflowCoreResolver:
             supportability_state="READY",
             include_cashflow_projection=True,
             cashflow_data_quality_status="DEGRADED",
+        )
+
+
+class _ExternalHedgeReadinessCoreResolver:
+    def resolve_execution_context(self, *, stateful_input, correlation_id):
+        return _core_execution_context(
+            supportability_state="READY",
+            include_external_hedge_readiness=True,
         )
 
 
@@ -992,6 +1041,47 @@ def test_stateful_construction_attaches_core_cashflow_projection(monkeypatch) ->
         "currency": "SGD",
     }
     assert "CASHFLOW_PROJECTION_CONTEXT_PRESENT" in reason_codes
+
+
+def test_stateful_currency_overlay_preserves_external_hedge_readiness_fail_closed(
+    monkeypatch,
+) -> None:
+    repository = InMemoryConstructionRepository()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: _ExternalHedgeReadinessCoreResolver(),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "methods": ["CURRENCY_OVERLAY"],
+            },
+            headers={"Idempotency-Key": "idem-construction-stateful-hedge-readiness"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    body = response.json()
+    alternative = body["alternatives"][0]
+    currency_context = alternative["diagnostics"]["authority_context"]["currency_overlay_context"]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "CURRENCY_OVERLAY"
+    assert alternative["method_status"] == "BLOCKED"
+    assert currency_context["source_system"] == "lotus-core"
+    assert currency_context["source_product_name"] == "ExternalHedgeExecutionReadiness"
+    assert currency_context["supportability_status"] == "BLOCKED"
+    assert "external_hedge_policy" in currency_context["missing_data_families"]
+    assert "oms_acknowledgement" in currency_context["blocked_capabilities"]
+    assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in reason_codes
+    assert "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED" in reason_codes
+    assert "CURRENCY_OVERLAY_CONTEXT_BLOCKED" in reason_codes
 
 
 def test_stateful_construction_marks_degraded_core_cashflow_projection(monkeypatch) -> None:

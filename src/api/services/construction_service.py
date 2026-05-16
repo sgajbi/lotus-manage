@@ -494,15 +494,15 @@ def _method_specific_reason_codes(
         )
     if method == ConstructionMethod.CURRENCY_OVERLAY:
         missing_pairs = _missing_currency_overlay_pairs(request=request)
+        overlay_status = _currency_overlay_status(
+            request=request,
+            context=authority_context.currency_overlay_context,
+        )
         if result.diagnostics.missing_fx_pairs or missing_pairs:
             reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_MISSING")
-        elif (
-            _currency_overlay_status(
-                request=request,
-                context=authority_context.currency_overlay_context,
-            )
-            == ConstructionMethodStatus.DEGRADED
-        ):
+        elif overlay_status == ConstructionMethodStatus.BLOCKED:
+            reason_codes.append("CURRENCY_OVERLAY_CONTEXT_BLOCKED")
+        elif overlay_status == ConstructionMethodStatus.DEGRADED:
             reason_codes.append("CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE")
         else:
             reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_READY")
@@ -752,6 +752,38 @@ def _authority_context_with_source_products(
                 liquidity_reserve_requirement=reserve_context,
                 planned_withdrawal_schedule=withdrawal_context,
                 reason_codes=source_reason_codes,
+            )
+    if authority_context.currency_overlay_context is None:
+        hedge_readiness = getattr(
+            source_context.context,
+            "external_hedge_execution_readiness",
+            None,
+        )
+        if hedge_readiness is not None:
+            payload = hedge_readiness.model_dump(mode="json", exclude_none=True)
+            source_hash = hash_canonical_payload(payload)
+            context_updates["currency_overlay_context"] = AuthoritativeCurrencyOverlayContext(
+                supportability_status=_source_status_to_method_status(
+                    hedge_readiness.supportability.state
+                ),
+                source_system="lotus-core",
+                policy_id="external-hedge-execution-readiness.v1",
+                hedge_ratio_min=Decimal("0.00"),
+                hedge_ratio_max=Decimal("0.00"),
+                eligible_currencies=hedge_readiness.exposure_currencies,
+                source_product_name=hedge_readiness.product_name,
+                source_product_version=hedge_readiness.product_version,
+                source_id=hedge_readiness.source_batch_fingerprint
+                or hedge_readiness.lineage.get("source_batch_fingerprint")
+                or source_hash,
+                content_hash=source_hash,
+                missing_data_families=hedge_readiness.supportability.missing_data_families,
+                blocked_capabilities=hedge_readiness.supportability.blocked_capabilities,
+                readiness_checks=hedge_readiness.readiness_checks,
+                reason_codes=[
+                    hedge_readiness.supportability.reason,
+                    "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED",
+                ],
             )
     if authority_context.client_restriction_context is None:
         restriction_profile = source_context.context.client_restriction_profile

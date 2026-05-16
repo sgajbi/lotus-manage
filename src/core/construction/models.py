@@ -456,6 +456,34 @@ class AuthoritativeCurrencyOverlayContext(BaseModel):
         default_factory=list,
         description="Currencies eligible for overlay treatment.",
     )
+    source_product_name: str | None = Field(
+        default=None,
+        description="Source-owned product name when external treasury readiness evidence exists.",
+    )
+    source_product_version: str | None = Field(
+        default=None,
+        description="Source-owned product version when external treasury readiness evidence exists.",
+    )
+    source_id: str | None = Field(
+        default=None,
+        description="Source-owned deterministic readiness evidence identifier.",
+    )
+    content_hash: str | None = Field(
+        default=None,
+        description="Hash of the external treasury readiness payload preserved for audit.",
+    )
+    missing_data_families: list[str] = Field(
+        default_factory=list,
+        description="External treasury source families missing from the readiness posture.",
+    )
+    blocked_capabilities: list[str] = Field(
+        default_factory=list,
+        description="Capabilities explicitly blocked by external treasury readiness posture.",
+    )
+    readiness_checks: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="Source-owned external treasury readiness checks, when available.",
+    )
     reason_codes: list[str] = Field(
         default_factory=list,
         description="Currency-overlay bounded reason codes.",
