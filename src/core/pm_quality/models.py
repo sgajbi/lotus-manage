@@ -93,6 +93,64 @@ class DpmPmQualityGovernanceApproval(BaseModel):
     )
 
 
+class DpmPmQualityPeerGroupPolicy(BaseModel):
+    """Bank-defined PM peer-group scope for governed score-run comparison."""
+
+    peer_group_id: str = Field(description="Bank-owned peer-group identifier.")
+    display_name: str = Field(description="Operator-facing peer-group label.")
+    segment_type: PmQualityFairnessSegmentType = Field(
+        description="Source-defined dimension used for the peer group."
+    )
+    minimum_peer_count: int = Field(
+        default=2,
+        ge=1,
+        le=100,
+        description="Minimum source-defined peers required before peer context is comparable.",
+    )
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Source refs proving the peer-group definition.",
+    )
+
+    @model_validator(mode="after")
+    def validate_peer_group(self) -> "DpmPmQualityPeerGroupPolicy":
+        if not self.peer_group_id.strip():
+            raise ValueError("PM_QUALITY_PEER_GROUP_ID_REQUIRED")
+        if not self.display_name.strip():
+            raise ValueError("PM_QUALITY_PEER_GROUP_DISPLAY_NAME_REQUIRED")
+        if not self.source_refs:
+            raise ValueError("PM_QUALITY_PEER_GROUP_SOURCE_REFS_REQUIRED")
+        return self
+
+
+class DpmPmQualityLookbackWindowPolicy(BaseModel):
+    """Bank-defined evidence lookback window for PM operating quality."""
+
+    window_id: str = Field(description="Bank-owned lookback-window identifier.")
+    start_date: str = Field(description="Inclusive ISO business date for evidence.")
+    end_date: str = Field(description="Inclusive ISO business date for evidence.")
+    timezone: str = Field(default="UTC", description="Business timezone for the window.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Source refs proving approval or source ownership for the window.",
+    )
+
+    @model_validator(mode="after")
+    def validate_lookback_window(self) -> "DpmPmQualityLookbackWindowPolicy":
+        if not self.window_id.strip():
+            raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_ID_REQUIRED")
+        try:
+            start = datetime.fromisoformat(self.start_date).date()
+            end = datetime.fromisoformat(self.end_date).date()
+        except ValueError as exc:
+            raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID") from exc
+        if start > end:
+            raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_RANGE_INVALID")
+        if not self.source_refs:
+            raise ValueError("PM_QUALITY_LOOKBACK_WINDOW_SOURCE_REFS_REQUIRED")
+        return self
+
+
 class DpmPmOperatingQualityPolicy(BaseModel):
     """Bank-owned PM operating quality policy supplied to a score run."""
 
@@ -142,6 +200,20 @@ class DpmPmOperatingQualityPolicy(BaseModel):
         description=(
             "Required bank approval and fairness-review evidence when the policy is enabled. "
             "Disabled policies may omit it."
+        ),
+    )
+    peer_group_policy: DpmPmQualityPeerGroupPolicy | None = Field(
+        default=None,
+        description=(
+            "Optional bank-defined peer-group policy. Manage records the context and source refs "
+            "but does not rank PMs or discover peers locally."
+        ),
+    )
+    lookback_window_policy: DpmPmQualityLookbackWindowPolicy | None = Field(
+        default=None,
+        description=(
+            "Optional bank-defined evidence lookback window. When supplied, score-run evidence "
+            "outside the window fails closed."
         ),
     )
 
@@ -265,6 +337,26 @@ class DpmPmQualityGovernanceEvidence(BaseModel):
     )
 
 
+class DpmPmQualityScopeEvidence(BaseModel):
+    """Materialized PM-quality scope evidence attached to a score run."""
+
+    peer_group_id: str | None = Field(
+        default=None,
+        description="Bank-defined peer group recorded for the run, if supplied.",
+    )
+    peer_group_display_name: str | None = Field(default=None)
+    peer_group_segment_type: PmQualityFairnessSegmentType | None = Field(default=None)
+    minimum_peer_count: int | None = Field(default=None, ge=1)
+    lookback_window_id: str | None = Field(default=None)
+    lookback_start_date: str | None = Field(default=None)
+    lookback_end_date: str | None = Field(default=None)
+    timezone: str | None = Field(default=None)
+    reason_codes: list[str] = Field(description="Bounded scope materialization reason codes.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Peer-group and lookback-window source refs used by the run."
+    )
+
+
 class DpmPmOperatingQualityScoreRun(BaseModel):
     """Deterministic, explainable PM operating quality score run."""
 
@@ -294,6 +386,13 @@ class DpmPmOperatingQualityScoreRun(BaseModel):
     governance_evidence: DpmPmQualityGovernanceEvidence | None = Field(
         default=None,
         description="Governance approval and fairness-review evidence applied to the score run.",
+    )
+    scope_evidence: DpmPmQualityScopeEvidence | None = Field(
+        default=None,
+        description=(
+            "Optional materialized peer-group and lookback-window scope evidence. Manage records "
+            "this context without ranking PMs or owning source methodology."
+        ),
     )
     reason_codes: list[str] = Field(description="Bounded score-run reason codes.")
     source_refs: list[DpmOutcomeSourceRef] = Field(description="Source refs used by the run.")

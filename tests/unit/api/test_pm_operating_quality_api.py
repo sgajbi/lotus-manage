@@ -61,6 +61,41 @@ def _policy(enabled: bool = True) -> dict:
     return payload
 
 
+def _scope_policy() -> dict:
+    payload = _policy()
+    payload["peer_group_policy"] = {
+        "peer_group_id": "sg_dpm_balanced",
+        "display_name": "Singapore DPM balanced mandates",
+        "segment_type": "MANDATE_TYPE",
+        "minimum_peer_count": 3,
+        "source_refs": [
+            {
+                "source_system": "lotus-core",
+                "source_type": "PM_QUALITY_PEER_GROUP_DEFINITION",
+                "source_id": "sg_dpm_balanced",
+                "source_version": "2026.05",
+                "content_hash": "sha256:pmq-peer-group",
+            }
+        ],
+    }
+    payload["lookback_window_policy"] = {
+        "window_id": "pmq_30d_20260512",
+        "start_date": "2026-04-13",
+        "end_date": "2026-05-12",
+        "timezone": "Asia/Singapore",
+        "source_refs": [
+            {
+                "source_system": "bank-governance",
+                "source_type": "PM_QUALITY_LOOKBACK_WINDOW",
+                "source_id": "pmq_30d_20260512",
+                "source_version": "2026.05",
+                "content_hash": "sha256:pmq-lookback-window",
+            }
+        ],
+    }
+    return payload
+
+
 def _governance_approval() -> dict:
     return {
         "approval_ref": "PMQ-APPROVAL-2026-05",
@@ -100,6 +135,47 @@ def _request_with_policy_ref(outcome_review_id: str = "dor_001") -> dict:
     policy = payload.pop("policy")
     payload["policy_id"] = policy["policy_id"]
     payload["policy_version"] = policy["policy_version"]
+    return payload
+
+
+def _scope_request() -> dict:
+    payload = _request()
+    payload["policy"] = _scope_policy()
+    payload["outcome_review_ids"] = []
+    payload["evidence_items"] = [
+        {
+            "indicator": "OUTCOME_DISCIPLINE",
+            "evidence_state": "READY",
+            "score": "92",
+            "source_system": "lotus-performance",
+            "source_type": "PM_OUTCOME_DISCIPLINE",
+            "source_id": "pm_outcome_001",
+            "source_refs": [
+                {
+                    "source_system": "lotus-performance",
+                    "source_type": "PM_OUTCOME_DISCIPLINE",
+                    "source_id": "pm_outcome_001",
+                    "source_version": "2026-05-10",
+                }
+            ],
+        },
+        {
+            "indicator": "SOURCE_QUALITY",
+            "evidence_state": "READY",
+            "score": "88",
+            "source_system": "lotus-risk",
+            "source_type": "PM_SOURCE_QUALITY",
+            "source_id": "pm_source_001",
+            "source_refs": [
+                {
+                    "source_system": "lotus-risk",
+                    "source_type": "PM_SOURCE_QUALITY",
+                    "source_id": "pm_source_001",
+                    "source_version": "2026-05-11",
+                }
+            ],
+        },
+    ]
     return payload
 
 
@@ -384,6 +460,48 @@ def test_pm_operating_quality_api_administers_policies_and_uses_policy_refs() ->
     assert created.json()["score_run"]["policy_version"] == "2026.05"
     assert missing.status_code == 404
     assert missing.json()["detail"] == "PM_QUALITY_POLICY_NOT_FOUND:pmq_missing:2026.05"
+
+
+def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
+    policy_repository = InMemoryDpmPmQualityPolicyRepository()
+    app.dependency_overrides[get_pm_quality_policy_repository] = lambda: policy_repository
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    try:
+        with TestClient(app) as client:
+            saved = client.put(
+                "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
+                json=_scope_policy(),
+            )
+            request = _scope_request()
+            request.pop("policy")
+            request["policy_id"] = "pmq_sg_dpm"
+            request["policy_version"] = "2026.05"
+            preview = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json=request,
+            )
+            stale_request = _scope_request()
+            stale_request["evidence_items"][0]["source_refs"][0]["source_version"] = "2026-04-01"
+            stale = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json=stale_request,
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert saved.status_code == 200
+    assert preview.status_code == 200
+    scope_evidence = preview.json()["score_run"]["scope_evidence"]
+    assert scope_evidence["peer_group_id"] == "sg_dpm_balanced"
+    assert scope_evidence["lookback_window_id"] == "pmq_30d_20260512"
+    assert scope_evidence["reason_codes"] == [
+        "PM_QUALITY_PEER_GROUP_MATERIALIZED",
+        "PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED",
+    ]
+    assert stale.status_code == 422
+    assert stale.json()["detail"] == "PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW"
 
 
 def test_pm_operating_quality_api_rejects_policy_admin_conflicts_and_bad_refs() -> None:

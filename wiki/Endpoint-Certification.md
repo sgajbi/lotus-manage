@@ -2028,6 +2028,9 @@ Functional coverage:
   and fail closed for missing required evidence,
 - score-run preview/create fails closed for missing governance approval, invalid or expired
   governance expiry, and unauthorized actors,
+- optional peer-group and lookback-window policy evidence is materialized into score-run
+  `scope_evidence`, included in source refs and content hash, and fails closed for dated evidence
+  outside the approved lookback window,
 - persisted outcome reviews can be included as source-backed outcome-discipline and source-quality
   evidence,
 - optional PM-book scope resolves from lotus-core, records returned portfolio count,
@@ -2045,6 +2048,8 @@ Non-functional posture:
 
 - The endpoint does not create HR, compensation, conduct-enforcement, autonomous-ranking,
   AI-generated, source-owner risk, performance, execution, tax, or OMS methodology.
+- Peer-group and lookback-window materialization records bank-defined comparison context only; it
+  does not discover peers locally, rank PMs, or own source methodology.
 - Fairness-analysis preview does not infer protected classes, discover segments locally, rank PMs,
   or create HR, compensation, conduct, approval, client-contact, execution, or OMS decisions.
 - Downstream UI and Gateway/Workbench fairness-analysis product realization remain future

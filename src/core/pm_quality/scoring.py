@@ -20,6 +20,7 @@ from src.core.pm_quality.models import (
     DpmPmQualityGovernanceEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityIndicatorResult,
+    DpmPmQualityScopeEvidence,
     DpmPmQualityWeight,
     PmQualityFairnessSegmentType,
     PmQualityState,
@@ -37,6 +38,7 @@ class _PmQualitySignal:
     state: str
     reason_codes: list[str]
     source_refs: list[DpmOutcomeSourceRef]
+    as_of_date: str | None = None
 
 
 @dataclass(frozen=True)
@@ -59,6 +61,7 @@ def build_pm_operating_quality_score_run(
     evidence_items: list[DpmPmQualityEvidenceItem],
     outcome_reviews: list[DpmPostTradeOutcomeReview],
     book_scope_evidence: DpmPmQualityBookScopeEvidence | None = None,
+    scope_evidence: DpmPmQualityScopeEvidence | None = None,
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
@@ -66,6 +69,8 @@ def build_pm_operating_quality_score_run(
 
     if policy.as_of_date != as_of_date:
         raise DpmPmQualityValidationError("PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH")
+    if scope_evidence is None:
+        scope_evidence = _scope_evidence_from_policy(policy)
     generated_at = datetime.now(timezone.utc)
     if not policy.enabled:
         return _disabled_score_run(
@@ -75,6 +80,7 @@ def build_pm_operating_quality_score_run(
             policy=policy,
             generated_at=generated_at,
             book_scope_evidence=book_scope_evidence,
+            scope_evidence=scope_evidence,
             generated_by=generated_by,
             correlation_id=correlation_id,
         )
@@ -88,6 +94,7 @@ def build_pm_operating_quality_score_run(
         *_signals_from_evidence(evidence_items),
         *_signals_from_outcome_reviews(outcome_reviews),
     ]
+    _validate_lookback_window(policy=policy, signals=signals)
     results = [_indicator_result(weight, signals) for weight in policy.weights]
     if any(result.state == "BLOCKED" for result in results):
         score = None
@@ -110,6 +117,7 @@ def build_pm_operating_quality_score_run(
         score=score,
         indicator_results=results,
         book_scope_evidence=book_scope_evidence,
+        scope_evidence=scope_evidence,
         governance_evidence=governance_evidence,
         reason_codes=reason_codes,
         generated_at=generated_at,
@@ -201,6 +209,7 @@ def _disabled_score_run(
     policy: DpmPmOperatingQualityPolicy,
     generated_at: datetime,
     book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
+    scope_evidence: DpmPmQualityScopeEvidence | None,
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
@@ -213,6 +222,7 @@ def _disabled_score_run(
         score=None,
         indicator_results=[],
         book_scope_evidence=book_scope_evidence,
+        scope_evidence=scope_evidence,
         governance_evidence=None,
         reason_codes=["PM_QUALITY_POLICY_DISABLED"],
         generated_at=generated_at,
@@ -240,6 +250,7 @@ def _signals_from_evidence(
                 state=item.evidence_state,
                 reason_codes=item.reason_codes or [f"{item.indicator}_SOURCE_SIGNAL"],
                 source_refs=source_refs,
+                as_of_date=_signal_as_of_date(source_refs),
             )
         )
     return signals
@@ -268,6 +279,7 @@ def _signals_from_outcome_reviews(
                         {result.reason_code for result in review.dimension_results}
                     ),
                     source_refs=[review_ref],
+                    as_of_date=review.review_window.as_of_date,
                 )
             )
         signals.append(
@@ -278,6 +290,7 @@ def _signals_from_outcome_reviews(
                 reason_codes=review.supportability.reason_codes
                 or ["OUTCOME_REVIEW_SOURCE_POSTURE"],
                 source_refs=[review_ref, *review.source_lineage],
+                as_of_date=review.review_window.as_of_date,
             )
         )
         if review.report_input_ref or review.ai_evidence_ref:
@@ -291,9 +304,73 @@ def _signals_from_outcome_reviews(
                     state="READY",
                     reason_codes=["OUTCOME_REVIEW_HANDOFF_EVIDENCE_AVAILABLE"],
                     source_refs=[review_ref, *refs],
+                    as_of_date=review.review_window.as_of_date,
                 )
             )
     return signals
+
+
+def _validate_lookback_window(
+    *,
+    policy: DpmPmOperatingQualityPolicy,
+    signals: list[_PmQualitySignal],
+) -> None:
+    if policy.lookback_window_policy is None:
+        return
+    try:
+        start_date = date.fromisoformat(policy.lookback_window_policy.start_date)
+        end_date = date.fromisoformat(policy.lookback_window_policy.end_date)
+    except ValueError as exc:
+        raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID") from exc
+    dated_signals = [signal for signal in signals if signal.as_of_date is not None]
+    if not dated_signals:
+        raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED")
+    for signal in dated_signals:
+        try:
+            signal_date = date.fromisoformat(str(signal.as_of_date))
+        except ValueError as exc:
+            raise DpmPmQualityValidationError("PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID") from exc
+        if signal_date < start_date or signal_date > end_date:
+            raise DpmPmQualityValidationError("PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW")
+
+
+def _signal_as_of_date(source_refs: list[DpmOutcomeSourceRef]) -> str | None:
+    for ref in source_refs:
+        if ref.source_version:
+            try:
+                return date.fromisoformat(ref.source_version).isoformat()
+            except ValueError:
+                continue
+    return None
+
+
+def _scope_evidence_from_policy(
+    policy: DpmPmOperatingQualityPolicy,
+) -> DpmPmQualityScopeEvidence | None:
+    peer_group = policy.peer_group_policy
+    lookback = policy.lookback_window_policy
+    if peer_group is None and lookback is None:
+        return None
+    reason_codes: list[str] = []
+    source_refs: list[DpmOutcomeSourceRef] = []
+    if peer_group is not None:
+        reason_codes.append("PM_QUALITY_PEER_GROUP_MATERIALIZED")
+        source_refs.extend(peer_group.source_refs)
+    if lookback is not None:
+        reason_codes.append("PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED")
+        source_refs.extend(lookback.source_refs)
+    return DpmPmQualityScopeEvidence(
+        peer_group_id=peer_group.peer_group_id if peer_group is not None else None,
+        peer_group_display_name=peer_group.display_name if peer_group is not None else None,
+        peer_group_segment_type=peer_group.segment_type if peer_group is not None else None,
+        minimum_peer_count=peer_group.minimum_peer_count if peer_group is not None else None,
+        lookback_window_id=lookback.window_id if lookback is not None else None,
+        lookback_start_date=lookback.start_date if lookback is not None else None,
+        lookback_end_date=lookback.end_date if lookback is not None else None,
+        timezone=lookback.timezone if lookback is not None else None,
+        reason_codes=reason_codes,
+        source_refs=source_refs,
+    )
 
 
 def _indicator_result(
@@ -479,6 +556,7 @@ def _score_run(
     score: Decimal | None,
     indicator_results: list[DpmPmQualityIndicatorResult],
     book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
+    scope_evidence: DpmPmQualityScopeEvidence | None,
     governance_evidence: DpmPmQualityGovernanceEvidence | None,
     reason_codes: list[str],
     generated_at: datetime,
@@ -486,10 +564,12 @@ def _score_run(
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
     scope_refs = book_scope_evidence.source_refs if book_scope_evidence is not None else []
+    pm_scope_refs = scope_evidence.source_refs if scope_evidence is not None else []
     governance_refs = governance_evidence.source_refs if governance_evidence is not None else []
     source_refs = _dedupe_refs(
         [ref for result in indicator_results for ref in result.source_refs]
         + scope_refs
+        + pm_scope_refs
         + governance_refs
     )
     hash_payload = {
@@ -502,6 +582,9 @@ def _score_run(
         "indicator_results": [result.model_dump(mode="json") for result in indicator_results],
         "book_scope_evidence": (
             book_scope_evidence.model_dump(mode="json") if book_scope_evidence is not None else None
+        ),
+        "scope_evidence": (
+            scope_evidence.model_dump(mode="json") if scope_evidence is not None else None
         ),
         "governance_evidence": (
             governance_evidence.model_dump(mode="json") if governance_evidence is not None else None
@@ -522,6 +605,7 @@ def _score_run(
         indicator_results=indicator_results,
         book_scope_evidence=book_scope_evidence,
         governance_evidence=governance_evidence,
+        scope_evidence=scope_evidence,
         reason_codes=reason_codes,
         source_refs=source_refs,
         content_hash=content_hash,

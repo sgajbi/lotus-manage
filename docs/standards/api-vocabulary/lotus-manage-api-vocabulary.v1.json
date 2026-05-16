@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T02:20:01.195136+00:00",
+  "generatedAt": "2026-05-16T02:38:28.766444+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2835,6 +2835,20 @@
       ]
     },
     {
+      "semanticId": "lotus.end_date",
+      "canonicalTerm": "end_date",
+      "preferredName": "end_date",
+      "description": "Inclusive ISO business date for evidence.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.engine_version",
       "canonicalTerm": "engine_version",
       "preferredName": "engine_version",
@@ -5242,6 +5256,62 @@
       ]
     },
     {
+      "semanticId": "lotus.lookback_end_date",
+      "canonicalTerm": "lookback_end_date",
+      "preferredName": "lookback_end_date",
+      "description": "dpm pm quality scope evidence field: lookback end date.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.lookback_start_date",
+      "canonicalTerm": "lookback_start_date",
+      "preferredName": "lookback_start_date",
+      "description": "dpm pm quality scope evidence field: lookback start date.",
+      "example": "2026-03-02",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.lookback_window_id",
+      "canonicalTerm": "lookback_window_id",
+      "preferredName": "lookback_window_id",
+      "description": "Unique lookback window identifier.",
+      "example": "LOOKBACK_WINDOW_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.lookback_window_policy",
+      "canonicalTerm": "lookback_window_policy",
+      "preferredName": "lookback_window_policy",
+      "description": "Optional bank-defined evidence lookback window. When supplied, score-run evidence outside the window fails closed.",
+      "example": "lookback_window_policy_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.lot_id",
       "canonicalTerm": "lot_id",
       "preferredName": "lot_id",
@@ -5905,6 +5975,21 @@
       ],
       "observedTypes": [
         "number"
+      ]
+    },
+    {
+      "semanticId": "lotus.minimum_peer_count",
+      "canonicalTerm": "minimum_peer_count",
+      "preferredName": "minimum_peer_count",
+      "description": "Minimum source-defined peers required before peer context is comparable.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer",
+        "object"
       ]
     },
     {
@@ -6667,6 +6752,63 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.peer_group_display_name",
+      "canonicalTerm": "peer_group_display_name",
+      "preferredName": "peer_group_display_name",
+      "description": "dpm pm quality scope evidence field: peer group display name.",
+      "example": "peer_group_display_name_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.peer_group_id",
+      "canonicalTerm": "peer_group_id",
+      "preferredName": "peer_group_id",
+      "description": "Bank-owned peer-group identifier.",
+      "example": "PEER_GROUP_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string",
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.peer_group_policy",
+      "canonicalTerm": "peer_group_policy",
+      "preferredName": "peer_group_policy",
+      "description": "Optional bank-defined peer-group policy. Manage records the context and source refs but does not rank PMs or discover peers locally.",
+      "example": "peer_group_policy_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.peer_group_segment_type",
+      "canonicalTerm": "peer_group_segment_type",
+      "preferredName": "peer_group_segment_type",
+      "description": "dpm pm quality scope evidence field: peer group segment type.",
+      "example": "peer_group_segment_type_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -8858,6 +9000,20 @@
       ]
     },
     {
+      "semanticId": "lotus.scope_evidence",
+      "canonicalTerm": "scope_evidence",
+      "preferredName": "scope_evidence",
+      "description": "Optional materialized peer-group and lookback-window scope evidence. Manage records this context without ranking PMs or owning source methodology.",
+      "example": "scope_evidence_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.score",
       "canonicalTerm": "score",
       "preferredName": "score",
@@ -9104,7 +9260,7 @@
       "semanticId": "lotus.segment_type",
       "canonicalTerm": "segment_type",
       "preferredName": "segment_type",
-      "description": "Source-defined segment dimension used for governance comparison.",
+      "description": "Source-defined dimension used for the peer group.",
       "example": "MANDATE_TYPE",
       "type": "string",
       "locations": [
@@ -9924,6 +10080,20 @@
       ]
     },
     {
+      "semanticId": "lotus.start_date",
+      "canonicalTerm": "start_date",
+      "preferredName": "start_date",
+      "description": "Inclusive ISO business date for evidence.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.started_at",
       "canonicalTerm": "started_at",
       "preferredName": "started_at",
@@ -10668,7 +10838,8 @@
         "body"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -11462,6 +11633,20 @@
       "preferredName": "window_end_date",
       "description": "Inclusive evidence-window end date.",
       "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.window_id",
+      "canonicalTerm": "window_id",
+      "preferredName": "window_id",
+      "description": "Bank-owned lookback-window identifier.",
+      "example": "WINDOW_001",
       "type": "string",
       "locations": [
         "body"
@@ -85666,6 +85851,182 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "policy.peer_group_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_policy",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_policy"
+          },
+          {
+            "name": "policy.peer_group_policy.peer_group_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "policy.peer_group_policy.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "policy.peer_group_policy.segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "policy.peer_group_policy.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "policy.lookback_window_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_policy",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_policy"
+          },
+          {
+            "name": "policy.lookback_window_policy.window_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_id",
+            "attributeRef": "#/attributeCatalog/lotus.window_id"
+          },
+          {
+            "name": "policy.lookback_window_policy.start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.start_date",
+            "attributeRef": "#/attributeCatalog/lotus.start_date"
+          },
+          {
+            "name": "policy.lookback_window_policy.end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.end_date",
+            "attributeRef": "#/attributeCatalog/lotus.end_date"
+          },
+          {
+            "name": "policy.lookback_window_policy.timezone",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "policy_id",
             "location": "body",
             "required": false,
@@ -86255,6 +86616,134 @@
           },
           {
             "name": "score_run.governance_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.scope_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.scope_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.scope_evidence"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_display_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_display_name",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_display_name"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_segment_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_segment_type"
+          },
+          {
+            "name": "score_run.scope_evidence.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_window_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_id",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_id"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_start_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_start_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_start_date"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_end_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_end_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_end_date"
+          },
+          {
+            "name": "score_run.scope_evidence.timezone",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "score_run.scope_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -86665,6 +87154,182 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "policy.peer_group_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_policy",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_policy"
+          },
+          {
+            "name": "policy.peer_group_policy.peer_group_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "policy.peer_group_policy.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "policy.peer_group_policy.segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "policy.peer_group_policy.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policy.peer_group_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "policy.lookback_window_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_policy",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_policy"
+          },
+          {
+            "name": "policy.lookback_window_policy.window_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_id",
+            "attributeRef": "#/attributeCatalog/lotus.window_id"
+          },
+          {
+            "name": "policy.lookback_window_policy.start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.start_date",
+            "attributeRef": "#/attributeCatalog/lotus.start_date"
+          },
+          {
+            "name": "policy.lookback_window_policy.end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.end_date",
+            "attributeRef": "#/attributeCatalog/lotus.end_date"
+          },
+          {
+            "name": "policy.lookback_window_policy.timezone",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policy.lookback_window_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "policy_id",
             "location": "body",
             "required": false,
@@ -87254,6 +87919,134 @@
           },
           {
             "name": "score_run.governance_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.scope_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.scope_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.scope_evidence"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_display_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_display_name",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_display_name"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_segment_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_segment_type"
+          },
+          {
+            "name": "score_run.scope_evidence.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_window_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_id",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_id"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_start_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_start_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_start_date"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_end_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_end_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_end_date"
+          },
+          {
+            "name": "score_run.scope_evidence.timezone",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "score_run.scope_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -87869,6 +88662,134 @@
           },
           {
             "name": "score_runs[].governance_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_runs[].scope_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.scope_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.scope_evidence"
+          },
+          {
+            "name": "score_runs[].scope_evidence.peer_group_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "score_runs[].scope_evidence.peer_group_display_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_display_name",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_display_name"
+          },
+          {
+            "name": "score_runs[].scope_evidence.peer_group_segment_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_segment_type"
+          },
+          {
+            "name": "score_runs[].scope_evidence.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "score_runs[].scope_evidence.lookback_window_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_id",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_id"
+          },
+          {
+            "name": "score_runs[].scope_evidence.lookback_start_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_start_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_start_date"
+          },
+          {
+            "name": "score_runs[].scope_evidence.lookback_end_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_end_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_end_date"
+          },
+          {
+            "name": "score_runs[].scope_evidence.timezone",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "score_runs[].scope_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_runs[].scope_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_runs[].scope_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_runs[].scope_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_runs[].scope_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_runs[].scope_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_runs[].scope_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -88756,6 +89677,182 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "peer_group_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_policy",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_policy"
+          },
+          {
+            "name": "peer_group_policy.peer_group_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "peer_group_policy.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "peer_group_policy.segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "peer_group_policy.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "peer_group_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "lookback_window_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_policy",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_policy"
+          },
+          {
+            "name": "lookback_window_policy.window_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_id",
+            "attributeRef": "#/attributeCatalog/lotus.window_id"
+          },
+          {
+            "name": "lookback_window_policy.start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.start_date",
+            "attributeRef": "#/attributeCatalog/lotus.start_date"
+          },
+          {
+            "name": "lookback_window_policy.end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.end_date",
+            "attributeRef": "#/attributeCatalog/lotus.end_date"
+          },
+          {
+            "name": "lookback_window_policy.timezone",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "lookback_window_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       },
@@ -88971,6 +90068,182 @@
           },
           {
             "name": "governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "peer_group_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_policy",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_policy"
+          },
+          {
+            "name": "peer_group_policy.peer_group_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "peer_group_policy.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "peer_group_policy.segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "peer_group_policy.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "peer_group_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "lookback_window_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_policy",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_policy"
+          },
+          {
+            "name": "lookback_window_policy.window_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_id",
+            "attributeRef": "#/attributeCatalog/lotus.window_id"
+          },
+          {
+            "name": "lookback_window_policy.start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.start_date",
+            "attributeRef": "#/attributeCatalog/lotus.start_date"
+          },
+          {
+            "name": "lookback_window_policy.end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.end_date",
+            "attributeRef": "#/attributeCatalog/lotus.end_date"
+          },
+          {
+            "name": "lookback_window_policy.timezone",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "lookback_window_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -89218,6 +90491,182 @@
           },
           {
             "name": "governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "peer_group_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_policy",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_policy"
+          },
+          {
+            "name": "peer_group_policy.peer_group_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "peer_group_policy.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "peer_group_policy.segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "peer_group_policy.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "peer_group_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "peer_group_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "lookback_window_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_policy",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_policy"
+          },
+          {
+            "name": "lookback_window_policy.window_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_id",
+            "attributeRef": "#/attributeCatalog/lotus.window_id"
+          },
+          {
+            "name": "lookback_window_policy.start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.start_date",
+            "attributeRef": "#/attributeCatalog/lotus.start_date"
+          },
+          {
+            "name": "lookback_window_policy.end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.end_date",
+            "attributeRef": "#/attributeCatalog/lotus.end_date"
+          },
+          {
+            "name": "lookback_window_policy.timezone",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "lookback_window_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "lookback_window_policy.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -89497,6 +90946,182 @@
           },
           {
             "name": "policies[].governance_approval.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "policies[].peer_group_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_policy",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_policy"
+          },
+          {
+            "name": "policies[].peer_group_policy.peer_group_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "policies[].peer_group_policy.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "policies[].peer_group_policy.segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "policies[].peer_group_policy.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "policies[].peer_group_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policies[].peer_group_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policies[].peer_group_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policies[].peer_group_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policies[].peer_group_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policies[].peer_group_policy.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "policies[].lookback_window_policy",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_policy",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_policy"
+          },
+          {
+            "name": "policies[].lookback_window_policy.window_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.window_id",
+            "attributeRef": "#/attributeCatalog/lotus.window_id"
+          },
+          {
+            "name": "policies[].lookback_window_policy.start_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.start_date",
+            "attributeRef": "#/attributeCatalog/lotus.start_date"
+          },
+          {
+            "name": "policies[].lookback_window_policy.end_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.end_date",
+            "attributeRef": "#/attributeCatalog/lotus.end_date"
+          },
+          {
+            "name": "policies[].lookback_window_policy.timezone",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "policies[].lookback_window_policy.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "policies[].lookback_window_policy.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "policies[].lookback_window_policy.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "policies[].lookback_window_policy.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "policies[].lookback_window_policy.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "policies[].lookback_window_policy.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
@@ -89992,6 +91617,134 @@
           },
           {
             "name": "score_run.governance_evidence.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "score_run.scope_evidence",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.scope_evidence",
+            "attributeRef": "#/attributeCatalog/lotus.scope_evidence"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_id",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_id"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_display_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_display_name",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_display_name"
+          },
+          {
+            "name": "score_run.scope_evidence.peer_group_segment_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.peer_group_segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.peer_group_segment_type"
+          },
+          {
+            "name": "score_run.scope_evidence.minimum_peer_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_peer_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_peer_count"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_window_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_window_id",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_window_id"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_start_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_start_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_start_date"
+          },
+          {
+            "name": "score_run.scope_evidence.lookback_end_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.lookback_end_date",
+            "attributeRef": "#/attributeCatalog/lotus.lookback_end_date"
+          },
+          {
+            "name": "score_run.scope_evidence.timezone",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.timezone",
+            "attributeRef": "#/attributeCatalog/lotus.timezone"
+          },
+          {
+            "name": "score_run.scope_evidence.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "score_run.scope_evidence.source_refs[].content_hash",
             "location": "body",
             "required": false,
             "type": "object",
