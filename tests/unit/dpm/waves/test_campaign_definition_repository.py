@@ -120,7 +120,7 @@ def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> 
 
     with pytest.raises(
         ValueError,
-        match="BULK_REVIEW_CAMPAIGN_ACTIVE_RETIREMENT_FIELDS_FORBIDDEN",
+        match="BULK_REVIEW_CAMPAIGN_ACTIVE_LIFECYCLE_FIELDS_FORBIDDEN",
     ):
         DpmBulkReviewCampaignDefinition.model_validate(
             {
@@ -162,6 +162,74 @@ def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> 
             definition=DpmBulkReviewCampaignDefinition.model_validate(
                 {
                     **retired.model_dump(mode="python"),
+                    "campaign_id": "missing-campaign",
+                    "content_hash": "",
+                }
+            )
+        )
+        is None
+    )
+
+
+def test_campaign_definition_supersession_validation_and_in_memory_lifecycle() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    original = _definition()
+    replacement = _definition(display_name="Refreshed Apple and Tesla holdings review")
+    replacement = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **replacement.model_dump(mode="python"),
+            "campaign_version": "2026.06",
+            "content_hash": "",
+        }
+    )
+    repository.save_definition(definition=original)
+    repository.save_definition(definition=replacement)
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_CONTENT_HASH_REQUIRED",
+    ):
+        DpmBulkReviewCampaignDefinition.model_validate(
+            {
+                **original.model_dump(mode="python"),
+                "status": "SUPERSEDED",
+                "superseded_at": "2026-05-12T08:00:00Z",
+                "superseded_by": "ops",
+                "supersession_reason": "Campaign candidate set refreshed.",
+                "supersession_correlation_id": "corr-campaign-definition-supersede-001",
+                "superseded_by_campaign_id": replacement.campaign_id,
+                "superseded_by_campaign_version": replacement.campaign_version,
+                "content_hash": "",
+            }
+        )
+
+    superseded = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **original.model_dump(mode="python"),
+            "status": "SUPERSEDED",
+            "superseded_at": "2026-05-12T08:00:00Z",
+            "superseded_by": "ops",
+            "supersession_reason": "Campaign candidate set refreshed.",
+            "supersession_correlation_id": "corr-campaign-definition-supersede-001",
+            "superseded_by_campaign_id": replacement.campaign_id,
+            "superseded_by_campaign_version": replacement.campaign_version,
+            "superseded_by_content_hash": replacement.content_hash,
+            "content_hash": "",
+        }
+    )
+
+    returned = repository.supersede_definition(definition=superseded)
+
+    assert returned is not None
+    assert returned == superseded
+    assert repository.list_definitions(status="ACTIVE") == [replacement]
+    assert repository.list_definitions(status="SUPERSEDED") == [superseded]
+    assert repository.supersede_definition(definition=superseded) == superseded
+    assert (
+        repository.supersede_definition(
+            definition=DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **superseded.model_dump(mode="python"),
                     "campaign_id": "missing-campaign",
                     "content_hash": "",
                 }
@@ -264,6 +332,49 @@ def test_postgres_campaign_definition_repository_retires_active_definition() -> 
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
     assert repository.retire_definition(definition=retired) == retired
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_supersedes_active_definition() -> None:
+    definition = _definition()
+    replacement = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition(display_name="Refreshed Apple and Tesla holdings review").model_dump(
+                mode="python"
+            ),
+            "campaign_version": "2026.06",
+            "content_hash": "",
+        }
+    )
+    superseded = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "SUPERSEDED",
+            "superseded_at": "2026-05-12T08:00:00Z",
+            "superseded_by": "ops",
+            "supersession_reason": "Campaign candidate set refreshed.",
+            "supersession_correlation_id": "corr-campaign-definition-supersede-001",
+            "superseded_by_campaign_id": replacement.campaign_id,
+            "superseded_by_campaign_version": replacement.campaign_version,
+            "superseded_by_content_hash": replacement.content_hash,
+            "content_hash": "",
+        }
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.supersede_definition(definition=superseded) == superseded
     assert connection.committed is True
 
 

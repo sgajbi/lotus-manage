@@ -133,8 +133,10 @@ identity, governance posture, expiry posture, source-ref count, and source-backe
 without discovering the global portfolio universe or recalculating membership. Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
-retired definitions stay auditable in list/get/discovery results but fail closed for new
-preview/create requests. Broader campaign workflow surfaces beyond this bounded lifecycle control,
+and superseding older definitions with active replacement versions at
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`;
+retired and superseded definitions stay auditable in list/get/discovery results but fail closed for
+new preview/create requests. Broader campaign workflow surfaces beyond these bounded lifecycle controls,
 richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
 unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal, cast
 
@@ -44,6 +44,11 @@ from src.core.waves import (
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
+)
+from src.core.waves.campaign_definition_lifecycle import (
+    DpmBulkReviewCampaignDefinitionLifecycleError,
+    retire_bulk_review_campaign_definition as retire_campaign_definition,
+    supersede_bulk_review_campaign_definition as supersede_campaign_definition,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.risk_authority import (
@@ -330,6 +335,25 @@ class DpmBulkReviewCampaignDefinitionRetirementRequest(BaseModel):
     correlation_id: str = Field(examples=["corr-campaign-definition-retire-001"])
 
 
+class DpmBulkReviewCampaignDefinitionSupersessionRequest(BaseModel):
+    superseded_by_campaign_version: str = Field(
+        description=(
+            "Replacement version for the same campaign id. The replacement definition must already "
+            "exist and be ACTIVE."
+        ),
+        examples=["2026.06"],
+    )
+    superseded_by: str = Field(
+        description="Actor superseding the campaign definition for future preview/create use.",
+        examples=["ops"],
+    )
+    supersession_reason: str = Field(
+        description="Business reason for replacing the persisted campaign definition.",
+        examples=["Updated source-backed candidate set after campaign refresh."],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-definition-supersede-001"])
+
+
 class DpmBulkReviewCampaignDefinitionPage(BaseModel):
     items: list[DpmBulkReviewCampaignDefinition]
     limit: int
@@ -343,7 +367,7 @@ class DpmBulkReviewCampaignDiscoveryItem(BaseModel):
     campaign_id: str
     campaign_version: str
     display_name: str
-    campaign_status: Literal["ACTIVE", "RETIRED"]
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"]
     as_of_date: str
     eligible_portfolio_types: list[str]
     candidate_count: int
@@ -354,6 +378,9 @@ class DpmBulkReviewCampaignDiscoveryItem(BaseModel):
     access_purpose: str | None = None
     source_ref_count: int
     content_hash: str
+    superseded_by_campaign_id: str | None = None
+    superseded_by_campaign_version: str | None = None
+    superseded_by_content_hash: str | None = None
     preview_reference: dict[str, str] = Field(
         description=(
             "Bounded reference clients can use to preview or create a BULK_REVIEW_CAMPAIGN wave "
@@ -858,10 +885,15 @@ def _request_with_campaign_definition(
             "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
             "Persisted bulk-review campaign definition was not found.",
         )
-    if definition.status != "ACTIVE":
+    if definition.status == "RETIRED":
         raise wave_service.DpmWaveValidationError(
             "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED",
             "Retired bulk-review campaign definitions cannot be used for new wave preview/create.",
+        )
+    if definition.status == "SUPERSEDED":
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED",
+            "Superseded bulk-review campaign definitions cannot be used for new wave preview/create.",
         )
     if definition.as_of_date != request.as_of_date:
         raise wave_service.DpmWaveValidationError(
@@ -1704,7 +1736,7 @@ def put_bulk_review_campaign_definition(
 )
 def list_bulk_review_campaign_definitions(
     campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED"] | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
     as_of_date: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
@@ -1747,38 +1779,24 @@ def retire_bulk_review_campaign_definition(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    existing = repository.get_definition(
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
-    if existing is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
-    if existing.status == "RETIRED":
-        return existing
     try:
-        retired_payload = existing.model_dump(mode="python")
-        retired_payload.update(
-            {
-                "status": "RETIRED",
-                "retired_at": datetime.now(timezone.utc),
-                "retired_by": request.retired_by,
-                "retirement_reason": request.retirement_reason,
-                "retirement_correlation_id": request.correlation_id,
-                "content_hash": "",
-            }
+        retired = retire_campaign_definition(
+            repository=repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            retired_by=request.retired_by,
+            retirement_reason=request.retirement_reason,
+            correlation_id=request.correlation_id,
         )
-        retired_definition = DpmBulkReviewCampaignDefinition.model_validate(retired_payload)
-        retired = repository.retire_definition(definition=retired_definition)
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": exc.code, "message": exc.message},
         ) from exc
     except ValueError as exc:
         raise HTTPException(
@@ -1796,6 +1814,70 @@ def retire_bulk_review_campaign_definition(
     return retired
 
 
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_200_OK,
+    summary="Supersede bulk-review campaign definition",
+    description=(
+        "Supersedes a persisted Manage-owned `BulkReviewCampaignDefinition:v1` with an already "
+        "persisted ACTIVE replacement version for the same campaign id. Superseded definitions "
+        "remain auditable but cannot be used for new `BULK_REVIEW_CAMPAIGN` preview/create "
+        "requests. This lifecycle action does not discover the global portfolio universe, "
+        "recalculate source facts, run maker-checker workflow, or claim OMS execution."
+    ),
+)
+def supersede_bulk_review_campaign_definition(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionSupersessionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    try:
+        superseded = supersede_campaign_definition(
+            repository=repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            replacement_version=request.superseded_by_campaign_version,
+            superseded_by=request.superseded_by,
+            supersession_reason=request.supersession_reason,
+            correlation_id=request.correlation_id,
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if exc.code == "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND"
+            else status.HTTP_422_UNPROCESSABLE_CONTENT
+            if exc.code == "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID"
+            else status.HTTP_409_CONFLICT
+        )
+        raise HTTPException(
+            status_code=status_code,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    if superseded is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return superseded
+
+
 @router.get(
     "/campaign-discovery",
     response_model=DpmBulkReviewCampaignDiscoveryPage,
@@ -1811,7 +1893,7 @@ def retire_bulk_review_campaign_definition(
 )
 def discover_bulk_review_campaigns(
     campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED"] | None = Query(default="ACTIVE"),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default="ACTIVE"),
     as_of_date: str | None = Query(default=None),
     active_on: str | None = Query(
         default=None,
@@ -1953,6 +2035,9 @@ def _campaign_discovery_item(
         access_purpose=access_purpose,
         source_ref_count=source_ref_count,
         content_hash=definition.content_hash,
+        superseded_by_campaign_id=definition.superseded_by_campaign_id,
+        superseded_by_campaign_version=definition.superseded_by_campaign_version,
+        superseded_by_content_hash=definition.superseded_by_content_hash,
         preview_reference={
             "trigger_type": "BULK_REVIEW_CAMPAIGN",
             "campaign_definition_id": definition.campaign_id,

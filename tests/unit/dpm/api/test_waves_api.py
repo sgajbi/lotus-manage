@@ -1858,6 +1858,126 @@ def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> Non
     assert missing_retire.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
+def test_bulk_review_campaign_definition_supersession_blocks_old_version() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        mandate_repository,
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        original_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        replacement_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.06"
+        )
+        original_put = client.put(original_route, json=_bulk_review_campaign_definition_request())
+        replacement_put = client.put(
+            replacement_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Refreshed Apple and Tesla holdings review",
+                "correlation_id": "corr-campaign-definition-002",
+            },
+        )
+        supersede_response = client.post(
+            f"{original_route}/supersede",
+            json={
+                "superseded_by_campaign_version": "2026.06",
+                "superseded_by": "ops",
+                "supersession_reason": "Campaign candidate set refreshed.",
+                "correlation_id": "corr-campaign-definition-supersede-001",
+            },
+        )
+        active_list = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions?campaign_status=ACTIVE"
+        )
+        superseded_list = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions?campaign_status=SUPERSEDED"
+        )
+        superseded_discovery = client.get(
+            "/api/v1/rebalance/waves/campaign-discovery?campaign_status=SUPERSEDED"
+        )
+        old_preview = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json={
+                "trigger_type": "BULK_REVIEW_CAMPAIGN",
+                "trigger_id": "ignored-request-trigger",
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": "2026.05",
+                "rationale": "Use superseded persisted source-backed campaign definition.",
+                "as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+            },
+        )
+        replacement_preview = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json={
+                "trigger_type": "BULK_REVIEW_CAMPAIGN",
+                "trigger_id": "ignored-request-trigger",
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": "2026.06",
+                "rationale": "Use replacement persisted source-backed campaign definition.",
+                "as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+            },
+        )
+        idempotent_supersede = client.post(
+            f"{original_route}/supersede",
+            json={
+                "superseded_by_campaign_version": "2026.06",
+                "superseded_by": "different-ops",
+                "supersession_reason": "Different reason should not rewrite supersession truth.",
+                "correlation_id": "corr-campaign-definition-supersede-002",
+            },
+        )
+        missing_replacement = client.post(
+            f"{replacement_route}/supersede",
+            json={
+                "superseded_by_campaign_version": "2026.07",
+                "superseded_by": "ops",
+                "supersession_reason": "Missing replacement.",
+                "correlation_id": "corr-campaign-definition-supersede-missing",
+            },
+        )
+
+    assert original_put.status_code == 200
+    assert replacement_put.status_code == 200
+    assert supersede_response.status_code == 200
+    superseded_definition = supersede_response.json()
+    assert superseded_definition["status"] == "SUPERSEDED"
+    assert superseded_definition["superseded_by"] == "ops"
+    assert superseded_definition["supersession_correlation_id"] == (
+        "corr-campaign-definition-supersede-001"
+    )
+    assert superseded_definition["superseded_by_campaign_version"] == "2026.06"
+    assert (
+        superseded_definition["superseded_by_content_hash"]
+        == replacement_put.json()["content_hash"]
+    )
+    assert active_list.json()["count"] == 1
+    assert active_list.json()["items"][0]["campaign_version"] == "2026.06"
+    assert superseded_list.json()["count"] == 1
+    assert superseded_discovery.json()["items"][0]["campaign_status"] == "SUPERSEDED"
+    assert superseded_discovery.json()["items"][0]["superseded_by_campaign_version"] == "2026.06"
+    assert old_preview.status_code == 422
+    assert old_preview.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED"
+    assert replacement_preview.status_code == 200
+    assert idempotent_supersede.status_code == 200
+    assert idempotent_supersede.json()["supersession_correlation_id"] == (
+        "corr-campaign-definition-supersede-001"
+    )
+    assert missing_replacement.status_code == 404
+    assert missing_replacement.json()["detail"]["code"] == (
+        "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND"
+    )
+
+
 def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> None:
     request = {
         **_bulk_review_campaign_definition_request(),
