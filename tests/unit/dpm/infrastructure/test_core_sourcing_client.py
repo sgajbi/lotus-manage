@@ -796,6 +796,48 @@ def _external_hedge_policy_payload() -> dict:
     }
 
 
+def _external_fx_forward_curve_payload() -> dict:
+    return {
+        "product_name": "ExternalFXForwardCurve",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "reporting_currency": "SGD",
+        "exposure_currencies": ["USD"],
+        "curve_points": [],
+        "supportability": {
+            "state": "UNAVAILABLE",
+            "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            "curve_point_count": 0,
+            "missing_data_families": ["external_fx_forward_curve"],
+            "blocked_capabilities": [
+                "forward_pricing",
+                "fx_valuation_methodology",
+                "hedge_advice",
+                "treasury_instruction",
+                "counterparty_selection",
+                "best_execution",
+                "oms_acknowledgement",
+                "fills",
+                "settlement",
+                "autonomous_treasury_action",
+            ],
+        },
+        "lineage": {
+            "source_system": "external-bank-treasury",
+            "source_table": "not_ingested",
+            "contract_version": "rfc_039_external_fx_forward_curve_v1",
+            "integration_status": "not_ingested",
+            "runtime_posture": "fail_closed",
+        },
+        "data_quality_status": "MISSING",
+        "latest_evidence_timestamp": None,
+        "source_batch_fingerprint": "sha256:external-fx-forward-curve",
+    }
+
+
 def _stateful_input() -> DpmStatefulInput:
     return DpmStatefulInput(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -837,6 +879,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_external_currency_exposure_payload())
     if path.endswith("/external-hedge-policy"):
         return httpx.Response(200, json=_external_hedge_policy_payload())
+    if path.endswith("/external-fx-forward-curve"):
+        return httpx.Response(200, json=_external_fx_forward_curve_payload())
     if path.endswith("/client-restriction-profile"):
         return httpx.Response(200, json=_client_restriction_profile_payload())
     if path.endswith("/sustainability-preference-profile"):
@@ -884,6 +928,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-hedge-execution-readiness",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-currency-exposure",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-hedge-policy",
+        "https://core.example.test/integration/market-data/external-fx-forward-curve",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
     ]
@@ -904,8 +949,11 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"exposure_currencies":["USD"]' in seen[12][2]
     assert b'"reporting_currency":"SGD"' in seen[13][2]
     assert b'"exposure_currencies":["USD"]' in seen[13][2]
-    assert b'"include_inactive_restrictions":false' in seen[14][2]
-    assert b'"include_inactive_preferences":false' in seen[15][2]
+    assert b'"portfolio_id":"PB_SG_GLOBAL_BAL_001"' in seen[14][2]
+    assert b'"reporting_currency":"SGD"' in seen[14][2]
+    assert b'"exposure_currencies":["USD"]' in seen[14][2]
+    assert b'"include_inactive_restrictions":false' in seen[15][2]
+    assert b'"include_inactive_preferences":false' in seen[16][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
@@ -937,6 +985,12 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.external_hedge_policy.supportability.policy_rule_count == 0
     assert (
         "hedge_policy_approval" in context.external_hedge_policy.supportability.blocked_capabilities
+    )
+    assert context.external_fx_forward_curve is not None
+    assert context.external_fx_forward_curve.supportability.state == "UNAVAILABLE"
+    assert context.external_fx_forward_curve.supportability.curve_point_count == 0
+    assert (
+        "forward_pricing" in context.external_fx_forward_curve.supportability.blocked_capabilities
     )
     assert context.client_restriction_profile is not None
     assert context.client_restriction_profile.supportability.state == "READY"
@@ -1605,6 +1659,46 @@ def test_core_resolver_fetches_external_hedge_policy_from_dedicated_route():
     assert "hedge_policy_approval" in response.supportability.blocked_capabilities
 
 
+def test_core_resolver_fetches_external_fx_forward_curve_from_dedicated_route():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_external_fx_forward_curve_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_external_fx_forward_curve(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        reporting_currency="SGD",
+        exposure_currencies=["USD"],
+        correlation_id="corr-fx-forward-curve-001",
+    )
+
+    assert (
+        seen["url"] == "https://core.example.test/integration/market-data/external-fx-forward-curve"
+    )
+    assert seen["correlation_id"] == "corr-fx-forward-curve-001"
+    assert b'"portfolio_id":"PB_SG_GLOBAL_BAL_001"' in seen["payload"]
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"mandate_id":"MANDATE_PB_SG_GLOBAL_BAL_001"' in seen["payload"]
+    assert b'"reporting_currency":"SGD"' in seen["payload"]
+    assert b'"exposure_currencies":["USD"]' in seen["payload"]
+    assert response.product_name == "ExternalFXForwardCurve"
+    assert response.supportability.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
+    assert response.supportability.curve_point_count == 0
+    assert response.curve_points == []
+    assert "forward_pricing" in response.supportability.blocked_capabilities
+
+
 def test_core_resolver_maps_mandate_binding_4xx_to_incomplete_error():
     client = DpmCoreResolverClient(
         config=DpmCoreResolverConfig(base_url="https://core.example.test"),
@@ -1822,6 +1916,32 @@ def test_source_product_helpers_retry_until_source_safe_unavailable() -> None:
     assert get_attempts["count"] == 2
 
 
+def test_source_product_helpers_map_exhausted_502_retries_to_unavailable() -> None:
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=2),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(502, json={}))
+        ),
+    )
+
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        client._post_source_product(
+            url="https://core.example.test/source",
+            payload={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        client._get_source_product(
+            url="https://core.example.test/source",
+            params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+
+
 def test_owned_core_resolver_client_closes_managed_http_client() -> None:
     http_client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200)))
     client = DpmCoreResolverClient(
@@ -1876,6 +1996,10 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
             client_income_needs_schedule_path_template="",
             liquidity_reserve_requirement_path_template="",
             planned_withdrawal_schedule_path_template="",
+            external_hedge_execution_readiness_path_template="",
+            external_currency_exposure_path_template="",
+            external_hedge_policy_path_template="",
+            external_fx_forward_curve_path_template="",
         ),
         client=httpx.Client(
             transport=httpx.MockTransport(lambda request: httpx.Response(500, json={}))
@@ -1888,6 +2012,54 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
             as_of_date=date(2026, 5, 3),
             security_ids=[],
             tenant_id="tenant_sg_pb",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_hedge_execution_readiness(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_currency_exposure(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_hedge_policy(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_fx_forward_curve(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
             correlation_id=None,
         )
         is None

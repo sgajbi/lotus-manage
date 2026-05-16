@@ -41,8 +41,12 @@ storage-layer constraint.
   liquidity-aware, currency-overlay, and regime-stress-aware alternatives with explicit
   supportability and source-authority posture. Liquidity-aware alternatives can consume optional
   `lotus-core` `PortfolioCashflowProjection:v1` evidence to flag projected cash-pressure policy
-  breaches. Client income-need planning and ESG/restriction-aware construction are intentionally
-  deferred until source-backed owner products exist.
+  breaches. Currency-overlay alternatives preserve fail-closed `lotus-core`
+  `ExternalHedgeExecutionReadiness:v1`, `ExternalCurrencyExposure:v1`,
+  `ExternalHedgePolicy:v1`, and `ExternalFXForwardCurve:v1` posture as blocked external treasury
+  evidence without claiming forward pricing, hedge advice, execution, OMS, fills, or settlement.
+  Client income-need planning and ESG/restriction-aware construction are intentionally deferred
+  until source-backed owner products exist.
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`
   retrieves a previously generated alternative set without recomputation.
 - `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`

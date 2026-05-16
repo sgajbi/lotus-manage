@@ -55,6 +55,7 @@ from src.core.construction.vocabulary import (
 )
 from src.core.dpm_source_context import (
     DpmCoreExternalCurrencyExposureResponse,
+    DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
     DpmResolvedSourceContext,
@@ -579,8 +580,14 @@ def _external_treasury_currency_overlay_context(
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
     currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
     hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
 ) -> AuthoritativeCurrencyOverlayContext | None:
-    if hedge_readiness is None and currency_exposure is None and hedge_policy is None:
+    if (
+        hedge_readiness is None
+        and currency_exposure is None
+        and hedge_policy is None
+        and fx_forward_curve is None
+    ):
         return None
 
     readiness_payload = (
@@ -598,11 +605,17 @@ def _external_treasury_currency_overlay_context(
         if hedge_policy is not None
         else None
     )
+    fx_forward_curve_payload = (
+        fx_forward_curve.model_dump(mode="json", exclude_none=True)
+        if fx_forward_curve is not None
+        else None
+    )
     source_hash = hash_canonical_payload(
         {
             "external_hedge_execution_readiness": readiness_payload,
             "external_currency_exposure": exposure_payload,
             "external_hedge_policy": hedge_policy_payload,
+            "external_fx_forward_curve": fx_forward_curve_payload,
         }
     )
     if hedge_readiness is not None:
@@ -614,17 +627,27 @@ def _external_treasury_currency_overlay_context(
         supportability_state = currency_exposure.supportability.state
         supportability_reason = currency_exposure.supportability.reason
         exposure_currencies = currency_exposure.exposure_currencies
-    else:
+    elif hedge_policy is not None:
         assert hedge_policy is not None
         supportability_state = hedge_policy.supportability.state
         supportability_reason = hedge_policy.supportability.reason
         exposure_currencies = hedge_policy.exposure_currencies
+    else:
+        assert fx_forward_curve is not None
+        supportability_state = fx_forward_curve.supportability.state
+        supportability_reason = fx_forward_curve.supportability.reason
+        exposure_currencies = fx_forward_curve.exposure_currencies
 
     exposure_source_hash = (
         hash_canonical_payload(exposure_payload) if exposure_payload is not None else None
     )
     hedge_policy_source_hash = (
         hash_canonical_payload(hedge_policy_payload) if hedge_policy_payload is not None else None
+    )
+    fx_forward_curve_source_hash = (
+        hash_canonical_payload(fx_forward_curve_payload)
+        if fx_forward_curve_payload is not None
+        else None
     )
     readiness_missing = (
         hedge_readiness.supportability.missing_data_families if hedge_readiness is not None else []
@@ -637,6 +660,11 @@ def _external_treasury_currency_overlay_context(
     hedge_policy_missing = (
         hedge_policy.supportability.missing_data_families if hedge_policy is not None else []
     )
+    fx_forward_curve_missing = (
+        fx_forward_curve.supportability.missing_data_families
+        if fx_forward_curve is not None
+        else []
+    )
     readiness_blocked = (
         hedge_readiness.supportability.blocked_capabilities if hedge_readiness is not None else []
     )
@@ -648,6 +676,9 @@ def _external_treasury_currency_overlay_context(
     hedge_policy_blocked = (
         hedge_policy.supportability.blocked_capabilities if hedge_policy is not None else []
     )
+    fx_forward_curve_blocked = (
+        fx_forward_curve.supportability.blocked_capabilities if fx_forward_curve is not None else []
+    )
     reason_codes: list[str] = [supportability_reason]
     if hedge_readiness is not None:
         reason_codes.append("EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED")
@@ -655,6 +686,8 @@ def _external_treasury_currency_overlay_context(
         reason_codes.append("EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED")
     if hedge_policy is not None:
         reason_codes.append("EXTERNAL_HEDGE_POLICY_FAIL_CLOSED")
+    if fx_forward_curve is not None:
+        reason_codes.append("EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED")
 
     return AuthoritativeCurrencyOverlayContext(
         supportability_status=_source_status_to_method_status(supportability_state),
@@ -676,9 +709,21 @@ def _external_treasury_currency_overlay_context(
         ),
         content_hash=source_hash,
         missing_data_families=sorted(
-            {*readiness_missing, *exposure_missing, *hedge_policy_missing}
+            {
+                *readiness_missing,
+                *exposure_missing,
+                *hedge_policy_missing,
+                *fx_forward_curve_missing,
+            }
         ),
-        blocked_capabilities=sorted({*readiness_blocked, *exposure_blocked, *hedge_policy_blocked}),
+        blocked_capabilities=sorted(
+            {
+                *readiness_blocked,
+                *exposure_blocked,
+                *hedge_policy_blocked,
+                *fx_forward_curve_blocked,
+            }
+        ),
         readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
         external_currency_exposure_source_product_name=(
             currency_exposure.product_name if currency_exposure is not None else None
@@ -718,6 +763,26 @@ def _external_treasury_currency_overlay_context(
             hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
         ),
         external_hedge_policy_rules=(hedge_policy.policy_rules if hedge_policy is not None else []),
+        external_fx_forward_curve_source_product_name=(
+            fx_forward_curve.product_name if fx_forward_curve is not None else None
+        ),
+        external_fx_forward_curve_source_product_version=(
+            fx_forward_curve.product_version if fx_forward_curve is not None else None
+        ),
+        external_fx_forward_curve_source_id=(
+            fx_forward_curve.source_batch_fingerprint
+            or fx_forward_curve.lineage.get("source_batch_fingerprint")
+            or fx_forward_curve_source_hash
+            if fx_forward_curve is not None
+            else None
+        ),
+        external_fx_forward_curve_content_hash=fx_forward_curve_source_hash,
+        external_fx_forward_curve_point_count=(
+            fx_forward_curve.supportability.curve_point_count if fx_forward_curve is not None else 0
+        ),
+        external_fx_forward_curve_points=(
+            fx_forward_curve.curve_points if fx_forward_curve is not None else []
+        ),
         reason_codes=reason_codes,
     )
 
@@ -922,10 +987,16 @@ def _authority_context_with_source_products(
             "external_hedge_policy",
             None,
         )
+        fx_forward_curve = getattr(
+            source_context.context,
+            "external_fx_forward_curve",
+            None,
+        )
         currency_context = _external_treasury_currency_overlay_context(
             hedge_readiness=hedge_readiness,
             currency_exposure=currency_exposure,
             hedge_policy=hedge_policy,
+            fx_forward_curve=fx_forward_curve,
         )
         if currency_context is not None:
             context_updates["currency_overlay_context"] = currency_context

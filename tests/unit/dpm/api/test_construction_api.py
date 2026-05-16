@@ -236,6 +236,7 @@ def _core_execution_context(
     include_external_hedge_readiness: bool = False,
     include_external_currency_exposure: bool = False,
     include_external_hedge_policy: bool = False,
+    include_external_fx_forward_curve: bool = False,
     cashflow_data_quality_status: str = "COMPLETE",
 ) -> DpmCoreExecutionContext:
     payload = {
@@ -462,6 +463,45 @@ def _core_execution_context(
             "data_quality_status": "MISSING",
             "source_batch_fingerprint": "sha256:external-hedge-policy",
         }
+    if include_external_fx_forward_curve:
+        payload["external_fx_forward_curve"] = {
+            "product_name": "ExternalFXForwardCurve",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "reporting_currency": "SGD",
+            "exposure_currencies": ["USD"],
+            "curve_points": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+                "curve_point_count": 0,
+                "missing_data_families": ["external_fx_forward_curve"],
+                "blocked_capabilities": [
+                    "forward_pricing",
+                    "fx_valuation_methodology",
+                    "hedge_advice",
+                    "treasury_instruction",
+                    "counterparty_selection",
+                    "best_execution",
+                    "oms_acknowledgement",
+                    "fills",
+                    "settlement",
+                    "autonomous_treasury_action",
+                ],
+            },
+            "lineage": {
+                "source_system": "external-bank-treasury",
+                "source_table": "not_ingested",
+                "contract_version": "rfc_039_external_fx_forward_curve_v1",
+                "integration_status": "not_ingested",
+                "runtime_posture": "fail_closed",
+            },
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-fx-forward-curve",
+        }
     return DpmCoreExecutionContext.model_validate(payload)
 
 
@@ -495,6 +535,7 @@ class _ExternalHedgeReadinessCoreResolver:
             include_external_hedge_readiness=True,
             include_external_currency_exposure=True,
             include_external_hedge_policy=True,
+            include_external_fx_forward_curve=True,
         )
 
 
@@ -1175,13 +1216,24 @@ def test_stateful_currency_overlay_preserves_external_hedge_readiness_fail_close
     assert currency_context["external_hedge_policy_rule_count"] == 0
     assert currency_context["external_hedge_policy_rules"] == []
     assert currency_context["external_hedge_policy_source_id"] == "sha256:external-hedge-policy"
+    assert (
+        currency_context["external_fx_forward_curve_source_product_name"]
+        == "ExternalFXForwardCurve"
+    )
+    assert currency_context["external_fx_forward_curve_point_count"] == 0
+    assert currency_context["external_fx_forward_curve_points"] == []
+    assert currency_context["external_fx_forward_curve_source_id"] == (
+        "sha256:external-fx-forward-curve"
+    )
     assert "fx_attribution" in currency_context["blocked_capabilities"]
     assert "hedge_policy_approval" in currency_context["blocked_capabilities"]
+    assert "forward_pricing" in currency_context["blocked_capabilities"]
     assert "oms_acknowledgement" in currency_context["blocked_capabilities"]
     assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in reason_codes
     assert "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED" in reason_codes
     assert "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED" in reason_codes
     assert "EXTERNAL_HEDGE_POLICY_FAIL_CLOSED" in reason_codes
+    assert "EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED" in reason_codes
     assert "CURRENCY_OVERLAY_CONTEXT_BLOCKED" in reason_codes
 
 

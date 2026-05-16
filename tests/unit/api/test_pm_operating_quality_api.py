@@ -1,6 +1,8 @@
 from decimal import Decimal
+from typing import Any
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_outcome_review_repository
@@ -18,10 +20,12 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityScoreRunRepository,
 )
 from src.core.pm_quality import (
+    DpmPmQualityFairnessAnalysisConflictError,
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityEvidenceItem,
     DpmPmQualityGovernanceApproval,
+    DpmPmQualityScoreRunConflictError,
     DpmPmQualityWeight,
     build_pm_operating_quality_score_run,
 )
@@ -268,6 +272,84 @@ def _pm_book_membership_payload(
     }
 
 
+def test_pm_operating_quality_request_models_normalize_and_validate_scope_edges() -> None:
+    scope = pmq_router.DpmPmOperatingQualityPmBookScopeRequest(
+        portfolio_types=[" dpm ", "DISCRETIONARY"]
+    )
+    assert scope.portfolio_types == ["DPM", "DISCRETIONARY"]
+
+    with pytest.raises(ValueError, match="portfolio_types must contain at least one value"):
+        pmq_router.DpmPmOperatingQualityPmBookScopeRequest(portfolio_types=[" "])
+    with pytest.raises(ValueError, match="either inline policy or persisted policy reference"):
+        pmq_router.DpmPmOperatingQualityScorePreviewRequest(
+            **{
+                **_request(),
+                "policy_id": "pmq_sg_dpm",
+                "policy_version": "2026.05",
+            }
+        )
+    request = _request()
+    request.pop("policy")
+    with pytest.raises(ValueError, match="both policy_id and policy_version"):
+        pmq_router.DpmPmOperatingQualityScorePreviewRequest(**request)
+    with pytest.raises(ValueError, match="score_run_ids must contain at least one value"):
+        pmq_router.DpmPmQualityFairnessSegmentRequest(
+            segment_id="region_sg",
+            segment_type="REGION",
+            display_name="Singapore",
+            score_run_ids=[" "],
+        )
+    with pytest.raises(ValueError, match="score_run_ids must be unique"):
+        pmq_router.DpmPmQualityFairnessSegmentRequest(
+            segment_id="region_sg",
+            segment_type="REGION",
+            display_name="Singapore",
+            score_run_ids=["pmq_1", "pmq_1"],
+        )
+    segment = pmq_router.DpmPmQualityFairnessSegmentRequest(
+        segment_id="region_sg",
+        segment_type="REGION",
+        display_name="Singapore",
+        score_run_ids=["pmq_1"],
+    )
+    with pytest.raises(ValueError, match="segment_id values must be unique"):
+        pmq_router.DpmPmQualityFairnessPreviewRequest(
+            policy_id="pmq_sg_dpm",
+            policy_version="2026.05",
+            as_of_date="2026-05-12",
+            actor_id="ops",
+            segments=[segment, segment],
+        )
+
+
+def test_pm_operating_quality_router_private_edges_fail_closed() -> None:
+    with pytest.raises(HTTPException) as missing_policy_ref:
+        pmq_router._resolve_policy(
+            request=pmq_router.DpmPmOperatingQualityScorePreviewRequest.model_construct(
+                policy=None,
+                policy_id=None,
+                policy_version=None,
+            ),
+            repository=InMemoryDpmPmQualityPolicyRepository(),
+        )
+    with pytest.raises(HTTPException) as invalid_book_scope_date:
+        pmq_router._resolve_pm_book_scope_evidence(
+            request=pmq_router.DpmPmOperatingQualityScorePreviewRequest.model_construct(
+                pm_id="pm_001",
+                as_of_date="not-a-date",
+            ),
+            scope=pmq_router.DpmPmOperatingQualityPmBookScopeRequest(
+                booking_center_code="Singapore"
+            ),
+            correlation_id="corr-invalid-date",
+        )
+
+    assert missing_policy_ref.value.status_code == 422
+    assert missing_policy_ref.value.detail == "PM_QUALITY_POLICY_REFERENCE_REQUIRED"
+    assert invalid_book_scope_date.value.status_code == 422
+    assert invalid_book_scope_date.value.detail == "INVALID_AS_OF_DATE"
+
+
 class _PmBookResolver:
     def __init__(self, payload: dict):
         self.payload = payload
@@ -286,6 +368,18 @@ class _UnavailablePmBookResolver:
 class _IncompletePmBookResolver:
     def resolve_portfolio_manager_book_membership(self, **_kwargs: object):
         raise DpmCoreResolverError("DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE")
+
+
+class _ConflictingScoreRunRepository(InMemoryDpmPmQualityScoreRunRepository):
+    def save_score_run(self, *, score_run: DpmPmOperatingQualityScoreRun) -> None:
+        raise DpmPmQualityScoreRunConflictError("PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT")
+
+
+class _ConflictingFairnessAnalysisRepository(InMemoryDpmPmQualityFairnessAnalysisRepository):
+    def save_fairness_analysis(self, *, analysis: Any) -> None:
+        raise DpmPmQualityFairnessAnalysisConflictError(
+            "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
+        )
 
 
 def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> None:
@@ -635,6 +729,26 @@ def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() 
     assert missing.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
 
 
+def test_pm_operating_quality_api_maps_persistence_conflicts_to_409() -> None:
+    outcome_repository = InMemoryDpmOutcomeReviewRepository()
+    outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        _ConflictingScoreRunRepository()
+    )
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs",
+                json=_request(),
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT"
+
+
 def test_pm_operating_quality_api_previews_source_segment_fairness_analysis() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     balanced_1 = _source_only_score_run(pm_id="pm_bal_001", score=Decimal("92"))
@@ -799,6 +913,58 @@ def test_pm_operating_quality_api_creates_gets_and_lists_fairness_analyses() -> 
     assert listed.json()["fairness_analyses"][0]["fairness_analysis_id"] == fairness_analysis_id
     assert missing.status_code == 404
     assert missing.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:missing"
+
+
+def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    balanced_1 = _source_only_score_run(pm_id="pm_bal_001", score=Decimal("92"))
+    balanced_2 = _source_only_score_run(
+        pm_id="pm_bal_002", score=Decimal("88"), correlation_id="corr-balanced-2"
+    )
+    income_1 = _source_only_score_run(
+        pm_id="pm_inc_001", score=Decimal("60"), correlation_id="corr-income-1"
+    )
+    income_2 = _source_only_score_run(
+        pm_id="pm_inc_002", score=Decimal("58"), correlation_id="corr-income-2"
+    )
+    for score_run in [balanced_1, balanced_2, income_1, income_2]:
+        score_run_repository.save_score_run(score_run=score_run)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
+    app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
+        _ConflictingFairnessAnalysisRepository()
+    )
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+                json={
+                    "policy_id": "pmq_sg_dpm",
+                    "policy_version": "2026.05",
+                    "as_of_date": "2026-05-12",
+                    "minimum_segment_score_run_count": 2,
+                    "maximum_average_score_spread": "15",
+                    "actor_id": "ops",
+                    "segments": [
+                        {
+                            "segment_id": "mandate_balanced",
+                            "segment_type": "MANDATE_TYPE",
+                            "display_name": "Balanced DPM Mandates",
+                            "score_run_ids": [balanced_1.score_run_id, balanced_2.score_run_id],
+                        },
+                        {
+                            "segment_id": "mandate_income",
+                            "segment_type": "MANDATE_TYPE",
+                            "display_name": "Income DPM Mandates",
+                            "score_run_ids": [income_1.score_run_id, income_2.score_run_id],
+                        },
+                    ],
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
 
 
 def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_runs() -> None:
