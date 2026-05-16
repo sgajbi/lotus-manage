@@ -92,8 +92,10 @@ instructions, or treasury actions. `lotus-core` PR #365 (`c7fa07b0`, wiki `067f9
 planned external treasury source-product contracts for currency exposure, hedge policy, FX forward
 curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`) now
 exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route. Manage
-does not consume that route yet and still makes no hedge advice, forward-pricing,
-counterparty-selection, treasury-instruction, best-execution, OMS, fill, or settlement claim.
+now consumes that posture through stateful core sourcing and preserves it in currency-overlay
+construction diagnostics as blocked external treasury readiness evidence. Manage still makes no
+hedge advice, forward-pricing, counterparty-selection, treasury-instruction, best-execution, OMS,
+fill, or settlement claim.
 Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.

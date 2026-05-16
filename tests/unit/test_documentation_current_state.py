@@ -1888,7 +1888,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`617e4e6`" in work_to_be_done
     assert "`ExternalCurrencyExposure:v1`" in work_to_be_done
     assert "`ExternalHedgeExecutionReadiness:v1`" in work_to_be_done
-    assert "first fail-closed runtime source-owner posture" in work_to_be_done
+    assert "first Manage\nconsumption of that posture" in work_to_be_done
+    assert "currency_overlay_context" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
     assert "does not calculate risk or performance methodology locally" in work_to_be_done
@@ -1928,10 +1929,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`)" in supported_features
     assert "`lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`)" in supported_features
     assert "`ExternalFXForwardCurve:v1`" in supported_features
-    assert (
-        "external treasury ingestion and Manage consumption remain future work"
-        in supported_features
-    )
+    assert "ExternalHedgeExecutionReadiness:v1` fail-closed posture" in supported_features
+    assert "external treasury ingestion remains future work" in supported_features
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features
     )
