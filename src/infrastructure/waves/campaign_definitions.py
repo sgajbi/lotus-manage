@@ -87,6 +87,25 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
             self._definitions[key] = deepcopy(definition)
             return deepcopy(definition)
 
+    def supersede_definition(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        key = (definition.campaign_id, definition.campaign_version)
+        with self._lock:
+            existing = self._definitions.get(key)
+            if existing is None:
+                return None
+            if existing.status == "SUPERSEDED":
+                return deepcopy(existing)
+            if existing.status != "ACTIVE":
+                raise DpmBulkReviewCampaignDefinitionConflictError(
+                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
+                )
+            self._definitions[key] = deepcopy(definition)
+            return deepcopy(definition)
+
 
 class PostgresDpmBulkReviewCampaignDefinitionRepository:
     def __init__(self, *, dsn: str) -> None:
@@ -202,6 +221,50 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 return None
             existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
             if existing.status == "RETIRED":
+                connection.rollback()
+                return existing
+            updated = connection.execute(
+                """
+                UPDATE dpm_bulk_review_campaign_definitions
+                SET status = %s, content_hash = %s, payload_json = %s
+                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
+                """,
+                (
+                    definition.status,
+                    definition.content_hash,
+                    dump_model_json(definition),
+                    definition.campaign_id,
+                    definition.campaign_version,
+                ),
+            )
+            rowcount = getattr(updated, "rowcount", 1)
+            if rowcount != 1:
+                connection.rollback()
+                raise DpmBulkReviewCampaignDefinitionConflictError(
+                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
+                )
+            connection.commit()
+            return definition
+
+    def supersede_definition(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        with closing(self._connect()) as connection:
+            persisted = connection.execute(
+                """
+                SELECT status, payload_json
+                FROM dpm_bulk_review_campaign_definitions
+                WHERE campaign_id = %s AND campaign_version = %s
+                """,
+                (definition.campaign_id, definition.campaign_version),
+            ).fetchone()
+            if persisted is None:
+                connection.rollback()
+                return None
+            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            if existing.status == "SUPERSEDED":
                 connection.rollback()
                 return existing
             updated = connection.execute(

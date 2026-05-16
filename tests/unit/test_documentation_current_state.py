@@ -1386,8 +1386,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/retire`" in work_to_be_done
     )
+    assert (
+        "`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/supersede`" in work_to_be_done
+    )
     assert "retired definitions auditable while blocking new preview/create use" in work_to_be_done
-    assert "broader campaign workflow surfaces beyond bounded definition retirement" in (
+    assert "replacement campaign version and content hash" in work_to_be_done
+    assert "broader campaign workflow surfaces beyond bounded definition lifecycle controls" in (
         work_to_be_done
     )
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
@@ -1949,8 +1954,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/retire`" in supported_features
     )
+    assert (
+        "`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/supersede`" in supported_features
+    )
     assert "`BulkReviewCampaignDiscovery:v1` summaries" in supported_features
     assert "retire definitions so they remain auditable under `RETIRED` status" in (
+        supported_features
+    )
+    assert "auditable under `SUPERSEDED` status with replacement version/content-hash lineage" in (
         supported_features
     )
     assert "without discovering the global portfolio universe or recalculating membership" in (

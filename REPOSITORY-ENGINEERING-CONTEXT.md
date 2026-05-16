@@ -548,9 +548,13 @@ Current repository posture:
     persisted campaign definitions through
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
     retirement preserves the candidate set for audit, makes the definition visible as `RETIRED`,
-    and blocks new wave preview/create use. Broader campaign workflow surfaces beyond this bounded
-    lifecycle control, wave risk/performance analytics posture, and external OMS execution remain
-    unpromoted until owning implementations are live-proven.
+    and blocks new wave preview/create use. Manage can also supersede an active definition with an
+    already persisted active replacement version through
+    `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`;
+    the old definition remains auditable as `SUPERSEDED`, records the replacement version/hash,
+    and fails closed for new wave preview/create use. Broader campaign workflow surfaces beyond
+    these bounded lifecycle controls, wave risk/performance analytics posture, and external OMS
+    execution remain unpromoted until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,

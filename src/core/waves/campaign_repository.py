@@ -38,3 +38,10 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
         raise NotImplementedError
+
+    def supersede_definition(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError
