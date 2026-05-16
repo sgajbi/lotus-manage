@@ -111,12 +111,16 @@ evidence, and supported-feature promotion.
   WTBD audit proof at `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/` and canonical
   Workbench evidence at `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`
   prove the first-wave Gateway/Workbench outcome-review product path after owning-app
-  implementation. Remaining RFC-0042 work is source-owner methodology enrichment, external
-  execution/OMS ownership, and any separately governed PM quality-scoring RFC
+  implementation. PM operating quality backend support, Gateway BFF composition, and `lotus-ai`
+  `pm_quality_summary.pack@v1` support-only score-run summaries are implemented. Remaining
+  RFC-0042 work is source-owner methodology enrichment, external execution/OMS ownership,
+  Workbench PM-quality UI, and Gateway/Workbench fairness-analysis plus PM-quality summary
+  invocation
 - RFC-0043
   partially implemented governed AI PM copilot roadmap using `lotus-ai` without transferring domain
   decision ownership to AI. Owner-side DPM packs exist for proof-pack PM memo, wave PM memo,
-  outcome-review narrative, operations handoff summary, and exception summary. Gateway/Workbench
+  outcome-review narrative, operations handoff summary, exception summary, and PM quality summary.
+  Gateway/Workbench
   operations-handoff and exception-summary invocation is now implemented through governed Gateway
   routes and Gateway-only Workbench actions; broader copilot workspace depth remains future owner
   work

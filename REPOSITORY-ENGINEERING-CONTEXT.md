@@ -525,6 +525,12 @@ Current repository posture:
     `lotus-workbench` PR #182 now expose first-wave Gateway/Workbench invocation for exception
     summaries and operations handoff summaries without direct browser prompt construction,
     client-message generation, PM scoring, routing, approval, or execution claims.
+    `lotus-ai` PR #70 adds the owner-side `pm_quality_summary.pack@v1` workflow over Manage-owned
+    `PmOperatingQualityScoreRun` evidence with source refs, supportability posture, optional
+    bounded portfolio-memory context, forbidden-action/output guardrails, review-required
+    support-only output, and no score calculation, PM ranking, HR, compensation, conduct,
+    client-contact, trade-approval, execution, OMS, or invented-source-fact claim. Gateway and
+    Workbench PM-quality summary invocation remain future owner scope.
     CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through
