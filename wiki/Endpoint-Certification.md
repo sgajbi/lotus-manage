@@ -1601,6 +1601,7 @@ Routes:
 - `POST /api/v1/rebalance/waves`
 - `GET /api/v1/rebalance/waves`
 - `PUT /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`
 - `GET /api/v1/rebalance/waves/campaign-definitions`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
@@ -1647,12 +1648,15 @@ Functional coverage:
 - bounded Manage-owned bulk-review campaign membership through
   `BulkReviewCampaignMembership:v1` over source-backed candidate portfolios, source-owned
   `portfolio_type`, eligible DPM portfolio-type filters, deterministic membership source refs,
-  optional approval/expiry/actor-entitlement governance evidence, immutable
-  `BulkReviewCampaignDefinition:v1` campaign definitions, and fail-closed validation,
+  optional approval/expiry/actor-entitlement governance evidence,
+  `BulkReviewCampaignDefinition:v1` campaign definitions, retirement lifecycle control, and
+  fail-closed validation,
 - bounded persisted campaign discovery through `BulkReviewCampaignDiscovery:v1`, summarizing
   campaign identity, governance posture, expiry posture, source-ref count, source-backed candidate
   counts, and preview references without discovering the global portfolio universe or recalculating
   membership,
+- retired campaign definitions remain available for audit and discovery under `RETIRED` status but
+  cannot be used for new `BULK_REVIEW_CAMPAIGN` preview/create requests,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

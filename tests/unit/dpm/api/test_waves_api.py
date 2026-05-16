@@ -1754,6 +1754,110 @@ def test_bulk_review_campaign_discovery_filters_expired_campaigns() -> None:
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        mandate_repository,
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        retire_response = client.post(
+            f"{route}/retire",
+            json={
+                "retired_by": "ops",
+                "retirement_reason": "Campaign completed and closed to new waves.",
+                "correlation_id": "corr-campaign-definition-retire-001",
+            },
+        )
+        fetched = client.get(route)
+        active_list = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions?campaign_status=ACTIVE"
+        )
+        retired_list = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions?campaign_status=RETIRED"
+        )
+        active_discovery = client.get("/api/v1/rebalance/waves/campaign-discovery")
+        retired_discovery = client.get(
+            "/api/v1/rebalance/waves/campaign-discovery?campaign_status=RETIRED"
+        )
+        preview_response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json={
+                "trigger_type": "BULK_REVIEW_CAMPAIGN",
+                "trigger_id": "ignored-request-trigger",
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": "2026.05",
+                "rationale": "Use retired persisted source-backed campaign definition.",
+                "as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+            },
+            headers={"X-Correlation-Id": "corr-bulk-review-definition-preview"},
+        )
+        create_response = client.post(
+            "/api/v1/rebalance/waves",
+            json={
+                "trigger_type": "BULK_REVIEW_CAMPAIGN",
+                "trigger_id": "ignored-request-trigger",
+                "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+                "campaign_definition_version": "2026.05",
+                "rationale": "Use retired persisted source-backed campaign definition.",
+                "as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+            },
+            headers={"Idempotency-Key": "idem-retired-campaign-definition-wave"},
+        )
+        idempotent_retire = client.post(
+            f"{route}/retire",
+            json={
+                "retired_by": "different-ops",
+                "retirement_reason": "Different reason should not rewrite retired audit truth.",
+                "correlation_id": "corr-campaign-definition-retire-002",
+            },
+        )
+        missing_retire = client.post(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/versions/2026.05/retire",
+            json={
+                "retired_by": "ops",
+                "retirement_reason": "Missing campaign.",
+                "correlation_id": "corr-campaign-definition-retire-missing",
+            },
+        )
+
+    assert put_response.status_code == 200
+    assert retire_response.status_code == 200
+    retired_definition = retire_response.json()
+    assert retired_definition["status"] == "RETIRED"
+    assert retired_definition["retired_by"] == "ops"
+    assert retired_definition["retirement_reason"] == "Campaign completed and closed to new waves."
+    assert retired_definition["retirement_correlation_id"] == "corr-campaign-definition-retire-001"
+    assert retired_definition["retired_at"] is not None
+    assert retired_definition["content_hash"] != put_response.json()["content_hash"]
+    assert fetched.json()["status"] == "RETIRED"
+    assert active_list.json()["count"] == 0
+    assert retired_list.json()["count"] == 1
+    assert active_discovery.json()["count"] == 0
+    assert retired_discovery.json()["count"] == 1
+    assert retired_discovery.json()["items"][0]["campaign_status"] == "RETIRED"
+    assert preview_response.status_code == 422
+    assert preview_response.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
+    assert create_response.status_code == 422
+    assert create_response.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
+    assert idempotent_retire.status_code == 200
+    assert idempotent_retire.json()["retirement_correlation_id"] == (
+        "corr-campaign-definition-retire-001"
+    )
+    assert missing_retire.status_code == 404
+    assert missing_retire.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+
+
 def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> None:
     request = {
         **_bulk_review_campaign_definition_request(),

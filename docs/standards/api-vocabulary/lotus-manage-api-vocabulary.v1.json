@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T01:56:24.922048+00:00",
+  "generatedAt": "2026-05-16T02:20:01.195136+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -8431,6 +8431,64 @@
       ]
     },
     {
+      "semanticId": "lotus.retired_at",
+      "canonicalTerm": "retired_at",
+      "preferredName": "retired_at",
+      "description": "dpm bulk review campaign definition field: retired at.",
+      "example": "retired_at_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.retired_by",
+      "canonicalTerm": "retired_by",
+      "preferredName": "retired_by",
+      "description": "dpm bulk review campaign definition field: retired by.",
+      "example": "retired_by_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object",
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.retirement_correlation_id",
+      "canonicalTerm": "retirement_correlation_id",
+      "preferredName": "retirement_correlation_id",
+      "description": "Unique retirement correlation identifier.",
+      "example": "RETIREMENT_CORRELATION_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.retirement_reason",
+      "canonicalTerm": "retirement_reason",
+      "preferredName": "retirement_reason",
+      "description": "dpm bulk review campaign definition field: retirement reason.",
+      "example": "retirement_reason_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object",
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.returned_count",
       "canonicalTerm": "returned_count",
       "preferredName": "returned_count",
@@ -13300,6 +13358,30 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "campaign_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical campaign id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_id",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+    },
+    {
+      "name": "campaign_version",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical campaign version used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_version",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_version"
     },
     {
       "name": "campaign_id",
@@ -60499,6 +60581,38 @@
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           },
           {
+            "name": "retired_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_at",
+            "attributeRef": "#/attributeCatalog/lotus.retired_at"
+          },
+          {
+            "name": "retired_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_by",
+            "attributeRef": "#/attributeCatalog/lotus.retired_by"
+          },
+          {
+            "name": "retirement_reason",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_reason",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_reason"
+          },
+          {
+            "name": "retirement_correlation_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_correlation_id"
+          },
+          {
             "name": "content_hash",
             "location": "body",
             "required": false,
@@ -60896,6 +61010,38 @@
             "type": "string",
             "semanticId": "lotus.correlation_id",
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "retired_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_at",
+            "attributeRef": "#/attributeCatalog/lotus.retired_at"
+          },
+          {
+            "name": "retired_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_by",
+            "attributeRef": "#/attributeCatalog/lotus.retired_by"
+          },
+          {
+            "name": "retirement_reason",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_reason",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_reason"
+          },
+          {
+            "name": "retirement_correlation_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_correlation_id"
           },
           {
             "name": "content_hash",
@@ -61329,6 +61475,38 @@
             "attributeRef": "#/attributeCatalog/lotus.correlation_id"
           },
           {
+            "name": "items[].retired_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_at",
+            "attributeRef": "#/attributeCatalog/lotus.retired_at"
+          },
+          {
+            "name": "items[].retired_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_by",
+            "attributeRef": "#/attributeCatalog/lotus.retired_by"
+          },
+          {
+            "name": "items[].retirement_reason",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_reason",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_reason"
+          },
+          {
+            "name": "items[].retirement_correlation_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_correlation_id"
+          },
+          {
             "name": "items[].content_hash",
             "location": "body",
             "required": false,
@@ -61359,6 +61537,461 @@
             "type": "integer",
             "semanticId": "lotus.count",
             "attributeRef": "#/attributeCatalog/lotus.count"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_rebalance_waves",
+      "method": "POST",
+      "path": "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire",
+      "operationId": "retire_bulk_review_campaign_definition_api_v1_rebalance_waves_campaign_definitions__campaign_id__versions__campaign_version__retire_post",
+      "summary": "Retire bulk-review campaign definition",
+      "request": {
+        "fields": [
+          {
+            "name": "campaign_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_version",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "retired_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.retired_by",
+            "attributeRef": "#/attributeCatalog/lotus.retired_by"
+          },
+          {
+            "name": "retirement_reason",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.retirement_reason",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_reason"
+          },
+          {
+            "name": "correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "status",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.status",
+            "attributeRef": "#/attributeCatalog/lotus.status"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "rationale",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.rationale",
+            "attributeRef": "#/attributeCatalog/lotus.rationale"
+          },
+          {
+            "name": "eligible_portfolio_types",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "candidates",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.candidates",
+            "attributeRef": "#/attributeCatalog/lotus.candidates"
+          },
+          {
+            "name": "candidates[].portfolio_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "candidates[].mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+          },
+          {
+            "name": "candidates[].portfolio_manager_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_manager_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_manager_id"
+          },
+          {
+            "name": "candidates[].portfolio_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.portfolio_type",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_type"
+          },
+          {
+            "name": "candidates[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "candidates[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "candidates[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "candidates[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "candidates[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "candidates[].source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "candidates[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "governance",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.governance",
+            "attributeRef": "#/attributeCatalog/lotus.governance"
+          },
+          {
+            "name": "governance.approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "governance.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "governance.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "governance.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "governance.entitled_actor_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.entitled_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_ids"
+          },
+          {
+            "name": "governance.access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "governance.source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "governance.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "governance.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "governance.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "governance.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "governance.source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "governance.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "source_refs[].supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "created_at",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.created_at",
+            "attributeRef": "#/attributeCatalog/lotus.created_at"
+          },
+          {
+            "name": "created_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.created_by",
+            "attributeRef": "#/attributeCatalog/lotus.created_by"
+          },
+          {
+            "name": "correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "retired_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_at",
+            "attributeRef": "#/attributeCatalog/lotus.retired_at"
+          },
+          {
+            "name": "retired_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retired_by",
+            "attributeRef": "#/attributeCatalog/lotus.retired_by"
+          },
+          {
+            "name": "retirement_reason",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_reason",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_reason"
+          },
+          {
+            "name": "retirement_correlation_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.retirement_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.retirement_correlation_id"
+          },
+          {
+            "name": "content_hash",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       }

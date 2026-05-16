@@ -43,7 +43,7 @@ class DpmBulkReviewCampaignDefinitionCandidate(BaseModel):
 
 
 class DpmBulkReviewCampaignDefinition(BaseModel):
-    """Immutable Manage-owned bulk-review campaign definition over source-backed candidates."""
+    """Manage-owned bulk-review campaign definition over source-backed candidates."""
 
     product_name: Literal["BulkReviewCampaignDefinition"] = "BulkReviewCampaignDefinition"
     product_version: Literal["v1"] = "v1"
@@ -65,12 +65,32 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     created_by: str = Field(examples=["ops"])
     correlation_id: str = Field(examples=["corr-campaign-definition-001"])
+    retired_at: datetime | None = Field(default=None)
+    retired_by: str | None = Field(default=None, examples=["ops"])
+    retirement_reason: str | None = Field(default=None)
+    retirement_correlation_id: str | None = Field(default=None)
     content_hash: str = Field(default="")
 
     @model_validator(mode="after")
     def validate_definition(self) -> "DpmBulkReviewCampaignDefinition":
-        if self.status != "ACTIVE":
-            raise ValueError("BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_ACTIVE")
+        if self.status == "ACTIVE":
+            retirement_fields = [
+                self.retired_at,
+                self.retired_by,
+                self.retirement_reason,
+                self.retirement_correlation_id,
+            ]
+            if any(value is not None for value in retirement_fields):
+                raise ValueError("BULK_REVIEW_CAMPAIGN_ACTIVE_RETIREMENT_FIELDS_FORBIDDEN")
+        else:
+            if self.retired_at is None:
+                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_TIMESTAMP_REQUIRED")
+            if not (self.retired_by or "").strip():
+                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_ACTOR_REQUIRED")
+            if not (self.retirement_reason or "").strip():
+                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_REASON_REQUIRED")
+            if not (self.retirement_correlation_id or "").strip():
+                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_CORRELATION_REQUIRED")
         if not [value for value in self.eligible_portfolio_types if value.strip()]:
             raise ValueError("BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED")
         if not self.candidates:

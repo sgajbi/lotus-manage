@@ -531,11 +531,15 @@ Current repository posture:
     the first-wave active campaign-definition list through Gateway/BFF without browser-side cohort
     or membership calculation. Persisted campaign discovery is now implemented at
     `GET /api/v1/rebalance/waves/campaign-discovery` as a Manage-owned
-    `BulkReviewCampaignDiscovery:v1` read model over immutable `BulkReviewCampaignDefinition:v1`
+    `BulkReviewCampaignDiscovery:v1` read model over persisted `BulkReviewCampaignDefinition:v1`
     records; it exposes campaign identity, governance posture, expiry posture, source-ref count,
     source-backed candidate counts, and preview references without discovering the global portfolio
-    universe, recalculating campaign membership, or owning source facts. Broader campaign workflow
-    surfaces, wave risk/performance analytics posture, and external OMS execution remain
+    universe, recalculating campaign membership, or owning source facts. Manage can retire
+    persisted campaign definitions through
+    `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
+    retirement preserves the candidate set for audit, makes the definition visible as `RETIRED`,
+    and blocks new wave preview/create use. Broader campaign workflow surfaces beyond this bounded
+    lifecycle control, wave risk/performance analytics posture, and external OMS execution remain
     unpromoted until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and

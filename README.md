@@ -130,9 +130,13 @@ campaign-definition list through Gateway/BFF without recalculating campaign memb
 also exposes persisted campaign discovery at
 `GET /api/v1/rebalance/waves/campaign-discovery`, summarizing `BulkReviewCampaignDefinition:v1`
 identity, governance posture, expiry posture, source-ref count, and source-backed candidate counts
-without discovering the global portfolio universe or recalculating membership. Broader campaign
-workflow surfaces, richer owning-service risk/performance aggregate enrichment, and external OMS
-execution remain unpromoted.
+without discovering the global portfolio universe or recalculating membership. Manage also supports
+retiring persisted campaign definitions at
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
+retired definitions stay auditable in list/get/discovery results but fail closed for new
+preview/create requests. Broader campaign workflow surfaces beyond this bounded lifecycle control,
+richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
+unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
 `dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,
