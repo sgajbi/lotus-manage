@@ -947,6 +947,76 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
     assert "EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED" in currency_context.reason_codes
 
 
+def test_source_context_lifts_fx_forward_curve_when_it_is_the_only_currency_source() -> None:
+    fx_forward_curve = DpmCoreExternalFXForwardCurveResponse.model_validate(
+        {
+            "product_name": "ExternalFXForwardCurve",
+            "product_version": "v1",
+            "portfolio_id": "pf_fx_1",
+            "client_id": "client-1",
+            "mandate_id": "mandate-1",
+            "as_of_date": "2026-05-03",
+            "reporting_currency": "USD",
+            "exposure_currencies": ["USD"],
+            "curve_points": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+                "curve_point_count": 0,
+                "missing_data_families": ["external_fx_forward_curve"],
+                "blocked_capabilities": [
+                    "forward_pricing",
+                    "fx_valuation_methodology",
+                    "best_execution",
+                ],
+            },
+            "lineage": {"runtime_posture": "fail_closed"},
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-fx-forward-curve",
+        }
+    )
+    source_context = DpmResolvedSourceContext.model_construct(
+        input_mode="stateful",
+        source_system="lotus-core",
+        stateful_context_hash="source-context-hash",
+        context=SimpleNamespace(
+            transaction_cost_curve=None,
+            portfolio_cashflow_projection=None,
+            client_income_needs_schedule=None,
+            liquidity_reserve_requirement=None,
+            planned_withdrawal_schedule=None,
+            external_hedge_execution_readiness=None,
+            external_currency_exposure=None,
+            external_hedge_policy=None,
+            external_fx_forward_curve=fx_forward_curve,
+            client_restriction_profile=None,
+            sustainability_preference_profile=None,
+        ),
+    )
+
+    context = construction_service._authority_context_with_source_products(
+        authority_context=ConstructionAuthorityContext(),
+        source_context=source_context,
+    )
+
+    currency_context = context.currency_overlay_context
+    assert currency_context is not None
+    assert currency_context.supportability_status == ConstructionMethodStatus.BLOCKED
+    assert currency_context.source_product_name is None
+    assert currency_context.source_id is not None
+    assert currency_context.source_id.startswith("sha256:")
+    assert currency_context.eligible_currencies == ["USD"]
+    assert currency_context.external_fx_forward_curve_source_product_name == (
+        "ExternalFXForwardCurve"
+    )
+    assert currency_context.external_fx_forward_curve_point_count == 0
+    assert currency_context.external_fx_forward_curve_points == []
+    assert "forward_pricing" in currency_context.blocked_capabilities
+    assert "best_execution" in currency_context.blocked_capabilities
+    assert "external_fx_forward_curve" in currency_context.missing_data_families
+    assert "EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED" in currency_context.reason_codes
+
+
 def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:
     payload = valid_api_payload()
     payload["portfolio_snapshot"]["base_currency"] = "SGD"

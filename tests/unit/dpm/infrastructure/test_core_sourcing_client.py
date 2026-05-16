@@ -1916,6 +1916,32 @@ def test_source_product_helpers_retry_until_source_safe_unavailable() -> None:
     assert get_attempts["count"] == 2
 
 
+def test_source_product_helpers_map_exhausted_502_retries_to_unavailable() -> None:
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test", max_attempts=2),
+        client=httpx.Client(
+            transport=httpx.MockTransport(lambda request: httpx.Response(502, json={}))
+        ),
+    )
+
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        client._post_source_product(
+            url="https://core.example.test/source",
+            payload={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+    with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_SOURCE_UNAVAILABLE"):
+        client._get_source_product(
+            url="https://core.example.test/source",
+            params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            correlation_id=None,
+            unavailable_code="DPM_CORE_SOURCE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_INCOMPLETE",
+        )
+
+
 def test_owned_core_resolver_client_closes_managed_http_client() -> None:
     http_client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200)))
     client = DpmCoreResolverClient(
@@ -1970,6 +1996,10 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
             client_income_needs_schedule_path_template="",
             liquidity_reserve_requirement_path_template="",
             planned_withdrawal_schedule_path_template="",
+            external_hedge_execution_readiness_path_template="",
+            external_currency_exposure_path_template="",
+            external_hedge_policy_path_template="",
+            external_fx_forward_curve_path_template="",
         ),
         client=httpx.Client(
             transport=httpx.MockTransport(lambda request: httpx.Response(500, json={}))
@@ -1982,6 +2012,54 @@ def test_optional_resolvers_suppress_unavailable_source_products() -> None:
             as_of_date=date(2026, 5, 3),
             security_ids=[],
             tenant_id="tenant_sg_pb",
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_hedge_execution_readiness(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_currency_exposure(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_hedge_policy(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
+            correlation_id=None,
+        )
+        is None
+    )
+    assert (
+        client._try_resolve_external_fx_forward_curve(
+            portfolio_id="PB_SG_GLOBAL_BAL_001",
+            as_of_date=date(2026, 5, 3),
+            tenant_id="tenant_sg_pb",
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            reporting_currency="SGD",
+            exposure_currencies=["USD"],
             correlation_id=None,
         )
         is None
