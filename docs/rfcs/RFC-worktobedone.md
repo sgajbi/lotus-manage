@@ -5467,6 +5467,29 @@ Latest WTBD-006 risk/performance issuer active-risk proof:
    income-needs planning, financial-planning advice, tax advice, tax optimization, and broader
    live portfolio-archetype validation remain source-owner or future-RFC work.
 
+Latest WTBD-006 performance currency-attribution fail-closed proof:
+
+1. `lotus-performance` PR #166 was merged to `main` as `643226d` and published wiki commit
+   `a48035b`; it tightens source-owned Karnosky-Singer currency-attribution evidence so
+   `currency_attribution_status` is `complete` only when `currency_mode=BOTH`, required local/FX
+   columns are present, and the request includes the `currency` grouping key,
+2. the same prerequisite check now gates both supportability status and emitted
+   `currency_attribution` / `currency_attribution_totals`, so downstream consumers receive
+   `currency_attribution_unavailable` instead of a false complete posture when no currency bucket
+   can be emitted,
+3. performance local proof passed focused attribution/docs tests, `make lint`, `make typecheck`,
+   `make openapi-gate`, `make api-vocabulary-gate`, `make no-alias-gate`,
+   `make domain-product-validate`, `make test-unit`, `make test-integration`, `make test-e2e`,
+   platform context validators, migration smoke, security audit, coverage gate, Docker build, and
+   the final GitHub Feature Lane and PR Merge Gate before merge,
+4. manage consumes this as source-owner supportability truth only: no Karnosky-Singer, FX
+   attribution, local/FX return, benchmark-currency, or portfolio-level currency-effect
+   calculation is implemented or duplicated in manage,
+5. this advances RFC42-WTBD-006 but does not close it: broader FX methodology beyond the
+   implemented performance attribution path, predictive execution, OMS acknowledgements,
+   income-needs planning, tax advice, tax optimization, and broader live portfolio-archetype
+   validation remain source-owner or future-RFC work.
+
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
 
 Target business outcome:
