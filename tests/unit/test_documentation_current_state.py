@@ -621,12 +621,14 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
         "`dpm_wave_pm_memo.pack@v1`",
         "`outcome_review_narrative.pack@v1`",
         "`dpm_operations_handoff_summary.pack@v1`",
+        "`pm_quality_summary.pack@v1`",
         "The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated",
         "bounded current RFC37-WTBD-002 product path",
         "WTBD Reintegration Audit - 2026-05-10",
-        "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, and exception summary packs",
+        "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary packs",
         "`dpm_exception_summary.pack@v1`",
         "lotus-ai` PR #68",
+        "`lotus-ai` PR #70",
         "support-only narrative aids",
     ]
 
@@ -1322,11 +1324,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, and AI-owned support-only PM quality summary pack are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bank-defined peer-group/lookback-window scope materialization, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are implemented"
+        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bank-defined peer-group/lookback-window scope materialization, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, and AI-owned support-only PM quality summary are implemented"
         in work_to_be_done
     )
     assert "2026-05-16 fairness-analysis lifecycle addendum" in work_to_be_done
@@ -1342,6 +1344,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "PmOperatingQualityScoreRun:v1" in work_to_be_done
     assert "`lotus-gateway` PR #213 (`62ce4c4`)" in work_to_be_done
     assert "`a4c9db9`" in work_to_be_done
+    assert "`lotus-ai` PR #70 (`1951f62`, wiki `038a1a1`)" in work_to_be_done
+    assert "`pm_quality_summary.pack@v1`" in work_to_be_done
     assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
     assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done
     assert "stale RFC wording that said Gateway/Workbench product proof remained unclaimed" in (

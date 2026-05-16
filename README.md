@@ -143,9 +143,10 @@ bounded lifecycle controls,
 richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
 unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
-`outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
-`dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,
-operations handoff, and monitoring-exception evidence with review-required guardrails. RFC-0042 is
+`outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`,
+`dpm_exception_summary.pack@v1`, and `pm_quality_summary.pack@v1` workflows over Manage-owned
+proof-pack, wave, outcome, operations handoff, monitoring-exception, and PM quality score-run
+evidence with review-required guardrails. RFC-0042 is
 `DONE` for manage backend
 authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
@@ -195,6 +196,12 @@ execution, or OMS decisions. Downstream UI remains future expansion.
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,
 compensation, conduct, approval, client-contact, execution, or OMS decisions. Workbench PM-quality
 UI remains future owner scope and must consume Gateway only.
+`lotus-ai` PR #70 (`1951f62`) adds `pm_quality_summary.pack@v1` for review-gated support-only
+summaries over Manage-owned `PmOperatingQualityScoreRun` evidence. The pack validates score-run
+identity, source refs, supportability posture, optional bounded portfolio-memory context, and
+forbidden-use controls, and it must not calculate scores, rank PMs, generate HR/compensation/
+conduct decisions, contact clients, approve trades, route orders, claim execution, or invent
+missing source facts. Gateway/Workbench product invocation remains future owner scope.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
