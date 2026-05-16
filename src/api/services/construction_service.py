@@ -56,6 +56,7 @@ from src.core.construction.vocabulary import (
 from src.core.dpm_source_context import (
     DpmCoreExternalCurrencyExposureResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
+    DpmCoreExternalHedgePolicyResponse,
     DpmResolvedSourceContext,
 )
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
@@ -577,8 +578,9 @@ def _external_treasury_currency_overlay_context(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
     currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
 ) -> AuthoritativeCurrencyOverlayContext | None:
-    if hedge_readiness is None and currency_exposure is None:
+    if hedge_readiness is None and currency_exposure is None and hedge_policy is None:
         return None
 
     readiness_payload = (
@@ -591,24 +593,38 @@ def _external_treasury_currency_overlay_context(
         if currency_exposure is not None
         else None
     )
+    hedge_policy_payload = (
+        hedge_policy.model_dump(mode="json", exclude_none=True)
+        if hedge_policy is not None
+        else None
+    )
     source_hash = hash_canonical_payload(
         {
             "external_hedge_execution_readiness": readiness_payload,
             "external_currency_exposure": exposure_payload,
+            "external_hedge_policy": hedge_policy_payload,
         }
     )
     if hedge_readiness is not None:
         supportability_state = hedge_readiness.supportability.state
         supportability_reason = hedge_readiness.supportability.reason
         exposure_currencies = hedge_readiness.exposure_currencies
-    else:
+    elif currency_exposure is not None:
         assert currency_exposure is not None
         supportability_state = currency_exposure.supportability.state
         supportability_reason = currency_exposure.supportability.reason
         exposure_currencies = currency_exposure.exposure_currencies
+    else:
+        assert hedge_policy is not None
+        supportability_state = hedge_policy.supportability.state
+        supportability_reason = hedge_policy.supportability.reason
+        exposure_currencies = hedge_policy.exposure_currencies
 
     exposure_source_hash = (
         hash_canonical_payload(exposure_payload) if exposure_payload is not None else None
+    )
+    hedge_policy_source_hash = (
+        hash_canonical_payload(hedge_policy_payload) if hedge_policy_payload is not None else None
     )
     readiness_missing = (
         hedge_readiness.supportability.missing_data_families if hedge_readiness is not None else []
@@ -618,6 +634,9 @@ def _external_treasury_currency_overlay_context(
         if currency_exposure is not None
         else []
     )
+    hedge_policy_missing = (
+        hedge_policy.supportability.missing_data_families if hedge_policy is not None else []
+    )
     readiness_blocked = (
         hedge_readiness.supportability.blocked_capabilities if hedge_readiness is not None else []
     )
@@ -626,11 +645,16 @@ def _external_treasury_currency_overlay_context(
         if currency_exposure is not None
         else []
     )
+    hedge_policy_blocked = (
+        hedge_policy.supportability.blocked_capabilities if hedge_policy is not None else []
+    )
     reason_codes: list[str] = [supportability_reason]
     if hedge_readiness is not None:
         reason_codes.append("EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED")
     if currency_exposure is not None:
         reason_codes.append("EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED")
+    if hedge_policy is not None:
+        reason_codes.append("EXTERNAL_HEDGE_POLICY_FAIL_CLOSED")
 
     return AuthoritativeCurrencyOverlayContext(
         supportability_status=_source_status_to_method_status(supportability_state),
@@ -651,8 +675,10 @@ def _external_treasury_currency_overlay_context(
             else source_hash
         ),
         content_hash=source_hash,
-        missing_data_families=sorted({*readiness_missing, *exposure_missing}),
-        blocked_capabilities=sorted({*readiness_blocked, *exposure_blocked}),
+        missing_data_families=sorted(
+            {*readiness_missing, *exposure_missing, *hedge_policy_missing}
+        ),
+        blocked_capabilities=sorted({*readiness_blocked, *exposure_blocked, *hedge_policy_blocked}),
         readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
         external_currency_exposure_source_product_name=(
             currency_exposure.product_name if currency_exposure is not None else None
@@ -674,6 +700,24 @@ def _external_treasury_currency_overlay_context(
         external_currency_exposure_rows=(
             currency_exposure.exposures if currency_exposure is not None else []
         ),
+        external_hedge_policy_source_product_name=(
+            hedge_policy.product_name if hedge_policy is not None else None
+        ),
+        external_hedge_policy_source_product_version=(
+            hedge_policy.product_version if hedge_policy is not None else None
+        ),
+        external_hedge_policy_source_id=(
+            hedge_policy.source_batch_fingerprint
+            or hedge_policy.lineage.get("source_batch_fingerprint")
+            or hedge_policy_source_hash
+            if hedge_policy is not None
+            else None
+        ),
+        external_hedge_policy_content_hash=hedge_policy_source_hash,
+        external_hedge_policy_rule_count=(
+            hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
+        ),
+        external_hedge_policy_rules=(hedge_policy.policy_rules if hedge_policy is not None else []),
         reason_codes=reason_codes,
     )
 
@@ -873,9 +917,15 @@ def _authority_context_with_source_products(
             "external_currency_exposure",
             None,
         )
+        hedge_policy = getattr(
+            source_context.context,
+            "external_hedge_policy",
+            None,
+        )
         currency_context = _external_treasury_currency_overlay_context(
             hedge_readiness=hedge_readiness,
             currency_exposure=currency_exposure,
+            hedge_policy=hedge_policy,
         )
         if currency_context is not None:
             context_updates["currency_overlay_context"] = currency_context
