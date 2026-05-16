@@ -88,7 +88,11 @@ preserves optional `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:
 mandate-health lineage. Security-level sustainability classification evidence remains an explicit
 pending-review boundary; Manage does not turn income needs, reserve requirements, or withdrawals
 into financial-planning advice, funding recommendations, client liability planning, OMS
-instructions, or treasury actions. Postgres
+instructions, or treasury actions. `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) now defines
+planned external treasury source-product contracts for currency exposure, hedge policy, FX forward
+curves, eligible hedge instruments, and hedge execution readiness; Manage does not consume them
+yet and still makes no hedge advice, forward-pricing, counterparty-selection, treasury-instruction,
+best-execution, OMS, fill, or settlement claim. Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.
 RFC-0040 is now implementation-backed for manage-owned pre-trade proof packs: durable
