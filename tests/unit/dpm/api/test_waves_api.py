@@ -1689,6 +1689,71 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
     assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
+def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        put_response = client.put(
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05",
+            json=_bulk_review_campaign_definition_request(),
+        )
+        discovery = client.get("/api/v1/rebalance/waves/campaign-discovery?active_on=2026-05-10")
+
+    assert put_response.status_code == 200
+    assert discovery.status_code == 200
+    payload = discovery.json()
+    assert payload["count"] == 1
+    item = payload["items"][0]
+    assert item["product_name"] == "BulkReviewCampaignDiscovery"
+    assert item["campaign_id"] == "campaign-holdings-apple-tesla-20260510"
+    assert item["campaign_version"] == "2026.05"
+    assert item["candidate_count"] == 2
+    assert item["eligible_candidate_count"] == 1
+    assert item["governance_status"] == "APPROVED"
+    assert item["expiry_state"] == "ACTIVE"
+    assert item["source_ref_count"] == 2
+    assert item["preview_reference"] == {
+        "trigger_type": "BULK_REVIEW_CAMPAIGN",
+        "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+        "campaign_definition_version": "2026.05",
+        "as_of_date": "2026-05-10",
+    }
+
+
+def test_bulk_review_campaign_discovery_filters_expired_campaigns() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        put_response = client.put(
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05",
+            json=_bulk_review_campaign_definition_request(),
+        )
+        filtered = client.get("/api/v1/rebalance/waves/campaign-discovery?active_on=2026-07-01")
+        included = client.get(
+            "/api/v1/rebalance/waves/campaign-discovery?active_on=2026-07-01&include_expired=true"
+        )
+        invalid = client.get("/api/v1/rebalance/waves/campaign-discovery?active_on=bad-date")
+
+    assert put_response.status_code == 200
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == 0
+    assert included.status_code == 200
+    assert included.json()["count"] == 1
+    assert included.json()["items"][0]["expiry_state"] == "EXPIRED"
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+
+
 def test_bulk_review_campaign_definition_put_maps_domain_validation_errors() -> None:
     request = {
         **_bulk_review_campaign_definition_request(),

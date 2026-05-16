@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-14T13:54:20.854067+00:00",
+  "generatedAt": "2026-05-16T01:56:24.922048+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -35,7 +35,8 @@
         "body"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -66,6 +67,20 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.active_on",
+      "canonicalTerm": "active_on",
+      "preferredName": "active_on",
+      "description": "Canonical active on used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "query"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -1263,10 +1278,12 @@
       "example": null,
       "type": "object",
       "locations": [
-        "query"
+        "query",
+        "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "string"
       ]
     },
     {
@@ -1282,6 +1299,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.candidate_count",
+      "canonicalTerm": "candidate_count",
+      "preferredName": "candidate_count",
+      "description": "dpm bulk review campaign discovery item field: candidate count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -2651,6 +2682,20 @@
       ]
     },
     {
+      "semanticId": "lotus.eligible_candidate_count",
+      "canonicalTerm": "eligible_candidate_count",
+      "preferredName": "eligible_candidate_count",
+      "description": "dpm bulk review campaign discovery item field: eligible candidate count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.eligible_currencies",
       "canonicalTerm": "eligible_currencies",
       "preferredName": "eligible_currencies",
@@ -3283,6 +3328,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.expiry_state",
+      "canonicalTerm": "expiry_state",
+      "preferredName": "expiry_state",
+      "description": "dpm bulk review campaign discovery item field: expiry state.",
+      "example": "ACTIVE",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -3967,6 +4026,20 @@
       ]
     },
     {
+      "semanticId": "lotus.governance_status",
+      "canonicalTerm": "governance_status",
+      "preferredName": "governance_status",
+      "description": "Current status for governance status.",
+      "example": "APPROVED",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.group_constraint_events",
       "canonicalTerm": "group_constraint_events",
       "preferredName": "group_constraint_events",
@@ -4343,6 +4416,20 @@
       "canonicalTerm": "include_async_operation",
       "preferredName": "include_async_operation",
       "description": "Canonical include async operation used by lotus-manage APIs.",
+      "example": null,
+      "type": "boolean",
+      "locations": [
+        "query"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.include_expired",
+      "canonicalTerm": "include_expired",
+      "preferredName": "include_expired",
+      "description": "Canonical include expired used by lotus-manage APIs.",
       "example": null,
       "type": "boolean",
       "locations": [
@@ -7075,6 +7162,22 @@
       ]
     },
     {
+      "semanticId": "lotus.preview_reference",
+      "canonicalTerm": "preview_reference",
+      "preferredName": "preview_reference",
+      "description": "Bounded reference clients can use to preview or create a BULK_REVIEW_CAMPAIGN wave from the persisted definition. Manage still resolves membership only from the source-backed candidate set in that definition.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.previous_value",
       "canonicalTerm": "previous_value",
       "preferredName": "previous_value",
@@ -9589,7 +9692,7 @@
       "semanticId": "lotus.source_ref_count",
       "canonicalTerm": "source_ref_count",
       "preferredName": "source_ref_count",
-      "description": "Count of source refs linked to the review.",
+      "description": "dpm bulk review campaign discovery item field: source ref count.",
       "example": 10,
       "type": "integer",
       "locations": [
@@ -13173,6 +13276,90 @@
       "allowedValues": [],
       "semanticId": "lotus.as_of_date",
       "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+    },
+    {
+      "name": "limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Canonical limit used by lotus-manage APIs.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.limit",
+      "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "offset",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Canonical offset used by lotus-manage APIs.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.offset",
+      "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "campaign_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Canonical campaign id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_id",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+    },
+    {
+      "name": "campaign_status",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Canonical campaign status used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_status",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Canonical as of date used by lotus-manage APIs.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+    },
+    {
+      "name": "active_on",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional ISO date used to classify and filter campaign expiry posture. When supplied with include_expired=false, expired campaigns are omitted.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.active_on",
+      "attributeRef": "#/attributeCatalog/lotus.active_on"
+    },
+    {
+      "name": "include_expired",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "boolean",
+      "description": "Canonical include expired used by lotus-manage APIs.",
+      "example": true,
+      "allowedValues": [],
+      "semanticId": "lotus.include_expired",
+      "attributeRef": "#/attributeCatalog/lotus.include_expired"
     },
     {
       "name": "limit",
@@ -61148,6 +61335,245 @@
             "type": "string",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.count",
+            "attributeRef": "#/attributeCatalog/lotus.count"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_rebalance_waves",
+      "method": "GET",
+      "path": "/api/v1/rebalance/waves/campaign-discovery",
+      "operationId": "discover_bulk_review_campaigns_api_v1_rebalance_waves_campaign_discovery_get",
+      "summary": "Discover persisted bulk-review campaigns",
+      "request": {
+        "fields": [
+          {
+            "name": "campaign_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_status",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "active_on",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.active_on",
+            "attributeRef": "#/attributeCatalog/lotus.active_on"
+          },
+          {
+            "name": "include_expired",
+            "location": "query",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.include_expired",
+            "attributeRef": "#/attributeCatalog/lotus.include_expired"
+          },
+          {
+            "name": "limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "items",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.items",
+            "attributeRef": "#/attributeCatalog/lotus.items"
+          },
+          {
+            "name": "items[].product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].campaign_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "items[].as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "items[].eligible_portfolio_types",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "items[].candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_count"
+          },
+          {
+            "name": "items[].eligible_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.eligible_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_candidate_count"
+          },
+          {
+            "name": "items[].governance_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.governance_status",
+            "attributeRef": "#/attributeCatalog/lotus.governance_status"
+          },
+          {
+            "name": "items[].expiry_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.expiry_state",
+            "attributeRef": "#/attributeCatalog/lotus.expiry_state"
+          },
+          {
+            "name": "items[].expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "items[].access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "items[].source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "items[].content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].preview_reference",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.preview_reference",
+            "attributeRef": "#/attributeCatalog/lotus.preview_reference"
           },
           {
             "name": "limit",

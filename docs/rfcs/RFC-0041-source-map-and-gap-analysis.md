@@ -69,7 +69,7 @@ owner and reason codes.
 | `CIO_MODEL_CHANGE` | Supported for source-owned model-change affected-mandate discovery | `model_portfolio_id`, as-of date, optional tenant and booking-center filters. | Reject caller-supplied portfolios; return dependency failures for unavailable, incomplete, or empty source cohorts. | Promote only while lotus-core `CioModelChangeAffectedCohort:v1` remains the source authority. |
 | `TACTICAL_HOUSE_VIEW` | Supported for bounded source-owned tactical house-view affected-cohort consumption | Bank-authored tactical house-view payload with source refs, as-of date, candidate portfolios, source-owned `portfolio_type`, source-owned `discretionary_mandate`, candidate source refs, eligible portfolio types, and optional minimum tactical exposure weight. | Reject missing source evidence; return dependency failures for unavailable, rejected, incomplete, or empty source cohorts. | Promote only while lotus-advise `TacticalHouseViewAffectedCohort:v1` remains the source authority; manage must not compute house-view, holdings, exposure, alignment, or mandate facts locally. |
 | `RISK_EVENT` | Supported for bounded source-owned risk-event affected-cohort discovery | `risk_event_id`, as-of date, candidate portfolios, and source-supplied `exposure_weights`. | Reject missing selector/candidates/exposure weights; return dependency failures for unavailable, rejected, incomplete, or empty source cohorts. | Promote only while lotus-risk `RiskEventAffectedCohort:v1` remains the source authority; manage must not compute risk-event impact locally. |
-| `BULK_REVIEW_CAMPAIGN` | Supported for bounded Manage-owned campaign membership over supplied source-backed candidates | Source-backed candidate portfolios, source-owned `portfolio_type`, source refs, as-of date, eligible portfolio types, optional governance evidence, and immutable campaign definitions. | Reject missing candidate/source/governance evidence or empty eligible membership; no global discovery. | Promote only for the bounded membership envelope and Workbench active campaign-definition list; global campaign discovery and broader campaign workflow surfaces remain future work. |
+| `BULK_REVIEW_CAMPAIGN` | Supported for bounded Manage-owned campaign membership and persisted campaign discovery over supplied source-backed candidates | Source-backed candidate portfolios, source-owned `portfolio_type`, source refs, as-of date, eligible portfolio types, optional governance evidence, immutable campaign definitions, and `BulkReviewCampaignDiscovery:v1` summaries. | Reject missing candidate/source/governance evidence or empty eligible membership; campaign discovery must not discover the global portfolio universe or recompute membership. | Promote only for the bounded membership envelope, persisted campaign-definition discovery, and Workbench active campaign-definition list; broader campaign workflow surfaces remain future work. |
 
 ## State-Machine Transition Matrix
 
@@ -600,8 +600,8 @@ Closure result:
    endpoint certification, README/wiki governance, pre-merge gate, and front-office runtime skills
    were sufficient. No central context or AGENTS.md operating-contract update is required by this
    final closure slice.
-5. Remaining unpromoted capabilities are explicit: global campaign discovery, broader campaign
-   workflow surfaces, richer source-owner depth, and external execution.
+5. Remaining unpromoted capabilities are explicit: broader campaign workflow surfaces, global
+   portfolio-universe campaign discovery, richer source-owner depth, and external execution.
 
 Validation:
 

@@ -325,6 +325,39 @@ class DpmBulkReviewCampaignDefinitionPage(BaseModel):
     count: int
 
 
+class DpmBulkReviewCampaignDiscoveryItem(BaseModel):
+    product_name: Literal["BulkReviewCampaignDiscovery"] = "BulkReviewCampaignDiscovery"
+    product_version: Literal["v1"] = "v1"
+    campaign_id: str
+    campaign_version: str
+    display_name: str
+    campaign_status: Literal["ACTIVE", "RETIRED"]
+    as_of_date: str
+    eligible_portfolio_types: list[str]
+    candidate_count: int
+    eligible_candidate_count: int
+    governance_status: Literal["APPROVED", "INCOMPLETE", "NOT_SUPPLIED"]
+    expiry_state: Literal["ACTIVE", "EXPIRED", "INVALID", "NOT_SUPPLIED"]
+    expires_on: str | None = None
+    access_purpose: str | None = None
+    source_ref_count: int
+    content_hash: str
+    preview_reference: dict[str, str] = Field(
+        description=(
+            "Bounded reference clients can use to preview or create a BULK_REVIEW_CAMPAIGN wave "
+            "from the persisted definition. Manage still resolves membership only from the "
+            "source-backed candidate set in that definition."
+        )
+    )
+
+
+class DpmBulkReviewCampaignDiscoveryPage(BaseModel):
+    items: list[DpmBulkReviewCampaignDiscoveryItem]
+    limit: int
+    offset: int
+    count: int
+
+
 class DpmWavePreviewRequest(BaseModel):
     trigger_type: Literal[
         "EXPLICIT_PORTFOLIO_LIST",
@@ -1678,6 +1711,62 @@ def list_bulk_review_campaign_definitions(
 
 
 @router.get(
+    "/campaign-discovery",
+    response_model=DpmBulkReviewCampaignDiscoveryPage,
+    status_code=status.HTTP_200_OK,
+    summary="Discover persisted bulk-review campaigns",
+    description=(
+        "Discovers persisted Manage-owned `BulkReviewCampaignDefinition:v1` records as a bounded "
+        "front-office operating read model. This endpoint summarizes campaign identity, governance "
+        "posture, expiry posture, source-ref count, and source-backed candidate counts. It does not "
+        "discover the global portfolio universe, calculate source facts, run maker-checker workflow, "
+        "or claim OMS execution."
+    ),
+)
+def discover_bulk_review_campaigns(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED"] | None = Query(default="ACTIVE"),
+    as_of_date: str | None = Query(default=None),
+    active_on: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date used to classify and filter campaign expiry posture. When supplied "
+            "with include_expired=false, expired campaigns are omitted."
+        ),
+    ),
+    include_expired: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDiscoveryPage:
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    definitions = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    items = [
+        _campaign_discovery_item(definition=definition, active_on=active_on_date)
+        for definition in definitions
+    ]
+    if active_on_date is not None and not include_expired:
+        items = [item for item in items if item.expiry_state != "EXPIRED"]
+    return DpmBulkReviewCampaignDiscoveryPage(
+        items=items,
+        limit=limit,
+        offset=offset,
+        count=len(items),
+    )
+
+
+@router.get(
     "/campaign-definitions/{campaign_id}/versions/{campaign_version}",
     response_model=DpmBulkReviewCampaignDefinition,
     status_code=status.HTTP_200_OK,
@@ -1704,6 +1793,103 @@ def get_bulk_review_campaign_definition(
             },
         )
     return definition
+
+
+def _parse_optional_campaign_discovery_date(
+    *,
+    value: str | None,
+    field_name: str,
+) -> date | None:
+    if value is None:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID",
+                "message": f"{field_name} must be an ISO date.",
+            },
+        ) from exc
+
+
+def _campaign_discovery_item(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    active_on: date | None,
+) -> DpmBulkReviewCampaignDiscoveryItem:
+    eligible_types = {
+        portfolio_type.strip()
+        for portfolio_type in definition.eligible_portfolio_types
+        if portfolio_type.strip()
+    }
+    governance = definition.governance
+    governance_status: Literal["APPROVED", "INCOMPLETE", "NOT_SUPPLIED"] = "NOT_SUPPLIED"
+    expiry_state: Literal["ACTIVE", "EXPIRED", "INVALID", "NOT_SUPPLIED"] = "NOT_SUPPLIED"
+    expires_on: str | None = None
+    access_purpose: str | None = None
+    source_ref_count = len(definition.source_refs)
+    if governance is not None:
+        approval_values = [
+            governance.approval_ref,
+            governance.approved_by,
+            governance.approved_at,
+        ]
+        governance_status = (
+            "APPROVED"
+            if all(approval_values)
+            else "INCOMPLETE"
+            if any(approval_values)
+            else "NOT_SUPPLIED"
+        )
+        expires_on = governance.expires_on
+        access_purpose = governance.access_purpose
+        source_ref_count += len(governance.source_refs)
+        expiry_state = _campaign_discovery_expiry_state(
+            expires_on=governance.expires_on,
+            active_on=active_on,
+        )
+    return DpmBulkReviewCampaignDiscoveryItem(
+        campaign_id=definition.campaign_id,
+        campaign_version=definition.campaign_version,
+        display_name=definition.display_name,
+        campaign_status=definition.status,
+        as_of_date=definition.as_of_date,
+        eligible_portfolio_types=definition.eligible_portfolio_types,
+        candidate_count=len(definition.candidates),
+        eligible_candidate_count=sum(
+            1 for candidate in definition.candidates if candidate.portfolio_type in eligible_types
+        ),
+        governance_status=governance_status,
+        expiry_state=expiry_state,
+        expires_on=expires_on,
+        access_purpose=access_purpose,
+        source_ref_count=source_ref_count,
+        content_hash=definition.content_hash,
+        preview_reference={
+            "trigger_type": "BULK_REVIEW_CAMPAIGN",
+            "campaign_definition_id": definition.campaign_id,
+            "campaign_definition_version": definition.campaign_version,
+            "as_of_date": definition.as_of_date,
+        },
+    )
+
+
+def _campaign_discovery_expiry_state(
+    *,
+    expires_on: str | None,
+    active_on: date | None,
+) -> Literal["ACTIVE", "EXPIRED", "INVALID", "NOT_SUPPLIED"]:
+    if not expires_on:
+        return "NOT_SUPPLIED"
+    try:
+        expiry_date = date.fromisoformat(expires_on)
+    except ValueError:
+        return "INVALID"
+    if active_on is None:
+        return "ACTIVE"
+    return "EXPIRED" if expiry_date < active_on else "ACTIVE"
 
 
 @router.post(

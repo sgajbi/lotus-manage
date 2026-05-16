@@ -126,9 +126,13 @@ validation. Tactical house-view wave discovery is implemented for `TACTICAL_HOUS
 lotus-advise `TacticalHouseViewAffectedCohort:v1` over caller-supplied source-backed candidate
 portfolios; Manage preserves Advise cohort refs and fails closed without recomputing house-view,
 holdings, exposure, alignment, or mandate facts. Workbench now renders the first-wave active
-campaign-definition list through Gateway/BFF without recalculating campaign membership. Global
-campaign discovery, broader campaign workflow surfaces, richer owning-service risk/performance
-aggregate enrichment, and external OMS execution remain unpromoted.
+campaign-definition list through Gateway/BFF without recalculating campaign membership. Manage now
+also exposes persisted campaign discovery at
+`GET /api/v1/rebalance/waves/campaign-discovery`, summarizing `BulkReviewCampaignDefinition:v1`
+identity, governance posture, expiry posture, source-ref count, and source-backed candidate counts
+without discovering the global portfolio universe or recalculating membership. Broader campaign
+workflow surfaces, richer owning-service risk/performance aggregate enrichment, and external OMS
+execution remain unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`, and
 `dpm_exception_summary.pack@v1` workflows over Manage-owned proof-pack, wave, outcome,
