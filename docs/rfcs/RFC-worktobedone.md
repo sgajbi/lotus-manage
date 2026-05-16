@@ -121,6 +121,13 @@ from summed weights and weight-averaged local/FX returns before applying Karnosk
 This advances RFC42-WTBD-006 source-owner FX methodology depth without adding any Manage-local FX
 attribution calculation, tax, execution, OMS, or Workbench product claim.
 
+2026-05-16 source-owner historical-attribution supportability update: `lotus-risk` PR #139
+(`40ac7a5`, wiki `421ae79`) tightens `HistoricalRiskAttributionReport:v1` so any source-owned
+attribution-set quality flag degrades response-level `metadata.calculation_supportability`.
+Manage consumes this as source-owner supportability truth only: missing grouping data, empty
+active-risk alignment, and unsupported attribution combinations remain degraded risk evidence, not
+ready values for local promotion or recalculation.
+
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
 | 1 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` non-rolling volatility, non-rolling drawdown, non-rolling Sharpe, non-rolling Sortino, non-rolling VaR, non-rolling beta, non-rolling tracking-error, non-rolling information-ratio, rolling volatility, rolling Sharpe, rolling beta, rolling maximum drawdown, rolling tracking-error, rolling information-ratio, drawdown analytics maximum-drawdown, average-drawdown, ulcer-index, and time-under-water methodology/wiki truth, and concentration position-HHI, top-position weight, top-N cumulative weight, issuer-HHI, and top-issuer weight methodology/wiki truth, `lotus-core` holdings-as-of, market-data coverage, DPM source-readiness, transaction-ledger window, cashflow-projection, liquidity-ladder, tax-lot window, client-tax profile/rule, portfolio realized-tax summary, and observed transaction-cost curve methodology/wiki truth, and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct `RiskMetricsReport:v1` volatility, drawdown, Sharpe, Sortino, VaR, beta, tracking error, or information ratio, rolling active-risk, rolling excess-return risk-adjusted performance, rolling benchmark sensitivity, rolling window maximum drawdown, drawdown analytics maximum drawdown, average drawdown, ulcer index, or time under water, concentration position HHI, concentration top-position weight, concentration top-N cumulative weight, concentration issuer HHI, concentration top issuer weight, rolling portfolio volatility, holdings snapshot selection, position weighting, cash-balance restatement, market price/FX freshness classification, DPM readiness family precedence, transaction row windowing/restatement, operational cash movement, cash-flow schedules, liquidity buckets, lot/cost-basis selection, explicit realized-tax aggregation, observed booked-fee cost curves, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
@@ -4869,6 +4876,28 @@ Latest WTBD-006 risk-attribution tightening proof:
    applicable, stateful active-risk support metadata, quality-flag posture, period-error posture,
    period end date, as-of date, and source units, and performs no covariance, contribution,
    residual, grouping, top-contributor, or support-matrix calculation locally.
+
+Latest WTBD-006 risk historical-attribution supportability proof:
+
+1. `lotus-risk` PR #139 was merged to `main` as `40ac7a5` and the repo-local wiki was published
+   to `lotus-risk.wiki` commit `421ae79`,
+2. `HistoricalRiskAttributionReport:v1` now degrades response-level
+   `metadata.calculation_supportability` whenever any attribution set emits source-owned quality
+   flags, including missing grouping data, empty active-risk alignment, and unsupported
+   attribution combinations,
+3. `docs/methodologies/metrics/attribution-volatility.md`,
+   `docs/methodologies/metrics/attribution-tracking-error.md`,
+   `docs/standards/risk-analytics-contract.md`, repo context, and wiki source record the
+   downstream preservation rule,
+4. source-owner proof passed locally with `make ci`, including Ruff, mypy, OpenAPI quality, API
+   vocabulary, domain-product validation, migration smoke, test-pyramid gate, dependency audit
+   with zero known vulnerabilities, `360` unit tests, `80` integration tests, `24` e2e tests,
+   `98%` coverage, and Docker build,
+5. GitHub PR Merge Gate passed workflow lint, lint/typecheck/security, unit, integration, e2e,
+   test-pyramid, coverage, and Docker build gates,
+6. Manage consumes this as source-owner supportability truth only and performs no covariance,
+   contribution, residual, grouping, supportability, or active-risk methodology calculation
+   locally.
 
 Latest WTBD-006 core-transaction-ledger tightening proof:
 

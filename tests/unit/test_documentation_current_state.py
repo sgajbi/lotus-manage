@@ -1872,6 +1872,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`16261c9`" in work_to_be_done
     assert "`41bdaa3`" in work_to_be_done
     assert "weight-averaged local/FX returns" in work_to_be_done
+    assert "source-owner historical-attribution supportability update" in work_to_be_done
+    assert "`lotus-risk` PR #139" in work_to_be_done
+    assert "`40ac7a5`" in work_to_be_done
+    assert "`421ae79`" in work_to_be_done
+    assert "attribution-set quality flag degrades response-level" in work_to_be_done
+    assert "missing grouping data, empty active-risk alignment" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
     assert "does not calculate risk or performance methodology locally" in work_to_be_done
@@ -1929,6 +1935,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-performance` PR #165 (`191a405`, wiki `46a9124`)" in supported_features
     assert "`lotus-performance` PR\n#167 / wiki `41bdaa3`" in supported_features
     assert "weight-averaged local/FX returns before Karnosky-Singer effects" in (supported_features)
+    assert "`lotus-risk` PR\n#139 / wiki `421ae79`" in supported_features
+    assert "degrade response-level\ncalculation supportability" in supported_features
+    assert "empty\nactive-risk alignment" in supported_features
     assert "`lotus-risk` PR #138 (`8ae3e4a`, wiki `616a10c`)" in supported_features
     assert "stateful\n`ACTIVE_RISK + ISSUER` historical attribution" in supported_features
     assert "performs no local benchmark issuer exposure, covariance, tracking-error" in (
