@@ -97,6 +97,12 @@ Current repository posture:
     Manage preserves these client-liquidity source products as evidence only and does not claim
     financial-planning advice, funding recommendation, client liability planning, OMS instruction,
     or treasury action.
+    `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) now defines planned, not active, external
+    treasury source-product boundaries for `ExternalCurrencyExposure:v1`,
+    `ExternalHedgePolicy:v1`, `ExternalFXForwardCurve:v1`,
+    `ExternalEligibleHedgeInstrument:v1`, and `ExternalHedgeExecutionReadiness:v1`. Manage does
+    not consume these contracts yet and must continue to avoid hedge advice, forward pricing,
+    counterparty selection, treasury instruction, best-execution, OMS, fill, and settlement claims.
     RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
     `SustainabilityPreferenceProfile:v1`, `PortfolioCashflowProjection:v1`,
     `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and
