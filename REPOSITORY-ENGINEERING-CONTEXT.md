@@ -453,6 +453,11 @@ Current repository posture:
     source-owned lotus-core `PortfolioManagerBookMembership:v1` scope materialization.
     Portfolio memory now projects those persisted source-backed score runs as
     `PM_QUALITY_SCORE_RUN` lineage events for matching PM-book members only.
+    PM operating quality policies may also carry bank-defined peer-group and lookback-window
+    evidence. Score-run preview/create records that materialized comparison context as
+    `scope_evidence`, preserves the peer-group/lookback source refs in the content hash, and fails
+    closed for dated evidence outside the approved lookback window without discovering peers,
+    ranking PMs, or owning source methodology.
     Manage also supports bounded PM operating quality fairness-analysis preview at
     `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview` through
     `PmOperatingQualityFairnessAnalysis:v1`: callers supply persisted score-run ids and

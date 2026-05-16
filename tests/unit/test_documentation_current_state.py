@@ -952,6 +952,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "pm_book_scope" in rfc
     assert "Enabled policies require bank approval and fairness-review evidence" in rfc
     assert "governance_evidence" in rfc
+    assert "peer_group_policy" in rfc
+    assert "lookback_window_policy" in rfc
+    assert "scope_evidence" in rfc
+    assert "PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW" in rfc
     assert "`lotus-gateway` PR #213 (`62ce4c4`)" in rfc
     assert "/api/v1/dpm/command-center/pm-operating-quality/*" in rfc
     assert "published Gateway wiki source at `a4c9db9`" in rfc
@@ -1322,11 +1326,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are implemented"
+        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bank-defined peer-group/lookback-window scope materialization, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are implemented"
         in work_to_be_done
     )
     assert "book_scope_evidence" in work_to_be_done
     assert "governance_evidence" in work_to_be_done
+    assert "scope_evidence" in work_to_be_done
+    assert "`peer_group_policy` and `lookback_window_policy`" in work_to_be_done
     assert "PmOperatingQualityScoreRun:v1" in work_to_be_done
     assert "`lotus-gateway` PR #213 (`62ce4c4`)" in work_to_be_done
     assert "`a4c9db9`" in work_to_be_done

@@ -32,6 +32,43 @@ def _enabled_policy() -> DpmPmOperatingQualityPolicy:
     )
 
 
+def _scope_policy() -> DpmPmOperatingQualityPolicy:
+    payload = _enabled_policy().model_dump(mode="python")
+    payload.update(
+        {
+            "peer_group_policy": {
+                "peer_group_id": "sg_dpm_balanced",
+                "display_name": "Singapore DPM balanced mandates",
+                "segment_type": "MANDATE_TYPE",
+                "minimum_peer_count": 3,
+                "source_refs": [
+                    DpmOutcomeSourceRef(
+                        source_system="lotus-core",
+                        source_type="PM_QUALITY_PEER_GROUP_DEFINITION",
+                        source_id="sg_dpm_balanced",
+                        source_version="2026.05",
+                    )
+                ],
+            },
+            "lookback_window_policy": {
+                "window_id": "pmq_30d_20260512",
+                "start_date": "2026-04-13",
+                "end_date": "2026-05-12",
+                "timezone": "Asia/Singapore",
+                "source_refs": [
+                    DpmOutcomeSourceRef(
+                        source_system="bank-governance",
+                        source_type="PM_QUALITY_LOOKBACK_WINDOW",
+                        source_id="pmq_30d_20260512",
+                        source_version="2026.05",
+                    )
+                ],
+            },
+        }
+    )
+    return DpmPmOperatingQualityPolicy.model_validate(payload)
+
+
 def _governance_approval() -> DpmPmQualityGovernanceApproval:
     return DpmPmQualityGovernanceApproval(
         approval_ref="PMQ-APPROVAL-2026-05",
@@ -129,6 +166,114 @@ def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs()
     ]
     assert any(ref.source_type == "PostTradeOutcomeReview" for ref in score_run.source_refs)
     assert any(ref.source_type == "DPM_OUTCOME_REPORT_INPUT" for ref in score_run.source_refs)
+
+
+def test_pm_operating_quality_materializes_peer_group_and_lookback_scope() -> None:
+    score_run = build_pm_operating_quality_score_run(
+        pm_id="pm_001",
+        book_id="sg_dpm_book",
+        as_of_date="2026-05-12",
+        policy=_scope_policy(),
+        evidence_items=[
+            DpmPmQualityEvidenceItem(
+                indicator="OUTCOME_DISCIPLINE",
+                evidence_state="READY",
+                score=Decimal("92"),
+                source_system="lotus-performance",
+                source_type="PM_OUTCOME_DISCIPLINE",
+                source_id="pm_outcome_001",
+                source_refs=[
+                    DpmOutcomeSourceRef(
+                        source_system="lotus-performance",
+                        source_type="PM_OUTCOME_DISCIPLINE",
+                        source_id="pm_outcome_001",
+                        source_version="2026-05-10",
+                    )
+                ],
+            ),
+            DpmPmQualityEvidenceItem(
+                indicator="SOURCE_QUALITY",
+                evidence_state="READY",
+                score=Decimal("88"),
+                source_system="lotus-risk",
+                source_type="PM_SOURCE_QUALITY",
+                source_id="pm_source_001",
+                source_refs=[
+                    DpmOutcomeSourceRef(
+                        source_system="lotus-risk",
+                        source_type="PM_SOURCE_QUALITY",
+                        source_id="pm_source_001",
+                        source_version="2026-05-11",
+                    )
+                ],
+            ),
+            DpmPmQualityEvidenceItem(
+                indicator="EVIDENCE_COMPLETENESS",
+                evidence_state="READY",
+                score=Decimal("90"),
+                source_system="lotus-manage",
+                source_type="PM_EVIDENCE_COMPLETENESS",
+                source_id="pm_evidence_001",
+                source_refs=[
+                    DpmOutcomeSourceRef(
+                        source_system="lotus-manage",
+                        source_type="PM_EVIDENCE_COMPLETENESS",
+                        source_id="pm_evidence_001",
+                        source_version="2026-05-12",
+                    )
+                ],
+            ),
+        ],
+        outcome_reviews=[],
+        generated_by="ops",
+        correlation_id="corr-scope-001",
+    )
+
+    assert score_run.scope_evidence is not None
+    assert score_run.scope_evidence.peer_group_id == "sg_dpm_balanced"
+    assert score_run.scope_evidence.minimum_peer_count == 3
+    assert score_run.scope_evidence.lookback_window_id == "pmq_30d_20260512"
+    assert score_run.scope_evidence.reason_codes == [
+        "PM_QUALITY_PEER_GROUP_MATERIALIZED",
+        "PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED",
+    ]
+    assert any(
+        ref.source_type == "PM_QUALITY_PEER_GROUP_DEFINITION" for ref in score_run.source_refs
+    )
+    assert any(ref.source_type == "PM_QUALITY_LOOKBACK_WINDOW" for ref in score_run.source_refs)
+
+
+def test_pm_operating_quality_lookback_window_fails_closed_for_stale_evidence() -> None:
+    with pytest.raises(
+        scoring.DpmPmQualityValidationError, match="PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW"
+    ):
+        build_pm_operating_quality_score_run(
+            pm_id="pm_001",
+            book_id="sg_dpm_book",
+            as_of_date="2026-05-12",
+            policy=_scope_policy(),
+            evidence_items=[
+                DpmPmQualityEvidenceItem(
+                    indicator="OUTCOME_DISCIPLINE",
+                    evidence_state="READY",
+                    score=Decimal("92"),
+                    source_system="lotus-performance",
+                    source_type="PM_OUTCOME_DISCIPLINE",
+                    source_id="pm_outcome_stale",
+                    source_refs=[
+                        DpmOutcomeSourceRef(
+                            source_system="lotus-performance",
+                            source_type="PM_OUTCOME_DISCIPLINE",
+                            source_id="pm_outcome_stale",
+                            source_version="2026-04-01",
+                        )
+                    ],
+                )
+            ],
+            outcome_reviews=[],
+            generated_by="ops",
+            correlation_id="corr-scope-stale",
+        )
 
 
 def test_pm_operating_quality_score_run_blocks_when_required_evidence_is_missing() -> None:
