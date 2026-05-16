@@ -358,6 +358,10 @@ Operationally important truths:
 7. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
+8. source-owned cash methodology depth is consumed as evidence from `lotus-core`. Current Core
+   products include `PortfolioCashflowProjection:v1`, `PortfolioLiquidityLadder:v1`, and
+   `PortfolioCashMovementSummary:v1`; Manage does not forecast cashflows, issue funding or
+   treasury instructions, or acknowledge OMS execution.
 
 ## Documentation Map
 

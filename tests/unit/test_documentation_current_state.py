@@ -1768,6 +1768,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "withholding-tax and other-interest-deduction aggregation" in work_to_be_done
     assert "explicit realized-tax aggregation" in work_to_be_done
     assert "tax-reporting certification" in work_to_be_done
+    assert "Latest WTBD-006 core portfolio-cash-movement-summary methodology proof" in (
+        work_to_be_done
+    )
+    assert "`lotus-core` PR #364" in work_to_be_done
+    assert "`486136affef18d7c9d51886be1d52a804cfd2867`" in work_to_be_done
+    assert "`lotus-core.wiki` commit `ad67cf6`" in work_to_be_done
+    assert "`PortfolioCashMovementSummary:v1` methodology" in work_to_be_done
+    assert "signed cash movement bucket evidence" in work_to_be_done
+    assert "latest-cashflow-row selection per transaction" in work_to_be_done
+    assert "cashflow forecasting" in work_to_be_done
     assert "Latest WTBD-006 core transaction-cost-curve methodology proof" in work_to_be_done
     assert "`lotus-core` PR #345" in work_to_be_done
     assert "`83d791d0e599f06a2c0caab6eaba647f717d4658`" in work_to_be_done
@@ -1833,10 +1843,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "market-data coverage, DPM source-readiness" in supported_features
     assert "transaction-ledger row measures" in supported_features
     assert (
-        "cashflow projection totals, liquidity-ladder buckets, tax lots, observed "
+        "cashflow projection totals, liquidity-ladder buckets, signed cash movement buckets, tax lots, observed "
         "transaction-cost evidence, client tax profile/rule evidence, and portfolio-level "
         "realized-tax summary evidence"
     ) in supported_features
+    assert (
+        "`PortfolioCashMovementSummary:v1` source-product truth through `lotus-core` PR #364"
+        in (supported_features)
+    )
     assert "`PortfolioRealizedTaxSummary:v1` source-product truth through `lotus-core` PR #363" in (
         supported_features
     )
