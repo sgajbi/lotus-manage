@@ -8,6 +8,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field, model_validator
 
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityServiceError,
+    DpmPmQualityFairnessAnalysisCommand,
+    DpmPmQualityFairnessSegmentCommand,
+    build_pm_quality_fairness_analysis_from_command,
+)
 from src.api.dependencies import (
     get_pm_quality_fairness_analysis_repository,
     get_outcome_review_repository,
@@ -22,7 +28,6 @@ from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityFairnessAnalysis,
-    DpmPmQualityFairnessSegmentInput,
     DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityPolicyConflictError,
@@ -31,7 +36,6 @@ from src.core.pm_quality import (
     DpmPmQualityScoreRunRepository,
     DpmPmQualityValidationError,
     PmQualityFairnessSegmentType,
-    build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
@@ -684,41 +688,39 @@ def _build_fairness_analysis(
     x_correlation_id: str | None,
     repository: DpmPmQualityScoreRunRepository,
 ) -> DpmPmQualityFairnessAnalysis:
-    segments = []
-    for segment_request in request.segments:
-        score_runs = []
-        for score_run_id in segment_request.score_run_ids:
-            score_run = repository.get_score_run(score_run_id=score_run_id)
-            if score_run is None:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{score_run_id}",
-                )
-            score_runs.append(score_run)
-        segments.append(
-            DpmPmQualityFairnessSegmentInput(
-                segment_id=segment_request.segment_id,
-                segment_type=segment_request.segment_type,
-                display_name=segment_request.display_name,
-                score_runs=score_runs,
-                source_refs=segment_request.source_refs,
+    command = DpmPmQualityFairnessAnalysisCommand(
+        policy_id=request.policy_id,
+        policy_version=request.policy_version,
+        as_of_date=request.as_of_date,
+        segments=[
+            DpmPmQualityFairnessSegmentCommand(
+                segment_id=segment.segment_id,
+                segment_type=segment.segment_type,
+                display_name=segment.display_name,
+                score_run_ids=segment.score_run_ids,
+                source_refs=segment.source_refs,
             )
-        )
+            for segment in request.segments
+        ],
+        minimum_segment_score_run_count=request.minimum_segment_score_run_count,
+        maximum_average_score_spread=request.maximum_average_score_spread,
+        actor_id=request.actor_id,
+        correlation_id=x_correlation_id or request.actor_id,
+    )
     try:
-        return build_pm_operating_quality_fairness_analysis(
-            policy_id=request.policy_id,
-            policy_version=request.policy_version,
-            as_of_date=request.as_of_date,
-            segments=segments,
-            minimum_segment_score_run_count=request.minimum_segment_score_run_count,
-            maximum_average_score_spread=request.maximum_average_score_spread,
-            generated_by=request.actor_id,
-            correlation_id=x_correlation_id or request.actor_id,
+        return build_pm_quality_fairness_analysis_from_command(
+            command=command,
+            score_run_repository=repository,
         )
-    except DpmPmQualityValidationError as exc:
+    except DpmPmOperatingQualityServiceError as exc:
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if exc.code.startswith("PM_QUALITY_SCORE_RUN_NOT_FOUND:")
+            else status.HTTP_422_UNPROCESSABLE_CONTENT
+        )
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
+            status_code=status_code,
+            detail=exc.code,
         ) from exc
 
 
