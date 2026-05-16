@@ -113,6 +113,64 @@ def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> Non
         repository.save_definition(definition=_definition(display_name="Changed name"))
 
 
+def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ACTIVE_RETIREMENT_FIELDS_FORBIDDEN",
+    ):
+        DpmBulkReviewCampaignDefinition.model_validate(
+            {
+                **definition.model_dump(mode="python"),
+                "retired_by": "ops",
+                "content_hash": "",
+            }
+        )
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+
+    returned = repository.retire_definition(definition=retired)
+
+    assert returned is not None
+    assert returned == retired
+    assert returned.content_hash != definition.content_hash
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == retired
+    )
+    assert repository.list_definitions(status="ACTIVE") == []
+    assert repository.list_definitions(status="RETIRED") == [retired]
+    assert repository.retire_definition(definition=retired) == retired
+    assert (
+        repository.retire_definition(
+            definition=DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **retired.model_dump(mode="python"),
+                    "campaign_id": "missing-campaign",
+                    "content_hash": "",
+                }
+            )
+        )
+        is None
+    )
+
+
 class _Cursor:
     def __init__(
         self, row: dict[str, object] | None = None, rows: list[dict[str, object]] | None = None
@@ -176,6 +234,73 @@ def test_postgres_campaign_definition_repository_uses_payload_rows() -> None:
     assert listed == [definition]
     assert _payload({"payload_json": {"campaign_id": "dict"}}) == {"campaign_id": "dict"}
     assert _payload({"payload_json": 1}) == "1"
+
+
+def test_postgres_campaign_definition_repository_retires_active_definition() -> None:
+    definition = _definition()
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.retire_definition(definition=retired) == retired
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_retirement_edges() -> None:
+    definition = _definition()
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    missing_connection = _Connection([_Cursor(row=None)])
+    repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.retire_definition(definition=definition) is None
+    assert missing_connection.rolled_back is True
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    retired_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "RETIRED",
+                    "payload_json": retired.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: retired_connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.retire_definition(definition=retired) == retired
+    assert retired_connection.rolled_back is True
 
 
 def test_postgres_campaign_definition_repository_init_guards(monkeypatch) -> None:

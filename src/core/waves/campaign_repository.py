@@ -31,3 +31,10 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
         raise NotImplementedError
+
+    def retire_definition(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError

@@ -1371,8 +1371,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "BulkReviewCampaignDiscovery:v1" in work_to_be_done
     assert "`GET /api/v1/rebalance/waves/campaign-discovery`" in work_to_be_done
     assert (
-        "broader campaign workflow surfaces and global\nportfolio-universe campaign discovery"
-        in (work_to_be_done)
+        "`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/retire`" in work_to_be_done
+    )
+    assert "retired definitions auditable while blocking new preview/create use" in work_to_be_done
+    assert "broader campaign workflow surfaces beyond bounded definition retirement" in (
+        work_to_be_done
     )
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
@@ -1929,7 +1933,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0040-proof/20260507-230235/critical-review.json" in supported_features
     assert "Explicit portfolio-list waves" in supported_features
     assert "`GET /api/v1/rebalance/waves/campaign-discovery`" in supported_features
+    assert (
+        "`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/retire`" in supported_features
+    )
     assert "`BulkReviewCampaignDiscovery:v1` summaries" in supported_features
+    assert "retire definitions so they remain auditable under `RETIRED` status" in (
+        supported_features
+    )
     assert "without discovering the global portfolio universe or recalculating membership" in (
         supported_features
     )

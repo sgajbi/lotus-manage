@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Annotated, Literal, cast
 
@@ -316,6 +316,18 @@ class DpmBulkReviewCampaignDefinitionRequest(BaseModel):
     source_refs: list[DpmWaveSourceRef] = Field(default_factory=list)
     created_by: str = Field(examples=["ops"])
     correlation_id: str = Field(examples=["corr-campaign-definition-001"])
+
+
+class DpmBulkReviewCampaignDefinitionRetirementRequest(BaseModel):
+    retired_by: str = Field(
+        description="Actor retiring the campaign definition for future preview/create use.",
+        examples=["ops"],
+    )
+    retirement_reason: str = Field(
+        description="Business reason for retiring the persisted campaign definition.",
+        examples=["Campaign review completed and no longer available for new waves."],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-definition-retire-001"])
 
 
 class DpmBulkReviewCampaignDefinitionPage(BaseModel):
@@ -845,6 +857,11 @@ def _request_with_campaign_definition(
         raise wave_service.DpmWaveValidationError(
             "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
             "Persisted bulk-review campaign definition was not found.",
+        )
+    if definition.status != "ACTIVE":
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED",
+            "Retired bulk-review campaign definitions cannot be used for new wave preview/create.",
         )
     if definition.as_of_date != request.as_of_date:
         raise wave_service.DpmWaveValidationError(
@@ -1708,6 +1725,75 @@ def list_bulk_review_campaign_definitions(
         offset=offset,
         count=len(items),
     )
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_200_OK,
+    summary="Retire bulk-review campaign definition",
+    description=(
+        "Retires a persisted Manage-owned `BulkReviewCampaignDefinition:v1` so it remains "
+        "auditable but can no longer be used for new `BULK_REVIEW_CAMPAIGN` preview/create "
+        "requests. This lifecycle action does not change the source-backed candidate set, "
+        "discover a global portfolio universe, run maker-checker workflow, or claim OMS execution."
+    ),
+)
+def retire_bulk_review_campaign_definition(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionRetirementRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    existing = repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    if existing.status == "RETIRED":
+        return existing
+    try:
+        retired_payload = existing.model_dump(mode="python")
+        retired_payload.update(
+            {
+                "status": "RETIRED",
+                "retired_at": datetime.now(timezone.utc),
+                "retired_by": request.retired_by,
+                "retirement_reason": request.retirement_reason,
+                "retirement_correlation_id": request.correlation_id,
+                "content_hash": "",
+            }
+        )
+        retired_definition = DpmBulkReviewCampaignDefinition.model_validate(retired_payload)
+        retired = repository.retire_definition(definition=retired_definition)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": str(exc), "message": str(exc)},
+        ) from exc
+    if retired is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return retired
 
 
 @router.get(
