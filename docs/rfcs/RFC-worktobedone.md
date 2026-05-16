@@ -49,7 +49,7 @@ retained only as evidence index and sequencing control.
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, and the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 and RFC39-WTBD-008 remain broader risk/performance and treasury-depth controls. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families, explicitly defers OMS execution, supports bounded PM quality score-run lineage for persisted score runs whose source-owned Core PM-book membership evidence includes the requested portfolio, and supports generation-time direct proof-pack enrichment from source-owned `RegimeScenarioPackEvaluation:v1` context when the selected alternative does not already carry regime-stress authority. | CIO approval evidence, effective-period exception posture, future OMS execution products, downstream UI, and richer score-run analytics remain future source depth rather than hidden manage proof-pack or portfolio-memory gaps. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003, the bounded tactical house-view source-owner plus manage-consumer result, the bounded manage-owned `BulkReviewCampaignMembership:v1` result, persisted Manage-owned `BulkReviewCampaignDiscovery:v1` over campaign definitions, Manage-owned campaign-definition retirement, Gateway campaign-definition BFF composition, and Workbench active campaign-definition list rendering are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial only for broader campaign workflow surfaces beyond bounded definition retirement. Tactical house-view source ownership is implemented in `lotus-advise`: it owns `TacticalHouseViewAffectedCohort:v1` for governed bank-authored house-view instructions and caller-supplied source-backed candidates. `lotus-manage` consumes that product for bounded `TACTICAL_HOUSE_VIEW` wave preview/create without recomputing advisory, house-view, holdings, exposure, alignment, or mandate facts. `lotus-manage` also owns and implements the first `BulkReviewCampaignMembership:v1` DPM operating campaign envelope with optional approval, expiry, access-purpose, source-ref, actor-entitlement governance evidence, persisted `BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, `GET /api/v1/rebalance/waves/campaign-discovery` for bounded persisted campaign discovery, and `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire` to keep retired definitions auditable while blocking new preview/create use. Source apps still own the underlying facts and calculated reasons. `lotus-workbench` renders the active campaign-definition list through Gateway/BFF without computing cohort membership locally. RFC41-WTBD-010 remains deferred execution scope with no supported claim. |
-| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 remains unsupported execution/OMS scope; RFC42-WTBD-008 remains partial for Workbench PM-quality UI and downstream Gateway/Workbench fairness-analysis product realization. |
+| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded portfolio-memory score-run lineage projection, and Gateway BFF composition are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; RFC42-WTBD-007 remains unsupported execution/OMS scope; RFC42-WTBD-008 remains partial for Workbench PM-quality UI and downstream Gateway/Workbench fairness-analysis product realization. |
 | RFC-0043 | The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including the merged owner-side operations handoff summary and exception summary packs plus their first-wave Gateway/Workbench invocation surfaces. | RFC-0043 remains partial until the full copilot workspace and any additional product-surface requirements are implemented by their owners. |
 
 ## Mainline WTBD Control Snapshot
@@ -3707,6 +3707,16 @@ artifacts belong to report/render/archive services, and AI narrative execution b
 
 ### Detailed Follow-Up Items
 
+2026-05-16 fairness-analysis lifecycle addendum:
+
+`lotus-manage` now persists immutable `PmOperatingQualityFairnessAnalysis:v1` evidence at
+`POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`, lists bounded pages at
+`GET /api/v1/rebalance/pm-operating-quality/fairness-analyses`, and retrieves one analysis at
+`GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`. The create
+route uses the same source-segment contract as preview, persists content-addressed evidence, and
+stored reads do not recompute score runs, infer protected classes, rank PMs, or create HR,
+compensation, conduct, approval, client-contact, execution, or OMS decisions.
+
 #### RFC42-WTBD-001 - Gateway Outcome-Review Composition And BFF Contract
 
 Target business outcome:
@@ -5576,16 +5586,18 @@ Implemented first-wave dependency posture:
 3. Bias/fairness controls are enforced first as required bank approval, fairness-review evidence,
    optional expiry, optional actor entitlement, no-hidden-use controls, and no-prohibited-use
    controls: compensation, HR, conduct enforcement, and autonomous decisioning are rejected or
-   listed as forbidden. Manage now supports bounded source-segment fairness-analysis preview
-   across caller-supplied mandate type, region, book profile, client constraint profile, market
-   regime, or custom source segments, using persisted score-run ids and source refs only.
+   listed as forbidden. Manage now supports bounded source-segment fairness-analysis preview and
+   immutable create/read/list lifecycle across caller-supplied mandate type, region, book profile,
+   client constraint profile, market regime, or custom source segments, using persisted score-run
+   ids and source refs only. Persisted fairness analyses are content-addressed and returned without
+   recomputing score runs or segment posture.
 4. Explainability, missing-evidence posture, supportability state, reason decomposition, source
    refs, and deterministic content hash are implementation-backed for every indicator.
 5. AI remains narrative-only and is not involved in score calculation.
 
 Remaining expansion wave:
 
-1. Gateway/Workbench realization of PM operating quality fairness-analysis preview,
+1. Gateway/Workbench realization of PM operating quality fairness-analysis lifecycle,
 2. Workbench PM operating quality UI through Gateway/BFF only,
 3. optional AI narrative over score-run evidence without score ownership,
 4. richer portfolio-memory analytics remain out of scope beyond bounded score-run lineage events.

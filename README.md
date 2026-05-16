@@ -172,14 +172,19 @@ When `pm_book_scope` is supplied, score-run preview/create materializes source-o
 `PortfolioManagerBookMembership:v1` evidence, records `book_scope_evidence` including bounded
 member portfolio ids, and fails closed for unavailable, incomplete, degraded, or empty PM-book
 membership. Persisted source-backed score runs are visible in portfolio memory as
-`PM_QUALITY_SCORE_RUN` lineage events only. The fairness-analysis preview route,
-`POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`, now emits bounded
-`PmOperatingQualityFairnessAnalysis:v1` posture over persisted score runs and source-defined
-segments such as mandate type, region, book profile, client constraint profile, or market regime.
-It validates common policy/as-of scope, requires minimum scorable segment counts, compares segment
-average scores against a governed spread threshold, and returns review-required or blocked posture
-without inferring protected classes, ranking PMs, or creating HR, compensation, conduct, approval,
-client-contact, execution, or OMS decisions. Downstream UI remains future expansion.
+`PM_QUALITY_SCORE_RUN` lineage events only. The fairness-analysis route family now supports preview
+and immutable create/read/list lifecycle at
+`POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`,
+`POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`,
+`GET /api/v1/rebalance/pm-operating-quality/fairness-analyses`, and
+`GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`. It emits
+bounded `PmOperatingQualityFairnessAnalysis:v1` posture over persisted score runs and
+source-defined segments such as mandate type, region, book profile, client constraint profile, or
+market regime. It validates common policy/as-of scope, requires minimum scorable segment counts,
+compares segment average scores against a governed spread threshold, persists content-addressed
+evidence immutably, and returns stored evidence without recomputing score runs. It does not infer
+protected classes, rank PMs, or create HR, compensation, conduct, approval, client-contact,
+execution, or OMS decisions. Downstream UI remains future expansion.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,

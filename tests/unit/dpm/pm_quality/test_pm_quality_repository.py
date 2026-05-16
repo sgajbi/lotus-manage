@@ -10,18 +10,23 @@ import pytest
 
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
+    DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityGovernanceApproval,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityWeight,
+    DpmPmQualityFairnessSegmentInput,
+    build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
 )
 from src.infrastructure.pm_quality import (
+    InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityScoreRunRepository,
 )
 from src.infrastructure.pm_quality import postgres as postgres_module
 from src.infrastructure.pm_quality.postgres import (
+    PostgresDpmPmQualityFairnessAnalysisRepository,
     PostgresDpmPmQualityPolicyRepository,
     PostgresDpmPmQualityScoreRunRepository,
 )
@@ -88,6 +93,36 @@ def _policy(*, policy_id: str = "pmq_sg_dpm", enabled: bool = True):
     )
 
 
+def _fairness_analysis():
+    first = _score_run(pm_id="pm_001")
+    second = _score_run(pm_id="pm_002")
+    return build_pm_operating_quality_fairness_analysis(
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+        as_of_date="2026-05-12",
+        segments=[
+            DpmPmQualityFairnessSegmentInput(
+                segment_id="region_sg",
+                segment_type="REGION",
+                display_name="Singapore",
+                score_runs=[first],
+                source_refs=[],
+            ),
+            DpmPmQualityFairnessSegmentInput(
+                segment_id="region_hk",
+                segment_type="REGION",
+                display_name="Hong Kong",
+                score_runs=[second],
+                source_refs=[],
+            ),
+        ],
+        minimum_segment_score_run_count=1,
+        maximum_average_score_spread=Decimal("15"),
+        generated_by="ops",
+        correlation_id="corr-fairness",
+    )
+
+
 class _FakeCursor:
     def __init__(self, row: dict[str, Any] | None = None, rows: list[dict[str, Any]] | None = None):
         self._row = row
@@ -104,6 +139,7 @@ class _FakePolicyConnection:
     def __init__(self) -> None:
         self.policies: dict[tuple[str, str], dict[str, Any]] = {}
         self.score_runs: dict[str, dict[str, Any]] = {}
+        self.fairness_analyses: dict[str, dict[str, Any]] = {}
         self.commits = 0
         self.rollbacks = 0
         self.closed = False
@@ -136,6 +172,31 @@ class _FakePolicyConnection:
             return _FakeCursor(self.score_runs.get(str(params[0])))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_score_runs"):
             rows = self._filter_score_runs(normalized=normalized, params=params)
+            return _FakeCursor(rows=rows)
+        if normalized.startswith("INSERT INTO dpm_pm_quality_fairness_analyses"):
+            fairness_analysis_id = str(params[0])
+            if fairness_analysis_id not in self.fairness_analyses:
+                self.fairness_analyses[fairness_analysis_id] = {
+                    "fairness_analysis_id": fairness_analysis_id,
+                    "policy_id": str(params[1]),
+                    "policy_version": str(params[2]),
+                    "as_of_date": str(params[3]),
+                    "state": str(params[4]),
+                    "content_hash": str(params[6]),
+                    "generated_at": str(params[7]),
+                    "payload_json": json.loads(str(params[10])),
+                }
+            return _FakeCursor()
+        if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_fairness_analyses"):
+            row = self.fairness_analyses.get(str(params[0]))
+            return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if (
+            normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses WHERE")
+            and "fairness_analysis_id = %s" in normalized
+        ):
+            return _FakeCursor(self.fairness_analyses.get(str(params[0])))
+        if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses"):
+            rows = self._filter_fairness_analyses(normalized=normalized, params=params)
             return _FakeCursor(rows=rows)
         if normalized.startswith("INSERT INTO dpm_pm_quality_policies"):
             key = (str(params[0]), str(params[1]))
@@ -199,6 +260,26 @@ class _FakePolicyConnection:
         offset = int(params[-1])
         return rows[offset : offset + limit]
 
+    def _filter_fairness_analyses(
+        self,
+        *,
+        normalized: str,
+        params: Sequence[Any],
+    ) -> list[dict[str, Any]]:
+        rows = list(self.fairness_analyses.values())
+        param_index = 0
+        for column in ("policy_id", "policy_version", "as_of_date", "state"):
+            if f"{column} = %s" in normalized:
+                rows = [row for row in rows if row[column] == str(params[param_index])]
+                param_index += 1
+        rows.sort(
+            key=lambda row: (row["generated_at"], row["fairness_analysis_id"]),
+            reverse=True,
+        )
+        limit = int(params[-2])
+        offset = int(params[-1])
+        return rows[offset : offset + limit]
+
     def commit(self) -> None:
         self.commits += 1
 
@@ -237,6 +318,21 @@ def fake_postgres_score_run_repository(
         lambda: (type("Psycopg", (), {"connect": lambda *_, **__: connection}), object()),
     )
     return PostgresDpmPmQualityScoreRunRepository(dsn="postgresql://unit-test"), connection
+
+
+@pytest.fixture
+def fake_postgres_fairness_analysis_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[PostgresDpmPmQualityFairnessAnalysisRepository, _FakePolicyConnection]:
+    connection = _FakePolicyConnection()
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: True)
+    monkeypatch.setattr(postgres_module, "apply_postgres_migrations", lambda **_: None)
+    monkeypatch.setattr(
+        postgres_module,
+        "_import_psycopg",
+        lambda: (type("Psycopg", (), {"connect": lambda *_, **__: connection}), object()),
+    )
+    return PostgresDpmPmQualityFairnessAnalysisRepository(dsn="postgresql://unit-test"), connection
 
 
 def test_in_memory_pm_quality_repository_persists_immutable_policies() -> None:
@@ -364,6 +460,80 @@ def test_postgres_pm_quality_score_run_repository_conflict_and_configuration_pat
     monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
     with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
         PostgresDpmPmQualityScoreRunRepository(dsn="postgresql://unit-test")
+
+
+def test_in_memory_pm_quality_repository_persists_immutable_fairness_analyses() -> None:
+    repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
+    analysis = _fairness_analysis()
+
+    repository.save_fairness_analysis(analysis=analysis)
+    repository.save_fairness_analysis(analysis=analysis)
+
+    stored = repository.get_fairness_analysis(fairness_analysis_id=analysis.fairness_analysis_id)
+    assert stored == analysis
+
+    changed = analysis.model_copy(update={"content_hash": "sha256:different"})
+    with pytest.raises(DpmPmQualityFairnessAnalysisConflictError):
+        repository.save_fairness_analysis(analysis=changed)
+
+
+def test_in_memory_pm_quality_repository_lists_fairness_analyses() -> None:
+    repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
+    analysis = _fairness_analysis()
+    repository.save_fairness_analysis(analysis=analysis)
+
+    assert repository.list_fairness_analyses(policy_id="pmq_sg_dpm") == [analysis]
+    assert repository.list_fairness_analyses(policy_version="2026.05") == [analysis]
+    assert repository.list_fairness_analyses(as_of_date="missing") == []
+    assert repository.list_fairness_analyses(state=analysis.state) == [analysis]
+    assert repository.list_fairness_analyses(limit=1, offset=1) == []
+
+
+def test_postgres_pm_quality_fairness_analysis_repository_round_trips_analyses(
+    fake_postgres_fairness_analysis_repository: tuple[
+        PostgresDpmPmQualityFairnessAnalysisRepository, _FakePolicyConnection
+    ],
+) -> None:
+    repository, connection = fake_postgres_fairness_analysis_repository
+    analysis = _fairness_analysis()
+
+    repository.save_fairness_analysis(analysis=analysis)
+    repository.save_fairness_analysis(analysis=analysis)
+
+    assert (
+        repository.get_fairness_analysis(fairness_analysis_id=analysis.fairness_analysis_id)
+        == analysis
+    )
+    assert repository.get_fairness_analysis(fairness_analysis_id="missing") is None
+    assert repository.list_fairness_analyses(policy_id="pmq_sg_dpm") == [analysis]
+    assert repository.list_fairness_analyses(policy_version="2026.05") == [analysis]
+    assert repository.list_fairness_analyses(as_of_date="missing") == []
+    assert repository.list_fairness_analyses(state=analysis.state) == [analysis]
+    assert connection.commits == 2
+
+
+def test_postgres_pm_quality_fairness_analysis_repository_conflict_and_configuration_paths(
+    fake_postgres_fairness_analysis_repository: tuple[
+        PostgresDpmPmQualityFairnessAnalysisRepository, _FakePolicyConnection
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, connection = fake_postgres_fairness_analysis_repository
+    analysis = _fairness_analysis()
+    repository.save_fairness_analysis(analysis=analysis)
+
+    changed = analysis.model_copy(update={"content_hash": "sha256:different"})
+    with pytest.raises(DpmPmQualityFairnessAnalysisConflictError, match="IMMUTABLE"):
+        repository.save_fairness_analysis(analysis=changed)
+
+    assert connection.rollbacks == 1
+
+    with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmPmQualityFairnessAnalysisRepository(dsn="")
+
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
+    with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
+        PostgresDpmPmQualityFairnessAnalysisRepository(dsn="postgresql://unit-test")
 
 
 def test_pm_quality_postgres_helpers_normalize_payloads_and_import_driver(

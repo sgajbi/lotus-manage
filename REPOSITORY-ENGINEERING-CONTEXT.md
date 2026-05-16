@@ -458,14 +458,19 @@ Current repository posture:
     `scope_evidence`, preserves the peer-group/lookback source refs in the content hash, and fails
     closed for dated evidence outside the approved lookback window without discovering peers,
     ranking PMs, or owning source methodology.
-    Manage also supports bounded PM operating quality fairness-analysis preview at
-    `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview` through
+    Manage also supports bounded PM operating quality fairness-analysis preview and immutable
+    create/read/list lifecycle at
+    `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`,
+    `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`,
+    `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses`, and
+    `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}` through
     `PmOperatingQualityFairnessAnalysis:v1`: callers supply persisted score-run ids and
     source-defined segment evidence for mandate type, region, book profile, client constraint
     profile, market regime, or custom source segments; Manage validates common policy/as-of scope,
-    minimum scorable segment counts, and governed average-score spread without inferring protected
-    classes or creating PM rankings, HR, compensation, conduct, approval, client-contact,
-    execution, or OMS decisions.
+    minimum scorable segment counts, and governed average-score spread, persists the content-
+    addressed evidence immutably, and returns stored evidence without recomputation. It does not
+    infer protected classes or create PM rankings, HR, compensation, conduct, approval,
+    client-contact, execution, or OMS decisions.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy and score-run truth without Gateway-local scoring,

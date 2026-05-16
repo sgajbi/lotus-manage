@@ -79,7 +79,7 @@ composition.
 | policy-pack supportability | `/api/v1/rebalance/policies/*` | `lotus-manage` | owns rebalance policy-pack selection and diagnostics |
 | integration capabilities | `/api/v1/integration/capabilities` | `lotus-manage` | owns feature/workflow capability truth for gateway and platform consumers |
 | bulk-review campaign membership | `POST /api/v1/rebalance/waves/preview`, `POST /api/v1/rebalance/waves` with `trigger_type=BULK_REVIEW_CAMPAIGN` | `lotus-manage` | owns the DPM operating campaign membership envelope, immutable campaign definitions, deterministic membership refs, optional approval/expiry/actor-entitlement governance evidence, and wave persistence; does not own underlying source facts, global campaign discovery, broader campaign workflow surfaces, or OMS execution |
-| PM operating quality score runs | `/api/v1/rebalance/pm-operating-quality/*` | `lotus-manage` | owns bank policy administration, score-run lifecycle, evidence decomposition, forbidden-use posture, and optional source-backed PM-book scope evidence; does not own HR, compensation, conduct enforcement, autonomous ranking, AI-generated scoring, or source-owner risk/performance/tax/execution methodology |
+| PM operating quality score runs and fairness analyses | `/api/v1/rebalance/pm-operating-quality/*` | `lotus-manage` | owns bank policy administration, score-run lifecycle, source-segment fairness-analysis lifecycle, evidence decomposition, forbidden-use posture, and optional source-backed PM-book scope evidence; does not own HR, compensation, conduct enforcement, autonomous ranking, protected-class inference, AI-generated scoring, or source-owner risk/performance/tax/execution methodology |
 
 ## Split-Boundary Posture
 

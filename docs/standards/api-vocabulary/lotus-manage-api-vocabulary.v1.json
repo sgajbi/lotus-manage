@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T02:38:28.766444+00:00",
+  "generatedAt": "2026-05-16T03:03:47.619553+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3452,6 +3452,22 @@
       ]
     },
     {
+      "semanticId": "lotus.fairness_analyses",
+      "canonicalTerm": "fairness_analyses",
+      "preferredName": "fairness_analyses",
+      "description": "Bounded page of persisted PM operating quality fairness analyses.",
+      "example": [
+        "fairness_analyses_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.fairness_analysis",
       "canonicalTerm": "fairness_analysis",
       "preferredName": "fairness_analysis",
@@ -3475,7 +3491,8 @@
       "example": "FAIRNESS_ANALYSIS_001",
       "type": "string",
       "locations": [
-        "body"
+        "body",
+        "path"
       ],
       "observedTypes": [
         "string"
@@ -7011,6 +7028,7 @@
       "type": "string",
       "locations": [
         "body",
+        "query",
         "path"
       ],
       "observedTypes": [
@@ -14359,6 +14377,102 @@
       "allowedValues": [],
       "semanticId": "lotus.x_correlation_id",
       "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
+      "name": "x_correlation_id",
+      "kind": "request_option",
+      "location": "header",
+      "required": false,
+      "type": "object",
+      "description": "Optional correlation id.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.x_correlation_id",
+      "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+    },
+    {
+      "name": "policy_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by policy id.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_id",
+      "attributeRef": "#/attributeCatalog/lotus.policy_id"
+    },
+    {
+      "name": "policy_version",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by policy version.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.policy_version",
+      "attributeRef": "#/attributeCatalog/lotus.policy_version"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by business as-of date.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+    },
+    {
+      "name": "state",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Filter by fairness-analysis state.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.state",
+      "attributeRef": "#/attributeCatalog/lotus.state"
+    },
+    {
+      "name": "limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Maximum rows to return.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.limit",
+      "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "offset",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Rows to skip.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.offset",
+      "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "fairness_analysis_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical fairness analysis id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.fairness_analysis_id",
+      "attributeRef": "#/attributeCatalog/lotus.fairness_analysis_id"
     },
     {
       "name": "policy_id",
@@ -89070,6 +89184,1355 @@
             "type": "string",
             "semanticId": "lotus.actor_id",
             "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "fairness_analysis",
+            "location": "body",
+            "required": true,
+            "type": "DpmPmQualityFairnessAnalysis",
+            "semanticId": "lotus.fairness_analysis",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis"
+          },
+          {
+            "name": "fairness_analysis.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "fairness_analysis.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "fairness_analysis.fairness_analysis_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_analysis_id",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis_id"
+          },
+          {
+            "name": "fairness_analysis.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "fairness_analysis.policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "fairness_analysis.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "fairness_analysis.state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analysis.segment_results",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.segment_results",
+            "attributeRef": "#/attributeCatalog/lotus.segment_results"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].segment_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_id",
+            "attributeRef": "#/attributeCatalog/lotus.segment_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_count"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].average_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.average_score",
+            "attributeRef": "#/attributeCatalog/lotus.average_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].minimum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_score",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].maximum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_score",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.score_run_refs",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_refs"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.minimum_segment_score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.minimum_segment_score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_segment_score_run_count"
+          },
+          {
+            "name": "fairness_analysis.maximum_average_score_spread",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.maximum_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_average_score_spread"
+          },
+          {
+            "name": "fairness_analysis.observed_average_score_spread",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.observed_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.observed_average_score_spread"
+          },
+          {
+            "name": "fairness_analysis.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analysis.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.forbidden_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.forbidden_uses",
+            "attributeRef": "#/attributeCatalog/lotus.forbidden_uses"
+          },
+          {
+            "name": "fairness_analysis.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          },
+          {
+            "name": "fairness_analysis.generated_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_by",
+            "attributeRef": "#/attributeCatalog/lotus.generated_by"
+          },
+          {
+            "name": "fairness_analysis.correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "POST",
+      "path": "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+      "operationId": "create_pm_quality_fairness_analysis_endpoint_api_v1_rebalance_pm_operating_quality_fairness_analyses_post",
+      "summary": "Create persisted PM operating quality fairness analysis",
+      "request": {
+        "fields": [
+          {
+            "name": "x-correlation-id",
+            "location": "header",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.x_correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.x_correlation_id"
+          },
+          {
+            "name": "policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "segments",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.segments",
+            "attributeRef": "#/attributeCatalog/lotus.segments"
+          },
+          {
+            "name": "segments[].segment_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_id",
+            "attributeRef": "#/attributeCatalog/lotus.segment_id"
+          },
+          {
+            "name": "segments[].segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "segments[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "segments[].score_run_ids",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.score_run_ids",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_ids"
+          },
+          {
+            "name": "segments[].source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "segments[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "segments[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "segments[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "segments[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "segments[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "minimum_segment_score_run_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.minimum_segment_score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_segment_score_run_count"
+          },
+          {
+            "name": "maximum_average_score_spread",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_average_score_spread"
+          },
+          {
+            "name": "actor_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "fairness_analysis",
+            "location": "body",
+            "required": true,
+            "type": "DpmPmQualityFairnessAnalysis",
+            "semanticId": "lotus.fairness_analysis",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis"
+          },
+          {
+            "name": "fairness_analysis.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "fairness_analysis.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "fairness_analysis.fairness_analysis_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_analysis_id",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis_id"
+          },
+          {
+            "name": "fairness_analysis.policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "fairness_analysis.policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "fairness_analysis.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "fairness_analysis.state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analysis.segment_results",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.segment_results",
+            "attributeRef": "#/attributeCatalog/lotus.segment_results"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].segment_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_id",
+            "attributeRef": "#/attributeCatalog/lotus.segment_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_count"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].average_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.average_score",
+            "attributeRef": "#/attributeCatalog/lotus.average_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].minimum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_score",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].maximum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_score",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_score"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.score_run_refs",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_refs"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].score_run_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.segment_results[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.minimum_segment_score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.minimum_segment_score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_segment_score_run_count"
+          },
+          {
+            "name": "fairness_analysis.maximum_average_score_spread",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.maximum_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_average_score_spread"
+          },
+          {
+            "name": "fairness_analysis.observed_average_score_spread",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.observed_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.observed_average_score_spread"
+          },
+          {
+            "name": "fairness_analysis.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analysis.source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analysis.source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.forbidden_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.forbidden_uses",
+            "attributeRef": "#/attributeCatalog/lotus.forbidden_uses"
+          },
+          {
+            "name": "fairness_analysis.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analysis.generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          },
+          {
+            "name": "fairness_analysis.generated_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_by",
+            "attributeRef": "#/attributeCatalog/lotus.generated_by"
+          },
+          {
+            "name": "fairness_analysis.correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "GET",
+      "path": "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+      "operationId": "list_pm_quality_fairness_analyses_endpoint_api_v1_rebalance_pm_operating_quality_fairness_analyses_get",
+      "summary": "List persisted PM operating quality fairness analyses",
+      "request": {
+        "fields": [
+          {
+            "name": "policy_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "policy_version",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "state",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "fairness_analyses",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.fairness_analyses",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analyses"
+          },
+          {
+            "name": "fairness_analyses[].product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "fairness_analyses[].product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "fairness_analyses[].fairness_analysis_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_analysis_id",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis_id"
+          },
+          {
+            "name": "fairness_analyses[].policy_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_id",
+            "attributeRef": "#/attributeCatalog/lotus.policy_id"
+          },
+          {
+            "name": "fairness_analyses[].policy_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.policy_version",
+            "attributeRef": "#/attributeCatalog/lotus.policy_version"
+          },
+          {
+            "name": "fairness_analyses[].as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "fairness_analyses[].state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analyses[].segment_results",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.segment_results",
+            "attributeRef": "#/attributeCatalog/lotus.segment_results"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].segment_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_id",
+            "attributeRef": "#/attributeCatalog/lotus.segment_id"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].segment_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.segment_type",
+            "attributeRef": "#/attributeCatalog/lotus.segment_type"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_count"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].average_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.average_score",
+            "attributeRef": "#/attributeCatalog/lotus.average_score"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].minimum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.minimum_score",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_score"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].maximum_score",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_score",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_score"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.score_run_refs",
+            "attributeRef": "#/attributeCatalog/lotus.score_run_refs"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].score_run_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analyses[].segment_results[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analyses[].minimum_segment_score_run_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.minimum_segment_score_run_count",
+            "attributeRef": "#/attributeCatalog/lotus.minimum_segment_score_run_count"
+          },
+          {
+            "name": "fairness_analyses[].maximum_average_score_spread",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.maximum_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_average_score_spread"
+          },
+          {
+            "name": "fairness_analyses[].observed_average_score_spread",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.observed_average_score_spread",
+            "attributeRef": "#/attributeCatalog/lotus.observed_average_score_spread"
+          },
+          {
+            "name": "fairness_analyses[].reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "fairness_analyses[].source_refs",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
+          },
+          {
+            "name": "fairness_analyses[].source_refs[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "fairness_analyses[].source_refs[].source_type",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "fairness_analyses[].source_refs[].source_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_id",
+            "attributeRef": "#/attributeCatalog/lotus.source_id"
+          },
+          {
+            "name": "fairness_analyses[].source_refs[].source_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_version"
+          },
+          {
+            "name": "fairness_analyses[].source_refs[].content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analyses[].forbidden_uses",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.forbidden_uses",
+            "attributeRef": "#/attributeCatalog/lotus.forbidden_uses"
+          },
+          {
+            "name": "fairness_analyses[].content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "fairness_analyses[].generated_at",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_at",
+            "attributeRef": "#/attributeCatalog/lotus.generated_at"
+          },
+          {
+            "name": "fairness_analyses[].generated_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.generated_by",
+            "attributeRef": "#/attributeCatalog/lotus.generated_by"
+          },
+          {
+            "name": "fairness_analyses[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.count",
+            "attributeRef": "#/attributeCatalog/lotus.count"
+          },
+          {
+            "name": "limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_pm_operating_quality",
+      "method": "GET",
+      "path": "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+      "operationId": "get_pm_quality_fairness_analysis_endpoint_api_v1_rebalance_pm_operating_quality_fairness_analyses__fairness_analysis_id__get",
+      "summary": "Get persisted PM operating quality fairness analysis",
+      "request": {
+        "fields": [
+          {
+            "name": "fairness_analysis_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.fairness_analysis_id",
+            "attributeRef": "#/attributeCatalog/lotus.fairness_analysis_id"
           }
         ]
       },

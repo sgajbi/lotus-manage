@@ -46,6 +46,21 @@
   Governance approval fails closed for missing approval, invalid or expired expiry, and
   unauthorized actors.
 
+- Product ID: `lotus-manage:PmOperatingQualityFairnessAnalysis:v1`
+- Product role: governed PM operating quality fairness-analysis evidence generated from persisted
+  score-run ids and source-defined operating segments. The lifecycle is immutable and supports
+  preview, create, list, and get without recomputing score runs.
+- Implemented route families:
+  - `/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`
+  - `/api/v1/rebalance/pm-operating-quality/fairness-analyses`
+  - `/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`
+- Source declaration: planned mesh promotion after the wider PM-quality product surface is
+  Gateway/Workbench-realized; current Manage truth is implementation-backed API evidence.
+- Boundary: Manage validates common policy/as-of scope, minimum scorable segment counts, and
+  governed average-score spread over caller-supplied source segments only. It does not infer
+  protected classes, discover segments locally, rank PMs, or create HR, compensation, conduct,
+  approval, client-contact, execution, or OMS decisions.
+
 ## Platform relationship
 
 `lotus-platform` aggregates the repo-native declaration, validates trust telemetry, applies mesh SLO/access/evidence policies, and includes this product in generated catalog, dependency graph, live certification, maturity matrix, evidence packs, and RFC-0092 operating reports.

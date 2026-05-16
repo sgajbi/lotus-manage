@@ -5,8 +5,14 @@ import json
 from copy import deepcopy
 from threading import Lock
 
-from src.core.pm_quality.models import DpmPmOperatingQualityPolicy, DpmPmOperatingQualityScoreRun
+from src.core.pm_quality.models import (
+    DpmPmOperatingQualityPolicy,
+    DpmPmOperatingQualityScoreRun,
+    DpmPmQualityFairnessAnalysis,
+)
 from src.core.pm_quality.repository import (
+    DpmPmQualityFairnessAnalysisConflictError,
+    DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
     DpmPmQualityScoreRunConflictError,
@@ -108,6 +114,55 @@ class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
                 reverse=True,
             )
             return deepcopy(score_runs[offset : offset + limit])
+
+
+class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysisRepository):
+    def __init__(self) -> None:
+        self._lock = Lock()
+        self._analyses: dict[str, DpmPmQualityFairnessAnalysis] = {}
+
+    def save_fairness_analysis(self, *, analysis: DpmPmQualityFairnessAnalysis) -> None:
+        with self._lock:
+            existing = self._analyses.get(analysis.fairness_analysis_id)
+            if existing is not None and existing.content_hash != analysis.content_hash:
+                raise DpmPmQualityFairnessAnalysisConflictError(
+                    "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
+                )
+            self._analyses[analysis.fairness_analysis_id] = deepcopy(analysis)
+
+    def get_fairness_analysis(
+        self,
+        *,
+        fairness_analysis_id: str,
+    ) -> DpmPmQualityFairnessAnalysis | None:
+        with self._lock:
+            analysis = self._analyses.get(fairness_analysis_id)
+            return deepcopy(analysis) if analysis is not None else None
+
+    def list_fairness_analyses(
+        self,
+        *,
+        policy_id: str | None = None,
+        policy_version: str | None = None,
+        as_of_date: str | None = None,
+        state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityFairnessAnalysis]:
+        with self._lock:
+            analyses = [
+                analysis
+                for analysis in self._analyses.values()
+                if (policy_id is None or analysis.policy_id == policy_id)
+                and (policy_version is None or analysis.policy_version == policy_version)
+                and (as_of_date is None or analysis.as_of_date == as_of_date)
+                and (state is None or analysis.state == state)
+            ]
+            analyses.sort(
+                key=lambda analysis: (analysis.generated_at, analysis.fairness_analysis_id),
+                reverse=True,
+            )
+            return deepcopy(analyses[offset : offset + limit])
 
 
 def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:
