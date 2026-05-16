@@ -20,7 +20,8 @@ composition.
    Dedicated client methods currently exist for `DpmModelPortfolioTarget:v1`,
    `DiscretionaryMandateBinding:v1`, `InstrumentEligibilityProfile:v1`,
    `ClientRestrictionProfile:v1`, `SustainabilityPreferenceProfile:v1`,
-   `ExternalCurrencyExposure:v1`, `ExternalHedgeExecutionReadiness:v1`, and
+   `ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
+   `ExternalHedgeExecutionReadiness:v1`, and
    `PortfolioManagerBookMembership:v1`.
 4. `lotus-manage` uses the bounded `lotus-risk` authority client for risk-owned analytics products.
    `RegimeScenarioPackEvaluation:v1` supports regime-stress-aware construction when configured;
@@ -56,6 +57,7 @@ composition.
 | inline bundle mode | caller supplies full input bundle | Local execution input | deterministic local simulation and analysis | bundle acceptance does not transfer source-data authority to manage |
 | PM-book membership | `lotus-core` owns portfolio-manager book membership, source records, filters, supportability, and source-batch fingerprint | Cohort membership source product | PM-book rebalance-wave discovery and optional PM operating quality score-run scope materialization from `PortfolioManagerBookMembership:v1` | manage must fail closed on unavailable, incomplete, degraded, or empty PM-book source posture and must not infer membership locally |
 | external currency exposure | `lotus-core` owns fail-closed external treasury currency exposure posture over bank-owned treasury source ingestion | External treasury source product | preserve `ExternalCurrencyExposure:v1` unavailable posture, empty exposure rows, exposure count, missing data families, blocked capabilities, lineage, and source hash in currency-overlay construction diagnostics | manage must block hedge realization while external treasury ingestion is unavailable and must not claim FX attribution, hedge advice, treasury instruction, execution readiness, OMS acknowledgement, fills, settlement, or autonomous treasury action |
+| external hedge policy | `lotus-core` owns fail-closed external treasury hedge-policy posture over bank-owned treasury source ingestion | External treasury source product | preserve `ExternalHedgePolicy:v1` unavailable posture, empty policy rows, policy-rule count, missing data families, blocked capabilities, lineage, and source hash in currency-overlay construction diagnostics | manage must block hedge realization while external treasury ingestion is unavailable and must not claim hedge-policy approval, hedge advice, treasury instruction, counterparty selection, OMS acknowledgement, fills, settlement, or autonomous treasury action |
 | external hedge execution readiness | `lotus-core` owns fail-closed external treasury readiness posture over bank-owned treasury source ingestion | External treasury source product | preserve `ExternalHedgeExecutionReadiness:v1` unavailable posture, missing data families, blocked capabilities, lineage, and source hash in currency-overlay construction diagnostics | manage must block hedge realization while external treasury ingestion is unavailable and must not claim hedge advice, forward pricing, counterparty selection, best execution, OMS acknowledgement, fills, settlement, or autonomous treasury action |
 
 ## `lotus-risk` Contract Family Posture

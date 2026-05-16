@@ -1634,7 +1634,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance` | Deferred beyond current seams/authority-backed concentration support | Current `RISK_AWARE` consumes concentration authority; broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance need owning-service contracts. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` source authority consumed by `lotus-manage` | Completed for bounded source-product consumption in stateful construction and mandate-health lineage | `LIQUIDITY_AWARE` accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and now also preserves optional `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and `PlannedWithdrawalSchedule:v1` supportability evidence from stateful core sourcing. Manage records source identity, counts, hashes, currencies, horizons, and reason codes for liquidity-aware diagnostics and mandate lineage, but does not compute financial-planning advice, funding recommendations, client liability plans, OMS instructions, or treasury actions. |
-| RFC39-WTBD-008 | External treasury/currency overlay source boundary | `lotus-core` ingestion of external bank treasury/currency products, consumed by `lotus-manage` | External-source contracts plus active fail-closed hedge-readiness and currency-exposure posture merged in `lotus-core`; Manage consumes the unavailable postures; runtime external treasury ingestion remains pending | Current support uses FX readiness and bounded currency-overlay context. Lotus will not introduce a `lotus-treasury` app. `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) declares contracts for external currency exposure, hedge policy, FX forward curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`) exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route. `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) exposes `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route. Manage now consumes both routes through stateful core sourcing and preserves empty exposure rows, exposure count, missing external treasury data families, blocked capabilities, lineage, source hashes, and reason codes in currency-overlay diagnostics so hedge realization remains blocked while ingestion is unavailable. Manage still must not claim FX attribution, price forwards, approve hedge policy, choose counterparties, claim best execution, produce OMS acknowledgements, claim fills/settlement, or perform autonomous treasury action. |
+| RFC39-WTBD-008 | External treasury/currency overlay source boundary | `lotus-core` ingestion of external bank treasury/currency products, consumed by `lotus-manage` | External-source contracts plus active fail-closed hedge-readiness, currency-exposure, and hedge-policy posture merged in `lotus-core`; Manage consumes the unavailable postures; runtime external treasury ingestion remains pending | Current support uses FX readiness and bounded currency-overlay context. Lotus will not introduce a `lotus-treasury` app. `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) declares contracts for external currency exposure, hedge policy, FX forward curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`) exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route. `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) exposes `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route. `lotus-core` PR #368 (`763db4c1`, wiki `50fff30`) exposes `ExternalHedgePolicy:v1` as an active fail-closed `UNAVAILABLE` route and `lotus-platform` PR #334 (`ae4f707`) mirrors it. Manage now consumes all three routes through stateful core sourcing and preserves empty exposure/policy rows, exposure count, policy-rule count, missing external treasury data families, blocked capabilities, lineage, source hashes, and reason codes in currency-overlay diagnostics so hedge realization remains blocked while ingestion is unavailable. Manage still must not claim FX attribution, price forwards, approve hedge policy, choose counterparties, claim best execution, produce OMS acknowledgements, claim fills/settlement, or perform autonomous treasury action. |
 | RFC39-WTBD-009 | First-class regime scenario-pack source | `lotus-risk` / CIO scenario authority, consumed by `lotus-manage` | First-wave implemented for `RegimeScenarioPackEvaluation:v1`; bounded construction-lab posture is downstream-visible | `lotus-risk` now owns a certified scenario-pack evaluation source product, and manage consumes it for `REGIME_STRESS_AWARE` when `DPM_RISK_BASE_URL` is configured. The Workbench construction lab can render method posture and reason codes through Gateway/manage truth; broader scenario contribution rows, CIO approval workflow, and richer scenario-specific UX remain future depth. |
 | RFC39-WTBD-010 | Construction alternative lifecycle across proof packs, waves, reports, and AI | `lotus-manage`, `lotus-report`, `lotus-ai`, `lotus-gateway`, `lotus-workbench` | Completed for bounded first-wave lifecycle support | Selected construction alternatives flow into RFC-0040 proof packs, RFC-0041 wave item selection and optional proof-pack linkage, proof-pack and wave report inputs, proof-pack AI evidence inputs, and outcome expected-snapshot assembly without downstream reconstruction of construction truth. External OMS execution, autonomous PM choice, approval beyond manage wave controls, and client communication remain unsupported. |
 
@@ -2085,22 +2085,36 @@ preserves the unavailable posture in currency-overlay diagnostics without making
 FX-attribution, hedge advice, treasury instruction, execution-readiness, OMS, fill, or settlement
 claim.
 
+`lotus-core` PR #368 merged to `main` as `763db4c1` and published wiki commit `50fff30`. It
+promotes `ExternalHedgePolicy:v1` to an active fail-closed route at
+`/integration/portfolios/{portfolio_id}/external-hedge-policy` that returns `UNAVAILABLE`, empty
+policy rules, missing `external_hedge_policy` data family, blocked hedge-policy approval,
+hedge-advice, treasury-instruction, counterparty-selection, OMS, fill, settlement, and
+autonomous-treasury-action capabilities, plus external-bank-treasury lineage. `lotus-platform` PR
+#334 merged as `ae4f707` and mirrors the active domain-product posture in platform discovery
+artifacts. Manage now consumes `ExternalHedgePolicy:v1` through stateful core sourcing and
+preserves the unavailable posture in currency-overlay diagnostics without making a local
+hedge-policy approval, hedge advice, treasury instruction, counterparty-selection, OMS, fill, or
+settlement claim.
+
 Manage now consumes those fail-closed postures through stateful core sourcing: the core resolver
 posts to `/integration/portfolios/{portfolio_id}/external-hedge-execution-readiness` and
-`/integration/portfolios/{portfolio_id}/external-currency-exposure`, derives exposure currencies
-from the resolved source context, and attaches `ExternalHedgeExecutionReadiness:v1` plus
-`ExternalCurrencyExposure:v1` to the DPM execution context. Construction enrichment lifts both
-postures into `currency_overlay_context` with source refs, content hashes, empty exposure rows,
-exposure count, missing external treasury data families, blocked capabilities, and reason codes.
+`/integration/portfolios/{portfolio_id}/external-currency-exposure` and
+`/integration/portfolios/{portfolio_id}/external-hedge-policy`, derives exposure currencies from
+the resolved source context, and attaches `ExternalHedgeExecutionReadiness:v1`,
+`ExternalCurrencyExposure:v1`, and `ExternalHedgePolicy:v1` to the DPM execution context.
+Construction enrichment lifts all three postures into `currency_overlay_context` with source refs,
+content hashes, empty exposure/policy rows, exposure count, policy-rule count, missing external
+treasury data families, blocked capabilities, and reason codes.
 `UNAVAILABLE` maps to `BLOCKED`, so `CURRENCY_OVERLAY` alternatives preserve fail-closed external
-treasury readiness and exposure diagnostics instead of deriving local hedge-readiness or
-FX-attribution claims.
+treasury readiness, exposure, and hedge-policy diagnostics instead of deriving local
+hedge-readiness, FX-attribution, or hedge-policy approval claims.
 
 This advances RFC39-WTBD-008 from source-owner fail-closed runtime posture to Manage consumption of
-both unavailable external treasury readiness and currency-exposure posture. It does not certify an
-external treasury ingestion table or add FX attribution, hedge advice, forward pricing, treasury
-instruction, counterparty selection, best execution, OMS acknowledgement, fills, settlement, or
-autonomous treasury action.
+unavailable external treasury readiness, currency-exposure, and hedge-policy postures. It does not
+certify an external treasury ingestion table or add FX attribution, hedge-policy approval, hedge
+advice, forward pricing, treasury instruction, counterparty selection, best execution, OMS
+acknowledgement, fills, settlement, or autonomous treasury action.
 
 Expected implementation wave:
 

@@ -79,11 +79,13 @@ posture as risk source truth and does not promote flagged attribution to ready e
 `067f919`) declares planned source-product contracts for `ExternalCurrencyExposure:v1`,
 `ExternalHedgePolicy:v1`, `ExternalFXForwardCurve:v1`, and
 `ExternalEligibleHedgeInstrument:v1`. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`) exposes
-`ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route. Manage now
-consumes that route through stateful core sourcing and preserves its unavailable posture in
-currency-overlay construction diagnostics as a blocked external treasury readiness context. Manage
-still makes no hedge advice, forward-pricing, counterparty-selection, best-execution,
-treasury-instruction, OMS, fills, or settlement claim.
+`ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route, PR #367
+(`3d0a7bbd`, wiki `d719c74`) exposes `ExternalCurrencyExposure:v1`, and PR #368 (`763db4c1`,
+wiki `50fff30`) exposes `ExternalHedgePolicy:v1`. Manage now consumes all three routes through
+stateful core sourcing and preserves their unavailable postures in currency-overlay construction
+diagnostics as blocked external treasury readiness, exposure, and policy context. Manage still
+makes no FX attribution, hedge-policy approval, hedge advice, forward-pricing,
+counterparty-selection, best-execution, treasury-instruction, OMS, fills, or settlement claim.
 
 ## Business Value Themes
 
