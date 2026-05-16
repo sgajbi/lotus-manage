@@ -97,15 +97,17 @@ Current repository posture:
     Manage preserves these client-liquidity source products as evidence only and does not claim
     financial-planning advice, funding recommendation, client liability planning, OMS instruction,
     or treasury action.
-    `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) now defines planned external treasury
-    source-product boundaries for `ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
+    `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) now defines external treasury source-product
+    boundaries for `ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
     `ExternalFXForwardCurve:v1`, and `ExternalEligibleHedgeInstrument:v1`. `lotus-core` PR #366
-    (`9e86df3b`, wiki `617e4e6`) now exposes `ExternalHedgeExecutionReadiness:v1` as an active
-    fail-closed `UNAVAILABLE` route. Manage now consumes this route through stateful core sourcing,
-    preserves missing external treasury data families and blocked capabilities in currency-overlay
-    construction diagnostics, and blocks hedge realization while continuing to avoid hedge advice,
-    forward pricing, counterparty selection, treasury instruction, best-execution, OMS, fill, and
-    settlement claims.
+    (`9e86df3b`, wiki `617e4e6`) exposes `ExternalHedgeExecutionReadiness:v1` as an active
+    fail-closed `UNAVAILABLE` route. `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) also
+    exposes `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route, with
+    `lotus-platform` PR #333 (`c46d581`) mirroring that active source-product posture. Manage now
+    consumes the readiness route through stateful core sourcing, preserves missing external
+    treasury data families and blocked capabilities in currency-overlay construction diagnostics,
+    and blocks hedge realization while continuing to avoid hedge advice, forward pricing,
+    counterparty selection, treasury instruction, best-execution, OMS, fill, and settlement claims.
     RFC-0038 mandate-health refresh also consumes core `ClientRestrictionProfile:v1`,
     `SustainabilityPreferenceProfile:v1`, `PortfolioCashflowProjection:v1`,
     `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and

@@ -89,13 +89,16 @@ mandate-health lineage. Security-level sustainability classification evidence re
 pending-review boundary; Manage does not turn income needs, reserve requirements, or withdrawals
 into financial-planning advice, funding recommendations, client liability planning, OMS
 instructions, or treasury actions. `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) now defines
-planned external treasury source-product contracts for currency exposure, hedge policy, FX forward
-curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`) now
-exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route. Manage
-now consumes that posture through stateful core sourcing and preserves it in currency-overlay
-construction diagnostics as blocked external treasury readiness evidence. Manage still makes no
-hedge advice, forward-pricing, counterparty-selection, treasury-instruction, best-execution, OMS,
-fill, or settlement claim.
+external treasury source-product contract boundaries for currency exposure, hedge policy, FX
+forward curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`)
+exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route.
+`lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) now also exposes
+`ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route and `lotus-platform`
+PR #333 (`c46d581`) mirrors that active source-product posture. Manage now consumes the readiness
+posture through stateful core sourcing and preserves it in currency-overlay construction
+diagnostics as blocked external treasury readiness evidence. Manage still makes no hedge advice,
+forward-pricing, counterparty-selection, treasury-instruction, best-execution, OMS, fill, or
+settlement claim.
 Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.
