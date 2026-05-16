@@ -1884,10 +1884,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "missing grouping data, empty active-risk alignment" in work_to_be_done
     assert "`lotus-core` PR #365" in work_to_be_done
     assert "`lotus-core` PR #366" in work_to_be_done
+    assert "`lotus-core` PR #367" in work_to_be_done
+    assert "`lotus-platform` PR\n#333" in work_to_be_done
+    assert "`3d0a7bbd`" in work_to_be_done
+    assert "`d719c74`" in work_to_be_done
+    assert "`c46d581`" in work_to_be_done
     assert "`9e86df3b`" in work_to_be_done
     assert "`617e4e6`" in work_to_be_done
     assert "`ExternalCurrencyExposure:v1`" in work_to_be_done
     assert "`ExternalHedgeExecutionReadiness:v1`" in work_to_be_done
+    assert "Manage has not yet consumed `ExternalCurrencyExposure:v1`" in work_to_be_done
     assert "first Manage\nconsumption of that posture" in work_to_be_done
     assert "currency_overlay_context" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
