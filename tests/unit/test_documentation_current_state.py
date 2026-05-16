@@ -1182,6 +1182,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-performance` PR #167 (`16261c9`, wiki\n`41bdaa3`)" in roadmap
     assert "2026-05-16 external treasury source-boundary update" in roadmap
     assert "`lotus-core` PR #365 (`c7fa07b0`, wiki\n`067f919`)" in roadmap
+    assert "`lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`)" in roadmap
+    assert "active fail-closed `UNAVAILABLE` route" in roadmap
     assert "rolling tracking-error methodology truth" in supported_features
     assert "`lotus-risk` PR #113" in supported_features
     assert "wiki `d1330ee`" in supported_features
@@ -1881,9 +1883,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "attribution-set quality flag degrades response-level" in work_to_be_done
     assert "missing grouping data, empty active-risk alignment" in work_to_be_done
     assert "`lotus-core` PR #365" in work_to_be_done
+    assert "`lotus-core` PR #366" in work_to_be_done
+    assert "`9e86df3b`" in work_to_be_done
+    assert "`617e4e6`" in work_to_be_done
     assert "`ExternalCurrencyExposure:v1`" in work_to_be_done
     assert "`ExternalHedgeExecutionReadiness:v1`" in work_to_be_done
-    assert "does not activate treasury ingestion" in work_to_be_done
+    assert "first fail-closed runtime source-owner posture" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
     assert "does not calculate risk or performance methodology locally" in work_to_be_done
@@ -1921,8 +1926,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "`lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`)" in supported_features
+    assert "`lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`)" in supported_features
     assert "`ExternalFXForwardCurve:v1`" in supported_features
-    assert "runtime ingestion and Manage consumption remain future work" in supported_features
+    assert (
+        "external treasury ingestion and Manage consumption remain future work"
+        in supported_features
+    )
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features
     )
