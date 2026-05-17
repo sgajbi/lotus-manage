@@ -22,6 +22,7 @@ from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
+    AuthoritativeExecutionAcknowledgementContext,
     AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativeLiquidityReserveRequirement,
@@ -59,6 +60,7 @@ from src.core.dpm_source_context import (
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
+    DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmResolvedSourceContext,
 )
 from src.core.models import EngineOptions, RebalanceResult, TargetMethod
@@ -570,6 +572,7 @@ def _authority_context_for_method(
         transaction_cost_context=authority_context.transaction_cost_context,
         liquidity_context=liquidity_context,
         currency_overlay_context=currency_context,
+        execution_acknowledgement_context=authority_context.execution_acknowledgement_context,
         regime_stress_context=regime_context,
         client_restriction_context=authority_context.client_restriction_context,
         sustainability_preference_context=authority_context.sustainability_preference_context,
@@ -848,6 +851,35 @@ def _external_treasury_currency_overlay_context(
     )
 
 
+def _external_order_execution_acknowledgement_context(
+    acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
+) -> AuthoritativeExecutionAcknowledgementContext | None:
+    if acknowledgement is None:
+        return None
+    payload = acknowledgement.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(payload)
+    return AuthoritativeExecutionAcknowledgementContext(
+        supportability_status=_source_status_to_method_status(acknowledgement.supportability.state),
+        source_system="lotus-core",
+        source_product_name=acknowledgement.product_name,
+        source_product_version=acknowledgement.product_version,
+        source_id=(
+            acknowledgement.source_batch_fingerprint
+            or acknowledgement.lineage.get("source_batch_fingerprint")
+            or source_hash
+        ),
+        content_hash=source_hash,
+        acknowledgement_count=acknowledgement.supportability.acknowledgement_count,
+        missing_data_families=acknowledgement.supportability.missing_data_families,
+        blocked_capabilities=acknowledgement.supportability.blocked_capabilities,
+        acknowledgements=acknowledgement.acknowledgements,
+        reason_codes=[
+            acknowledgement.supportability.reason,
+            "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
+        ],
+    )
+
+
 def _authority_context_with_source_products(
     *,
     authority_context: ConstructionAuthorityContext,
@@ -1067,6 +1099,15 @@ def _authority_context_with_source_products(
         )
         if currency_context is not None:
             context_updates["currency_overlay_context"] = currency_context
+    if authority_context.execution_acknowledgement_context is None:
+        acknowledgement = getattr(
+            source_context.context,
+            "external_order_execution_acknowledgement",
+            None,
+        )
+        acknowledgement_context = _external_order_execution_acknowledgement_context(acknowledgement)
+        if acknowledgement_context is not None:
+            context_updates["execution_acknowledgement_context"] = acknowledgement_context
     if authority_context.client_restriction_context is None:
         restriction_profile = source_context.context.client_restriction_profile
         if restriction_profile is not None:

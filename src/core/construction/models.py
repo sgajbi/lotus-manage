@@ -610,6 +610,53 @@ class AuthoritativeCurrencyOverlayContext(BaseModel):
     )
 
 
+class AuthoritativeExecutionAcknowledgementContext(BaseModel):
+    supportability_status: ConstructionMethodStatus = Field(
+        description="External OMS acknowledgement supportability status."
+    )
+    source_system: str = Field(description="Source system that owns acknowledgement posture.")
+    source_product_name: str = Field(
+        default="ExternalOrderExecutionAcknowledgement",
+        description="Source-owned external OMS acknowledgement product name.",
+    )
+    source_product_version: str = Field(
+        default="v1",
+        description="Source-owned external OMS acknowledgement product version.",
+    )
+    source_id: str | None = Field(
+        default=None,
+        description="Source-owned deterministic external OMS acknowledgement evidence identifier.",
+    )
+    content_hash: str | None = Field(
+        default=None,
+        description="Hash of the external OMS acknowledgement posture preserved for audit.",
+    )
+    acknowledgement_count: int = Field(
+        default=0,
+        ge=0,
+        description="External OMS acknowledgement row count returned by the source owner.",
+    )
+    missing_data_families: list[str] = Field(
+        default_factory=list,
+        description="External OMS source families missing from the acknowledgement posture.",
+    )
+    blocked_capabilities: list[str] = Field(
+        default_factory=list,
+        description="Capabilities explicitly blocked by external OMS acknowledgement posture.",
+    )
+    acknowledgements: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "Source-owned acknowledgement rows. Empty while bank-owned OMS ingestion is "
+            "unavailable; these rows are never execution, fill, or settlement confirmation."
+        ),
+    )
+    reason_codes: list[str] = Field(
+        default_factory=list,
+        description="Execution-boundary bounded reason codes.",
+    )
+
+
 class AuthoritativeRegimeStressContext(BaseModel):
     supportability_status: ConstructionMethodStatus = Field(
         description="Scenario-pack supportability status for regime stress construction."
@@ -659,6 +706,14 @@ class ConstructionAuthorityContext(BaseModel):
     currency_overlay_context: AuthoritativeCurrencyOverlayContext | None = Field(
         default=None,
         description="Optional currency-overlay and hedge-policy authority context.",
+    )
+    execution_acknowledgement_context: AuthoritativeExecutionAcknowledgementContext | None = Field(
+        default=None,
+        description=(
+            "Optional lotus-core ExternalOrderExecutionAcknowledgement:v1 posture. Manage "
+            "preserves this as fail-closed execution-boundary evidence and never as execution, "
+            "fill, settlement, or OMS acknowledgement truth."
+        ),
     )
     regime_stress_context: AuthoritativeRegimeStressContext | None = Field(
         default=None,

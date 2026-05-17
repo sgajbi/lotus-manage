@@ -238,6 +238,7 @@ def _core_execution_context(
     include_external_hedge_policy: bool = False,
     include_external_eligible_hedge_instruments: bool = False,
     include_external_fx_forward_curve: bool = False,
+    include_external_order_execution_acknowledgement: bool = False,
     cashflow_data_quality_status: str = "COMPLETE",
 ) -> DpmCoreExecutionContext:
     payload = {
@@ -543,6 +544,43 @@ def _core_execution_context(
             "data_quality_status": "MISSING",
             "source_batch_fingerprint": "sha256:external-fx-forward-curve",
         }
+    if include_external_order_execution_acknowledgement:
+        payload["external_order_execution_acknowledgement"] = {
+            "product_name": "ExternalOrderExecutionAcknowledgement",
+            "product_version": "v1",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "client_id": "CIF_SG_000184",
+            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+            "as_of_date": "2026-05-03",
+            "execution_intent_id": None,
+            "order_reference_ids": [],
+            "acknowledgements": [],
+            "supportability": {
+                "state": "UNAVAILABLE",
+                "reason": "EXTERNAL_OMS_SOURCE_NOT_INGESTED",
+                "acknowledgement_count": 0,
+                "missing_data_families": ["external_oms_order_execution_acknowledgement"],
+                "blocked_capabilities": [
+                    "order_generation",
+                    "venue_routing",
+                    "best_execution",
+                    "oms_acknowledgement",
+                    "fills",
+                    "settlement",
+                    "execution_status_certification",
+                    "autonomous_execution_action",
+                ],
+            },
+            "lineage": {
+                "source_system": "external-bank-oms",
+                "source_table": "not_ingested",
+                "contract_version": "rfc_042_external_order_execution_acknowledgement_v1",
+                "integration_status": "not_ingested",
+                "runtime_posture": "fail_closed",
+            },
+            "data_quality_status": "MISSING",
+            "source_batch_fingerprint": "sha256:external-order-execution-acknowledgement",
+        }
     return DpmCoreExecutionContext.model_validate(payload)
 
 
@@ -578,6 +616,14 @@ class _ExternalHedgeReadinessCoreResolver:
             include_external_hedge_policy=True,
             include_external_eligible_hedge_instruments=True,
             include_external_fx_forward_curve=True,
+        )
+
+
+class _ExternalOrderExecutionAcknowledgementCoreResolver:
+    def resolve_execution_context(self, *, stateful_input, correlation_id):
+        return _core_execution_context(
+            supportability_state="READY",
+            include_external_order_execution_acknowledgement=True,
         )
 
 
@@ -1288,6 +1334,63 @@ def test_stateful_currency_overlay_preserves_external_hedge_readiness_fail_close
     assert "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED" in reason_codes
     assert "EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED" in reason_codes
     assert "CURRENCY_OVERLAY_CONTEXT_BLOCKED" in reason_codes
+
+
+def test_stateful_construction_preserves_external_order_execution_acknowledgement_fail_closed(
+    monkeypatch,
+) -> None:
+    repository = InMemoryConstructionRepository()
+    monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
+    monkeypatch.setattr(
+        rebalance_service,
+        "build_core_resolver_client",
+        lambda: _ExternalOrderExecutionAcknowledgementCoreResolver(),
+    )
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json={
+                "input_mode": "stateful",
+                "stateful_input": _stateful_input_payload(),
+                "methods": ["HEURISTIC_EXPLAINABLE"],
+            },
+            headers={"Idempotency-Key": "idem-construction-stateful-order-ack"},
+        )
+
+    app.dependency_overrides = {}
+
+    assert response.status_code == 200
+    body = response.json()
+    alternative = body["alternatives"][0]
+    authority_context = alternative["diagnostics"]["authority_context"]
+    acknowledgement_context = authority_context["execution_acknowledgement_context"]
+    reason_codes = alternative["diagnostics"]["enrichment_summary"]["reason_codes"]
+    assert alternative["method"] == "HEURISTIC_EXPLAINABLE"
+    assert acknowledgement_context["source_system"] == "lotus-core"
+    assert acknowledgement_context["source_product_name"] == "ExternalOrderExecutionAcknowledgement"
+    assert acknowledgement_context["source_product_version"] == "v1"
+    assert acknowledgement_context["supportability_status"] == "BLOCKED"
+    assert acknowledgement_context["acknowledgement_count"] == 0
+    assert acknowledgement_context["acknowledgements"] == []
+    assert (
+        "external_oms_order_execution_acknowledgement"
+        in (acknowledgement_context["missing_data_families"])
+    )
+    assert "best_execution" in acknowledgement_context["blocked_capabilities"]
+    assert "oms_acknowledgement" in acknowledgement_context["blocked_capabilities"]
+    assert "fills" in acknowledgement_context["blocked_capabilities"]
+    assert "settlement" in acknowledgement_context["blocked_capabilities"]
+    assert acknowledgement_context["source_id"] == (
+        "sha256:external-order-execution-acknowledgement"
+    )
+    assert "EXTERNAL_OMS_SOURCE_NOT_INGESTED" in acknowledgement_context["reason_codes"]
+    assert (
+        "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED"
+        in acknowledgement_context["reason_codes"]
+    )
+    assert "EXTERNAL_OMS_SOURCE_NOT_INGESTED" not in reason_codes
+    assert "external_execution_claimed" not in authority_context
 
 
 def test_stateful_construction_marks_degraded_core_cashflow_projection(monkeypatch) -> None:

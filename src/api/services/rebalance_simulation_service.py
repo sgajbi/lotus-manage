@@ -154,6 +154,10 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
                 "DPM_CORE_PLANNED_WITHDRAWAL_SCHEDULE_PATH_TEMPLATE",
                 "/integration/portfolios/{portfolio_id}/planned-withdrawal-schedule",
             ),
+            external_order_execution_acknowledgement_path_template=os.getenv(
+                "DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_PATH_TEMPLATE",
+                "/integration/portfolios/{portfolio_id}/external-order-execution-acknowledgement",
+            ),
             transaction_cost_lookback_days=env_int("DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS", 400),
             timeout_seconds=env_float("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", 2.0),
             max_attempts=env_int("DPM_CORE_RESOLVER_MAX_ATTEMPTS", 2),

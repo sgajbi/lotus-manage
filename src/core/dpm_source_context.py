@@ -1179,6 +1179,60 @@ class DpmCoreExternalFXForwardCurveResponse(BaseModel):
     source_batch_fingerprint: Optional[str] = Field(default=None)
 
 
+class DpmCoreExternalOrderExecutionAcknowledgementSupportability(BaseModel):
+    state: Literal["UNAVAILABLE"] = Field(
+        description="Core readiness state for external OMS order-execution acknowledgement."
+    )
+    reason: Literal["EXTERNAL_OMS_SOURCE_NOT_INGESTED"] = Field(
+        description="Bounded core fail-closed reason code."
+    )
+    acknowledgement_count: int = Field(
+        ge=0,
+        description="External OMS acknowledgement row count emitted by core.",
+    )
+    missing_data_families: list[str] = Field(
+        default_factory=list,
+        description="External OMS source families required before acknowledgements are usable.",
+    )
+    blocked_capabilities: list[str] = Field(
+        default_factory=list,
+        description="Execution, OMS, fill, settlement, and autonomous-action capabilities blocked.",
+    )
+
+
+class DpmCoreExternalOrderExecutionAcknowledgementResponse(BaseModel):
+    product_name: Literal["ExternalOrderExecutionAcknowledgement"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    mandate_id: Optional[str] = Field(default=None, description="Optional mandate identifier.")
+    as_of_date: date = Field(description="Business date used to resolve acknowledgement posture.")
+    execution_intent_id: Optional[str] = Field(
+        default=None,
+        description="Optional Manage execution-intent identifier used to query acknowledgement posture.",
+    )
+    order_reference_ids: list[str] = Field(
+        default_factory=list,
+        description="Optional external order references used to query acknowledgement posture.",
+    )
+    acknowledgements: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "External OMS acknowledgement rows, empty while source ingestion is unavailable. "
+            "Manage preserves these as evidence only and never as order, fill, or settlement truth."
+        ),
+    )
+    supportability: DpmCoreExternalOrderExecutionAcknowledgementSupportability = Field(
+        description="Fail-closed external OMS acknowledgement supportability posture."
+    )
+    lineage: dict[str, str] = Field(default_factory=dict)
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(default=None)
+
+
 class DpmCoreClientRestrictionEntry(BaseModel):
     restriction_scope: str = Field(description="Source-owned restriction scope.")
     restriction_code: str = Field(description="Bounded restriction code.")
@@ -1372,6 +1426,17 @@ class DpmCoreExecutionContext(BaseModel):
             "fail-closed external treasury forward-curve evidence and does not turn it into "
             "forward pricing, FX valuation methodology, hedge advice, treasury instruction, "
             "counterparty selection, best execution, OMS, fill, or settlement truth."
+        ),
+    )
+    external_order_execution_acknowledgement: Optional[
+        DpmCoreExternalOrderExecutionAcknowledgementResponse
+    ] = Field(
+        default=None,
+        description=(
+            "Optional lotus-core ExternalOrderExecutionAcknowledgement:v1 posture. Manage "
+            "preserves this as fail-closed external OMS acknowledgement evidence and does not "
+            "turn it into order generation, venue routing, best execution, OMS acknowledgement, "
+            "fill, settlement, execution-status certification, or autonomous execution truth."
         ),
     )
     client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = Field(
