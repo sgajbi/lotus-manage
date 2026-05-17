@@ -54,18 +54,21 @@ retained only as evidence index and sequencing control.
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: the 2026-05-10 mainline after the RFC40-WTBD-009 selected-alternative
-regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI workflow-pack truth
-reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the RFC38-WTBD-006
-source-backed mandate-health consumption slice, the RFC38-WTBD-008 command-center product closure,
-the RFC38-WTBD-005 mandate objective/benchmark/review source-consumption slice, and the
-RFC39-WTBD-010 construction lifecycle
-audit. RFC37-WTBD-005 now has the supported proof-pack, rebalance-wave, and outcome-review report,
-render, archive, Gateway/Workbench posture, and AI-evidence handoff truth moved into RFC-0037 as a
-completed parent-roadmap closure result. RFC36-WTBD-006 is now closed as a no-migration-required
-conditional item after the cross-repo audit found no active consumer dependency that justifies
-restoring retired manage proposal routes; the only stale durable truth found was the platform API
-vocabulary mirror, which `lotus-platform` PR #316 refreshed and validated. RFC41-WTBD-003 now has
+Snapshot basis: the 2026-05-18 clean mainline after `lotus-manage` PR #273 (`58e8662114f2c0a66b2f3aaff60eda9001a855f8`) closed the bounded RFC42-WTBD-008 PM operating
+quality downstream realization and the wiki source was published at commit `4fc0dd7`. The current
+classification remains 59 total WTBD items: 44 done on merged/published truth, 4 partial or in
+progress, and 11 remaining/open. Earlier source slices include the RFC40-WTBD-009
+selected-alternative regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI
+workflow-pack truth reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the
+RFC38-WTBD-006 source-backed mandate-health consumption slice, the RFC38-WTBD-008 command-center
+product closure, the RFC38-WTBD-005 mandate objective/benchmark/review source-consumption slice,
+and the RFC39-WTBD-010 construction lifecycle audit. RFC37-WTBD-005 now has the supported
+proof-pack, rebalance-wave, and outcome-review report, render, archive, Gateway/Workbench posture,
+and AI-evidence handoff truth moved into RFC-0037 as a completed parent-roadmap closure result.
+RFC36-WTBD-006 is now closed as a no-migration-required conditional item after the cross-repo audit
+found no active consumer dependency that justifies restoring retired manage proposal routes; the
+only stale durable truth found was the platform API vocabulary mirror, which `lotus-platform`
+PR #316 refreshed and validated. RFC41-WTBD-003 now has
 `lotus-risk:RiskEventAffectedCohort:v1` source ownership, the platform mesh mirror, and the
 `lotus-manage` `RISK_EVENT` wave preview/create consumer implemented, validated, merged to
 `main`, and wiki-published. RFC38-WTBD-006 now has `lotus-manage` first-wave mandate-health

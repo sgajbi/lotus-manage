@@ -1,9 +1,31 @@
+import re
 from pathlib import Path
 
 from src.api.main import app
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+WTBD_PARTIAL_IDS = {
+    "RFC37-WTBD-001",
+    "RFC40-WTBD-009",
+    "RFC41-WTBD-003",
+    "RFC42-WTBD-006",
+}
+
+WTBD_OPEN_IDS = {
+    "RFC36-WTBD-004",
+    "RFC36-WTBD-005",
+    "RFC37-WTBD-002",
+    "RFC37-WTBD-003",
+    "RFC37-WTBD-004",
+    "RFC37-WTBD-007",
+    "RFC38-WTBD-007",
+    "RFC39-WTBD-005",
+    "RFC39-WTBD-008",
+    "RFC41-WTBD-010",
+    "RFC42-WTBD-007",
+}
 
 CURRENT_DOC_PATHS = [
     ROOT / "Makefile",
@@ -39,6 +61,18 @@ def _iter_current_docs() -> list[Path]:
             continue
         docs.extend(child for child in path.rglob("*.md") if "api-vocabulary" not in child.parts)
     return sorted(set(docs))
+
+
+def _detailed_wtbd_rows() -> list[list[str]]:
+    ledger = ROOT / "docs" / "rfcs" / "RFC-worktobedone.md"
+    rows: list[list[str]] = []
+    for line in ledger.read_text(encoding="utf-8").splitlines():
+        if not re.match(r"^\| RFC\d+-WTBD-\d+ ", line):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if len(cells) == 5:
+            rows.append(cells)
+    return rows
 
 
 def test_current_docs_do_not_advertise_removed_advisory_runtime_surface() -> None:
@@ -287,6 +321,27 @@ def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:
             missing.append(target)
 
     assert missing == []
+
+
+def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
+    rows = _detailed_wtbd_rows()
+    all_ids = {row[0] for row in rows}
+    done_ids = all_ids - WTBD_PARTIAL_IDS - WTBD_OPEN_IDS
+
+    assert len(rows) == 59
+    assert len(done_ids) == 44
+    assert len(WTBD_PARTIAL_IDS) == 4
+    assert len(WTBD_OPEN_IDS) == 11
+    assert WTBD_PARTIAL_IDS <= all_ids
+    assert WTBD_OPEN_IDS <= all_ids
+
+    ledger = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    for wtbd_id in WTBD_PARTIAL_IDS:
+        assert f"| {wtbd_id} |" in ledger
+
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+    assert "59 WTBD items: 44 done on merged/published truth, 4 partial" in supported_features
+    assert "11 remaining or open" in supported_features
 
 
 def test_indexed_rfc_and_adr_files_exist() -> None:
@@ -1361,6 +1416,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
+    assert "Snapshot basis: the 2026-05-18 clean mainline" in work_to_be_done
+    assert "`lotus-manage` PR #273 (`58e8662114f2c0a66b2f3aaff60eda9001a855f8`)" in (
+        work_to_be_done
+    )
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 44 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
