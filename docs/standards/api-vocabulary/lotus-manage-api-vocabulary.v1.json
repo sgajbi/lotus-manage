@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-16T13:14:23.782283+00:00",
+  "generatedAt": "2026-05-17T00:19:52.908523+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3493,6 +3493,94 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_eligible_hedge_instrument_content_hash",
+      "canonicalTerm": "external_eligible_hedge_instrument_content_hash",
+      "preferredName": "external_eligible_hedge_instrument_content_hash",
+      "description": "Hash of the external eligible hedge instrument payload preserved for audit.",
+      "example": "external_eligible_hedge_instrument_content_hash_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_eligible_hedge_instrument_count",
+      "canonicalTerm": "external_eligible_hedge_instrument_count",
+      "preferredName": "external_eligible_hedge_instrument_count",
+      "description": "Source-owned external eligible hedge instrument row count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_eligible_hedge_instrument_source_id",
+      "canonicalTerm": "external_eligible_hedge_instrument_source_id",
+      "preferredName": "external_eligible_hedge_instrument_source_id",
+      "description": "Source-owned deterministic external eligible hedge instrument evidence identifier.",
+      "example": "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENT_SOURCE_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_eligible_hedge_instrument_source_product_name",
+      "canonicalTerm": "external_eligible_hedge_instrument_source_product_name",
+      "preferredName": "external_eligible_hedge_instrument_source_product_name",
+      "description": "Source-owned external eligible hedge instrument product name, when available.",
+      "example": "external_eligible_hedge_instrument_source_product_name_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_eligible_hedge_instrument_source_product_version",
+      "canonicalTerm": "external_eligible_hedge_instrument_source_product_version",
+      "preferredName": "external_eligible_hedge_instrument_source_product_version",
+      "description": "Source-owned external eligible hedge instrument product version, when available.",
+      "example": "external_eligible_hedge_instrument_source_product_version_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_eligible_hedge_instruments",
+      "canonicalTerm": "external_eligible_hedge_instruments",
+      "preferredName": "external_eligible_hedge_instruments",
+      "description": "Source-owned external eligible hedge instrument rows. Empty while bank-owned treasury ingestion is unavailable; these rows are never suitability approval, product recommendation, counterparty selection, or execution readiness.",
+      "example": [
+        {
+          "sample_key": "sample_value"
+        }
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -56418,6 +56506,54 @@
             "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_rules"
           },
           {
+            "name": "authority_context.currency_overlay_context.external_eligible_hedge_instrument_source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_source_product_name"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_eligible_hedge_instrument_source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_source_product_version"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_eligible_hedge_instrument_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_source_id"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_eligible_hedge_instrument_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_content_hash"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_eligible_hedge_instrument_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.external_eligible_hedge_instrument_count",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_count"
+          },
+          {
+            "name": "authority_context.currency_overlay_context.external_eligible_hedge_instruments",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.external_eligible_hedge_instruments",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instruments"
+          },
+          {
             "name": "authority_context.currency_overlay_context.external_fx_forward_curve_source_product_name",
             "location": "body",
             "required": false,
@@ -71666,6 +71802,54 @@
             "type": "array",
             "semanticId": "lotus.external_hedge_policy_rules",
             "attributeRef": "#/attributeCatalog/lotus.external_hedge_policy_rules"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_eligible_hedge_instrument_source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_source_product_name"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_eligible_hedge_instrument_source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_source_product_version"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_eligible_hedge_instrument_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_source_id"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_eligible_hedge_instrument_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.external_eligible_hedge_instrument_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_content_hash"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_eligible_hedge_instrument_count",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.external_eligible_hedge_instrument_count",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instrument_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.currency_overlay_context.external_eligible_hedge_instruments",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.external_eligible_hedge_instruments",
+            "attributeRef": "#/attributeCatalog/lotus.external_eligible_hedge_instruments"
           },
           {
             "name": "item_inputs[].authority_context.currency_overlay_context.external_fx_forward_curve_source_product_name",

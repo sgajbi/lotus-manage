@@ -796,6 +796,49 @@ def _external_hedge_policy_payload() -> dict:
     }
 
 
+def _external_eligible_hedge_instruments_payload() -> dict:
+    return {
+        "product_name": "ExternalEligibleHedgeInstrument",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-04-10",
+        "reporting_currency": "SGD",
+        "exposure_currencies": ["USD"],
+        "instrument_types": ["FX_FORWARD", "FX_SWAP"],
+        "eligible_instruments": [],
+        "supportability": {
+            "state": "UNAVAILABLE",
+            "reason": "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            "instrument_count": 0,
+            "missing_data_families": ["external_eligible_hedge_instrument"],
+            "blocked_capabilities": [
+                "eligible_instrument_selection",
+                "suitability_approval",
+                "product_recommendation",
+                "counterparty_selection",
+                "treasury_instruction",
+                "best_execution",
+                "oms_acknowledgement",
+                "fills",
+                "settlement",
+                "autonomous_treasury_action",
+            ],
+        },
+        "lineage": {
+            "source_system": "external-bank-treasury",
+            "source_table": "not_ingested",
+            "contract_version": "rfc_039_external_eligible_hedge_instrument_v1",
+            "integration_status": "not_ingested",
+            "runtime_posture": "fail_closed",
+        },
+        "data_quality_status": "MISSING",
+        "latest_evidence_timestamp": None,
+        "source_batch_fingerprint": "sha256:external-eligible-hedge-instrument",
+    }
+
+
 def _external_fx_forward_curve_payload() -> dict:
     return {
         "product_name": "ExternalFXForwardCurve",
@@ -879,6 +922,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_external_currency_exposure_payload())
     if path.endswith("/external-hedge-policy"):
         return httpx.Response(200, json=_external_hedge_policy_payload())
+    if path.endswith("/external-eligible-hedge-instruments"):
+        return httpx.Response(200, json=_external_eligible_hedge_instruments_payload())
     if path.endswith("/external-fx-forward-curve"):
         return httpx.Response(200, json=_external_fx_forward_curve_payload())
     if path.endswith("/client-restriction-profile"):
@@ -928,6 +973,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-hedge-execution-readiness",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-currency-exposure",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-hedge-policy",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/external-eligible-hedge-instruments",
         "https://core.example.test/integration/market-data/external-fx-forward-curve",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-restriction-profile",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/sustainability-preference-profile",
@@ -949,11 +995,14 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"exposure_currencies":["USD"]' in seen[12][2]
     assert b'"reporting_currency":"SGD"' in seen[13][2]
     assert b'"exposure_currencies":["USD"]' in seen[13][2]
-    assert b'"portfolio_id":"PB_SG_GLOBAL_BAL_001"' in seen[14][2]
     assert b'"reporting_currency":"SGD"' in seen[14][2]
     assert b'"exposure_currencies":["USD"]' in seen[14][2]
-    assert b'"include_inactive_restrictions":false' in seen[15][2]
-    assert b'"include_inactive_preferences":false' in seen[16][2]
+    assert b'"instrument_types":["FX_FORWARD","FX_SWAP"]' in seen[14][2]
+    assert b'"portfolio_id":"PB_SG_GLOBAL_BAL_001"' in seen[15][2]
+    assert b'"reporting_currency":"SGD"' in seen[15][2]
+    assert b'"exposure_currencies":["USD"]' in seen[15][2]
+    assert b'"include_inactive_restrictions":false' in seen[16][2]
+    assert b'"include_inactive_preferences":false' in seen[17][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
@@ -985,6 +1034,14 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.external_hedge_policy.supportability.policy_rule_count == 0
     assert (
         "hedge_policy_approval" in context.external_hedge_policy.supportability.blocked_capabilities
+    )
+    assert context.external_eligible_hedge_instruments is not None
+    assert context.external_eligible_hedge_instruments.supportability.state == "UNAVAILABLE"
+    assert context.external_eligible_hedge_instruments.supportability.instrument_count == 0
+    assert context.external_eligible_hedge_instruments.eligible_instruments == []
+    assert (
+        "eligible_instrument_selection"
+        in context.external_eligible_hedge_instruments.supportability.blocked_capabilities
     )
     assert context.external_fx_forward_curve is not None
     assert context.external_fx_forward_curve.supportability.state == "UNAVAILABLE"
@@ -1657,6 +1714,48 @@ def test_core_resolver_fetches_external_hedge_policy_from_dedicated_route():
     assert response.supportability.policy_rule_count == 0
     assert response.policy_rules == []
     assert "hedge_policy_approval" in response.supportability.blocked_capabilities
+
+
+def test_core_resolver_fetches_external_eligible_hedge_instruments_from_dedicated_route():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_external_eligible_hedge_instruments_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_external_eligible_hedge_instruments(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 4, 10),
+        tenant_id="tenant_sg_pb",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        reporting_currency="SGD",
+        exposure_currencies=["USD"],
+        instrument_types=["FX_FORWARD", "FX_SWAP"],
+        correlation_id="corr-eligible-hedge-instruments-001",
+    )
+
+    assert seen["url"] == (
+        "https://core.example.test/integration/portfolios/"
+        "PB_SG_GLOBAL_BAL_001/external-eligible-hedge-instruments"
+    )
+    assert seen["correlation_id"] == "corr-eligible-hedge-instruments-001"
+    assert b'"as_of_date":"2026-04-10"' in seen["payload"]
+    assert b'"mandate_id":"MANDATE_PB_SG_GLOBAL_BAL_001"' in seen["payload"]
+    assert b'"reporting_currency":"SGD"' in seen["payload"]
+    assert b'"exposure_currencies":["USD"]' in seen["payload"]
+    assert b'"instrument_types":["FX_FORWARD","FX_SWAP"]' in seen["payload"]
+    assert response.product_name == "ExternalEligibleHedgeInstrument"
+    assert response.supportability.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
+    assert response.supportability.instrument_count == 0
+    assert response.eligible_instruments == []
+    assert "eligible_instrument_selection" in response.supportability.blocked_capabilities
 
 
 def test_core_resolver_fetches_external_fx_forward_curve_from_dedicated_route():

@@ -1901,18 +1901,22 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`89225766`" in work_to_be_done
     assert "`72dc91d`" in work_to_be_done
     assert "`72be854`" in work_to_be_done
+    assert "`bacad356`" in work_to_be_done
+    assert "`6e7c706`" in work_to_be_done
     assert "`ExternalCurrencyExposure:v1`" in work_to_be_done
     assert "`ExternalHedgePolicy:v1`" in work_to_be_done
+    assert "`ExternalEligibleHedgeInstrument:v1`" in work_to_be_done
     assert "`ExternalFXForwardCurve:v1`" in work_to_be_done
     assert "`ExternalHedgeExecutionReadiness:v1`" in work_to_be_done
     assert "Manage now consumes `ExternalCurrencyExposure:v1`" in work_to_be_done
     assert (
-        "empty exposure/policy/forward-curve rows, exposure count, policy-rule count, "
-        "curve-point count"
+        "empty exposure/policy/eligible-instrument/forward-curve rows, exposure count, "
+        "policy-rule count, eligible-instrument count, curve-point count"
     ) in work_to_be_done
     assert "unavailable external treasury readiness, currency-exposure, hedge-policy" in (
         work_to_be_done
     )
+    assert "eligible-instrument" in work_to_be_done
     assert "FX forward-curve" in work_to_be_done
     assert "currency_overlay_context" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
@@ -1956,16 +1960,20 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`)" in supported_features
     assert "`lotus-core` PR #368 (`763db4c1`, wiki `50fff30`)" in supported_features
     assert "`lotus-core` PR #369 (`89225766`, wiki `72dc91d`)" in supported_features
+    assert "`lotus-core` PR #370 (`bacad356`, wiki `6e7c706`)" in supported_features
     assert "`lotus-platform` PR #334 (`ae4f707`)" in supported_features
     assert "`lotus-platform` PR #335 (`72be854`)" in supported_features
+    assert "`ExternalEligibleHedgeInstrument:v1`" in supported_features
     assert "`ExternalFXForwardCurve:v1`" in supported_features
     assert (
         "ExternalHedgeExecutionReadiness:v1`, `ExternalCurrencyExposure:v1`, "
-        "`ExternalHedgePolicy:v1`, and `ExternalFXForwardCurve:v1`"
+        "`ExternalHedgePolicy:v1`, `ExternalEligibleHedgeInstrument:v1`, and "
+        "`ExternalFXForwardCurve:v1`"
     ) in (supported_features)
-    assert "blocked external treasury readiness/exposure/policy/forward-curve evidence" in (
-        supported_features
-    )
+    assert (
+        "blocked external treasury readiness/exposure/policy/eligible-instrument/forward-curve "
+        "evidence"
+    ) in supported_features
     assert "external treasury ingestion remains future work" in supported_features
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features
