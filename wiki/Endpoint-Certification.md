@@ -1606,6 +1606,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
 - `GET /api/v1/rebalance/waves/{wave_id}`
@@ -1669,6 +1670,9 @@ Functional coverage:
 - preview-readiness checks fail closed over lifecycle status, requested as-of date,
   source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement
   before new `BULK_REVIEW_CAMPAIGN` preview/create use,
+- launch packages return readiness, exact preview/create request drafts, idempotency/correlation
+  header guidance, and explicit no-recalculation/no-OMS operating boundaries without creating a
+  wave,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

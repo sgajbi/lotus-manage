@@ -98,13 +98,14 @@
       "current_routes": [
         "/api/v1/rebalance/waves/campaign-definitions",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves"
       ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Bulk review campaign membership is generated from the source-backed candidate set supplied inline or through an immutable BulkReviewCampaignDefinition:v1 definition plus optional governance evidence for the requested campaign as-of date. Preview-readiness evaluates persisted definition lifecycle, requested as-of date, source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement before new preview/create use."
+        "max_allowed_age_description": "Bulk review campaign membership is generated from the source-backed candidate set supplied inline or through an immutable BulkReviewCampaignDefinition:v1 definition plus optional governance evidence for the requested campaign as-of date. Preview-readiness evaluates persisted definition lifecycle, requested as-of date, source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement before new preview/create use. Launch packages provide a bounded preview/create request draft and required headers without recalculating campaign membership."
       },
       "completeness_policy": {
         "default_status": "complete",

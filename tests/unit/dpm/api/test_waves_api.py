@@ -1762,6 +1762,88 @@ def test_bulk_review_campaign_definition_preview_readiness_fails_closed() -> Non
     assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
+def test_bulk_review_campaign_definition_launch_package_builds_preview_and_create_drafts() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        package = client.get(
+            f"{route}/launch-package?"
+            "requested_as_of_date=2026-05-10&actor_id=pm_001&correlation_id=corr-launch-001"
+        )
+
+    assert put_response.status_code == 200
+    assert package.status_code == 200
+    payload = package.json()
+    assert payload["product_name"] == "BulkReviewCampaignDefinitionLaunchPackage"
+    assert payload["launch_state"] == "READY"
+    assert payload["reason_codes"] == []
+    assert payload["readiness"]["preview_create_allowed"] is True
+    assert payload["preview_request"] == payload["create_request"]
+    assert payload["preview_request"] == {
+        "trigger_type": "BULK_REVIEW_CAMPAIGN",
+        "trigger_id": "campaign-holdings-apple-tesla-20260510",
+        "rationale": "Review discretionary portfolios affected by the Apple and Tesla campaign.",
+        "as_of_date": "2026-05-10",
+        "actor_id": "pm_001",
+        "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+        "campaign_definition_version": "2026.05",
+        "portfolio_types": ["DISCRETIONARY"],
+        "portfolios": [],
+    }
+    assert payload["create_headers"]["X-Correlation-Id"] == "corr-launch-001"
+    assert payload["create_headers"]["Idempotency-Key"].startswith(
+        "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:"
+    )
+    assert "NO_MAKER_CHECKER_WORKFLOW" in payload["operating_boundaries"]
+    assert "NO_OMS_EXECUTION_CLAIM" in payload["operating_boundaries"]
+    assert payload["content_hash"].startswith("sha256:")
+
+
+def test_bulk_review_campaign_definition_launch_package_fails_closed_when_not_ready() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    expired_request = _bulk_review_campaign_definition_request()
+    governance = dict(expired_request["governance"])
+    governance["expires_on"] = "2026-05-09"
+    expired_request["governance"] = governance
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=expired_request)
+        package = client.get(
+            f"{route}/launch-package?requested_as_of_date=2026-05-10&actor_id=pm_999"
+        )
+        missing = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/"
+            "versions/2026.05/launch-package?requested_as_of_date=2026-05-10&actor_id=pm_001"
+        )
+
+    assert put_response.status_code == 200
+    assert package.status_code == 200
+    payload = package.json()
+    assert payload["launch_state"] == "BLOCKED"
+    assert payload["readiness"]["preview_create_allowed"] is False
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in payload["reason_codes"]
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in payload["reason_codes"]
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+
+
 def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
