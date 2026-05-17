@@ -15,7 +15,13 @@ RiskOutcomeMeasure = Literal[
     "INFORMATION_RATIO",
     "VAR",
 ]
-DrawdownOutcomeMeasure = Literal["max_drawdown", "relative_max_drawdown"]
+DrawdownOutcomeMeasure = Literal[
+    "max_drawdown",
+    "relative_max_drawdown",
+    "average_drawdown",
+    "ulcer_index",
+    "time_under_water_days",
+]
 ConcentrationOutcomeMeasure = Literal[
     "hhi_current",
     "hhi_proposed",
@@ -157,7 +163,7 @@ def realized_drawdown_source_from_drawdown_response(
         source_type="DRAWDOWN_RESPONSE",
         source_id=f"{request_fingerprint}:{period}:{measure}",
         value=value if source_state != "NOT_SUPPORTED" else None,
-        unit="ratio",
+        unit=_drawdown_unit(measure),
         source_state=source_state,
         quality=quality,
         observed_at=None,
@@ -431,13 +437,34 @@ def _drawdown_value(
     result: dict[str, Any],
     measure: DrawdownOutcomeMeasure,
 ) -> tuple[Decimal | None, str]:
+    summary = _read_mapping(result.get("summary"))
     if measure == "max_drawdown":
-        summary = _read_mapping(result.get("summary"))
         return (
             _decimal_value(summary.get("max_drawdown"))
             if summary.get("max_drawdown") is not None
             else None,
             "RISK_DRAWDOWN_ABSOLUTE",
+        )
+    if measure == "average_drawdown":
+        return (
+            _decimal_value(summary.get("average_drawdown"))
+            if summary.get("average_drawdown") is not None
+            else None,
+            "RISK_DRAWDOWN_AVERAGE",
+        )
+    if measure == "ulcer_index":
+        return (
+            _decimal_value(summary.get("ulcer_index"))
+            if summary.get("ulcer_index") is not None
+            else None,
+            "RISK_DRAWDOWN_ULCER_INDEX",
+        )
+    if measure == "time_under_water_days":
+        return (
+            _decimal_value(summary.get("time_under_water_days"))
+            if summary.get("time_under_water_days") is not None
+            else None,
+            "RISK_DRAWDOWN_TIME_UNDER_WATER",
         )
 
     relative_context = _read_mapping(result.get("relative_to_benchmark_context"))
@@ -721,6 +748,12 @@ def _metric_unit(metric: RiskOutcomeMeasure) -> str:
         return "percentage_point"
     if metric in {"SHARPE", "SORTINO", "BETA", "INFORMATION_RATIO"}:
         return "ratio"
+    return "ratio"
+
+
+def _drawdown_unit(measure: DrawdownOutcomeMeasure) -> str:
+    if measure == "time_under_water_days":
+        return "days"
     return "ratio"
 
 

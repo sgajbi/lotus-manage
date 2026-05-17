@@ -4658,6 +4658,26 @@ Latest WTBD-006 risk drawdown analytics time-under-water methodology proof:
    liquidity ladders, execution methodology, and client tax/OMS claims remain future source-owner
    work.
 
+Latest WTBD-006 manage drawdown analytics consumer-preservation proof:
+
+1. `lotus-manage` now preserves source-emitted `DrawdownAnalyticsReport:v1` average drawdown,
+   ulcer index, and time-under-water values in RFC-0042 realized outcome snapshots through
+   `realized_drawdown_source_from_drawdown_response`,
+2. the adapter maps only `summary.average_drawdown`, `summary.ulcer_index`, and
+   `summary.time_under_water_days` values supplied by `lotus-risk`; it does not calculate cumulative wealth, running peaks, underwater paths,
+   squared drawdowns, observation counts,
+   episode lists, relative benchmark behavior, or any drawdown methodology locally,
+3. source references, request fingerprints, as-of date, supportability state, quality, and reason
+   codes remain source-owned and hash-backed so report, AI, portfolio-memory, Gateway, and
+   Workbench consumers can preserve the source-owner posture without reconstructing risk facts,
+4. focused Manage proof covers maximum drawdown, relative maximum drawdown, average drawdown,
+   ulcer index, time-under-water, degraded relative benchmark posture, and realized-snapshot
+   supportability through `tests/unit/core/test_risk_realized_outcome_sources.py`,
+5. this advances RFC42-WTBD-006 but does not close it: broader aggregate risk/performance
+   products, broader FX methodology beyond performance-owned Karnosky-Singer attribution totals,
+   predictive execution, OMS acknowledgement, client tax advice, after-tax optimization, and
+   financial-planning claims remain unsupported source-owner work.
+
 Latest WTBD-006 risk concentration position-HHI methodology proof:
 
 1. `lotus-risk` PR #133 was merged to `main` as

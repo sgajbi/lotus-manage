@@ -1669,6 +1669,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "strictly-underwater observation counting" in work_to_be_done
     assert "explicit non-duration posture for calendar/business-day settings" in work_to_be_done
     assert "source-owner proof passed locally with `348` unit tests" in work_to_be_done
+    assert "Latest WTBD-006 manage drawdown analytics consumer-preservation proof" in (
+        work_to_be_done
+    )
+    assert "realized_drawdown_source_from_drawdown_response" in work_to_be_done
+    assert "`summary.average_drawdown`, `summary.ulcer_index`, and" in work_to_be_done
+    assert "it does not calculate cumulative wealth, running peaks, underwater paths" in (
+        work_to_be_done
+    )
+    assert "tests/unit/core/test_risk_realized_outcome_sources.py" in work_to_be_done
     assert "Latest WTBD-006 risk concentration position-HHI methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #133" in work_to_be_done
     assert "`dea20b5a6f99403a9b8e974ac9da823c691c5465`" in work_to_be_done
@@ -2072,6 +2081,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-risk` PR\n#139 / wiki `421ae79`" in supported_features
     assert "degrade response-level\ncalculation supportability" in supported_features
     assert "empty\nactive-risk alignment" in supported_features
+    assert "Current Manage drawdown analytics consumer proof additionally preserves" in (
+        supported_features
+    )
+    assert "`summary.average_drawdown`, `summary.ulcer_index`, and" in supported_features
+    assert "it does not reconstruct cumulative wealth, running peaks, underwater paths" in (
+        supported_features
+    )
     assert "`lotus-risk` PR #138 (`8ae3e4a`, wiki `616a10c`)" in supported_features
     assert "stateful\n`ACTIVE_RISK + ISSUER` historical attribution" in supported_features
     assert "performs no local benchmark issuer exposure, covariance, tracking-error" in (
