@@ -11,6 +11,7 @@ from src.core.waves.campaign_definition_lifecycle import (
     supersede_bulk_review_campaign_definition,
 )
 from src.core.waves.campaign_definition_launch_history import (
+    build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
 )
 from src.core.waves.campaign_definition_launch_execution import (
@@ -268,6 +269,39 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
         )
         is None
     )
+
+
+def test_campaign_definition_launch_history_page_is_bounded_audit_evidence() -> None:
+    definition = record_bulk_review_campaign_definition_launch(
+        definition=_definition(),
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+        launched_at=datetime(2026, 5, 10, tzinfo=timezone.utc),
+    )
+
+    page = build_bulk_review_campaign_definition_launch_history_page(
+        definition=definition,
+        limit=1,
+        offset=0,
+    )
+    empty_page = build_bulk_review_campaign_definition_launch_history_page(
+        definition=definition,
+        limit=1,
+        offset=1,
+    )
+
+    assert page.product_name == "BulkReviewCampaignDefinitionLaunchHistory"
+    assert page.campaign_id == definition.campaign_id
+    assert page.count == 1
+    assert page.total_count == 1
+    assert page.items[0].wave_id == "dwv_campaign_launch_001"
+    assert "NO_ORDER_GENERATION" in page.operating_boundaries
+    assert "NO_OMS_EXECUTION_CLAIM" in page.operating_boundaries
+    assert empty_page.count == 0
+    assert empty_page.total_count == 1
 
 
 def test_campaign_definition_launch_command_is_ready_only() -> None:

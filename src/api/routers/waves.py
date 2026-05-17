@@ -36,6 +36,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
+    DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
@@ -48,6 +49,7 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_preview_readiness,
     build_bulk_review_campaign_definition_launch_package,
     build_bulk_review_campaign_definition_launch_command,
+    build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
 )
 from src.core.waves.campaign_definitions import (
@@ -1991,6 +1993,47 @@ def list_bulk_review_campaign_definition_lifecycle_events(
             },
         )
     return build_bulk_review_campaign_definition_lifecycle_events(definition=definition)
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history",
+    response_model=DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign definition launch history",
+    description=(
+        "Returns a bounded append-only launch audit page for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. The records identify durable waves launched from "
+        "the definition and preserve actor, requested as-of date, correlation, and idempotency "
+        "evidence. They do not imply maker-checker workflow, trade approval, order generation, "
+        "routing, fills, settlement, or OMS execution."
+    ),
+)
+def list_bulk_review_campaign_definition_launch_history(
+    campaign_id: str,
+    campaign_version: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
+    definition = repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if definition is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return build_bulk_review_campaign_definition_launch_history_page(
+        definition=definition,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get(

@@ -36,6 +36,8 @@ from src.core.waves.campaign_definition_launch_package import (
     build_bulk_review_campaign_definition_launch_package,
 )
 from src.core.waves.campaign_definition_launch_history import (
+    DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
+    build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
 )
 from src.core.waves.campaign_definition_launch_execution import (
@@ -87,6 +89,7 @@ __all__ = [
     "DpmBulkReviewCampaignDiscoveryPage",
     "DpmBulkReviewCampaignDefinitionLifecycleEvent",
     "DpmBulkReviewCampaignDefinitionLifecycleEventPage",
+    "DpmBulkReviewCampaignDefinitionLaunchHistoryPage",
     "DpmBulkReviewCampaignDefinitionLaunchBlocked",
     "DpmBulkReviewCampaignDefinitionLaunchCommand",
     "DpmBulkReviewCampaignDefinitionLaunchPackage",
@@ -116,6 +119,7 @@ __all__ = [
     "apply_wave_transition",
     "build_bulk_review_campaign_discovery_item",
     "build_bulk_review_campaign_definition_lifecycle_events",
+    "build_bulk_review_campaign_definition_launch_history_page",
     "build_bulk_review_campaign_definition_launch_command",
     "record_bulk_review_campaign_definition_launch",
     "build_bulk_review_campaign_definition_launch_package",
