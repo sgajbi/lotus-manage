@@ -91,6 +91,14 @@ hedge-policy approval, eligible-instrument selection, suitability approval, prod
 hedge advice, forward-pricing, FX valuation methodology, counterparty-selection, best-execution,
 treasury-instruction, OMS, fills, or settlement claim.
 
+2026-05-17 external OMS acknowledgement boundary update: `lotus-core` PR #371 (`9774bc40`) exposes
+`ExternalOrderExecutionAcknowledgement:v1` as an active fail-closed `UNAVAILABLE` route. Manage
+consumes that posture through stateful core sourcing and preserves acknowledgement count, empty
+acknowledgement rows, missing data families, blocked capabilities, lineage, and source hash in
+construction authority diagnostics. Manage still makes no order-generation, venue-routing,
+best-execution, OMS acknowledgement-ingestion, fill, settlement, execution-status-certification, or
+autonomous execution claim.
+
 ## Business Value Themes
 
 1. scale PM capacity through exception-based monitoring and wave orchestration,

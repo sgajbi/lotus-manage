@@ -336,6 +336,14 @@ Gateway, Workbench, reporting, and AI consumers must preserve missing grouping d
 active-risk alignment, and unsupported attribution combinations as degraded source truth rather
 than promoting them as ready analytics or recalculating risk attribution locally.
 
+Current external execution boundary proof additionally includes Core-owned
+`ExternalOrderExecutionAcknowledgement:v1` and Manage construction-authority consumption of that
+posture. The posture is fail-closed `UNAVAILABLE`: Manage preserves acknowledgement counts, empty
+acknowledgement rows, missing data families, blocked capabilities, lineage, and source hashes as
+diagnostics only. It is not a supported order-generation, venue-routing, best-execution, OMS
+acknowledgement-ingestion, fill, settlement, execution-status-certification, or autonomous
+execution capability.
+
 Current risk concentration source-owner proof additionally includes `ConcentrationRiskReport:v1`
 top-position weight methodology truth through `lotus-risk` PR #134 / wiki `dd25844`. Downstream
 services must preserve the decimal `0..1` top-position weight, proposed-state fallback,
