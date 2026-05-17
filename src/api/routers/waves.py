@@ -36,12 +36,14 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
+    DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmRebalanceWave,
     DpmWaveReportInput,
     DpmWaveRepository,
     DpmWaveSourceRef,
     build_bulk_review_campaign_discovery_item,
+    build_bulk_review_campaign_definition_preview_readiness,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -1966,6 +1968,54 @@ def list_bulk_review_campaign_definition_lifecycle_events(
             },
         )
     return build_bulk_review_campaign_definition_lifecycle_events(definition=definition)
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
+    response_model=DpmBulkReviewCampaignDefinitionPreviewReadiness,
+    status_code=status.HTTP_200_OK,
+    summary="Check bulk-review campaign definition preview readiness",
+    description=(
+        "Evaluates whether one persisted Manage-owned `BulkReviewCampaignDefinition:v1` can be "
+        "used for new `BULK_REVIEW_CAMPAIGN` preview/create. The response is a bounded "
+        "fail-closed supportability check over lifecycle status, as-of date, source-backed "
+        "candidate eligibility, approval evidence, expiry, and optional actor entitlement. It "
+        "does not create a wave, discover the global portfolio universe, recalculate membership, "
+        "run maker-checker workflow, approve trades, or claim OMS execution."
+    ),
+)
+def get_bulk_review_campaign_definition_preview_readiness(
+    campaign_id: str,
+    campaign_version: str,
+    requested_as_of_date: str = Query(
+        description="ISO date that the future wave preview/create request would use.",
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionPreviewReadiness:
+    definition = repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if definition is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return build_bulk_review_campaign_definition_preview_readiness(
+        definition=definition,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+    )
 
 
 def _parse_optional_campaign_discovery_date(

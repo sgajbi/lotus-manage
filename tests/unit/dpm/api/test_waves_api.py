@@ -1689,6 +1689,79 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
     assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
+def test_bulk_review_campaign_definition_preview_readiness_is_ready_for_eligible_actor() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        readiness = client.get(
+            f"{route}/preview-readiness?requested_as_of_date=2026-05-10&actor_id=pm_001"
+        )
+
+    assert put_response.status_code == 200
+    assert readiness.status_code == 200
+    payload = readiness.json()
+    assert payload["product_name"] == "BulkReviewCampaignDefinitionPreviewReadiness"
+    assert payload["preview_create_allowed"] is True
+    assert payload["supportability_state"] == "READY"
+    assert payload["reason_codes"] == []
+    assert payload["candidate_count"] == 2
+    assert payload["eligible_candidate_count"] == 1
+    assert payload["excluded_candidate_count"] == 1
+    assert payload["governance_status"] == "APPROVED"
+    assert payload["expiry_state"] == "ACTIVE"
+    assert payload["actor_entitlement_state"] == "AUTHORIZED"
+    assert payload["lifecycle_event_count"] == 1
+    assert payload["source_ref_count"] == 5
+    assert payload["content_hash"].startswith("sha256:")
+
+
+def test_bulk_review_campaign_definition_preview_readiness_fails_closed() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    expired_request = _bulk_review_campaign_definition_request()
+    governance = dict(expired_request["governance"])
+    governance["expires_on"] = "2026-05-09"
+    expired_request["governance"] = governance
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=expired_request)
+        readiness = client.get(
+            f"{route}/preview-readiness?requested_as_of_date=2026-05-10&actor_id=pm_999"
+        )
+        missing = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/"
+            "versions/2026.05/preview-readiness?requested_as_of_date=2026-05-10"
+        )
+
+    assert put_response.status_code == 200
+    assert readiness.status_code == 200
+    payload = readiness.json()
+    assert payload["preview_create_allowed"] is False
+    assert payload["supportability_state"] == "BLOCKED"
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in payload["reason_codes"]
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in payload["reason_codes"]
+    assert payload["expiry_state"] == "EXPIRED"
+    assert payload["actor_entitlement_state"] == "UNAUTHORIZED"
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+
+
 def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 

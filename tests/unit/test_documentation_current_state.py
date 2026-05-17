@@ -1404,10 +1404,16 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/lifecycle-events`" in work_to_be_done
     )
+    assert (
+        "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/preview-readiness`" in work_to_be_done
+    )
     assert "retired definitions auditable while blocking new preview/create use" in work_to_be_done
     assert "replacement campaign version and content hash" in work_to_be_done
     assert "campaign-definition lifecycle-event projection addendum" in work_to_be_done
     assert "src/core/waves/campaign_definition_events.py" in work_to_be_done
+    assert "campaign-definition preview-readiness addendum" in work_to_be_done
+    assert "src/core/waves/campaign_definition_readiness.py" in work_to_be_done
     assert "broader campaign workflow surfaces beyond bounded definition lifecycle controls" in (
         work_to_be_done
     )
@@ -2053,7 +2059,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/lifecycle-events`" in supported_features
     )
+    assert (
+        "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/preview-readiness`" in supported_features
+    )
     assert "`BulkReviewCampaignDiscovery:v1` summaries" in supported_features
+    assert "`BulkReviewCampaignDefinitionPreviewReadiness`" in supported_features
     assert "retire definitions so they remain auditable under `RETIRED` status" in (
         supported_features
     )
@@ -2063,6 +2074,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "project bounded lifecycle events for create, retire, and supersede posture" in (
         supported_features
     )
+    assert "check fail-closed preview readiness" in supported_features
     assert "without discovering the global portfolio universe or recalculating membership" in (
         supported_features
     )

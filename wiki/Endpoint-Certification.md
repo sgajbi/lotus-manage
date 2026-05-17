@@ -1606,6 +1606,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
 - `GET /api/v1/rebalance/waves/{wave_id}`
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
@@ -1665,6 +1666,9 @@ Functional coverage:
   `BULK_REVIEW_CAMPAIGN` preview/create requests,
 - lifecycle events project create, retire, and supersede audit posture from the persisted
   definition record without separate workflow storage or source-fact recalculation,
+- preview-readiness checks fail closed over lifecycle status, requested as-of date,
+  source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement
+  before new `BULK_REVIEW_CAMPAIGN` preview/create use,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

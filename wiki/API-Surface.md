@@ -125,12 +125,14 @@ flowchart LR
   returns linked proof-pack and handoff posture for the persisted wave.
 - `GET /api/v1/rebalance/waves/{wave_id}/report-input`
   returns deterministic `DpmWaveReportInput` for downstream report materialization without
-  requiring `lotus-report` to reconstruct wave state, proof-pack linkage, internal handoff refs, or
-  source hashes. If persisted handoff evidence contains an external execution claim, this endpoint
-  fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating unsupported OMS
-  truth downstream.
+  claiming external execution or requiring `lotus-report` to reconstruct wave state, proof-pack
+  linkage, internal handoff refs, or source hashes. If persisted handoff evidence contains an
+  external execution claim, this endpoint fails closed with
+  `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating unsupported OMS truth downstream.
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
   returns product-safe operator diagnostics and bounded reason-code posture.
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
+  checks whether a persisted bulk-review campaign definition is ready for new preview/create use.
 
 These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
 `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. CIO model-change

@@ -599,10 +599,13 @@ Current repository posture:
     at
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
     from the persisted definition record, so operators can audit create, retire, and supersede
-    posture without separate workflow storage or router-local business logic. Broader campaign
-    workflow surfaces beyond these bounded lifecycle controls, wave risk/performance analytics
-    posture, and external OMS execution remain unpromoted until owning implementations are
-    live-proven.
+    posture without separate workflow storage or router-local business logic. Manage also exposes
+    `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
+    as a bounded fail-closed supportability check over lifecycle status, requested as-of date,
+    source-backed candidate eligibility, governance approval, expiry, and optional actor
+    entitlement before new preview/create use. Broader campaign workflow surfaces beyond these
+    bounded lifecycle controls, wave risk/performance analytics posture, and external OMS
+    execution remain unpromoted until owning implementations are live-proven.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
