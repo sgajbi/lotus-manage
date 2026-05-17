@@ -250,6 +250,22 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
             ),
         ),
         DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="external_order_execution_acknowledgement",
+            source_system="lotus-core",
+            owner="lotus-core source-boundary posture; future execution or OMS owner",
+            support_status="DEFERRED_SOURCE_OWNER",
+            event_types=[],
+            route="/integration/portfolios/{portfolio_id}/external-order-execution-acknowledgement",
+            reason_code="EXTERNAL_ORDER_ACKNOWLEDGEMENT_SOURCE_EVENTS_DEFERRED",
+            summary=(
+                "Core ExternalOrderExecutionAcknowledgement:v1 is consumed only as fail-closed "
+                "source-product posture for construction and outcome evidence; portfolio memory "
+                "does not project acknowledgement, fill, settlement, or execution-status events "
+                "until bank-owned OMS acknowledgement ingestion publishes a certified "
+                "no-raw-payload source-event family."
+            ),
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
             family_key="pm_scoring",
             source_system="lotus-manage",
             owner="lotus-manage PM operating quality product",

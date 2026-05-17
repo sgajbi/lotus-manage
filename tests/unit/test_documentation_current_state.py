@@ -1346,6 +1346,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "Portfolio memory projects only bounded `PM_QUALITY_SCORE_RUN` lineage for persisted "
         "source-backed score runs"
     ) in supported_features
+    assert "Core `ExternalOrderExecutionAcknowledgement:v1` source-product posture" in (
+        supported_features
+    )
+    assert (
+        "does not project acknowledgement, fill, settlement, or execution-status events"
+        in supported_features
+    )
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
     assert "mandate health, monitoring exception, proof-pack" in supported_features
     assert "stable event identity plus retention, redaction, access, audit policy" in (
@@ -2005,6 +2012,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "blocked `EXECUTION_QUALITY` source snapshot" in work_to_be_done
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in work_to_be_done
     assert "without promoting OMS acknowledgement, fill, settlement" in work_to_be_done
+    assert "explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred" in (
+        work_to_be_done
+    )
     assert "currency_overlay_context" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
