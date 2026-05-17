@@ -140,7 +140,8 @@ flowchart LR
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
   returns a bounded launch package with readiness, preview/create request draft, and create headers.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
-  creates a durable `BULK_REVIEW_CAMPAIGN` wave only when launch-package readiness is `READY`.
+  creates a durable `BULK_REVIEW_CAMPAIGN` wave only when launch-package readiness is `READY`
+  and records append-only launch history on the persisted definition.
 
 These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
 `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. CIO model-change
