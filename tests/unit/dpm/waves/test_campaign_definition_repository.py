@@ -13,6 +13,10 @@ from src.core.waves.campaign_definition_lifecycle import (
 from src.core.waves.campaign_definition_launch_history import (
     record_bulk_review_campaign_definition_launch,
 )
+from src.core.waves.campaign_definition_launch_execution import (
+    DpmBulkReviewCampaignDefinitionLaunchBlocked,
+    build_bulk_review_campaign_definition_launch_command,
+)
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -264,6 +268,46 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
         )
         is None
     )
+
+
+def test_campaign_definition_launch_command_is_ready_only() -> None:
+    definition = _definition()
+
+    command = build_bulk_review_campaign_definition_launch_command(
+        definition=definition,
+        requested_as_of_date="2026-05-10",
+        actor_id="ops",
+        correlation_id="corr-campaign-definition-launch-001",
+    )
+
+    assert command.create_request.trigger_type == "BULK_REVIEW_CAMPAIGN"
+    assert command.create_request.campaign_definition_id == definition.campaign_id
+    assert command.correlation_id == "corr-campaign-definition-launch-001"
+    assert command.idempotency_key.startswith(
+        "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:"
+    )
+    assert command.launch_package.launch_state == "READY"
+
+    expired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "governance": {
+                **definition.governance.model_dump(mode="python"),
+                "expires_on": "2026-05-09",
+            },
+            "content_hash": "",
+        }
+    )
+    with pytest.raises(DpmBulkReviewCampaignDefinitionLaunchBlocked) as blocked:
+        build_bulk_review_campaign_definition_launch_command(
+            definition=expired,
+            requested_as_of_date="2026-05-10",
+            actor_id="ops",
+            correlation_id=None,
+        )
+
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in blocked.value.reason_codes
+    assert blocked.value.readiness.preview_create_allowed is False
 
 
 def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> None:
