@@ -42,6 +42,35 @@ class DpmBulkReviewCampaignDefinitionCandidate(BaseModel):
         return self
 
 
+class DpmBulkReviewCampaignDefinitionLaunchRecord(BaseModel):
+    """Durable launch audit record for a persisted bulk-review campaign definition."""
+
+    wave_id: str = Field(
+        description="Durable rebalance wave created from this campaign definition.",
+        examples=["dwv_campaign_001"],
+    )
+    launched_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when Manage recorded the launch.",
+    )
+    launched_by: str = Field(
+        description="Actor who launched the campaign definition wave.",
+        examples=["pm_001"],
+    )
+    requested_as_of_date: str = Field(
+        description="Requested as-of date used for the launched wave.",
+        examples=["2026-05-10"],
+    )
+    correlation_id: str = Field(
+        description="Correlation id carried into the durable wave launch.",
+        examples=["corr-campaign-definition-launch-001"],
+    )
+    idempotency_key: str = Field(
+        description="Deterministic launch idempotency key used for durable wave replay.",
+        examples=["campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:..."],
+    )
+
+
 class DpmBulkReviewCampaignDefinition(BaseModel):
     """Manage-owned bulk-review campaign definition over source-backed candidates."""
 
@@ -97,6 +126,13 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
     superseded_by_content_hash: str | None = Field(
         default=None,
         description="Content hash of the replacement active campaign definition.",
+    )
+    launch_history: list[DpmBulkReviewCampaignDefinitionLaunchRecord] = Field(
+        default_factory=list,
+        description=(
+            "Append-only durable launch audit records. These records prove Manage-created waves "
+            "from this definition without implying maker-checker, trade approval, or OMS execution."
+        ),
     )
     content_hash: str = Field(default="")
 

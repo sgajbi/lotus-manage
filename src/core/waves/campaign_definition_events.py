@@ -14,7 +14,7 @@ class DpmBulkReviewCampaignDefinitionLifecycleEvent(BaseModel):
         "BulkReviewCampaignDefinitionLifecycleEvent"
     )
     product_version: Literal["v1"] = "v1"
-    event_type: Literal["CREATED", "RETIRED", "SUPERSEDED"] = Field(
+    event_type: Literal["CREATED", "LAUNCHED", "RETIRED", "SUPERSEDED"] = Field(
         description="Campaign-definition lifecycle event type.",
         examples=["CREATED"],
     )
@@ -52,6 +52,18 @@ class DpmBulkReviewCampaignDefinitionLifecycleEvent(BaseModel):
         default=None,
         description="Replacement definition content hash for supersession events.",
     )
+    wave_id: str | None = Field(
+        default=None,
+        description="Durable wave id for launch events.",
+    )
+    requested_as_of_date: str | None = Field(
+        default=None,
+        description="Requested as-of date used for launch events.",
+    )
+    idempotency_key: str | None = Field(
+        default=None,
+        description="Deterministic durable-create idempotency key for launch events.",
+    )
 
 
 class DpmBulkReviewCampaignDefinitionLifecycleEventPage(BaseModel):
@@ -78,6 +90,23 @@ def build_bulk_review_campaign_definition_lifecycle_events(
             content_hash=definition.content_hash,
         )
     ]
+    for launch in definition.launch_history:
+        events.append(
+            DpmBulkReviewCampaignDefinitionLifecycleEvent(
+                event_type="LAUNCHED",
+                campaign_id=definition.campaign_id,
+                campaign_version=definition.campaign_version,
+                occurred_at=launch.launched_at.isoformat(),
+                actor_id=launch.launched_by,
+                reason="Durable bulk-review campaign wave launched.",
+                correlation_id=launch.correlation_id,
+                status_after=definition.status,
+                content_hash=definition.content_hash,
+                wave_id=launch.wave_id,
+                requested_as_of_date=launch.requested_as_of_date,
+                idempotency_key=launch.idempotency_key,
+            )
+        )
     if definition.status == "RETIRED":
         events.append(
             DpmBulkReviewCampaignDefinitionLifecycleEvent(

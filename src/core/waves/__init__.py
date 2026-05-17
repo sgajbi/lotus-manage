@@ -17,6 +17,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
+    DpmBulkReviewCampaignDefinitionLaunchRecord,
 )
 from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
@@ -33,6 +34,9 @@ from src.core.waves.campaign_definition_launch_package import (
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignDefinitionWaveRequestDraft,
     build_bulk_review_campaign_definition_launch_package,
+)
+from src.core.waves.campaign_definition_launch_history import (
+    record_bulk_review_campaign_definition_launch,
 )
 from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
@@ -73,6 +77,7 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionCandidate",
     "DpmBulkReviewCampaignDefinitionConflictError",
     "DpmBulkReviewCampaignDefinitionGovernance",
+    "DpmBulkReviewCampaignDefinitionLaunchRecord",
     "DpmBulkReviewCampaignDiscoveryItem",
     "DpmBulkReviewCampaignDiscoveryPage",
     "DpmBulkReviewCampaignDefinitionLifecycleEvent",
@@ -104,6 +109,7 @@ __all__ = [
     "apply_wave_transition",
     "build_bulk_review_campaign_discovery_item",
     "build_bulk_review_campaign_definition_lifecycle_events",
+    "record_bulk_review_campaign_definition_launch",
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",
     "build_wave_report_input",

@@ -46,6 +46,7 @@ from src.core.waves import (
     build_bulk_review_campaign_discovery_item,
     build_bulk_review_campaign_definition_preview_readiness,
     build_bulk_review_campaign_definition_launch_package,
+    record_bulk_review_campaign_definition_launch,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -2168,10 +2169,28 @@ def launch_bulk_review_campaign_definition(
             mandate_repository=mandate_repository,
             wave_repository=wave_repository,
         )
+        launched_definition = record_bulk_review_campaign_definition_launch(
+            definition=definition,
+            wave_id=wave.wave_id,
+            launched_by=wave_request.actor_id,
+            requested_as_of_date=wave_request.as_of_date,
+            correlation_id=launch_package.correlation_id,
+            idempotency_key=launch_package.create_headers["Idempotency-Key"],
+        )
+        if launched_definition.content_hash != definition.content_hash:
+            campaign_definition_repository.record_definition_launch(definition=launched_definition)
     except wave_service.DpmWaveValidationError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": str(exc),
+                "message": "Bulk-review campaign definition launch audit could not be recorded.",
+            },
         ) from exc
     return _wave_response(wave=wave, durable=True, idempotent_replay=replay)
 

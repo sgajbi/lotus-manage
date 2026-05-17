@@ -1867,6 +1867,8 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
         }
         first = client.post(f"{route}/launch", json=launch_request)
         second = client.post(f"{route}/launch", json=launch_request)
+        fetched = client.get(route)
+        events = client.get(f"{route}/lifecycle-events")
 
     assert put_response.status_code == 200
     assert first.status_code == 201
@@ -1892,6 +1894,20 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
         "BulkReviewCampaignGovernance",
     }
     assert wave_repository.get_wave(wave_id=wave["wave_id"]) is not None
+    assert fetched.status_code == 200
+    assert len(fetched.json()["launch_history"]) == 1
+    assert fetched.json()["launch_history"][0]["wave_id"] == wave["wave_id"]
+    assert events.status_code == 200
+    event_payload = events.json()
+    assert event_payload["count"] == 2
+    assert [event["event_type"] for event in event_payload["items"]] == ["CREATED", "LAUNCHED"]
+    launch_event = event_payload["items"][1]
+    assert launch_event["wave_id"] == wave["wave_id"]
+    assert launch_event["actor_id"] == "pm_001"
+    assert launch_event["requested_as_of_date"] == "2026-05-10"
+    assert launch_event["idempotency_key"].startswith(
+        "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:"
+    )
 
 
 def test_bulk_review_campaign_definition_launch_fails_closed_when_readiness_blocked() -> None:
