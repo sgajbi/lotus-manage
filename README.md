@@ -168,7 +168,10 @@ and checking fail-closed preview readiness at
 before new wave use;
 and building bounded launch packages at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
-with preview/create request drafts and idempotency headers;
+with preview/create request drafts and idempotency headers; and launching a durable wave from a
+ready persisted definition at
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
+using deterministic launch idempotency;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
 fail closed for new preview/create requests. Broader campaign workflow surfaces beyond these
 bounded lifecycle controls,

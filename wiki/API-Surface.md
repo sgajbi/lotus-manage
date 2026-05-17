@@ -139,6 +139,8 @@ flowchart LR
   checks whether a persisted bulk-review campaign definition is ready for new preview/create use.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
   returns a bounded launch package with readiness, preview/create request draft, and create headers.
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
+  creates a durable `BULK_REVIEW_CAMPAIGN` wave only when launch-package readiness is `READY`.
 
 These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
 `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. CIO model-change
