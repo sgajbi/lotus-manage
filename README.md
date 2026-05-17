@@ -98,13 +98,19 @@ exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILAB
 `UNAVAILABLE` route. `lotus-core` PR #369 (`89225766`, wiki `72dc91d`) exposes
 `ExternalFXForwardCurve:v1` as an active fail-closed `UNAVAILABLE` route, and `lotus-core` PR #370
 (`bacad356`, wiki `6e7c706`) exposes `ExternalEligibleHedgeInstrument:v1` as an active
-fail-closed `UNAVAILABLE` route. `lotus-platform` PR #333 (`c46d581`), PR #334 (`ae4f707`), and
+fail-closed `UNAVAILABLE` route. `lotus-core` PR #371 (`9774bc40`, wiki published) exposes
+`ExternalOrderExecutionAcknowledgement:v1` as an active fail-closed `UNAVAILABLE` route for external
+OMS acknowledgement posture. `lotus-platform` PR #333 (`c46d581`), PR #334 (`ae4f707`), and
 PR #335 (`72be854`) mirror the first active treasury source-product postures. Manage now consumes
 the readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve
 postures through stateful core sourcing and preserves them in currency-overlay construction
 diagnostics as blocked external treasury evidence, including empty exposure/policy/
 eligible-instrument/forward-curve rows, exposure/policy-rule/eligible-instrument/curve-point
-counts, missing data families, blocked capabilities, lineage, and source hashes. Manage still makes
+counts, missing data families, blocked capabilities, lineage, and source hashes. Manage also
+preserves Core's external order-execution acknowledgement posture in construction authority
+diagnostics as fail-closed execution-boundary evidence, including acknowledgement counts, empty
+acknowledgement rows, missing data families, blocked capabilities, lineage, and source hashes.
+Manage still makes
 no FX-attribution, hedge-policy approval, eligible-instrument selection, suitability approval,
 product-recommendation, hedge advice, forward-pricing, FX valuation-methodology,
 counterparty-selection, treasury-instruction, best-execution, OMS, fill, or settlement claim.
@@ -418,6 +424,10 @@ Operationally important truths:
    products include `PortfolioCashflowProjection:v1`, `PortfolioLiquidityLadder:v1`, and
    `PortfolioCashMovementSummary:v1`; Manage does not forecast cashflows, issue funding or
    treasury instructions, or acknowledge OMS execution.
+9. source-owned external OMS acknowledgement posture is consumed as fail-closed evidence from
+   `lotus-core` `ExternalOrderExecutionAcknowledgement:v1`; Manage records blocked diagnostics
+   only and does not generate orders, route venues, certify best execution, ingest OMS
+   acknowledgements, confirm fills, or settle trades.
 
 ## Documentation Map
 

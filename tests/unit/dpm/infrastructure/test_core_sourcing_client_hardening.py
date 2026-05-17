@@ -54,6 +54,11 @@ from src.infrastructure.core_sourcing.client import (
             "resolve_transaction_cost_curve_url",
             "DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE",
         ),
+        (
+            "external_order_execution_acknowledgement_path_template",
+            "resolve_external_order_execution_acknowledgement_url",
+            "DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_UNAVAILABLE",
+        ),
     ],
 )
 def test_core_resolver_config_rejects_blank_source_product_paths(
@@ -72,6 +77,7 @@ def test_core_resolver_config_rejects_blank_source_product_paths(
             "resolve_cio_model_change_affected_cohort_url",
             "resolve_portfolio_tax_lots_url",
             "resolve_transaction_cost_curve_url",
+            "resolve_external_order_execution_acknowledgement_url",
         }:
             method("identifier")
         else:

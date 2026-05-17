@@ -609,7 +609,10 @@ Current repository posture:
     header guidance, correlation id guidance, and explicit no-OMS/no-maker-checker boundaries.
     Broader campaign workflow surfaces beyond these bounded lifecycle controls, wave
     risk/performance analytics posture, and external OMS execution remain unpromoted until owning
-    implementations are live-proven.
+    implementations are live-proven. Manage consumes `lotus-core`
+    `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
+    diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
+    acknowledgements, confirm fills, or settle trades.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
@@ -623,7 +626,11 @@ Current repository posture:
     `MarketDataCoverageWindow:v1` price/FX freshness posture,
     `TransactionLedgerWindow:v1` explicit transaction-row trade-fee, withholding-tax,
     realized-FX-P&L, linked-cashflow measures, and `PortfolioCashflowProjection:v1` total net
-    cashflow, live
+    cashflow. Construction source authority also preserves `lotus-core`
+    `ExternalOrderExecutionAcknowledgement:v1` fail-closed external OMS acknowledgement posture as
+    blocked diagnostics with source lineage, missing data families, blocked capabilities,
+    acknowledgement counts, empty acknowledgement rows, and source hashes without execution, fill,
+    settlement, venue-routing, or OMS acknowledgement claims. Live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on

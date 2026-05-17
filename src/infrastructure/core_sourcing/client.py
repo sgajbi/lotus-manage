@@ -12,6 +12,7 @@ from src.core.dpm_source_context import (
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
+    DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreCioModelChangeAffectedCohortResponse,
@@ -102,6 +103,9 @@ class DpmCoreResolverConfig:
     )
     external_fx_forward_curve_path_template: str = (
         "/integration/market-data/external-fx-forward-curve"
+    )
+    external_order_execution_acknowledgement_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/external-order-execution-acknowledgement"
     )
     transaction_cost_lookback_days: int = 400
     client_restriction_profile_path_template: str = (
@@ -274,6 +278,16 @@ class DpmCoreResolverConfig:
             raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_FX_FORWARD_CURVE_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_external_order_execution_acknowledgement_url(self, portfolio_id: str) -> str:
+        path_template = self.external_order_execution_acknowledgement_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError(
+                "DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_UNAVAILABLE"
+            )
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
 
     def resolve_client_restriction_profile_url(self, portfolio_id: str) -> str:
@@ -540,6 +554,15 @@ class DpmCoreResolverClient:
             exposure_currencies=exposure_currencies,
             correlation_id=correlation_id,
         )
+        external_order_execution_acknowledgement = (
+            self._try_resolve_external_order_execution_acknowledgement(
+                portfolio_id=stateful_input.portfolio_id,
+                as_of_date=stateful_input.as_of,
+                tenant_id=stateful_input.tenant_id,
+                mandate_id=stateful_input.mandate_id,
+                correlation_id=correlation_id,
+            )
+        )
         client_restriction_profile = self._try_resolve_client_restriction_profile(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -602,6 +625,7 @@ class DpmCoreResolverClient:
             external_hedge_policy=external_hedge_policy,
             external_eligible_hedge_instruments=external_eligible_hedge_instruments,
             external_fx_forward_curve=external_fx_forward_curve,
+            external_order_execution_acknowledgement=external_order_execution_acknowledgement,
             client_restriction_profile=client_restriction_profile,
             sustainability_preference_profile=sustainability_preference_profile,
         )
@@ -1128,6 +1152,34 @@ class DpmCoreResolverClient:
         )
         return DpmCoreExternalFXForwardCurveResponse.model_validate(response)
 
+    def resolve_external_order_execution_acknowledgement(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        execution_intent_id: Optional[str] = None,
+        order_reference_ids: Optional[list[str]] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCoreExternalOrderExecutionAcknowledgementResponse:
+        url = self._config.resolve_external_order_execution_acknowledgement_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "execution_intent_id": execution_intent_id,
+            "order_reference_ids": order_reference_ids or [],
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_UNAVAILABLE",
+            incomplete_code="DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_INCOMPLETE",
+        )
+        return DpmCoreExternalOrderExecutionAcknowledgementResponse.model_validate(response)
+
     def resolve_client_restriction_profile(
         self,
         *,
@@ -1409,6 +1461,28 @@ class DpmCoreResolverClient:
                 mandate_id=mandate_id,
                 reporting_currency=reporting_currency,
                 exposure_currencies=exposure_currencies,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_external_order_execution_acknowledgement(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreExternalOrderExecutionAcknowledgementResponse | None:
+        try:
+            return self.resolve_external_order_execution_acknowledgement(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                execution_intent_id=None,
+                order_reference_ids=[],
                 correlation_id=correlation_id,
             )
         except DpmCoreResolverError:
