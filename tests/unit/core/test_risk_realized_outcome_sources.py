@@ -742,6 +742,46 @@ def test_drawdown_response_adapter_wraps_source_owned_relative_max_drawdown() ->
     assert "RISK_DRAWDOWN_RELATIVE_APPLIED" in source.reason_codes
 
 
+def test_drawdown_response_adapter_wraps_source_owned_average_drawdown() -> None:
+    source = realized_drawdown_source_from_drawdown_response(
+        _drawdown_response(),
+        measure="average_drawdown",
+    )
+
+    assert source.source_type == "DRAWDOWN_RESPONSE"
+    assert source.source_id == "sha256:drawdown-request:YTD:average_drawdown"
+    assert str(source.value) == "-0.041208"
+    assert source.unit == "ratio"
+    assert "RISK_DRAWDOWN_MEASURE_AVERAGE_DRAWDOWN" in source.reason_codes
+    assert "RISK_DRAWDOWN_AVERAGE" in source.reason_codes
+
+
+def test_drawdown_response_adapter_wraps_source_owned_ulcer_index() -> None:
+    source = realized_drawdown_source_from_drawdown_response(
+        _drawdown_response(),
+        measure="ulcer_index",
+    )
+
+    assert source.source_id == "sha256:drawdown-request:YTD:ulcer_index"
+    assert str(source.value) == "0.053901"
+    assert source.unit == "ratio"
+    assert "RISK_DRAWDOWN_MEASURE_ULCER_INDEX" in source.reason_codes
+    assert "RISK_DRAWDOWN_ULCER_INDEX" in source.reason_codes
+
+
+def test_drawdown_response_adapter_wraps_source_owned_time_under_water() -> None:
+    source = realized_drawdown_source_from_drawdown_response(
+        _drawdown_response(),
+        measure="time_under_water_days",
+    )
+
+    assert source.source_id == "sha256:drawdown-request:YTD:time_under_water_days"
+    assert str(source.value) == "27"
+    assert source.unit == "days"
+    assert "RISK_DRAWDOWN_MEASURE_TIME_UNDER_WATER_DAYS" in source.reason_codes
+    assert "RISK_DRAWDOWN_TIME_UNDER_WATER" in source.reason_codes
+
+
 def test_risk_metrics_report_adapter_supports_explicit_metric() -> None:
     source = realized_risk_source_from_risk_metrics_report(
         _risk_metrics_report(),

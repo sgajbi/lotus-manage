@@ -336,6 +336,13 @@ Gateway, Workbench, reporting, and AI consumers must preserve missing grouping d
 active-risk alignment, and unsupported attribution combinations as degraded source truth rather
 than promoting them as ready analytics or recalculating risk attribution locally.
 
+Current Manage drawdown analytics consumer proof additionally preserves source-emitted
+`DrawdownAnalyticsReport:v1` `summary.average_drawdown`, `summary.ulcer_index`, and
+`summary.time_under_water_days` values in RFC-0042 realized outcome snapshots. Manage records those
+values with source refs, request fingerprints, as-of date, supportability, quality, and reason codes
+only; it does not reconstruct cumulative wealth, running peaks, underwater paths, squared
+drawdowns, observation counts, or any drawdown methodology locally.
+
 Current external execution boundary proof additionally includes Core-owned
 `ExternalOrderExecutionAcknowledgement:v1` and Manage construction-authority consumption of that
 posture. The posture is fail-closed `UNAVAILABLE`: Manage preserves acknowledgement counts, empty
