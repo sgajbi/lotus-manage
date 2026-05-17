@@ -196,12 +196,17 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert campaign_membership["current_routes"] == [
         "/api/v1/rebalance/waves/campaign-definitions",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves",
     ]
     assert campaign_membership["lineage_policy"]["lineage_required"] is True
     assert (
         "BulkReviewCampaignDefinition:v1"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "Preview-readiness evaluates persisted definition lifecycle"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
 

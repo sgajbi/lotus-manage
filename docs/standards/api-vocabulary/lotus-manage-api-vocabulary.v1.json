@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-17T00:19:52.908523+00:00",
+  "generatedAt": "2026-05-17T00:39:54.878332+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -115,7 +115,7 @@
       "semanticId": "lotus.actor_entitlement_state",
       "canonicalTerm": "actor_entitlement_state",
       "preferredName": "actor_entitlement_state",
-      "description": "Actor entitlement posture applied to this run.",
+      "description": "Actor entitlement posture when entitlement evidence is supplied.",
       "example": "AUTHORIZED",
       "type": "string",
       "locations": [
@@ -2252,6 +2252,20 @@
       ]
     },
     {
+      "semanticId": "lotus.definition_as_of_date",
+      "canonicalTerm": "definition_as_of_date",
+      "preferredName": "definition_as_of_date",
+      "description": "dpm bulk review campaign definition preview readiness field: definition as of date.",
+      "example": "2026-03-02",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.degraded_dimension_count",
       "canonicalTerm": "degraded_dimension_count",
       "preferredName": "degraded_dimension_count",
@@ -3239,6 +3253,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.excluded_candidate_count",
+      "canonicalTerm": "excluded_candidate_count",
+      "preferredName": "excluded_candidate_count",
+      "description": "Candidates excluded by source-owned portfolio type.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -5523,6 +5551,20 @@
       ]
     },
     {
+      "semanticId": "lotus.lifecycle_event_count",
+      "canonicalTerm": "lifecycle_event_count",
+      "preferredName": "lifecycle_event_count",
+      "description": "Projected lifecycle event count for create/retire/supersede audit posture.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.limit",
       "canonicalTerm": "limit",
       "preferredName": "limit",
@@ -7704,6 +7746,20 @@
       ]
     },
     {
+      "semanticId": "lotus.preview_create_allowed",
+      "canonicalTerm": "preview_create_allowed",
+      "preferredName": "preview_create_allowed",
+      "description": "Whether this definition can be used for new BULK_REVIEW_CAMPAIGN preview/create.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
       "semanticId": "lotus.preview_reference",
       "canonicalTerm": "preview_reference",
       "preferredName": "preview_reference",
@@ -8635,6 +8691,21 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.requested_as_of_date",
+      "canonicalTerm": "requested_as_of_date",
+      "preferredName": "requested_as_of_date",
+      "description": "Canonical requested as of date used by lotus-manage APIs.",
+      "example": null,
+      "type": "string",
+      "locations": [
+        "query",
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -14274,6 +14345,54 @@
       "allowedValues": [],
       "semanticId": "lotus.campaign_version",
       "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+    },
+    {
+      "name": "campaign_id",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical campaign id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_id",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+    },
+    {
+      "name": "campaign_version",
+      "kind": "request_option",
+      "location": "path",
+      "required": true,
+      "type": "string",
+      "description": "Canonical campaign version used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_version",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+    },
+    {
+      "name": "requested_as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": true,
+      "type": "string",
+      "description": "ISO date that the future wave preview/create request would use.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.requested_as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+    },
+    {
+      "name": "actor_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional actor id to evaluate against campaign entitlement evidence.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.actor_id",
+      "attributeRef": "#/attributeCatalog/lotus.actor_id"
     },
     {
       "name": "x_correlation_id",
@@ -64309,6 +64428,221 @@
             "type": "integer",
             "semanticId": "lotus.count",
             "attributeRef": "#/attributeCatalog/lotus.count"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_rebalance_waves",
+      "method": "GET",
+      "path": "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
+      "operationId": "get_bulk_review_campaign_definition_preview_readiness_api_v1_rebalance_waves_campaign_definitions__campaign_id__versions__campaign_version__preview_readiness_get",
+      "summary": "Check bulk-review campaign definition preview readiness",
+      "request": {
+        "fields": [
+          {
+            "name": "campaign_id",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_version",
+            "location": "path",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "requested_as_of_date",
+            "location": "query",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "actor_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "campaign_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "definition_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.definition_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.definition_as_of_date"
+          },
+          {
+            "name": "requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "preview_create_allowed",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.preview_create_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.preview_create_allowed"
+          },
+          {
+            "name": "supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_count"
+          },
+          {
+            "name": "eligible_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.eligible_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_candidate_count"
+          },
+          {
+            "name": "excluded_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.excluded_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.excluded_candidate_count"
+          },
+          {
+            "name": "eligible_portfolio_types",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "governance_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.governance_status",
+            "attributeRef": "#/attributeCatalog/lotus.governance_status"
+          },
+          {
+            "name": "expiry_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.expiry_state",
+            "attributeRef": "#/attributeCatalog/lotus.expiry_state"
+          },
+          {
+            "name": "actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "lifecycle_event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.lifecycle_event_count",
+            "attributeRef": "#/attributeCatalog/lotus.lifecycle_event_count"
+          },
+          {
+            "name": "source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       }

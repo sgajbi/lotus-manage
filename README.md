@@ -157,6 +157,9 @@ and superseding older definitions with active replacement versions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`;
 and projecting lifecycle events at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`;
+and checking fail-closed preview readiness at
+`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
+before new wave use;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
 fail closed for new preview/create requests. Broader campaign workflow surfaces beyond these
 bounded lifecycle controls,
