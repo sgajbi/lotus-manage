@@ -312,10 +312,10 @@ Audience use:
 
 ## WTBD Product-Readiness Roadmap
 
-`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the current mainline snapshot it
-tracks 59 WTBD items: 44 done on merged/published truth, 4 partial or in progress, and 11 remaining
-or open. The next execution wave should focus on product surfaces that materially improve
-bank-buyable demo and operating value without inventing unsupported source truth.
+`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-18 clean mainline
+snapshot after `lotus-manage` PR #273, it tracks 59 WTBD items: 44 done on merged/published truth, 4 partial or in progress, and 11 remaining or open. The next execution wave should focus on product
+surfaces that materially improve bank-buyable demo and operating value without inventing
+unsupported source truth.
 
 | Priority | WTBD | Business value | Required proof before support claim |
 | ---: | --- | --- | --- |
