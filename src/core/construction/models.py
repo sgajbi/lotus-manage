@@ -540,6 +540,41 @@ class AuthoritativeCurrencyOverlayContext(BaseModel):
             "is unavailable; these rows are never hedge-policy approval or hedge advice."
         ),
     )
+    external_eligible_hedge_instrument_source_product_name: str | None = Field(
+        default=None,
+        description=(
+            "Source-owned external eligible hedge instrument product name, when available."
+        ),
+    )
+    external_eligible_hedge_instrument_source_product_version: str | None = Field(
+        default=None,
+        description=(
+            "Source-owned external eligible hedge instrument product version, when available."
+        ),
+    )
+    external_eligible_hedge_instrument_source_id: str | None = Field(
+        default=None,
+        description=(
+            "Source-owned deterministic external eligible hedge instrument evidence identifier."
+        ),
+    )
+    external_eligible_hedge_instrument_content_hash: str | None = Field(
+        default=None,
+        description="Hash of the external eligible hedge instrument payload preserved for audit.",
+    )
+    external_eligible_hedge_instrument_count: int = Field(
+        default=0,
+        ge=0,
+        description="Source-owned external eligible hedge instrument row count.",
+    )
+    external_eligible_hedge_instruments: list[dict[str, str]] = Field(
+        default_factory=list,
+        description=(
+            "Source-owned external eligible hedge instrument rows. Empty while bank-owned "
+            "treasury ingestion is unavailable; these rows are never suitability approval, "
+            "product recommendation, counterparty selection, or execution readiness."
+        ),
+    )
     external_fx_forward_curve_source_product_name: str | None = Field(
         default=None,
         description="Source-owned external FX forward-curve product name, when available.",

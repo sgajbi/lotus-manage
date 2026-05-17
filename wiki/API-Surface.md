@@ -43,8 +43,10 @@ storage-layer constraint.
   `lotus-core` `PortfolioCashflowProjection:v1` evidence to flag projected cash-pressure policy
   breaches. Currency-overlay alternatives preserve fail-closed `lotus-core`
   `ExternalHedgeExecutionReadiness:v1`, `ExternalCurrencyExposure:v1`,
-  `ExternalHedgePolicy:v1`, and `ExternalFXForwardCurve:v1` posture as blocked external treasury
-  evidence without claiming forward pricing, hedge advice, execution, OMS, fills, or settlement.
+  `ExternalHedgePolicy:v1`, `ExternalEligibleHedgeInstrument:v1`, and
+  `ExternalFXForwardCurve:v1` posture as blocked external treasury evidence without claiming
+  eligible-instrument selection, suitability approval, product recommendation, forward pricing,
+  hedge advice, execution, OMS, fills, or settlement.
   Client income-need planning and ESG/restriction-aware construction are intentionally deferred
   until source-backed owner products exist.
 - `GET /api/v1/construction/alternative-sets/{alternative_set_id}`

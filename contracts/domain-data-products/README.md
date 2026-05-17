@@ -20,8 +20,9 @@ Current declarations:
    the `lotus-core:PortfolioManagerBookMembership:v1` API-read dependency used by PM-book
    rebalance-wave discovery and optional PM operating quality score-run scope materialization, and
    the stateful `lotus-core:ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
-   `ExternalFXForwardCurve:v1`, and `ExternalHedgeExecutionReadiness:v1` dependencies used to
-   preserve fail-closed external treasury exposure, policy, forward-curve, and readiness posture in
+   `ExternalEligibleHedgeInstrument:v1`, `ExternalFXForwardCurve:v1`, and
+   `ExternalHedgeExecutionReadiness:v1` dependencies used to preserve fail-closed external
+   treasury exposure, policy, eligible-instrument, forward-curve, and readiness posture in
    currency-overlay diagnostics.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the

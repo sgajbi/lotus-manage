@@ -96,15 +96,18 @@ exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILAB
 `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route and `lotus-core` PR
 #368 (`763db4c1`, wiki `50fff30`) exposes `ExternalHedgePolicy:v1` as an active fail-closed
 `UNAVAILABLE` route. `lotus-core` PR #369 (`89225766`, wiki `72dc91d`) exposes
-`ExternalFXForwardCurve:v1` as an active fail-closed `UNAVAILABLE` route. `lotus-platform` PR #333
-(`c46d581`), PR #334 (`ae4f707`), and PR #335 (`72be854`) mirror those active source-product
-postures. Manage now consumes the readiness, currency-exposure, hedge-policy, and FX forward-curve
+`ExternalFXForwardCurve:v1` as an active fail-closed `UNAVAILABLE` route, and `lotus-core` PR #370
+(`bacad356`, wiki `6e7c706`) exposes `ExternalEligibleHedgeInstrument:v1` as an active
+fail-closed `UNAVAILABLE` route. `lotus-platform` PR #333 (`c46d581`), PR #334 (`ae4f707`), and
+PR #335 (`72be854`) mirror the first active treasury source-product postures. Manage now consumes
+the readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve
 postures through stateful core sourcing and preserves them in currency-overlay construction
-diagnostics as blocked external treasury evidence, including empty exposure/policy/forward-curve
-rows, exposure/policy-rule/curve-point counts, missing data families, blocked capabilities,
-lineage, and source hashes. Manage still makes no FX-attribution, hedge-policy approval, hedge
-advice, forward-pricing, FX valuation-methodology, counterparty-selection, treasury-instruction,
-best-execution, OMS, fill, or settlement claim.
+diagnostics as blocked external treasury evidence, including empty exposure/policy/
+eligible-instrument/forward-curve rows, exposure/policy-rule/eligible-instrument/curve-point
+counts, missing data families, blocked capabilities, lineage, and source hashes. Manage still makes
+no FX-attribution, hedge-policy approval, eligible-instrument selection, suitability approval,
+product-recommendation, hedge advice, forward-pricing, FX valuation-methodology,
+counterparty-selection, treasury-instruction, best-execution, OMS, fill, or settlement claim.
 Postgres
 persistence, live proof, and downstream Gateway/Workbench realization requirements are documented,
 but full product-surface support still requires Gateway and Workbench implementation and proof.

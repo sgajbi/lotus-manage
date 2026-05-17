@@ -55,6 +55,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "ExternalCurrencyExposure",
         "ExternalHedgePolicy",
         "ExternalFXForwardCurve",
+        "ExternalEligibleHedgeInstrument",
         "ExternalHedgeExecutionReadiness",
         "RiskEventAffectedCohort",
         "TacticalHouseViewAffectedCohort",
@@ -87,6 +88,11 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["ExternalFXForwardCurve"]["producer_repository"] == "lotus-core"
     assert by_name["ExternalFXForwardCurve"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["ExternalFXForwardCurve"]["failure_posture"] == "fail_closed"
+    assert by_name["ExternalEligibleHedgeInstrument"]["producer_repository"] == "lotus-core"
+    assert (
+        by_name["ExternalEligibleHedgeInstrument"]["consumption_mode"] == "stateful_core_sourcing"
+    )
+    assert by_name["ExternalEligibleHedgeInstrument"]["failure_posture"] == "fail_closed"
     assert by_name["ExternalHedgeExecutionReadiness"]["producer_repository"] == "lotus-core"
     assert (
         by_name["ExternalHedgeExecutionReadiness"]["consumption_mode"] == "stateful_core_sourcing"
@@ -125,6 +131,7 @@ def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profil
         "ExternalCurrencyExposure",
         "ExternalHedgePolicy",
         "ExternalFXForwardCurve",
+        "ExternalEligibleHedgeInstrument",
         "ExternalHedgeExecutionReadiness",
     }
     assert "modeled, feature-gated outbound resolver seam" in upstream_family_map

@@ -8,6 +8,7 @@ import httpx
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreExternalCurrencyExposureResponse,
+    DpmCoreExternalEligibleHedgeInstrumentResponse,
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
@@ -95,6 +96,9 @@ class DpmCoreResolverConfig:
     )
     external_hedge_policy_path_template: str = (
         "/integration/portfolios/{portfolio_id}/external-hedge-policy"
+    )
+    external_eligible_hedge_instruments_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/external-eligible-hedge-instruments"
     )
     external_fx_forward_curve_path_template: str = (
         "/integration/market-data/external-fx-forward-curve"
@@ -250,6 +254,16 @@ class DpmCoreResolverConfig:
         path_template = self.external_hedge_policy_path_template.strip()
         if not path_template:
             raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_HEDGE_POLICY_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_external_eligible_hedge_instruments_url(self, portfolio_id: str) -> str:
+        path_template = self.external_eligible_hedge_instruments_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError(
+                "DPM_CORE_EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_UNAVAILABLE"
+            )
         base = self.base_url.rstrip("/")
         path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
         return f"{base}/{path}"
@@ -507,6 +521,16 @@ class DpmCoreResolverClient:
             exposure_currencies=exposure_currencies,
             correlation_id=correlation_id,
         )
+        external_eligible_hedge_instruments = self._try_resolve_external_eligible_hedge_instruments(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            reporting_currency=portfolio_snapshot.base_currency,
+            exposure_currencies=exposure_currencies,
+            instrument_types=["FX_FORWARD", "FX_SWAP"],
+            correlation_id=correlation_id,
+        )
         external_fx_forward_curve = self._try_resolve_external_fx_forward_curve(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -576,6 +600,7 @@ class DpmCoreResolverClient:
             external_hedge_execution_readiness=external_hedge_execution_readiness,
             external_currency_exposure=external_currency_exposure,
             external_hedge_policy=external_hedge_policy,
+            external_eligible_hedge_instruments=external_eligible_hedge_instruments,
             external_fx_forward_curve=external_fx_forward_curve,
             client_restriction_profile=client_restriction_profile,
             sustainability_preference_profile=sustainability_preference_profile,
@@ -1044,6 +1069,36 @@ class DpmCoreResolverClient:
         )
         return DpmCoreExternalHedgePolicyResponse.model_validate(response)
 
+    def resolve_external_eligible_hedge_instruments(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        reporting_currency: Optional[str] = None,
+        exposure_currencies: Optional[list[str]] = None,
+        instrument_types: Optional[list[str]] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCoreExternalEligibleHedgeInstrumentResponse:
+        url = self._config.resolve_external_eligible_hedge_instruments_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "reporting_currency": reporting_currency,
+            "exposure_currencies": exposure_currencies or [],
+            "instrument_types": instrument_types or [],
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_UNAVAILABLE",
+            incomplete_code="DPM_CORE_EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_INCOMPLETE",
+        )
+        return DpmCoreExternalEligibleHedgeInstrumentResponse.model_validate(response)
+
     def resolve_external_fx_forward_curve(
         self,
         *,
@@ -1304,6 +1359,32 @@ class DpmCoreResolverClient:
                 mandate_id=mandate_id,
                 reporting_currency=reporting_currency,
                 exposure_currencies=exposure_currencies,
+                correlation_id=correlation_id,
+            )
+        except DpmCoreResolverError:
+            return None
+
+    def _try_resolve_external_eligible_hedge_instruments(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str],
+        mandate_id: Optional[str],
+        reporting_currency: Optional[str],
+        exposure_currencies: list[str],
+        instrument_types: list[str],
+        correlation_id: Optional[str],
+    ) -> DpmCoreExternalEligibleHedgeInstrumentResponse | None:
+        try:
+            return self.resolve_external_eligible_hedge_instruments(
+                portfolio_id=portfolio_id,
+                as_of_date=as_of_date,
+                tenant_id=tenant_id,
+                mandate_id=mandate_id,
+                reporting_currency=reporting_currency,
+                exposure_currencies=exposure_currencies,
+                instrument_types=instrument_types,
                 correlation_id=correlation_id,
             )
         except DpmCoreResolverError:

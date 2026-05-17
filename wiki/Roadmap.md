@@ -82,11 +82,13 @@ posture as risk source truth and does not promote flagged attribution to ready e
 `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route, PR #367
 (`3d0a7bbd`, wiki `d719c74`) exposes `ExternalCurrencyExposure:v1`, and PR #368 (`763db4c1`,
 wiki `50fff30`) exposes `ExternalHedgePolicy:v1`; PR #369 (`89225766`, wiki `72dc91d`) exposes
-`ExternalFXForwardCurve:v1`, mirrored by `lotus-platform` PR #335 (`72be854`). Manage now consumes
-all four routes through stateful core sourcing and preserves their unavailable postures in
+`ExternalFXForwardCurve:v1`, mirrored by `lotus-platform` PR #335 (`72be854`); PR #370
+(`bacad356`, wiki `6e7c706`) exposes `ExternalEligibleHedgeInstrument:v1`. Manage now consumes all
+five routes through stateful core sourcing and preserves their unavailable postures in
 currency-overlay construction diagnostics as blocked external treasury readiness, exposure, policy,
-and FX forward-curve context. Manage still makes no FX attribution, hedge-policy approval, hedge
-advice, forward-pricing, FX valuation methodology, counterparty-selection, best-execution,
+eligible-instrument, and FX forward-curve context. Manage still makes no FX attribution,
+hedge-policy approval, eligible-instrument selection, suitability approval, product recommendation,
+hedge advice, forward-pricing, FX valuation methodology, counterparty-selection, best-execution,
 treasury-instruction, OMS, fills, or settlement claim.
 
 ## Business Value Themes
