@@ -1869,6 +1869,12 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
         second = client.post(f"{route}/launch", json=launch_request)
         fetched = client.get(route)
         events = client.get(f"{route}/lifecycle-events")
+        launch_history = client.get(f"{route}/launch-history")
+        empty_launch_history_page = client.get(f"{route}/launch-history?offset=1")
+        missing_launch_history = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/"
+            "versions/2026.05/launch-history"
+        )
 
     assert put_response.status_code == 200
     assert first.status_code == 201
@@ -1907,6 +1913,24 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
     assert launch_event["requested_as_of_date"] == "2026-05-10"
     assert launch_event["idempotency_key"].startswith(
         "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:"
+    )
+    assert launch_history.status_code == 200
+    launch_history_payload = launch_history.json()
+    assert launch_history_payload["product_name"] == "BulkReviewCampaignDefinitionLaunchHistory"
+    assert launch_history_payload["count"] == 1
+    assert launch_history_payload["total_count"] == 1
+    assert launch_history_payload["items"][0]["wave_id"] == wave["wave_id"]
+    assert launch_history_payload["items"][0]["correlation_id"] == (
+        "corr-campaign-definition-launch-001"
+    )
+    assert "NO_OMS_EXECUTION_CLAIM" in launch_history_payload["operating_boundaries"]
+    assert empty_launch_history_page.status_code == 200
+    assert empty_launch_history_page.json()["count"] == 0
+    assert empty_launch_history_page.json()["total_count"] == 1
+    assert missing_launch_history.status_code == 404
+    assert (
+        missing_launch_history.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
     )
 
 

@@ -615,6 +615,11 @@ Current repository posture:
     definition and lifecycle-event projection so operators can audit wave id, actor, requested
     as-of date, correlation id, and deterministic idempotency without adding maker-checker,
     trade-approval, routing, or OMS claims.
+    Manage also exposes first-class bounded launch-history audit pages at
+    `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`
+    with pagination, total count, wave id, actor, requested as-of date, correlation id,
+    idempotency key, and explicit no-order/no-OMS boundaries so downstream consumers do not need to
+    fetch full definitions or infer launch rows from generic lifecycle events.
     Broader campaign workflow surfaces beyond these bounded lifecycle controls, wave
     risk/performance analytics posture, and external OMS execution remain unpromoted until owning
     implementations are live-proven. Manage consumes `lotus-core`
