@@ -36,6 +36,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
+    DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -46,6 +47,7 @@ from src.core.waves import (
     build_bulk_review_campaign_discovery_item,
     build_bulk_review_campaign_definition_preview_readiness,
     build_bulk_review_campaign_definition_launch_package,
+    build_bulk_review_campaign_definition_launch_command,
     record_bulk_review_campaign_definition_launch,
 )
 from src.core.waves.campaign_definitions import (
@@ -2127,32 +2129,30 @@ def launch_bulk_review_campaign_definition(
                 "message": "Bulk-review campaign definition was not found.",
             },
         )
-    launch_package = build_bulk_review_campaign_definition_launch_package(
-        definition=definition,
-        requested_as_of_date=request.requested_as_of_date,
-        actor_id=request.actor_id,
-        correlation_id=request.correlation_id,
-    )
-    if (
-        launch_package.launch_state != "READY"
-        or not launch_package.readiness.preview_create_allowed
-    ):
+    try:
+        launch_command = build_bulk_review_campaign_definition_launch_command(
+            definition=definition,
+            requested_as_of_date=request.requested_as_of_date,
+            actor_id=request.actor_id,
+            correlation_id=request.correlation_id,
+        )
+    except DpmBulkReviewCampaignDefinitionLaunchBlocked as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={
                 "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED",
                 "message": "Bulk-review campaign definition is not ready for durable launch.",
-                "reason_codes": launch_package.reason_codes,
-                "readiness": launch_package.readiness.model_dump(mode="json"),
+                "reason_codes": exc.reason_codes,
+                "readiness": exc.readiness.model_dump(mode="json"),
             },
-        )
+        ) from exc
     wave_request = DpmWavePreviewRequest.model_validate(
-        launch_package.create_request.model_dump(mode="json")
+        launch_command.create_request.model_dump(mode="json")
     )
     try:
         portfolios = _portfolio_inputs_for_request(
             request=wave_request,
-            correlation_id=launch_package.correlation_id,
+            correlation_id=launch_command.correlation_id,
             advise_authority_client=None,
             risk_authority_client=None,
             campaign_definition_repository=campaign_definition_repository,
@@ -2163,9 +2163,9 @@ def launch_bulk_review_campaign_definition(
             rationale=wave_request.rationale,
             as_of_date=wave_request.as_of_date,
             actor_id=wave_request.actor_id,
-            correlation_id=launch_package.correlation_id,
+            correlation_id=launch_command.correlation_id,
             portfolios=portfolios,
-            idempotency_key=launch_package.create_headers["Idempotency-Key"],
+            idempotency_key=launch_command.idempotency_key,
             mandate_repository=mandate_repository,
             wave_repository=wave_repository,
         )
@@ -2174,8 +2174,8 @@ def launch_bulk_review_campaign_definition(
             wave_id=wave.wave_id,
             launched_by=wave_request.actor_id,
             requested_as_of_date=wave_request.as_of_date,
-            correlation_id=launch_package.correlation_id,
-            idempotency_key=launch_package.create_headers["Idempotency-Key"],
+            correlation_id=launch_command.correlation_id,
+            idempotency_key=launch_command.idempotency_key,
         )
         if launched_definition.content_hash != definition.content_hash:
             campaign_definition_repository.record_definition_launch(definition=launched_definition)
