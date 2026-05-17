@@ -2000,6 +2000,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "eligible-instrument" in work_to_be_done
     assert "FX forward-curve" in work_to_be_done
+    assert "2026-05-18 realized outcome source-consumer result" in work_to_be_done
+    assert "realized_execution_acknowledgement_source_from_response" in work_to_be_done
+    assert "blocked `EXECUTION_QUALITY` source snapshot" in work_to_be_done
+    assert "`EXECUTION_EVIDENCE_BLOCKED`" in work_to_be_done
+    assert "without promoting OMS acknowledgement, fill, settlement" in work_to_be_done
     assert "currency_overlay_context" in work_to_be_done
     assert "downstream no-reconstruction posture" in work_to_be_done
     assert "`aggregate_metrics.source_analytics`" in work_to_be_done
@@ -2056,6 +2061,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "blocked external treasury readiness/exposure/policy/eligible-instrument/forward-curve "
         "evidence"
     ) in supported_features
+    assert "realized_execution_acknowledgement_source_from_response" in supported_features
+    assert "keeps `EXECUTION_QUALITY` blocked with a null realized value" in supported_features
     assert "external treasury ingestion remains future work" in supported_features
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (
         supported_features

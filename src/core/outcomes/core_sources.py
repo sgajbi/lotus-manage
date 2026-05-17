@@ -199,6 +199,70 @@ def realized_cashflow_projection_source_from_cashflow_projection_response(
     )
 
 
+def realized_execution_acknowledgement_source_from_response(
+    response: dict[str, Any],
+) -> DpmRealizedSourceSnapshot:
+    """Adapt lotus-core OMS acknowledgement posture without claiming execution support."""
+
+    metadata = _core_metadata(response)
+    portfolio_id = _read_required_text(response.get("portfolio_id"), "portfolio_id")
+    supportability = _read_mapping(response.get("supportability"))
+    acknowledgement_count = _read_int(
+        supportability.get("acknowledgement_count"),
+        "supportability.acknowledgement_count",
+    )
+    supportability_state = (
+        _read_text(supportability.get("state")) or metadata["data_quality_status"]
+    ).upper()
+    supportability_reason = (
+        _read_text(supportability.get("reason")) or "EXTERNAL_OMS_ACKNOWLEDGEMENT_UNAVAILABLE"
+    )
+    execution_intent_id = _read_text(response.get("execution_intent_id")) or "none"
+    order_reference_ids = _read_text_list(response.get("order_reference_ids"))
+    order_basis = ",".join(order_reference_ids) if order_reference_ids else "none"
+    source_id = _source_id(
+        product_name=metadata["product_name"],
+        product_version=metadata["product_version"],
+        portfolio_id=portfolio_id,
+        as_of_date=metadata["as_of_date"],
+        basis=(
+            "external_order_execution_acknowledgement:"
+            f"execution_intent={execution_intent_id}:orders={order_basis}"
+        ),
+        fingerprint=metadata["content_hash"],
+    )
+    return DpmRealizedSourceSnapshot(
+        dimension="EXECUTION_QUALITY",
+        source_system="lotus-core",
+        source_type="EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT",
+        source_id=source_id,
+        value=Decimal(acknowledgement_count),
+        unit="acknowledgements",
+        source_state="BLOCKED" if supportability_state == "UNAVAILABLE" else "DEGRADED",
+        quality="MISSING" if supportability_state == "UNAVAILABLE" else "UNAVAILABLE",
+        observed_at=metadata["observed_at"],
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["content_hash"],
+        reason_codes=[
+            "CORE_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
+            f"CORE_PRODUCT_{metadata['product_name'].upper()}",
+            f"CORE_PRODUCT_VERSION_{metadata['product_version'].upper()}",
+            f"EXECUTION_ACKNOWLEDGEMENT_SUPPORTABILITY_{supportability_state}",
+            supportability_reason,
+            f"EXECUTION_ACKNOWLEDGEMENT_COUNT_{acknowledgement_count}",
+            *_prefixed_reason_codes(
+                "EXECUTION_ACKNOWLEDGEMENT_MISSING_DATA",
+                _read_text_list(supportability.get("missing_data_families")),
+            ),
+            *_prefixed_reason_codes(
+                "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY",
+                _read_text_list(supportability.get("blocked_capabilities")),
+            ),
+            f"CORE_DATA_QUALITY_{metadata['data_quality_status'].upper()}",
+        ],
+    )
+
+
 def unavailable_core_cash_source(
     *,
     source_id: str,
@@ -436,6 +500,30 @@ def _read_required_text(value: Any, field_name: str) -> str:
     if text is None:
         raise CoreOutcomeSourceError(f"lotus-core cash response is missing {field_name}")
     return text
+
+
+def _read_text_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
+
+
+def _read_int(value: Any, field_name: str) -> int:
+    if isinstance(value, bool):
+        raise CoreOutcomeSourceError(f"lotus-core response contains non-integer {field_name}")
+    try:
+        parsed = int(str(value))
+    except (TypeError, ValueError) as exc:
+        raise CoreOutcomeSourceError(
+            f"lotus-core response contains non-integer {field_name}"
+        ) from exc
+    if parsed < 0:
+        raise CoreOutcomeSourceError(f"lotus-core response contains negative {field_name}")
+    return parsed
+
+
+def _prefixed_reason_codes(prefix: str, values: list[str]) -> list[str]:
+    return [f"{prefix}_{value.upper()}" for value in values]
 
 
 def _decimal_value(value: Any) -> Decimal:

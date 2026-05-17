@@ -347,9 +347,11 @@ Current external execution boundary proof additionally includes Core-owned
 `ExternalOrderExecutionAcknowledgement:v1` and Manage construction-authority consumption of that
 posture. The posture is fail-closed `UNAVAILABLE`: Manage preserves acknowledgement counts, empty
 acknowledgement rows, missing data families, blocked capabilities, lineage, and source hashes as
-diagnostics only. It is not a supported order-generation, venue-routing, best-execution, OMS
-acknowledgement-ingestion, fill, settlement, execution-status-certification, or autonomous
-execution capability.
+diagnostics only. Manage now also preserves that fail-closed posture as RFC-0042 realized outcome
+execution-quality source evidence through `realized_execution_acknowledgement_source_from_response`,
+where the assembled outcome keeps `EXECUTION_QUALITY` blocked with a null realized value. It is not
+a supported order-generation, venue-routing, best-execution, OMS acknowledgement-ingestion, fill,
+settlement, execution-status-certification, or autonomous execution capability.
 
 Current risk concentration source-owner proof additionally includes `ConcentrationRiskReport:v1`
 top-position weight methodology truth through `lotus-risk` PR #134 / wiki `dd25844`. Downstream
