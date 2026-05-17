@@ -36,6 +36,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
+    DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmRebalanceWave,
@@ -44,6 +45,7 @@ from src.core.waves import (
     DpmWaveSourceRef,
     build_bulk_review_campaign_discovery_item,
     build_bulk_review_campaign_definition_preview_readiness,
+    build_bulk_review_campaign_definition_launch_package,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -2015,6 +2017,59 @@ def get_bulk_review_campaign_definition_preview_readiness(
         definition=definition,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
+    )
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package",
+    response_model=DpmBulkReviewCampaignDefinitionLaunchPackage,
+    status_code=status.HTTP_200_OK,
+    summary="Build bulk-review campaign definition launch package",
+    description=(
+        "Builds an operator launch package for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. The package contains fail-closed preview readiness, "
+        "a bounded preview/create request draft, idempotency and correlation headers, and explicit "
+        "operating boundaries for downstream consumers. It does not create a wave, discover the "
+        "global portfolio universe, recalculate membership, run maker-checker workflow, approve "
+        "trades, or claim OMS execution."
+    ),
+)
+def get_bulk_review_campaign_definition_launch_package(
+    campaign_id: str,
+    campaign_version: str,
+    requested_as_of_date: str = Query(
+        description="ISO date that the future wave preview/create request would use.",
+        examples=["2026-05-10"],
+    ),
+    actor_id: str = Query(
+        description="Actor id to place in the preview/create request draft.",
+        examples=["pm_001"],
+    ),
+    correlation_id: str | None = Query(
+        default=None,
+        description="Optional correlation id to carry into the create header draft.",
+    ),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionLaunchPackage:
+    definition = repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if definition is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    return build_bulk_review_campaign_definition_launch_package(
+        definition=definition,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        correlation_id=correlation_id,
     )
 
 

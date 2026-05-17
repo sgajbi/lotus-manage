@@ -196,6 +196,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert campaign_membership["current_routes"] == [
         "/api/v1/rebalance/waves/campaign-definitions",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves",
@@ -207,6 +208,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     )
     assert (
         "Preview-readiness evaluates persisted definition lifecycle"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "Launch packages provide a bounded preview/create request draft"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
 
