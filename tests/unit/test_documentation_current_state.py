@@ -2082,9 +2082,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "auditable under `SUPERSEDED` status with replacement version/content-hash lineage" in (
         supported_features
     )
-    assert "project bounded lifecycle events for create, retire, and supersede posture" in (
+    assert "project bounded lifecycle events for create, launch, retire, and supersede posture" in (
         supported_features
     )
+    assert "deterministic launch idempotency and append-only launch history" in supported_features
     assert "check fail-closed preview readiness" in supported_features
     assert "idempotency/correlation header guidance" in supported_features
     assert "without discovering the global portfolio universe or recalculating membership" in (

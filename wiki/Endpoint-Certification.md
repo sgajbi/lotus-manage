@@ -1666,7 +1666,7 @@ Functional coverage:
 - superseded campaign definitions remain available for audit and discovery under `SUPERSEDED`
   status, preserve replacement version/content-hash lineage, and cannot be used for new
   `BULK_REVIEW_CAMPAIGN` preview/create requests,
-- lifecycle events project create, retire, and supersede audit posture from the persisted
+- lifecycle events project create, launch, retire, and supersede audit posture from the persisted
   definition record without separate workflow storage or source-fact recalculation,
 - preview-readiness checks fail closed over lifecycle status, requested as-of date,
   source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement
@@ -1674,6 +1674,8 @@ Functional coverage:
 - launch packages return readiness, exact preview/create request drafts, idempotency/correlation
   header guidance, and explicit no-recalculation/no-OMS operating boundaries without creating a
   wave,
+- ready-only launch appends bounded launch history with wave id, actor, requested as-of date,
+  correlation id, and deterministic idempotency key without maker-checker or OMS claims,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

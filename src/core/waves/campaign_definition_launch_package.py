@@ -136,10 +136,19 @@ def _idempotency_key(
         "campaign_version": definition.campaign_version,
         "requested_as_of_date": requested_as_of_date,
         "actor_id": actor_id,
-        "definition_hash": definition.content_hash,
+        "definition_hash": _launch_basis_hash(definition),
     }
     digest = _hash_payload(payload).removeprefix("sha256:")[:24]
     return f"campaign-launch:{definition.campaign_id}:{definition.campaign_version}:{digest}"
+
+
+def _launch_basis_hash(definition: DpmBulkReviewCampaignDefinition) -> str:
+    payload = definition.model_dump(mode="json")
+    payload["content_hash"] = ""
+    payload["created_at"] = ""
+    payload["launch_history"] = []
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _hash_payload(payload: dict[str, object]) -> str:

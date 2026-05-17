@@ -45,3 +45,10 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
         raise NotImplementedError
+
+    def record_definition_launch(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError

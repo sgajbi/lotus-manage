@@ -10,6 +10,9 @@ from src.core.waves.campaign_definition_lifecycle import (
     retire_bulk_review_campaign_definition,
     supersede_bulk_review_campaign_definition,
 )
+from src.core.waves.campaign_definition_launch_history import (
+    record_bulk_review_campaign_definition_launch,
+)
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -209,6 +212,58 @@ def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> Non
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT",
     ):
         repository.save_definition(definition=_definition(display_name="Changed name"))
+
+
+def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+        launched_at=datetime(2026, 5, 10, tzinfo=timezone.utc),
+    )
+    replayed = record_bulk_review_campaign_definition_launch(
+        definition=launched,
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+    )
+
+    returned = repository.record_definition_launch(definition=launched)
+
+    assert returned == launched
+    assert replayed == launched
+    assert launched.content_hash != definition.content_hash
+    assert len(launched.launch_history) == 1
+    assert launched.launch_history[0].wave_id == "dwv_campaign_launch_001"
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == launched
+    )
+    assert repository.record_definition_launch(definition=launched) == launched
+    assert (
+        repository.record_definition_launch(
+            definition=DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **launched.model_dump(mode="python"),
+                    "campaign_id": "missing-campaign",
+                    "content_hash": "",
+                }
+            )
+        )
+        is None
+    )
 
 
 def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> None:
@@ -690,6 +745,36 @@ def test_postgres_campaign_definition_repository_supersedes_active_definition() 
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
     assert repository.supersede_definition(definition=superseded) == superseded
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_launch_history() -> None:
+    definition = _definition()
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+        launched_at=datetime(2026, 5, 10, tzinfo=timezone.utc),
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.record_definition_launch(definition=launched) == launched
     assert connection.committed is True
 
 

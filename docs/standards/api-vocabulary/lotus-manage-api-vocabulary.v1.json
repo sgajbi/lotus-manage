@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-17T02:52:32.523183+00:00",
+  "generatedAt": "2026-05-17T03:43:30.709898+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5617,11 +5617,55 @@
       ]
     },
     {
+      "semanticId": "lotus.launch_history",
+      "canonicalTerm": "launch_history",
+      "preferredName": "launch_history",
+      "description": "Append-only durable launch audit records. These records prove Manage-created waves from this definition without implying maker-checker, trade approval, or OMS execution.",
+      "example": [
+        "launch_history_item_example"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.launch_state",
       "canonicalTerm": "launch_state",
       "preferredName": "launch_state",
       "description": "READY only when preview/create readiness allows launch.",
       "example": "READY",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.launched_at",
+      "canonicalTerm": "launched_at",
+      "preferredName": "launched_at",
+      "description": "UTC timestamp when Manage recorded the launch.",
+      "example": "2026-03-02T10:30:00Z",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.launched_by",
+      "canonicalTerm": "launched_by",
+      "preferredName": "launched_by",
+      "description": "Actor who launched the campaign definition wave.",
+      "example": "sample_launched_by",
       "type": "string",
       "locations": [
         "body"
@@ -8839,15 +8883,16 @@
       "semanticId": "lotus.requested_as_of_date",
       "canonicalTerm": "requested_as_of_date",
       "preferredName": "requested_as_of_date",
-      "description": "Canonical requested as of date used by lotus-manage APIs.",
-      "example": null,
+      "description": "Requested as-of date used for the launched wave.",
+      "example": "2026-03-02",
       "type": "string",
       "locations": [
-        "query",
-        "body"
+        "body",
+        "query"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -12326,7 +12371,7 @@
       "semanticId": "lotus.wave_id",
       "canonicalTerm": "wave_id",
       "preferredName": "wave_id",
-      "description": "Stable rebalance wave identifier.",
+      "description": "Durable rebalance wave created from this campaign definition.",
       "example": "WAVE_001",
       "type": "string",
       "locations": [
@@ -62262,6 +62307,62 @@
             "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
           },
           {
+            "name": "launch_history",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.launch_history",
+            "attributeRef": "#/attributeCatalog/lotus.launch_history"
+          },
+          {
+            "name": "launch_history[].wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "launch_history[].launched_at",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.launched_at",
+            "attributeRef": "#/attributeCatalog/lotus.launched_at"
+          },
+          {
+            "name": "launch_history[].launched_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.launched_by",
+            "attributeRef": "#/attributeCatalog/lotus.launched_by"
+          },
+          {
+            "name": "launch_history[].requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "launch_history[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "launch_history[].idempotency_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
             "name": "content_hash",
             "location": "body",
             "required": false,
@@ -62747,6 +62848,62 @@
             "type": "object",
             "semanticId": "lotus.superseded_by_content_hash",
             "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
+          },
+          {
+            "name": "launch_history",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.launch_history",
+            "attributeRef": "#/attributeCatalog/lotus.launch_history"
+          },
+          {
+            "name": "launch_history[].wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "launch_history[].launched_at",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.launched_at",
+            "attributeRef": "#/attributeCatalog/lotus.launched_at"
+          },
+          {
+            "name": "launch_history[].launched_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.launched_by",
+            "attributeRef": "#/attributeCatalog/lotus.launched_by"
+          },
+          {
+            "name": "launch_history[].requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "launch_history[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "launch_history[].idempotency_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
           },
           {
             "name": "content_hash",
@@ -63266,6 +63423,62 @@
             "type": "object",
             "semanticId": "lotus.superseded_by_content_hash",
             "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
+          },
+          {
+            "name": "items[].launch_history",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.launch_history",
+            "attributeRef": "#/attributeCatalog/lotus.launch_history"
+          },
+          {
+            "name": "items[].launch_history[].wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "items[].launch_history[].launched_at",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.launched_at",
+            "attributeRef": "#/attributeCatalog/lotus.launched_at"
+          },
+          {
+            "name": "items[].launch_history[].launched_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.launched_by",
+            "attributeRef": "#/attributeCatalog/lotus.launched_by"
+          },
+          {
+            "name": "items[].launch_history[].requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].launch_history[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "items[].launch_history[].idempotency_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
           },
           {
             "name": "items[].content_hash",
@@ -63803,6 +64016,62 @@
             "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
           },
           {
+            "name": "launch_history",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.launch_history",
+            "attributeRef": "#/attributeCatalog/lotus.launch_history"
+          },
+          {
+            "name": "launch_history[].wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "launch_history[].launched_at",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.launched_at",
+            "attributeRef": "#/attributeCatalog/lotus.launched_at"
+          },
+          {
+            "name": "launch_history[].launched_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.launched_by",
+            "attributeRef": "#/attributeCatalog/lotus.launched_by"
+          },
+          {
+            "name": "launch_history[].requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "launch_history[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "launch_history[].idempotency_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
             "name": "content_hash",
             "location": "body",
             "required": false,
@@ -64322,6 +64591,62 @@
             "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
           },
           {
+            "name": "launch_history",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.launch_history",
+            "attributeRef": "#/attributeCatalog/lotus.launch_history"
+          },
+          {
+            "name": "launch_history[].wave_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "launch_history[].launched_at",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.launched_at",
+            "attributeRef": "#/attributeCatalog/lotus.launched_at"
+          },
+          {
+            "name": "launch_history[].launched_by",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.launched_by",
+            "attributeRef": "#/attributeCatalog/lotus.launched_by"
+          },
+          {
+            "name": "launch_history[].requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "launch_history[].correlation_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.correlation_id",
+            "attributeRef": "#/attributeCatalog/lotus.correlation_id"
+          },
+          {
+            "name": "launch_history[].idempotency_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
+          },
+          {
             "name": "content_hash",
             "location": "body",
             "required": false,
@@ -64742,6 +65067,30 @@
             "type": "object",
             "semanticId": "lotus.replacement_content_hash",
             "attributeRef": "#/attributeCatalog/lotus.replacement_content_hash"
+          },
+          {
+            "name": "items[].wave_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "items[].requested_as_of_date",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].idempotency_key",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.idempotency_key",
+            "attributeRef": "#/attributeCatalog/lotus.idempotency_key"
           },
           {
             "name": "count",
