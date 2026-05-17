@@ -168,7 +168,8 @@ class DpmPortfolioMemory(BaseModel):
         default_factory=list,
         description=(
             "Supported and deferred source-event families in the portfolio-memory contract, "
-            "including explicit OMS deferred-source-owner and PM-quality projection boundaries."
+            "including explicit OMS, external order acknowledgement, and PM-quality projection "
+            "boundaries."
         ),
     )
     events: list[DpmPortfolioMemoryEvent] = Field(

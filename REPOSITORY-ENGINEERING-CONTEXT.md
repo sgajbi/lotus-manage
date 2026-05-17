@@ -655,7 +655,9 @@ Current repository posture:
     `ExternalOrderExecutionAcknowledgement:v1` fail-closed external OMS acknowledgement posture as
     blocked diagnostics with source lineage, missing data families, blocked capabilities,
     acknowledgement counts, empty acknowledgement rows, and source hashes without execution, fill,
-    settlement, venue-routing, or OMS acknowledgement claims. Live
+    settlement, venue-routing, or OMS acknowledgement claims. Portfolio memory separately exposes
+    that Core source product as a deferred source-event family posture only; it does not project
+    acknowledgement, fill, settlement, or execution-status events. Live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on

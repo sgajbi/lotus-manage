@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-17T04:04:10.440444+00:00",
+  "generatedAt": "2026-05-17T23:39:06.477305+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -10396,7 +10396,7 @@
       "semanticId": "lotus.source_event_family_posture",
       "canonicalTerm": "source_event_family_posture",
       "preferredName": "source_event_family_posture",
-      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit OMS deferred-source-owner and PM-quality projection boundaries.",
+      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit OMS, external order acknowledgement, and PM-quality projection boundaries.",
       "example": [
         "source_event_family_posture_item_example"
       ],

@@ -331,6 +331,24 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert family_posture["generated_document_archive"].source_system == "lotus-archive"
     assert family_posture["external_oms_execution"].support_status == "DEFERRED_SOURCE_OWNER"
     assert family_posture["external_oms_execution"].event_types == []
+    assert (
+        family_posture["external_order_execution_acknowledgement"].support_status
+        == "DEFERRED_SOURCE_OWNER"
+    )
+    assert family_posture["external_order_execution_acknowledgement"].source_system == "lotus-core"
+    assert family_posture["external_order_execution_acknowledgement"].event_types == []
+    assert (
+        family_posture["external_order_execution_acknowledgement"].reason_code
+        == "EXTERNAL_ORDER_ACKNOWLEDGEMENT_SOURCE_EVENTS_DEFERRED"
+    )
+    assert (
+        "ExternalOrderExecutionAcknowledgement:v1"
+        in family_posture["external_order_execution_acknowledgement"].summary
+    )
+    assert (
+        "does not project acknowledgement, fill, settlement, or execution-status events"
+        in family_posture["external_order_execution_acknowledgement"].summary
+    )
     assert family_posture["pm_scoring"].source_system == "lotus-manage"
     assert family_posture["pm_scoring"].owner == "lotus-manage PM operating quality product"
     assert family_posture["pm_scoring"].support_status == "SUPPORTED"
@@ -423,6 +441,22 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "governed OMS owner publishes a no-raw-payload source-event family."
         ),
     }
+    assert family_posture["external_order_execution_acknowledgement"] == {
+        "family_key": "external_order_execution_acknowledgement",
+        "source_system": "lotus-core",
+        "owner": "lotus-core source-boundary posture; future execution or OMS owner",
+        "support_status": "DEFERRED_SOURCE_OWNER",
+        "event_types": [],
+        "route": "/integration/portfolios/{portfolio_id}/external-order-execution-acknowledgement",
+        "reason_code": "EXTERNAL_ORDER_ACKNOWLEDGEMENT_SOURCE_EVENTS_DEFERRED",
+        "summary": (
+            "Core ExternalOrderExecutionAcknowledgement:v1 is consumed only as fail-closed "
+            "source-product posture for construction and outcome evidence; portfolio memory "
+            "does not project acknowledgement, fill, settlement, or execution-status events "
+            "until bank-owned OMS acknowledgement ingestion publishes a certified "
+            "no-raw-payload source-event family."
+        ),
+    }
     assert family_posture["pm_scoring"]["support_status"] == "SUPPORTED"
     assert family_posture["pm_scoring"] == {
         "family_key": "pm_scoring",
@@ -458,7 +492,7 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     ]
     assert "hidden portfolio-memory truth" in posture_schema["properties"]["summary"]["description"]
     assert (
-        "PM-quality projection boundaries"
+        "external order acknowledgement, and PM-quality projection boundaries"
         in memory_schema["properties"]["source_event_family_posture"]["description"]
     )
 

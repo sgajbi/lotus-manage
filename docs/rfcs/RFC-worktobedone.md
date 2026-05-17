@@ -637,7 +637,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
-| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus report, AI, and archive source-event families | Manage/Gateway/Workbench portfolio memory, report-owned source events, AI workflow-pack source events, and archive generated-document/client-delivery source events exist; OMS and PM-scoring source-event families remain future. |
+| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus report, AI, archive, PM-quality lineage, and explicit external acknowledgement posture | Manage/Gateway/Workbench portfolio memory, report-owned source events, AI workflow-pack source events, archive generated-document/client-delivery source events, bounded PM quality score-run lineage, and explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred source-event posture exist. Full OMS execution/acknowledgement/fill/settlement event projection remains future bank-owned OMS source scope. |
 
 ### RFC37 Gold-Pass Audit And RFC Reintegration - 2026-05-09
 
@@ -983,23 +983,42 @@ Target business outcome:
 Lotus preserves a durable, searchable, governed decision memory across mandate health,
 construction, proof packs, rebalance waves, execution outcomes, reports, and AI evidence.
 
-Why it cannot be done now:
+Current implementation-backed result:
 
-RFC-0038 through RFC-0041 provide important event/evidence pieces, but RFC-0042 outcome events,
-report/archive materialization, AI provenance, and front-office surfaces are still incomplete.
+The first-wave portfolio-memory path is implementation-backed across Manage, Gateway, Workbench,
+report, AI, archive, and PM operating quality score-run lineage. Manage composes persisted mandate
+health snapshots, monitoring exceptions, proof packs, proof-pack decision timeline events,
+rebalance wave events, internal operations handoffs, outcome-review events, and bounded
+`PM_QUALITY_SCORE_RUN` lineage into a deterministic no-raw-payload timeline. Report, AI, and
+archive publish their own source-event family postures, while Manage records source-family posture
+without reconstructing their events.
+
+The read model now also names `external_order_execution_acknowledgement` as a deferred
+source-event family tied to Core `ExternalOrderExecutionAcknowledgement:v1`. That source product
+is consumed only as fail-closed construction and outcome evidence; portfolio memory does not
+project acknowledgement, fill, settlement, or execution-status events until bank-owned OMS
+acknowledgement ingestion publishes a certified no-raw-payload source-event family.
+
+Why work remains:
+
+RFC-0037's full portfolio-memory ambition still needs broader cross-app event discovery and search,
+richer source-owner construction events, and bank-owned OMS execution/acknowledgement/fill/
+settlement event families. Those cannot be fabricated in Manage from source-product supportability
+posture.
 
 Dependencies before implementation:
 
 1. event identity and retention policy across child RFCs,
-2. RFC-0042 outcome events,
-3. report/archive and AI evidence refs,
-4. Gateway/Workbench timeline/search UX,
-5. access, redaction, and audit policy.
+2. broader cross-app event discovery beyond first-wave family posture,
+3. certified source-owner construction and execution event families,
+4. richer Gateway/Workbench timeline/search UX,
+5. bank-owned OMS acknowledgement, fill, settlement, and reconciliation source-event contracts.
 
 Expected implementation wave:
 
-Treat as a later cross-RFC portfolio-memory RFC or closure slice after RFC-0042/RFC-0043 and
-downstream product surfaces are implemented.
+Continue as small owner-scoped slices. Manage can harden timeline composition, evidence posture,
+and no-raw-payload family declarations; report, AI, archive, Gateway, Workbench, and future OMS
+owners must own their source events and product surfaces.
 
 Promotion proof:
 

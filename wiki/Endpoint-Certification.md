@@ -1930,7 +1930,8 @@ Functional behavior:
   `DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y`, `NO_RAW_PAYLOADS`,
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
 - publishes `source_event_family_posture` for supported manage, report, AI, archive, and PM quality
-  score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS execution,
+  score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS
+  execution and Core `ExternalOrderExecutionAcknowledgement:v1` source-product posture,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1944,10 +1945,13 @@ Non-functional posture:
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
 - Future OMS execution remains roadmap scope and is visible as deferred posture rather than hidden
-  portfolio-memory functionality. Persisted PM operating quality score runs are implemented
-  separately at `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` projects only
-  bounded `PM_QUALITY_SCORE_RUN` lineage for score runs whose source-owned Core PM-book evidence
-  includes the requested portfolio.
+  portfolio-memory functionality. Core `ExternalOrderExecutionAcknowledgement:v1` remains
+  fail-closed supportability evidence for construction and outcome evidence only; portfolio memory
+  does not project acknowledgement, fill, settlement, or execution-status events from it.
+  Persisted PM operating quality score runs are implemented separately at
+  `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` projects only bounded
+  `PM_QUALITY_SCORE_RUN` lineage for score runs whose source-owned Core PM-book evidence includes
+  the requested portfolio.
 
 ```mermaid
 flowchart LR
