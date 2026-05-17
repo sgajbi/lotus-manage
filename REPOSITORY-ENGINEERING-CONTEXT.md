@@ -579,10 +579,15 @@ Current repository posture:
     facts. `BULK_REVIEW_CAMPAIGN` additionally preserves optional
     Manage-owned approval, expiry, access-purpose, source-ref, and actor-entitlement governance
     evidence without discovering source-owned cohorts. Gateway campaign-definition BFF composition
-    is merged through `lotus-gateway` PR #212 for list/get/upsert of Manage-owned campaign
-    definitions without Gateway-local cohort or membership calculation. Workbench PR #184 renders
-    the first-wave active campaign-definition list through Gateway/BFF without browser-side cohort
-    or membership calculation. Persisted campaign discovery is now implemented at
+    is merged through `lotus-gateway` PR #212 for list/get/upsert and extended through PR #231
+    (`ea6c036`, Main Releasability Gate `25989936539`) for bounded lifecycle-events,
+    launch-history, launch-package, durable launch, and campaign-discovery BFF preservation of
+    Manage-owned payloads without Gateway-local cohort, membership, readiness, idempotency,
+    maker-checker, order, or OMS calculation. Workbench PR #184 renders the first-wave active
+    campaign-definition list through Gateway/BFF, and Workbench PR #244 (`31ea877`, Main
+    Releasability Gate `25989936388`) validates Gateway-only READY-gated launch and paged
+    launch-history/empty-state/no-order/no-OMS boundary rendering without browser-side cohort,
+    membership, readiness, or execution calculation. Persisted campaign discovery is now implemented at
     `GET /api/v1/rebalance/waves/campaign-discovery` as a Manage-owned
     `BulkReviewCampaignDiscovery:v1` read model over persisted `BulkReviewCampaignDefinition:v1`
     records; it exposes campaign identity, governance posture, expiry posture, source-ref count,
