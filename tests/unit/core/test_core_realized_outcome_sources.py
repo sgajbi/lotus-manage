@@ -5,6 +5,7 @@ from src.core.outcomes import (
     assemble_realized_outcome_snapshot,
     realized_cashflow_projection_source_from_cashflow_projection_response,
     realized_cash_source_from_cash_balances_response,
+    realized_execution_acknowledgement_source_from_response,
     realized_transaction_source_from_transaction_ledger_response,
     unavailable_core_cashflow_projection_source,
     unavailable_core_cash_source,
@@ -148,6 +149,44 @@ def _cashflow_projection_response() -> dict[str, object]:
         "booked_total_net_cashflow": "0",
         "projected_settlement_total_cashflow": "-25000.00",
         "projection_days": 10,
+    }
+
+
+def _external_order_execution_acknowledgement_response() -> dict[str, object]:
+    return {
+        "product_name": "ExternalOrderExecutionAcknowledgement",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-05-06",
+        "execution_intent_id": "intent_rebalance_001",
+        "order_reference_ids": ["ORD-001", "ORD-002"],
+        "acknowledgements": [],
+        "supportability": {
+            "state": "UNAVAILABLE",
+            "reason": "EXTERNAL_OMS_SOURCE_NOT_INGESTED",
+            "acknowledgement_count": 0,
+            "missing_data_families": ["external_oms_order_execution_acknowledgement"],
+            "blocked_capabilities": [
+                "order_generation",
+                "venue_routing",
+                "best_execution",
+                "oms_acknowledgement",
+                "fills",
+                "settlement",
+                "execution_status_certification",
+                "autonomous_execution_action",
+            ],
+        },
+        "lineage": {
+            "source_system": "external-bank-oms",
+            "integration_status": "not_ingested",
+            "runtime_posture": "fail_closed",
+        },
+        "data_quality_status": "MISSING",
+        "latest_evidence_timestamp": None,
+        "source_batch_fingerprint": "sha256:external-order-execution-acknowledgement",
     }
 
 
@@ -431,6 +470,68 @@ def test_cashflow_projection_source_can_make_rfc42_cash_dimension_ready() -> Non
     assert cash.source_refs[0].source_type == "PORTFOLIO_CASHFLOW_PROJECTION"
 
 
+def test_external_order_execution_acknowledgement_adapter_preserves_fail_closed_posture() -> None:
+    source = realized_execution_acknowledgement_source_from_response(
+        _external_order_execution_acknowledgement_response()
+    )
+
+    assert source.dimension == "EXECUTION_QUALITY"
+    assert source.source_system == "lotus-core"
+    assert source.source_type == "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT"
+    assert source.source_id == (
+        "ExternalOrderExecutionAcknowledgement:v1:PB_SG_GLOBAL_BAL_001:2026-05-06:"
+        "external_order_execution_acknowledgement:execution_intent=intent_rebalance_001:"
+        "orders=ORD-001,ORD-002:sha256:external-order-execution-acknowledgement"
+    )
+    assert str(source.value) == "0"
+    assert source.unit == "acknowledgements"
+    assert source.source_state == "BLOCKED"
+    assert source.quality == "MISSING"
+    assert source.content_hash == "sha256:external-order-execution-acknowledgement"
+    assert source.reason_codes[:6] == [
+        "CORE_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
+        "CORE_PRODUCT_EXTERNALORDEREXECUTIONACKNOWLEDGEMENT",
+        "CORE_PRODUCT_VERSION_V1",
+        "EXECUTION_ACKNOWLEDGEMENT_SUPPORTABILITY_UNAVAILABLE",
+        "EXTERNAL_OMS_SOURCE_NOT_INGESTED",
+        "EXECUTION_ACKNOWLEDGEMENT_COUNT_0",
+    ]
+    assert (
+        "EXECUTION_ACKNOWLEDGEMENT_MISSING_DATA_EXTERNAL_OMS_ORDER_EXECUTION_ACKNOWLEDGEMENT"
+        in source.reason_codes
+    )
+    assert "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_FILLS" in source.reason_codes
+    assert "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_SETTLEMENT" in source.reason_codes
+
+
+def test_external_order_execution_acknowledgement_blocks_rfc42_execution_dimension() -> None:
+    source = realized_execution_acknowledgement_source_from_response(
+        _external_order_execution_acknowledgement_response()
+    )
+
+    snapshot = assemble_realized_outcome_snapshot(
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        review_window=_window(),
+        source_snapshots=[source],
+        required_dimensions=["EXECUTION_QUALITY"],
+    )
+
+    execution_quality = snapshot.realized_values["EXECUTION_QUALITY"]
+    assert snapshot.supportability.state == "BLOCKED"
+    assert execution_quality.value is None
+    assert execution_quality.unit == "acknowledgements"
+    assert execution_quality.supportability.reason_codes[:2] == [
+        "EXECUTION_EVIDENCE_BLOCKED",
+        "CORE_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
+    ]
+    assert execution_quality.source_refs[0].source_type == (
+        "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT"
+    )
+    assert snapshot.source_hashes[source.source_id] == (
+        "sha256:external-order-execution-acknowledgement"
+    )
+
+
 @pytest.mark.parametrize(
     ("measure", "expected_value"),
     [
@@ -527,6 +628,16 @@ def test_cashflow_projection_adapter_rejects_missing_projection_posture() -> Non
 
     with pytest.raises(CoreOutcomeSourceError, match="include_projected"):
         realized_cashflow_projection_source_from_cashflow_projection_response(malformed)
+
+
+def test_external_order_execution_acknowledgement_rejects_invalid_count() -> None:
+    malformed = _external_order_execution_acknowledgement_response()
+    supportability = malformed["supportability"]
+    assert isinstance(supportability, dict)
+    supportability["acknowledgement_count"] = -1
+
+    with pytest.raises(CoreOutcomeSourceError, match="negative"):
+        realized_execution_acknowledgement_source_from_response(malformed)
 
 
 def test_cash_adapter_rejects_local_aggregation_request() -> None:
