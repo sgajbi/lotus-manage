@@ -1844,6 +1844,101 @@ def test_bulk_review_campaign_definition_launch_package_fails_closed_when_not_re
     assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
+def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        launch_request = {
+            "requested_as_of_date": "2026-05-10",
+            "actor_id": "pm_001",
+            "correlation_id": "corr-campaign-definition-launch-001",
+        }
+        first = client.post(f"{route}/launch", json=launch_request)
+        second = client.post(f"{route}/launch", json=launch_request)
+
+    assert put_response.status_code == 200
+    assert first.status_code == 201
+    assert second.status_code == 201
+    first_payload = first.json()
+    second_payload = second.json()
+    assert first_payload["durable"] is True
+    assert first_payload["idempotent_replay"] is False
+    assert second_payload["idempotent_replay"] is True
+    assert second_payload["wave"]["wave_id"] == first_payload["wave"]["wave_id"]
+    wave = first_payload["wave"]
+    assert wave["state"] == "CREATED"
+    assert wave["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
+    assert wave["trigger"]["trigger_id"] == "campaign-holdings-apple-tesla-20260510"
+    assert wave["created_by"] == "pm_001"
+    assert wave["correlation_id"] == "corr-campaign-definition-launch-001"
+    assert wave["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    item = wave["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "BulkReviewCampaignDefinition",
+        "BulkReviewCampaignMembership",
+        "BulkReviewCampaignGovernance",
+    }
+    assert wave_repository.get_wave(wave_id=wave["wave_id"]) is not None
+
+
+def test_bulk_review_campaign_definition_launch_fails_closed_when_readiness_blocked() -> None:
+    wave_repository = InMemoryDpmWaveRepository()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    expired_request = _bulk_review_campaign_definition_request()
+    governance = dict(expired_request["governance"])
+    governance["expires_on"] = "2026-05-09"
+    expired_request["governance"] = governance
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        wave_repository,
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=expired_request)
+        blocked = client.post(
+            f"{route}/launch",
+            json={
+                "requested_as_of_date": "2026-05-10",
+                "actor_id": "pm_999",
+            },
+        )
+        missing = client.post(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/versions/2026.05/launch",
+            json={
+                "requested_as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+            },
+        )
+
+    assert put_response.status_code == 200
+    assert blocked.status_code == 422
+    blocked_detail = blocked.json()["detail"]
+    assert blocked_detail["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED"
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in blocked_detail["reason_codes"]
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in blocked_detail["reason_codes"]
+    assert blocked_detail["readiness"]["preview_create_allowed"] is False
+    assert wave_repository.list_waves() == []
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+
+
 def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 

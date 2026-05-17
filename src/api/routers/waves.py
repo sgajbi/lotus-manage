@@ -364,6 +364,24 @@ class DpmBulkReviewCampaignDefinitionSupersessionRequest(BaseModel):
     correlation_id: str = Field(examples=["corr-campaign-definition-supersede-001"])
 
 
+class DpmBulkReviewCampaignDefinitionLaunchRequest(BaseModel):
+    requested_as_of_date: str = Field(
+        description="ISO date used for the durable campaign wave.",
+        examples=["2026-05-10"],
+    )
+    actor_id: str = Field(
+        description="Human or service actor launching the persisted campaign definition.",
+        examples=["pm_001"],
+    )
+    correlation_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional correlation id for the durable wave. When omitted, Manage derives the same "
+            "deterministic correlation id used by the launch package."
+        ),
+    )
+
+
 class DpmBulkReviewCampaignDefinitionPage(BaseModel):
     items: list[DpmBulkReviewCampaignDefinition]
     limit: int
@@ -2071,6 +2089,91 @@ def get_bulk_review_campaign_definition_launch_package(
         actor_id=actor_id,
         correlation_id=correlation_id,
     )
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch",
+    response_model=DpmWaveResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Launch bulk-review campaign definition",
+    description=(
+        "Creates a durable `BULK_REVIEW_CAMPAIGN` wave from one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1` only when its launch package is ready. The endpoint "
+        "uses the persisted source-backed candidate set and deterministic launch idempotency key; "
+        "it does not discover the global portfolio universe, recalculate membership, run "
+        "maker-checker workflow, approve trades, route orders, or claim OMS execution."
+    ),
+)
+def launch_bulk_review_campaign_definition(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionLaunchRequest,
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmWaveResponse:
+    definition = campaign_definition_repository.get_definition(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    if definition is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
+                "message": "Bulk-review campaign definition was not found.",
+            },
+        )
+    launch_package = build_bulk_review_campaign_definition_launch_package(
+        definition=definition,
+        requested_as_of_date=request.requested_as_of_date,
+        actor_id=request.actor_id,
+        correlation_id=request.correlation_id,
+    )
+    if (
+        launch_package.launch_state != "READY"
+        or not launch_package.readiness.preview_create_allowed
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={
+                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED",
+                "message": "Bulk-review campaign definition is not ready for durable launch.",
+                "reason_codes": launch_package.reason_codes,
+                "readiness": launch_package.readiness.model_dump(mode="json"),
+            },
+        )
+    wave_request = DpmWavePreviewRequest.model_validate(
+        launch_package.create_request.model_dump(mode="json")
+    )
+    try:
+        portfolios = _portfolio_inputs_for_request(
+            request=wave_request,
+            correlation_id=launch_package.correlation_id,
+            advise_authority_client=None,
+            risk_authority_client=None,
+            campaign_definition_repository=campaign_definition_repository,
+        )
+        wave, replay = wave_service.create_wave(
+            trigger_type=wave_request.trigger_type,
+            trigger_id=wave_request.trigger_id,
+            rationale=wave_request.rationale,
+            as_of_date=wave_request.as_of_date,
+            actor_id=wave_request.actor_id,
+            correlation_id=launch_package.correlation_id,
+            portfolios=portfolios,
+            idempotency_key=launch_package.create_headers["Idempotency-Key"],
+            mandate_repository=mandate_repository,
+            wave_repository=wave_repository,
+        )
+    except wave_service.DpmWaveValidationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    return _wave_response(wave=wave, durable=True, idempotent_replay=replay)
 
 
 def _parse_optional_campaign_discovery_date(
