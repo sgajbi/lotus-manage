@@ -1330,11 +1330,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, and AI-owned support-only PM quality summary pack are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality product realization are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
-        "First bounded policy administration, score-run preview, immutable create/read/list score-run lifecycle, optional source-owned PM-book materialization, bank approval evidence, fairness-review evidence, expiry controls, actor entitlement checks, bank-defined peer-group/lookback-window scope materialization, bounded source-segment fairness-analysis preview, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, and AI-owned support-only PM quality summary are implemented"
+        "Completed for the bounded bank-buyable support claim: policy administration, score-run preview, immutable create/read/list score-run lifecycle"
         in work_to_be_done
     )
     assert "2026-05-16 fairness-analysis lifecycle addendum" in work_to_be_done
@@ -1352,6 +1352,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`a4c9db9`" in work_to_be_done
     assert "`lotus-ai` PR #70 (`1951f62`, wiki `038a1a1`)" in work_to_be_done
     assert "`pm_quality_summary.pack@v1`" in work_to_be_done
+    assert "`lotus-workbench` PR #245 (`2af063b`, wiki `2ba368d`" in work_to_be_done
+    assert "Main Releasability Gate `25991445845`" in work_to_be_done
     assert "RFC42 Gold-Pass Audit And RFC Reintegration - 2026-05-09" in work_to_be_done
     assert "RFC42-WTBD-001 through RFC42-WTBD-005 are completed" in work_to_be_done
     assert "stale RFC wording that said Gateway/Workbench product proof remained unclaimed" in (
@@ -1360,9 +1362,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 43 |" in work_to_be_done
+    assert "| Done on merged/published truth | 44 |" in work_to_be_done
     assert "| Partial / in progress | 4 |" in work_to_be_done
-    assert "| Remaining / open | 12 |" in work_to_be_done
+    assert "| Remaining / open | 11 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
@@ -1943,7 +1945,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 43 done on merged/published truth, 4 partial" in (supported_features)
+    assert "59 WTBD items: 44 done on merged/published truth, 4 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

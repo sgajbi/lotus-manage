@@ -510,9 +510,14 @@ Current repository posture:
     client-contact, execution, or OMS decisions.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
-    `a4c9db9`, preserving Manage policy and score-run truth without Gateway-local scoring,
-    ranking, policy administration, HR, compensation, conduct, approval, client-contact,
-    execution, or OMS claims. Workbench PM-quality UI remains future owner scope.
+    `a4c9db9`, preserving Manage policy, score-run, fairness-analysis, and PM-quality summary
+    truth without Gateway-local scoring, ranking, policy administration, HR, compensation,
+    conduct, approval, client-contact, execution, or OMS claims. `lotus-workbench` PR #245
+    (`2af063b`, wiki `2ba368d`, Main Releasability Gate `25991445845`) completes the bounded
+    Gateway-only PM operating quality surface for policy/score-run evidence, fairness-analysis
+    preview/create/list/detail, and review-gated PM-quality support-summary invocation without
+    browser-side score, segment-average, fairness-spread, protected-class, ranking, HR, conduct,
+    client-contact, trade, order, OMS, or execution logic.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,
@@ -562,7 +567,9 @@ Current repository posture:
     bounded portfolio-memory context, forbidden-action/output guardrails, review-required
     support-only output, and no score calculation, PM ranking, HR, compensation, conduct,
     client-contact, trade-approval, execution, OMS, or invented-source-fact claim. Gateway and
-    Workbench PM-quality summary invocation remain future owner scope.
+    Workbench PM-quality summary invocation are bounded product-realized through Gateway PR #213
+    and Workbench PR #245; persisted summary history and review-action workflow remain future
+    product depth, not part of the current support claim.
     CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through
