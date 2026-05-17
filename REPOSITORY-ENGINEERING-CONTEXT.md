@@ -607,6 +607,11 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
     as a bounded operator package with readiness, preview/create request drafts, idempotency
     header guidance, correlation id guidance, and explicit no-OMS/no-maker-checker boundaries.
+    Manage can now also launch a durable wave from a ready persisted definition through
+    `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`,
+    reusing launch-package readiness and deterministic launch idempotency while failing closed
+    before persistence when lifecycle, expiry, governance, candidate, or actor entitlement posture
+    is not ready.
     Broader campaign workflow surfaces beyond these bounded lifecycle controls, wave
     risk/performance analytics posture, and external OMS execution remain unpromoted until owning
     implementations are live-proven. Manage consumes `lotus-core`
