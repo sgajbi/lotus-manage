@@ -1845,7 +1845,10 @@ Functional behavior:
   refreshed state and source refs.
 - Supportability returns bounded state, reason-code posture, source-owner families, source-ref
   count, dimension-state counts, freshness-state counts, and remediation routes without raw
-  upstream payloads.
+  upstream payloads. It also returns structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY`
+  evidence with blocked capabilities, required future execution/OMS owner, required
+  `ExternalOrderExecutionAcknowledgement:v1` source product, execution-quality dimension posture,
+  acknowledgement-count posture, and deterministic content hash.
 - Report input returns deterministic report-ready facts, source hashes, supportability, dimension
   outcomes, and a canonical handoff hash without rendering reports or archive records.
 - AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
@@ -1868,6 +1871,9 @@ Non-functional posture:
 - Supportability inspection logs use the bounded `outcome_review.supportability.inspected` event
   with state/count fields only; no portfolio, actor, review, source-payload, proof-pack, wave,
   request-hash, idempotency, or raw upstream identifiers are emitted.
+- External execution remains fail-closed. The supportability boundary is diagnostic evidence only;
+  it does not certify best execution, route orders, ingest OMS acknowledgements, confirm fills,
+  project settlement, or reconcile execution status.
 - OpenAPI tests pin path presence, grouping, request/response body presence, and What/When/How
   guidance for preview, create, search, lookup, refresh, supportability, report input, AI evidence
   input, run lookup, and wave lookup.

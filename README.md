@@ -437,8 +437,9 @@ Operationally important truths:
    treasury instructions, or acknowledge OMS execution.
 9. source-owned external OMS acknowledgement posture is consumed as fail-closed evidence from
    `lotus-core` `ExternalOrderExecutionAcknowledgement:v1`; Manage records blocked diagnostics
-   only and does not generate orders, route venues, certify best execution, ingest OMS
-   acknowledgements, confirm fills, or settle trades.
+   and exposes structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` supportability evidence only.
+   Manage does not generate orders, route venues, certify best execution, ingest OMS
+   acknowledgements, confirm fills, project settlement, or reconcile execution status.
 
 ## Documentation Map
 

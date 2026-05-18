@@ -2048,6 +2048,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "realized_execution_acknowledgement_source_from_response" in work_to_be_done
     assert "blocked `EXECUTION_QUALITY` source snapshot" in work_to_be_done
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in work_to_be_done
+    assert "2026-05-18 outcome supportability boundary result" in work_to_be_done
+    assert "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY" in work_to_be_done
+    assert "acknowledgement-count posture" in work_to_be_done
     assert "without promoting OMS acknowledgement, fill, settlement" in work_to_be_done
     assert "explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred" in (
         work_to_be_done

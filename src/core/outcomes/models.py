@@ -115,6 +115,68 @@ class DpmOutcomeSupportability(BaseModel):
     )
 
 
+class DpmOutcomeExternalExecutionBoundaryEvidence(BaseModel):
+    """Fail-closed external execution boundary for outcome-review consumers."""
+
+    boundary_id: Literal["DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"] = Field(
+        default="DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY",
+        description="Stable unsupported external execution boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for external execution evidence.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported outcome-review boundary evidence.",
+    )
+    source_product_name: Literal["DpmPostTradeOutcomeReview"] = Field(
+        default="DpmPostTradeOutcomeReview",
+        description="Manage-owned source product that consumes but does not own execution truth.",
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    source_product_present: bool = Field(
+        description=(
+            "Whether source lineage includes Core ExternalOrderExecutionAcknowledgement posture."
+        ),
+        examples=[True],
+    )
+    execution_quality_dimension_state: OutcomeDimensionState | None = Field(
+        default=None,
+        description="Current outcome-review EXECUTION_QUALITY dimension state when present.",
+        examples=["BLOCKED"],
+    )
+    execution_acknowledgement_count_projected: int | None = Field(
+        default=None,
+        description=(
+            "Acknowledgement-count posture preserved from source reason codes when available; "
+            "zero means no certified acknowledgements are projected."
+        ),
+        examples=[0],
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the external execution outcome boundary.",
+        examples=["OUTCOME_EXTERNAL_EXECUTION_EVIDENCE_NOT_CERTIFIED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="External execution capabilities blocked from outcome-review promotion.",
+        examples=[["best_execution", "oms_acknowledgement", "fills", "settlement"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before execution evidence can be promoted.",
+        examples=["future execution/OMS owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume execution acknowledgement truth.",
+        examples=["ExternalOrderExecutionAcknowledgement:v1"],
+    )
+    summary: str = Field(description="Operator-facing no-claim outcome boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmOutcomeMetricValue(BaseModel):
     """Expected or realized value supplied by a source owner."""
 
