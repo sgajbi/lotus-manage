@@ -538,3 +538,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   behavior-preserving slices only when focused tests pin the source-owner boundary.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-008: Source-cohort routes repeated source-ref serialization
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_source_refs.py`
+- Finding: source-cohort route helpers repeated `DpmWaveSourceRef` JSON serialization in tactical
+  house-view, risk-event, bulk-review campaign, and campaign-governance payload assembly. The
+  duplication was mechanically simple but easy to drift from the source-reference helper boundary
+  added for lineage dictionary construction.
+- Action: added `source_refs_payload()` to `src/api/routers/wave_source_refs.py` and reused it for
+  source-ref list serialization across source-cohort payload assembly. Focused tests pin JSON-mode
+  serialization and preserve the existing route-level regression coverage.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_source_refs.py`; full validation is
+  recorded in the PR evidence for this slice.
+- Follow-up: source-cohort payload preparation can continue moving out of `waves.py` once the
+  request DTO ownership boundary is split cleanly enough to avoid router-helper cycles.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

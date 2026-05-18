@@ -64,6 +64,7 @@ from src.api.routers.wave_source_refs import (
     risk_event_affected_portfolio_ref,
     risk_event_cohort_ref,
     risk_event_ref,
+    source_refs_payload,
     tactical_house_view_affected_portfolio_ref,
     tactical_house_view_cohort_ref,
     tactical_house_view_ref,
@@ -998,7 +999,7 @@ def _resolve_tactical_house_view_portfolios(
                     else None
                 ),
                 "alignment_signal": candidate.alignment_signal,
-                "source_refs": [ref.model_dump(mode="json") for ref in candidate.source_refs],
+                "source_refs": source_refs_payload(candidate.source_refs),
                 "reason_codes": ["TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_BACKED"],
             }
         )
@@ -1012,7 +1013,7 @@ def _resolve_tactical_house_view_portfolios(
                 "as_of_date": as_of_date.isoformat(),
                 "target_action": tactical_view.target_action,
                 "rationale": tactical_view.rationale,
-                "source_refs": [ref.model_dump(mode="json") for ref in tactical_view.source_refs],
+                "source_refs": source_refs_payload(tactical_view.source_refs),
                 "reason_codes": ["TACTICAL_HOUSE_VIEW_BANK_AUTHORED"],
             },
             candidate_portfolios=candidate_payloads,
@@ -1207,7 +1208,7 @@ def _resolve_risk_event_portfolios(
                         supportability_state=supportability_state,
                         content_hash=cohort.request_fingerprint,
                     ),
-                    *[ref.model_dump(mode="json") for ref in candidate_refs],
+                    *source_refs_payload(candidate_refs),
                 ],
             }
         )
@@ -1289,7 +1290,7 @@ def _resolve_bulk_review_campaign_portfolios(
                     campaign_as_of_date=campaign_as_of_date,
                     membership_hash=membership_hash,
                 ),
-                *[ref.model_dump(mode="json") for ref in candidate.source_refs],
+                *source_refs_payload(candidate.source_refs),
             ],
             "diagnostics": {
                 "source_owner": "lotus-manage",
@@ -1365,7 +1366,7 @@ def _resolve_bulk_review_campaign_governance(
         actor_id=request.actor_id,
         governance=governance.model_dump(mode="json"),
     )
-    governance_refs = [
+    governance_refs: list[dict[str, object]] = [
         {
             "source_system": "lotus-manage",
             "source_type": "BulkReviewCampaignGovernance",
@@ -1374,7 +1375,7 @@ def _resolve_bulk_review_campaign_governance(
             "supportability_state": "READY",
             "content_hash": governance_hash,
         },
-        *[ref.model_dump(mode="json") for ref in governance.source_refs],
+        *source_refs_payload(governance.source_refs),
     ]
     return (
         {

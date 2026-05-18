@@ -1,6 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import date
+
+from src.core.waves import DpmWaveSourceRef
+
+
+def source_refs_payload(refs: Iterable[DpmWaveSourceRef]) -> list[dict[str, object]]:
+    return [ref.model_dump(mode="json") for ref in refs]
 
 
 def source_ref_payload(
