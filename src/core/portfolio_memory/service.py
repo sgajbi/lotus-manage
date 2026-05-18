@@ -22,6 +22,7 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
+    DpmPortfolioMemoryExternalExecutionBoundaryEvidence,
     DpmPortfolioMemorySourceEventFamilyPosture,
     DpmPortfolioMemorySourceRef,
     PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
@@ -135,6 +136,7 @@ def build_portfolio_memory(
         reason_codes=reason_codes,
         governance_policy=_portfolio_memory_governance_policy(),
         source_event_family_posture=_source_event_family_posture(),
+        external_execution_boundary=_external_execution_boundary_evidence(),
         events=events,
         content_hash="",
         generated_at=generated_at.isoformat(),
@@ -153,6 +155,38 @@ def _portfolio_memory_governance_policy() -> dict[str, str]:
         "access_classification": PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
         "source_authority_policy": PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY,
     }
+
+
+def _external_execution_boundary_evidence() -> DpmPortfolioMemoryExternalExecutionBoundaryEvidence:
+    payload = {
+        "boundary_id": "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmPortfolioMemory",
+        "source_product_version": "v1",
+        "external_execution_events_projected": False,
+        "external_acknowledgement_events_projected": False,
+        "reason_code": "PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_EVENTS_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "order_generation",
+            "venue_routing",
+            "best_execution",
+            "oms_acknowledgement",
+            "fills",
+            "settlement",
+            "execution_status_projection",
+        ],
+        "required_owner": "future execution/OMS owner",
+        "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "summary": (
+            "Portfolio memory preserves source-backed Manage, report, AI, archive, and PM-quality "
+            "lineage only; external execution, OMS acknowledgement, fill, settlement, and "
+            "execution-status events remain blocked until a certified bank-owned OMS source-event "
+            "family is published."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmPortfolioMemoryExternalExecutionBoundaryEvidence.model_validate(payload)
 
 
 def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPosture]:

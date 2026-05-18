@@ -130,7 +130,12 @@ The portfolio-memory API now publishes source-event family posture for supported
 AI, and archive families, explicitly marks OMS execution as deferred, and points PM scoring to the
 separate Manage-owned PM operating quality score-run lifecycle product. Persisted PM quality score
 runs with source-owned Core PM-book membership now project bounded portfolio-memory lineage events
-for matching portfolios without copying raw score payloads or creating portfolio-level rankings.
+for matching portfolios without copying raw score payloads or creating portfolio-level rankings. The
+portfolio-memory response also carries structured
+`DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked OMS capabilities, the
+required future execution/OMS owner, and `ExternalOrderExecutionAcknowledgement:v1` as the required
+future source product before acknowledgement, fill, settlement, or execution-status events can be
+projected.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,

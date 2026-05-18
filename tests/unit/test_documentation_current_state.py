@@ -1363,6 +1363,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "Core `ExternalOrderExecutionAcknowledgement:v1` source-product posture" in (
         supported_features
     )
+    assert "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY" in supported_features
+    assert "blocked OMS capabilities" in supported_features
     assert (
         "does not project acknowledgement, fill, settlement, or execution-status events"
         in supported_features
@@ -1595,6 +1597,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`CONSTRUCTION_ALTERNATIVE_SET`" in work_to_be_done
     assert "`CONSTRUCTION_ALTERNATIVE_SELECTED`" in work_to_be_done
     assert "without copying raw request payloads, raw selection payloads" in work_to_be_done
+    assert "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY" in work_to_be_done
+    assert "required future execution/OMS owner" in work_to_be_done
     assert "event identity, retention, redaction, access, and audit policy are implemented" in (
         work_to_be_done
     )
