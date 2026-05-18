@@ -9,8 +9,34 @@ from src.api.routers.wave_source_refs import (
     pm_book_member_ref,
     pm_book_membership_ref,
     risk_event_affected_portfolio_ref,
+    source_refs_payload,
     tactical_house_view_affected_portfolio_ref,
 )
+from src.core.waves import DpmWaveSourceRef
+
+
+def test_source_refs_payload_serializes_refs_with_json_mode() -> None:
+    refs = [
+        DpmWaveSourceRef(
+            source_system="lotus-core",
+            source_type="PortfolioManagerBookMembership",
+            source_id="pm-book-snapshot-001",
+            source_version="v1",
+            supportability_state="READY",
+            content_hash="sha256:pm-book",
+        )
+    ]
+
+    assert source_refs_payload(refs) == [
+        {
+            "source_system": "lotus-core",
+            "source_type": "PortfolioManagerBookMembership",
+            "source_id": "pm-book-snapshot-001",
+            "source_version": "v1",
+            "supportability_state": "READY",
+            "content_hash": "sha256:pm-book",
+        }
+    ]
 
 
 def test_pm_book_membership_ref_preserves_source_batch_lineage() -> None:
