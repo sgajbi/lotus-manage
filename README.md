@@ -425,9 +425,11 @@ Operationally important truths:
 6. proof packs preserve source-owned `RegimeScenarioPackEvaluation:v1` evidence when scenario
    context is carried by the chosen construction alternative or supplied directly at generation
    time as `regime_stress_context`. Selected-alternative evidence takes precedence. Manage records
-   scenario pack id, worst-case loss, policy threshold, supportability, lineage, and reason codes;
-   it does not generate scenario methodology, contribution rows, CIO approval evidence,
-   effective-period exceptions, or portfolio/mandate applicability evidence locally.
+   scenario pack id, worst-case loss, policy threshold, supportability, lineage, reason codes, and
+   bounded `scenario_evidence_posture` for missing, stale/effective-period-exception,
+   inapplicable, or contribution-partial source evidence; it does not generate scenario
+   methodology, contribution rows, CIO approval evidence, effective-period exceptions, or
+   portfolio/mandate applicability evidence locally.
 7. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.

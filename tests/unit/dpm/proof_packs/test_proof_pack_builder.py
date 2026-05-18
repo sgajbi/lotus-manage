@@ -34,6 +34,7 @@ from src.core.proof_packs import builder as builder_module
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
     source_analytics_for_alternative,
+    source_analytics_for_context,
 )
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
@@ -733,6 +734,12 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
     assert scenario.facts["approval_evidence_projected"] is True
     assert scenario.facts["effective_period_projected"] is True
     assert scenario.facts["applicability_evidence_projected"] is True
+    assert scenario.facts["scenario_evidence_posture"] == {
+        "cio_approval": "PROJECTED",
+        "effective_period": "PROJECTED",
+        "applicability": "PROJECTED",
+        "source_reason_posture": "READY",
+    }
     assert scenario.metrics["worst_case_loss_pct"] == "0.1800"
     assert scenario.metrics["maximum_allowed_loss_pct"] == "0.1200"
     assert scenario.reason_codes == ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"]
@@ -788,6 +795,12 @@ def test_selected_alternative_proof_pack_accepts_direct_regime_scenario_pack_sou
     assert scenario.facts["approval_evidence_projected"] is True
     assert scenario.facts["effective_period_projected"] is True
     assert scenario.facts["applicability_evidence_projected"] is True
+    assert scenario.facts["scenario_evidence_posture"] == {
+        "cio_approval": "PROJECTED",
+        "effective_period": "PROJECTED",
+        "applicability": "PROJECTED",
+        "source_reason_posture": "READY",
+    }
     assert scenario.metrics["worst_case_loss_pct"] == "0.0700"
     assert scenario.metrics["maximum_allowed_loss_pct"] == "0.1200"
     assert scenario.reason_codes == ["REGIME_SCENARIO_WITHIN_POLICY"]
@@ -888,7 +901,100 @@ def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
     assert sustainability.state == "PENDING_REVIEW"
     assert sustainability.reason_codes == ["DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED"]
     assert regime_stress is not None
-    assert regime_stress.reason_codes == ["DPM_REGIME_STRESS_CONTEXT_DEGRADED"]
+    assert regime_stress.reason_codes == [
+        "DPM_REGIME_STRESS_CONTEXT_DEGRADED",
+        "REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING",
+    ]
+
+
+def test_regime_scenario_pack_missing_governance_evidence_is_pending_review() -> None:
+    context = AuthoritativeRegimeStressContext(
+        supportability_status="READY",
+        source_system="lotus-risk",
+        scenario_pack_id="CIO_REGIME_2026_Q4",
+        worst_case_loss_pct=Decimal("0.0600"),
+        maximum_allowed_loss_pct=Decimal("0.1200"),
+        reason_codes=["REGIME_SCENARIO_WITHIN_POLICY"],
+    )
+
+    analytics = source_analytics_for_context(
+        source_context=context.model_dump(mode="json"),
+        family="regime_stress",
+    )
+
+    assert analytics is not None
+    assert analytics.state == "PENDING_REVIEW"
+    assert analytics.facts["approval_evidence_projected"] is False
+    assert analytics.facts["effective_period_projected"] is False
+    assert analytics.facts["applicability_evidence_projected"] is False
+    assert analytics.facts["scenario_evidence_posture"] == {
+        "cio_approval": "MISSING",
+        "effective_period": "MISSING",
+        "applicability": "MISSING",
+        "source_reason_posture": "READY",
+    }
+    assert analytics.reason_codes == [
+        "REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_WITHIN_POLICY",
+    ]
+
+
+@pytest.mark.parametrize(
+    ("source_reason_code", "expected_state", "expected_posture", "expected_reason_code"),
+    [
+        (
+            "REGIME_SCENARIO_PACK_STALE",
+            "DEGRADED",
+            "EFFECTIVE_PERIOD_EXCEPTION",
+            "REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION",
+        ),
+        (
+            "REGIME_SCENARIO_PORTFOLIO_INAPPLICABLE",
+            "BLOCKED",
+            "INAPPLICABLE",
+            "REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED",
+        ),
+        (
+            "REGIME_SCENARIO_CONTRIBUTION_PARTIAL",
+            "PENDING_REVIEW",
+            "CONTRIBUTION_PARTIAL",
+            "REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL",
+        ),
+    ],
+)
+def test_regime_scenario_source_reason_codes_drive_section_posture(
+    source_reason_code: str,
+    expected_state: str,
+    expected_posture: str,
+    expected_reason_code: str,
+) -> None:
+    context = AuthoritativeRegimeStressContext(
+        supportability_status="READY",
+        source_system="lotus-risk",
+        scenario_pack_id="CIO_REGIME_2026_Q4",
+        worst_case_loss_pct=Decimal("0.0600"),
+        maximum_allowed_loss_pct=Decimal("0.1200"),
+        cio_approval_ref="CIO-APPROVAL-2026-Q4",
+        effective_from=date(2026, 10, 1),
+        applicable_mandate_ids=["mandate_001"],
+        reason_codes=[source_reason_code],
+    )
+
+    analytics = source_analytics_for_context(
+        source_context=context.model_dump(mode="json"),
+        family="regime_stress",
+    )
+
+    assert analytics is not None
+    assert analytics.state == expected_state
+    assert analytics.facts["scenario_evidence_posture"]["source_reason_posture"] == (
+        expected_posture
+    )
+    assert expected_reason_code in analytics.reason_codes
 
 
 @pytest.mark.parametrize(
