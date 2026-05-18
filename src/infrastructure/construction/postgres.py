@@ -94,6 +94,27 @@ class PostgresConstructionRepository:
             row = connection.execute(query, (idempotency_key,)).fetchone()
         return _alternative_set_from_row(row)
 
+    def list_alternative_sets(
+        self,
+        *,
+        portfolio_id: str,
+        limit: int,
+    ) -> list[ConstructionAlternativeSet]:
+        query = """
+            SELECT payload_json
+            FROM dpm_construction_alternative_sets
+            WHERE portfolio_id = %s
+            ORDER BY created_at DESC, alternative_set_id DESC
+            LIMIT %s
+        """
+        with closing(self._connect()) as connection:
+            rows = connection.execute(query, (portfolio_id, limit)).fetchall()
+        return [
+            alternative_set
+            for row in rows
+            if (alternative_set := _alternative_set_from_row(row)) is not None
+        ]
+
     def save_selection(
         self,
         *,

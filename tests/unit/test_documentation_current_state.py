@@ -1354,7 +1354,20 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         in supported_features
     )
     assert "Gateway command-center composition, Workbench timeline rendering" in supported_features
-    assert "mandate health, monitoring exception, proof-pack" in supported_features
+    assert "mandate health, monitoring exception, construction alternative set generation" in (
+        supported_features
+    )
+    assert "construction alternative set generation, selected-alternative decisions" in (
+        supported_features
+    )
+    assert "`CONSTRUCTION_ALTERNATIVE_SET` and `CONSTRUCTION_ALTERNATIVE_SELECTED`" in (
+        supported_features
+    )
+    assert "without copying raw request/selection payloads" in supported_features
+    assert (
+        "recalculating construction, risk, performance, tax, cash, FX, or execution methodology"
+        in (supported_features)
+    )
     assert "stable event identity plus retention, redaction, access, audit policy" in (
         supported_features
     )
@@ -1562,6 +1575,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "dpm-portfolio-memory-live.png" in work_to_be_done
     assert "MANDATE_HEALTH_SNAPSHOT" in work_to_be_done
     assert "MANDATE_MONITORING_EXCEPTION" in work_to_be_done
+    assert "persisted construction alternative set and selected-alternative lineage" in (
+        work_to_be_done
+    )
+    assert "`CONSTRUCTION_ALTERNATIVE_SET`" in work_to_be_done
+    assert "`CONSTRUCTION_ALTERNATIVE_SELECTED`" in work_to_be_done
+    assert "without copying raw request payloads, raw selection payloads" in work_to_be_done
     assert "event identity, retention, redaction, access, and audit policy are implemented" in (
         work_to_be_done
     )
@@ -2204,9 +2223,17 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "canonical live validation captured `dpm-portfolio-memory-live.png`" in (
         supported_features
     )
-    assert "persisted mandate health snapshots, monitoring exceptions, proof packs" in (
+    assert "construction alternative set generation, selected-alternative decisions" in (
         supported_features
     )
+    assert "`CONSTRUCTION_ALTERNATIVE_SET` and `CONSTRUCTION_ALTERNATIVE_SELECTED`" in (
+        supported_features
+    )
+    assert "without copying raw request/selection payloads" in supported_features
+    assert (
+        "persisted mandate health snapshots, monitoring exceptions, RFC-0039 construction "
+        "alternative set generation"
+    ) in supported_features
     assert (
         "Workbench proof-pack review UX is implementation-backed through `lotus-workbench` PR #156"
         in (supported_features)

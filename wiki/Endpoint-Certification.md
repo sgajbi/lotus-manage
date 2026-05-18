@@ -1914,11 +1914,11 @@ Purpose:
 
 RFC40-WTBD-010 manage-owned backend foundation for source-backed portfolio memory. The endpoint
 returns one deterministic, hashable portfolio timeline across persisted mandate health snapshots,
-monitoring exceptions, proof packs, proof-pack-local decision timeline events, RFC-0041 rebalance
-wave events, internal operations handoff refs, and RFC-0042 outcome-review events. It is an
-event-lineage read model for PM, operations, audit, Gateway, Workbench, and future report/AI
-consumers; it is not a risk/performance, execution, tax, cash, FX, or order-routing calculation
-surface.
+monitoring exceptions, RFC-0039 construction alternative set generation, selected-alternative
+decisions, proof packs, proof-pack-local decision timeline events, RFC-0041 rebalance wave events,
+internal operations handoff refs, and RFC-0042 outcome-review events. It is an event-lineage read
+model for PM, operations, audit, Gateway, Workbench, and future report/AI consumers; it is not a
+risk/performance, execution, tax, cash, FX, construction, or order-routing calculation surface.
 
 Functional behavior:
 
@@ -1926,12 +1926,15 @@ Functional behavior:
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
   artifact refs, content hashes, stable event identity, and bounded metadata,
+- includes persisted construction alternative set and selected-alternative decision events without
+  copying raw construction request or selection payloads,
 - publishes aggregate and event-level retention, redaction, access, and audit policy:
   `DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y`, `NO_RAW_PAYLOADS`,
   `CLIENT_CONFIDENTIAL_INTERNAL`, and `AUDIT_READ_AND_EXPORT`,
-- publishes `source_event_family_posture` for supported manage, report, AI, archive, and PM quality
-  score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for external OMS
-  execution and Core `ExternalOrderExecutionAcknowledgement:v1` source-product posture,
+- publishes `source_event_family_posture` for supported manage construction, report, AI, archive,
+  and PM quality score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for
+  external OMS execution and Core `ExternalOrderExecutionAcknowledgement:v1` source-product
+  posture,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1942,6 +1945,8 @@ Non-functional posture:
 - Read-only and side-effect free.
 - Uses bounded `limit` validation to protect response size.
 - Does not expose raw upstream payloads.
+- Does not recalculate construction, risk, performance, tax, cash, FX, or execution methodology
+  from construction alternative events.
 - Does not claim external execution; wave handoff nodes preserve `external_execution_claimed=false`
   when present.
 - Future OMS execution remains roadmap scope and is visible as deferred posture rather than hidden
@@ -1957,6 +1962,7 @@ Non-functional posture:
 flowchart LR
     Proof[Proof packs] --> Memory[Portfolio memory API]
     Mandates[Mandate health and exceptions] --> Memory
+    Construction[Construction alternatives] --> Memory
     Timeline[Proof-pack timeline] --> Memory
     Waves[Wave events] --> Memory
     Handoff[Internal handoff refs] --> Memory

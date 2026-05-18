@@ -6,6 +6,7 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
+    get_construction_repository,
     get_mandate_repository,
     get_outcome_review_repository,
     get_pm_quality_score_run_repository,
@@ -13,6 +14,8 @@ from src.api.dependencies import (
     get_wave_repository,
 )
 from src.api.main import app
+from src.core.construction import build_alternative_set, build_do_nothing_baseline
+from src.core.construction.models import ConstructionAlternativeSelection
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -45,11 +48,13 @@ from src.core.waves.models import (
     DpmWaveSourceRef,
     DpmWaveTrigger,
 )
+from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
+from tests.unit.dpm.construction.test_alternative_engine import _ready_rebalance_result
 from tests.unit.dpm.proof_packs.test_proof_pack_repository import _proof_pack
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
@@ -212,6 +217,40 @@ def _pm_quality_score_run() -> DpmPmOperatingQualityScoreRun:
     )
 
 
+def _construction_repository() -> InMemoryConstructionRepository:
+    repository = InMemoryConstructionRepository()
+    result = _ready_rebalance_result()
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_memory_001",
+        portfolio_id=PORTFOLIO_ID,
+        as_of="2026-05-03",
+        alternatives=[build_do_nothing_baseline(result=result)],
+    ).model_copy(
+        update={
+            "request_hash": "sha256:construction-memory",
+            "generated_at": datetime(2026, 5, 3, 9, 30, tzinfo=timezone.utc),
+            "source_supportability_state": "READY",
+        }
+    )
+    repository.save_alternative_set(
+        alternative_set=alternative_set,
+        idempotency_key="idem-construction-memory",
+    )
+    repository.save_selection(
+        selection=ConstructionAlternativeSelection(
+            selection_id="casel_memory_001",
+            alternative_set_id="cas_memory_001",
+            alternative_id="alt_do_nothing_baseline",
+            actor_id="pm_001",
+            reason_code="MINIMIZE_TURNOVER",
+            comment="Keep portfolio stable for review.",
+            correlation_id="corr-construction-memory",
+            selected_at=datetime(2026, 5, 3, 10, 30, tzinfo=timezone.utc),
+        )
+    )
+    return repository
+
+
 def _wave() -> DpmRebalanceWave:
     item = DpmRebalanceWaveItem(
         wave_item_id="dwi_memory_001",
@@ -283,6 +322,7 @@ def _wave() -> DpmRebalanceWave:
 
 def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
 
@@ -292,6 +332,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         wave_repository=wave_repository,
         outcome_review_repository=outcome_repository,
         mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_repository,
         generated_at=datetime(2026, 5, 7, 10, 0, tzinfo=timezone.utc),
     )
@@ -315,6 +356,8 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.event_type_counts["PROOF_PACK_CREATED"] == 1
     assert memory.event_type_counts["MANDATE_HEALTH_SNAPSHOT"] == 1
     assert memory.event_type_counts["MANDATE_MONITORING_EXCEPTION"] == 1
+    assert memory.event_type_counts["CONSTRUCTION_ALTERNATIVE_SET"] == 1
+    assert memory.event_type_counts["CONSTRUCTION_ALTERNATIVE_SELECTED"] == 1
     assert memory.event_type_counts["WAVE_HANDOFF_READY"] == 1
     assert memory.event_type_counts["OUTCOME_REVIEW_CREATED"] == 1
     assert memory.event_type_counts["PM_QUALITY_SCORE_RUN"] == 1
@@ -329,6 +372,15 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     )
     assert family_posture["ai_workflow_pack"].source_system == "lotus-ai"
     assert family_posture["generated_document_archive"].source_system == "lotus-archive"
+    assert family_posture["construction_alternatives"].support_status == "SUPPORTED"
+    assert family_posture["construction_alternatives"].event_types == [
+        "CONSTRUCTION_ALTERNATIVE_SET",
+        "CONSTRUCTION_ALTERNATIVE_SELECTED",
+    ]
+    assert (
+        "without copying raw request payloads"
+        in family_posture["construction_alternatives"].summary
+    )
     assert family_posture["external_oms_execution"].support_status == "DEFERRED_SOURCE_OWNER"
     assert family_posture["external_oms_execution"].event_types == []
     assert (
@@ -379,6 +431,31 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert pm_quality_events[0].metadata["numeric_score_projected"] is False
     assert "score" not in pm_quality_events[0].metadata
     assert pm_quality_events[0].artifact_refs[0].content_hash == "sha256:pmq-score-run-001"
+    construction_events = {
+        event.event_type: event
+        for event in memory.events
+        if event.event_type in {"CONSTRUCTION_ALTERNATIVE_SET", "CONSTRUCTION_ALTERNATIVE_SELECTED"}
+    }
+    assert construction_events["CONSTRUCTION_ALTERNATIVE_SET"].content_hash == (
+        "sha256:construction-memory"
+    )
+    assert construction_events["CONSTRUCTION_ALTERNATIVE_SET"].metadata["alternative_count"] == 1
+    assert (
+        construction_events["CONSTRUCTION_ALTERNATIVE_SET"].metadata[
+            "raw_request_payload_projected"
+        ]
+        is False
+    )
+    assert (
+        construction_events["CONSTRUCTION_ALTERNATIVE_SELECTED"].metadata["comment_projected"]
+        is True
+    )
+    assert (
+        construction_events["CONSTRUCTION_ALTERNATIVE_SELECTED"].metadata[
+            "raw_selection_payload_projected"
+        ]
+        is False
+    )
     assert memory.events == sorted(
         memory.events,
         key=lambda event: (event.event_time, event.event_id),
@@ -401,9 +478,11 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
 
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
+    app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
     app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
@@ -423,11 +502,28 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     )
     assert payload["event_type_counts"]["WAVE_EVENT"] == 1
     assert payload["event_type_counts"]["MANDATE_MONITORING_EXCEPTION"] == 1
+    assert payload["event_type_counts"]["CONSTRUCTION_ALTERNATIVE_SET"] == 1
+    assert payload["event_type_counts"]["CONSTRUCTION_ALTERNATIVE_SELECTED"] == 1
     assert payload["event_type_counts"]["PM_QUALITY_SCORE_RUN"] == 1
     family_posture = {
         posture["family_key"]: posture for posture in payload["source_event_family_posture"]
     }
     assert family_posture["proof_pack_decision_timeline"]["support_status"] == "SUPPORTED"
+    assert family_posture["construction_alternatives"] == {
+        "family_key": "construction_alternatives",
+        "source_system": "lotus-manage",
+        "owner": "lotus-manage construction alternatives product",
+        "support_status": "SUPPORTED",
+        "event_types": ["CONSTRUCTION_ALTERNATIVE_SET", "CONSTRUCTION_ALTERNATIVE_SELECTED"],
+        "route": "/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+        "reason_code": "CONSTRUCTION_ALTERNATIVE_SOURCE_EVENTS_SUPPORTED",
+        "summary": (
+            "Construction alternative set generation and selected-alternative decisions are "
+            "projected from persisted construction repository truth without copying raw "
+            "request payloads or recalculating construction, risk, performance, tax, cash, "
+            "FX, or execution methodology."
+        ),
+    }
     assert family_posture["external_oms_execution"] == {
         "family_key": "external_oms_execution",
         "source_system": "future-oms-owner",

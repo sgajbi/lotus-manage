@@ -183,10 +183,11 @@ Current repository posture:
     optimization from observed booked-fee evidence. RFC40-WTBD-010 now has a manage backend portfolio-memory
     foundation through `/api/v1/rebalance/portfolio-memory/{portfolio_id}` and
     `src/core/portfolio_memory/`: it composes persisted mandate health snapshots, monitoring
-    exceptions, proof packs, proof-pack-local decision timeline events, RFC-0041 wave events,
-    internal handoff refs, and RFC-0042 outcome-review events into a deterministic, source-backed,
-    hashable timeline without reconstructing mandate health, risk, performance, execution, tax,
-    cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
+    exceptions, RFC-0039 construction alternative set generation, selected-alternative decisions,
+    proof packs, proof-pack-local decision timeline events, RFC-0041 wave events, internal handoff
+    refs, and RFC-0042 outcome-review events into a deterministic, source-backed, hashable
+    timeline without reconstructing mandate health, construction, risk, performance, execution,
+    tax, cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
     includes merged and wiki-published issuer active-risk source truth through `lotus-performance`
     PR #165 (`191a405`, wiki `46a9124`) and `lotus-risk` PR #138 (`8ae3e4a`, wiki
     `616a10c`): performance owns benchmark issuer exposure context from lotus-core index-catalog
@@ -683,8 +684,9 @@ Primary areas:
    RFC-0042 outcome-review authority lives in `src/core/outcomes/`; outcome persistence lives in
    `src/infrastructure/outcomes/`; API orchestration lives in
    `src/api/services/outcome_review_service.py` and `src/api/routers/outcome_reviews.py`.
-   RFC-0040/RFC-0041/RFC-0042 portfolio-memory read-model primitives live in
-   `src/core/portfolio_memory/`; API orchestration lives in
+   RFC-0039/RFC-0040/RFC-0041/RFC-0042 portfolio-memory read-model primitives live in
+   `src/core/portfolio_memory/`; construction event listing depends on
+   `src/core/construction/repository.py`; API orchestration lives in
    `src/api/routers/portfolio_memory.py`.
 2. `scripts/`
    OpenAPI, vocabulary, migration, and governance scripts.

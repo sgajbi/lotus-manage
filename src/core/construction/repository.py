@@ -43,6 +43,14 @@ class ConstructionRepository(Protocol):
     ) -> ConstructionAlternativeSet | None:
         """Return the alternative set previously associated with an idempotency key."""
 
+    def list_alternative_sets(
+        self,
+        *,
+        portfolio_id: str,
+        limit: int,
+    ) -> list[ConstructionAlternativeSet]:
+        """Return recent alternative sets for a portfolio, newest first."""
+
     def save_selection(
         self,
         *,
