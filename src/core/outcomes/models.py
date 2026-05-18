@@ -177,6 +177,60 @@ class DpmOutcomeExternalExecutionBoundaryEvidence(BaseModel):
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
 
+class DpmOutcomeClientCommunicationBoundaryEvidence(BaseModel):
+    """Fail-closed client-communication boundary for outcome-review consumers."""
+
+    boundary_id: Literal["DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"] = Field(
+        default="DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY",
+        description="Stable unsupported client-communication boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for client communication evidence.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported outcome-review communication boundary.",
+    )
+    source_product_name: Literal["DpmPostTradeOutcomeReview"] = Field(
+        default="DpmPostTradeOutcomeReview",
+        description=(
+            "Manage-owned source product that may support internal review but does not own "
+            "client-contact truth."
+        ),
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    client_communication_projected: Literal[False] = Field(
+        default=False,
+        description="Outcome-review evidence never projects client communication delivery.",
+    )
+    client_approval_projected: Literal[False] = Field(
+        default=False,
+        description="Outcome-review evidence never projects client approval.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the client communication outcome boundary.",
+        examples=["OUTCOME_CLIENT_COMMUNICATION_NOT_SUPPORTED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Client communication capabilities blocked from outcome-review promotion.",
+        examples=[["client_contact", "message_generation", "delivery_confirmation"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before client communication evidence can be promoted.",
+        examples=["future client-communication owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume client communication truth.",
+        examples=["ClientCommunicationRecord:v1"],
+    )
+    summary: str = Field(description="Operator-facing no-claim client communication summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmOutcomeMetricValue(BaseModel):
     """Expected or realized value supplied by a source owner."""
 

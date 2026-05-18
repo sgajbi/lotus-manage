@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.outcomes.models import (
+    DpmOutcomeClientCommunicationBoundaryEvidence,
     DpmOutcomeExternalExecutionBoundaryEvidence,
     DpmPostTradeOutcomeReview,
 )
@@ -72,6 +73,42 @@ def build_outcome_external_execution_boundary(
     return DpmOutcomeExternalExecutionBoundaryEvidence.model_validate(payload)
 
 
+def build_outcome_client_communication_boundary(
+    review: DpmPostTradeOutcomeReview,
+) -> DpmOutcomeClientCommunicationBoundaryEvidence:
+    """Build fail-closed client communication evidence from persisted review truth."""
+
+    reason_codes = sorted(
+        {
+            reason
+            for result in review.dimension_results
+            for reason in [result.reason_code, *result.supportability.reason_codes]
+        }
+        | set(review.supportability.reason_codes)
+    )
+    payload = {
+        "boundary_id": "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmPostTradeOutcomeReview",
+        "source_product_version": "v1",
+        "client_communication_projected": False,
+        "client_approval_projected": False,
+        "reason_code": "OUTCOME_CLIENT_COMMUNICATION_NOT_SUPPORTED",
+        "blocked_capabilities": _blocked_client_communication_capabilities(reason_codes),
+        "required_owner": "future client-communication owner",
+        "required_source_product": "ClientCommunicationRecord:v1",
+        "summary": (
+            "Outcome review may support internal PM, CIO, compliance, operations, report, and AI "
+            "review workflows, but Manage does not contact clients, generate client-ready "
+            "messages, collect client approval, confirm delivery, or certify client communication "
+            "until a client-communication owner publishes governed source events."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmOutcomeClientCommunicationBoundaryEvidence.model_validate(payload)
+
+
 def _blocked_execution_capabilities(reason_codes: list[str]) -> list[str]:
     capabilities = {
         reason.removeprefix("EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_").lower()
@@ -85,6 +122,23 @@ def _blocked_execution_capabilities(reason_codes: list[str]) -> list[str]:
             "fills",
             "settlement",
             "execution_status_projection",
+        }
+    return sorted(capabilities)
+
+
+def _blocked_client_communication_capabilities(reason_codes: list[str]) -> list[str]:
+    capabilities = {
+        reason.removeprefix("CLIENT_COMMUNICATION_BLOCKED_CAPABILITY_").lower()
+        for reason in reason_codes
+        if reason.startswith("CLIENT_COMMUNICATION_BLOCKED_CAPABILITY_")
+    }
+    if not capabilities:
+        capabilities = {
+            "client_contact",
+            "client_approval",
+            "client_message_generation",
+            "delivery_confirmation",
+            "communication_audit",
         }
     return sorted(capabilities)
 

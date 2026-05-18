@@ -675,7 +675,12 @@ Current repository posture:
     evidence derived from persisted source refs and realized `EXECUTION_QUALITY` posture, including
     blocked capabilities, required future execution/OMS owner, required
     `ExternalOrderExecutionAcknowledgement:v1` source product, acknowledgement-count posture, and
-    deterministic content hash. Portfolio memory separately exposes
+    deterministic content hash. They also expose structured
+    `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence with `client_communication_projected=false`,
+    `client_approval_projected=false`, blocked client contact/message/delivery/audit capabilities,
+    required future client-communication owner, required `ClientCommunicationRecord:v1` source
+    product, and deterministic content hash so downstream report, AI, support, and operations
+    consumers do not infer client contact from outcome-review evidence. Portfolio memory separately exposes
     that Core source product as a deferred source-event family posture only; it does not project
     acknowledgement, fill, settlement, or execution-status events. Live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under

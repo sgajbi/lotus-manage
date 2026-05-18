@@ -15,6 +15,7 @@ from src.core.outcomes.core_sources import (
 )
 from src.core.outcomes.models import (
     DpmExpectedOutcomeSnapshot,
+    DpmOutcomeClientCommunicationBoundaryEvidence,
     DpmOutcomeDimensionInput,
     DpmOutcomeDimensionResult,
     DpmOutcomeEvent,
@@ -41,7 +42,10 @@ from src.core.outcomes.snapshots import (
     assemble_expected_outcome_snapshot,
 )
 from src.core.outcomes.realized_sources import assemble_realized_outcome_snapshot
-from src.core.outcomes.execution_boundary import build_outcome_external_execution_boundary
+from src.core.outcomes.execution_boundary import (
+    build_outcome_client_communication_boundary,
+    build_outcome_external_execution_boundary,
+)
 from src.core.outcomes.performance_sources import (
     PerformanceOutcomeSourceError,
     realized_active_performance_source_from_workspace_summary,
@@ -74,6 +78,7 @@ from src.core.outcomes.handoffs import (
 
 __all__ = [
     "DpmExpectedOutcomeSnapshot",
+    "DpmOutcomeClientCommunicationBoundaryEvidence",
     "DpmExpectedSnapshotAssemblyError",
     "DpmOutcomeAiDimensionEvidence",
     "DpmOutcomeAiEvidenceInput",
@@ -108,6 +113,7 @@ __all__ = [
     "assemble_realized_outcome_snapshot",
     "assert_no_ai_forbidden_fields",
     "build_ai_evidence_input",
+    "build_outcome_client_communication_boundary",
     "build_outcome_external_execution_boundary",
     "build_report_input",
     "compare_outcome_dimension",

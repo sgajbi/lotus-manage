@@ -1851,14 +1851,18 @@ Functional behavior:
   upstream payloads. It also returns structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY`
   evidence with blocked capabilities, required future execution/OMS owner, required
   `ExternalOrderExecutionAcknowledgement:v1` source product, execution-quality dimension posture,
-  acknowledgement-count posture, and deterministic content hash.
+  acknowledgement-count posture, and deterministic content hash, plus structured
+  `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence for unsupported client contact,
+  client-message, approval, delivery, and communication-audit truth.
 - Report input returns deterministic report-ready facts, source hashes, supportability, dimension
-  outcomes, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence, and a canonical handoff
-  hash without rendering reports, archive records, or OMS execution claims.
+  outcomes, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
+  `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, and a canonical handoff hash without
+  rendering reports, archive records, client messages, delivery records, or OMS execution claims.
 - AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
-  refs, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence, and a canonical handoff hash
-  without generating prompts, memos, recommendations, approvals, client communications, or
-  execution instructions.
+  refs, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
+  `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, and a canonical handoff hash without
+  generating prompts, memos, recommendations, approvals, client communications, or execution
+  instructions.
 - Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
 
 Non-functional posture:

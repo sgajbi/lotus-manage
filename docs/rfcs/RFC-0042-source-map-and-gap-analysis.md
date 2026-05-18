@@ -214,9 +214,11 @@ Slice 8 evidence is recorded in `docs/rfcs/RFC-0042-report-ai-handoffs-slice8.md
 is report-ready but does not render a report or create an archive record. The AI evidence input is
 bounded, hash-linked, source-ref-backed, and includes explicit forbidden actions for order
 placement, approval, control override, invented evidence, PM scoring, and client contact. Both
-handoffs carry structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence so downstream
-consumers receive the same no-OMS posture as supportability without inferring fills, settlement,
-best execution, or OMS acknowledgement truth.
+handoffs carry structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
+`DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence so downstream consumers receive the same
+no-OMS and no-client-communication posture as supportability without inferring fills, settlement,
+best execution, OMS acknowledgement, client contact, client approval, message delivery, or
+communication-audit truth.
 
 `src/api/routers/outcome_reviews.py` exposes:
 
@@ -315,8 +317,8 @@ can be claimed.
 | Tax lots and realized tax | `lotus-core` or tax source owner | `TAX_OUTCOME` | Explicit transaction-row withholding tax adapter implemented. `lotus-core` also publishes source-owned `ClientTaxProfile:v1`, `ClientTaxRuleSet:v1`, and `PortfolioRealizedTaxSummary:v1` evidence; portfolio-level explicit realized-tax aggregation is source-owned in Core, while tax-loss harvesting suitability, after-tax optimization, jurisdiction-specific recommendations, client-tax approval, tax-reporting certification, and tax advice remain unsupported. | Consume source product; no manage-local tax-lot, client-tax, realized-tax aggregation, or tax-advice authority. |
 | Risk after execution | `lotus-risk` | `RISK_OUTCOME` | RiskMetricsReport selected metric output, drawdown response max-drawdown output, concentration response selected-measure output, rolling metrics selected metric/statistic/window output, and historical attribution selected set/contributor output have implemented adapters. | Consume risk owner output and supportability; otherwise mark not supported/degraded. |
 | Returns series/TWR/MWR/contribution/attribution | `lotus-performance` | `PERFORMANCE_OUTCOME` | Workspace-summary TWR, active return, MWR, contribution, and attribution outputs have implemented adapters; broader benchmark-relative outcome contracts outside source-emitted attribution scalars remain source-owner follow-on work. | Consume performance owner output and supportability; otherwise mark not supported/degraded. |
-| Report artifact | `lotus-report`, `lotus-render`, `lotus-archive` | Reports and archive | Downstream only | Manage emits `DpmOutcomeReportInput` with explicit external execution boundary evidence; no artifact or OMS claim. |
-| AI memo/copilot output | `lotus-ai` | AI assistance | Downstream only | Manage emits `DpmOutcomeAiEvidenceInput` with explicit external execution boundary evidence; no narrative or OMS claim. |
+| Report artifact | `lotus-report`, `lotus-render`, `lotus-archive` | Reports and archive | Downstream only | Manage emits `DpmOutcomeReportInput` with explicit external execution and client communication boundary evidence; no artifact, OMS, or client communication claim. |
+| AI memo/copilot output | `lotus-ai` | AI assistance | Downstream only | Manage emits `DpmOutcomeAiEvidenceInput` with explicit external execution and client communication boundary evidence; no narrative, OMS, or client communication claim. |
 | Product composition | `lotus-gateway` | Product API | Downstream RFC required | Gateway must preserve manage truth and source supportability. |
 | Product surface | `lotus-workbench` | UI/demos | Downstream RFC required | Workbench must consume Gateway/BFF only and prove canonical runtime. |
 
