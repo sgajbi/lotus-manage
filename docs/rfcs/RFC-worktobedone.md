@@ -55,11 +55,15 @@ retained only as evidence index and sequencing control.
 ## Mainline WTBD Control Snapshot
 
 Snapshot basis: the 2026-05-18 clean mainline after `lotus-manage` PR #286 (`6a4e199e31466dd9cf1a3b882072803c364a51e4`) reclassified the external OMS/execution boundary as partial
-and the wiki source was published at commit `3062697`. This update reclassifies RFC39-WTBD-008 as
-partial because external treasury contracts, active fail-closed source postures, and Manage
-consumption are merged while runtime external treasury ingestion remains pending. The current
-classification is 59 total WTBD items: 44 done on merged/published truth, 6 partial or in progress,
-and 9 remaining/open.
+and the wiki source was published at commit `3062697`. Later classification updates reclassified
+RFC39-WTBD-008 as partial because external treasury contracts, active fail-closed source postures,
+and Manage consumption are merged while runtime external treasury ingestion remains pending. This
+update also normalizes RFC37-WTBD-002, RFC37-WTBD-003, and RFC37-WTBD-007 as partial, matching the
+detail rows: bounded first-wave product paths, cross-app product surfaces, and portfolio-memory
+lineage exist, while the full copilot workspace, broader front-office realization, full portfolio
+memory, OMS execution/fill/settlement projection, PM scoring, and remaining source-owner depth
+remain future scope. The current classification is 59 total WTBD items: 44 done on
+merged/published truth, 9 partial or in progress, and 6 remaining/open.
 Earlier source slices include the RFC40-WTBD-009
 selected-alternative regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI
 workflow-pack truth reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the
@@ -97,8 +101,8 @@ methodology, performance benchmark analytics, or unsupported ESG approval.
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
 | Done on merged/published truth | 44 | Implementation-backed items merged to owning `main` branches, validated, and published where wiki truth changed. |
-| Partial / in progress | 6 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
-| Remaining / open | 9 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Partial / in progress | 9 | Items with meaningful implementation-backed progress but known source-owner or downstream gaps. |
+| Remaining / open | 6 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Recently closed in this snapshot:
 
