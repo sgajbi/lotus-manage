@@ -759,6 +759,10 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
     assert "Manage backend implementation is `DONE` for explicit portfolio-list waves" in roadmap
     assert "| Explicit portfolio-list rebalance waves |" in supported_features
     assert "Supported as RFC-0041 `DONE` manage backend authority" in supported_features
+    assert "structured `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence" in supported_features
+    assert "ExternalOrderExecutionAcknowledgement:v1` as the required future source product" in (
+        supported_features
+    )
     assert "PM-book wave discovery is source-backed through lotus-core" in supported_features
     assert "source-owned `PM_BOOK_REVIEW` and `CIO_MODEL_CHANGE` cohorts" in supported_features
     assert (
@@ -856,6 +860,7 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "`lotus-platform` PR #313",
         "`91f933a`",
         "external_execution_claimed=false",
+        "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY",
         "canonical-front-office-qa-20260509-225912.json",
         "wtbd-rfc40-audit-20260509",
     ]
@@ -869,6 +874,8 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "Full front-office command-center product support",
         "bounded `RISK_EVENT` wave preview and durable",
         "Gold-pass assessment for the 2026-05-10 risk-event consumer slice",
+        "2026-05-18 boundary-evidence hardening result",
+        "`ExternalOrderExecutionAcknowledgement:v1` source product",
         "canonical-front-office-qa-20260509-225912.json",
         "dpm-wave-command-center-live.png",
         "external OMS execution",
@@ -884,6 +891,7 @@ def test_rfc0041_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "review-gated wave PM memo",
         "Source-owned risk-event rebalance waves",
         "bounded risk-event wave discovery is source-backed through lotus-risk",
+        "structured `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence",
         "canonical-front-office-qa-20260509-225912.json",
         "external OMS execution is not supported",
     ]

@@ -1716,11 +1716,13 @@ Functional coverage:
 - item-list returns item-level source, selection, proof-pack, and handoff posture for Gateway and
   operations without UI-side recomputation,
 - proof-pack posture returns linked proof-pack refs, degraded proof-pack counts, handoff refs, and
-  the external-execution boundary,
+  structured `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked capabilities, the
+  required future execution/OMS owner, and the required
+  `ExternalOrderExecutionAcknowledgement:v1` source product,
 - report input returns deterministic `DpmWaveReportInput` with wave identity, aggregate metrics,
   supportability, proof-pack posture, item rows, event rows, handoff refs, source refs,
-  redaction policy, wave/content hashes, and `external_execution_claimed=false` for downstream
-  report generation,
+  redaction policy, wave/content hashes, the same structured external-execution boundary evidence,
+  and `external_execution_claimed=false` for downstream report generation,
 - report input fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` if persisted wave handoff
   evidence ever contains an external execution claim; proof-pack posture remains available for
   operator diagnosis, but unsupported OMS truth is not propagated downstream,

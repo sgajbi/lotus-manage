@@ -307,6 +307,51 @@ class DpmWaveHandoffRef(BaseModel):
     )
 
 
+class DpmWaveExternalExecutionBoundaryEvidence(BaseModel):
+    boundary_id: Literal["DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"] = Field(
+        default="DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY",
+        description="Stable unsupported external execution boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for external execution.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported boundary evidence.",
+    )
+    source_product_name: Literal["DpmWaveInternalOperationsHandoff"] = Field(
+        default="DpmWaveInternalOperationsHandoff",
+        description="Manage-owned source product that stops at internal operations handoff.",
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    external_execution_claimed: bool = Field(
+        description="Whether persisted handoff evidence contains an unsafe external execution claim.",
+        examples=[False],
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the external execution boundary.",
+        examples=["NO_EXTERNAL_EXECUTION_OWNER"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Execution capabilities blocked by this boundary evidence.",
+        examples=[["order_generation", "venue_routing", "oms_acknowledgement"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before external execution can be promoted.",
+        examples=["future execution/OMS owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume execution acknowledgement truth.",
+        examples=["ExternalOrderExecutionAcknowledgement:v1"],
+    )
+    summary: str = Field(description="Operator-facing no-claim boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmRebalanceWave(BaseModel):
     wave_id: str = Field(description="Stable rebalance wave identifier.", examples=["dwv_001"])
     wave_version: str = Field(

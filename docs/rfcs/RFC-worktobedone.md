@@ -3756,6 +3756,16 @@ posture for operator diagnosis, but `GET /api/v1/rebalance/waves/{wave_id}/repor
 render, archive, or AI evidence paths. This does not implement OMS integration; it makes the
 unsupported boundary machine-readable, API-documented, and regression-tested.
 
+2026-05-18 boundary-evidence hardening result:
+
+Wave proof-pack posture and `DpmWaveReportInput` now include structured
+`DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence with a deterministic content hash, blocked
+capabilities, required future execution/OMS owner, and required
+`ExternalOrderExecutionAcknowledgement:v1` source product. Valid Manage-owned handoff evidence
+continues to carry `external_execution_claimed=false`; contaminated handoff evidence remains
+diagnosable through proof-pack posture but is still blocked from report-input propagation. This is
+fail-closed evidence only, not execution integration.
+
 Dependencies before implementation:
 
 1. execution/OMS owner and contract,
@@ -3782,7 +3792,7 @@ Boundary-hardening proof:
 
 1. `python -m pytest tests/unit/dpm/api/test_waves_api.py -q`, 64 passed,
 2. OpenAPI regression asserts the report-input `422` unsupported-boundary response and the
-   proof-pack `external_execution_claimed` invariant wording,
+   proof-pack `external_execution_claimed` invariant wording plus structured boundary evidence,
 3. report-input API regression proves an unsafe external-execution claim returns
    `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY`.
 

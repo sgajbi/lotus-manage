@@ -75,6 +75,7 @@ from src.infrastructure.advise_authority import (
     LotusAdviseAuthorityUnavailableError,
 )
 from src.core.waves.models import (
+    DpmWaveExternalExecutionBoundaryEvidence,
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
     DpmWaveHandoffRef,
@@ -795,6 +796,12 @@ class DpmWaveProofPackPostureResponse(BaseModel):
             "external OMS/execution owner contract exists."
         ),
         examples=[False],
+    )
+    external_execution_boundary: DpmWaveExternalExecutionBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-OMS boundary evidence for downstream reports, audit, and "
+            "operator diagnosis."
+        )
     )
 
 

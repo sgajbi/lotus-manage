@@ -23,6 +23,7 @@ from src.core.waves import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
     DpmWaveAlreadyExistsError,
+    DpmWaveExternalExecutionBoundaryEvidence,
     DpmWaveHandoffRef,
     DpmWaveIdempotencyConflictError,
     DpmWaveInvalidTransitionError,
@@ -836,6 +837,9 @@ def proof_pack_posture_for_wave(*, wave: DpmRebalanceWave) -> dict[str, object]:
     degraded_count = sum(
         1 for item in wave.items if item.diagnostics.get("proof_pack_state") == "DEGRADED"
     )
+    external_execution_claimed = any(
+        handoff.external_execution_claimed for handoff in wave.handoff_refs
+    )
     return {
         "wave_id": wave.wave_id,
         "wave_state": wave.state,
@@ -845,10 +849,47 @@ def proof_pack_posture_for_wave(*, wave: DpmRebalanceWave) -> dict[str, object]:
         "degraded_proof_pack_count": degraded_count,
         "proof_pack_refs": proof_pack_refs,
         "handoff_refs": wave.handoff_refs,
-        "external_execution_claimed": any(
-            handoff.external_execution_claimed for handoff in wave.handoff_refs
+        "external_execution_claimed": external_execution_claimed,
+        "external_execution_boundary": _external_execution_boundary(
+            external_execution_claimed=external_execution_claimed
+        ).model_dump(mode="json"),
+    }
+
+
+def _external_execution_boundary(
+    *, external_execution_claimed: bool
+) -> DpmWaveExternalExecutionBoundaryEvidence:
+    payload: dict[str, object] = {
+        "boundary_id": "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmWaveInternalOperationsHandoff",
+        "source_product_version": "v1",
+        "external_execution_claimed": external_execution_claimed,
+        "reason_code": "UNSAFE_EXTERNAL_EXECUTION_CLAIM"
+        if external_execution_claimed
+        else "NO_EXTERNAL_EXECUTION_OWNER",
+        "blocked_capabilities": [
+            "order_generation",
+            "venue_routing",
+            "best_execution",
+            "oms_acknowledgement",
+            "fills",
+            "settlement",
+            "execution_status_certification",
+        ],
+        "required_owner": "future execution/OMS owner",
+        "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "summary": (
+            "Persisted handoff evidence contains an unsafe external execution claim; downstream "
+            "report input must remain blocked."
+            if external_execution_claimed
+            else "Manage wave evidence stops at internal operations handoff until a governed "
+            "execution/OMS owner and certified acknowledgement source product exist."
         ),
     }
+    payload["content_hash"] = _request_hash(payload)
+    return DpmWaveExternalExecutionBoundaryEvidence.model_validate(payload)
 
 
 def _get_wave_or_raise(

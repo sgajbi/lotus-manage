@@ -4433,6 +4433,27 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     proof_payload = proof_pack.json()
     assert proof_payload["ready_proof_pack_count"] == 1
     assert proof_payload["external_execution_claimed"] is False
+    assert (
+        proof_payload["external_execution_boundary"]["boundary_id"]
+        == "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"
+    )
+    assert proof_payload["external_execution_boundary"]["supportability_state"] == "BLOCKED"
+    assert (
+        proof_payload["external_execution_boundary"]["reason_code"] == "NO_EXTERNAL_EXECUTION_OWNER"
+    )
+    assert (
+        proof_payload["external_execution_boundary"]["required_owner"]
+        == "future execution/OMS owner"
+    )
+    assert (
+        proof_payload["external_execution_boundary"]["required_source_product"]
+        == "ExternalOrderExecutionAcknowledgement:v1"
+    )
+    assert (
+        "oms_acknowledgement"
+        in proof_payload["external_execution_boundary"]["blocked_capabilities"]
+    )
+    assert proof_payload["external_execution_boundary"]["content_hash"].startswith("sha256:")
     assert proof_payload["handoff_refs"][0]["handoff_ref_id"] == "dwh_read_001"
 
     assert report_input.status_code == 200
@@ -4447,6 +4468,10 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert report_payload["items"][0]["proof_pack_id"] == "dpp_read_ready"
     assert report_payload["handoff_refs"][0]["handoff_ref_id"] == "dwh_read_001"
     assert report_payload["external_execution_claimed"] is False
+    assert (
+        report_payload["external_execution_boundary"]
+        == proof_payload["external_execution_boundary"]
+    )
     assert report_payload["evidence_ref"]["ref_type"] == "DPM_WAVE_REPORT_INPUT"
     assert report_payload["evidence_ref"]["content_hash"] == report_payload["content_hash"]
     assert report_payload["content_hash"].startswith("sha256:")
@@ -4516,7 +4541,13 @@ def test_wave_report_input_rejects_external_execution_claims() -> None:
         report_input = client.get("/api/v1/rebalance/waves/dwv_external_claim/report-input")
 
     assert proof_pack.status_code == 200
-    assert proof_pack.json()["external_execution_claimed"] is True
+    proof_payload = proof_pack.json()
+    assert proof_payload["external_execution_claimed"] is True
+    assert (
+        proof_payload["external_execution_boundary"]["reason_code"]
+        == "UNSAFE_EXTERNAL_EXECUTION_CLAIM"
+    )
+    assert proof_payload["external_execution_boundary"]["external_execution_claimed"] is True
     assert report_input.status_code == 422
     assert report_input.json()["detail"]["code"] == "DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY"
     assert "cannot propagate external execution claims" in report_input.json()["detail"]["message"]
@@ -4587,4 +4618,8 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     ]
     assert "Always false for valid manage-owned handoff evidence" in external_execution_description
     assert "external OMS/execution owner contract" in external_execution_description
+    boundary_description = proof_pack_schema["properties"]["external_execution_boundary"][
+        "description"
+    ]
+    assert "Structured fail-closed no-OMS boundary evidence" in boundary_description
     assert "excludes portfolio identifiers" in supportability["description"]
