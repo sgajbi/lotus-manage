@@ -547,7 +547,10 @@ Acceptance:
 1. adapter tests cover ready and degraded paths,
 2. source-owner contract tests exist for any upstream change,
 3. manage does not duplicate source-owner calculations,
-4. `EXECUTION_EVIDENCE_BLOCKED` is emitted where execution truth is unavailable.
+4. `EXECUTION_EVIDENCE_BLOCKED` is emitted where execution truth is unavailable, and
+   supportability emits `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` with blocked capabilities,
+   required future execution/OMS owner, required `ExternalOrderExecutionAcknowledgement:v1`,
+   acknowledgement-count posture, and deterministic content hash.
 
 Slice 5 evidence:
 

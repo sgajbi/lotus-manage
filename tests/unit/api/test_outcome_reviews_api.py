@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
@@ -7,6 +9,15 @@ from src.api.dependencies import (
     get_wave_repository,
 )
 from src.api.main import app
+from src.core.outcomes import (
+    DpmOutcomeDimensionInput,
+    DpmOutcomeMetricValue,
+    DpmOutcomeSourceFreshness,
+    DpmOutcomeSourceRef,
+    DpmOutcomeSupportability,
+    DpmOutcomeTolerance,
+    compare_outcome_dimension,
+)
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
@@ -309,5 +320,125 @@ def test_outcome_review_supportability_routes_source_owner_remediation() -> None
             "lotus-risk:refresh-post-trade-risk-source",
             "source-owner:refresh-realized-outcome-source",
         ]
+    finally:
+        app.dependency_overrides.clear()
+
+
+def test_outcome_review_supportability_exposes_external_execution_boundary() -> None:
+    repository = InMemoryDpmOutcomeReviewRepository()
+    base_review = _review()
+    source_ref = DpmOutcomeSourceRef(
+        source_system="lotus-core",
+        source_type="EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT",
+        source_id="ExternalOrderExecutionAcknowledgement:v1:PB_SG_GLOBAL_BAL_001:2026-05-06",
+        source_version="rfc_042_external_order_execution_acknowledgement_v1",
+        content_hash="sha256:external-acknowledgement",
+    )
+    expected = DpmOutcomeMetricValue(
+        value=Decimal("1"),
+        unit="acknowledgements",
+        source_refs=[source_ref],
+        source_freshness=DpmOutcomeSourceFreshness(
+            observed_at="2026-05-06T01:10:00Z",
+            as_of_date="2026-05-06",
+            freshness_state="CURRENT",
+        ),
+        supportability=DpmOutcomeSupportability(
+            state="READY",
+            reason_codes=["EXPECTED_EXECUTION_INTENT_READY"],
+        ),
+    )
+    realized = DpmOutcomeMetricValue(
+        value=Decimal("0"),
+        unit="acknowledgements",
+        source_refs=[source_ref],
+        source_freshness=DpmOutcomeSourceFreshness(
+            observed_at="2026-05-06T01:15:00Z",
+            as_of_date="2026-05-06",
+            freshness_state="CURRENT",
+        ),
+        supportability=DpmOutcomeSupportability(
+            state="BLOCKED",
+            reason_codes=[
+                "CORE_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
+                "EXECUTION_ACKNOWLEDGEMENT_SUPPORTABILITY_UNAVAILABLE",
+                "EXTERNAL_OMS_SOURCE_NOT_INGESTED",
+                "EXECUTION_ACKNOWLEDGEMENT_COUNT_0",
+                "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_BEST_EXECUTION",
+                "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_OMS_ACKNOWLEDGEMENT",
+                "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_FILLS",
+                "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_SETTLEMENT",
+            ],
+        ),
+    )
+    execution_result = compare_outcome_dimension(
+        DpmOutcomeDimensionInput(
+            dimension="EXECUTION_QUALITY",
+            expected=expected,
+            realized=realized,
+            tolerance=DpmOutcomeTolerance(soft=Decimal("0"), hard=Decimal("0")),
+            materiality=Decimal("0"),
+            direction="HIGHER_IS_BETTER",
+        )
+    )
+    review = base_review.model_copy(
+        update={
+            "state": "BLOCKED",
+            "realized_snapshot": base_review.realized_snapshot.model_copy(
+                update={
+                    "realized_values": {
+                        **base_review.realized_snapshot.realized_values,
+                        "EXECUTION_QUALITY": realized,
+                    },
+                    "supportability": DpmOutcomeSupportability(
+                        state="BLOCKED",
+                        reason_codes=["EXECUTION_EVIDENCE_BLOCKED"],
+                    ),
+                    "source_lineage": [*base_review.realized_snapshot.source_lineage, source_ref],
+                    "source_hashes": {
+                        **base_review.realized_snapshot.source_hashes,
+                        "external_acknowledgement": "sha256:external-acknowledgement",
+                    },
+                    "quality_summary": {
+                        **base_review.realized_snapshot.quality_summary,
+                        "MISSING": 1,
+                    },
+                }
+            ),
+            "dimension_results": [*base_review.dimension_results, execution_result],
+            "supportability": DpmOutcomeSupportability(
+                state="BLOCKED",
+                reason_codes=["SOURCE_READY", "EXECUTION_EVIDENCE_BLOCKED"],
+            ),
+            "source_lineage": [*base_review.source_lineage, source_ref],
+            "source_hashes": {
+                **base_review.source_hashes,
+                "external_acknowledgement": "sha256:external-acknowledgement",
+            },
+            "content_hash": "sha256:blocked-execution-review",
+        }
+    )
+    repository.save_outcome_review(review=review, retention_expires_at=None)
+    _override_repositories(repository)
+    try:
+        with TestClient(app) as client:
+            response = client.get("/api/v1/rebalance/outcome-reviews/dor_001/supportability")
+
+        assert response.status_code == 200
+        boundary = response.json()["external_execution_boundary"]
+        assert boundary["boundary_id"] == "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
+        assert boundary["supportability_state"] == "BLOCKED"
+        assert boundary["source_product_present"] is True
+        assert boundary["execution_quality_dimension_state"] == "BLOCKED"
+        assert boundary["execution_acknowledgement_count_projected"] == 0
+        assert boundary["required_owner"] == "future execution/OMS owner"
+        assert boundary["required_source_product"] == "ExternalOrderExecutionAcknowledgement:v1"
+        assert boundary["blocked_capabilities"] == [
+            "best_execution",
+            "fills",
+            "oms_acknowledgement",
+            "settlement",
+        ]
+        assert boundary["content_hash"].startswith("sha256:")
     finally:
         app.dependency_overrides.clear()

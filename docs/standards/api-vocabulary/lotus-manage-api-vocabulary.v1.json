@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-18T00:58:08.810461+00:00",
+  "generatedAt": "2026-05-18T01:14:27.468073+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3441,11 +3441,39 @@
       ]
     },
     {
+      "semanticId": "lotus.execution_acknowledgement_count_projected",
+      "canonicalTerm": "execution_acknowledgement_count_projected",
+      "preferredName": "execution_acknowledgement_count_projected",
+      "description": "Acknowledgement-count posture preserved from source reason codes when available; zero means no certified acknowledgements are projected.",
+      "example": "execution_acknowledgement_count_projected_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.execution_evidence_ref",
       "canonicalTerm": "execution_evidence_ref",
       "preferredName": "execution_evidence_ref",
       "description": "Execution-owner evidence ref when certified evidence exists.",
       "example": "execution_evidence_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.execution_quality_dimension_state",
+      "canonicalTerm": "execution_quality_dimension_state",
+      "preferredName": "execution_quality_dimension_state",
+      "description": "Current outcome-review EXECUTION_QUALITY dimension state when present.",
+      "example": "execution_quality_dimension_state_example",
       "type": "object",
       "locations": [
         "body"
@@ -3780,6 +3808,7 @@
       ],
       "observedTypes": [
         "DpmWaveExternalExecutionBoundaryEvidence",
+        "DpmOutcomeExternalExecutionBoundaryEvidence",
         "DpmPortfolioMemoryExternalExecutionBoundaryEvidence"
       ]
     },
@@ -10693,6 +10722,20 @@
       "observedTypes": [
         "object",
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_product_present",
+      "canonicalTerm": "source_product_present",
+      "preferredName": "source_product_present",
+      "description": "Whether source lineage includes Core ExternalOrderExecutionAcknowledgement posture.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -87246,6 +87289,126 @@
             "type": "array",
             "semanticId": "lotus.remediation_routes",
             "attributeRef": "#/attributeCatalog/lotus.remediation_routes"
+          },
+          {
+            "name": "external_execution_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmOutcomeExternalExecutionBoundaryEvidence",
+            "semanticId": "lotus.external_execution_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.external_execution_boundary"
+          },
+          {
+            "name": "external_execution_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "external_execution_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "external_execution_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "external_execution_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "external_execution_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "external_execution_boundary.source_product_present",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.source_product_present",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_present"
+          },
+          {
+            "name": "external_execution_boundary.execution_quality_dimension_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_quality_dimension_state",
+            "attributeRef": "#/attributeCatalog/lotus.execution_quality_dimension_state"
+          },
+          {
+            "name": "external_execution_boundary.execution_acknowledgement_count_projected",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.execution_acknowledgement_count_projected",
+            "attributeRef": "#/attributeCatalog/lotus.execution_acknowledgement_count_projected"
+          },
+          {
+            "name": "external_execution_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "external_execution_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "external_execution_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "external_execution_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "external_execution_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "external_execution_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       }
