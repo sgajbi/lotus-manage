@@ -394,3 +394,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   to RFC-0036 Slice 4.
 - Status: deliberately retained until Slice 4 review
 - Wiki decision: no wiki source change in Slice 2.
+
+## BACKEND-REVIEW-20260519-001: Wave router mixed response contracts with endpoint orchestration
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, rebalance-wave API response DTOs and response mapper
+- Finding: `src/api/routers/waves.py` had grown past 3,000 lines and combined endpoint routing,
+  request DTOs, response DTOs, source-cohort resolution, workflow orchestration, and HTTP error
+  mapping in one module. This made the wave surface harder to review and increased the risk that
+  reusable response contracts or supportability serialization would drift from endpoint behavior.
+- Action: extracted wave response DTOs and the shared response mapper into
+  `src/api/routers/wave_response_contracts.py`. The router now keeps endpoint wiring and request
+  parsing while response contract models and supportability response assembly live in a dedicated
+  module that can be reused by future wave route splits.
+- Status: hardened
+- Evidence: `python -m ruff check src\api\routers\waves.py src\api\routers\wave_response_contracts.py`
+  during implementation; full validation is recorded in the PR evidence for this slice.
+- Follow-up: continue splitting `waves.py` by bounded route families only after the response-contract
+  boundary stays green in OpenAPI and wave API tests.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature or operator-contract change.
