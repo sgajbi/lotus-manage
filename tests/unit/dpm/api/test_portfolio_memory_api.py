@@ -413,6 +413,19 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     )
     assert "bank-supplied policy" in family_posture["pm_scoring"].summary
     assert "does not copy raw score payloads" in family_posture["pm_scoring"].summary
+    assert memory.external_execution_boundary.boundary_id == (
+        "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY"
+    )
+    assert memory.external_execution_boundary.supportability_state == "BLOCKED"
+    assert memory.external_execution_boundary.external_execution_events_projected is False
+    assert memory.external_execution_boundary.external_acknowledgement_events_projected is False
+    assert memory.external_execution_boundary.required_owner == "future execution/OMS owner"
+    assert memory.external_execution_boundary.required_source_product == (
+        "ExternalOrderExecutionAcknowledgement:v1"
+    )
+    assert "oms_acknowledgement" in memory.external_execution_boundary.blocked_capabilities
+    assert "execution_status_projection" in memory.external_execution_boundary.blocked_capabilities
+    assert memory.external_execution_boundary.content_hash.startswith("sha256:")
     mandate_events = {
         event.event_type: event
         for event in memory.events
@@ -570,6 +583,35 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "portfolio-level rankings."
         ),
     }
+    assert payload["external_execution_boundary"] == {
+        "boundary_id": "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmPortfolioMemory",
+        "source_product_version": "v1",
+        "external_execution_events_projected": False,
+        "external_acknowledgement_events_projected": False,
+        "reason_code": "PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_EVENTS_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "order_generation",
+            "venue_routing",
+            "best_execution",
+            "oms_acknowledgement",
+            "fills",
+            "settlement",
+            "execution_status_projection",
+        ],
+        "required_owner": "future execution/OMS owner",
+        "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "summary": (
+            "Portfolio memory preserves source-backed Manage, report, AI, archive, and PM-quality "
+            "lineage only; external execution, OMS acknowledgement, fill, settlement, and "
+            "execution-status events remain blocked until a certified bank-owned OMS source-event "
+            "family is published."
+        ),
+        "content_hash": payload["external_execution_boundary"]["content_hash"],
+    }
+    assert payload["external_execution_boundary"]["content_hash"].startswith("sha256:")
     pm_quality_events = [
         event for event in payload["events"] if event["event_type"] == "PM_QUALITY_SCORE_RUN"
     ]
@@ -583,6 +625,14 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert "/api/v1/rebalance/portfolio-memory/{portfolio_id}" in openapi_json["paths"]
     memory_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemory"]
     assert "source_event_family_posture" in memory_schema["properties"]
+    assert "external_execution_boundary" in memory_schema["properties"]
+    boundary_schema = openapi_json["components"]["schemas"][
+        "DpmPortfolioMemoryExternalExecutionBoundaryEvidence"
+    ]
+    assert (
+        "External execution capabilities blocked from portfolio-memory projection."
+        in boundary_schema["properties"]["blocked_capabilities"]["description"]
+    )
     posture_schema = openapi_json["components"]["schemas"][
         "DpmPortfolioMemorySourceEventFamilyPosture"
     ]

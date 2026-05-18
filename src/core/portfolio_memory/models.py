@@ -44,6 +44,55 @@ PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY = (
 )
 
 
+class DpmPortfolioMemoryExternalExecutionBoundaryEvidence(BaseModel):
+    boundary_id: Literal["DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY"] = Field(
+        default="DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY",
+        description="Stable unsupported external execution boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for portfolio-memory execution events.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported portfolio-memory boundary evidence.",
+    )
+    source_product_name: Literal["DpmPortfolioMemory"] = Field(
+        default="DpmPortfolioMemory",
+        description="Manage-owned read model that stops at source-backed memory projection.",
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    external_execution_events_projected: Literal[False] = Field(
+        default=False,
+        description="Portfolio memory does not project external execution, fill, or OMS events.",
+    )
+    external_acknowledgement_events_projected: Literal[False] = Field(
+        default=False,
+        description="Portfolio memory does not project bank-owned OMS acknowledgement events.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the external execution memory boundary.",
+        examples=["PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_EVENTS_NOT_SUPPORTED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="External execution capabilities blocked from portfolio-memory projection.",
+        examples=[["order_generation", "venue_routing", "oms_acknowledgement"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before external execution memory can be promoted.",
+        examples=["future execution/OMS owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume execution acknowledgement truth.",
+        examples=["ExternalOrderExecutionAcknowledgement:v1"],
+    )
+    summary: str = Field(description="Operator-facing no-claim memory boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmPortfolioMemorySourceRef(BaseModel):
     source_system: str = Field(description="System that owns this source evidence.")
     source_type: str = Field(description="Source product, artifact, or event type.")
@@ -173,6 +222,11 @@ class DpmPortfolioMemory(BaseModel):
             "including explicit OMS, external order acknowledgement, and PM-quality projection "
             "boundaries."
         ),
+    )
+    external_execution_boundary: DpmPortfolioMemoryExternalExecutionBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-OMS boundary evidence for portfolio-memory consumers."
+        )
     )
     events: list[DpmPortfolioMemoryEvent] = Field(
         description="Ordered source-backed portfolio-memory events."

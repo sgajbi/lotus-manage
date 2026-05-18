@@ -1939,6 +1939,9 @@ Functional behavior:
   and PM quality score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for
   external OMS execution and Core `ExternalOrderExecutionAcknowledgement:v1` source-product
   posture,
+- publishes structured `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked
+  OMS capabilities, the required future execution/OMS owner, the required
+  `ExternalOrderExecutionAcknowledgement:v1` source product, and a deterministic content hash,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -1956,7 +1959,9 @@ Non-functional posture:
 - Future OMS execution remains roadmap scope and is visible as deferred posture rather than hidden
   portfolio-memory functionality. Core `ExternalOrderExecutionAcknowledgement:v1` remains
   fail-closed supportability evidence for construction and outcome evidence only; portfolio memory
-  does not project acknowledgement, fill, settlement, or execution-status events from it.
+  does not project acknowledgement, fill, settlement, or execution-status events from it. The
+  structured external execution boundary lets consumers render the blocked posture without
+  inferring hidden OMS events.
   Persisted PM operating quality score runs are implemented separately at
   `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` projects only bounded
   `PM_QUALITY_SCORE_RUN` lineage for score runs whose source-owned Core PM-book evidence includes

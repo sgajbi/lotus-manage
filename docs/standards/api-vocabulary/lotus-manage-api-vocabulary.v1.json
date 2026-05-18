@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-18T00:41:05.446336+00:00",
+  "generatedAt": "2026-05-18T00:58:08.810461+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3577,6 +3577,20 @@
       ]
     },
     {
+      "semanticId": "lotus.external_acknowledgement_events_projected",
+      "canonicalTerm": "external_acknowledgement_events_projected",
+      "preferredName": "external_acknowledgement_events_projected",
+      "description": "Portfolio memory does not project bank-owned OMS acknowledgement events.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
       "semanticId": "lotus.external_currency_exposure_content_hash",
       "canonicalTerm": "external_currency_exposure_content_hash",
       "preferredName": "external_currency_exposure_content_hash",
@@ -3765,7 +3779,8 @@
         "body"
       ],
       "observedTypes": [
-        "DpmWaveExternalExecutionBoundaryEvidence"
+        "DpmWaveExternalExecutionBoundaryEvidence",
+        "DpmPortfolioMemoryExternalExecutionBoundaryEvidence"
       ]
     },
     {
@@ -3773,6 +3788,20 @@
       "canonicalTerm": "external_execution_claimed",
       "preferredName": "external_execution_claimed",
       "description": "Always false: manage handoff evidence is not external execution.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.external_execution_events_projected",
+      "canonicalTerm": "external_execution_events_projected",
+      "preferredName": "external_execution_events_projected",
+      "description": "Portfolio memory does not project external execution, fill, or OMS events.",
       "example": true,
       "type": "boolean",
       "locations": [
@@ -90716,6 +90745,118 @@
             "type": "string",
             "semanticId": "lotus.summary",
             "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "external_execution_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmPortfolioMemoryExternalExecutionBoundaryEvidence",
+            "semanticId": "lotus.external_execution_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.external_execution_boundary"
+          },
+          {
+            "name": "external_execution_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "external_execution_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "external_execution_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "external_execution_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "external_execution_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "external_execution_boundary.external_execution_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.external_execution_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.external_execution_events_projected"
+          },
+          {
+            "name": "external_execution_boundary.external_acknowledgement_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.external_acknowledgement_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.external_acknowledgement_events_projected"
+          },
+          {
+            "name": "external_execution_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "external_execution_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "external_execution_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "external_execution_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "external_execution_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "external_execution_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
             "name": "events",

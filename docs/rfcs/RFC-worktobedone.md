@@ -637,7 +637,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
-| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus construction alternatives, report, AI, archive, PM-quality lineage, and explicit external acknowledgement posture | Manage/Gateway/Workbench portfolio memory, persisted construction alternative set and selected-alternative lineage, report-owned source events, AI workflow-pack source events, archive generated-document/client-delivery source events, bounded PM quality score-run lineage, and explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred source-event posture exist. Full OMS execution/acknowledgement/fill/settlement event projection and broader cross-app search/discovery remain future source-owner scope. |
+| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus construction alternatives, report, AI, archive, PM-quality lineage, and structured external execution boundary evidence | Manage/Gateway/Workbench portfolio memory, persisted construction alternative set and selected-alternative lineage, report-owned source events, AI workflow-pack source events, archive generated-document/client-delivery source events, bounded PM quality score-run lineage, explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred source-event posture, and `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence exist. Full OMS execution/acknowledgement/fill/settlement event projection and broader cross-app search/discovery remain future source-owner scope. |
 
 ### RFC37 Gold-Pass Audit And RFC Reintegration - 2026-05-09
 
@@ -1003,9 +1003,13 @@ construction, risk, performance, tax, cash, FX, or execution methodology.
 
 The read model now also names `external_order_execution_acknowledgement` as a deferred
 source-event family tied to Core `ExternalOrderExecutionAcknowledgement:v1`. That source product
-is consumed only as fail-closed construction and outcome evidence; portfolio memory does not
-project acknowledgement, fill, settlement, or execution-status events until bank-owned OMS
-acknowledgement ingestion publishes a certified no-raw-payload source-event family.
+is consumed only as fail-closed construction and outcome evidence. The portfolio-memory response
+now also emits structured `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence with blocked
+capabilities, required future execution/OMS owner, required
+`ExternalOrderExecutionAcknowledgement:v1` source product, and deterministic content hash;
+portfolio memory does not project acknowledgement, fill, settlement, or execution-status events
+until bank-owned OMS acknowledgement ingestion publishes a certified no-raw-payload source-event
+family.
 
 Why work remains:
 

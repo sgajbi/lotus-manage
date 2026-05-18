@@ -468,7 +468,12 @@ Current repository posture:
     supported manage/report/AI/archive families, marks external OMS execution as deferred, and
     supports bounded PM quality score-run lineage for persisted score runs whose source-owned Core
     PM-book membership evidence includes the requested portfolio, without copying raw score
-    payloads or creating portfolio-level rankings.
+    payloads or creating portfolio-level rankings. The portfolio-memory response also carries
+    structured `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence with blocked OMS
+    capabilities, required future execution/OMS owner, required
+    `ExternalOrderExecutionAcknowledgement:v1` source product, and deterministic content hash so
+    downstream consumers can render the no-acknowledgement/no-fill/no-settlement posture without
+    inferring unsupported execution events.
     `lotus-report` PR #92 adds the report-side bounded
     `portfolio_memory_context` consumer for proof-pack, rebalance-wave, and outcome-review report
     jobs without reconstructing manage-owned portfolio-memory events, and `lotus-report` PR #93
