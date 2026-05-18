@@ -543,7 +543,11 @@ Current repository posture:
     lineage refs, reason codes, and source-emitted scalar values without manage-local risk or
     performance methodology. Wave simulation item diagnostics now preserve bounded
     `proposed_changes` from construction alternatives as PM-review evidence only, with no order,
-    execution, fill, venue-routing, or OMS claim. Wave report materialization is now implemented in
+    execution, fill, venue-routing, or OMS claim. Wave proof-pack posture and report input now
+    include structured `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence naming the blocked
+    capabilities, required future execution/OMS owner, and required
+    `ExternalOrderExecutionAcknowledgement:v1` source product while continuing to fail closed if
+    persisted handoff evidence contains any external execution claim. Wave report materialization is now implemented in
     owning repositories through `lotus-manage` PR #124, `lotus-report` PR #91, `lotus-render`
     PR #12, and `lotus-archive` PR #24: manage remains deterministic wave report-input authority,
     while report/render/archive own job materialization, the `rebalance-wave` template, generated

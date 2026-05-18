@@ -126,12 +126,13 @@ flowchart LR
 - `POST /api/v1/rebalance/waves/{wave_id}/cancel`
   records pre-execution cancellation evidence.
 - `GET /api/v1/rebalance/waves/{wave_id}/proof-pack`
-  returns linked proof-pack and handoff posture for the persisted wave.
+  returns linked proof-pack and handoff posture for the persisted wave, including structured
+  `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence.
 - `GET /api/v1/rebalance/waves/{wave_id}/report-input`
   returns deterministic `DpmWaveReportInput` for downstream report materialization without
   claiming external execution or requiring `lotus-report` to reconstruct wave state, proof-pack
-  linkage, internal handoff refs, or source hashes. If persisted handoff evidence contains an
-  external execution claim, this endpoint fails closed with
+  linkage, internal handoff refs, source hashes, or the fail-closed execution-boundary object. If
+  persisted handoff evidence contains an external execution claim, this endpoint fails closed with
   `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` instead of propagating unsupported OMS truth downstream.
 - `GET /api/v1/rebalance/waves/{wave_id}/supportability`
   returns product-safe operator diagnostics and bounded reason-code posture.
