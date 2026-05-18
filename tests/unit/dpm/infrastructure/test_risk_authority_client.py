@@ -91,6 +91,13 @@ def _regime_scenario_response(
         "maximum_allowed_loss_pct": maximum_allowed_loss_pct,
         "breach": worst_case_loss_pct > maximum_allowed_loss_pct,
         "scenario_results": [],
+        "cio_approval_ref": "CIO-APPROVAL-2026-Q2",
+        "approved_by": "cio_001",
+        "approved_at": "2026-04-30T09:00:00Z",
+        "effective_from": "2026-05-01",
+        "effective_to": "2026-06-30",
+        "applicable_portfolio_ids": ["pf_test"],
+        "applicable_mandate_ids": ["mandate_test"],
         "reason_codes": reason_codes or ["REGIME_SCENARIO_PACK_READY"],
         "metadata": {
             "product_name": "RegimeScenarioPackEvaluation",
@@ -199,6 +206,13 @@ def test_lotus_risk_authority_client_maps_regime_scenario_pack_evaluation() -> N
     assert context.supportability_status == ConstructionMethodStatus.READY
     assert context.scenario_pack_id == "CIO_REGIME_2026_Q2"
     assert context.worst_case_loss_pct == Decimal("0.0845")
+    assert context.cio_approval_ref == "CIO-APPROVAL-2026-Q2"
+    assert context.approved_by == "cio_001"
+    assert context.approved_at == "2026-04-30T09:00:00Z"
+    assert context.effective_from == date(2026, 5, 1)
+    assert context.effective_to == date(2026, 6, 30)
+    assert context.applicable_portfolio_ids == ["pf_test"]
+    assert context.applicable_mandate_ids == ["mandate_test"]
     assert context.reason_codes == ["REGIME_SCENARIO_PACK_READY"]
 
 

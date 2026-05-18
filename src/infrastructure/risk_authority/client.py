@@ -305,9 +305,17 @@ def _regime_context_from_scenario_response(
         return AuthoritativeRegimeStressContext(
             supportability_status=_scenario_status_from_supportability(supportability),
             source_system=str(metadata.get("source_service") or "lotus-risk"),
+            source_product_version=str(metadata.get("product_version") or "v1"),
             scenario_pack_id=str(body["scenario_pack_id"]),
             worst_case_loss_pct=Decimal(str(body["worst_case_loss_pct"])),
             maximum_allowed_loss_pct=Decimal(str(body["maximum_allowed_loss_pct"])),
+            cio_approval_ref=_optional_text(body.get("cio_approval_ref")),
+            approved_by=_optional_text(body.get("approved_by")),
+            approved_at=_optional_text(body.get("approved_at")),
+            effective_from=_optional_date(body.get("effective_from")),
+            effective_to=_optional_date(body.get("effective_to")),
+            applicable_portfolio_ids=_text_list(body.get("applicable_portfolio_ids")),
+            applicable_mandate_ids=_text_list(body.get("applicable_mandate_ids")),
             reason_codes=sorted({str(reason_code) for reason_code in reason_codes}),
         )
     except (KeyError, TypeError, ValueError) as exc:
@@ -392,3 +400,23 @@ def _scenario_bucket(asset_class: str) -> str:
 def _dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:
     value = body.get(key)
     return value if isinstance(value, dict) else {}
+
+
+def _optional_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _optional_date(value: Any) -> date | None:
+    text = _optional_text(value)
+    if text is None:
+        return None
+    return date.fromisoformat(text)
+
+
+def _text_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [text for item in value if (text := _optional_text(item)) is not None]

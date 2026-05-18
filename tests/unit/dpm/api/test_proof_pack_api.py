@@ -279,6 +279,13 @@ def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
                 "scenario_pack_id": "CIO_REGIME_2026_Q3",
                 "worst_case_loss_pct": "0.1700",
                 "maximum_allowed_loss_pct": "0.1200",
+                "cio_approval_ref": "CIO-APPROVAL-2026-Q3",
+                "approved_by": "cio_001",
+                "approved_at": "2026-04-30T09:00:00Z",
+                "effective_from": "2026-05-01",
+                "effective_to": "2026-06-30",
+                "applicable_portfolio_ids": ["pf_api"],
+                "applicable_mandate_ids": ["mandate_api_001"],
                 "reason_codes": ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"],
             },
         },
@@ -299,6 +306,14 @@ def test_generate_selected_alternative_proof_pack_accepts_direct_regime_context(
     assert scenario["facts"]["source_system"] == "lotus-risk"
     assert scenario["facts"]["source_product_name"] == "RegimeScenarioPackEvaluation"
     assert scenario["facts"]["scenario_pack_id"] == "CIO_REGIME_2026_Q3"
+    assert scenario["facts"]["cio_approval_ref"] == "CIO-APPROVAL-2026-Q3"
+    assert scenario["facts"]["effective_from"] == "2026-05-01"
+    assert scenario["facts"]["effective_to"] == "2026-06-30"
+    assert scenario["facts"]["applicable_portfolio_ids"] == ["pf_api"]
+    assert scenario["facts"]["applicable_mandate_ids"] == ["mandate_api_001"]
+    assert scenario["facts"]["approval_evidence_projected"] is True
+    assert scenario["facts"]["effective_period_projected"] is True
+    assert scenario["facts"]["applicability_evidence_projected"] is True
     assert scenario["metrics"]["worst_case_loss_pct"] == "0.1700"
     assert scenario["metrics"]["maximum_allowed_loss_pct"] == "0.1200"
     assert scenario["reason_codes"] == ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"]

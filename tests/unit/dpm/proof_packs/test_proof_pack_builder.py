@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 import pytest
@@ -679,6 +679,13 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
             scenario_pack_id="CIO_REGIME_2026_Q2",
             worst_case_loss_pct=Decimal("0.1800"),
             maximum_allowed_loss_pct=Decimal("0.1200"),
+            cio_approval_ref="CIO-APPROVAL-2026-Q2",
+            approved_by="cio_001",
+            approved_at="2026-04-30T09:00:00Z",
+            effective_from=date(2026, 5, 1),
+            effective_to=date(2026, 6, 30),
+            applicable_portfolio_ids=["pf_proof_pack_1"],
+            applicable_mandate_ids=["mandate_001"],
             reason_codes=["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"],
         )
     )
@@ -716,6 +723,16 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
     assert scenario.facts["source_product_name"] == "RegimeScenarioPackEvaluation"
     assert scenario.facts["source_product_version"] == "v1"
     assert scenario.facts["scenario_pack_id"] == "CIO_REGIME_2026_Q2"
+    assert scenario.facts["cio_approval_ref"] == "CIO-APPROVAL-2026-Q2"
+    assert scenario.facts["approved_by"] == "cio_001"
+    assert scenario.facts["approved_at"] == "2026-04-30T09:00:00Z"
+    assert scenario.facts["effective_from"] == "2026-05-01"
+    assert scenario.facts["effective_to"] == "2026-06-30"
+    assert scenario.facts["applicable_portfolio_ids"] == ["pf_proof_pack_1"]
+    assert scenario.facts["applicable_mandate_ids"] == ["mandate_001"]
+    assert scenario.facts["approval_evidence_projected"] is True
+    assert scenario.facts["effective_period_projected"] is True
+    assert scenario.facts["applicability_evidence_projected"] is True
     assert scenario.metrics["worst_case_loss_pct"] == "0.1800"
     assert scenario.metrics["maximum_allowed_loss_pct"] == "0.1200"
     assert scenario.reason_codes == ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"]
@@ -752,6 +769,9 @@ def test_selected_alternative_proof_pack_accepts_direct_regime_scenario_pack_sou
             scenario_pack_id="CIO_REGIME_2026_Q3",
             worst_case_loss_pct=Decimal("0.0700"),
             maximum_allowed_loss_pct=Decimal("0.1200"),
+            cio_approval_ref="CIO-APPROVAL-2026-Q3",
+            effective_from=date(2026, 7, 1),
+            applicable_mandate_ids=["mandate_001"],
             reason_codes=["REGIME_SCENARIO_WITHIN_POLICY"],
         ),
     )
@@ -762,6 +782,12 @@ def test_selected_alternative_proof_pack_accepts_direct_regime_scenario_pack_sou
     assert scenario.facts["source_system"] == "lotus-risk"
     assert scenario.facts["source_product_name"] == "RegimeScenarioPackEvaluation"
     assert scenario.facts["scenario_pack_id"] == "CIO_REGIME_2026_Q3"
+    assert scenario.facts["cio_approval_ref"] == "CIO-APPROVAL-2026-Q3"
+    assert scenario.facts["effective_from"] == "2026-07-01"
+    assert scenario.facts["applicable_mandate_ids"] == ["mandate_001"]
+    assert scenario.facts["approval_evidence_projected"] is True
+    assert scenario.facts["effective_period_projected"] is True
+    assert scenario.facts["applicability_evidence_projected"] is True
     assert scenario.metrics["worst_case_loss_pct"] == "0.0700"
     assert scenario.metrics["maximum_allowed_loss_pct"] == "0.1200"
     assert scenario.reason_codes == ["REGIME_SCENARIO_WITHIN_POLICY"]
