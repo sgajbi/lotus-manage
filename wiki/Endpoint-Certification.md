@@ -1578,9 +1578,12 @@ Non-functional posture:
   layers.
 - The route preserves `RegimeScenarioPackEvaluation:v1` facts, metrics, reason codes, source refs,
   hashes, and optional source-supplied CIO approval, effective-period, and portfolio/mandate
-  applicability evidence when supplied, but does not calculate scenario methodology, validate CIO
-  approval workflow, calculate effective-period exceptions, or derive portfolio/mandate
-  applicability locally.
+  applicability evidence when supplied. It emits bounded `scenario_evidence_posture` so missing
+  evidence remains `PENDING_REVIEW`, stale/effective-period-exception source reasons are
+  `DEGRADED`, inapplicable source reasons are `BLOCKED`, and contribution-partial source reasons
+  remain `PENDING_REVIEW`, but does not calculate scenario methodology, validate CIO approval
+  workflow, calculate effective-period exceptions, or derive portfolio/mandate applicability
+  locally.
 - Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
   `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
   not inferred from these refs.

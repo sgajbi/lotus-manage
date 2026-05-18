@@ -326,9 +326,13 @@ def _regime_stress_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_REGIME_STRESS_CONTEXT_DEGRADED")
+    evidence_posture = _regime_stress_evidence_posture(context)
+    reason_codes = {*context.reason_codes, *evidence_posture["reason_codes"]}
+    if context.supportability_status in {
+        ConstructionMethodStatus.DEGRADED,
+        ConstructionMethodStatus.BLOCKED,
+    }:
+        reason_codes.add("DPM_REGIME_STRESS_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="regime_stress",
         source_system=context.source_system,
@@ -339,7 +343,12 @@ def _regime_stress_source_analytics(
     )
     return ProofPackSourceAnalytics(
         family="regime_stress",
-        state=_section_state(context.supportability_status),
+        state=_lowest_section_state(
+            [
+                _section_state(context.supportability_status),
+                evidence_posture["state"],
+            ]
+        ),
         summary=(
             "Scenario/regime evidence is attached from source-owned "
             "RegimeScenarioPackEvaluation:v1."
@@ -366,16 +375,73 @@ def _regime_stress_source_analytics(
             "applicability_evidence_projected": bool(
                 context.applicable_portfolio_ids or context.applicable_mandate_ids
             ),
+            "scenario_evidence_posture": evidence_posture["facts"],
         },
         metrics={
             "worst_case_loss_pct": context.worst_case_loss_pct,
             "maximum_allowed_loss_pct": context.maximum_allowed_loss_pct,
         },
-        reason_codes=reason_codes,
+        reason_codes=sorted(reason_codes),
         source_ref=source_ref,
         source_hash_key="regime_stress_context",
         content_hash=content_hash,
     )
+
+
+def _regime_stress_evidence_posture(
+    context: AuthoritativeRegimeStressContext,
+) -> dict[str, Any]:
+    reason_codes: set[str] = set()
+    posture_facts: dict[str, str] = {
+        "cio_approval": "PROJECTED" if context.cio_approval_ref else "MISSING",
+        "effective_period": (
+            "PROJECTED"
+            if context.effective_from is not None or context.effective_to is not None
+            else "MISSING"
+        ),
+        "applicability": (
+            "PROJECTED"
+            if context.applicable_portfolio_ids or context.applicable_mandate_ids
+            else "MISSING"
+        ),
+        "source_reason_posture": "READY",
+    }
+    posture_states: list[ProofPackSectionState] = ["READY"]
+    if not context.cio_approval_ref:
+        reason_codes.add("REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING")
+        posture_states.append("PENDING_REVIEW")
+    if context.effective_from is None and context.effective_to is None:
+        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING")
+        posture_states.append("PENDING_REVIEW")
+    if not context.applicable_portfolio_ids and not context.applicable_mandate_ids:
+        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING")
+        posture_states.append("PENDING_REVIEW")
+
+    source_reason_codes = {reason.upper() for reason in context.reason_codes}
+    if any(
+        "INAPPLICABLE" in reason or "NOT_APPLICABLE" in reason for reason in source_reason_codes
+    ):
+        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED")
+        posture_facts["source_reason_posture"] = "INAPPLICABLE"
+        posture_states.append("BLOCKED")
+    elif any(
+        marker in reason
+        for reason in source_reason_codes
+        for marker in ["STALE", "EXPIRED", "OUTSIDE_EFFECTIVE", "EFFECTIVE_PERIOD_EXCEPTION"]
+    ):
+        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION")
+        posture_facts["source_reason_posture"] = "EFFECTIVE_PERIOD_EXCEPTION"
+        posture_states.append("DEGRADED")
+    elif any("CONTRIBUTION" in reason and "PARTIAL" in reason for reason in source_reason_codes):
+        reason_codes.add("REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL")
+        posture_facts["source_reason_posture"] = "CONTRIBUTION_PARTIAL"
+        posture_states.append("PENDING_REVIEW")
+
+    return {
+        "state": _lowest_section_state(posture_states),
+        "reason_codes": sorted(reason_codes),
+        "facts": posture_facts,
+    }
 
 
 def _source_ref(
@@ -404,6 +470,16 @@ def _section_state(status: ConstructionMethodStatus) -> ProofPackSectionState:
     if status == ConstructionMethodStatus.PENDING_REVIEW:
         return "PENDING_REVIEW"
     return "DEGRADED"
+
+
+def _lowest_section_state(states: list[ProofPackSectionState]) -> ProofPackSectionState:
+    order: dict[ProofPackSectionState, int] = {
+        "READY": 0,
+        "PENDING_REVIEW": 1,
+        "DEGRADED": 2,
+        "BLOCKED": 3,
+    }
+    return max(states, key=lambda state: order[state])
 
 
 def _mapping(value: Any) -> dict[str, Any]:
