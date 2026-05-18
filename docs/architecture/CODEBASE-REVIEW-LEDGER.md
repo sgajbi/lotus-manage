@@ -516,3 +516,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   broader campaign workflow surfaces.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-007: Source-cohort routes built lineage refs inline
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_source_refs.py`
+- Finding: source-cohort wave resolution paths built PM-book, CIO model-change, tactical
+  house-view, risk-event, and bulk-review campaign source-reference dictionaries inline in route
+  orchestration. The repeated lineage construction made it harder to review whether source-owner
+  product names, fallback identities, supportability state casing, and content hashes stayed
+  consistent across source families.
+- Action: extracted pure source-reference builders into
+  `src/api/routers/wave_source_refs.py` and reused them across the source-cohort route helpers
+  without changing API response shape. Focused tests now cover fallback identities, content-hash
+  preservation, supportability state propagation, and member-level refs that intentionally omit
+  `content_hash`.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_source_refs.py`; full validation is
+  recorded in the PR evidence for this slice.
+- Follow-up: continue separating source-cohort payload preparation and route orchestration in small
+  behavior-preserving slices only when focused tests pin the source-owner boundary.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

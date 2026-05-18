@@ -53,6 +53,21 @@ from src.api.routers.wave_source_dependency_http import (
     upstream_dependency_failed_http_exception,
     upstream_unavailable_http_exception,
 )
+from src.api.routers.wave_source_refs import (
+    bulk_review_campaign_member_ref,
+    bulk_review_campaign_membership_ref,
+    cio_model_change_affected_mandate_ref,
+    cio_model_change_cohort_ref,
+    cio_model_change_event_ref,
+    pm_book_member_ref,
+    pm_book_membership_ref,
+    risk_event_affected_portfolio_ref,
+    risk_event_cohort_ref,
+    risk_event_ref,
+    tactical_house_view_affected_portfolio_ref,
+    tactical_house_view_cohort_ref,
+    tactical_house_view_ref,
+)
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -815,26 +830,22 @@ def _resolve_pm_book_portfolios(
         or membership.source_batch_fingerprint
         or f"pm_book:{membership.portfolio_manager_id}:{membership.as_of_date.isoformat()}"
     )
-    book_ref = {
-        "source_system": "lotus-core",
-        "source_type": "PortfolioManagerBookMembership",
-        "source_id": source_id,
-        "source_version": membership.product_version,
-        "supportability_state": membership.supportability.state,
-        "content_hash": membership.source_batch_fingerprint,
-    }
+    book_ref = pm_book_membership_ref(
+        source_id=source_id,
+        product_version=membership.product_version,
+        supportability_state=membership.supportability.state,
+        content_hash=membership.source_batch_fingerprint,
+    )
     return [
         {
             "portfolio_id": member.portfolio_id,
             "source_refs": [
                 book_ref,
-                {
-                    "source_system": "lotus-core",
-                    "source_type": "PORTFOLIO_MANAGER_BOOK_MEMBER",
-                    "source_id": member.source_record_id or member.portfolio_id,
-                    "source_version": membership.as_of_date.isoformat(),
-                    "supportability_state": "READY",
-                },
+                pm_book_member_ref(
+                    source_record_id=member.source_record_id,
+                    portfolio_id=member.portfolio_id,
+                    as_of_date=membership.as_of_date,
+                ),
             ],
         }
         for member in membership.members
@@ -890,22 +901,18 @@ def _resolve_cio_model_change_portfolios(
     source_id = (
         cohort.snapshot_id or cohort.source_batch_fingerprint or cohort.model_change_event_id
     )
-    cohort_ref = {
-        "source_system": "lotus-core",
-        "source_type": "CioModelChangeAffectedCohort",
-        "source_id": source_id,
-        "source_version": cohort.product_version,
-        "supportability_state": cohort.supportability.state,
-        "content_hash": cohort.source_batch_fingerprint,
-    }
-    event_ref = {
-        "source_system": "lotus-core",
-        "source_type": "CIO_MODEL_CHANGE_EVENT",
-        "source_id": cohort.model_change_event_id,
-        "source_version": cohort.model_portfolio_version,
-        "supportability_state": cohort.supportability.state,
-        "content_hash": cohort.source_batch_fingerprint,
-    }
+    cohort_ref = cio_model_change_cohort_ref(
+        source_id=source_id,
+        product_version=cohort.product_version,
+        supportability_state=cohort.supportability.state,
+        content_hash=cohort.source_batch_fingerprint,
+    )
+    event_ref = cio_model_change_event_ref(
+        model_change_event_id=cohort.model_change_event_id,
+        model_portfolio_version=cohort.model_portfolio_version,
+        supportability_state=cohort.supportability.state,
+        content_hash=cohort.source_batch_fingerprint,
+    )
     return [
         {
             "portfolio_id": mandate.portfolio_id,
@@ -913,13 +920,11 @@ def _resolve_cio_model_change_portfolios(
             "source_refs": [
                 cohort_ref,
                 event_ref,
-                {
-                    "source_system": "lotus-core",
-                    "source_type": "CIO_MODEL_CHANGE_AFFECTED_MANDATE",
-                    "source_id": mandate.source_record_id or mandate.mandate_id,
-                    "source_version": str(mandate.binding_version),
-                    "supportability_state": "READY",
-                },
+                cio_model_change_affected_mandate_ref(
+                    source_record_id=mandate.source_record_id,
+                    mandate_id=mandate.mandate_id,
+                    binding_version=mandate.binding_version,
+                ),
             ],
         }
         for mandate in cohort.affected_mandates
@@ -1040,22 +1045,21 @@ def _resolve_tactical_house_view_portfolios(
             message="Tactical house-view cohort returned no affected portfolios.",
         )
 
-    cohort_ref = {
-        "source_system": cohort.source_service,
-        "source_type": cohort.product_name,
-        "source_id": cohort.cohort_id,
-        "source_version": cohort.product_version,
-        "supportability_state": cohort.supportability_state,
-        "content_hash": cohort.content_hash,
-    }
-    house_view_ref = {
-        "source_system": cohort.source_service,
-        "source_type": "TACTICAL_HOUSE_VIEW",
-        "source_id": cohort.tactical_view_id,
-        "source_version": cohort.tactical_view_version,
-        "supportability_state": cohort.supportability_state,
-        "content_hash": cohort.content_hash,
-    }
+    cohort_ref = tactical_house_view_cohort_ref(
+        source_service=cohort.source_service,
+        product_name=cohort.product_name,
+        cohort_id=cohort.cohort_id,
+        product_version=cohort.product_version,
+        supportability_state=cohort.supportability_state,
+        content_hash=cohort.content_hash,
+    )
+    house_view_ref = tactical_house_view_ref(
+        source_service=cohort.source_service,
+        tactical_view_id=cohort.tactical_view_id,
+        tactical_view_version=cohort.tactical_view_version,
+        supportability_state=cohort.supportability_state,
+        content_hash=cohort.content_hash,
+    )
     return [
         {
             "portfolio_id": affected.portfolio_id,
@@ -1063,14 +1067,14 @@ def _resolve_tactical_house_view_portfolios(
             "source_refs": [
                 cohort_ref,
                 house_view_ref,
-                {
-                    "source_system": cohort.source_service,
-                    "source_type": "TACTICAL_HOUSE_VIEW_AFFECTED_PORTFOLIO",
-                    "source_id": f"{cohort.cohort_id}:{affected.portfolio_id}",
-                    "source_version": cohort.product_version,
-                    "supportability_state": cohort.supportability_state,
-                    "content_hash": cohort.content_hash,
-                },
+                tactical_house_view_affected_portfolio_ref(
+                    source_service=cohort.source_service,
+                    cohort_id=cohort.cohort_id,
+                    portfolio_id=affected.portfolio_id,
+                    product_version=cohort.product_version,
+                    supportability_state=cohort.supportability_state,
+                    content_hash=cohort.content_hash,
+                ),
                 *affected.source_refs,
             ],
             "diagnostics": {
@@ -1169,22 +1173,22 @@ def _resolve_risk_event_portfolios(
         )
 
     source_id = cohort.cohort_id or cohort.request_fingerprint or risk_event_id
-    cohort_ref = {
-        "source_system": cohort.source_service,
-        "source_type": cohort.product_name,
-        "source_id": source_id,
-        "source_version": cohort.product_version,
-        "supportability_state": cohort.calculation_supportability.upper(),
-        "content_hash": cohort.request_fingerprint,
-    }
-    event_ref = {
-        "source_system": cohort.source_service,
-        "source_type": "RISK_EVENT",
-        "source_id": cohort.risk_event_id,
-        "source_version": cohort.product_version,
-        "supportability_state": cohort.calculation_supportability.upper(),
-        "content_hash": cohort.request_fingerprint,
-    }
+    supportability_state = cohort.calculation_supportability.upper()
+    cohort_ref = risk_event_cohort_ref(
+        source_service=cohort.source_service,
+        product_name=cohort.product_name,
+        source_id=source_id,
+        product_version=cohort.product_version,
+        supportability_state=supportability_state,
+        content_hash=cohort.request_fingerprint,
+    )
+    event_ref = risk_event_ref(
+        source_service=cohort.source_service,
+        risk_event_id=cohort.risk_event_id,
+        product_version=cohort.product_version,
+        supportability_state=supportability_state,
+        content_hash=cohort.request_fingerprint,
+    )
     portfolios: list[dict[str, object]] = []
     for affected in cohort.affected_portfolios:
         matched_candidate = candidate_by_portfolio_id.get(affected.portfolio_id)
@@ -1196,14 +1200,13 @@ def _resolve_risk_event_portfolios(
                 "source_refs": [
                     cohort_ref,
                     event_ref,
-                    {
-                        "source_system": cohort.source_service,
-                        "source_type": "RISK_EVENT_AFFECTED_PORTFOLIO",
-                        "source_id": affected.source_ref,
-                        "source_version": cohort.product_version,
-                        "supportability_state": cohort.calculation_supportability.upper(),
-                        "content_hash": cohort.request_fingerprint,
-                    },
+                    risk_event_affected_portfolio_ref(
+                        source_service=cohort.source_service,
+                        source_ref=affected.source_ref,
+                        product_version=cohort.product_version,
+                        supportability_state=supportability_state,
+                        content_hash=cohort.request_fingerprint,
+                    ),
                     *[ref.model_dump(mode="json") for ref in candidate_refs],
                 ],
             }
@@ -1268,14 +1271,11 @@ def _resolve_bulk_review_campaign_portfolios(
         portfolio_types=sorted(eligible_portfolio_types),
         portfolios=[candidate.model_dump(mode="json") for candidate in included_candidates],
     )
-    membership_ref = {
-        "source_system": "lotus-manage",
-        "source_type": "BulkReviewCampaignMembership",
-        "source_id": f"campaign:{request.trigger_id}:{campaign_as_of_date.isoformat()}",
-        "source_version": "v1",
-        "supportability_state": "READY",
-        "content_hash": membership_hash,
-    }
+    membership_ref = bulk_review_campaign_membership_ref(
+        trigger_id=request.trigger_id,
+        campaign_as_of_date=campaign_as_of_date,
+        membership_hash=membership_hash,
+    )
     return [
         {
             "portfolio_id": candidate.portfolio_id,
@@ -1283,14 +1283,12 @@ def _resolve_bulk_review_campaign_portfolios(
             "source_refs": [
                 membership_ref,
                 *governance_refs,
-                {
-                    "source_system": "lotus-manage",
-                    "source_type": "BULK_REVIEW_CAMPAIGN_MEMBER",
-                    "source_id": f"{request.trigger_id}:{candidate.portfolio_id}",
-                    "source_version": campaign_as_of_date.isoformat(),
-                    "supportability_state": "READY",
-                    "content_hash": membership_hash,
-                },
+                bulk_review_campaign_member_ref(
+                    trigger_id=request.trigger_id,
+                    portfolio_id=candidate.portfolio_id,
+                    campaign_as_of_date=campaign_as_of_date,
+                    membership_hash=membership_hash,
+                ),
                 *[ref.model_dump(mode="json") for ref in candidate.source_refs],
             ],
             "diagnostics": {
