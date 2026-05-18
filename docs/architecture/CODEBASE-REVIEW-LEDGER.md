@@ -436,3 +436,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   focused API tests and OpenAPI gates.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-003: Wave workflow routes repeated HTTP error mapping
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_http_errors.py`
+- Finding: durable wave read and workflow routes repeated identical `DpmWaveLookupError` and
+  `DpmWaveValidationError` HTTP response mapping. Some routes had route-specific conflict
+  semantics (`WAVE_CREATE_CONFLICT` versus optimistic `DPM_WAVE_VERSION_CONFLICT`), so the repeated
+  code was easy to keep mostly correct but harder to audit as the router grew.
+- Action: extracted reusable wave lookup and validation HTTP exception builders into
+  `src/api/routers/wave_http_errors.py`, including explicit route-level conflict-code selection.
+  The endpoint methods now preserve their existing status-code behavior while keeping HTTP mapping
+  outside the route orchestration body.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_http_errors.py`; focused wave API
+  regression `python -m pytest tests\unit\api\test_wave_http_errors.py tests\unit\dpm\api\test_waves_api.py -q`.
+- Follow-up: continue moving bounded route-family plumbing out of `waves.py` only when the helper
+  has direct tests and the route family stays green under OpenAPI and wave API regression tests.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

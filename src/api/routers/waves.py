@@ -33,6 +33,10 @@ from src.api.routers.wave_response_contracts import (
     wave_response,
 )
 from src.api.routers.wave_campaign_definition_http import get_campaign_definition_or_404
+from src.api.routers.wave_http_errors import (
+    wave_lookup_http_exception,
+    wave_validation_http_exception,
+)
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -1984,10 +1988,7 @@ def launch_bulk_review_campaign_definition(
         if launched_definition.content_hash != definition.content_hash:
             campaign_definition_repository.record_definition_launch(definition=launched_definition)
     except wave_service.DpmWaveValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_validation_http_exception(exc, conflict_codes=()) from exc
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -2095,10 +2096,7 @@ def preview_wave(
             mandate_repository=mandate_repository,
         )
     except wave_service.DpmWaveValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_validation_http_exception(exc, conflict_codes=()) from exc
     return wave_response(wave=wave, durable=False)
 
 
@@ -2198,15 +2196,7 @@ def create_wave(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveValidationError as exc:
-        status_code = (
-            status.HTTP_409_CONFLICT
-            if exc.code == "WAVE_CREATE_CONFLICT"
-            else status.HTTP_422_UNPROCESSABLE_CONTENT
-        )
-        raise HTTPException(
-            status_code=status_code,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_validation_http_exception(exc, conflict_codes=("WAVE_CREATE_CONFLICT",)) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2337,10 +2327,7 @@ def get_wave_detail(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     return DpmWaveDetailResponse.model_validate(payload)
 
 
@@ -2369,10 +2356,7 @@ def get_wave_items(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     return DpmWaveItemsResponse.model_validate(payload)
 
 
@@ -2457,20 +2441,9 @@ def source_check_wave(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        status_code = (
-            status.HTTP_409_CONFLICT
-            if exc.code == "DPM_WAVE_VERSION_CONFLICT"
-            else status.HTTP_422_UNPROCESSABLE_CONTENT
-        )
-        raise HTTPException(
-            status_code=status_code,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2531,12 +2504,9 @@ def simulate_wave(
             risk_authority_client=risk_authority_client,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2592,12 +2562,9 @@ def select_wave_item_alternative(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True)
 
 
@@ -2641,12 +2608,9 @@ def approve_wave(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2690,12 +2654,9 @@ def stage_wave(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2738,12 +2699,9 @@ def handoff_wave(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2789,12 +2747,9 @@ def cancel_wave(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
 
 
@@ -2823,10 +2778,7 @@ def get_wave_proof_pack_posture(
             wave_repository=wave_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     return DpmWaveProofPackPostureResponse.model_validate(payload)
 
 
@@ -2869,12 +2821,9 @@ def get_wave_report_input(
             mandate_repository=mandate_repository,
         )
     except wave_service.DpmWaveLookupError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     except wave_service.DpmWaveValidationError as exc:
-        raise _wave_validation_http_exception(exc) from exc
+        raise wave_validation_http_exception(exc) from exc
 
 
 @router.get(
@@ -2908,10 +2857,7 @@ def get_wave_supportability(
             supportability_state="not_found",
             reason="wave_not_found",
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise wave_lookup_http_exception(exc) from exc
     supportability_state = str(payload["supportability_state"])
     reason = str(payload["reason"])
     record_wave_supportability(
@@ -2931,15 +2877,3 @@ def get_wave_supportability(
         },
     )
     return DpmWaveSupportabilityResponse.model_validate(payload)
-
-
-def _wave_validation_http_exception(exc: wave_service.DpmWaveValidationError) -> HTTPException:
-    status_code = (
-        status.HTTP_409_CONFLICT
-        if exc.code == "DPM_WAVE_VERSION_CONFLICT"
-        else status.HTTP_422_UNPROCESSABLE_CONTENT
-    )
-    return HTTPException(
-        status_code=status_code,
-        detail={"code": exc.code, "message": exc.message},
-    )
