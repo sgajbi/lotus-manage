@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 WTBD_PARTIAL_IDS = {
     "RFC37-WTBD-001",
+    "RFC39-WTBD-008",
     "RFC40-WTBD-009",
     "RFC41-WTBD-003",
     "RFC42-WTBD-006",
@@ -23,7 +24,6 @@ WTBD_OPEN_IDS = {
     "RFC37-WTBD-007",
     "RFC38-WTBD-007",
     "RFC39-WTBD-005",
-    "RFC39-WTBD-008",
     "RFC41-WTBD-010",
 }
 
@@ -330,8 +330,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
 
     assert len(rows) == 59
     assert len(done_ids) == 44
-    assert len(WTBD_PARTIAL_IDS) == 5
-    assert len(WTBD_OPEN_IDS) == 10
+    assert len(WTBD_PARTIAL_IDS) == 6
+    assert len(WTBD_OPEN_IDS) == 9
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
 
@@ -340,8 +340,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 44 done on merged/published truth, 5 partial" in supported_features
-    assert "10 remaining or open" in supported_features
+    assert "59 WTBD items: 44 done on merged/published truth, 6 partial" in supported_features
+    assert "9 remaining or open" in supported_features
 
 
 def test_indexed_rfc_and_adr_files_exist() -> None:
@@ -1459,13 +1459,13 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "Snapshot basis: the 2026-05-18 clean mainline" in work_to_be_done
-    assert "`lotus-manage` PR #285 (`2f91e590ae34e414d94d8580d08ce0a2d0ccbc50`)" in (
+    assert "`lotus-manage` PR #286 (`6a4e199e31466dd9cf1a3b882072803c364a51e4`)" in (
         work_to_be_done
     )
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 44 |" in work_to_be_done
-    assert "| Partial / in progress | 5 |" in work_to_be_done
-    assert "| Remaining / open | 10 |" in work_to_be_done
+    assert "| Partial / in progress | 6 |" in work_to_be_done
+    assert "| Remaining / open | 9 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
     assert "RFC38-WTBD-004 - PM-Book Discovery" in work_to_be_done
@@ -2080,7 +2080,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 44 done on merged/published truth, 5 partial" in (supported_features)
+    assert "59 WTBD items: 44 done on merged/published truth, 6 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (
