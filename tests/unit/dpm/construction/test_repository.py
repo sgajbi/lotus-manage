@@ -42,6 +42,28 @@ def test_in_memory_repository_persists_alternative_set_and_idempotency_lookup() 
     assert by_id is not alternative_set
 
 
+def test_in_memory_repository_lists_alternative_sets_by_portfolio_newest_first() -> None:
+    repository = InMemoryConstructionRepository()
+    older = _alternative_set().model_copy(update={"alternative_set_id": "cas_repo_older"})
+    newer = _alternative_set().model_copy(update={"alternative_set_id": "cas_repo_newer"})
+    other = _alternative_set().model_copy(
+        update={"alternative_set_id": "cas_repo_other", "portfolio_id": "other_pf"}
+    )
+
+    repository.save_alternative_set(alternative_set=older, idempotency_key="idem-older")
+    repository.save_alternative_set(alternative_set=other, idempotency_key="idem-other")
+    repository.save_alternative_set(alternative_set=newer, idempotency_key="idem-newer")
+
+    assert [
+        row.alternative_set_id
+        for row in repository.list_alternative_sets(portfolio_id="pf_construct_1", limit=10)
+    ] == ["cas_repo_newer", "cas_repo_older"]
+    assert [
+        row.alternative_set_id
+        for row in repository.list_alternative_sets(portfolio_id="pf_construct_1", limit=1)
+    ] == ["cas_repo_newer"]
+
+
 def test_in_memory_repository_records_latest_selection_decision() -> None:
     repository = InMemoryConstructionRepository()
     repository.save_alternative_set(
@@ -123,6 +145,24 @@ def test_postgres_repository_persists_alternative_set_and_idempotency(
     assert connection.commits == 1
 
 
+def test_postgres_repository_lists_alternative_sets_by_portfolio(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connection = _FakeConnection()
+    repository = _postgres_repository(monkeypatch, connection)
+    alternative_set = _alternative_set()
+
+    repository.save_alternative_set(
+        alternative_set=alternative_set,
+        idempotency_key="idem-postgres-list",
+    )
+
+    assert repository.list_alternative_sets(portfolio_id="pf_construct_1", limit=10) == [
+        alternative_set
+    ]
+    assert repository.list_alternative_sets(portfolio_id="other_pf", limit=10) == []
+
+
 def test_postgres_repository_records_latest_selection(monkeypatch: pytest.MonkeyPatch) -> None:
     connection = _FakeConnection()
     repository = _postgres_repository(monkeypatch, connection)
@@ -198,6 +238,14 @@ class _FakeConnection:
             return _FakeCursor(self.alternative_sets_by_id.get(str(params[0])))
         if "FROM dpm_construction_alternative_sets WHERE idempotency_key" in normalized:
             return _FakeCursor(self.alternative_sets_by_idempotency.get(str(params[0])))
+        if "FROM dpm_construction_alternative_sets WHERE portfolio_id" in normalized:
+            return _FakeCursor(
+                [
+                    row
+                    for row in self.alternative_sets_by_id.values()
+                    if row["portfolio_id"] == str(params[0])
+                ][: int(params[1])]
+            )
         if normalized.startswith("INSERT INTO dpm_construction_alternative_selections"):
             return self._insert_selection(params)
         if "FROM dpm_construction_alternative_selections WHERE alternative_set_id" in normalized:
@@ -213,7 +261,7 @@ class _FakeConnection:
     def _insert_alternative_set(self, params: Sequence[Any]) -> "_FakeCursor":
         alternative_set_id = str(params[0])
         idempotency_key = str(params[5])
-        row = {"payload_json": json.loads(str(params[8]))}
+        row = {"portfolio_id": str(params[1]), "payload_json": json.loads(str(params[8]))}
         self.alternative_sets_by_id[alternative_set_id] = row
         self.alternative_sets_by_idempotency[idempotency_key] = row
         return _FakeCursor(None)
@@ -225,8 +273,11 @@ class _FakeConnection:
 
 
 class _FakeCursor:
-    def __init__(self, row: dict[str, Any] | None) -> None:
+    def __init__(self, row: dict[str, Any] | list[dict[str, Any]] | None) -> None:
         self._row = row
 
     def fetchone(self) -> dict[str, Any] | None:
-        return self._row
+        return self._row if isinstance(self._row, dict) else None
+
+    def fetchall(self) -> list[dict[str, Any]]:
+        return self._row if isinstance(self._row, list) else []

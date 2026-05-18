@@ -48,6 +48,24 @@ class InMemoryConstructionRepository(ConstructionRepository):
             row = self._alternative_sets.get(alternative_set_id)
             return deepcopy(row) if row is not None else None
 
+    def list_alternative_sets(
+        self,
+        *,
+        portfolio_id: str,
+        limit: int,
+    ) -> list[ConstructionAlternativeSet]:
+        with self._lock:
+            rows = [
+                deepcopy(row)
+                for row in self._alternative_sets.values()
+                if row.portfolio_id == portfolio_id
+            ]
+        return sorted(
+            rows,
+            key=lambda row: (row.generated_at, row.alternative_set_id),
+            reverse=True,
+        )[:limit]
+
     def save_selection(
         self,
         *,
