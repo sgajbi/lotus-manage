@@ -171,10 +171,12 @@ Current repository posture:
     context: `scenario_and_regime_evidence` preserves `lotus-risk` / CIO
     `RegimeScenarioPackEvaluation:v1` supportability, source refs, canonical
     `regime_stress_context` hashes, scenario pack id, worst-case loss, policy threshold, and bounded
-    reason codes when the selected alternative carries the authority context or the caller supplies
-    it directly for proof-pack generation. Selected-alternative evidence takes precedence; Manage
-    does not calculate scenario methodology, contribution rows, CIO approval workflow, effective
-    period exceptions, or portfolio/mandate applicability evidence. RFC39-WTBD-006 is now
+    reason codes plus optional source-supplied CIO approval, effective-period, and
+    portfolio/mandate applicability evidence when the selected alternative carries the authority
+    context or the caller supplies it directly for proof-pack generation. Selected-alternative
+    evidence takes precedence; Manage does not calculate scenario methodology, contribution rows,
+    CIO approval workflow validity, effective-period exception methodology, or portfolio/mandate
+    applicability logic. RFC39-WTBD-006 is now
     implemented for source-owned observed-cost
     construction comparison: the `COST_AWARE` method applies `TransactionCostCurve:v1` observed
     average bps to candidate trade notionals, emits `ESTIMATED_COST` objective/constraint traces,

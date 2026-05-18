@@ -347,8 +347,25 @@ def _regime_stress_source_analytics(
         facts={
             "source_system": context.source_system,
             "source_product_name": "RegimeScenarioPackEvaluation",
-            "source_product_version": "v1",
+            "source_product_version": context.source_product_version,
             "scenario_pack_id": context.scenario_pack_id,
+            "cio_approval_ref": context.cio_approval_ref,
+            "approved_by": context.approved_by,
+            "approved_at": context.approved_at,
+            "effective_from": context.effective_from.isoformat()
+            if context.effective_from is not None
+            else None,
+            "effective_to": context.effective_to.isoformat()
+            if context.effective_to is not None
+            else None,
+            "applicable_portfolio_ids": context.applicable_portfolio_ids,
+            "applicable_mandate_ids": context.applicable_mandate_ids,
+            "approval_evidence_projected": context.cio_approval_ref is not None,
+            "effective_period_projected": context.effective_from is not None
+            or context.effective_to is not None,
+            "applicability_evidence_projected": bool(
+                context.applicable_portfolio_ids or context.applicable_mandate_ids
+            ),
         },
         metrics={
             "worst_case_loss_pct": context.worst_case_loss_pct,

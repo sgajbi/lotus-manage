@@ -662,12 +662,44 @@ class AuthoritativeRegimeStressContext(BaseModel):
         description="Scenario-pack supportability status for regime stress construction."
     )
     source_system: str = Field(description="Risk or CIO scenario-pack authority.")
+    source_product_version: str = Field(
+        default="v1",
+        description="Source-owned RegimeScenarioPackEvaluation product version.",
+    )
     scenario_pack_id: str = Field(description="Scenario pack identifier used for construction.")
     worst_case_loss_pct: Decimal = Field(
         description="Worst expected loss across scenario pack as a portfolio ratio."
     )
     maximum_allowed_loss_pct: Decimal = Field(
         description="Maximum permitted scenario loss ratio for the mandate."
+    )
+    cio_approval_ref: str | None = Field(
+        default=None,
+        description="Optional source-owned CIO approval reference for the scenario pack.",
+    )
+    approved_by: str | None = Field(
+        default=None,
+        description="Optional source-owned approver identifier for the scenario pack.",
+    )
+    approved_at: str | None = Field(
+        default=None,
+        description="Optional source-owned approval timestamp or business date.",
+    )
+    effective_from: date | None = Field(
+        default=None,
+        description="Optional source-owned scenario-pack effective start date.",
+    )
+    effective_to: date | None = Field(
+        default=None,
+        description="Optional source-owned scenario-pack effective end date.",
+    )
+    applicable_portfolio_ids: list[str] = Field(
+        default_factory=list,
+        description="Optional source-owned portfolio applicability evidence.",
+    )
+    applicable_mandate_ids: list[str] = Field(
+        default_factory=list,
+        description="Optional source-owned mandate applicability evidence.",
     )
     reason_codes: list[str] = Field(
         default_factory=list,

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-17T23:39:06.477305+00:00",
+  "generatedAt": "2026-05-18T00:23:20.808217+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -496,6 +496,38 @@
       ]
     },
     {
+      "semanticId": "lotus.applicable_mandate_ids",
+      "canonicalTerm": "applicable_mandate_ids",
+      "preferredName": "applicable_mandate_ids",
+      "description": "Optional source-owned mandate applicability evidence.",
+      "example": [
+        "2026-03-02"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.applicable_portfolio_ids",
+      "canonicalTerm": "applicable_portfolio_ids",
+      "preferredName": "applicable_portfolio_ids",
+      "description": "Optional source-owned portfolio applicability evidence.",
+      "example": [
+        "sample_applicable_portfolio_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.applies_to_asset_classes",
       "canonicalTerm": "applies_to_asset_classes",
       "preferredName": "applies_to_asset_classes",
@@ -602,7 +634,7 @@
       "semanticId": "lotus.approved_at",
       "canonicalTerm": "approved_at",
       "preferredName": "approved_at",
-      "description": "dpm bulk review campaign definition governance field: approved at.",
+      "description": "Optional source-owned approval timestamp or business date.",
       "example": "approved_at_example",
       "type": "object",
       "locations": [
@@ -617,7 +649,7 @@
       "semanticId": "lotus.approved_by",
       "canonicalTerm": "approved_by",
       "preferredName": "approved_by",
-      "description": "dpm bulk review campaign definition governance field: approved by.",
+      "description": "Optional source-owned approver identifier for the scenario pack.",
       "example": "approved_by_example",
       "type": "object",
       "locations": [
@@ -1515,6 +1547,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.cio_approval_ref",
+      "canonicalTerm": "cio_approval_ref",
+      "preferredName": "cio_approval_ref",
+      "description": "Optional source-owned CIO approval reference for the scenario pack.",
+      "example": "cio_approval_ref_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -2760,7 +2806,8 @@
         "body"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -57182,6 +57229,14 @@
             "attributeRef": "#/attributeCatalog/lotus.source_system"
           },
           {
+            "name": "authority_context.regime_stress_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
             "name": "authority_context.regime_stress_context.scenario_pack_id",
             "location": "body",
             "required": true,
@@ -57204,6 +57259,62 @@
             "type": "object",
             "semanticId": "lotus.maximum_allowed_loss_pct",
             "attributeRef": "#/attributeCatalog/lotus.maximum_allowed_loss_pct"
+          },
+          {
+            "name": "authority_context.regime_stress_context.cio_approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cio_approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.cio_approval_ref"
+          },
+          {
+            "name": "authority_context.regime_stress_context.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "authority_context.regime_stress_context.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "authority_context.regime_stress_context.effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.effective_from"
+          },
+          {
+            "name": "authority_context.regime_stress_context.effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.effective_to"
+          },
+          {
+            "name": "authority_context.regime_stress_context.applicable_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.applicable_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.applicable_portfolio_ids"
+          },
+          {
+            "name": "authority_context.regime_stress_context.applicable_mandate_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.applicable_mandate_ids",
+            "attributeRef": "#/attributeCatalog/lotus.applicable_mandate_ids"
           },
           {
             "name": "authority_context.regime_stress_context.reason_codes",
@@ -58107,6 +58218,14 @@
             "attributeRef": "#/attributeCatalog/lotus.source_system"
           },
           {
+            "name": "regime_stress_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
             "name": "regime_stress_context.scenario_pack_id",
             "location": "body",
             "required": true,
@@ -58129,6 +58248,62 @@
             "type": "object",
             "semanticId": "lotus.maximum_allowed_loss_pct",
             "attributeRef": "#/attributeCatalog/lotus.maximum_allowed_loss_pct"
+          },
+          {
+            "name": "regime_stress_context.cio_approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cio_approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.cio_approval_ref"
+          },
+          {
+            "name": "regime_stress_context.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "regime_stress_context.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "regime_stress_context.effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.effective_from"
+          },
+          {
+            "name": "regime_stress_context.effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.effective_to"
+          },
+          {
+            "name": "regime_stress_context.applicable_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.applicable_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.applicable_portfolio_ids"
+          },
+          {
+            "name": "regime_stress_context.applicable_mandate_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.applicable_mandate_ids",
+            "attributeRef": "#/attributeCatalog/lotus.applicable_mandate_ids"
           },
           {
             "name": "regime_stress_context.reason_codes",
@@ -74636,6 +74811,14 @@
             "attributeRef": "#/attributeCatalog/lotus.source_system"
           },
           {
+            "name": "item_inputs[].authority_context.regime_stress_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
             "name": "item_inputs[].authority_context.regime_stress_context.scenario_pack_id",
             "location": "body",
             "required": true,
@@ -74658,6 +74841,62 @@
             "type": "object",
             "semanticId": "lotus.maximum_allowed_loss_pct",
             "attributeRef": "#/attributeCatalog/lotus.maximum_allowed_loss_pct"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.cio_approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.cio_approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.cio_approval_ref"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.effective_from",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.effective_from",
+            "attributeRef": "#/attributeCatalog/lotus.effective_from"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.effective_to",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.effective_to",
+            "attributeRef": "#/attributeCatalog/lotus.effective_to"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.applicable_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.applicable_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.applicable_portfolio_ids"
+          },
+          {
+            "name": "item_inputs[].authority_context.regime_stress_context.applicable_mandate_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.applicable_mandate_ids",
+            "attributeRef": "#/attributeCatalog/lotus.applicable_mandate_ids"
           },
           {
             "name": "item_inputs[].authority_context.regime_stress_context.reason_codes",

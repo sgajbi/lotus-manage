@@ -100,7 +100,9 @@ class DpmProofPackGenerateRequest(BaseModel):
             "Optional source-owned `RegimeScenarioPackEvaluation:v1` context for direct "
             "proof-pack scenario/regime enrichment. It is used only when the selected "
             "construction alternative does not already carry regime-stress authority context; "
-            "Manage preserves the source evidence and does not calculate scenario methodology."
+            "Manage preserves source-supplied scenario, CIO approval, effective-period, and "
+            "portfolio/mandate applicability evidence, does not calculate scenario methodology, "
+            "and does not validate source-owner approval workflow."
         ),
     )
 
