@@ -667,11 +667,12 @@ Current repository posture:
     `ExternalOrderExecutionAcknowledgement:v1` fail-closed external OMS acknowledgement posture as
     blocked diagnostics with source lineage, missing data families, blocked capabilities,
     acknowledgement counts, empty acknowledgement rows, and source hashes without execution, fill,
-    settlement, venue-routing, or OMS acknowledgement claims. Outcome-review supportability now
-    exposes structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence derived from persisted
-    source refs and realized `EXECUTION_QUALITY` posture, including blocked capabilities, required
-    future execution/OMS owner, required `ExternalOrderExecutionAcknowledgement:v1` source product,
-    acknowledgement-count posture, and deterministic content hash. Portfolio memory separately exposes
+    settlement, venue-routing, or OMS acknowledgement claims. Outcome-review supportability, report
+    input, and AI evidence input now expose structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY`
+    evidence derived from persisted source refs and realized `EXECUTION_QUALITY` posture, including
+    blocked capabilities, required future execution/OMS owner, required
+    `ExternalOrderExecutionAcknowledgement:v1` source product, acknowledgement-count posture, and
+    deterministic content hash. Portfolio memory separately exposes
     that Core source product as a deferred source-event family posture only; it does not project
     acknowledgement, fill, settlement, or execution-status events. Live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under

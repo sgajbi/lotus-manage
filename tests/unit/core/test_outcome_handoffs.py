@@ -24,6 +24,13 @@ def test_outcome_report_input_is_deterministic_and_hash_linked() -> None:
     assert report_input.evidence_ref.content_hash == report_input.content_hash
     assert report_input.content_hash.startswith("sha256:")
     assert report_input.dimensions[0].dimension == "DRIFT_REDUCTION"
+    assert report_input.external_execution_boundary.boundary_id == (
+        "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
+    )
+    assert report_input.external_execution_boundary.source_product_present is False
+    assert report_input.external_execution_boundary.required_source_product == (
+        "ExternalOrderExecutionAcknowledgement:v1"
+    )
     assert report_input.redaction_policy == "NO_RAW_PAYLOADS"
 
 
@@ -77,6 +84,11 @@ def test_outcome_ai_evidence_input_is_bounded_and_forbids_actions() -> None:
     assert "place_orders" in ai_input.forbidden_actions
     assert "approve_rebalance" in ai_input.forbidden_actions
     assert "score_portfolio_manager" in ai_input.forbidden_actions
+    assert ai_input.external_execution_boundary.boundary_id == (
+        "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
+    )
+    assert ai_input.external_execution_boundary.supportability_state == "BLOCKED"
+    assert "oms_acknowledgement" in ai_input.external_execution_boundary.blocked_capabilities
     assert ai_input.permitted_use.startswith("Draft support-only")
     assert_no_ai_forbidden_fields(ai_input.model_dump(mode="json"))
 

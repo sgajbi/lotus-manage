@@ -28,10 +28,12 @@ communications, or execution instructions inside `lotus-manage`.
 
 1. Report input carries review id, review hash, portfolio/mandate/run/proof/wave references,
    review window, state, overall outcome, variance summary, dimension facts, supportability,
-   source lineage, source hashes, section hashes, redaction policy, evidence ref, and canonical
-   content hash.
+   source lineage, source hashes, section hashes, structured
+   `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence, redaction policy, evidence ref, and
+   canonical content hash.
 2. AI evidence input carries permitted use, forbidden actions, forbidden-field posture, bounded
-   dimension facts, source refs, evidence ref, and canonical content hash.
+   dimension facts, source refs, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence,
+   evidence ref, and canonical content hash.
 3. AI guardrails explicitly forbid order placement, rebalance approval, control overrides,
    invented missing evidence, `score_portfolio_manager`, and client contact.
 4. Handoff hashes are deterministic and linked back to the source outcome-review content hash.
