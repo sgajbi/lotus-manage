@@ -456,3 +456,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   has direct tests and the route family stays green under OpenAPI and wave API regression tests.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-004: Campaign-definition routes repeated lifecycle error mapping
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_campaign_definition_http.py`
+- Finding: campaign-definition create, retire, supersede, discovery, and launch routes repeated
+  HTTP exception construction for conflict, lifecycle, validation, not-found, launch-blocked, and
+  invalid-date cases. The route bodies remained behaviorally correct, but the repeated mappings made
+  status-code posture harder to review and increased the chance of future drift across the same
+  bounded API family.
+- Action: moved campaign-definition HTTP exception builders into
+  `src/api/routers/wave_campaign_definition_http.py`, including the explicit supersession lifecycle
+  status mapping and launch-readiness payload preservation. The router now delegates error
+  translation while keeping endpoint orchestration and request parsing local.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_campaign_definition_http.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: continue shrinking `waves.py` by cohesive route families only after each extracted
+  boundary has focused unit tests and route-level regression coverage.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
