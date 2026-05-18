@@ -32,6 +32,7 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveSupportabilityResponse,
     wave_response,
 )
+from src.api.routers.wave_campaign_definition_http import get_campaign_definition_or_404
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -1747,18 +1748,11 @@ def get_bulk_review_campaign_definition(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = repository.get_definition(
+    definition = get_campaign_definition_or_404(
+        repository=repository,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
     return definition
 
 
@@ -1782,18 +1776,11 @@ def list_bulk_review_campaign_definition_lifecycle_events(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
-    definition = repository.get_definition(
+    definition = get_campaign_definition_or_404(
+        repository=repository,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
     return build_bulk_review_campaign_definition_lifecycle_events(definition=definition)
 
 
@@ -1819,18 +1806,11 @@ def list_bulk_review_campaign_definition_launch_history(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
-    definition = repository.get_definition(
+    definition = get_campaign_definition_or_404(
+        repository=repository,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
     return build_bulk_review_campaign_definition_launch_history_page(
         definition=definition,
         limit=limit,
@@ -1867,18 +1847,11 @@ def get_bulk_review_campaign_definition_preview_readiness(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionPreviewReadiness:
-    definition = repository.get_definition(
+    definition = get_campaign_definition_or_404(
+        repository=repository,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
     return build_bulk_review_campaign_definition_preview_readiness(
         definition=definition,
         requested_as_of_date=requested_as_of_date,
@@ -1919,18 +1892,11 @@ def get_bulk_review_campaign_definition_launch_package(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchPackage:
-    definition = repository.get_definition(
+    definition = get_campaign_definition_or_404(
+        repository=repository,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
     return build_bulk_review_campaign_definition_launch_package(
         definition=definition,
         requested_as_of_date=requested_as_of_date,
@@ -1962,18 +1928,11 @@ def launch_bulk_review_campaign_definition(
         get_campaign_definition_repository
     ),
 ) -> DpmWaveResponse:
-    definition = campaign_definition_repository.get_definition(
+    definition = get_campaign_definition_or_404(
+        repository=campaign_definition_repository,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
     try:
         launch_command = build_bulk_review_campaign_definition_launch_command(
             definition=definition,
