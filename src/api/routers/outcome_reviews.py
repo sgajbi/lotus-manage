@@ -27,6 +27,7 @@ from src.api.services.outcome_review_service import (
 from src.core.outcomes import (
     DpmExpectedOutcomeSnapshot,
     DpmOutcomeAiEvidenceInput,
+    DpmOutcomeClientCommunicationBoundaryEvidence,
     DpmOutcomeEvent,
     DpmOutcomeExternalExecutionBoundaryEvidence,
     DpmOutcomeReviewComparison,
@@ -38,6 +39,7 @@ from src.core.outcomes import (
     OutcomeComparisonDirection,
     OutcomeDimension,
     OutcomeReviewState,
+    build_outcome_client_communication_boundary,
     build_outcome_external_execution_boundary,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
@@ -152,6 +154,12 @@ class DpmOutcomeReviewSupportabilityResponse(BaseModel):
         description=(
             "Structured fail-closed no-OMS boundary evidence for outcome-review supportability "
             "consumers."
+        )
+    )
+    client_communication_boundary: DpmOutcomeClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-client-communication boundary evidence for outcome-review "
+            "supportability consumers."
         )
     )
 
@@ -449,6 +457,7 @@ def _supportability_response(
         freshness_state_counts=freshness_state_counts,
         remediation_routes=_remediation_routes(review),
         external_execution_boundary=build_outcome_external_execution_boundary(review),
+        client_communication_boundary=build_outcome_client_communication_boundary(review),
     )
 
 

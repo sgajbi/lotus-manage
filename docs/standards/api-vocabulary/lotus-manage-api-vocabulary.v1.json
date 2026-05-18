@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-18T01:30:28.032097+00:00",
+  "generatedAt": "2026-05-18T02:08:03.175464+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1575,6 +1575,50 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.client_approval_projected",
+      "canonicalTerm": "client_approval_projected",
+      "preferredName": "client_approval_projected",
+      "description": "Outcome-review evidence never projects client approval.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.client_communication_boundary",
+      "canonicalTerm": "client_communication_boundary",
+      "preferredName": "client_communication_boundary",
+      "description": "Fail-closed client-communication boundary for outcome-review consumers.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmOutcomeClientCommunicationBoundaryEvidence",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmOutcomeClientCommunicationBoundaryEvidence"
+      ]
+    },
+    {
+      "semanticId": "lotus.client_communication_projected",
+      "canonicalTerm": "client_communication_projected",
+      "preferredName": "client_communication_projected",
+      "description": "Outcome-review evidence never projects client communication delivery.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -87409,6 +87453,118 @@
             "type": "string",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "client_communication_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmOutcomeClientCommunicationBoundaryEvidence",
+            "semanticId": "lotus.client_communication_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_boundary"
+          },
+          {
+            "name": "client_communication_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "client_communication_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "client_communication_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "client_communication_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "client_communication_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "client_communication_boundary.client_communication_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_communication_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_projected"
+          },
+          {
+            "name": "client_communication_boundary.client_approval_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_approval_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_approval_projected"
+          },
+          {
+            "name": "client_communication_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "client_communication_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "client_communication_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "client_communication_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "client_communication_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "client_communication_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           }
         ]
       }
@@ -87923,6 +88079,118 @@
           },
           {
             "name": "external_execution_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "client_communication_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmOutcomeClientCommunicationBoundaryEvidence",
+            "semanticId": "lotus.client_communication_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_boundary"
+          },
+          {
+            "name": "client_communication_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "client_communication_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "client_communication_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "client_communication_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "client_communication_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "client_communication_boundary.client_communication_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_communication_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_projected"
+          },
+          {
+            "name": "client_communication_boundary.client_approval_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_approval_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_approval_projected"
+          },
+          {
+            "name": "client_communication_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "client_communication_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "client_communication_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "client_communication_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "client_communication_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "client_communication_boundary.content_hash",
             "location": "body",
             "required": true,
             "type": "string",
@@ -88522,6 +88790,118 @@
           },
           {
             "name": "external_execution_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "client_communication_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmOutcomeClientCommunicationBoundaryEvidence",
+            "semanticId": "lotus.client_communication_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_boundary"
+          },
+          {
+            "name": "client_communication_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "client_communication_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "client_communication_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "client_communication_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "client_communication_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "client_communication_boundary.client_communication_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_communication_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_projected"
+          },
+          {
+            "name": "client_communication_boundary.client_approval_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_approval_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_approval_projected"
+          },
+          {
+            "name": "client_communication_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "client_communication_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "client_communication_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "client_communication_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "client_communication_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "client_communication_boundary.content_hash",
             "location": "body",
             "required": true,
             "type": "string",

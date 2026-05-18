@@ -8,8 +8,12 @@ from pydantic import BaseModel, Field
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
-from src.core.outcomes.execution_boundary import build_outcome_external_execution_boundary
+from src.core.outcomes.execution_boundary import (
+    build_outcome_client_communication_boundary,
+    build_outcome_external_execution_boundary,
+)
 from src.core.outcomes.models import (
+    DpmOutcomeClientCommunicationBoundaryEvidence,
     DpmOutcomeDimensionResult,
     DpmOutcomeExternalExecutionBoundaryEvidence,
     DpmOutcomeSourceRef,
@@ -87,6 +91,12 @@ class DpmOutcomeReportInput(BaseModel):
             "consumers without promoting acknowledgement, fill, settlement, or best-execution truth."
         )
     )
+    client_communication_boundary: DpmOutcomeClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Fail-closed client communication boundary evidence carried for downstream report "
+            "consumers without promoting client contact, message, approval, delivery, or audit truth."
+        )
+    )
     portfolio_memory_context: DpmPortfolioMemoryReportContext | None = Field(
         default=None,
         description=(
@@ -137,6 +147,13 @@ class DpmOutcomeAiEvidenceInput(BaseModel):
             "consumers without permitting order, fill, settlement, or best-execution claims."
         )
     )
+    client_communication_boundary: DpmOutcomeClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Fail-closed client communication boundary evidence carried for downstream AI "
+            "consumers without permitting client contact, message generation, approval, delivery, "
+            "or communication-audit claims."
+        )
+    )
     evidence_ref: DpmOutcomeSourceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical AI-evidence input hash.")
 
@@ -174,6 +191,7 @@ def build_report_input(
         source_hashes=review.source_hashes,
         section_hashes=review.section_hashes,
         external_execution_boundary=build_outcome_external_execution_boundary(review),
+        client_communication_boundary=build_outcome_client_communication_boundary(review),
         portfolio_memory_context=portfolio_memory_context,
         redaction_policy="NO_RAW_PAYLOADS",
         evidence_ref=_handoff_ref(
@@ -223,6 +241,7 @@ def build_ai_evidence_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeAiEv
         dimensions=dimensions,
         source_refs=_dedupe_source_refs(review),
         external_execution_boundary=build_outcome_external_execution_boundary(review),
+        client_communication_boundary=build_outcome_client_communication_boundary(review),
         evidence_ref=_handoff_ref(
             ref_type=OUTCOME_AI_EVIDENCE_REF_TYPE,
             outcome_review_id=review.outcome_review_id,

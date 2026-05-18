@@ -56,9 +56,11 @@ portfolio-memory score-run lineage projection are also implemented for that prod
 adds bounded `PmOperatingQualityFairnessAnalysis:v1` preview over persisted score runs and
 source-defined operating segments, with common policy/as-of validation, minimum scorable segment
 counts, governed spread posture, and explicit no protected-class inference, PM ranking, HR,
-compensation, conduct, approval, client-contact, execution, or OMS claims. Execution/OMS
-integration, client communication, Workbench PM quality UI, and richer source-owner methodology
-remain outside the supported claim until their owners implement and prove them.
+compensation, conduct, approval, client-contact, execution, or OMS claims. Outcome supportability,
+report input, and AI evidence now carry explicit `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY`
+evidence for the no-client-contact boundary. Execution/OMS integration, client communication,
+Workbench PM quality UI, and richer source-owner methodology remain outside the supported claim
+until their owners implement and prove them.
 
 ---
 
@@ -145,6 +147,8 @@ RFC-0042 targets these business outcomes:
 6. Claim Gateway, Workbench, report, archive, or AI support before owning apps implement and prove
    the product surface.
 7. Promote automatic external execution feedback unless a certified source-owner contract exists.
+8. Contact clients, generate client-ready messages, collect client approval, confirm delivery, or
+   certify client communication audit evidence locally.
 
 ---
 
@@ -809,8 +813,8 @@ fairness analytics, and richer source-owner methodology remain outside the suppo
 | Expected-versus-realized variance decomposition | Supported for source-backed supplied dimensions | Supported where expected and realized evidence reconcile with lineage, hashes, and tests. |
 | Source-degraded outcome review | Supported as explicit state behavior | Degraded, blocked, unsupported, stale, partial, malformed, conflicting, and execution-evidence-blocked states are tested and documented. |
 | Searchable outcome memory | Supported as manage backend memory | Immutable persistence, events, source hashes, run lookup, wave lookup, and indexed search are proven. |
-| Report input from outcome review | Supported as manage handoff contract plus first-wave materialization path | Manage emits bounded report input with structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence; `lotus-report`, `lotus-render`, and `lotus-archive` own generated report and archive lifecycle without recomputing outcome truth or inferring OMS execution. |
-| AI evidence input from outcome review | Supported as bounded evidence contract plus governed narrative path | Manage emits bounded AI evidence input with structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence; `lotus-ai` owns guarded workflow-pack narrative execution. No recommendation, PM scoring, OMS execution, or client-contact support is claimed. |
+| Report input from outcome review | Supported as manage handoff contract plus first-wave materialization path | Manage emits bounded report input with structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence; `lotus-report`, `lotus-render`, and `lotus-archive` own generated report and archive lifecycle without recomputing outcome truth, inferring OMS execution, or claiming client communication. |
+| AI evidence input from outcome review | Supported as bounded evidence contract plus governed narrative path | Manage emits bounded AI evidence input with structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence; `lotus-ai` owns guarded workflow-pack narrative execution. No recommendation, PM scoring, OMS execution, or client-contact support is claimed. |
 | Gateway outcome composition | Supported through `lotus-gateway` PR #186/#187/#188/#189 | Gateway composes manage outcome-review truth and report/AI handoff posture without recomputing expected values, realized values, variance, tolerance, lineage, freshness, or review state. |
 | Workbench outcome review UX | Supported through `lotus-workbench` PR #146/#147/#148 | Workbench consumes Gateway/BFF contracts only and renders the first-wave outcome-review, report-request, and AI-narrative request posture with canonical proof. |
 | PM operating quality policy, score-run, and fairness-analysis lifecycle | Supported as separate Manage-owned first-wave product | `PUT /api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}`, `GET /policies`, and `GET /policies/{policy_id}/versions/{policy_version}` administer immutable policy versions; `POST /score-runs/preview` emits `PmOperatingQualityScoreRun:v1`; `POST /score-runs`, `GET /score-runs`, and `GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence; `POST /fairness-analyses/preview` emits bounded `PmOperatingQualityFairnessAnalysis:v1` over persisted score runs and source-defined segments; `POST /fairness-analyses`, `GET /fairness-analyses`, and `GET /fairness-analyses/{fairness_analysis_id}` persist, list, and retrieve immutable fairness-analysis evidence without recomputing score runs. Enabled policies require bank approval and fairness-review evidence; score-run preview/create emits `governance_evidence` and fails closed for missing approval, invalid/expired expiry, unauthorized actors, and missing scoring evidence. Optional `pm_book_scope` materializes source-owned lotus-core `PortfolioManagerBookMembership:v1` scope evidence and fails closed for unavailable, incomplete, degraded, or empty PM-book membership. Optional `peer_group_policy` and `lookback_window_policy` materialize into score-run `scope_evidence`, preserve peer-group/lookback source refs in the content hash, and fail closed with `PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW` when dated evidence falls outside the approved window. Fairness analysis validates common policy/as-of scope, requires minimum scorable segment counts, flags governed average-score spread review, persists content-addressed evidence immutably, and does not infer protected classes or rank PMs. Scoring is disabled by default, and HR, compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, local peer discovery, and source-owner methodology claims are prohibited. |

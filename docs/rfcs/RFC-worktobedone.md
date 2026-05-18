@@ -631,7 +631,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0037 |
 | --- | --- | --- | --- | --- |
-| RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` | Completed for the bounded first-wave outcome-review product path; richer source-owner/OMS/PM-scoring/client-communication scope remains | RFC-0037 identifies outcome learning as target-state. RFC-0042 now delivers manage authority, Gateway/Workbench product realization, report/archive materialization, and governed AI narrative request flow. |
+| RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` | Completed for the bounded first-wave outcome-review product path; Manage now also emits explicit no-client-communication boundary evidence; richer source-owner/OMS/PM-scoring/client-communication execution scope remains | RFC-0037 identifies outcome learning as target-state. RFC-0042 now delivers manage authority, Gateway/Workbench product realization, report/archive materialization, governed AI narrative request flow, and bounded client-communication non-claim evidence. |
 | RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Completed for the bounded current product path; partial for the broader copilot workspace | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary packs with guardrails and provenance, plus conservative workflow-pack default-version resolution. Gateway and Workbench now expose the operations handoff, exception-summary, and PM-quality summary invocation surfaces through governed Gateway routes. Full copilot workspace and any additional product surfaces remain future work. |
 | RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0043 | Multiple canonical product surfaces and first-wave AI workflow-pack invocation paths are implementation-backed, but the broader RFC-0043 copilot workspace, full portfolio memory, OMS, PM scoring, and remaining source-owner depth are not complete. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
@@ -674,7 +674,9 @@ Current implementation-backed result:
 RFC-0042 is done for the `lotus-manage` backend authority and the bounded first-wave product path.
 Manage now provides source-backed outcome-review preview/create/retrieve/search, immutable
 persistence and append-only events, source-refresh eventing, supportability diagnostics, certified
-OpenAPI, and bounded report-input and AI-evidence input handoffs. Gateway and Workbench product
+OpenAPI, bounded report-input and AI-evidence input handoffs, and structured
+`DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence proving no client-contact, client-message,
+client-approval, delivery-confirmation, or communication-audit claim is made. Gateway and Workbench product
 support, outcome report/archive materialization, and governed AI narrative request flow are
 implemented in their owning repositories. It deliberately does not claim execution/OMS integration,
 PM scoring, client communication, or richer source-owner risk/performance/tax/FX/cash
@@ -5843,6 +5845,21 @@ consumers a machine-readable no-OMS boundary without promoting order generation,
 best-execution certification, OMS acknowledgement ingestion, fill confirmation, settlement, or
 execution-status reconciliation. Focused API and handoff proof lives in
 `tests/unit/api/test_outcome_reviews_api.py`.
+
+2026-05-18 outcome client-communication boundary result:
+
+`GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}/supportability` now emits structured
+and the `DpmOutcomeReportInput` / `DpmOutcomeAiEvidenceInput` handoff contracts now carry
+`DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence. The boundary is derived from persisted
+outcome-review truth, always projects `client_communication_projected=false` and
+`client_approval_projected=false`, names blocked client-contact, client-message-generation,
+client-approval, delivery-confirmation, and communication-audit capabilities, identifies the
+required future client-communication owner and `ClientCommunicationRecord:v1` source product, and
+carries a deterministic content hash. This gives Gateway, Workbench, report, AI, support, and
+operations consumers a machine-readable no-client-communication boundary without promoting client contact, client-ready message generation,
+client approval, delivery confirmation, or communication audit truth.
+Focused API and handoff proof lives in `tests/unit/api/test_outcome_reviews_api.py`
+and `tests/unit/core/test_outcome_handoffs.py`.
 
 Dependencies before implementation:
 

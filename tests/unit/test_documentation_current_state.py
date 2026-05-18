@@ -2056,10 +2056,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`EXECUTION_EVIDENCE_BLOCKED`" in work_to_be_done
     assert "2026-05-18 outcome supportability and handoff boundary result" in work_to_be_done
     assert "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY" in work_to_be_done
+    assert "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY" in work_to_be_done
     assert "DpmOutcomeReportInput" in work_to_be_done
     assert "DpmOutcomeAiEvidenceInput" in work_to_be_done
     assert "acknowledgement-count posture" in work_to_be_done
+    assert "client_communication_projected=false" in work_to_be_done
+    assert "`ClientCommunicationRecord:v1` source product" in work_to_be_done
     assert "without promoting OMS acknowledgement, fill, settlement" in work_to_be_done
+    assert "without promoting client contact, client-ready message generation" in work_to_be_done
     assert "explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred" in (
         work_to_be_done
     )
@@ -2120,6 +2124,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "evidence"
     ) in supported_features
     assert "realized_execution_acknowledgement_source_from_response" in supported_features
+    assert "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY" in supported_features
+    assert "client_approval_projected=false" in supported_features
     assert "keeps `EXECUTION_QUALITY` blocked with a null realized value" in supported_features
     assert "external treasury ingestion remains future work" in supported_features
     assert "`MarketDataCoverageWindow:v1` methodology truth through `lotus-core` PR #349" in (

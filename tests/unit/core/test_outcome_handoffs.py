@@ -31,6 +31,16 @@ def test_outcome_report_input_is_deterministic_and_hash_linked() -> None:
     assert report_input.external_execution_boundary.required_source_product == (
         "ExternalOrderExecutionAcknowledgement:v1"
     )
+    assert report_input.client_communication_boundary.boundary_id == (
+        "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert report_input.client_communication_boundary.supportability_state == "BLOCKED"
+    assert report_input.client_communication_boundary.client_communication_projected is False
+    assert report_input.client_communication_boundary.client_approval_projected is False
+    assert "client_contact" in report_input.client_communication_boundary.blocked_capabilities
+    assert report_input.client_communication_boundary.required_source_product == (
+        "ClientCommunicationRecord:v1"
+    )
     assert report_input.redaction_policy == "NO_RAW_PAYLOADS"
 
 
@@ -89,6 +99,13 @@ def test_outcome_ai_evidence_input_is_bounded_and_forbids_actions() -> None:
     )
     assert ai_input.external_execution_boundary.supportability_state == "BLOCKED"
     assert "oms_acknowledgement" in ai_input.external_execution_boundary.blocked_capabilities
+    assert ai_input.client_communication_boundary.boundary_id == (
+        "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert ai_input.client_communication_boundary.supportability_state == "BLOCKED"
+    assert "client_message_generation" in (
+        ai_input.client_communication_boundary.blocked_capabilities
+    )
     assert ai_input.permitted_use.startswith("Draft support-only")
     assert_no_ai_forbidden_fields(ai_input.model_dump(mode="json"))
 

@@ -443,6 +443,11 @@ Operationally important truths:
    report-input, and AI-evidence handoffs only.
    Manage does not generate orders, route venues, certify best execution, ingest OMS
    acknowledgements, confirm fills, project settlement, or reconcile execution status.
+10. outcome-review supportability, report-input, and AI-evidence handoffs also expose structured
+    `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage may support internal PM, CIO,
+    compliance, operations, report, and AI review workflows, but it does not contact clients,
+    generate client-ready messages, collect client approval, confirm delivery, or certify client
+    communication audit truth.
 
 ## Documentation Map
 

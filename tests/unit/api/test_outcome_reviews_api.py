@@ -125,6 +125,13 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert report_input["external_execution_boundary"]["boundary_id"] == (
                 "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
             )
+            assert report_input["client_communication_boundary"]["boundary_id"] == (
+                "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
+            )
+            assert (
+                report_input["client_communication_boundary"]["client_communication_projected"]
+                is False
+            )
             assert report_input["portfolio_memory_context"]["portfolio_id"] == (
                 "PB_SG_GLOBAL_BAL_001"
             )
@@ -144,6 +151,9 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert ai_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_AI_EVIDENCE_INPUT"
             assert ai_input["external_execution_boundary"]["boundary_id"] == (
                 "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
+            )
+            assert ai_input["client_communication_boundary"]["boundary_id"] == (
+                "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
             )
             assert "place_orders" in ai_input["forbidden_actions"]
             assert "score_portfolio_manager" in ai_input["forbidden_actions"]
@@ -200,10 +210,15 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
         "get"
     ]
     assert all(marker in report["description"] for marker in ["What:", "When:", "How:"])
+    assert "DpmOutcomeClientCommunicationBoundaryEvidence" in schema["components"]["schemas"]
+    report_schema = schema["components"]["schemas"]["DpmOutcomeReportInput"]
+    assert "client_communication_boundary" in report_schema["properties"]
     ai = schema["paths"]["/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"][
         "get"
     ]
     assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
+    ai_schema = schema["components"]["schemas"]["DpmOutcomeAiEvidenceInput"]
+    assert "client_communication_boundary" in ai_schema["properties"]
 
     guided_get_paths = [
         ("/api/v1/rebalance/outcome-reviews", "get"),
@@ -432,6 +447,7 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
 
         assert response.status_code == 200
         boundary = response.json()["external_execution_boundary"]
+        client_boundary = response.json()["client_communication_boundary"]
         assert boundary["boundary_id"] == "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
         assert boundary["supportability_state"] == "BLOCKED"
         assert boundary["source_product_present"] is True
@@ -446,6 +462,20 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
             "settlement",
         ]
         assert boundary["content_hash"].startswith("sha256:")
+        assert client_boundary["boundary_id"] == "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
+        assert client_boundary["supportability_state"] == "BLOCKED"
+        assert client_boundary["client_communication_projected"] is False
+        assert client_boundary["client_approval_projected"] is False
+        assert client_boundary["required_owner"] == "future client-communication owner"
+        assert client_boundary["required_source_product"] == "ClientCommunicationRecord:v1"
+        assert client_boundary["blocked_capabilities"] == [
+            "client_approval",
+            "client_contact",
+            "client_message_generation",
+            "communication_audit",
+            "delivery_confirmation",
+        ]
+        assert client_boundary["content_hash"].startswith("sha256:")
 
         report = client.get("/api/v1/rebalance/outcome-reviews/dor_001/report-input")
         ai = client.get("/api/v1/rebalance/outcome-reviews/dor_001/ai-evidence-input")
@@ -454,5 +484,7 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
         assert ai.status_code == 200
         assert report.json()["external_execution_boundary"] == boundary
         assert ai.json()["external_execution_boundary"] == boundary
+        assert report.json()["client_communication_boundary"] == client_boundary
+        assert ai.json()["client_communication_boundary"] == client_boundary
     finally:
         app.dependency_overrides.clear()
