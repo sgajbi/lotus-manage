@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 from datetime import date
 from decimal import Decimal
@@ -40,6 +38,10 @@ from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_value_http_exception,
     get_campaign_definition_or_404,
     invalid_campaign_discovery_date_http_exception,
+)
+from src.api.routers.wave_campaign_hashing import (
+    campaign_governance_hash,
+    campaign_membership_hash,
 )
 from src.api.routers.wave_http_errors import (
     wave_lookup_http_exception,
@@ -1266,7 +1268,7 @@ def _resolve_bulk_review_campaign_portfolios(
             },
         )
 
-    membership_hash = _campaign_membership_hash(
+    membership_hash = campaign_membership_hash(
         trigger_id=request.trigger_id,
         as_of_date=campaign_as_of_date,
         portfolio_types=sorted(eligible_portfolio_types),
@@ -1361,7 +1363,7 @@ def _resolve_bulk_review_campaign_governance(
                 "actor_id is not entitled for this bulk-review campaign.",
             )
 
-    governance_hash = _campaign_governance_hash(
+    governance_hash = campaign_governance_hash(
         trigger_id=request.trigger_id,
         actor_id=request.actor_id,
         governance=governance.model_dump(mode="json"),
@@ -1392,42 +1394,6 @@ def _resolve_bulk_review_campaign_governance(
         },
         governance_refs,
     )
-
-
-def _campaign_governance_hash(
-    *,
-    trigger_id: str,
-    actor_id: str,
-    governance: dict[str, object],
-) -> str:
-    payload = {
-        "product_name": "BulkReviewCampaignGovernance",
-        "product_version": "v1",
-        "trigger_id": trigger_id,
-        "actor_id": actor_id,
-        "governance": governance,
-    }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
-
-
-def _campaign_membership_hash(
-    *,
-    trigger_id: str,
-    as_of_date: date,
-    portfolio_types: list[str],
-    portfolios: list[dict[str, object]],
-) -> str:
-    payload = {
-        "product_name": "BulkReviewCampaignMembership",
-        "product_version": "v1",
-        "trigger_id": trigger_id,
-        "as_of_date": as_of_date.isoformat(),
-        "portfolio_types": portfolio_types,
-        "portfolios": portfolios,
-    }
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
 
 
 @router.put(

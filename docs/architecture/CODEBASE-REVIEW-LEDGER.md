@@ -557,3 +557,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   request DTO ownership boundary is split cleanly enough to avoid router-helper cycles.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-009: Campaign membership hashing lived in router orchestration
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_campaign_hashing.py`
+- Finding: deterministic hash construction for `BulkReviewCampaignMembership:v1` and
+  `BulkReviewCampaignGovernance:v1` lived inside the wave router. The code was pure and correct,
+  but keeping canonical payload construction beside route orchestration made campaign lineage
+  behavior harder to test directly and forced the router to own low-level JSON/hash mechanics.
+- Action: extracted campaign governance and membership hash builders into
+  `src/api/routers/wave_campaign_hashing.py` and reused them from the bulk-review campaign
+  resolution helpers. Focused tests now pin stable canonical hashing, actor sensitivity, and
+  membership-change sensitivity.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_campaign_hashing.py`; full validation
+  is recorded in the PR evidence for this slice.
+- Follow-up: continue moving pure campaign membership helpers out of `waves.py` only when tests can
+  pin lineage, supportability, and failure semantics without broad route coupling.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
