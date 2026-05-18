@@ -122,6 +122,9 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert report_input["outcome_review_content_hash"] == outcome_review["content_hash"]
             assert report_input["content_hash"].startswith("sha256:")
             assert report_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_REPORT_INPUT"
+            assert report_input["external_execution_boundary"]["boundary_id"] == (
+                "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
+            )
             assert report_input["portfolio_memory_context"]["portfolio_id"] == (
                 "PB_SG_GLOBAL_BAL_001"
             )
@@ -139,6 +142,9 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert ai_input["outcome_review_content_hash"] == outcome_review["content_hash"]
             assert ai_input["content_hash"].startswith("sha256:")
             assert ai_input["evidence_ref"]["source_type"] == "DPM_OUTCOME_AI_EVIDENCE_INPUT"
+            assert ai_input["external_execution_boundary"]["boundary_id"] == (
+                "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY"
+            )
             assert "place_orders" in ai_input["forbidden_actions"]
             assert "score_portfolio_manager" in ai_input["forbidden_actions"]
 
@@ -440,5 +446,13 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
             "settlement",
         ]
         assert boundary["content_hash"].startswith("sha256:")
+
+        report = client.get("/api/v1/rebalance/outcome-reviews/dor_001/report-input")
+        ai = client.get("/api/v1/rebalance/outcome-reviews/dor_001/ai-evidence-input")
+
+        assert report.status_code == 200
+        assert ai.status_code == 200
+        assert report.json()["external_execution_boundary"] == boundary
+        assert ai.json()["external_execution_boundary"] == boundary
     finally:
         app.dependency_overrides.clear()

@@ -1850,10 +1850,12 @@ Functional behavior:
   `ExternalOrderExecutionAcknowledgement:v1` source product, execution-quality dimension posture,
   acknowledgement-count posture, and deterministic content hash.
 - Report input returns deterministic report-ready facts, source hashes, supportability, dimension
-  outcomes, and a canonical handoff hash without rendering reports or archive records.
+  outcomes, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence, and a canonical handoff
+  hash without rendering reports, archive records, or OMS execution claims.
 - AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
-  refs, and a canonical handoff hash without generating prompts, memos, recommendations, approvals,
-  client communications, or execution instructions.
+  refs, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence, and a canonical handoff hash
+  without generating prompts, memos, recommendations, approvals, client communications, or
+  execution instructions.
 - Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
 
 Non-functional posture:
