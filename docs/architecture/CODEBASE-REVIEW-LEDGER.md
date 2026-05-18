@@ -496,3 +496,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   tests cover the shared domain error semantics.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-006: Source-cohort routes repeated dependency HTTP mapping
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_source_dependency_http.py`
+- Finding: source-owner cohort resolution paths repeated `503` unavailable and `424` dependency
+  failure response construction for Core PM-book membership, Core CIO model-change cohorts,
+  Advise tactical house-view cohorts, and Risk risk-event cohorts. The behavior was correct, but
+  source-specific status-code rules were embedded in route orchestration.
+- Action: extracted reusable source-dependency HTTP exception builders into
+  `src/api/routers/wave_source_dependency_http.py` and reused them across the source-cohort routes
+  while preserving rejected-source `424`, unavailable-source `503`, not-ready, empty, and
+  reason-code payload behavior.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_source_dependency_http.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: continue separating source-cohort orchestration from router concerns before adding
+  broader campaign workflow surfaces.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

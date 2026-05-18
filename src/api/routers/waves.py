@@ -46,6 +46,13 @@ from src.api.routers.wave_http_errors import (
     wave_validation_http_exception,
 )
 from src.api.routers.wave_date_validation import parse_wave_as_of_date
+from src.api.routers.wave_source_dependency_http import (
+    source_authority_unavailable_http_exception,
+    source_dependency_failed_http_exception,
+    source_unavailable_http_exception,
+    upstream_dependency_failed_http_exception,
+    upstream_unavailable_http_exception,
+)
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -784,30 +791,24 @@ def _resolve_pm_book_portfolios(
             correlation_id=correlation_id,
         )
     except DpmCoreResolverUnavailableError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
+        raise upstream_unavailable_http_exception(
+            exc,
+            default_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
         ) from exc
     except DpmCoreResolverError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
+        raise upstream_dependency_failed_http_exception(
+            exc,
+            default_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
         ) from exc
     if membership.supportability.state != "READY":
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": membership.supportability.reason,
-                "message": "PM-book membership is not source-ready.",
-            },
+        raise source_dependency_failed_http_exception(
+            code=membership.supportability.reason,
+            message="PM-book membership is not source-ready.",
         )
     if not membership.members:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
-                "message": "PM-book membership returned no affected portfolios.",
-            },
+        raise source_dependency_failed_http_exception(
+            code="DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+            message="PM-book membership returned no affected portfolios.",
         )
     source_id = (
         membership.snapshot_id
@@ -867,30 +868,24 @@ def _resolve_cio_model_change_portfolios(
             correlation_id=correlation_id,
         )
     except DpmCoreResolverUnavailableError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": str(exc) or "DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE"},
+        raise upstream_unavailable_http_exception(
+            exc,
+            default_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
         ) from exc
     except DpmCoreResolverError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={"code": str(exc) or "DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE"},
+        raise upstream_dependency_failed_http_exception(
+            exc,
+            default_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
         ) from exc
     if cohort.supportability.state != "READY":
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": cohort.supportability.reason,
-                "message": "CIO model-change affected cohort is not source-ready.",
-            },
+        raise source_dependency_failed_http_exception(
+            code=cohort.supportability.reason,
+            message="CIO model-change affected cohort is not source-ready.",
         )
     if not cohort.affected_mandates:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
-                "message": "CIO model-change affected cohort returned no portfolios.",
-            },
+        raise source_dependency_failed_http_exception(
+            code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
+            message="CIO model-change affected cohort returned no portfolios.",
         )
     source_id = (
         cohort.snapshot_id or cohort.source_batch_fingerprint or cohort.model_change_event_id
@@ -954,12 +949,9 @@ def _resolve_tactical_house_view_portfolios(
             "TACTICAL_HOUSE_VIEW requires tactical house-view source_refs.",
         )
     if advise_authority_client is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={
-                "code": "DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE",
-                "message": "DPM_ADVISE_BASE_URL is not configured.",
-            },
+        raise source_unavailable_http_exception(
+            code="DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE",
+            message="DPM_ADVISE_BASE_URL is not configured.",
         )
     as_of_date = parse_wave_as_of_date(request.as_of_date)
     eligible_portfolio_types = [
@@ -1028,32 +1020,24 @@ def _resolve_tactical_house_view_portfolios(
             correlation_id=correlation_id,
         )
     except LotusAdviseAuthorityUnavailableError as exc:
-        error_code = str(exc) or "DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE"
-        status_code = (
-            status.HTTP_424_FAILED_DEPENDENCY
-            if error_code == "LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED"
-            else status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-        raise HTTPException(status_code=status_code, detail={"code": error_code}) from exc
+        raise source_authority_unavailable_http_exception(
+            exc,
+            default_code="DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE",
+            rejected_code="LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED",
+        ) from exc
 
     if cohort.supportability_state != "READY":
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY"
-                if cohort.supportability_state == "EMPTY"
-                else "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
-                "message": "Tactical house-view affected cohort is not source-ready.",
-                "reason_codes": list(cohort.supportability_reason_codes),
-            },
+        raise source_dependency_failed_http_exception(
+            code="DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY"
+            if cohort.supportability_state == "EMPTY"
+            else "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
+            message="Tactical house-view affected cohort is not source-ready.",
+            reason_codes=list(cohort.supportability_reason_codes),
         )
     if not cohort.affected_portfolios:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
-                "message": "Tactical house-view cohort returned no affected portfolios.",
-            },
+        raise source_dependency_failed_http_exception(
+            code="DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+            message="Tactical house-view cohort returned no affected portfolios.",
         )
 
     cohort_ref = {
@@ -1124,12 +1108,9 @@ def _resolve_risk_event_portfolios(
         )
     as_of_date = parse_wave_as_of_date(request.as_of_date)
     if risk_authority_client is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={
-                "code": "DPM_RISK_EVENT_COHORT_UNAVAILABLE",
-                "message": "DPM_RISK_BASE_URL is not configured.",
-            },
+        raise source_unavailable_http_exception(
+            code="DPM_RISK_EVENT_COHORT_UNAVAILABLE",
+            message="DPM_RISK_BASE_URL is not configured.",
         )
 
     candidate_by_portfolio_id: dict[str, DpmWavePortfolioInput] = {}
@@ -1169,33 +1150,22 @@ def _resolve_risk_event_portfolios(
             correlation_id=correlation_id,
         )
     except LotusRiskAuthorityUnavailableError as exc:
-        error_code = str(exc) or "DPM_RISK_EVENT_COHORT_UNAVAILABLE"
-        status_code = (
-            status.HTTP_424_FAILED_DEPENDENCY
-            if error_code == "LOTUS_RISK_EVENT_COHORT_REJECTED"
-            else status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-        raise HTTPException(
-            status_code=status_code,
-            detail={"code": error_code},
+        raise source_authority_unavailable_http_exception(
+            exc,
+            default_code="DPM_RISK_EVENT_COHORT_UNAVAILABLE",
+            rejected_code="LOTUS_RISK_EVENT_COHORT_REJECTED",
         ) from exc
 
     if cohort.calculation_supportability != "ready":
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_RISK_EVENT_COHORT_INCOMPLETE",
-                "message": "Risk-event affected cohort is not source-ready.",
-                "reason_codes": list(cohort.reason_codes),
-            },
+        raise source_dependency_failed_http_exception(
+            code="DPM_RISK_EVENT_COHORT_INCOMPLETE",
+            message="Risk-event affected cohort is not source-ready.",
+            reason_codes=list(cohort.reason_codes),
         )
     if not cohort.affected_portfolios:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_RISK_EVENT_COHORT_EMPTY",
-                "message": "Risk-event affected cohort returned no affected portfolios.",
-            },
+        raise source_dependency_failed_http_exception(
+            code="DPM_RISK_EVENT_COHORT_EMPTY",
+            message="Risk-event affected cohort returned no affected portfolios.",
         )
 
     source_id = cohort.cohort_id or cohort.request_fingerprint or risk_event_id
