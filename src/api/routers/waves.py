@@ -32,7 +32,15 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveSupportabilityResponse,
     wave_response,
 )
-from src.api.routers.wave_campaign_definition_http import get_campaign_definition_or_404
+from src.api.routers.wave_campaign_definition_http import (
+    campaign_definition_conflict_http_exception,
+    campaign_definition_launch_blocked_http_exception,
+    campaign_definition_lifecycle_http_exception,
+    campaign_definition_not_found_http_exception,
+    campaign_definition_value_http_exception,
+    get_campaign_definition_or_404,
+    invalid_campaign_discovery_date_http_exception,
+)
 from src.api.routers.wave_http_errors import (
     wave_lookup_http_exception,
     wave_validation_http_exception,
@@ -1519,15 +1527,9 @@ def put_bulk_review_campaign_definition(
         )
         repository.save_definition(definition=definition)
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": str(exc), "message": str(exc)},
-        ) from exc
+        raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={"code": str(exc), "message": str(exc)},
-        ) from exc
+        raise campaign_definition_value_http_exception(exc) from exc
     return definition
 
 
@@ -1593,28 +1595,13 @@ def retire_bulk_review_campaign_definition(
             correlation_id=request.correlation_id,
         )
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": str(exc), "message": str(exc)},
-        ) from exc
+        raise campaign_definition_conflict_http_exception(exc) from exc
     except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise campaign_definition_lifecycle_http_exception(exc) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={"code": str(exc), "message": str(exc)},
-        ) from exc
+        raise campaign_definition_value_http_exception(exc) from exc
     if retired is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
+        raise campaign_definition_not_found_http_exception()
     return retired
 
 
@@ -1650,35 +1637,13 @@ def supersede_bulk_review_campaign_definition(
             correlation_id=request.correlation_id,
         )
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"code": str(exc), "message": str(exc)},
-        ) from exc
+        raise campaign_definition_conflict_http_exception(exc) from exc
     except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
-        status_code = (
-            status.HTTP_404_NOT_FOUND
-            if exc.code == "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND"
-            else status.HTTP_422_UNPROCESSABLE_CONTENT
-            if exc.code == "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID"
-            else status.HTTP_409_CONFLICT
-        )
-        raise HTTPException(
-            status_code=status_code,
-            detail={"code": exc.code, "message": exc.message},
-        ) from exc
+        raise campaign_definition_lifecycle_http_exception(exc) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={"code": str(exc), "message": str(exc)},
-        ) from exc
+        raise campaign_definition_value_http_exception(exc) from exc
     if superseded is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-                "message": "Bulk-review campaign definition was not found.",
-            },
-        )
+        raise campaign_definition_not_found_http_exception()
     return superseded
 
 
@@ -1945,15 +1910,7 @@ def launch_bulk_review_campaign_definition(
             correlation_id=request.correlation_id,
         )
     except DpmBulkReviewCampaignDefinitionLaunchBlocked as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED",
-                "message": "Bulk-review campaign definition is not ready for durable launch.",
-                "reason_codes": exc.reason_codes,
-                "readiness": exc.readiness.model_dump(mode="json"),
-            },
-        ) from exc
+        raise campaign_definition_launch_blocked_http_exception(exc) from exc
     wave_request = DpmWavePreviewRequest.model_validate(
         launch_command.create_request.model_dump(mode="json")
     )
@@ -1990,12 +1947,9 @@ def launch_bulk_review_campaign_definition(
     except wave_service.DpmWaveValidationError as exc:
         raise wave_validation_http_exception(exc, conflict_codes=()) from exc
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": str(exc),
-                "message": "Bulk-review campaign definition launch audit could not be recorded.",
-            },
+        raise campaign_definition_conflict_http_exception(
+            exc,
+            message="Bulk-review campaign definition launch audit could not be recorded.",
         ) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replay)
 
@@ -2010,13 +1964,7 @@ def _parse_optional_campaign_discovery_date(
     try:
         return date.fromisoformat(value)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail={
-                "code": "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID",
-                "message": f"{field_name} must be an ISO date.",
-            },
-        ) from exc
+        raise invalid_campaign_discovery_date_http_exception(field_name) from exc
 
 
 @router.post(
