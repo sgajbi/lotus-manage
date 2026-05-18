@@ -414,3 +414,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   boundary stays green in OpenAPI and wave API tests.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature or operator-contract change.
+
+## BACKEND-REVIEW-20260519-002: Campaign-definition routes repeated HTTP lookup handling
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`,
+  `src/api/routers/wave_campaign_definition_http.py`
+- Finding: the campaign-definition read, lifecycle projection, launch-history, readiness,
+  launch-package, and durable-launch routes repeated the same repository lookup and `404`
+  response construction. The duplication kept router behavior correct but made the already-large
+  wave router harder to audit and increased the risk of divergent error payloads across bounded
+  campaign-definition endpoints.
+- Action: extracted the API-level campaign-definition lookup and shared not-found response into
+  `src/api/routers/wave_campaign_definition_http.py`, then reused it across campaign-definition
+  read and launch routes. The domain-level preview/create validation path remains in `waves.py`
+  because it deliberately raises `DpmWaveValidationError` instead of an HTTP exception.
+- Status: hardened
+- Evidence: `python -m ruff check src\api\routers\waves.py src\api\routers\wave_campaign_definition_http.py tests\unit\dpm\api\test_waves_api.py`;
+  `python -m pytest tests\unit\dpm\api\test_waves_api.py -q` (`110 passed`).
+- Follow-up: continue route-family extraction only after each bounded helper remains covered by
+  focused API tests and OpenAPI gates.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
