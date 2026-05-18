@@ -45,6 +45,7 @@ from src.api.routers.wave_http_errors import (
     wave_lookup_http_exception,
     wave_validation_http_exception,
 )
+from src.api.routers.wave_date_validation import parse_wave_as_of_date
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -765,13 +766,7 @@ def _resolve_pm_book_portfolios(
             "PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
             "PM_BOOK_REVIEW requires portfolio_manager_id.",
         )
-    try:
-        as_of_date = date.fromisoformat(request.as_of_date)
-    except ValueError as exc:
-        raise wave_service.DpmWaveValidationError(
-            "INVALID_AS_OF_DATE",
-            "as_of_date must be an ISO date.",
-        ) from exc
+    as_of_date = parse_wave_as_of_date(request.as_of_date)
     portfolio_types = [value.strip().upper() for value in request.portfolio_types if value.strip()]
     if not portfolio_types:
         raise wave_service.DpmWaveValidationError(
@@ -861,13 +856,7 @@ def _resolve_cio_model_change_portfolios(
             "CIO_MODEL_CHANGE_MODEL_PORTFOLIO_REQUIRED",
             "CIO_MODEL_CHANGE requires model_portfolio_id.",
         )
-    try:
-        as_of_date = date.fromisoformat(request.as_of_date)
-    except ValueError as exc:
-        raise wave_service.DpmWaveValidationError(
-            "INVALID_AS_OF_DATE",
-            "as_of_date must be an ISO date.",
-        ) from exc
+    as_of_date = parse_wave_as_of_date(request.as_of_date)
     try:
         cohort = build_core_resolver_client().resolve_cio_model_change_affected_cohort(
             model_portfolio_id=model_portfolio_id,
@@ -972,13 +961,7 @@ def _resolve_tactical_house_view_portfolios(
                 "message": "DPM_ADVISE_BASE_URL is not configured.",
             },
         )
-    try:
-        as_of_date = date.fromisoformat(request.as_of_date)
-    except ValueError as exc:
-        raise wave_service.DpmWaveValidationError(
-            "INVALID_AS_OF_DATE",
-            "as_of_date must be an ISO date.",
-        ) from exc
+    as_of_date = parse_wave_as_of_date(request.as_of_date)
     eligible_portfolio_types = [
         value.strip().upper() for value in request.portfolio_types if value.strip()
     ]
@@ -1139,13 +1122,7 @@ def _resolve_risk_event_portfolios(
             "RISK_EVENT_CANDIDATE_PORTFOLIOS_REQUIRED",
             "RISK_EVENT requires candidate portfolios with source-supplied exposure weights.",
         )
-    try:
-        as_of_date = date.fromisoformat(request.as_of_date)
-    except ValueError as exc:
-        raise wave_service.DpmWaveValidationError(
-            "INVALID_AS_OF_DATE",
-            "as_of_date must be an ISO date.",
-        ) from exc
+    as_of_date = parse_wave_as_of_date(request.as_of_date)
     if risk_authority_client is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -1273,13 +1250,7 @@ def _resolve_bulk_review_campaign_portfolios(
             "BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED",
             "BULK_REVIEW_CAMPAIGN requires source-backed candidate portfolios.",
         )
-    try:
-        campaign_as_of_date = date.fromisoformat(request.as_of_date)
-    except ValueError as exc:
-        raise wave_service.DpmWaveValidationError(
-            "INVALID_AS_OF_DATE",
-            "as_of_date must be an ISO date.",
-        ) from exc
+    campaign_as_of_date = parse_wave_as_of_date(request.as_of_date)
     governance_diagnostics, governance_refs = _resolve_bulk_review_campaign_governance(
         request=request,
         campaign_as_of_date=campaign_as_of_date,

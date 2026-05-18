@@ -477,3 +477,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   boundary has focused unit tests and route-level regression coverage.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-005: Source-cohort wave routes repeated as-of-date validation
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_date_validation.py`
+- Finding: source-cohort wave resolution paths repeated identical ISO `as_of_date` parsing and
+  `INVALID_AS_OF_DATE` domain-validation error construction. The repeated code was small, but it sat
+  in the same high-risk router area as source-owner cohort calls and campaign membership, making
+  future route-family splits easier to drift.
+- Action: extracted the shared wave `as_of_date` parser into
+  `src/api/routers/wave_date_validation.py` and reused it across PM-book, CIO model-change,
+  tactical house-view, risk-event, and bulk-review campaign resolution paths.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_date_validation.py`; full validation
+  is recorded in the PR evidence for this slice.
+- Follow-up: keep extracting cohesive source-cohort helper boundaries only when behavior-preserving
+  tests cover the shared domain error semantics.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
