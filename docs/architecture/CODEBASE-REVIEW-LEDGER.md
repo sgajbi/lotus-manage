@@ -675,3 +675,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   campaign-governance domain object emerges.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-015: Bulk-review candidate selection embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_campaign_candidate_selection.py`
+- Finding: bulk-review campaign candidate filtering, excluded-candidate counting, portfolio-type
+  validation, and required source-ref validation were still embedded directly in `waves.py`. The
+  behavior was correct, but the loop is pure source-backed candidate selection logic and made the
+  route resolver harder to scan beside membership hashing, governance diagnostics, and source-ref
+  assembly.
+- Action: extracted `select_bulk_review_campaign_candidates()` into
+  `src/api/routers/wave_campaign_candidate_selection.py` and reused it from the campaign resolver
+  while preserving existing validation codes, messages, and excluded-candidate diagnostics.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_campaign_candidate_selection.py`;
+  full validation is recorded in the PR evidence for this slice.
+- Follow-up: keep membership source-ref assembly in the route until a stable campaign-membership
+  response projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

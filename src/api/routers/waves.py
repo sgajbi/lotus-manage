@@ -43,6 +43,9 @@ from src.api.routers.wave_campaign_hashing import (
     campaign_governance_hash,
     campaign_membership_hash,
 )
+from src.api.routers.wave_campaign_candidate_selection import (
+    select_bulk_review_campaign_candidates,
+)
 from src.api.routers.wave_campaign_governance_validation import (
     campaign_actor_entitlement_state,
     campaign_approval_status,
@@ -1232,25 +1235,11 @@ def _resolve_bulk_review_campaign_portfolios(
         )
     )
 
-    included_candidates: list[DpmWavePortfolioInput] = []
-    excluded_count = 0
-    for candidate in request.portfolios:
-        portfolio_type = normalize_required_portfolio_type(
-            candidate.portfolio_type,
-            required_code="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED",
-            required_message=(
-                "BULK_REVIEW_CAMPAIGN candidate portfolios require source-owned portfolio_type."
-            ),
-        )
-        if portfolio_type not in eligible_portfolio_types:
-            excluded_count += 1
-            continue
-        if not candidate.source_refs:
-            raise wave_service.DpmWaveValidationError(
-                "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_REQUIRED",
-                "BULK_REVIEW_CAMPAIGN candidate portfolios require source_refs.",
-            )
-        included_candidates.append(candidate)
+    selection = select_bulk_review_campaign_candidates(
+        candidates=request.portfolios,
+        eligible_portfolio_types=eligible_portfolio_types,
+    )
+    included_candidates = selection.included_candidates
 
     if not included_candidates:
         raise HTTPException(
@@ -1296,7 +1285,7 @@ def _resolve_bulk_review_campaign_portfolios(
                 if candidate.portfolio_type
                 else None,
                 "eligible_portfolio_types": sorted(eligible_portfolio_types),
-                "excluded_candidate_count": excluded_count,
+                "excluded_candidate_count": selection.excluded_count,
                 "membership_supportability_state": "READY",
                 **governance_diagnostics,
             },
