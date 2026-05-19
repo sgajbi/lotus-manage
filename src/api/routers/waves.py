@@ -57,7 +57,6 @@ from src.api.routers.wave_http_errors import (
 )
 from src.api.routers.wave_date_validation import parse_wave_as_of_date
 from src.api.routers.wave_portfolio_type_validation import (
-    normalize_required_portfolio_type,
     normalize_required_portfolio_types,
 )
 from src.api.routers.wave_required_text_validation import normalize_required_text
@@ -84,6 +83,9 @@ from src.api.routers.wave_source_refs import (
     tactical_house_view_affected_portfolio_ref,
     tactical_house_view_cohort_ref,
     tactical_house_view_ref,
+)
+from src.api.routers.wave_tactical_candidate_selection import (
+    build_tactical_house_view_candidate_payloads,
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
@@ -979,41 +981,7 @@ def _resolve_tactical_house_view_portfolios(
         required_message="TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
     )
 
-    candidate_payloads: list[dict[str, object]] = []
-    for candidate in request.portfolios:
-        portfolio_type = normalize_required_portfolio_type(
-            candidate.portfolio_type,
-            required_code="TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPE_REQUIRED",
-            required_message=(
-                "TACTICAL_HOUSE_VIEW candidate portfolios require source-owned portfolio_type."
-            ),
-        )
-        if candidate.discretionary_mandate is None:
-            raise wave_service.DpmWaveValidationError(
-                "TACTICAL_HOUSE_VIEW_DISCRETIONARY_MANDATE_REQUIRED",
-                "TACTICAL_HOUSE_VIEW candidate portfolios require source-owned discretionary_mandate.",
-            )
-        if not candidate.source_refs:
-            raise wave_service.DpmWaveValidationError(
-                "TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_REFS_REQUIRED",
-                "TACTICAL_HOUSE_VIEW candidate portfolios require source_refs.",
-            )
-        candidate_payloads.append(
-            {
-                "portfolio_id": candidate.portfolio_id,
-                "mandate_id": candidate.mandate_id,
-                "portfolio_type": portfolio_type,
-                "discretionary_mandate": candidate.discretionary_mandate,
-                "current_exposure_weight": (
-                    str(candidate.current_exposure_weight)
-                    if candidate.current_exposure_weight is not None
-                    else None
-                ),
-                "alignment_signal": candidate.alignment_signal,
-                "source_refs": source_refs_payload(candidate.source_refs),
-                "reason_codes": ["TACTICAL_HOUSE_VIEW_CANDIDATE_SOURCE_BACKED"],
-            }
-        )
+    candidate_payloads = build_tactical_house_view_candidate_payloads(request.portfolios)
 
     try:
         cohort = advise_authority_client.tactical_house_view_affected_cohort(

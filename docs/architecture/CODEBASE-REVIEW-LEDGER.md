@@ -695,3 +695,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   response projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-016: Tactical house-view candidate payload assembly embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_tactical_candidate_selection.py`
+- Finding: tactical house-view source-backed candidate validation and payload assembly lived inside
+  the router resolver beside lotus-advise source-authority calls and response source-ref assembly.
+  The behavior was correct, but the candidate payload builder is pure Manage-side source-evidence
+  normalization and was harder to test directly while embedded in the route.
+- Action: extracted `build_tactical_house_view_candidate_payloads()` into
+  `src/api/routers/wave_tactical_candidate_selection.py` and reused it from the tactical
+  house-view resolver while preserving existing fail-closed validation codes, messages, source-ref
+  payload shape, exposure-weight string conversion, and reason-code semantics.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_tactical_candidate_selection.py`;
+  full validation is recorded in the PR evidence for this slice.
+- Follow-up: keep lotus-advise authority invocation and affected-portfolio response projection in
+  the route until a stable tactical house-view workflow projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
