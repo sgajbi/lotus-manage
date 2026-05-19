@@ -636,3 +636,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   preserve private-banking semantics and fail-closed route-specific error codes.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-013: Risk-event exposure-weight validation embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_risk_event_validation.py`
+- Finding: risk-event source-cohort resolution normalized source-supplied exposure bucket names and
+  enforced missing/negative exposure-weight validation inline inside `waves.py`. The behavior was
+  correct, but it kept risk-event candidate validation coupled to route orchestration and made the
+  source-owned exposure contract harder to test directly.
+- Action: extracted `normalize_risk_event_exposure_weights()` into
+  `src/api/routers/wave_risk_event_validation.py` and reused it from the risk-event resolver while
+  preserving the existing fail-closed validation codes and messages.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_risk_event_validation.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: continue moving pure request-normalization logic out of `waves.py` when the helper can
+  retain source-owner boundaries and route-specific failure semantics.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
