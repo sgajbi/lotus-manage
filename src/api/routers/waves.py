@@ -51,6 +51,9 @@ from src.api.routers.wave_campaign_governance_validation import (
     campaign_approval_status,
     campaign_expiry_state,
 )
+from src.api.routers.wave_cio_model_change_projection import (
+    build_cio_model_change_resolved_portfolios,
+)
 from src.api.routers.wave_http_errors import (
     wave_lookup_http_exception,
     wave_validation_http_exception,
@@ -72,9 +75,6 @@ from src.api.routers.wave_source_dependency_http import (
 from src.api.routers.wave_source_refs import (
     bulk_review_campaign_member_ref,
     bulk_review_campaign_membership_ref,
-    cio_model_change_affected_mandate_ref,
-    cio_model_change_cohort_ref,
-    cio_model_change_event_ref,
     risk_event_affected_portfolio_ref,
     risk_event_cohort_ref,
     risk_event_ref,
@@ -889,37 +889,7 @@ def _resolve_cio_model_change_portfolios(
             code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
             message="CIO model-change affected cohort returned no portfolios.",
         )
-    source_id = (
-        cohort.snapshot_id or cohort.source_batch_fingerprint or cohort.model_change_event_id
-    )
-    cohort_ref = cio_model_change_cohort_ref(
-        source_id=source_id,
-        product_version=cohort.product_version,
-        supportability_state=cohort.supportability.state,
-        content_hash=cohort.source_batch_fingerprint,
-    )
-    event_ref = cio_model_change_event_ref(
-        model_change_event_id=cohort.model_change_event_id,
-        model_portfolio_version=cohort.model_portfolio_version,
-        supportability_state=cohort.supportability.state,
-        content_hash=cohort.source_batch_fingerprint,
-    )
-    return [
-        {
-            "portfolio_id": mandate.portfolio_id,
-            "mandate_id": mandate.mandate_id,
-            "source_refs": [
-                cohort_ref,
-                event_ref,
-                cio_model_change_affected_mandate_ref(
-                    source_record_id=mandate.source_record_id,
-                    mandate_id=mandate.mandate_id,
-                    binding_version=mandate.binding_version,
-                ),
-            ],
-        }
-        for mandate in cohort.affected_mandates
-    ]
+    return build_cio_model_change_resolved_portfolios(cohort)
 
 
 def _resolve_tactical_house_view_portfolios(
