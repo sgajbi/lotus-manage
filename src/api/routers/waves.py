@@ -60,7 +60,7 @@ from src.api.routers.wave_portfolio_type_validation import (
     normalize_required_portfolio_types,
 )
 from src.api.routers.wave_required_text_validation import normalize_required_text
-from src.api.routers.wave_risk_event_validation import normalize_risk_event_exposure_weights
+from src.api.routers.wave_risk_event_validation import build_risk_event_candidate_payloads
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
     source_dependency_failed_http_exception,
@@ -1096,25 +1096,13 @@ def _resolve_risk_event_portfolios(
             message="DPM_RISK_BASE_URL is not configured.",
         )
 
-    candidate_by_portfolio_id: dict[str, DpmWavePortfolioInput] = {}
-    risk_portfolios: list[dict[str, object]] = []
-    for candidate in request.portfolios:
-        exposure_weights = normalize_risk_event_exposure_weights(candidate.exposure_weights)
-        candidate_by_portfolio_id[candidate.portfolio_id] = candidate
-        risk_portfolios.append(
-            {
-                "portfolio_id": candidate.portfolio_id,
-                "mandate_id": candidate.mandate_id,
-                "portfolio_manager_id": candidate.portfolio_manager_id,
-                "exposure_weights": exposure_weights,
-            }
-        )
+    candidate_payloads = build_risk_event_candidate_payloads(request.portfolios)
 
     try:
         cohort = risk_authority_client.risk_event_affected_cohort(
             risk_event_id=risk_event_id,
             as_of_date=as_of_date,
-            portfolios=risk_portfolios,
+            portfolios=candidate_payloads.risk_portfolios,
             minimum_impact_score=Decimal(str(request.minimum_impact_score)),
             correlation_id=correlation_id,
         )
@@ -1156,7 +1144,7 @@ def _resolve_risk_event_portfolios(
     )
     portfolios: list[dict[str, object]] = []
     for affected in cohort.affected_portfolios:
-        matched_candidate = candidate_by_portfolio_id.get(affected.portfolio_id)
+        matched_candidate = candidate_payloads.candidate_by_portfolio_id.get(affected.portfolio_id)
         candidate_refs = matched_candidate.source_refs if matched_candidate is not None else []
         portfolios.append(
             {

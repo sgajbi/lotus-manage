@@ -715,3 +715,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the route until a stable tactical house-view workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-017: Risk-event candidate payload assembly embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_risk_event_validation.py`
+- Finding: risk-event candidate exposure normalization and lotus-risk request payload assembly
+  were still embedded in the router resolver. The logic was correct, but it mixed pure
+  source-candidate preparation with source-authority invocation and affected-portfolio projection,
+  making the risk-event cohort boundary harder to test directly.
+- Action: added `build_risk_event_candidate_payloads()` and
+  `RiskEventCandidatePayloads` to `src/api/routers/wave_risk_event_validation.py`, then reused the
+  helper from the risk-event resolver while preserving exposure-bucket normalization, validation
+  codes, duplicate portfolio-id mapping behavior, and request payload shape.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_risk_event_validation.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: keep lotus-risk authority invocation and affected-portfolio response source-ref
+  projection in the route until a stable risk-event workflow projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
