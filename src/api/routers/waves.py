@@ -79,12 +79,10 @@ from src.api.routers.wave_source_refs import (
     bulk_review_campaign_member_ref,
     bulk_review_campaign_membership_ref,
     source_refs_payload,
-    tactical_house_view_affected_portfolio_ref,
-    tactical_house_view_cohort_ref,
-    tactical_house_view_ref,
 )
 from src.api.routers.wave_tactical_candidate_selection import (
     build_tactical_house_view_candidate_payloads,
+    build_tactical_house_view_resolved_portfolios,
 )
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
@@ -970,52 +968,7 @@ def _resolve_tactical_house_view_portfolios(
             message="Tactical house-view cohort returned no affected portfolios.",
         )
 
-    cohort_ref = tactical_house_view_cohort_ref(
-        source_service=cohort.source_service,
-        product_name=cohort.product_name,
-        cohort_id=cohort.cohort_id,
-        product_version=cohort.product_version,
-        supportability_state=cohort.supportability_state,
-        content_hash=cohort.content_hash,
-    )
-    house_view_ref = tactical_house_view_ref(
-        source_service=cohort.source_service,
-        tactical_view_id=cohort.tactical_view_id,
-        tactical_view_version=cohort.tactical_view_version,
-        supportability_state=cohort.supportability_state,
-        content_hash=cohort.content_hash,
-    )
-    return [
-        {
-            "portfolio_id": affected.portfolio_id,
-            "mandate_id": affected.mandate_id,
-            "source_refs": [
-                cohort_ref,
-                house_view_ref,
-                tactical_house_view_affected_portfolio_ref(
-                    source_service=cohort.source_service,
-                    cohort_id=cohort.cohort_id,
-                    portfolio_id=affected.portfolio_id,
-                    product_version=cohort.product_version,
-                    supportability_state=cohort.supportability_state,
-                    content_hash=cohort.content_hash,
-                ),
-                *affected.source_refs,
-            ],
-            "diagnostics": {
-                "source_owner": cohort.source_service,
-                "source_product": f"{cohort.product_name}:{cohort.product_version}",
-                "tactical_view_id": cohort.tactical_view_id,
-                "tactical_view_version": cohort.tactical_view_version,
-                "theme_id": cohort.theme_id,
-                "target_action": cohort.target_action,
-                "cohort_supportability_state": cohort.supportability_state,
-                "cohort_reason_codes": list(cohort.supportability_reason_codes),
-                "inclusion_reason_codes": list(affected.inclusion_reason_codes),
-            },
-        }
-        for affected in cohort.affected_portfolios
-    ]
+    return build_tactical_house_view_resolved_portfolios(cohort)
 
 
 def _resolve_risk_event_portfolios(
