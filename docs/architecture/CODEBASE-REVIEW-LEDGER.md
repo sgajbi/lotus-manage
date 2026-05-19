@@ -596,3 +596,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helpers can preserve route-specific validation semantics.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-011: Source-cohort routes repeated required identifier validation
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_required_text_validation.py`
+- Finding: PM-book, CIO model-change, and risk-event route helpers repeated the same trim and
+  required-value validation for source-cohort identifiers while embedding route-specific error
+  codes and messages in the router body. The behavior was correct, but the repeated pattern made
+  source-cohort normalization harder to review as route orchestration continued to shrink.
+- Action: extracted `normalize_required_text()` into
+  `src/api/routers/wave_required_text_validation.py` and reused it for `portfolio_manager_id`,
+  `model_portfolio_id`, and `risk_event_id` validation while preserving each route's existing
+  validation code and message.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_required_text_validation.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: continue extracting source-cohort request normalization only when route-specific
+  validation semantics remain explicit at the call site.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

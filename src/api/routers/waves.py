@@ -49,6 +49,7 @@ from src.api.routers.wave_http_errors import (
 )
 from src.api.routers.wave_date_validation import parse_wave_as_of_date
 from src.api.routers.wave_portfolio_type_validation import normalize_required_portfolio_types
+from src.api.routers.wave_required_text_validation import normalize_required_text
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
     source_dependency_failed_http_exception,
@@ -786,12 +787,11 @@ def _resolve_pm_book_portfolios(
             "PM_BOOK_REVIEW_REJECTS_CALLER_PORTFOLIOS",
             "PM_BOOK_REVIEW resolves the affected portfolio set from lotus-core.",
         )
-    portfolio_manager_id = (request.portfolio_manager_id or "").strip()
-    if not portfolio_manager_id:
-        raise wave_service.DpmWaveValidationError(
-            "PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
-            "PM_BOOK_REVIEW requires portfolio_manager_id.",
-        )
+    portfolio_manager_id = normalize_required_text(
+        request.portfolio_manager_id,
+        required_code="PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
+        required_message="PM_BOOK_REVIEW requires portfolio_manager_id.",
+    )
     as_of_date = parse_wave_as_of_date(request.as_of_date)
     portfolio_types = normalize_required_portfolio_types(
         request.portfolio_types,
@@ -865,12 +865,11 @@ def _resolve_cio_model_change_portfolios(
             "CIO_MODEL_CHANGE_REJECTS_CALLER_PORTFOLIOS",
             "CIO_MODEL_CHANGE resolves the affected portfolio set from lotus-core.",
         )
-    model_portfolio_id = (request.model_portfolio_id or "").strip()
-    if not model_portfolio_id:
-        raise wave_service.DpmWaveValidationError(
-            "CIO_MODEL_CHANGE_MODEL_PORTFOLIO_REQUIRED",
-            "CIO_MODEL_CHANGE requires model_portfolio_id.",
-        )
+    model_portfolio_id = normalize_required_text(
+        request.model_portfolio_id,
+        required_code="CIO_MODEL_CHANGE_MODEL_PORTFOLIO_REQUIRED",
+        required_message="CIO_MODEL_CHANGE requires model_portfolio_id.",
+    )
     as_of_date = parse_wave_as_of_date(request.as_of_date)
     try:
         cohort = build_core_resolver_client().resolve_cio_model_change_affected_cohort(
@@ -1099,12 +1098,11 @@ def _resolve_risk_event_portfolios(
     correlation_id: str,
     risk_authority_client: LotusRiskAuthorityClient | None,
 ) -> list[dict[str, object]]:
-    risk_event_id = (request.risk_event_id or "").strip()
-    if not risk_event_id:
-        raise wave_service.DpmWaveValidationError(
-            "RISK_EVENT_ID_REQUIRED",
-            "RISK_EVENT requires risk_event_id.",
-        )
+    risk_event_id = normalize_required_text(
+        request.risk_event_id,
+        required_code="RISK_EVENT_ID_REQUIRED",
+        required_message="RISK_EVENT requires risk_event_id.",
+    )
     if not request.portfolios:
         raise wave_service.DpmWaveValidationError(
             "RISK_EVENT_CANDIDATE_PORTFOLIOS_REQUIRED",
