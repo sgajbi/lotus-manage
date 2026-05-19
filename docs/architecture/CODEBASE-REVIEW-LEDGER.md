@@ -735,3 +735,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   projection in the route until a stable risk-event workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-018: PM-book membership projection embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_pm_book_projection.py`
+- Finding: PM-book source membership projection was embedded in the route resolver after the
+  lotus-core call. The projection was correct, but it mixed source-authority failure handling with
+  deterministic wave portfolio/source-ref materialization, making PM-book lineage fallback behavior
+  harder to test directly.
+- Action: extracted `build_pm_book_resolved_portfolios()` into
+  `src/api/routers/wave_pm_book_projection.py` and reused it from the PM-book resolver while
+  preserving snapshot-id, batch-fingerprint, deterministic book-id, and member source-record
+  fallback behavior.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_pm_book_projection.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: keep lotus-core resolver invocation and source dependency error mapping in the route
+  until a stable PM-book workflow projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
