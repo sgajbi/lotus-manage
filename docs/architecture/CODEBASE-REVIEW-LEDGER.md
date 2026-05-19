@@ -655,3 +655,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   retain source-owner boundaries and route-specific failure semantics.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-014: Campaign governance validation embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_campaign_governance_validation.py`
+- Finding: bulk-review campaign governance approval completeness, expiry-date posture, and
+  actor-entitlement checks were embedded directly in `waves.py`. The behavior was correct, but the
+  validation rules are private-banking governance semantics and deserve focused tests separate from
+  route orchestration and source-ref assembly.
+- Action: extracted `campaign_approval_status()`, `campaign_expiry_state()`, and
+  `campaign_actor_entitlement_state()` into
+  `src/api/routers/wave_campaign_governance_validation.py`, then reused them from the bulk-review
+  campaign governance resolver while preserving existing validation codes and messages.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_campaign_governance_validation.py`;
+  full validation is recorded in the PR evidence for this slice.
+- Follow-up: keep source-ref and diagnostic assembly near the route request context unless a stable
+  campaign-governance domain object emerges.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.

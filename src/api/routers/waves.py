@@ -43,6 +43,11 @@ from src.api.routers.wave_campaign_hashing import (
     campaign_governance_hash,
     campaign_membership_hash,
 )
+from src.api.routers.wave_campaign_governance_validation import (
+    campaign_actor_entitlement_state,
+    campaign_approval_status,
+    campaign_expiry_state,
+)
 from src.api.routers.wave_http_errors import (
     wave_lookup_http_exception,
     wave_validation_http_exception,
@@ -1317,39 +1322,19 @@ def _resolve_bulk_review_campaign_governance(
             [],
         )
 
-    approval_fields = [governance.approval_ref, governance.approved_by, governance.approved_at]
-    supplied_approval_fields = [value for value in approval_fields if value]
-    if supplied_approval_fields and len(supplied_approval_fields) != len(approval_fields):
-        raise wave_service.DpmWaveValidationError(
-            "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE",
-            "Bulk-review campaign approval evidence requires approval_ref, approved_by, and approved_at.",
-        )
-
-    expiry_state = "NOT_SUPPLIED"
-    if governance.expires_on:
-        try:
-            expires_on = date.fromisoformat(governance.expires_on)
-        except ValueError as exc:
-            raise wave_service.DpmWaveValidationError(
-                "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
-                "campaign_governance.expires_on must be an ISO date.",
-            ) from exc
-        if expires_on < campaign_as_of_date:
-            raise wave_service.DpmWaveValidationError(
-                "BULK_REVIEW_CAMPAIGN_EXPIRED",
-                "Bulk-review campaign governance is expired for the requested as_of_date.",
-            )
-        expiry_state = "ACTIVE"
-
-    entitled_actor_ids = {actor.strip() for actor in governance.entitled_actor_ids if actor.strip()}
-    actor_entitlement_state = "NOT_SUPPLIED"
-    if entitled_actor_ids:
-        actor_entitlement_state = "AUTHORIZED"
-        if request.actor_id not in entitled_actor_ids:
-            raise wave_service.DpmWaveValidationError(
-                "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED",
-                "actor_id is not entitled for this bulk-review campaign.",
-            )
+    approval_status = campaign_approval_status(
+        approval_ref=governance.approval_ref,
+        approved_by=governance.approved_by,
+        approved_at=governance.approved_at,
+    )
+    expiry_state = campaign_expiry_state(
+        expires_on=governance.expires_on,
+        campaign_as_of_date=campaign_as_of_date,
+    )
+    actor_entitlement_state = campaign_actor_entitlement_state(
+        entitled_actor_ids=governance.entitled_actor_ids,
+        actor_id=request.actor_id,
+    )
 
     governance_hash = campaign_governance_hash(
         trigger_id=request.trigger_id,
@@ -1369,9 +1354,7 @@ def _resolve_bulk_review_campaign_governance(
     ]
     return (
         {
-            "campaign_governance_status": "APPROVED"
-            if len(supplied_approval_fields) == len(approval_fields)
-            else "NOT_SUPPLIED",
+            "campaign_governance_status": approval_status,
             "campaign_approval_ref": governance.approval_ref,
             "campaign_approved_by": governance.approved_by,
             "campaign_approved_at": governance.approved_at,
