@@ -179,7 +179,9 @@ Current repository posture:
     inapplicable source reason codes become `BLOCKED`, and contribution-partial source reason codes
     remain `PENDING_REVIEW`. Selected-alternative evidence takes precedence; Manage does not
     calculate scenario methodology, contribution rows, CIO approval workflow validity,
-    effective-period exception methodology, or portfolio/mandate applicability logic. RFC39-WTBD-006 is now
+    effective-period exception methodology, or portfolio/mandate applicability logic.
+    `lotus-risk` PR #140 (`5395091`, wiki `67390cc`) now pins source-owned v3 scenario and
+    contribution methodology truth for `RegimeScenarioPackEvaluation:v1`. RFC39-WTBD-006 is now
     implemented for source-owned observed-cost
     construction comparison: the `COST_AWARE` method applies `TransactionCostCurve:v1` observed
     average bps to candidate trade notionals, emits `ESTIMATED_COST` objective/constraint traces,

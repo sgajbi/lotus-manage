@@ -429,7 +429,8 @@ Operationally important truths:
    bounded `scenario_evidence_posture` for missing, stale/effective-period-exception,
    inapplicable, or contribution-partial source evidence; it does not generate scenario
    methodology, contribution rows, CIO approval evidence, effective-period exceptions, or
-   portfolio/mandate applicability evidence locally.
+   portfolio/mandate applicability evidence locally. `lotus-risk` now owns the auditable
+   scenario/contribution methodology for this source product through PR #140.
 7. wave simulation item diagnostics can expose bounded `proposed_changes` from selected
    construction alternatives. These rows are pre-trade review evidence only and are not orders,
    executions, fills, or OMS instructions.
