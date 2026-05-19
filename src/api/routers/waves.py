@@ -48,7 +48,10 @@ from src.api.routers.wave_http_errors import (
     wave_validation_http_exception,
 )
 from src.api.routers.wave_date_validation import parse_wave_as_of_date
-from src.api.routers.wave_portfolio_type_validation import normalize_required_portfolio_types
+from src.api.routers.wave_portfolio_type_validation import (
+    normalize_required_portfolio_type,
+    normalize_required_portfolio_types,
+)
 from src.api.routers.wave_required_text_validation import normalize_required_text
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
@@ -969,12 +972,13 @@ def _resolve_tactical_house_view_portfolios(
 
     candidate_payloads: list[dict[str, object]] = []
     for candidate in request.portfolios:
-        portfolio_type = (candidate.portfolio_type or "").strip().upper()
-        if not portfolio_type:
-            raise wave_service.DpmWaveValidationError(
-                "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPE_REQUIRED",
-                "TACTICAL_HOUSE_VIEW candidate portfolios require source-owned portfolio_type.",
-            )
+        portfolio_type = normalize_required_portfolio_type(
+            candidate.portfolio_type,
+            required_code="TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPE_REQUIRED",
+            required_message=(
+                "TACTICAL_HOUSE_VIEW candidate portfolios require source-owned portfolio_type."
+            ),
+        )
         if candidate.discretionary_mandate is None:
             raise wave_service.DpmWaveValidationError(
                 "TACTICAL_HOUSE_VIEW_DISCRETIONARY_MANDATE_REQUIRED",
@@ -1239,12 +1243,13 @@ def _resolve_bulk_review_campaign_portfolios(
     included_candidates: list[DpmWavePortfolioInput] = []
     excluded_count = 0
     for candidate in request.portfolios:
-        portfolio_type = (candidate.portfolio_type or "").strip().upper()
-        if not portfolio_type:
-            raise wave_service.DpmWaveValidationError(
-                "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED",
-                "BULK_REVIEW_CAMPAIGN candidate portfolios require source-owned portfolio_type.",
-            )
+        portfolio_type = normalize_required_portfolio_type(
+            candidate.portfolio_type,
+            required_code="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED",
+            required_message=(
+                "BULK_REVIEW_CAMPAIGN candidate portfolios require source-owned portfolio_type."
+            ),
+        )
         if portfolio_type not in eligible_portfolio_types:
             excluded_count += 1
             continue
