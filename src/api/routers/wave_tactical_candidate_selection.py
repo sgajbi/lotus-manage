@@ -4,7 +4,12 @@ from collections.abc import Iterable, Sequence
 from typing import Protocol
 
 from src.api.routers.wave_portfolio_type_validation import normalize_required_portfolio_type
-from src.api.routers.wave_source_refs import source_refs_payload
+from src.api.routers.wave_source_refs import (
+    source_refs_payload,
+    tactical_house_view_affected_portfolio_ref,
+    tactical_house_view_cohort_ref,
+    tactical_house_view_ref,
+)
 from src.api.services import wave_service
 from src.core.waves import DpmWaveSourceRef
 
@@ -30,6 +35,58 @@ class TacticalHouseViewCandidate(Protocol):
 
     @property
     def source_refs(self) -> Sequence[DpmWaveSourceRef]: ...
+
+
+class TacticalHouseViewAffectedPortfolio(Protocol):
+    @property
+    def portfolio_id(self) -> str: ...
+
+    @property
+    def mandate_id(self) -> str | None: ...
+
+    @property
+    def inclusion_reason_codes(self) -> tuple[str, ...]: ...
+
+    @property
+    def source_refs(self) -> Sequence[dict[str, object]]: ...
+
+
+class TacticalHouseViewAffectedCohort(Protocol):
+    @property
+    def cohort_id(self) -> str: ...
+
+    @property
+    def tactical_view_id(self) -> str: ...
+
+    @property
+    def tactical_view_version(self) -> str: ...
+
+    @property
+    def theme_id(self) -> str: ...
+
+    @property
+    def target_action(self) -> str: ...
+
+    @property
+    def product_name(self) -> str: ...
+
+    @property
+    def product_version(self) -> str: ...
+
+    @property
+    def source_service(self) -> str: ...
+
+    @property
+    def content_hash(self) -> str | None: ...
+
+    @property
+    def supportability_state(self) -> str: ...
+
+    @property
+    def supportability_reason_codes(self) -> tuple[str, ...]: ...
+
+    @property
+    def affected_portfolios(self) -> tuple[TacticalHouseViewAffectedPortfolio, ...]: ...
 
 
 def build_tactical_house_view_candidate_payloads(
@@ -71,3 +128,54 @@ def build_tactical_house_view_candidate_payloads(
             }
         )
     return payloads
+
+
+def build_tactical_house_view_resolved_portfolios(
+    cohort: TacticalHouseViewAffectedCohort,
+) -> list[dict[str, object]]:
+    cohort_ref = tactical_house_view_cohort_ref(
+        source_service=cohort.source_service,
+        product_name=cohort.product_name,
+        cohort_id=cohort.cohort_id,
+        product_version=cohort.product_version,
+        supportability_state=cohort.supportability_state,
+        content_hash=cohort.content_hash,
+    )
+    house_view_ref = tactical_house_view_ref(
+        source_service=cohort.source_service,
+        tactical_view_id=cohort.tactical_view_id,
+        tactical_view_version=cohort.tactical_view_version,
+        supportability_state=cohort.supportability_state,
+        content_hash=cohort.content_hash,
+    )
+    return [
+        {
+            "portfolio_id": affected.portfolio_id,
+            "mandate_id": affected.mandate_id,
+            "source_refs": [
+                cohort_ref,
+                house_view_ref,
+                tactical_house_view_affected_portfolio_ref(
+                    source_service=cohort.source_service,
+                    cohort_id=cohort.cohort_id,
+                    portfolio_id=affected.portfolio_id,
+                    product_version=cohort.product_version,
+                    supportability_state=cohort.supportability_state,
+                    content_hash=cohort.content_hash,
+                ),
+                *affected.source_refs,
+            ],
+            "diagnostics": {
+                "source_owner": cohort.source_service,
+                "source_product": f"{cohort.product_name}:{cohort.product_version}",
+                "tactical_view_id": cohort.tactical_view_id,
+                "tactical_view_version": cohort.tactical_view_version,
+                "theme_id": cohort.theme_id,
+                "target_action": cohort.target_action,
+                "cohort_supportability_state": cohort.supportability_state,
+                "cohort_reason_codes": list(cohort.supportability_reason_codes),
+                "inclusion_reason_codes": list(affected.inclusion_reason_codes),
+            },
+        }
+        for affected in cohort.affected_portfolios
+    ]

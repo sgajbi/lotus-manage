@@ -795,3 +795,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   until a stable risk-event workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-021: Tactical house-view cohort projection embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_tactical_candidate_selection.py`
+- Finding: tactical house-view affected-cohort projection was still embedded in the route resolver
+  after the lotus-advise source-authority call. The behavior was correct, but it mixed source
+  dependency error handling with deterministic wave portfolio/source-ref and diagnostics
+  materialization, making the tactical house-view lineage contract harder to test directly.
+- Action: added `build_tactical_house_view_resolved_portfolios()` to
+  `src/api/routers/wave_tactical_candidate_selection.py` and reused it from the tactical
+  house-view resolver while preserving cohort, house-view, affected-portfolio, source-owned
+  candidate lineage, supportability, and diagnostics behavior.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_tactical_candidate_selection.py`;
+  full validation is recorded in the PR evidence for this slice.
+- Follow-up: keep lotus-advise resolver invocation and source dependency error mapping in the route
+  until a stable tactical house-view workflow projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
