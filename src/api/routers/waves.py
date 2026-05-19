@@ -64,7 +64,10 @@ from src.api.routers.wave_portfolio_type_validation import (
 )
 from src.api.routers.wave_pm_book_projection import build_pm_book_resolved_portfolios
 from src.api.routers.wave_required_text_validation import normalize_required_text
-from src.api.routers.wave_risk_event_validation import build_risk_event_candidate_payloads
+from src.api.routers.wave_risk_event_validation import (
+    build_risk_event_candidate_payloads,
+    build_risk_event_resolved_portfolios,
+)
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
     source_dependency_failed_http_exception,
@@ -75,9 +78,6 @@ from src.api.routers.wave_source_dependency_http import (
 from src.api.routers.wave_source_refs import (
     bulk_review_campaign_member_ref,
     bulk_review_campaign_membership_ref,
-    risk_event_affected_portfolio_ref,
-    risk_event_cohort_ref,
-    risk_event_ref,
     source_refs_payload,
     tactical_house_view_affected_portfolio_ref,
     tactical_house_view_cohort_ref,
@@ -1070,46 +1070,11 @@ def _resolve_risk_event_portfolios(
             message="Risk-event affected cohort returned no affected portfolios.",
         )
 
-    source_id = cohort.cohort_id or cohort.request_fingerprint or risk_event_id
-    supportability_state = cohort.calculation_supportability.upper()
-    cohort_ref = risk_event_cohort_ref(
-        source_service=cohort.source_service,
-        product_name=cohort.product_name,
-        source_id=source_id,
-        product_version=cohort.product_version,
-        supportability_state=supportability_state,
-        content_hash=cohort.request_fingerprint,
+    return build_risk_event_resolved_portfolios(
+        cohort=cohort,
+        candidate_by_portfolio_id=candidate_payloads.candidate_by_portfolio_id,
+        fallback_risk_event_id=risk_event_id,
     )
-    event_ref = risk_event_ref(
-        source_service=cohort.source_service,
-        risk_event_id=cohort.risk_event_id,
-        product_version=cohort.product_version,
-        supportability_state=supportability_state,
-        content_hash=cohort.request_fingerprint,
-    )
-    portfolios: list[dict[str, object]] = []
-    for affected in cohort.affected_portfolios:
-        matched_candidate = candidate_payloads.candidate_by_portfolio_id.get(affected.portfolio_id)
-        candidate_refs = matched_candidate.source_refs if matched_candidate is not None else []
-        portfolios.append(
-            {
-                "portfolio_id": affected.portfolio_id,
-                "mandate_id": affected.mandate_id,
-                "source_refs": [
-                    cohort_ref,
-                    event_ref,
-                    risk_event_affected_portfolio_ref(
-                        source_service=cohort.source_service,
-                        source_ref=affected.source_ref,
-                        product_version=cohort.product_version,
-                        supportability_state=supportability_state,
-                        content_hash=cohort.request_fingerprint,
-                    ),
-                    *source_refs_payload(candidate_refs),
-                ],
-            }
-        )
-    return portfolios
 
 
 def _resolve_bulk_review_campaign_portfolios(

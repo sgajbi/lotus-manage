@@ -775,3 +775,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   until a stable CIO model-change workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-020: Risk-event cohort projection embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_risk_event_validation.py`
+- Finding: risk-event affected-cohort projection was still embedded in the route resolver after the
+  lotus-risk source-authority call. The behavior was correct, but it mixed source dependency error
+  handling with deterministic wave portfolio/source-ref materialization, making lineage fallback
+  behavior harder to test directly.
+- Action: added `build_risk_event_resolved_portfolios()` to
+  `src/api/routers/wave_risk_event_validation.py` and reused it from the risk-event resolver while
+  preserving cohort-id, request-fingerprint, requested-event fallback, event source-ref,
+  affected-portfolio source-ref, candidate source-ref, and supportability-state behavior.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_risk_event_validation.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: keep lotus-risk resolver invocation and source dependency error mapping in the route
+  until a stable risk-event workflow projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
