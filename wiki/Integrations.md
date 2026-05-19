@@ -153,7 +153,8 @@ alternative does not already carry regime-stress authority. Manage does not gene
 methodology, contribution rows, CIO approval evidence, effective-period exceptions, or
 portfolio/mandate applicability evidence locally; it only maps missing,
 stale/effective-period-exception, inapplicable, and contribution-partial source evidence into
-bounded proof-pack section states and reason codes.
+bounded proof-pack section states and reason codes. `lotus-risk` owns the auditable
+scenario/contribution methodology for `RegimeScenarioPackEvaluation:v1` through PR #140.
 ESG/restriction-aware construction consumes `lotus-core` `ClientRestrictionProfile:v1` and
 `SustainabilityPreferenceProfile:v1` through the same stateful core-sourcing path. Manage can block
 candidate trades that violate hard client restrictions and can flag sustainability allocation or

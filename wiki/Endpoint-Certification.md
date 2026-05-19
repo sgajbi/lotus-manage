@@ -1583,7 +1583,8 @@ Non-functional posture:
   `DEGRADED`, inapplicable source reasons are `BLOCKED`, and contribution-partial source reasons
   remain `PENDING_REVIEW`, but does not calculate scenario methodology, validate CIO approval
   workflow, calculate effective-period exceptions, or derive portfolio/mandate applicability
-  locally.
+  locally. `lotus-risk` PR #140 pins the source-owned scenario/contribution methodology for
+  `RegimeScenarioPackEvaluation:v1`.
 - Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
   `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
   not inferred from these refs.
