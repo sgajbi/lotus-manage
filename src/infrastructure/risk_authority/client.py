@@ -298,10 +298,15 @@ def _regime_context_from_scenario_response(
 ) -> AuthoritativeRegimeStressContext:
     try:
         metadata = _dict_section(body, "metadata")
+        governance_evidence = _optional_dict_section(body, "governance_evidence")
         supportability = str(metadata.get("calculation_supportability", "degraded"))
         reason_codes = body.get("reason_codes")
         if not isinstance(reason_codes, list):
             reason_codes = ["REGIME_SCENARIO_PACK_RESPONSE_REASON_CODES_MISSING"]
+        portfolio_id = _optional_text(body.get("portfolio_id"))
+        portfolio_applicability_ref = _optional_text(
+            governance_evidence.get("portfolio_applicability_ref")
+        )
         return AuthoritativeRegimeStressContext(
             supportability_status=_scenario_status_from_supportability(supportability),
             source_system=str(metadata.get("source_service") or "lotus-risk"),
@@ -309,12 +314,31 @@ def _regime_context_from_scenario_response(
             scenario_pack_id=str(body["scenario_pack_id"]),
             worst_case_loss_pct=Decimal(str(body["worst_case_loss_pct"])),
             maximum_allowed_loss_pct=Decimal(str(body["maximum_allowed_loss_pct"])),
-            cio_approval_ref=_optional_text(body.get("cio_approval_ref")),
-            approved_by=_optional_text(body.get("approved_by")),
-            approved_at=_optional_text(body.get("approved_at")),
-            effective_from=_optional_date(body.get("effective_from")),
-            effective_to=_optional_date(body.get("effective_to")),
-            applicable_portfolio_ids=_text_list(body.get("applicable_portfolio_ids")),
+            cio_approval_status=_optional_text(governance_evidence.get("cio_approval_status")),
+            cio_approval_ref=_optional_text(governance_evidence.get("cio_approval_ref"))
+            or _optional_text(body.get("cio_approval_ref")),
+            approved_by=_optional_text(governance_evidence.get("approved_by"))
+            or _optional_text(body.get("approved_by")),
+            approved_at=_optional_text(governance_evidence.get("approved_at"))
+            or _optional_text(body.get("approved_at")),
+            effective_from=_optional_date(
+                governance_evidence.get("effective_from") or body.get("effective_from")
+            ),
+            effective_to=_optional_date(
+                governance_evidence.get("effective_to") or body.get("effective_to")
+            ),
+            effective_period_status=_optional_text(
+                governance_evidence.get("effective_period_status")
+            ),
+            applicability_status=_optional_text(governance_evidence.get("applicability_status")),
+            applicability_scope=_text_list(governance_evidence.get("applicability_scope")),
+            portfolio_applicability_ref=portfolio_applicability_ref,
+            methodology_ref=_optional_text(governance_evidence.get("methodology_ref")),
+            applicable_portfolio_ids=_regime_applicable_portfolio_ids(
+                body=body,
+                portfolio_id=portfolio_id,
+                portfolio_applicability_ref=portfolio_applicability_ref,
+            ),
             applicable_mandate_ids=_text_list(body.get("applicable_mandate_ids")),
             reason_codes=sorted({str(reason_code) for reason_code in reason_codes}),
         )
@@ -400,6 +424,29 @@ def _scenario_bucket(asset_class: str) -> str:
 def _dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:
     value = body.get(key)
     return value if isinstance(value, dict) else {}
+
+
+def _optional_dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:
+    value = body.get(key)
+    if value is None:
+        return {}
+    if isinstance(value, dict):
+        return value
+    raise ValueError(f"{key} must be an object")
+
+
+def _regime_applicable_portfolio_ids(
+    *,
+    body: dict[str, Any],
+    portfolio_id: str | None,
+    portfolio_applicability_ref: str | None,
+) -> list[str]:
+    explicit_portfolios = _text_list(body.get("applicable_portfolio_ids"))
+    if explicit_portfolios:
+        return explicit_portfolios
+    if portfolio_id and portfolio_applicability_ref:
+        return [portfolio_id]
+    return []
 
 
 def _optional_text(value: Any) -> str | None:

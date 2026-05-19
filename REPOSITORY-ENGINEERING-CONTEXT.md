@@ -171,17 +171,19 @@ Current repository posture:
     context: `scenario_and_regime_evidence` preserves `lotus-risk` / CIO
     `RegimeScenarioPackEvaluation:v1` supportability, source refs, canonical
     `regime_stress_context` hashes, scenario pack id, worst-case loss, policy threshold, and bounded
-    reason codes plus optional source-supplied CIO approval, effective-period, and
-    portfolio/mandate applicability evidence when the selected alternative carries the authority
-    context or the caller supplies it directly for proof-pack generation. It also emits bounded
+    reason codes plus source-supplied `governance_evidence` for CIO approval, effective-period,
+    and portfolio applicability posture when the selected alternative carries the authority context
+    or the caller supplies it directly for proof-pack generation. It also emits bounded
     `scenario_evidence_posture` so missing governance/applicability evidence becomes
     `PENDING_REVIEW`, source stale/effective-period-exception reason codes become `DEGRADED`,
     inapplicable source reason codes become `BLOCKED`, and contribution-partial source reason codes
     remain `PENDING_REVIEW`. Selected-alternative evidence takes precedence; Manage does not
-    calculate scenario methodology, contribution rows, CIO approval workflow validity,
-    effective-period exception methodology, or portfolio/mandate applicability logic.
+    calculate scenario methodology, contribution rows, CIO approval, effective-period posture, or
+    portfolio applicability logic.
     `lotus-risk` PR #140 (`5395091`, wiki `67390cc`) now pins source-owned v3 scenario and
-    contribution methodology truth for `RegimeScenarioPackEvaluation:v1`. RFC39-WTBD-006 is now
+    contribution methodology truth for `RegimeScenarioPackEvaluation:v1`; `lotus-risk` PR #141
+    (`978f441`, wiki `c2c6560`) now pins bounded source-owned scenario-pack governance posture.
+    RFC39-WTBD-006 is now
     implemented for source-owned observed-cost
     construction comparison: the `COST_AWARE` method applies `TransactionCostCurve:v1` observed
     average bps to candidate trade notionals, emits `ESTIMATED_COST` objective/constraint traces,

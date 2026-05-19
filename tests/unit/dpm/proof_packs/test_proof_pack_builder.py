@@ -680,11 +680,17 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
             scenario_pack_id="CIO_REGIME_2026_Q2",
             worst_case_loss_pct=Decimal("0.1800"),
             maximum_allowed_loss_pct=Decimal("0.1200"),
+            cio_approval_status="approved",
             cio_approval_ref="CIO-APPROVAL-2026-Q2",
             approved_by="cio_001",
             approved_at="2026-04-30T09:00:00Z",
             effective_from=date(2026, 5, 1),
             effective_to=date(2026, 6, 30),
+            effective_period_status="active",
+            applicability_status="applicable",
+            applicability_scope=["DISCRETIONARY_PRIVATE_BANKING_BALANCED"],
+            portfolio_applicability_ref="CIO-APPROVAL-2026-Q2-APP-pf_proof_pack_1",
+            methodology_ref="docs/methodologies/metrics/regime-scenario-pack-evaluation.md",
             applicable_portfolio_ids=["pf_proof_pack_1"],
             applicable_mandate_ids=["mandate_001"],
             reason_codes=["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"],
@@ -724,11 +730,22 @@ def test_selected_alternative_proof_pack_preserves_regime_scenario_pack_source()
     assert scenario.facts["source_product_name"] == "RegimeScenarioPackEvaluation"
     assert scenario.facts["source_product_version"] == "v1"
     assert scenario.facts["scenario_pack_id"] == "CIO_REGIME_2026_Q2"
+    assert scenario.facts["cio_approval_status"] == "approved"
     assert scenario.facts["cio_approval_ref"] == "CIO-APPROVAL-2026-Q2"
     assert scenario.facts["approved_by"] == "cio_001"
     assert scenario.facts["approved_at"] == "2026-04-30T09:00:00Z"
     assert scenario.facts["effective_from"] == "2026-05-01"
     assert scenario.facts["effective_to"] == "2026-06-30"
+    assert scenario.facts["effective_period_status"] == "active"
+    assert scenario.facts["applicability_status"] == "applicable"
+    assert scenario.facts["applicability_scope"] == ["DISCRETIONARY_PRIVATE_BANKING_BALANCED"]
+    assert scenario.facts["portfolio_applicability_ref"] == (
+        "CIO-APPROVAL-2026-Q2-APP-pf_proof_pack_1"
+    )
+    assert (
+        scenario.facts["methodology_ref"]
+        == "docs/methodologies/metrics/regime-scenario-pack-evaluation.md"
+    )
     assert scenario.facts["applicable_portfolio_ids"] == ["pf_proof_pack_1"]
     assert scenario.facts["applicable_mandate_ids"] == ["mandate_001"]
     assert scenario.facts["approval_evidence_projected"] is True

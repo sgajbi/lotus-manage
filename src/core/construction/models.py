@@ -673,6 +673,10 @@ class AuthoritativeRegimeStressContext(BaseModel):
     maximum_allowed_loss_pct: Decimal = Field(
         description="Maximum permitted scenario loss ratio for the mandate."
     )
+    cio_approval_status: str | None = Field(
+        default=None,
+        description="Optional source-owned CIO approval status for the scenario pack.",
+    )
     cio_approval_ref: str | None = Field(
         default=None,
         description="Optional source-owned CIO approval reference for the scenario pack.",
@@ -692,6 +696,26 @@ class AuthoritativeRegimeStressContext(BaseModel):
     effective_to: date | None = Field(
         default=None,
         description="Optional source-owned scenario-pack effective end date.",
+    )
+    effective_period_status: str | None = Field(
+        default=None,
+        description="Optional source-owned effective-period posture for the requested as-of date.",
+    )
+    applicability_status: str | None = Field(
+        default=None,
+        description="Optional source-owned portfolio applicability posture for this request.",
+    )
+    applicability_scope: list[str] = Field(
+        default_factory=list,
+        description="Optional source-owned portfolio or mandate scope labels for the scenario pack.",
+    )
+    portfolio_applicability_ref: str | None = Field(
+        default=None,
+        description="Optional source-owned reference proving the requested portfolio is in scope.",
+    )
+    methodology_ref: str | None = Field(
+        default=None,
+        description="Optional source-owned scenario-pack methodology reference.",
     )
     applicable_portfolio_ids: list[str] = Field(
         default_factory=list,

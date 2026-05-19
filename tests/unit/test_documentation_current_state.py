@@ -12,7 +12,6 @@ WTBD_PARTIAL_IDS = {
     "RFC37-WTBD-003",
     "RFC37-WTBD-007",
     "RFC39-WTBD-008",
-    "RFC40-WTBD-009",
     "RFC41-WTBD-003",
     "RFC42-WTBD-006",
     "RFC42-WTBD-007",
@@ -329,8 +328,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     done_ids = all_ids - WTBD_PARTIAL_IDS - WTBD_OPEN_IDS
 
     assert len(rows) == 59
-    assert len(done_ids) == 44
-    assert len(WTBD_PARTIAL_IDS) == 9
+    assert len(done_ids) == 45
+    assert len(WTBD_PARTIAL_IDS) == 8
     assert len(WTBD_OPEN_IDS) == 6
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
@@ -340,7 +339,7 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 44 done on merged/published truth, 9 partial" in supported_features
+    assert "59 WTBD items: 45 done on merged/published truth, 8 partial" in supported_features
     assert "6 remaining or open" in supported_features
 
 
@@ -634,15 +633,15 @@ def test_rfc0040_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "Gold-pass assessment - 2026-05-10",
         "`RegimeScenarioPackEvaluation:v1` context in `scenario_and_regime_evidence`",
         "generation-time direct `regime_stress_context` enrichment",
-        "bounded source-supplied CIO approval, effective-period, and portfolio/mandate applicability evidence preservation",
+        "source-owned `governance_evidence` for CIO approval, effective-period, and portfolio-applicability posture",
         "`scenario_evidence_posture`",
         "`REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION`",
         "`REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED`",
         "`REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL`",
         "`approval_evidence_projected`, `effective_period_projected`",
         "`applicability_evidence_projected`",
-        "does not validate source-owner CIO workflow approval",
         "lotus-risk` PR #140",
+        "lotus-risk` PR #141",
         "v3 auditable methodology truth",
         "portfolio-memory consumers",
         "canonical-front-office-qa-20260509-225912.json",
@@ -662,9 +661,10 @@ def test_rfc0040_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
         "`scenario_and_regime_evidence` sections preserve",
         "bounded `scenario_evidence_posture`",
         "stale/effective-period-exception source evidence is degraded",
-        "optional source-supplied CIO approval/effective-period/portfolio-mandate applicability evidence",
-        "without manage-local risk/performance/scenario methodology, CIO approval workflow validation",
+        "source-owned CIO approval/effective-period/portfolio-applicability `governance_evidence`",
+        "without manage-local risk/performance/scenario methodology, CIO approval",
         "lotus-risk` PR #140",
+        "lotus-risk` PR #141",
         "review-gated PM memo",
         "canonical-front-office-qa-20260509-225912.json",
         "wtbd-rfc40-audit-20260509",
@@ -1466,8 +1466,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         work_to_be_done
     )
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 44 |" in work_to_be_done
-    assert "| Partial / in progress | 9 |" in work_to_be_done
+    assert "| Done on merged/published truth | 45 |" in work_to_be_done
+    assert "| Partial / in progress | 8 |" in work_to_be_done
     assert "| Remaining / open | 6 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
@@ -2083,7 +2083,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 44 done on merged/published truth, 9 partial" in (supported_features)
+    assert "59 WTBD items: 45 done on merged/published truth, 8 partial" in (supported_features)
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

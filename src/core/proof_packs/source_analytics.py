@@ -358,6 +358,7 @@ def _regime_stress_source_analytics(
             "source_product_name": "RegimeScenarioPackEvaluation",
             "source_product_version": context.source_product_version,
             "scenario_pack_id": context.scenario_pack_id,
+            "cio_approval_status": context.cio_approval_status,
             "cio_approval_ref": context.cio_approval_ref,
             "approved_by": context.approved_by,
             "approved_at": context.approved_at,
@@ -367,14 +368,17 @@ def _regime_stress_source_analytics(
             "effective_to": context.effective_to.isoformat()
             if context.effective_to is not None
             else None,
+            "effective_period_status": context.effective_period_status,
+            "applicability_status": context.applicability_status,
+            "applicability_scope": context.applicability_scope,
+            "portfolio_applicability_ref": context.portfolio_applicability_ref,
+            "methodology_ref": context.methodology_ref,
             "applicable_portfolio_ids": context.applicable_portfolio_ids,
             "applicable_mandate_ids": context.applicable_mandate_ids,
             "approval_evidence_projected": context.cio_approval_ref is not None,
             "effective_period_projected": context.effective_from is not None
             or context.effective_to is not None,
-            "applicability_evidence_projected": bool(
-                context.applicable_portfolio_ids or context.applicable_mandate_ids
-            ),
+            "applicability_evidence_projected": _regime_applicability_projected(context),
             "scenario_evidence_posture": evidence_posture["facts"],
         },
         metrics={
@@ -399,11 +403,7 @@ def _regime_stress_evidence_posture(
             if context.effective_from is not None or context.effective_to is not None
             else "MISSING"
         ),
-        "applicability": (
-            "PROJECTED"
-            if context.applicable_portfolio_ids or context.applicable_mandate_ids
-            else "MISSING"
-        ),
+        "applicability": "PROJECTED" if _regime_applicability_projected(context) else "MISSING",
         "source_reason_posture": "READY",
     }
     posture_states: list[ProofPackSectionState] = ["READY"]
@@ -413,7 +413,7 @@ def _regime_stress_evidence_posture(
     if context.effective_from is None and context.effective_to is None:
         reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING")
         posture_states.append("PENDING_REVIEW")
-    if not context.applicable_portfolio_ids and not context.applicable_mandate_ids:
+    if not _regime_applicability_projected(context):
         reason_codes.add("REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING")
         posture_states.append("PENDING_REVIEW")
 
@@ -442,6 +442,16 @@ def _regime_stress_evidence_posture(
         "reason_codes": sorted(reason_codes),
         "facts": posture_facts,
     }
+
+
+def _regime_applicability_projected(context: AuthoritativeRegimeStressContext) -> bool:
+    return bool(
+        context.applicable_portfolio_ids
+        or context.applicable_mandate_ids
+        or context.applicability_scope
+        or context.portfolio_applicability_ref
+        or context.applicability_status
+    )
 
 
 def _source_ref(
