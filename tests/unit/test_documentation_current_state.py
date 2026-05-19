@@ -1532,7 +1532,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "src/core/waves/campaign_definition_workflow_overview.py" in work_to_be_done
     assert "campaign-definition launch-package addendum" in work_to_be_done
     assert "src/core/waves/campaign_definition_launch_package.py" in work_to_be_done
-    assert "Approval inboxes, maker-checker workflow" in work_to_be_done
+    assert "bounded read-only campaign approval-attention inbox" in work_to_be_done
+    assert "Approval state mutation, maker-checker workflow" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (

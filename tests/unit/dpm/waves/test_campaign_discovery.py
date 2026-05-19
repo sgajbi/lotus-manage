@@ -19,6 +19,10 @@ from src.core.waves.campaign_operating_queue import (
     build_bulk_review_campaign_operating_queue_item,
     build_bulk_review_campaign_operating_queue_page,
 )
+from src.core.waves.campaign_approval_inbox import (
+    build_bulk_review_campaign_approval_inbox_item,
+    build_bulk_review_campaign_approval_inbox_page,
+)
 
 
 def _definition(
@@ -27,6 +31,7 @@ def _definition(
     approval_ref: str | None = "BRC-APPROVAL-2026-05",
     approved_by: str | None = "cio_ops_committee",
     approved_at: str | None = "2026-05-14T08:30:00+08:00",
+    entitled_actor_ids: list[str] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
     return DpmBulkReviewCampaignDefinition(
         campaign_id="campaign-holdings-apple-tesla-20260510",
@@ -65,6 +70,7 @@ def _definition(
             approved_by=approved_by,
             approved_at=approved_at,
             expires_on=expires_on,
+            entitled_actor_ids=entitled_actor_ids or [],
             source_refs=[
                 DpmWaveSourceRef(
                     source_system="lotus-manage",
@@ -216,4 +222,72 @@ def test_campaign_operating_queue_page_filters_expired_rows_and_counts_statuses(
     assert page.count == 1
     assert page.status_counts == {"READY_TO_LAUNCH": 1}
     assert page.items[0].discovery.expiry_state == "ACTIVE"
+    assert page.content_hash.startswith("sha256:")
+
+
+def test_campaign_approval_inbox_classifies_governance_attention() -> None:
+    complete = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    missing_approval = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(approval_ref=None, approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    incomplete = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    expired = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(expires_on="2026-05-01"),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    unauthorized = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(entitled_actor_ids=["ops"]),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    assert complete.product_name == "BulkReviewCampaignApprovalInboxItem"
+    assert complete.inbox_status == "APPROVAL_COMPLETE"
+    assert complete.approval_ref == "BRC-APPROVAL-2026-05"
+    assert complete.approval_source_ref_count == 1
+    assert complete.content_hash.startswith("sha256:")
+    assert missing_approval.inbox_status == "APPROVAL_REQUIRED"
+    assert incomplete.inbox_status == "APPROVAL_INCOMPLETE"
+    assert expired.inbox_status == "EXPIRY_ATTENTION"
+    assert unauthorized.inbox_status == "ENTITLEMENT_ATTENTION"
+    assert "NO_APPROVAL_STATE_MUTATION" in unauthorized.operating_boundaries
+
+
+def test_campaign_approval_inbox_page_filters_closed_and_status() -> None:
+    page = build_bulk_review_campaign_approval_inbox_page(
+        definitions=[
+            _definition(),
+            _definition(approval_ref=None, approved_by=None, approved_at=None),
+        ],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        include_closed=False,
+        inbox_status="APPROVAL_REQUIRED",
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignApprovalInbox"
+    assert page.count == 1
+    assert page.status_counts == {"APPROVAL_REQUIRED": 1}
+    assert page.items[0].inbox_reason_codes == [
+        "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_NOT_SUPPLIED"
+    ]
     assert page.content_hash.startswith("sha256:")

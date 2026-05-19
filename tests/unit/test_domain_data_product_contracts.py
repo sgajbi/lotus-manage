@@ -201,6 +201,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
         "/api/v1/rebalance/waves/campaign-operating-queue",
+        "/api/v1/rebalance/waves/campaign-approval-inbox",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves",
     ]
@@ -219,6 +220,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     )
     assert (
         "Workflow overview composes discovery, preview-readiness, lifecycle-event, launch-history"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "The approval inbox classifies persisted definitions into approval-complete"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
 

@@ -95,6 +95,8 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
+    CampaignApprovalInboxStatus,
+    DpmBulkReviewCampaignApprovalInboxPage,
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
@@ -114,6 +116,7 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_launch_command,
     build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
+    build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_definition_workflow_overview,
     build_bulk_review_campaign_operating_queue_page,
 )
@@ -1454,6 +1457,74 @@ def list_bulk_review_campaign_operating_queue(
         actor_id=actor_id,
         active_on=active_on_date,
         include_expired=include_expired,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/campaign-approval-inbox",
+    response_model=DpmBulkReviewCampaignApprovalInboxPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign approval attention inbox",
+    description=(
+        "Returns a read-only approval attention inbox over persisted "
+        "`BulkReviewCampaignDefinition:v1` records. The inbox classifies approval-complete, "
+        "approval-required, approval-incomplete, expiry-attention, entitlement-attention, and "
+        "closed campaign definitions from existing governance evidence and fail-closed readiness "
+        "checks. It does not mutate approval state, create maker-checker workflow, approve trades, "
+        "generate orders, or claim OMS execution."
+    ),
+)
+def list_bulk_review_campaign_approval_inbox(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
+    as_of_date: str | None = Query(default=None),
+    requested_as_of_date: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date to evaluate expiry and readiness. When omitted, each definition's "
+            "persisted campaign as-of date is used."
+        ),
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    active_on: str | None = Query(
+        default=None,
+        description="Optional ISO date used to classify discovery expiry posture.",
+    ),
+    inbox_status: CampaignApprovalInboxStatus | None = Query(
+        default=None,
+        description="Optional filter for one approval attention posture.",
+    ),
+    include_closed: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignApprovalInboxPage:
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    definitions = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return build_bulk_review_campaign_approval_inbox_page(
+        definitions=definitions,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        active_on=active_on_date,
+        include_closed=include_closed,
+        inbox_status=inbox_status,
         limit=limit,
         offset=offset,
     )

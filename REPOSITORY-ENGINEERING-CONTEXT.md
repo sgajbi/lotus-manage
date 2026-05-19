@@ -662,9 +662,15 @@ Current repository posture:
     preview-readiness, lifecycle, and launch-history posture without global portfolio-universe
     discovery, source-fact recalculation, maker-checker workflow, trade approval, order
     generation, or OMS claims.
-    Approval inboxes, maker-checker workflow, broader cross-actor campaign operating queues, wave
-    risk/performance analytics posture, and external OMS execution remain unpromoted until owning
-    implementations are live-proven. Manage consumes `lotus-core`
+    Manage also exposes a bounded read-only approval attention inbox at
+    `GET /api/v1/rebalance/waves/campaign-approval-inbox`, classifying persisted campaign
+    definitions as approval complete, approval required, approval incomplete, expiry attention,
+    entitlement attention, or closed from existing governance evidence and readiness posture without
+    mutating approval state, adding maker-checker workflow, approving trades, generating orders, or
+    claiming OMS execution.
+    Approval state mutation, maker-checker workflow, broader cross-actor campaign operating queues,
+    wave risk/performance analytics posture, and external OMS execution remain unpromoted until
+    owning implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
     diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
     acknowledgements, confirm fills, or settle trades.
