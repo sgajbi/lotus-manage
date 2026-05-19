@@ -2108,6 +2108,98 @@ def test_bulk_review_campaign_discovery_filters_expired_campaigns() -> None:
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_closed_rows() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        active_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        expired_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-expired-20260510/versions/2026.05"
+        )
+        retired_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-retired-20260510/versions/2026.05"
+        )
+        active_put = client.put(active_route, json=_bulk_review_campaign_definition_request())
+        expired_put = client.put(
+            expired_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Expired campaign review",
+                "governance": {
+                    **_bulk_review_campaign_governance(),
+                    "expires_on": "2026-05-01",
+                },
+                "correlation_id": "corr-campaign-definition-expired",
+            },
+        )
+        retired_put = client.put(
+            retired_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Retired campaign review",
+                "correlation_id": "corr-campaign-definition-retired",
+            },
+        )
+        retire_response = client.post(
+            f"{retired_route}/retire",
+            json={
+                "retired_by": "ops",
+                "retirement_reason": "Campaign closed before queue review.",
+                "correlation_id": "corr-campaign-definition-retire-queue",
+            },
+        )
+        active_queue = client.get(
+            "/api/v1/rebalance/waves/campaign-operating-queue?"
+            "campaign_status=ACTIVE&active_on=2026-05-10&requested_as_of_date=2026-05-10"
+            "&actor_id=pm_001"
+        )
+        all_queue = client.get(
+            "/api/v1/rebalance/waves/campaign-operating-queue?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&include_expired=true"
+        )
+        invalid = client.get("/api/v1/rebalance/waves/campaign-operating-queue?active_on=bad-date")
+
+    assert active_put.status_code == 200
+    assert expired_put.status_code == 200
+    assert retired_put.status_code == 200
+    assert retire_response.status_code == 200
+
+    assert active_queue.status_code == 200
+    active_payload = active_queue.json()
+    assert active_payload["product_name"] == "BulkReviewCampaignOperatingQueue"
+    assert active_payload["count"] == 1
+    assert active_payload["status_counts"] == {"READY_TO_LAUNCH": 1}
+    assert active_payload["items"][0]["queue_status"] == "READY_TO_LAUNCH"
+    assert active_payload["items"][0]["preview_readiness"]["preview_create_allowed"] is True
+    assert "NO_MAKER_CHECKER_WORKFLOW" in active_payload["items"][0]["operating_boundaries"]
+
+    assert all_queue.status_code == 200
+    all_payload = all_queue.json()
+    statuses = {item["campaign_id"]: item["queue_status"] for item in all_payload["items"]}
+    assert statuses == {
+        "campaign-holdings-apple-tesla-20260510": "READY_TO_LAUNCH",
+        "campaign-holdings-expired-20260510": "ATTENTION_REQUIRED",
+        "campaign-holdings-retired-20260510": "CLOSED",
+    }
+    assert all_payload["status_counts"] == {
+        "READY_TO_LAUNCH": 1,
+        "ATTENTION_REQUIRED": 1,
+        "CLOSED": 1,
+    }
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())

@@ -1618,6 +1618,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
+- `GET /api/v1/rebalance/waves/campaign-operating-queue`
 - `GET /api/v1/rebalance/waves/{wave_id}`
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
@@ -1690,6 +1691,9 @@ Functional coverage:
   correlation id, and deterministic idempotency key without maker-checker or OMS claims,
 - launch-history pages expose append-only launch audit records, total count, pagination, and
   explicit no-order/no-OMS boundaries without requiring consumers to fetch full definitions,
+- campaign operating queue pages classify persisted campaign definitions into launch-ready,
+  attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
+  launch-history posture without adding maker-checker, order, or OMS claims,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

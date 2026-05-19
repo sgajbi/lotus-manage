@@ -102,12 +102,13 @@
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
+        "/api/v1/rebalance/waves/campaign-operating-queue",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves"
       ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Bulk review campaign membership is generated from the source-backed candidate set supplied inline or through an immutable BulkReviewCampaignDefinition:v1 definition plus optional governance evidence for the requested campaign as-of date. Preview-readiness evaluates persisted definition lifecycle, requested as-of date, source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement before new preview/create use. Workflow overview composes discovery, preview-readiness, lifecycle-event, launch-history, and optional launch-package posture without discovering the global portfolio universe or recalculating membership. Launch packages provide a bounded preview/create request draft and required headers without recalculating campaign membership. Durable definition launch consumes the same readiness package, creates one wave only when ready, replays by deterministic launch idempotency, and records append-only launch history for wave lineage."
+        "max_allowed_age_description": "Bulk review campaign membership is generated from the source-backed candidate set supplied inline or through an immutable BulkReviewCampaignDefinition:v1 definition plus optional governance evidence for the requested campaign as-of date. Preview-readiness evaluates persisted definition lifecycle, requested as-of date, source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement before new preview/create use. Workflow overview composes discovery, preview-readiness, lifecycle-event, launch-history, and optional launch-package posture without discovering the global portfolio universe or recalculating membership. The operating queue classifies persisted definitions into launch-ready, attention-required, and closed rows from existing discovery, preview-readiness, lifecycle, and launch-history posture without adding maker-checker, order, or OMS claims. Launch packages provide a bounded preview/create request draft and required headers without recalculating campaign membership. Durable definition launch consumes the same readiness package, creates one wave only when ready, replays by deterministic launch idempotency, and records append-only launch history for wave lineage."
       },
       "completeness_policy": {
         "default_status": "complete",
