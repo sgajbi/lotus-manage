@@ -15,6 +15,10 @@ from src.core.waves.campaign_discovery import (
 from src.core.waves.campaign_definition_workflow_overview import (
     build_bulk_review_campaign_definition_workflow_overview,
 )
+from src.core.waves.campaign_operating_queue import (
+    build_bulk_review_campaign_operating_queue_item,
+    build_bulk_review_campaign_operating_queue_page,
+)
 
 
 def _definition(
@@ -166,3 +170,50 @@ def test_campaign_workflow_overview_includes_launch_package_when_ready_for_actor
     assert overview.launch_package is not None
     assert overview.launch_package.correlation_id == "corr-workflow-overview"
     assert overview.launch_package.create_request.trigger_type == "BULK_REVIEW_CAMPAIGN"
+
+
+def test_campaign_operating_queue_classifies_ready_and_attention_rows() -> None:
+    ready_item = build_bulk_review_campaign_operating_queue_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    attention_item = build_bulk_review_campaign_operating_queue_item(
+        definition=_definition(expires_on="2026-05-01"),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    assert ready_item.product_name == "BulkReviewCampaignOperatingQueueItem"
+    assert ready_item.queue_status == "READY_TO_LAUNCH"
+    assert ready_item.queue_reason_codes == ["CAMPAIGN_DEFINITION_READY_TO_LAUNCH"]
+    assert ready_item.lifecycle_event_count == 1
+    assert ready_item.launch_history_count == 0
+    assert ready_item.content_hash.startswith("sha256:")
+
+    assert attention_item.queue_status == "ATTENTION_REQUIRED"
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in attention_item.queue_reason_codes
+    assert "NO_OMS_EXECUTION_CLAIM" in attention_item.operating_boundaries
+
+
+def test_campaign_operating_queue_page_filters_expired_rows_and_counts_statuses() -> None:
+    page = build_bulk_review_campaign_operating_queue_page(
+        definitions=[
+            _definition(),
+            _definition(expires_on="2026-05-01"),
+        ],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        include_expired=False,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignOperatingQueue"
+    assert page.count == 1
+    assert page.status_counts == {"READY_TO_LAUNCH": 1}
+    assert page.items[0].discovery.expiry_state == "ACTIVE"
+    assert page.content_hash.startswith("sha256:")

@@ -54,6 +54,12 @@ from src.core.waves.campaign_definition_workflow_overview import (
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
     build_bulk_review_campaign_definition_workflow_overview,
 )
+from src.core.waves.campaign_operating_queue import (
+    DpmBulkReviewCampaignOperatingQueueItem,
+    DpmBulkReviewCampaignOperatingQueuePage,
+    build_bulk_review_campaign_operating_queue_item,
+    build_bulk_review_campaign_operating_queue_page,
+)
 from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -101,6 +107,8 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionPreviewReadiness",
     "DpmBulkReviewCampaignDefinitionWorkflowOverview",
     "DpmBulkReviewCampaignDefinitionWaveRequestDraft",
+    "DpmBulkReviewCampaignOperatingQueueItem",
+    "DpmBulkReviewCampaignOperatingQueuePage",
     "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
     "DpmWaveExternalExecutionBoundaryEvidence",
@@ -132,6 +140,8 @@ __all__ = [
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",
     "build_bulk_review_campaign_definition_workflow_overview",
+    "build_bulk_review_campaign_operating_queue_item",
+    "build_bulk_review_campaign_operating_queue_page",
     "build_wave_report_input",
     "classify_wave_item_source_readiness",
     "classify_bulk_review_campaign_expiry",

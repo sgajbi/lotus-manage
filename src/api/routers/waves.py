@@ -101,6 +101,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
+    DpmBulkReviewCampaignOperatingQueuePage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -114,6 +115,7 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
     build_bulk_review_campaign_definition_workflow_overview,
+    build_bulk_review_campaign_operating_queue_page,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -1387,6 +1389,73 @@ def discover_bulk_review_campaigns(
         limit=limit,
         offset=offset,
         count=len(items),
+    )
+
+
+@router.get(
+    "/campaign-operating-queue",
+    response_model=DpmBulkReviewCampaignOperatingQueuePage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign operating queue",
+    description=(
+        "Returns a Manage-owned operating queue over persisted "
+        "`BulkReviewCampaignDefinition:v1` records. The queue composes discovery posture, "
+        "fail-closed preview readiness, lifecycle event counts, launch-history posture, and "
+        "bounded reason codes so operators can separate launch-ready campaigns from attention "
+        "items and closed definitions. It does not discover the global portfolio universe, "
+        "recalculate source facts, run maker-checker workflow, approve trades, generate orders, "
+        "or claim OMS execution."
+    ),
+)
+def list_bulk_review_campaign_operating_queue(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
+    as_of_date: str | None = Query(default=None),
+    requested_as_of_date: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date to evaluate readiness for every returned definition. When omitted, "
+            "each definition's persisted campaign as-of date is used."
+        ),
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    active_on: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date used to classify and filter campaign expiry posture. When supplied "
+            "with include_expired=false, expired campaigns are omitted."
+        ),
+    ),
+    include_expired: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignOperatingQueuePage:
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    definitions = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return build_bulk_review_campaign_operating_queue_page(
+        definitions=definitions,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        active_on=active_on_date,
+        include_expired=include_expired,
+        limit=limit,
+        offset=offset,
     )
 
 

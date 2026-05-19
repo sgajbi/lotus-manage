@@ -656,7 +656,13 @@ Current repository posture:
     with pagination, total count, wave id, actor, requested as-of date, correlation id,
     idempotency key, and explicit no-order/no-OMS boundaries so downstream consumers do not need to
     fetch full definitions or infer launch rows from generic lifecycle events.
-    Approval inboxes, maker-checker workflow, richer campaign operating queues, wave
+    Manage also exposes a bounded operating queue at
+    `GET /api/v1/rebalance/waves/campaign-operating-queue`, classifying persisted campaign
+    definitions as ready to launch, attention required, or closed from existing discovery,
+    preview-readiness, lifecycle, and launch-history posture without global portfolio-universe
+    discovery, source-fact recalculation, maker-checker workflow, trade approval, order
+    generation, or OMS claims.
+    Approval inboxes, maker-checker workflow, broader cross-actor campaign operating queues, wave
     risk/performance analytics posture, and external OMS execution remain unpromoted until owning
     implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
