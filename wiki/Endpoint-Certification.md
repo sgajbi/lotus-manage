@@ -1612,6 +1612,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`
@@ -1675,6 +1676,10 @@ Functional coverage:
   `BULK_REVIEW_CAMPAIGN` preview/create requests,
 - lifecycle events project create, launch, retire, and supersede audit posture from the persisted
   definition record without separate workflow storage or source-fact recalculation,
+- workflow overview composes discovery posture, preview readiness, lifecycle events, launch
+  history, and optional launch-package guidance into one operator-safe read model without global
+  portfolio discovery, source-fact recalculation, maker-checker, trade approval, order, or OMS
+  claims,
 - preview-readiness checks fail closed over lifecycle status, requested as-of date,
   source-backed candidate eligibility, governance approval, expiry, and optional actor entitlement
   before new `BULK_REVIEW_CAMPAIGN` preview/create use,
