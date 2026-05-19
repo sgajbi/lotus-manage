@@ -1619,6 +1619,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
 - `GET /api/v1/rebalance/waves/campaign-operating-queue`
+- `GET /api/v1/rebalance/waves/campaign-approval-inbox`
 - `GET /api/v1/rebalance/waves/{wave_id}`
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
@@ -1694,6 +1695,10 @@ Functional coverage:
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without adding maker-checker, order, or OMS claims,
+- campaign approval inbox pages classify persisted campaign definitions into approval-complete,
+  approval-required, approval-incomplete, expiry-attention, entitlement-attention, and closed rows
+  by composing governance evidence and preview-readiness posture without mutating approval state or
+  adding maker-checker, trade-approval, order, or OMS claims,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

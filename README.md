@@ -166,6 +166,11 @@ an operating queue at `GET /api/v1/rebalance/waves/campaign-operating-queue`, cl
 definitions as ready to launch, attention required, or closed from existing discovery,
 preview-readiness, lifecycle, and launch-history posture without creating maker-checker or OMS
 claims. Manage also supports
+an approval attention inbox at `GET /api/v1/rebalance/waves/campaign-approval-inbox`, classifying
+persisted definitions as approval complete, approval required, approval incomplete, expiry
+attention, entitlement attention, or closed from existing governance evidence and readiness posture
+without mutating approval state, creating maker-checker workflow, approving trades, generating
+orders, or claiming OMS execution. Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
 and superseding older definitions with active replacement versions at
@@ -189,8 +194,8 @@ using deterministic launch idempotency; and listing append-only launch history a
 with wave id, actor, requested as-of date, correlation id, idempotency key, pagination, and
 explicit no-order/no-OMS operating boundaries;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
-fail closed for new preview/create requests. Approval inboxes, maker-checker workflow, broader
-cross-actor campaign operating queues,
+fail closed for new preview/create requests. Approval state mutation, maker-checker workflow,
+broader cross-actor campaign operating queues,
 richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
 unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,

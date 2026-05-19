@@ -2200,6 +2200,153 @@ def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_clo
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_approval_inbox_summarizes_governance_attention_rows() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        complete_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        required_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-approval-required-20260510/versions/2026.05"
+        )
+        incomplete_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-approval-incomplete-20260510/versions/2026.05"
+        )
+        expired_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-approval-expired-20260510/versions/2026.05"
+        )
+        retired_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-approval-retired-20260510/versions/2026.05"
+        )
+
+        complete_put = client.put(
+            complete_route,
+            json=_bulk_review_campaign_definition_request(),
+        )
+        required_put = client.put(
+            required_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Approval required campaign review",
+                "governance": None,
+                "correlation_id": "corr-campaign-definition-approval-required",
+            },
+        )
+        incomplete_put = client.put(
+            incomplete_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Approval incomplete campaign review",
+                "governance": {
+                    **_bulk_review_campaign_governance(),
+                    "approved_by": None,
+                    "approved_at": None,
+                },
+                "correlation_id": "corr-campaign-definition-approval-incomplete",
+            },
+        )
+        expired_put = client.put(
+            expired_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Approval expired campaign review",
+                "governance": {
+                    **_bulk_review_campaign_governance(),
+                    "expires_on": "2026-05-01",
+                },
+                "correlation_id": "corr-campaign-definition-approval-expired",
+            },
+        )
+        retired_put = client.put(
+            retired_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Approval retired campaign review",
+                "correlation_id": "corr-campaign-definition-approval-retired",
+            },
+        )
+        retire_response = client.post(
+            f"{retired_route}/retire",
+            json={
+                "retired_by": "ops",
+                "retirement_reason": "Campaign closed before approval inbox review.",
+                "correlation_id": "corr-campaign-definition-retire-approval-inbox",
+            },
+        )
+
+        inbox = client.get(
+            "/api/v1/rebalance/waves/campaign-approval-inbox?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&include_closed=true"
+        )
+        filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-approval-inbox?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&inbox_status=APPROVAL_REQUIRED"
+        )
+        unauthorized = client.get(
+            "/api/v1/rebalance/waves/campaign-approval-inbox?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_999"
+            "&inbox_status=ENTITLEMENT_ATTENTION"
+        )
+        invalid = client.get("/api/v1/rebalance/waves/campaign-approval-inbox?active_on=bad-date")
+
+    assert complete_put.status_code == 200
+    assert required_put.status_code == 200
+    assert incomplete_put.status_code == 200
+    assert expired_put.status_code == 200
+    assert retired_put.status_code == 200
+    assert retire_response.status_code == 200
+
+    assert inbox.status_code == 200
+    payload = inbox.json()
+    assert payload["product_name"] == "BulkReviewCampaignApprovalInbox"
+    statuses = {item["campaign_id"]: item["inbox_status"] for item in payload["items"]}
+    assert statuses == {
+        "campaign-holdings-apple-tesla-20260510": "APPROVAL_COMPLETE",
+        "campaign-holdings-approval-required-20260510": "APPROVAL_REQUIRED",
+        "campaign-holdings-approval-incomplete-20260510": "APPROVAL_INCOMPLETE",
+        "campaign-holdings-approval-expired-20260510": "EXPIRY_ATTENTION",
+        "campaign-holdings-approval-retired-20260510": "CLOSED",
+    }
+    assert payload["status_counts"] == {
+        "APPROVAL_COMPLETE": 1,
+        "APPROVAL_REQUIRED": 1,
+        "APPROVAL_INCOMPLETE": 1,
+        "EXPIRY_ATTENTION": 1,
+        "CLOSED": 1,
+    }
+    assert "NO_APPROVAL_STATE_MUTATION" in payload["items"][0]["operating_boundaries"]
+
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == 1
+    assert filtered.json()["items"][0]["inbox_status"] == "APPROVAL_REQUIRED"
+
+    assert unauthorized.status_code == 200
+    unauthorized_payload = unauthorized.json()
+    unauthorized_statuses = {
+        item["campaign_id"]: item["inbox_status"] for item in unauthorized_payload["items"]
+    }
+    assert unauthorized_statuses == {
+        "campaign-holdings-apple-tesla-20260510": "ENTITLEMENT_ATTENTION",
+        "campaign-holdings-approval-incomplete-20260510": "ENTITLEMENT_ATTENTION",
+        "campaign-holdings-approval-expired-20260510": "ENTITLEMENT_ATTENTION",
+    }
+
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())

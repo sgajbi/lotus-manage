@@ -60,6 +60,13 @@ from src.core.waves.campaign_operating_queue import (
     build_bulk_review_campaign_operating_queue_item,
     build_bulk_review_campaign_operating_queue_page,
 )
+from src.core.waves.campaign_approval_inbox import (
+    CampaignApprovalInboxStatus,
+    DpmBulkReviewCampaignApprovalInboxItem,
+    DpmBulkReviewCampaignApprovalInboxPage,
+    build_bulk_review_campaign_approval_inbox_item,
+    build_bulk_review_campaign_approval_inbox_page,
+)
 from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -89,8 +96,11 @@ from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
 __all__ = [
     "DpmRebalanceWave",
+    "CampaignApprovalInboxStatus",
     "DpmRebalanceWaveEvent",
     "DpmRebalanceWaveItem",
+    "DpmBulkReviewCampaignApprovalInboxItem",
+    "DpmBulkReviewCampaignApprovalInboxPage",
     "DpmBulkReviewCampaignDefinition",
     "DpmBulkReviewCampaignDefinitionCandidate",
     "DpmBulkReviewCampaignDefinitionConflictError",
@@ -140,6 +150,8 @@ __all__ = [
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",
     "build_bulk_review_campaign_definition_workflow_overview",
+    "build_bulk_review_campaign_approval_inbox_item",
+    "build_bulk_review_campaign_approval_inbox_page",
     "build_bulk_review_campaign_operating_queue_item",
     "build_bulk_review_campaign_operating_queue_page",
     "build_wave_report_input",
