@@ -12,6 +12,9 @@ from src.core.waves.campaign_discovery import (
     build_bulk_review_campaign_discovery_item,
     classify_bulk_review_campaign_expiry,
 )
+from src.core.waves.campaign_definition_workflow_overview import (
+    build_bulk_review_campaign_definition_workflow_overview,
+)
 
 
 def _definition(
@@ -124,3 +127,42 @@ def test_campaign_expiry_classifier_is_bounded_and_date_driven() -> None:
         )
         == "EXPIRED"
     )
+
+
+def test_campaign_workflow_overview_composes_bounded_operating_posture() -> None:
+    overview = build_bulk_review_campaign_definition_workflow_overview(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id=None,
+        active_on=date(2026, 5, 16),
+        launch_history_limit=20,
+        launch_history_offset=0,
+        include_launch_package=True,
+    )
+
+    assert overview.product_name == "BulkReviewCampaignDefinitionWorkflowOverview"
+    assert overview.discovery.governance_status == "APPROVED"
+    assert overview.preview_readiness.preview_create_allowed is True
+    assert overview.lifecycle_events.count == 1
+    assert overview.launch_history.count == 0
+    assert overview.launch_package is None
+    assert overview.content_hash.startswith("sha256:")
+    assert "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY" in overview.operating_boundaries
+
+
+def test_campaign_workflow_overview_includes_launch_package_when_ready_for_actor() -> None:
+    overview = build_bulk_review_campaign_definition_workflow_overview(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        launch_history_limit=20,
+        launch_history_offset=0,
+        include_launch_package=True,
+        correlation_id="corr-workflow-overview",
+    )
+
+    assert overview.preview_readiness.preview_create_allowed is True
+    assert overview.launch_package is not None
+    assert overview.launch_package.correlation_id == "corr-workflow-overview"
+    assert overview.launch_package.create_request.trigger_type == "BULK_REVIEW_CAMPAIGN"

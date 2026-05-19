@@ -102,6 +102,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
+    DpmBulkReviewCampaignDefinitionWorkflowOverview,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmWaveReportInput,
     DpmWaveRepository,
@@ -112,6 +113,7 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_launch_command,
     build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
+    build_bulk_review_campaign_definition_workflow_overview,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -1469,6 +1471,73 @@ def list_bulk_review_campaign_definition_launch_history(
         definition=definition,
         limit=limit,
         offset=offset,
+    )
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview",
+    response_model=DpmBulkReviewCampaignDefinitionWorkflowOverview,
+    status_code=status.HTTP_200_OK,
+    summary="Get bulk-review campaign workflow overview",
+    description=(
+        "Returns an operator-safe workflow overview for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. The overview composes discovery posture, "
+        "fail-closed preview readiness, lifecycle events, launch history, and optional launch "
+        "package guidance. It does not discover the global portfolio universe, recalculate "
+        "source facts, run maker-checker workflow, approve trades, route orders, or claim OMS "
+        "execution."
+    ),
+)
+def get_bulk_review_campaign_definition_workflow_overview(
+    campaign_id: str,
+    campaign_version: str,
+    requested_as_of_date: str = Query(
+        description="ISO date that the future wave preview/create request would use.",
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    active_on: str | None = Query(
+        default=None,
+        description="Optional ISO date used to classify campaign expiry posture.",
+    ),
+    include_launch_package: bool = Query(
+        default=True,
+        description=(
+            "When true, include launch package guidance if preview readiness is READY and actor_id "
+            "is supplied."
+        ),
+    ),
+    correlation_id: str | None = Query(
+        default=None,
+        description="Optional correlation id to carry into launch package guidance.",
+    ),
+    launch_history_limit: int = Query(default=20, ge=1, le=200),
+    launch_history_offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionWorkflowOverview:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    return build_bulk_review_campaign_definition_workflow_overview(
+        definition=definition,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        active_on=active_on_date,
+        launch_history_limit=launch_history_limit,
+        launch_history_offset=launch_history_offset,
+        include_launch_package=include_launch_package,
+        correlation_id=correlation_id,
     )
 
 

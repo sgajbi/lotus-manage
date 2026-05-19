@@ -1512,6 +1512,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/workflow-overview`" in work_to_be_done
+    )
+    assert (
+        "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/preview-readiness`" in work_to_be_done
     )
     assert (
@@ -1524,11 +1528,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "src/core/waves/campaign_definition_events.py" in work_to_be_done
     assert "campaign-definition preview-readiness addendum" in work_to_be_done
     assert "src/core/waves/campaign_definition_readiness.py" in work_to_be_done
+    assert "campaign-definition workflow-overview addendum" in work_to_be_done
+    assert "src/core/waves/campaign_definition_workflow_overview.py" in work_to_be_done
     assert "campaign-definition launch-package addendum" in work_to_be_done
     assert "src/core/waves/campaign_definition_launch_package.py" in work_to_be_done
-    assert "broader campaign workflow surfaces beyond bounded definition lifecycle controls" in (
-        work_to_be_done
-    )
+    assert "Approval inboxes, maker-checker workflow" in work_to_be_done
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -2218,6 +2222,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/workflow-overview`" in supported_features
+    )
+    assert (
+        "`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/preview-readiness`" in supported_features
     )
     assert (
@@ -2225,6 +2233,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "{campaign_version}/launch-package`" in supported_features
     )
     assert "`BulkReviewCampaignDiscovery:v1` summaries" in supported_features
+    assert "`BulkReviewCampaignDefinitionWorkflowOverview:v1`" in supported_features
     assert "`BulkReviewCampaignDefinitionPreviewReadiness`" in supported_features
     assert "`BulkReviewCampaignDefinitionLaunchPackage:v1`" in supported_features
     assert "retire definitions so they remain auditable under `RETIRED` status" in (
@@ -2236,6 +2245,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "project bounded lifecycle events for create, launch, retire, and supersede posture" in (
         supported_features
     )
+    assert "emit a bounded workflow overview" in supported_features
     assert "deterministic launch idempotency and append-only launch history" in supported_features
     assert "check fail-closed preview readiness" in supported_features
     assert "idempotency/correlation header guidance" in supported_features

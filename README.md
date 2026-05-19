@@ -168,6 +168,10 @@ and superseding older definitions with active replacement versions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`;
 and projecting lifecycle events at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`;
+and composing a bounded workflow overview at
+`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview`
+with discovery, fail-closed readiness, lifecycle events, launch history, and optional launch
+package guidance;
 and checking fail-closed preview readiness at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
 before new wave use;
@@ -181,8 +185,8 @@ using deterministic launch idempotency; and listing append-only launch history a
 with wave id, actor, requested as-of date, correlation id, idempotency key, pagination, and
 explicit no-order/no-OMS operating boundaries;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
-fail closed for new preview/create requests. Broader campaign workflow surfaces beyond these
-bounded lifecycle controls,
+fail closed for new preview/create requests. Approval inboxes, maker-checker workflow, richer
+campaign operating queues,
 richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
 unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,

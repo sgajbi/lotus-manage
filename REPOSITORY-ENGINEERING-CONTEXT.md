@@ -631,6 +631,11 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
     from the persisted definition record, so operators can audit create, retire, and supersede
     posture without separate workflow storage or router-local business logic. Manage also exposes
+    `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview`
+    as an operator-safe read model that composes persisted campaign discovery posture,
+    fail-closed preview readiness, lifecycle events, launch history, and optional launch-package
+    guidance without global portfolio-universe discovery, source-fact recalculation,
+    maker-checker workflow, trade approval, order generation, or OMS claims. Manage also exposes
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
     as a bounded fail-closed supportability check over lifecycle status, requested as-of date,
     source-backed candidate eligibility, governance approval, expiry, and optional actor
@@ -651,7 +656,7 @@ Current repository posture:
     with pagination, total count, wave id, actor, requested as-of date, correlation id,
     idempotency key, and explicit no-order/no-OMS boundaries so downstream consumers do not need to
     fetch full definitions or infer launch rows from generic lifecycle events.
-    Broader campaign workflow surfaces beyond these bounded lifecycle controls, wave
+    Approval inboxes, maker-checker workflow, richer campaign operating queues, wave
     risk/performance analytics posture, and external OMS execution remain unpromoted until owning
     implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority

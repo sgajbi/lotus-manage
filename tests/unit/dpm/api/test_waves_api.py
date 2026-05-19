@@ -1808,6 +1808,70 @@ def test_bulk_review_campaign_definition_launch_package_builds_preview_and_creat
     assert payload["content_hash"].startswith("sha256:")
 
 
+def test_bulk_review_campaign_definition_workflow_overview_composes_operator_posture() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        overview = client.get(
+            f"{route}/workflow-overview?"
+            "requested_as_of_date=2026-05-10&actor_id=pm_001&active_on=2026-05-16"
+            "&correlation_id=corr-campaign-workflow-overview"
+        )
+
+    assert put_response.status_code == 200
+    assert overview.status_code == 200
+    payload = overview.json()
+    assert payload["product_name"] == "BulkReviewCampaignDefinitionWorkflowOverview"
+    assert payload["discovery"]["governance_status"] == "APPROVED"
+    assert payload["discovery"]["eligible_candidate_count"] == 1
+    assert payload["preview_readiness"]["supportability_state"] == "READY"
+    assert payload["lifecycle_events"]["count"] == 1
+    assert payload["launch_history"]["count"] == 0
+    assert payload["launch_package"]["correlation_id"] == "corr-campaign-workflow-overview"
+    assert payload["launch_package"]["create_request"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
+    assert "NO_OMS_EXECUTION_CLAIM" in payload["operating_boundaries"]
+    assert payload["content_hash"].startswith("sha256:")
+
+
+def test_bulk_review_campaign_definition_workflow_overview_fails_closed_without_package() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    expired_request = _bulk_review_campaign_definition_request()
+    governance = dict(expired_request["governance"])
+    governance["expires_on"] = "2026-05-09"
+    expired_request["governance"] = governance
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=expired_request)
+        overview = client.get(
+            f"{route}/workflow-overview?"
+            "requested_as_of_date=2026-05-10&actor_id=pm_001&active_on=2026-05-10"
+        )
+
+    assert put_response.status_code == 200
+    assert overview.status_code == 200
+    payload = overview.json()
+    assert payload["preview_readiness"]["supportability_state"] == "BLOCKED"
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in payload["preview_readiness"]["reason_codes"]
+    assert payload["launch_package"] is None
+
+
 def test_bulk_review_campaign_definition_launch_package_fails_closed_when_not_ready() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     expired_request = _bulk_review_campaign_definition_request()

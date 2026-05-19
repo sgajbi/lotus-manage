@@ -50,6 +50,10 @@ from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     build_bulk_review_campaign_definition_preview_readiness,
 )
+from src.core.waves.campaign_definition_workflow_overview import (
+    DpmBulkReviewCampaignDefinitionWorkflowOverview,
+    build_bulk_review_campaign_definition_workflow_overview,
+)
 from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -95,6 +99,7 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionLaunchCommand",
     "DpmBulkReviewCampaignDefinitionLaunchPackage",
     "DpmBulkReviewCampaignDefinitionPreviewReadiness",
+    "DpmBulkReviewCampaignDefinitionWorkflowOverview",
     "DpmBulkReviewCampaignDefinitionWaveRequestDraft",
     "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
@@ -126,6 +131,7 @@ __all__ = [
     "record_bulk_review_campaign_definition_launch",
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",
+    "build_bulk_review_campaign_definition_workflow_overview",
     "build_wave_report_input",
     "classify_wave_item_source_readiness",
     "classify_bulk_review_campaign_expiry",
