@@ -616,3 +616,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   validation semantics remain explicit at the call site.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-012: Candidate portfolio-type normalization drift risk
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_portfolio_type_validation.py`
+- Finding: tactical house-view and bulk-review campaign route helpers still repeated single
+  candidate portfolio-type trimming, upper-casing, and required-value validation even after the
+  eligible portfolio-type list normalizer was centralized. The duplicated single-value path could
+  drift from list normalization and route-specific error handling as source-cohort routes continue
+  to be decomposed.
+- Action: added `normalize_required_portfolio_type()` next to the existing required-list helper
+  and reused it for tactical house-view and bulk-review campaign candidate validation while keeping
+  each route's validation code and message explicit.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_portfolio_type_validation.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: continue consolidating source-cohort candidate validation where shared helpers can
+  preserve private-banking semantics and fail-closed route-specific error codes.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
