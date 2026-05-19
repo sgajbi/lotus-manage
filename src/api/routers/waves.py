@@ -59,6 +59,7 @@ from src.api.routers.wave_date_validation import parse_wave_as_of_date
 from src.api.routers.wave_portfolio_type_validation import (
     normalize_required_portfolio_types,
 )
+from src.api.routers.wave_pm_book_projection import build_pm_book_resolved_portfolios
 from src.api.routers.wave_required_text_validation import normalize_required_text
 from src.api.routers.wave_risk_event_validation import build_risk_event_candidate_payloads
 from src.api.routers.wave_source_dependency_http import (
@@ -74,8 +75,6 @@ from src.api.routers.wave_source_refs import (
     cio_model_change_affected_mandate_ref,
     cio_model_change_cohort_ref,
     cio_model_change_event_ref,
-    pm_book_member_ref,
-    pm_book_membership_ref,
     risk_event_affected_portfolio_ref,
     risk_event_cohort_ref,
     risk_event_ref,
@@ -842,31 +841,7 @@ def _resolve_pm_book_portfolios(
             code="DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
             message="PM-book membership returned no affected portfolios.",
         )
-    source_id = (
-        membership.snapshot_id
-        or membership.source_batch_fingerprint
-        or f"pm_book:{membership.portfolio_manager_id}:{membership.as_of_date.isoformat()}"
-    )
-    book_ref = pm_book_membership_ref(
-        source_id=source_id,
-        product_version=membership.product_version,
-        supportability_state=membership.supportability.state,
-        content_hash=membership.source_batch_fingerprint,
-    )
-    return [
-        {
-            "portfolio_id": member.portfolio_id,
-            "source_refs": [
-                book_ref,
-                pm_book_member_ref(
-                    source_record_id=member.source_record_id,
-                    portfolio_id=member.portfolio_id,
-                    as_of_date=membership.as_of_date,
-                ),
-            ],
-        }
-        for member in membership.members
-    ]
+    return build_pm_book_resolved_portfolios(membership)
 
 
 def _resolve_cio_model_change_portfolios(
