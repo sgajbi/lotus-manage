@@ -48,6 +48,7 @@ from src.api.routers.wave_http_errors import (
     wave_validation_http_exception,
 )
 from src.api.routers.wave_date_validation import parse_wave_as_of_date
+from src.api.routers.wave_portfolio_type_validation import normalize_required_portfolio_types
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
     source_dependency_failed_http_exception,
@@ -792,12 +793,11 @@ def _resolve_pm_book_portfolios(
             "PM_BOOK_REVIEW requires portfolio_manager_id.",
         )
     as_of_date = parse_wave_as_of_date(request.as_of_date)
-    portfolio_types = [value.strip().upper() for value in request.portfolio_types if value.strip()]
-    if not portfolio_types:
-        raise wave_service.DpmWaveValidationError(
-            "PM_BOOK_REVIEW_PORTFOLIO_TYPES_REQUIRED",
-            "PM_BOOK_REVIEW requires at least one portfolio type.",
-        )
+    portfolio_types = normalize_required_portfolio_types(
+        request.portfolio_types,
+        required_code="PM_BOOK_REVIEW_PORTFOLIO_TYPES_REQUIRED",
+        required_message="PM_BOOK_REVIEW requires at least one portfolio type.",
+    )
     try:
         membership = build_core_resolver_client().resolve_portfolio_manager_book_membership(
             portfolio_manager_id=portfolio_manager_id,
@@ -962,14 +962,11 @@ def _resolve_tactical_house_view_portfolios(
             message="DPM_ADVISE_BASE_URL is not configured.",
         )
     as_of_date = parse_wave_as_of_date(request.as_of_date)
-    eligible_portfolio_types = [
-        value.strip().upper() for value in request.portfolio_types if value.strip()
-    ]
-    if not eligible_portfolio_types:
-        raise wave_service.DpmWaveValidationError(
-            "TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED",
-            "TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
-        )
+    eligible_portfolio_types = normalize_required_portfolio_types(
+        request.portfolio_types,
+        required_code="TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED",
+        required_message="TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
+    )
 
     candidate_payloads: list[dict[str, object]] = []
     for candidate in request.portfolios:
@@ -1231,14 +1228,15 @@ def _resolve_bulk_review_campaign_portfolios(
         request=request,
         campaign_as_of_date=campaign_as_of_date,
     )
-    eligible_portfolio_types = {
-        value.strip().upper() for value in request.portfolio_types if value.strip()
-    }
-    if not eligible_portfolio_types:
-        raise wave_service.DpmWaveValidationError(
-            "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED",
-            "BULK_REVIEW_CAMPAIGN requires at least one eligible portfolio type.",
+    eligible_portfolio_types = set(
+        normalize_required_portfolio_types(
+            request.portfolio_types,
+            required_code="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED",
+            required_message=(
+                "BULK_REVIEW_CAMPAIGN requires at least one eligible portfolio type."
+            ),
         )
+    )
 
     included_candidates: list[DpmWavePortfolioInput] = []
     excluded_count = 0

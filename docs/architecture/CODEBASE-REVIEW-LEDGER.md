@@ -577,3 +577,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   pin lineage, supportability, and failure semantics without broad route coupling.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-010: Source-cohort routes repeated portfolio-type normalization
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_portfolio_type_validation.py`
+- Finding: PM-book, tactical house-view, and bulk-review campaign route helpers repeated
+  portfolio-type trimming, upper-casing, and required-list validation with route-specific error
+  codes. The duplication was small but sat in source-cohort orchestration, where future route
+  splits could drift on accepted portfolio-type casing or missing-input semantics.
+- Action: extracted `normalize_required_portfolio_types()` into
+  `src/api/routers/wave_portfolio_type_validation.py` and reused it across the source-cohort paths
+  while preserving each route's existing validation code and message.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_portfolio_type_validation.py`; full
+  validation is recorded in the PR evidence for this slice.
+- Follow-up: continue moving source-cohort request normalization into focused helpers only where the
+  helpers can preserve route-specific validation semantics.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
