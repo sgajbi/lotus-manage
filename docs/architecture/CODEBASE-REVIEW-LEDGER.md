@@ -755,3 +755,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   until a stable PM-book workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260519-019: CIO model-change cohort projection embedded in router
+
+- Date: 2026-05-19
+- Scope: `src/api/routers/waves.py`, `src/api/routers/wave_cio_model_change_projection.py`
+- Finding: CIO model-change affected-cohort projection was embedded in the route resolver after
+  the lotus-core call. The projection was correct, but it mixed upstream source dependency handling
+  with deterministic wave portfolio/source-ref materialization, making lineage fallback behavior
+  harder to test directly.
+- Action: extracted `build_cio_model_change_resolved_portfolios()` into
+  `src/api/routers/wave_cio_model_change_projection.py` and reused it from the CIO model-change
+  resolver while preserving snapshot-id, batch-fingerprint, model-change-event id, event source-ref,
+  and affected-mandate source-record fallback behavior.
+- Status: hardened
+- Evidence: focused helper tests in `tests/unit/api/test_wave_cio_model_change_projection.py`;
+  full validation is recorded in the PR evidence for this slice.
+- Follow-up: keep lotus-core resolver invocation and source dependency error mapping in the route
+  until a stable CIO model-change workflow projection object is introduced.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
