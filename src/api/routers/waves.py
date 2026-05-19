@@ -53,6 +53,7 @@ from src.api.routers.wave_portfolio_type_validation import (
     normalize_required_portfolio_types,
 )
 from src.api.routers.wave_required_text_validation import normalize_required_text
+from src.api.routers.wave_risk_event_validation import normalize_risk_event_exposure_weights
 from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
     source_dependency_failed_http_exception,
@@ -1122,21 +1123,7 @@ def _resolve_risk_event_portfolios(
     candidate_by_portfolio_id: dict[str, DpmWavePortfolioInput] = {}
     risk_portfolios: list[dict[str, object]] = []
     for candidate in request.portfolios:
-        exposure_weights = {
-            bucket.strip().upper(): weight
-            for bucket, weight in candidate.exposure_weights.items()
-            if bucket.strip()
-        }
-        if not exposure_weights:
-            raise wave_service.DpmWaveValidationError(
-                "RISK_EVENT_EXPOSURE_WEIGHTS_REQUIRED",
-                "RISK_EVENT candidate portfolios require source-supplied exposure_weights.",
-            )
-        if any(weight < 0 for weight in exposure_weights.values()):
-            raise wave_service.DpmWaveValidationError(
-                "RISK_EVENT_EXPOSURE_WEIGHTS_INVALID",
-                "RISK_EVENT exposure_weights must be non-negative.",
-            )
+        exposure_weights = normalize_risk_event_exposure_weights(candidate.exposure_weights)
         candidate_by_portfolio_id[candidate.portfolio_id] = candidate
         risk_portfolios.append(
             {
