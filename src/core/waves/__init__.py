@@ -17,6 +17,7 @@ from src.core.waves.models import (
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecision,
+    DpmBulkReviewCampaignDefinitionAssignmentAction,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
     DpmBulkReviewCampaignDefinitionLaunchRecord,
@@ -52,6 +53,12 @@ from src.core.waves.campaign_definition_approval_decisions import (
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     build_bulk_review_campaign_definition_approval_decision_page,
     record_bulk_review_campaign_definition_approval_decision,
+)
+from src.core.waves.campaign_assignment_actions import (
+    CampaignAssignmentActionType,
+    DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    build_bulk_review_campaign_definition_assignment_action_page,
+    record_bulk_review_campaign_definition_assignment_action,
 )
 from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
@@ -120,6 +127,7 @@ from src.core.waves.source_readiness import classify_wave_item_source_readiness
 __all__ = [
     "DpmRebalanceWave",
     "CampaignApprovalDecisionType",
+    "CampaignAssignmentActionType",
     "CampaignApprovalInboxStatus",
     "CampaignAssignmentEscalationTier",
     "CampaignAssignmentSlaPosture",
@@ -134,6 +142,8 @@ __all__ = [
     "DpmBulkReviewCampaignDefinition",
     "DpmBulkReviewCampaignDefinitionApprovalDecision",
     "DpmBulkReviewCampaignDefinitionApprovalDecisionPage",
+    "DpmBulkReviewCampaignDefinitionAssignmentAction",
+    "DpmBulkReviewCampaignDefinitionAssignmentActionPage",
     "DpmBulkReviewCampaignDefinitionCandidate",
     "DpmBulkReviewCampaignDefinitionConflictError",
     "DpmBulkReviewCampaignDefinitionGovernance",
@@ -181,7 +191,9 @@ __all__ = [
     "build_bulk_review_campaign_definition_launch_history_page",
     "build_bulk_review_campaign_definition_launch_command",
     "build_bulk_review_campaign_definition_approval_decision_page",
+    "build_bulk_review_campaign_definition_assignment_action_page",
     "record_bulk_review_campaign_definition_approval_decision",
+    "record_bulk_review_campaign_definition_assignment_action",
     "record_bulk_review_campaign_definition_launch",
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",

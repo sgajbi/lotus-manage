@@ -22,6 +22,10 @@ from src.core.waves.campaign_definition_approval_decisions import (
     build_bulk_review_campaign_definition_approval_decision_page,
     record_bulk_review_campaign_definition_approval_decision,
 )
+from src.core.waves.campaign_assignment_actions import (
+    build_bulk_review_campaign_definition_assignment_action_page,
+    record_bulk_review_campaign_definition_assignment_action,
+)
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -390,6 +394,87 @@ def test_campaign_definition_approval_decisions_are_append_only() -> None:
             decided_by="cio_ops_committee",
             decision_reason="Conflicting decision.",
             correlation_id="corr-campaign-approval-decision-002",
+        )
+
+
+def test_campaign_definition_assignment_actions_are_append_only() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    escalated = record_bulk_review_campaign_definition_assignment_action(
+        definition=assigned,
+        action_type="ESCALATED",
+        action_ref="BRC-ASSIGN-2026-05-002",
+        recorded_by="ops",
+        action_reason="Approval evidence requires governance attention.",
+        assigned_actor_ids=["governance_ops"],
+        escalation_tier="GOVERNANCE",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-action-002",
+    )
+    replayed = record_bulk_review_campaign_definition_assignment_action(
+        definition=escalated,
+        action_type="ESCALATED",
+        action_ref="BRC-ASSIGN-2026-05-002",
+        recorded_by="ops",
+        action_reason="Approval evidence requires governance attention.",
+        assigned_actor_ids=["governance_ops"],
+        escalation_tier="GOVERNANCE",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-action-002",
+    )
+    returned = repository.record_definition_assignment_action(definition=escalated)
+    page = build_bulk_review_campaign_definition_assignment_action_page(
+        definition=escalated,
+        limit=50,
+        offset=0,
+    )
+
+    assert returned == escalated
+    assert replayed == escalated
+    assert escalated.content_hash != definition.content_hash
+    assert len(escalated.assignment_actions) == 2
+    assert escalated.assignment_actions[1].action_type == "ESCALATED"
+    assert "approval_state_mutation" in escalated.assignment_actions[1].forbidden_actions
+    assert page.product_name == "BulkReviewCampaignDefinitionAssignmentActionPage"
+    assert page.latest_action_type == "ESCALATED"
+    assert page.current_assigned_actor_ids == ["governance_ops"]
+    assert page.current_escalation_tier == "GOVERNANCE"
+    assert page.current_sla_posture == "ATTENTION"
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == escalated
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT",
+    ):
+        record_bulk_review_campaign_definition_assignment_action(
+            definition=escalated,
+            action_type="RESOLVED",
+            action_ref="BRC-ASSIGN-2026-05-002",
+            recorded_by="ops",
+            action_reason="Conflicting assignment action.",
+            assigned_actor_ids=[],
+            escalation_tier="NONE",
+            sla_posture="ON_TRACK",
+            correlation_id="corr-campaign-assignment-action-conflict",
         )
 
 
@@ -971,6 +1056,38 @@ def test_postgres_campaign_definition_repository_records_approval_decisions() ->
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
     assert repository.record_definition_approval_decision(definition=approved) == approved
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_assignment_actions() -> None:
+    definition = _definition()
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.record_definition_assignment_action(definition=assigned) == assigned
     assert connection.committed is True
 
 

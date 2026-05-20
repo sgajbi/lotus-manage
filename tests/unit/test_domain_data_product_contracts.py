@@ -256,6 +256,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
         "/api/v1/rebalance/waves/campaign-operating-queue",
@@ -296,6 +297,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     )
     assert (
         "The assignment plan derives read-only actor routing"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "Assignment actions provide append-only assignment"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
 

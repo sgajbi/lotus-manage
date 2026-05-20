@@ -113,6 +113,63 @@ class DpmBulkReviewCampaignDefinitionApprovalDecision(BaseModel):
     content_hash: str = Field(description="Deterministic hash of the approval decision record.")
 
 
+class DpmBulkReviewCampaignDefinitionAssignmentAction(BaseModel):
+    """Append-only assignment or escalation action for a bulk-review campaign definition."""
+
+    action_id: str = Field(
+        description="Stable content-addressed assignment-action identity.",
+        examples=["brc_assignment_action_9f4e1a2b3c4d5e6f"],
+    )
+    action_type: Literal[
+        "ASSIGNED",
+        "REASSIGNED",
+        "ESCALATED",
+        "DEESCALATED",
+        "RESOLVED",
+    ] = Field(description="Bounded campaign assignment or escalation action.")
+    action_ref: str = Field(
+        description="Bank workflow, ticket, or queue reference for the assignment action.",
+        examples=["BRC-ASSIGN-2026-05-001"],
+    )
+    recorded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when Manage recorded the assignment action.",
+    )
+    recorded_by: str = Field(
+        description="Actor who recorded the assignment action.",
+        examples=["ops"],
+    )
+    action_reason: str = Field(description="Human-authored assignment or escalation rationale.")
+    assigned_actor_ids: list[str] = Field(
+        default_factory=list,
+        description="Actors assigned or routed by this action. Empty only for resolved actions.",
+    )
+    escalation_tier: Literal["NONE", "PM", "OPS", "GOVERNANCE"] = Field(
+        description="Bounded escalation tier after this action."
+    )
+    sla_posture: Literal["ON_TRACK", "ATTENTION", "BREACHED_OR_BLOCKED"] = Field(
+        description="Bounded operational SLA posture after this action."
+    )
+    correlation_id: str = Field(examples=["corr-campaign-assignment-action-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Source refs for ticket, queue, committee, or control evidence.",
+    )
+    forbidden_actions: list[str] = Field(
+        default_factory=lambda: [
+            "maker_checker_workflow",
+            "approval_state_mutation",
+            "trade_approval",
+            "order_generation",
+            "order_routing",
+            "oms_execution",
+            "client_contact",
+        ],
+        description="Actions outside this assignment-action evidence contract.",
+    )
+    content_hash: str = Field(description="Deterministic hash of the assignment-action record.")
+
+
 class DpmBulkReviewCampaignDefinition(BaseModel):
     """Manage-owned bulk-review campaign definition over source-backed candidates."""
 
@@ -182,6 +239,14 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
             "Append-only campaign approval-decision evidence. These records mutate campaign "
             "approval posture only and do not approve trades, generate orders, route orders, "
             "or claim OMS execution."
+        ),
+    )
+    assignment_actions: list[DpmBulkReviewCampaignDefinitionAssignmentAction] = Field(
+        default_factory=list,
+        description=(
+            "Append-only campaign assignment and escalation actions. These records mutate "
+            "assignment posture only and do not create maker-checker workflow, approval state "
+            "changes, trade approval, order routing, client contact, or OMS execution."
         ),
     )
     content_hash: str = Field(default="")
@@ -269,5 +334,7 @@ def bulk_review_campaign_definition_hash(
     payload["created_at"] = ""
     if not payload.get("approval_decisions"):
         payload.pop("approval_decisions", None)
+    if not payload.get("assignment_actions"):
+        payload.pop("assignment_actions", None)
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()

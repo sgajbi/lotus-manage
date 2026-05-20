@@ -1619,6 +1619,8 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
 - `GET /api/v1/rebalance/waves/campaign-operating-queue`
 - `GET /api/v1/rebalance/waves/campaign-approval-inbox`
@@ -1699,6 +1701,11 @@ Functional coverage:
 - approval decisions append bounded approval posture evidence to active definitions and expose a
   paged `BulkReviewCampaignDefinitionApprovalDecisionPage` without maker-checker workflow, trade
   approval, order generation, routing, client contact, or OMS claims,
+- assignment actions append bounded assignment, reassignment, escalation, de-escalation, and
+  resolution posture evidence to active definitions and expose a paged
+  `BulkReviewCampaignDefinitionAssignmentActionPage` with current assigned actors, escalation tier,
+  and SLA posture without approval-state mutation, maker-checker workflow, trade approval, order
+  generation, routing, client contact, or OMS claims,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without adding maker-checker, order, or OMS claims,
