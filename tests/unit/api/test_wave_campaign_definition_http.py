@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from datetime import date
+
+import pytest
 from fastapi import status
+from fastapi import HTTPException
 
 from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_conflict_http_exception,
@@ -9,6 +13,7 @@ from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_not_found_http_exception,
     campaign_definition_value_http_exception,
     invalid_campaign_discovery_date_http_exception,
+    parse_optional_campaign_discovery_date,
 )
 from src.core.waves.campaign_definition_launch_execution import (
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
@@ -145,6 +150,25 @@ def test_invalid_campaign_discovery_date_http_exception_maps_field_name() -> Non
 
     assert http_exc.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
     assert http_exc.detail == {
+        "code": "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID",
+        "message": "active_on must be an ISO date.",
+    }
+
+
+def test_parse_optional_campaign_discovery_date_accepts_empty_and_iso_date() -> None:
+    assert parse_optional_campaign_discovery_date(value=None, field_name="active_on") is None
+    assert parse_optional_campaign_discovery_date(
+        value="2026-05-10",
+        field_name="active_on",
+    ) == date(2026, 5, 10)
+
+
+def test_parse_optional_campaign_discovery_date_maps_invalid_date_to_http_error() -> None:
+    with pytest.raises(HTTPException) as exc_info:
+        parse_optional_campaign_discovery_date(value="2026/05/10", field_name="active_on")
+
+    assert exc_info.value.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+    assert exc_info.value.detail == {
         "code": "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID",
         "message": "active_on must be an ISO date.",
     }
