@@ -41,7 +41,7 @@ from src.core.pm_quality.models import (
 )
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.portfolio_memory import service as portfolio_memory_service
-from src.core.portfolio_memory.service import build_portfolio_memory
+from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
 from src.core.proof_packs import DpmProofPackEvidenceRef
 from src.core.waves.models import (
     DpmRebalanceWave,
@@ -1105,6 +1105,47 @@ def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
 
 
+def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+
+    empty_filtered = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        mandate_repository=InMemoryDpmMandateRepository(),
+        portfolio_ids=["EMPTY_PORTFOLIO"],
+    )
+    event_type_filtered = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        event_type="NOT_A_MEMORY_EVENT",
+    )
+    state_filtered = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        supportability_state="BLOCKED",
+    )
+    source_filtered = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        source_system="not-a-source-system",
+    )
+
+    assert empty_filtered.returned_count == 0
+    assert event_type_filtered.returned_count == 0
+    assert state_filtered.returned_count == 0
+    assert source_filtered.returned_count == 0
+
+
 def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
     wave = _wave()
     outcome_ref = DpmOutcomeSourceRef(
@@ -1192,3 +1233,23 @@ def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
         )
         == "PENDING_REVIEW"
     )
+    assert (
+        portfolio_memory_service._pm_quality_review_action_state(
+            _pm_quality_review_action().model_copy(update={"action_state": "ESCALATED"})
+        )
+        == "DEGRADED"
+    )
+    assert (
+        portfolio_memory_service._pm_quality_review_action_state(
+            _pm_quality_review_action().model_copy(update={"action_state": "CLOSED"})
+        )
+        == "READY"
+    )
+    assert portfolio_memory_service._assignment_sla_state("BREACHED_OR_BLOCKED") == "DEGRADED"
+    assert portfolio_memory_service._assignment_task_state("CANCELLED", "ON_TRACK") == "BLOCKED"
+    assert portfolio_memory_service._assignment_task_state("BLOCKED", "ON_TRACK") == "DEGRADED"
+    assert portfolio_memory_service._assignment_task_state("OPEN", "ON_TRACK") == "PENDING_REVIEW"
+    assert portfolio_memory_service._assignment_task_state("DONE", "ON_TRACK") == "READY"
+    assert portfolio_memory_service._maker_checker_state("FAILED") == "BLOCKED"
+    assert portfolio_memory_service._maker_checker_state("EXCEPTION_OPEN") == "DEGRADED"
+    assert portfolio_memory_service._maker_checker_state("PENDING") == "PENDING_REVIEW"
