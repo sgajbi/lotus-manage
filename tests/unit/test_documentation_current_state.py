@@ -1576,10 +1576,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "campaign assignment-task lifecycle addendum" in work_to_be_done
     assert "src/core/waves/campaign_assignment_tasks.py" in work_to_be_done
     assert "BulkReviewCampaignDefinitionAssignmentTaskPage" in work_to_be_done
+    assert "campaign workflow-automation readiness addendum" in work_to_be_done
+    assert "src/core/waves/campaign_workflow_automation.py" in work_to_be_done
+    assert "BulkReviewCampaignWorkflowAutomation:v1" in work_to_be_done
     assert "bounded read-only campaign approval-attention inbox" in work_to_be_done
-    assert "broader workflow automation beyond controlled Manage-side assignment tasks" in (
-        work_to_be_done
-    )
+    assert "external workflow orchestration beyond Manage-side task readiness" in (work_to_be_done)
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (
@@ -2311,6 +2312,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`BulkReviewCampaignDefinitionApprovalDecisionPage`" in supported_features
     assert "`BulkReviewCampaignDefinitionMakerCheckerControlPage`" in supported_features
     assert "`BulkReviewCampaignDefinitionAssignmentTaskPage`" in supported_features
+    assert "`GET /api/v1/rebalance/waves/campaign-workflow-automation`" in supported_features
+    assert "`BulkReviewCampaignWorkflowAutomation:v1`" in supported_features
+    assert "src/core/waves/campaign_workflow_automation.py" in supported_features
     assert "retire definitions so they remain auditable under `RETIRED` status" in (
         supported_features
     )

@@ -1631,6 +1631,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-approval-inbox`
 - `GET /api/v1/rebalance/waves/campaign-workflow-board`
 - `GET /api/v1/rebalance/waves/campaign-assignment-plan`
+- `GET /api/v1/rebalance/waves/campaign-workflow-automation`
 - `GET /api/v1/rebalance/waves/{wave_id}`
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`
@@ -1717,6 +1718,10 @@ Functional coverage:
   escalation-tier counts, SLA-posture counts, assignees, due date, and source refs without
   approval-state mutation, maker-checker workflow, trade approval, order generation, routing,
   client contact, external workflow orchestration, or OMS claims,
+- workflow automation readiness composes assignment-plan posture and controlled assignment-task
+  state into `BulkReviewCampaignWorkflowAutomation:v1` rows for opening, monitoring, or escalating
+  Manage-owned assignment tasks without automatic task mutation, external workflow orchestration,
+  maker-checker workflow, client contact, trade approval, order generation, or OMS claims,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without adding maker-checker, order, or OMS claims,

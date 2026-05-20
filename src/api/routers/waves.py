@@ -107,6 +107,8 @@ from src.core.waves import (
     CampaignMakerCheckerControlOutcome,
     CampaignWorkflowBoardStatus,
     CampaignWorkflowNextAction,
+    CampaignWorkflowAutomationAction,
+    CampaignWorkflowAutomationStatus,
     DpmBulkReviewCampaignApprovalInboxPage,
     DpmBulkReviewCampaignAssignmentPlanPage,
     DpmBulkReviewCampaignDefinition,
@@ -121,6 +123,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignOperatingQueuePage,
     DpmBulkReviewCampaignWorkflowBoardPage,
+    DpmBulkReviewCampaignWorkflowAutomationPage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -147,6 +150,7 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_workflow_overview,
     build_bulk_review_campaign_operating_queue_page,
     build_bulk_review_campaign_workflow_board_page,
+    build_bulk_review_campaign_workflow_automation_page,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -1904,6 +1908,80 @@ def list_bulk_review_campaign_assignment_plan(
         include_closed=include_closed,
         escalation_tier=escalation_tier,
         next_action=next_action,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/campaign-workflow-automation",
+    response_model=DpmBulkReviewCampaignWorkflowAutomationPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign workflow automation readiness",
+    description=(
+        "Returns read-only Manage-side workflow automation readiness over persisted "
+        "`BulkReviewCampaignDefinition:v1` records. The projection composes the assignment plan "
+        "with existing controlled assignment-task state to identify where Manage may safely "
+        "propose opening, monitoring, or escalating its own assignment tasks. It does not mutate "
+        "tasks, orchestrate external workflow, discover the global portfolio universe, "
+        "recalculate source facts, mutate approval state, create maker-checker workflow, contact "
+        "clients, approve trades, generate orders, or claim OMS execution."
+    ),
+)
+def list_bulk_review_campaign_workflow_automation(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
+    as_of_date: str | None = Query(default=None),
+    requested_as_of_date: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's "
+            "persisted campaign as-of date is used."
+        ),
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    active_on: str | None = Query(
+        default=None,
+        description="Optional ISO date used to classify discovery expiry posture.",
+    ),
+    automation_status: CampaignWorkflowAutomationStatus | None = Query(
+        default=None,
+        description="Optional filter for one Manage-side automation posture.",
+    ),
+    automation_action: CampaignWorkflowAutomationAction | None = Query(
+        default=None,
+        description="Optional filter for one proposed Manage-side automation action.",
+    ),
+    include_closed: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignWorkflowAutomationPage:
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    definitions = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return build_bulk_review_campaign_workflow_automation_page(
+        definitions=definitions,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        active_on=active_on_date,
+        include_closed=include_closed,
+        automation_status=automation_status,
+        automation_action=automation_action,
         limit=limit,
         offset=offset,
     )

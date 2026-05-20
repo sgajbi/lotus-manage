@@ -2604,6 +2604,134 @@ def test_bulk_review_campaign_assignment_plan_summarizes_escalation_posture() ->
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readiness() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        ready_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        active_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-active-task-20260510/versions/2026.05"
+        )
+        blocked_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-blocked-task-20260510/versions/2026.05"
+        )
+
+        ready_put = client.put(ready_route, json=_bulk_review_campaign_definition_request())
+        active_put = client.put(
+            active_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Active automation task row",
+                "correlation_id": "corr-campaign-definition-automation-active",
+            },
+        )
+        blocked_put = client.put(
+            blocked_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Blocked automation task row",
+                "correlation_id": "corr-campaign-definition-automation-blocked",
+            },
+        )
+        active_task = client.post(
+            f"{active_route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-AUTO-ACTIVE",
+                "task_type": "ASSIGNMENT",
+                "opened_by": "ops",
+                "task_reason": "Campaign requires PM acknowledgement.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-automation-active-task",
+            },
+        )
+        blocked_task = client.post(
+            f"{blocked_route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-AUTO-BLOCKED",
+                "task_type": "ASSIGNMENT",
+                "opened_by": "ops",
+                "task_reason": "Campaign requires PM acknowledgement.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-automation-blocked-task",
+            },
+        )
+        blocked_transition = client.post(
+            f"{blocked_route}/assignment-tasks/BRC-TASK-AUTO-BLOCKED/transitions",
+            json={
+                "transition_type": "BLOCKED",
+                "transition_ref": "BRC-TASK-AUTO-BLOCKED:blocked",
+                "transitioned_by": "pm_001",
+                "transition_reason": "Governance evidence is incomplete.",
+                "sla_posture": "BREACHED_OR_BLOCKED",
+                "correlation_id": "corr-campaign-automation-blocked-transition",
+            },
+        )
+
+        automation = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-automation?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+        )
+        filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-automation?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&automation_status=BLOCKED"
+        )
+        invalid = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-automation?active_on=bad-date"
+        )
+
+    assert ready_put.status_code == 200
+    assert active_put.status_code == 200
+    assert blocked_put.status_code == 200
+    assert active_task.status_code == 201
+    assert blocked_task.status_code == 201
+    assert blocked_transition.status_code == 201
+
+    assert automation.status_code == 200
+    payload = automation.json()
+    assert payload["product_name"] == "BulkReviewCampaignWorkflowAutomation"
+    statuses = {item["campaign_id"]: item["automation_status"] for item in payload["items"]}
+    assert statuses == {
+        "campaign-holdings-apple-tesla-20260510": "AUTOMATION_CANDIDATE",
+        "campaign-holdings-active-task-20260510": "MANUAL_REVIEW_REQUIRED",
+        "campaign-holdings-blocked-task-20260510": "BLOCKED",
+    }
+    assert payload["automation_status_counts"] == {
+        "AUTOMATION_CANDIDATE": 1,
+        "MANUAL_REVIEW_REQUIRED": 1,
+        "BLOCKED": 1,
+    }
+    ready_item = next(
+        item
+        for item in payload["items"]
+        if item["campaign_id"] == "campaign-holdings-apple-tesla-20260510"
+    )
+    assert ready_item["automation_action"] == "OPEN_ASSIGNMENT_TASK"
+    assert ready_item["proposed_task_type"] == "ASSIGNMENT"
+    assert ready_item["proposed_task_ref"].startswith("BRC-AUTO-202605-")
+    assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in ready_item["operating_boundaries"]
+
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == 1
+    assert filtered.json()["items"][0]["automation_action"] == "ESCALATE_ASSIGNMENT_TASK"
+
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+
+
 def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
