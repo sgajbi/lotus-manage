@@ -2745,6 +2745,18 @@ def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readine
     assert "NO_AUTOMATIC_MAKER_CHECKER_MUTATION" in ready_item["operating_boundaries"]
     assert "NO_MAKER_CHECKER_WORKFLOW" not in ready_item["operating_boundaries"]
     assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in ready_item["operating_boundaries"]
+    assert payload["capability_posture"]["external_workflow_orchestration"] == "UNSUPPORTED"
+    assert (
+        payload["capability_posture"]["external_workflow_owner_posture"] == "DEFERRED_SOURCE_OWNER"
+    )
+    assert (
+        ready_item["capability_posture"]["manage_assignment_task_mutation"]
+        == "CONTROLLED_ENDPOINT_ONLY"
+    )
+    assert (
+        "NO_EXTERNAL_WORKFLOW_ORCHESTRATION"
+        in ready_item["capability_posture"]["operating_boundaries"]
+    )
 
     assert filtered.status_code == 200
     assert filtered.json()["count"] == 1

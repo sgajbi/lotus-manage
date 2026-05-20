@@ -33,6 +33,10 @@ CampaignWorkflowAutomationAction = Literal[
     "NO_AUTOMATION_BLOCKED",
     "NO_AUTOMATION_CLOSED",
 ]
+CampaignWorkflowReadinessSupport = Literal["SUPPORTED"]
+CampaignWorkflowMutationSupport = Literal["CONTROLLED_ENDPOINT_ONLY"]
+ExternalWorkflowOrchestrationSupport = Literal["UNSUPPORTED"]
+ExternalWorkflowOwnerPosture = Literal["DEFERRED_SOURCE_OWNER"]
 
 _CLOSED_TASK_STATUSES = {"RESOLVED", "CANCELLED"}
 _BLOCKED_TASK_STATUSES = {"BLOCKED"}
@@ -49,6 +53,58 @@ WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES = [
     "NO_ORDER_GENERATION",
     "NO_OMS_EXECUTION_CLAIM",
 ]
+
+
+class DpmBulkReviewCampaignWorkflowCapabilityPosture(BaseModel):
+    """Machine-readable capability posture for campaign workflow automation."""
+
+    product_name: Literal["BulkReviewCampaignWorkflowCapabilityPosture"] = (
+        "BulkReviewCampaignWorkflowCapabilityPosture"
+    )
+    product_version: Literal["v1"] = "v1"
+    manage_assignment_task_readiness: CampaignWorkflowReadinessSupport = Field(
+        default="SUPPORTED",
+        description=(
+            "Manage supports deterministic readiness classification for controlled assignment "
+            "tasks from persisted campaign definitions."
+        ),
+        examples=["SUPPORTED"],
+    )
+    manage_assignment_task_mutation: CampaignWorkflowMutationSupport = Field(
+        default="CONTROLLED_ENDPOINT_ONLY",
+        description=(
+            "Assignment task state may only be changed through the explicit controlled "
+            "assignment-task endpoints, never by this read-only automation projection."
+        ),
+        examples=["CONTROLLED_ENDPOINT_ONLY"],
+    )
+    external_workflow_orchestration: ExternalWorkflowOrchestrationSupport = Field(
+        default="UNSUPPORTED",
+        description=(
+            "External workflow-engine orchestration is outside this Manage projection and is not "
+            "claimed by the workflow-automation endpoint."
+        ),
+        examples=["UNSUPPORTED"],
+    )
+    external_workflow_owner_posture: ExternalWorkflowOwnerPosture = Field(
+        default="DEFERRED_SOURCE_OWNER",
+        description=(
+            "Future external workflow orchestration requires an owning workflow source product "
+            "or bank workflow authority before Manage can consume it."
+        ),
+        examples=["DEFERRED_SOURCE_OWNER"],
+    )
+    controlled_assignment_task_endpoint: str = Field(
+        default=(
+            "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+            "{campaign_version}/assignment-tasks"
+        ),
+        description="Endpoint family for explicit controlled assignment-task state changes.",
+    )
+    operating_boundaries: list[str] = Field(
+        default_factory=lambda: list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
+        description="Unsupported claims this capability posture must not imply.",
+    )
 
 
 class DpmBulkReviewCampaignWorkflowAutomationItem(BaseModel):
@@ -93,6 +149,13 @@ class DpmBulkReviewCampaignWorkflowAutomationItem(BaseModel):
     automation_reason_codes: list[str] = Field(
         description="Reason codes explaining the automation readiness posture."
     )
+    capability_posture: DpmBulkReviewCampaignWorkflowCapabilityPosture = Field(
+        default_factory=lambda: DpmBulkReviewCampaignWorkflowCapabilityPosture(),
+        description=(
+            "Machine-readable support boundary for Manage-side assignment readiness versus "
+            "unsupported external workflow orchestration."
+        ),
+    )
     assignment_plan: DpmBulkReviewCampaignAssignmentPlanItem = Field(
         description="Source assignment-plan row used to derive automation readiness."
     )
@@ -119,6 +182,12 @@ class DpmBulkReviewCampaignWorkflowAutomationPage(BaseModel):
     )
     automation_action_counts: dict[str, int] = Field(
         description="Automation row counts by proposed action for the returned page."
+    )
+    capability_posture: DpmBulkReviewCampaignWorkflowCapabilityPosture = Field(
+        default_factory=lambda: DpmBulkReviewCampaignWorkflowCapabilityPosture(),
+        description=(
+            "Page-level support boundary, present even when the returned automation page is empty."
+        ),
     )
     content_hash: str = Field(description="Canonical hash over the automation page.")
 
@@ -165,6 +234,7 @@ def build_bulk_review_campaign_workflow_automation_item(
         "active_task_refs": [task.task_ref for task in active_tasks],
         "blocked_task_refs": [task.task_ref for task in blocked_tasks],
         "automation_reason_codes": reason_codes,
+        "capability_posture": _workflow_capability_posture().model_dump(mode="json"),
         "assignment_plan": assignment_plan.model_dump(mode="json"),
         "operating_boundaries": list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         "content_hash": "",
@@ -216,6 +286,7 @@ def build_bulk_review_campaign_workflow_automation_page(
         "count": len(items),
         "automation_status_counts": status_counts,
         "automation_action_counts": action_counts,
+        "capability_posture": _workflow_capability_posture().model_dump(mode="json"),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)
@@ -298,6 +369,10 @@ def _proposed_task_ref(
     )
     digest = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:8].upper()
     return f"BRC-AUTO-{definition.campaign_version.replace('.', '')}-{digest}"
+
+
+def _workflow_capability_posture() -> DpmBulkReviewCampaignWorkflowCapabilityPosture:
+    return DpmBulkReviewCampaignWorkflowCapabilityPosture()
 
 
 def _hash_payload(payload: dict[str, object]) -> str:

@@ -3571,11 +3571,15 @@ breached task refs for escalation. The builder lives in
 router and preserving reusable domain logic.
 
 This advances RFC41-WTBD-003 beyond controlled assignment-task mutation into a bounded
-Manage-side automation-readiness projection. It does not mutate tasks, orchestrate external
-workflow systems, mutate maker-checker control state, contact clients, approve trades, generate or
-route orders, discover the global portfolio universe, recalculate membership, or claim OMS execution.
-RFC41-WTBD-003 remains partial for global portfolio-universe campaign discovery and any external
-workflow orchestration beyond Manage-side task readiness and append-only evidence ledgers.
+Manage-side automation-readiness projection. The response now carries
+`BulkReviewCampaignWorkflowCapabilityPosture:v1` at page and row level so consumers can
+machine-read supported Manage assignment-task readiness, controlled endpoint-only task mutation,
+unsupported external workflow orchestration, and deferred external workflow owner posture. It does
+not mutate tasks, orchestrate external workflow systems, mutate maker-checker control state, contact
+clients, approve trades, generate or route orders, discover the global portfolio universe,
+recalculate membership, or claim OMS execution. RFC41-WTBD-003 remains partial for global
+portfolio-universe campaign discovery and any external workflow orchestration beyond Manage-side
+task readiness and append-only evidence ledgers.
 
 2026-05-20 campaign maker-checker control addendum:
 

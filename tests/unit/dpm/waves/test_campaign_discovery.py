@@ -768,6 +768,13 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
     assert "NO_AUTOMATIC_TASK_MUTATION" in candidate.operating_boundaries
     assert "NO_AUTOMATIC_MAKER_CHECKER_MUTATION" in candidate.operating_boundaries
     assert "NO_MAKER_CHECKER_WORKFLOW" not in candidate.operating_boundaries
+    assert candidate.capability_posture.manage_assignment_task_readiness == "SUPPORTED"
+    assert (
+        candidate.capability_posture.manage_assignment_task_mutation == "CONTROLLED_ENDPOINT_ONLY"
+    )
+    assert candidate.capability_posture.external_workflow_orchestration == "UNSUPPORTED"
+    assert candidate.capability_posture.external_workflow_owner_posture == "DEFERRED_SOURCE_OWNER"
+    assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in candidate.capability_posture.operating_boundaries
 
     assert active.automation_status == "MANUAL_REVIEW_REQUIRED"
     assert active.automation_action == "MONITOR_ACTIVE_TASK"
@@ -800,6 +807,23 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
         "MONITOR_ACTIVE_TASK": 1,
         "ESCALATE_ASSIGNMENT_TASK": 1,
     }
+    assert page.capability_posture.external_workflow_orchestration == "UNSUPPORTED"
+
+    empty_page = build_bulk_review_campaign_workflow_automation_page(
+        definitions=[],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+        include_closed=False,
+        automation_status=None,
+        automation_action=None,
+        limit=50,
+        offset=0,
+    )
+
+    assert empty_page.items == []
+    assert empty_page.capability_posture.manage_assignment_task_readiness == "SUPPORTED"
+    assert empty_page.capability_posture.external_workflow_orchestration == "UNSUPPORTED"
 
 
 def test_campaign_workflow_automation_filters_actions_and_closed_rows() -> None:

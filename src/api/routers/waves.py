@@ -1927,7 +1927,9 @@ def list_bulk_review_campaign_assignment_plan(
         "propose opening, monitoring, or escalating its own assignment tasks. It does not mutate "
         "tasks, orchestrate external workflow, discover the global portfolio universe, "
         "recalculate source facts, mutate approval state, mutate maker-checker control state, "
-        "contact clients, approve trades, generate orders, or claim OMS execution."
+        "contact clients, approve trades, generate orders, or claim OMS execution. The response "
+        "includes `capability_posture` so consumers can distinguish supported Manage assignment "
+        "readiness from unsupported external workflow orchestration even when the page is empty."
     ),
 )
 def list_bulk_review_campaign_workflow_automation(

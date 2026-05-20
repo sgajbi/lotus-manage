@@ -1723,7 +1723,9 @@ Functional coverage:
   state into `BulkReviewCampaignWorkflowAutomation:v1` rows for opening, monitoring, or escalating
   Manage-owned assignment tasks without automatic task mutation, external workflow orchestration,
   maker-checker control-state mutation, client contact, trade approval, order generation, or OMS
-  claims,
+  claims; page and row `BulkReviewCampaignWorkflowCapabilityPosture:v1` objects make supported
+  Manage assignment-task readiness, controlled endpoint-only task mutation, unsupported external
+  workflow orchestration, and deferred external workflow owner posture machine-readable,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without mutating maker-checker control state, order, or OMS claims,
