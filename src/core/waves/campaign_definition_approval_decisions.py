@@ -71,12 +71,13 @@ def record_bulk_review_campaign_definition_approval_decision(
             return definition
         raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT")
 
-    return definition.model_copy(
+    updated = definition.model_copy(
         update={
             "approval_decisions": [*definition.approval_decisions, decision],
             "content_hash": "",
         }
     )
+    return DpmBulkReviewCampaignDefinition.model_validate(updated.model_dump(mode="python"))
 
 
 def build_bulk_review_campaign_definition_approval_decision_page(

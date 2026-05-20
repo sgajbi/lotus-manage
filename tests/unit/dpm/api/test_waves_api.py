@@ -2604,6 +2604,127 @@ def test_bulk_review_campaign_assignment_plan_summarizes_escalation_posture() ->
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        assigned = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-2026-05-001",
+                "recorded_by": "ops",
+                "action_reason": "Route campaign to assigned PM.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-action-001",
+            },
+        )
+        escalated = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ESCALATED",
+                "action_ref": "BRC-ASSIGN-2026-05-002",
+                "recorded_by": "ops",
+                "action_reason": "Approval evidence requires governance attention.",
+                "assigned_actor_ids": ["governance_ops"],
+                "escalation_tier": "GOVERNANCE",
+                "sla_posture": "ATTENTION",
+                "correlation_id": "corr-campaign-assignment-action-002",
+                "source_refs": [
+                    {
+                        "source_system": "ticketing",
+                        "source_type": "CampaignAssignmentTicket",
+                        "source_id": "BRC-ASSIGN-2026-05-002",
+                    }
+                ],
+            },
+        )
+        replay = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ESCALATED",
+                "action_ref": "BRC-ASSIGN-2026-05-002",
+                "recorded_by": "ops",
+                "action_reason": "Approval evidence requires governance attention.",
+                "assigned_actor_ids": ["governance_ops"],
+                "escalation_tier": "GOVERNANCE",
+                "sla_posture": "ATTENTION",
+                "correlation_id": "corr-campaign-assignment-action-002",
+                "source_refs": [
+                    {
+                        "source_system": "ticketing",
+                        "source_type": "CampaignAssignmentTicket",
+                        "source_id": "BRC-ASSIGN-2026-05-002",
+                    }
+                ],
+            },
+        )
+        conflicting = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "RESOLVED",
+                "action_ref": "BRC-ASSIGN-2026-05-002",
+                "recorded_by": "ops",
+                "action_reason": "Conflicting reuse.",
+                "assigned_actor_ids": [],
+                "escalation_tier": "NONE",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-action-conflict",
+            },
+        )
+        missing_actor = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-2026-05-003",
+                "recorded_by": "ops",
+                "action_reason": "Missing actor.",
+                "assigned_actor_ids": [],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-action-missing-actor",
+            },
+        )
+        listed = client.get(f"{route}/assignment-actions")
+
+    assert put_response.status_code == 200
+    assert assigned.status_code == 201
+    assert escalated.status_code == 201
+    assert replay.status_code == 201
+    assert len(replay.json()["assignment_actions"]) == 2
+    assert conflicting.status_code == 422
+    assert (
+        conflicting.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
+    )
+    assert missing_actor.status_code == 422
+    assert (
+        missing_actor.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTORS_REQUIRED"
+    )
+
+    payload = listed.json()
+    assert listed.status_code == 200
+    assert payload["product_name"] == "BulkReviewCampaignDefinitionAssignmentActionPage"
+    assert payload["count"] == 2
+    assert payload["latest_action_type"] == "ESCALATED"
+    assert payload["current_assigned_actor_ids"] == ["governance_ops"]
+    assert payload["current_escalation_tier"] == "GOVERNANCE"
+    assert payload["current_sla_posture"] == "ATTENTION"
+    assert "maker_checker_workflow" in payload["assignment_actions"][0]["forbidden_actions"]
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())

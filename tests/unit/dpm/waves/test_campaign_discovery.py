@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import date
 
+import pytest
+
 from src.core.waves import DpmWaveSourceRef
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
@@ -30,6 +32,10 @@ from src.core.waves.campaign_workflow_board import (
 from src.core.waves.campaign_assignment_plan import (
     build_bulk_review_campaign_assignment_plan_item,
     build_bulk_review_campaign_assignment_plan_page,
+)
+from src.core.waves.campaign_assignment_actions import (
+    build_bulk_review_campaign_definition_assignment_action_page,
+    record_bulk_review_campaign_definition_assignment_action,
 )
 
 
@@ -426,3 +432,181 @@ def test_campaign_assignment_plan_page_filters_tier_and_counts() -> None:
     assert page.sla_posture_counts == {"ATTENTION": 1}
     assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
     assert page.content_hash.startswith("sha256:")
+
+
+def test_campaign_assignment_actions_record_append_only_posture() -> None:
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=_definition(),
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001", "pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    escalated = record_bulk_review_campaign_definition_assignment_action(
+        definition=assigned,
+        action_type="ESCALATED",
+        action_ref="BRC-ASSIGN-2026-05-002",
+        recorded_by="ops",
+        action_reason="Approval evidence requires governance attention.",
+        assigned_actor_ids=["governance_ops"],
+        escalation_tier="GOVERNANCE",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-action-002",
+    )
+
+    assert len(escalated.assignment_actions) == 2
+    assert escalated.assignment_actions[0].action_id.startswith("brc_assignment_action_")
+    assert escalated.assignment_actions[0].assigned_actor_ids == ["pm_001"]
+    assert "maker_checker_workflow" in escalated.assignment_actions[0].forbidden_actions
+    assert escalated.content_hash.startswith("sha256:")
+
+    page = build_bulk_review_campaign_definition_assignment_action_page(
+        definition=escalated,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignDefinitionAssignmentActionPage"
+    assert page.count == 2
+    assert page.latest_action_type == "ESCALATED"
+    assert page.current_assigned_actor_ids == ["governance_ops"]
+    assert page.current_escalation_tier == "GOVERNANCE"
+    assert page.current_sla_posture == "ATTENTION"
+
+
+def test_campaign_assignment_actions_validate_conflicts_and_resolved_state() -> None:
+    definition = _definition()
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    replay = record_bulk_review_campaign_definition_assignment_action(
+        definition=assigned,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    resolved = record_bulk_review_campaign_definition_assignment_action(
+        definition=assigned,
+        action_type="RESOLVED",
+        action_ref="BRC-ASSIGN-2026-05-002",
+        recorded_by="ops",
+        action_reason="Assignment completed.",
+        assigned_actor_ids=[],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-002",
+    )
+
+    assert replay is assigned
+    page = build_bulk_review_campaign_definition_assignment_action_page(
+        definition=resolved,
+        limit=50,
+        offset=0,
+    )
+    assert page.latest_action_type == "RESOLVED"
+    assert page.current_assigned_actor_ids == []
+    assert page.current_escalation_tier == "NONE"
+
+    try:
+        record_bulk_review_campaign_definition_assignment_action(
+            definition=assigned,
+            action_type="ESCALATED",
+            action_ref="BRC-ASSIGN-2026-05-001",
+            recorded_by="ops",
+            action_reason="Conflicting reuse.",
+            assigned_actor_ids=["governance_ops"],
+            escalation_tier="GOVERNANCE",
+            sla_posture="ATTENTION",
+            correlation_id="corr-campaign-assignment-action-conflict",
+        )
+    except ValueError as exc:
+        assert str(exc) == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
+    else:  # pragma: no cover
+        raise AssertionError("Expected duplicate assignment action ref conflict")
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason_code"),
+    [
+        ({"action_ref": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_REQUIRED"),
+        ({"recorded_by": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTOR_REQUIRED"),
+        ({"action_reason": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REASON_REQUIRED"),
+        (
+            {"correlation_id": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_CORRELATION_REQUIRED",
+        ),
+        (
+            {"assigned_actor_ids": []},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTORS_REQUIRED",
+        ),
+        (
+            {"action_type": "RESOLVED", "assigned_actor_ids": [], "escalation_tier": "PM"},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_RESOLVED_TIER_INVALID",
+        ),
+    ],
+)
+def test_campaign_assignment_actions_validate_required_fields(
+    overrides: dict[str, object],
+    reason_code: str,
+) -> None:
+    request = {
+        "definition": _definition(),
+        "action_type": "ASSIGNED",
+        "action_ref": "BRC-ASSIGN-2026-05-001",
+        "recorded_by": "ops",
+        "action_reason": "Route ready campaign to assigned PM.",
+        "assigned_actor_ids": ["pm_001"],
+        "escalation_tier": "PM",
+        "sla_posture": "ON_TRACK",
+        "correlation_id": "corr-campaign-assignment-action-001",
+    } | overrides
+
+    with pytest.raises(ValueError, match=reason_code):
+        record_bulk_review_campaign_definition_assignment_action(**request)
+
+
+def test_campaign_assignment_actions_require_active_definition() -> None:
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition().model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTIVE_REQUIRED",
+    ):
+        record_bulk_review_campaign_definition_assignment_action(
+            definition=retired,
+            action_type="ASSIGNED",
+            action_ref="BRC-ASSIGN-2026-05-001",
+            recorded_by="ops",
+            action_reason="Route ready campaign to assigned PM.",
+            assigned_actor_ids=["pm_001"],
+            escalation_tier="PM",
+            sla_posture="ON_TRACK",
+            correlation_id="corr-campaign-assignment-action-001",
+        )

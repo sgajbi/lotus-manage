@@ -96,14 +96,17 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     CampaignApprovalDecisionType,
+    CampaignAssignmentActionType,
     CampaignApprovalInboxStatus,
     CampaignAssignmentEscalationTier,
+    CampaignAssignmentSlaPosture,
     CampaignWorkflowBoardStatus,
     CampaignWorkflowNextAction,
     DpmBulkReviewCampaignApprovalInboxPage,
     DpmBulkReviewCampaignAssignmentPlanPage,
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
+    DpmBulkReviewCampaignDefinitionAssignmentActionPage,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
@@ -124,7 +127,9 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
     build_bulk_review_campaign_definition_approval_decision_page,
+    build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_approval_decision,
+    record_bulk_review_campaign_definition_assignment_action,
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_assignment_plan_page,
     build_bulk_review_campaign_definition_workflow_overview,
@@ -485,6 +490,46 @@ class DpmBulkReviewCampaignDefinitionApprovalDecisionRequest(BaseModel):
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
         description="Optional decision evidence refs such as committee minutes or ticket ids.",
+    )
+
+
+class DpmBulkReviewCampaignDefinitionAssignmentActionRequest(BaseModel):
+    action_type: CampaignAssignmentActionType = Field(
+        description="Bounded campaign assignment or escalation action.",
+        examples=["ASSIGNED"],
+    )
+    action_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, ticket, or queue reference for this assignment action.",
+        examples=["BRC-ASSIGN-2026-05-001"],
+    )
+    recorded_by: str = Field(
+        min_length=1,
+        description="Actor recording the campaign assignment action.",
+        examples=["ops"],
+    )
+    action_reason: str = Field(
+        min_length=1,
+        description="Human-authored assignment or escalation rationale.",
+        examples=["Campaign routed to assigned PM with governance attention."],
+    )
+    assigned_actor_ids: list[str] = Field(
+        default_factory=list,
+        description="Actors assigned by this action. Required unless action_type is RESOLVED.",
+        examples=[["pm_001"]],
+    )
+    escalation_tier: CampaignAssignmentEscalationTier = Field(
+        description="Bounded escalation tier after this action.",
+        examples=["PM"],
+    )
+    sla_posture: CampaignAssignmentSlaPosture = Field(
+        description="Bounded operational SLA posture after this action.",
+        examples=["ON_TRACK"],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-assignment-action-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Optional assignment evidence refs such as queue or ticket ids.",
     )
 
 
@@ -1809,6 +1854,88 @@ def list_bulk_review_campaign_definition_approval_decisions(
         campaign_version=campaign_version,
     )
     return build_bulk_review_campaign_definition_approval_decision_page(
+        definition=definition,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_201_CREATED,
+    summary="Record bulk-review campaign assignment action",
+    description=(
+        "Records an append-only assignment or escalation action on one active Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. This mutates campaign assignment posture only: it "
+        "does not mutate approval state, run maker-checker workflow, approve trades, generate "
+        "orders, route orders, contact clients, or claim OMS execution."
+    ),
+)
+def record_bulk_review_campaign_definition_assignment_action_endpoint(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    try:
+        updated = record_bulk_review_campaign_definition_assignment_action(
+            definition=definition,
+            action_type=request.action_type,
+            action_ref=request.action_ref,
+            recorded_by=request.recorded_by,
+            action_reason=request.action_reason,
+            assigned_actor_ids=request.assigned_actor_ids,
+            escalation_tier=request.escalation_tier,
+            sla_posture=request.sla_posture,
+            correlation_id=request.correlation_id,
+            source_refs=request.source_refs,
+        )
+        persisted = repository.record_definition_assignment_action(definition=updated)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if persisted is None:
+        raise campaign_definition_not_found_http_exception()
+    return persisted
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions",
+    response_model=DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign assignment actions",
+    description=(
+        "Returns a bounded append-only assignment-action page for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. The response summarizes current assigned actors, "
+        "escalation tier, and SLA posture without creating maker-checker workflow, mutating "
+        "approval state, trade approval, order generation, order routing, client contact, or OMS "
+        "execution claims."
+    ),
+)
+def list_bulk_review_campaign_definition_assignment_actions(
+    campaign_id: str,
+    campaign_version: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    return build_bulk_review_campaign_definition_assignment_action_page(
         definition=definition,
         limit=limit,
         offset=offset,

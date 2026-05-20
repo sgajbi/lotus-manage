@@ -713,10 +713,19 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing, escalation
     tier, SLA posture, and reason codes from the workflow board without mutating assignment state,
     creating escalation tasks, creating maker-checker workflow, approving trades, generating
-    orders, or claiming OMS execution. Maker-checker workflow beyond append-only approval
-    decisions, mutable assignment/escalation task lifecycle beyond the read-only plan, wave
-    risk/performance analytics posture, global portfolio-universe campaign discovery, and external OMS execution remain
-    unpromoted until owning implementations are live-proven. Manage consumes `lotus-core`
+    orders, or claiming OMS execution.
+    Manage now also exposes append-only campaign assignment and escalation actions at
+    `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
+    plus a bounded audit page at
+    `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`.
+    These actions record assignment, reassignment, escalation, de-escalation, and resolution
+    posture with deterministic action ids, conflict-safe action refs, assigned actor ids,
+    escalation tier, SLA posture, correlation id, and optional source refs. They mutate assignment
+    posture evidence only and do not mutate approval state, create maker-checker workflow, approve
+    trades, generate or route orders, contact clients, or claim OMS execution. Maker-checker
+    workflow beyond append-only approval decisions, global portfolio-universe campaign discovery,
+    wave risk/performance analytics posture, and external OMS execution remain unpromoted until
+    owning implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
     diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
     acknowledgements, confirm fills, or settle trades.

@@ -179,7 +179,13 @@ generating orders, or claiming OMS execution. Manage also supports a read-only a
 escalation plan at `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing,
 escalation tier, SLA posture, and reason codes from the workflow board without mutating assignment
 state, creating escalation tasks, creating maker-checker workflow, approving trades, generating
-orders, or claiming OMS execution. Manage also supports
+orders, or claiming OMS execution. Manage also supports append-only assignment and escalation
+actions at
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
+plus listing them at the same route with `GET`, mutating assignment posture evidence only with
+assigned actors, escalation tier, SLA posture, correlation id, source refs, deterministic action ids,
+and conflict-safe action refs; it does not mutate approval state, create maker-checker workflow,
+approve trades, generate or route orders, contact clients, or claim OMS execution. Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
 and superseding older definitions with active replacement versions at
@@ -209,9 +215,8 @@ with wave id, actor, requested as-of date, correlation id, idempotency key, pagi
 explicit no-order/no-OMS operating boundaries;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
 fail closed for new preview/create requests. Maker-checker workflow beyond append-only approval
-decisions, global portfolio-universe campaign discovery, broader cross-actor campaign operating queues,
-richer owning-service risk/performance aggregate enrichment, and external OMS execution remain
-unpromoted.
+decisions, global portfolio-universe campaign discovery, richer owning-service risk/performance
+aggregate enrichment, and external OMS execution remain unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,
 `outcome_review_narrative.pack@v1`, `dpm_operations_handoff_summary.pack@v1`,
 `dpm_exception_summary.pack@v1`, and `pm_quality_summary.pack@v1` workflows over Manage-owned
