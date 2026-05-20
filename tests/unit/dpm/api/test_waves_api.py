@@ -2119,6 +2119,21 @@ def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> No
     assert item["governance_status"] == "APPROVED"
     assert item["expiry_state"] == "ACTIVE"
     assert item["source_ref_count"] == 2
+    assert item["universe_posture"] == {
+        "product_name": "BulkReviewCampaignUniversePosture",
+        "product_version": "v1",
+        "source_scope": "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
+        "global_portfolio_universe_discovery": "UNSUPPORTED",
+        "candidate_source_ref_posture": "SOURCE_BACKED",
+        "source_systems": ["lotus-advise", "lotus-core"],
+        "operating_boundaries": [
+            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
+            "NO_SOURCE_FACT_RECALCULATION",
+            "NO_MEMBERSHIP_RECOMPUTATION",
+            "NO_ORDER_GENERATION",
+            "NO_OMS_EXECUTION_CLAIM",
+        ],
+    }
     assert item["preview_reference"] == {
         "trigger_type": "BULK_REVIEW_CAMPAIGN",
         "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",

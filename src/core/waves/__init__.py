@@ -28,7 +28,9 @@ from src.core.waves.campaign_definitions import (
 from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
     DpmBulkReviewCampaignDiscoveryPage,
+    DpmBulkReviewCampaignUniversePosture,
     build_bulk_review_campaign_discovery_item,
+    build_bulk_review_campaign_universe_posture,
     classify_bulk_review_campaign_expiry,
 )
 from src.core.waves.campaign_definition_events import (
@@ -189,6 +191,7 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionMakerCheckerControlPage",
     "DpmBulkReviewCampaignDiscoveryItem",
     "DpmBulkReviewCampaignDiscoveryPage",
+    "DpmBulkReviewCampaignUniversePosture",
     "DpmBulkReviewCampaignDefinitionLifecycleEvent",
     "DpmBulkReviewCampaignDefinitionLifecycleEventPage",
     "DpmBulkReviewCampaignDefinitionLaunchHistoryPage",
@@ -228,6 +231,7 @@ __all__ = [
     "WaveTriggerType",
     "apply_wave_transition",
     "build_bulk_review_campaign_discovery_item",
+    "build_bulk_review_campaign_universe_posture",
     "build_bulk_review_campaign_definition_lifecycle_events",
     "build_bulk_review_campaign_definition_launch_history_page",
     "build_bulk_review_campaign_definition_launch_command",

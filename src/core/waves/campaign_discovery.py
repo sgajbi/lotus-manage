@@ -8,6 +8,50 @@ from pydantic import BaseModel, Field
 from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
 
 
+class DpmBulkReviewCampaignUniversePosture(BaseModel):
+    """Machine-readable boundary for campaign candidate-universe support."""
+
+    product_name: Literal["BulkReviewCampaignUniversePosture"] = "BulkReviewCampaignUniversePosture"
+    product_version: Literal["v1"] = "v1"
+    source_scope: Literal["PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"] = Field(
+        default="PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
+        description=(
+            "The only supported candidate universe for this row: source-backed portfolios already "
+            "persisted on the Manage-owned campaign definition."
+        ),
+    )
+    global_portfolio_universe_discovery: Literal["UNSUPPORTED"] = Field(
+        default="UNSUPPORTED",
+        description=(
+            "Manage does not scan the bank-wide portfolio universe or discover new candidate "
+            "portfolios for bulk-review campaigns."
+        ),
+    )
+    candidate_source_ref_posture: Literal["SOURCE_BACKED", "NO_CANDIDATES"] = Field(
+        description=(
+            "Whether the persisted candidate set carries source refs. Campaign definitions reject "
+            "unsourced candidates, so populated rows are source-backed."
+        )
+    )
+    source_systems: list[str] = Field(
+        description="Sorted source systems represented by persisted candidate source refs.",
+        examples=[["lotus-core", "lotus-risk"]],
+    )
+    operating_boundaries: list[str] = Field(
+        default_factory=lambda: [
+            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
+            "NO_SOURCE_FACT_RECALCULATION",
+            "NO_MEMBERSHIP_RECOMPUTATION",
+            "NO_ORDER_GENERATION",
+            "NO_OMS_EXECUTION_CLAIM",
+        ],
+        description=(
+            "Explicit non-claims for the campaign discovery universe posture. These boundaries are "
+            "part of the API contract, not free-text guidance."
+        ),
+    )
+
+
 class DpmBulkReviewCampaignDiscoveryItem(BaseModel):
     """Bounded front-office read model for one persisted campaign definition."""
 
@@ -26,6 +70,7 @@ class DpmBulkReviewCampaignDiscoveryItem(BaseModel):
     expires_on: str | None = None
     access_purpose: str | None = None
     source_ref_count: int
+    universe_posture: DpmBulkReviewCampaignUniversePosture
     content_hash: str
     superseded_by_campaign_id: str | None = None
     superseded_by_campaign_version: str | None = None
@@ -100,6 +145,7 @@ def build_bulk_review_campaign_discovery_item(
         expires_on=expires_on,
         access_purpose=access_purpose,
         source_ref_count=source_ref_count,
+        universe_posture=build_bulk_review_campaign_universe_posture(definition=definition),
         content_hash=definition.content_hash,
         superseded_by_campaign_id=definition.superseded_by_campaign_id,
         superseded_by_campaign_version=definition.superseded_by_campaign_version,
@@ -110,6 +156,24 @@ def build_bulk_review_campaign_discovery_item(
             "campaign_definition_version": definition.campaign_version,
             "as_of_date": definition.as_of_date,
         },
+    )
+
+
+def build_bulk_review_campaign_universe_posture(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+) -> DpmBulkReviewCampaignUniversePosture:
+    source_systems = sorted(
+        {
+            source_ref.source_system
+            for candidate in definition.candidates
+            for source_ref in candidate.source_refs
+            if source_ref.source_system.strip()
+        }
+    )
+    return DpmBulkReviewCampaignUniversePosture(
+        candidate_source_ref_posture="SOURCE_BACKED" if source_systems else "NO_CANDIDATES",
+        source_systems=source_systems,
     )
 
 
