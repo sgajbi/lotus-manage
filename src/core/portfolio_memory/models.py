@@ -99,6 +99,59 @@ class DpmPortfolioMemoryExternalExecutionBoundaryEvidence(BaseModel):
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
 
+class DpmPortfolioMemoryClientCommunicationBoundaryEvidence(BaseModel):
+    boundary_id: Literal["DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY"] = Field(
+        default="DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY",
+        description="Stable unsupported client-communication boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for portfolio-memory client communication.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported portfolio-memory boundary evidence.",
+    )
+    source_product_name: Literal["DpmPortfolioMemory"] = Field(
+        default="DpmPortfolioMemory",
+        description="Manage-owned read model that stops at source-backed memory projection.",
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    client_communication_events_projected: Literal[False] = Field(
+        default=False,
+        description="Portfolio memory does not project client contact or message events.",
+    )
+    client_delivery_events_projected: Literal[False] = Field(
+        default=False,
+        description="Portfolio memory does not project client delivery confirmation events.",
+    )
+    client_approval_events_projected: Literal[False] = Field(
+        default=False,
+        description="Portfolio memory does not project client approval or consent events.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the client-communication memory boundary.",
+        examples=["PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_EVENTS_NOT_SUPPORTED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Client communication capabilities blocked from portfolio-memory projection.",
+        examples=[["client_contact", "client_message_generation", "delivery_confirmation"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before client communication memory can be promoted.",
+        examples=["future client-communication owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume client communication truth.",
+        examples=["ClientCommunicationRecord:v1"],
+    )
+    summary: str = Field(description="Operator-facing no-claim memory boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmPortfolioMemorySourceRef(BaseModel):
     source_system: str = Field(description="System that owns this source evidence.")
     source_type: str = Field(description="Source product, artifact, or event type.")
@@ -225,13 +278,19 @@ class DpmPortfolioMemory(BaseModel):
         default_factory=list,
         description=(
             "Supported and deferred source-event families in the portfolio-memory contract, "
-            "including explicit OMS, external order acknowledgement, and PM-quality projection "
-            "boundaries."
+            "including explicit OMS, external order acknowledgement, client communication, and "
+            "PM-quality projection boundaries."
         ),
     )
     external_execution_boundary: DpmPortfolioMemoryExternalExecutionBoundaryEvidence = Field(
         description=(
             "Structured fail-closed no-OMS boundary evidence for portfolio-memory consumers."
+        )
+    )
+    client_communication_boundary: DpmPortfolioMemoryClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-client-contact boundary evidence for portfolio-memory "
+            "consumers."
         )
     )
     events: list[DpmPortfolioMemoryEvent] = Field(

@@ -143,7 +143,11 @@ portfolio-memory response also carries structured
 `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked OMS capabilities, the
 required future execution/OMS owner, and `ExternalOrderExecutionAcknowledgement:v1` as the required
 future source product before acknowledgement, fill, settlement, or execution-status events can be
-projected.
+projected. It also carries structured
+`DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY` evidence naming blocked client-contact,
+message-generation, delivery-confirmation, client-approval, and communication-audit capabilities,
+the required future client-communication owner, and `ClientCommunicationRecord:v1` as the required
+future source product before any client communication events can be projected.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,

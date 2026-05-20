@@ -2009,10 +2009,15 @@ Functional behavior:
 - publishes `source_event_family_posture` for supported manage construction, report, AI, archive,
   and PM quality score-run lineage families plus explicit `DEFERRED_SOURCE_OWNER` posture for
   external OMS execution and Core `ExternalOrderExecutionAcknowledgement:v1` source-product
-  posture,
+  posture, and explicit `DEFERRED_SOURCE_OWNER` posture for future client communication source
+  events,
 - publishes structured `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked
   OMS capabilities, the required future execution/OMS owner, the required
   `ExternalOrderExecutionAcknowledgement:v1` source product, and a deterministic content hash,
+- publishes structured `DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY` evidence naming blocked
+  client-contact, message-generation, delivery-confirmation, client-approval, and
+  communication-audit capabilities, the required future client-communication owner, the required
+  `ClientCommunicationRecord:v1` source product, and a deterministic content hash,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
@@ -2035,6 +2040,11 @@ Non-functional posture:
   does not project acknowledgement, fill, settlement, or execution-status events from it. The
   structured external execution boundary lets consumers render the blocked posture without
   inferring hidden OMS events.
+- Future client communication source events remain roadmap scope and are visible as deferred
+  posture rather than hidden portfolio-memory functionality. Portfolio memory does not project
+  client-contact, client-message, client-delivery, client-approval, or communication-audit events;
+  the structured client communication boundary lets consumers render that blocked posture without
+  inferring hidden client communication events.
   Persisted PM operating quality score runs are implemented separately at
   `/api/v1/rebalance/pm-operating-quality/score-runs`; `pm_scoring` projects only bounded
   `PM_QUALITY_SCORE_RUN` lineage for score runs whose source-owned Core PM-book evidence includes
