@@ -10,6 +10,7 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
     DpmPmQualityReviewAction,
+    DpmPmQualitySummaryInvocation,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
@@ -20,6 +21,8 @@ from src.core.pm_quality.repository import (
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
+    DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationRepository,
 )
 
 
@@ -217,6 +220,60 @@ class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionReposit
                 reverse=True,
             )
             return deepcopy(actions[offset : offset + limit])
+
+
+class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocationRepository):
+    def __init__(self) -> None:
+        self._lock = Lock()
+        self._invocations: dict[str, DpmPmQualitySummaryInvocation] = {}
+
+    def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+        with self._lock:
+            existing = self._invocations.get(invocation.summary_invocation_id)
+            if existing is not None and existing.content_hash != invocation.content_hash:
+                raise DpmPmQualitySummaryInvocationConflictError(
+                    "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
+                )
+            self._invocations[invocation.summary_invocation_id] = deepcopy(invocation)
+
+    def get_summary_invocation(
+        self,
+        *,
+        summary_invocation_id: str,
+    ) -> DpmPmQualitySummaryInvocation | None:
+        with self._lock:
+            invocation = self._invocations.get(summary_invocation_id)
+            return deepcopy(invocation) if invocation is not None else None
+
+    def list_summary_invocations(
+        self,
+        *,
+        score_run_id: str | None = None,
+        review_action_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        invocation_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualitySummaryInvocation]:
+        with self._lock:
+            invocations = [
+                invocation
+                for invocation in self._invocations.values()
+                if (score_run_id is None or invocation.score_run_id == score_run_id)
+                and (review_action_id is None or invocation.review_action_id == review_action_id)
+                and (policy_id is None or invocation.policy_id == policy_id)
+                and (as_of_date is None or invocation.as_of_date == as_of_date)
+                and (invocation_state is None or invocation.invocation_state == invocation_state)
+            ]
+            invocations.sort(
+                key=lambda invocation: (
+                    invocation.generated_at,
+                    invocation.summary_invocation_id,
+                ),
+                reverse=True,
+            )
+            return deepcopy(invocations[offset : offset + limit])
 
 
 def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:

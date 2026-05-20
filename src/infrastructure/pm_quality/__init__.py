@@ -5,12 +5,14 @@ from src.infrastructure.pm_quality.in_memory import (
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.pm_quality.postgres import (
     PostgresDpmPmQualityFairnessAnalysisRepository,
     PostgresDpmPmQualityPolicyRepository,
     PostgresDpmPmQualityReviewActionRepository,
     PostgresDpmPmQualityScoreRunRepository,
+    PostgresDpmPmQualitySummaryInvocationRepository,
 )
 
 __all__ = [
@@ -18,8 +20,10 @@ __all__ = [
     "InMemoryDpmPmQualityPolicyRepository",
     "InMemoryDpmPmQualityReviewActionRepository",
     "InMemoryDpmPmQualityScoreRunRepository",
+    "InMemoryDpmPmQualitySummaryInvocationRepository",
     "PostgresDpmPmQualityFairnessAnalysisRepository",
     "PostgresDpmPmQualityPolicyRepository",
     "PostgresDpmPmQualityReviewActionRepository",
     "PostgresDpmPmQualityScoreRunRepository",
+    "PostgresDpmPmQualitySummaryInvocationRepository",
 ]

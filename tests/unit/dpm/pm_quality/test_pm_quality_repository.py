@@ -15,17 +15,20 @@ from src.core.pm_quality import (
     DpmPmQualityPolicyConflictError,
     DpmPmQualityReviewActionConflictError,
     DpmPmQualityScoreRunConflictError,
+    DpmPmQualitySummaryInvocationConflictError,
     DpmPmQualityWeight,
     DpmPmQualityFairnessSegmentInput,
     build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
     build_pm_quality_review_action,
+    build_pm_quality_summary_invocation,
 )
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.pm_quality import postgres as postgres_module
 from src.infrastructure.pm_quality.postgres import (
@@ -33,6 +36,7 @@ from src.infrastructure.pm_quality.postgres import (
     PostgresDpmPmQualityPolicyRepository,
     PostgresDpmPmQualityReviewActionRepository,
     PostgresDpmPmQualityScoreRunRepository,
+    PostgresDpmPmQualitySummaryInvocationRepository,
 )
 
 
@@ -142,6 +146,30 @@ def _review_action():
     )
 
 
+def _summary_invocation():
+    score_run = _score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+    return build_pm_quality_summary_invocation(
+        score_run=score_run,
+        review_action=review_action,
+        invocation_state="REQUESTED",
+        summary_ref="PMQ-SUMMARY-2026-05-001",
+        requested_by="ops",
+        source_refs=[],
+        correlation_id="corr-summary",
+    )
+
+
 class _FakeCursor:
     def __init__(self, row: dict[str, Any] | None = None, rows: list[dict[str, Any]] | None = None):
         self._row = row
@@ -160,6 +188,7 @@ class _FakePolicyConnection:
         self.score_runs: dict[str, dict[str, Any]] = {}
         self.fairness_analyses: dict[str, dict[str, Any]] = {}
         self.review_actions: dict[str, dict[str, Any]] = {}
+        self.summary_invocations: dict[str, dict[str, Any]] = {}
         self.commits = 0
         self.rollbacks = 0
         self.closed = False
@@ -248,6 +277,42 @@ class _FakePolicyConnection:
             return _FakeCursor(self.review_actions.get(str(params[0])))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions"):
             rows = self._filter_review_actions(normalized=normalized, params=params)
+            return _FakeCursor(rows=rows)
+        if normalized.startswith("INSERT INTO dpm_pm_quality_summary_invocations"):
+            summary_invocation_id = str(params[0])
+            if summary_invocation_id not in self.summary_invocations:
+                self.summary_invocations[summary_invocation_id] = {
+                    "summary_invocation_id": summary_invocation_id,
+                    "score_run_id": str(params[1]),
+                    "review_action_id": str(params[2]),
+                    "policy_id": str(params[3]),
+                    "policy_version": str(params[4]),
+                    "as_of_date": str(params[5]),
+                    "invocation_state": str(params[6]),
+                    "summary_ref": str(params[7]),
+                    "workflow_pack_name": str(params[8]),
+                    "workflow_pack_version": str(params[9]),
+                    "workflow_run_id": params[10],
+                    "summary_artifact_ref": params[11],
+                    "summary_content_hash": params[12],
+                    "content_hash": str(params[13]),
+                    "generated_at": str(params[14]),
+                    "requested_by": str(params[15]),
+                    "payload_json": json.loads(str(params[17])),
+                }
+            return _FakeCursor()
+        if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_summary_invocations"):
+            row = self.summary_invocations.get(str(params[0]))
+            return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if (
+            normalized.startswith(
+                "SELECT payload_json FROM dpm_pm_quality_summary_invocations WHERE"
+            )
+            and "summary_invocation_id = %s" in normalized
+        ):
+            return _FakeCursor(self.summary_invocations.get(str(params[0])))
+        if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_summary_invocations"):
+            rows = self._filter_summary_invocations(normalized=normalized, params=params)
             return _FakeCursor(rows=rows)
         if normalized.startswith("INSERT INTO dpm_pm_quality_policies"):
             key = (str(params[0]), str(params[1]))
@@ -351,6 +416,32 @@ class _FakePolicyConnection:
         offset = int(params[-1])
         return rows[offset : offset + limit]
 
+    def _filter_summary_invocations(
+        self,
+        *,
+        normalized: str,
+        params: Sequence[Any],
+    ) -> list[dict[str, Any]]:
+        rows = list(self.summary_invocations.values())
+        param_index = 0
+        for column in (
+            "score_run_id",
+            "review_action_id",
+            "policy_id",
+            "as_of_date",
+            "invocation_state",
+        ):
+            if f"{column} = %s" in normalized:
+                rows = [row for row in rows if row[column] == str(params[param_index])]
+                param_index += 1
+        rows.sort(
+            key=lambda row: (row["generated_at"], row["summary_invocation_id"]),
+            reverse=True,
+        )
+        limit = int(params[-2])
+        offset = int(params[-1])
+        return rows[offset : offset + limit]
+
     def commit(self) -> None:
         self.commits += 1
 
@@ -419,6 +510,21 @@ def fake_postgres_review_action_repository(
         lambda: (type("Psycopg", (), {"connect": lambda *_, **__: connection}), object()),
     )
     return PostgresDpmPmQualityReviewActionRepository(dsn="postgresql://unit-test"), connection
+
+
+@pytest.fixture
+def fake_postgres_summary_invocation_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[PostgresDpmPmQualitySummaryInvocationRepository, _FakePolicyConnection]:
+    connection = _FakePolicyConnection()
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: True)
+    monkeypatch.setattr(postgres_module, "apply_postgres_migrations", lambda **_: None)
+    monkeypatch.setattr(
+        postgres_module,
+        "_import_psycopg",
+        lambda: (type("Psycopg", (), {"connect": lambda *_, **__: connection}), object()),
+    )
+    return PostgresDpmPmQualitySummaryInvocationRepository(dsn="postgresql://unit-test"), connection
 
 
 def test_in_memory_pm_quality_repository_persists_immutable_policies() -> None:
@@ -650,6 +756,40 @@ def test_in_memory_pm_quality_repository_lists_review_actions() -> None:
     assert repository.list_review_actions(limit=1, offset=1) == []
 
 
+def test_in_memory_pm_quality_repository_persists_immutable_summary_invocations() -> None:
+    repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    invocation = _summary_invocation()
+
+    repository.save_summary_invocation(invocation=invocation)
+    repository.save_summary_invocation(invocation=invocation)
+
+    stored = repository.get_summary_invocation(
+        summary_invocation_id=invocation.summary_invocation_id
+    )
+    assert stored == invocation
+
+    changed = invocation.model_copy(update={"content_hash": "sha256:different"})
+    with pytest.raises(DpmPmQualitySummaryInvocationConflictError):
+        repository.save_summary_invocation(invocation=changed)
+
+
+def test_in_memory_pm_quality_repository_lists_summary_invocations() -> None:
+    repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    invocation = _summary_invocation()
+    repository.save_summary_invocation(invocation=invocation)
+
+    assert repository.list_summary_invocations(score_run_id=invocation.score_run_id) == [invocation]
+    assert repository.list_summary_invocations(review_action_id=invocation.review_action_id) == [
+        invocation
+    ]
+    assert repository.list_summary_invocations(policy_id="pmq_sg_dpm") == [invocation]
+    assert repository.list_summary_invocations(as_of_date="missing") == []
+    assert repository.list_summary_invocations(invocation_state=invocation.invocation_state) == [
+        invocation
+    ]
+    assert repository.list_summary_invocations(limit=1, offset=1) == []
+
+
 def test_postgres_pm_quality_review_action_repository_round_trips_actions(
     fake_postgres_review_action_repository: tuple[
         PostgresDpmPmQualityReviewActionRepository, _FakePolicyConnection
@@ -668,6 +808,34 @@ def test_postgres_pm_quality_review_action_repository_round_trips_actions(
     assert repository.list_review_actions(policy_id="pmq_sg_dpm") == [action]
     assert repository.list_review_actions(as_of_date="missing") == []
     assert repository.list_review_actions(action_state=action.action_state) == [action]
+    assert connection.commits == 2
+
+
+def test_postgres_pm_quality_summary_invocation_repository_round_trips_invocations(
+    fake_postgres_summary_invocation_repository: tuple[
+        PostgresDpmPmQualitySummaryInvocationRepository, _FakePolicyConnection
+    ],
+) -> None:
+    repository, connection = fake_postgres_summary_invocation_repository
+    invocation = _summary_invocation()
+
+    repository.save_summary_invocation(invocation=invocation)
+    repository.save_summary_invocation(invocation=invocation)
+
+    assert (
+        repository.get_summary_invocation(summary_invocation_id=invocation.summary_invocation_id)
+        == invocation
+    )
+    assert repository.get_summary_invocation(summary_invocation_id="missing") is None
+    assert repository.list_summary_invocations(score_run_id=invocation.score_run_id) == [invocation]
+    assert repository.list_summary_invocations(review_action_id=invocation.review_action_id) == [
+        invocation
+    ]
+    assert repository.list_summary_invocations(policy_id="pmq_sg_dpm") == [invocation]
+    assert repository.list_summary_invocations(as_of_date="missing") == []
+    assert repository.list_summary_invocations(invocation_state=invocation.invocation_state) == [
+        invocation
+    ]
     assert connection.commits == 2
 
 
@@ -693,6 +861,30 @@ def test_postgres_pm_quality_review_action_repository_conflict_and_configuration
     monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
     with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
         PostgresDpmPmQualityReviewActionRepository(dsn="postgresql://unit-test")
+
+
+def test_postgres_pm_quality_summary_invocation_repository_conflict_and_configuration_paths(
+    fake_postgres_summary_invocation_repository: tuple[
+        PostgresDpmPmQualitySummaryInvocationRepository, _FakePolicyConnection
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, connection = fake_postgres_summary_invocation_repository
+    invocation = _summary_invocation()
+    repository.save_summary_invocation(invocation=invocation)
+
+    changed = invocation.model_copy(update={"content_hash": "sha256:different"})
+    with pytest.raises(DpmPmQualitySummaryInvocationConflictError, match="IMMUTABLE"):
+        repository.save_summary_invocation(invocation=changed)
+
+    assert connection.rollbacks == 1
+
+    with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmPmQualitySummaryInvocationRepository(dsn="")
+
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
+    with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
+        PostgresDpmPmQualitySummaryInvocationRepository(dsn="postgresql://unit-test")
 
 
 def test_pm_quality_postgres_helpers_normalize_payloads_and_import_driver(

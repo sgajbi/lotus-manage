@@ -551,6 +551,17 @@ Current repository posture:
     optional source refs; Manage preserves the target content hash and records an immutable ledger
     row without mutating score runs, recomputing fairness posture, ranking PMs, making HR,
     compensation, conduct, client-contact, trade, order, OMS, or execution decisions.
+    Manage also supports review-gated PM quality support-summary invocation history at
+    `POST /api/v1/rebalance/pm-operating-quality/summary-invocations/preview`,
+    `POST /api/v1/rebalance/pm-operating-quality/summary-invocations`,
+    `GET /api/v1/rebalance/pm-operating-quality/summary-invocations`, and
+    `GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`
+    through `PmOperatingQualitySummaryInvocation:v1`: callers reference an existing persisted
+    score run and persisted review action, supply a bounded summary reference plus workflow/run
+    and artifact identity, and Manage records append-only history without storing generated AI
+    narrative text, exposing raw review rationale, recalculating scores, recomputing fairness,
+    ranking PMs, or making HR, compensation, conduct, client-contact, trade, order, OMS, or
+    execution decisions.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy, score-run, fairness-analysis, and PM-quality summary
@@ -615,8 +626,9 @@ Current repository posture:
     support-only output, and no score calculation, PM ranking, HR, compensation, conduct,
     client-contact, trade-approval, execution, OMS, or invented-source-fact claim. Gateway and
     Workbench PM-quality summary invocation are bounded product-realized through Gateway PR #213
-    and Workbench PR #245; persisted summary history and approval workflow beyond immutable review
-    actions remain future product depth, not part of the current support claim.
+    and Workbench PR #245; Manage-owned persisted summary invocation history is now bounded to
+    review-gated workflow/run/artifact identity only. Approval workflow beyond immutable review
+    actions remains future product depth, not part of the current support claim.
     CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through

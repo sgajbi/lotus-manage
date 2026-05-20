@@ -7,6 +7,7 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
     DpmPmQualityReviewAction,
+    DpmPmQualitySummaryInvocation,
 )
 
 
@@ -20,6 +21,10 @@ class DpmPmQualityFairnessAnalysisConflictError(Exception):
 
 class DpmPmQualityReviewActionConflictError(Exception):
     """Raised when immutable review-action identity conflicts."""
+
+
+class DpmPmQualitySummaryInvocationConflictError(Exception):
+    """Raised when immutable summary-invocation identity conflicts."""
 
 
 class DpmPmQualityPolicyConflictError(Exception):
@@ -122,3 +127,28 @@ class DpmPmQualityReviewActionRepository(Protocol):
         offset: int = 0,
     ) -> list[DpmPmQualityReviewAction]:
         """Return a bounded page of persisted review actions."""
+
+
+class DpmPmQualitySummaryInvocationRepository(Protocol):
+    def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+        """Persist an immutable PM-quality support-summary invocation record."""
+
+    def get_summary_invocation(
+        self,
+        *,
+        summary_invocation_id: str,
+    ) -> DpmPmQualitySummaryInvocation | None:
+        """Return a summary invocation by id, or None when absent."""
+
+    def list_summary_invocations(
+        self,
+        *,
+        score_run_id: str | None = None,
+        review_action_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        invocation_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualitySummaryInvocation]:
+        """Return a bounded page of persisted summary invocations."""

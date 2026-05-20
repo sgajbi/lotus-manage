@@ -17,6 +17,7 @@ from src.core.pm_quality import (
     build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
     build_pm_quality_review_action,
+    build_pm_quality_summary_invocation,
 )
 from src.core.pm_quality import scoring
 from tests.unit.infrastructure.test_outcome_review_repository import _review
@@ -224,6 +225,63 @@ def test_pm_quality_review_action_records_bounded_target_evidence() -> None:
     assert any(ref.source_type == "PmOperatingQualityScoreRun" for ref in action.source_refs)
     assert "NO_SCORE_RECALCULATION" in action.operating_boundaries
     assert "compensation_decision" in action.forbidden_uses
+
+
+def test_pm_quality_summary_invocation_records_history_without_summary_text() -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+
+    invocation = build_pm_quality_summary_invocation(
+        score_run=score_run,
+        review_action=review_action,
+        invocation_state="COMPLETED",
+        summary_ref="PMQ-SUMMARY-2026-05-001",
+        workflow_pack_name="pm_quality_summary.pack",
+        workflow_pack_version="v1",
+        workflow_run_id="pmq-summary-run-001",
+        summary_artifact_ref="pmq-summary-artifact-001",
+        summary_content_hash="sha256:pmq-summary",
+        requested_by="ops",
+        source_refs=[],
+        correlation_id="corr-summary",
+    )
+
+    assert invocation.product_name == "PmOperatingQualitySummaryInvocation"
+    assert invocation.summary_invocation_id.startswith("pmq_summary_")
+    assert invocation.score_run_id == score_run.score_run_id
+    assert invocation.review_action_id == review_action.review_action_id
+    assert invocation.reason_codes == [
+        "PM_QUALITY_SUMMARY_INVOCATION_COMPLETED",
+        "PM_QUALITY_SUMMARY_REVIEW_GATED",
+        "PM_QUALITY_SUMMARY_HISTORY_NO_TEXT_STORED",
+    ]
+    assert any(ref.source_type == "PmOperatingQualityScoreRun" for ref in invocation.source_refs)
+    assert any(
+        ref.source_type == "PmOperatingQualityReviewAction" for ref in invocation.source_refs
+    )
+    assert "NO_SUMMARY_TEXT_STORAGE" in invocation.operating_boundaries
+    assert "summary_text_storage" in invocation.forbidden_uses
+
+    with pytest.raises(ValueError, match="PM_QUALITY_SUMMARY_REVIEW_ACTION_TARGET_MISMATCH"):
+        build_pm_quality_summary_invocation(
+            score_run=score_run,
+            review_action=review_action.model_copy(update={"target_id": "other"}),
+            invocation_state="REQUESTED",
+            summary_ref="PMQ-SUMMARY-2026-05-002",
+            requested_by="ops",
+            source_refs=[],
+            correlation_id="corr-summary-mismatch",
+        )
 
 
 def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs() -> None:
