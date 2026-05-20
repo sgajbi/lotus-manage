@@ -320,15 +320,16 @@ Audience use:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-20 clean mainline
-snapshot after `lotus-manage` PR #317, the RFC39-WTBD-008 external treasury reclassification, the
+snapshot after `lotus-manage` PR #318, the RFC39-WTBD-008 external treasury reclassification, the
 RFC37 partial-classification normalization, and the source-owned performance MWR FX-evidence
 advance from `lotus-performance` PR #168, it tracks 59 WTBD items: 45 done on merged/published
 truth, 8 partial or in progress, and 6 remaining or open. The count does not move for PR #168
 because it advances an existing RFC42-WTBD-006 partial row rather than closing stateful per-input
-FX evidence, broader FX methodology, predictive execution, or OMS acknowledgement gaps. The next
-execution wave should focus on product
-surfaces that materially improve bank-buyable demo and operating value without inventing
-unsupported source truth.
+FX evidence, broader FX methodology, predictive execution, or OMS acknowledgement gaps. Current
+Manage source-consumer declaration hardening also does not move the count because it advances an
+existing partial row rather than closing a full WTBD promotion gate. The next execution wave should
+focus on product surfaces that materially improve bank-buyable demo and operating value without
+inventing unsupported source truth.
 
 | Priority | WTBD | Business value | Required proof before support claim |
 | ---: | --- | --- | --- |
@@ -350,6 +351,17 @@ single-reporting-currency without per-input FX metadata. Manage, Gateway, Workbe
 and AI consumers must preserve this source-owned evidence posture rather than converting MWR FX,
 sourcing rates, recalculating mixed-currency capital timing, or promoting missing stateful FX
 metadata as ready evidence.
+
+Current Manage source-consumer governance proof additionally keeps
+`contracts/domain-data-products/lotus-manage-consumers.v1.json` aligned to the current
+implementation-backed stateful source surface across model targets, mandate binding, benchmark
+watchlist posture, eligibility, tax lots, market-data coverage, DPM source readiness, projected cashflow,
+client liquidity references, restrictions, sustainability preferences, external treasury and OMS
+fail-closed postures, CIO model-change cohorts, PM-book membership, transaction-cost curves,
+risk-event and tactical cohorts, and regime-scenario evaluation. This is mesh declaration truth
+only; it is not raw market-data ownership, valuation methodology, risk/performance methodology,
+tax advice, financial-planning advice, scenario methodology, treasury instruction, execution,
+OMS acknowledgement ingestion, fill, or settlement support.
 
 Current risk historical-attribution supportability proof additionally includes `lotus-risk` PR
 #139 / wiki `421ae79`, which makes `HistoricalRiskAttributionReport:v1` degrade response-level

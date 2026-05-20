@@ -12,18 +12,30 @@ Current declarations:
 1. `lotus-manage-consumers.v1.json`
    Consumer declaration for governed `lotus-core` products used by management execution workflows.
    It includes the request-payload `PortfolioStateSnapshot:v1` dependency, stateful
+   `DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
+   `InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`,
+   `MarketDataCoverageWindow:v1`, and `DpmSourceReadiness:v1` dependencies used by stateful
+   source-backed execution, mandate
+   health, source readiness, and tax/market-data supportability,
    `ClientRestrictionProfile:v1` / `SustainabilityPreferenceProfile:v1` dependencies used by
-   ESG/restriction-aware construction and proof-pack source preservation, and the
+   ESG/restriction-aware construction and proof-pack source preservation, the
+   `PortfolioCashflowProjection:v1`, `ClientIncomeNeedsSchedule:v1`,
+   `LiquidityReserveRequirement:v1`, and `PlannedWithdrawalSchedule:v1` dependencies used for
+   bounded cash/liquidity reference evidence, and the
    `lotus-risk:RiskEventAffectedCohort:v1` API-read dependency used by source-owned
    risk-event rebalance waves, plus the `lotus-advise:TacticalHouseViewAffectedCohort:v1`
    API-read dependency used by Advise-owned tactical house-view rebalance waves. It also declares
+   `lotus-core:CioModelChangeAffectedCohort:v1` for source-owned CIO model-change wave
+   discovery, `lotus-core:TransactionCostCurve:v1` for source-owned observed cost evidence,
+   `lotus-risk:RegimeScenarioPackEvaluation:v1` for source-owned regime-stress evidence, and
    the `lotus-core:PortfolioManagerBookMembership:v1` API-read dependency used by PM-book
    rebalance-wave discovery and optional PM operating quality score-run scope materialization, and
    the stateful `lotus-core:ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
    `ExternalEligibleHedgeInstrument:v1`, `ExternalFXForwardCurve:v1`, and
    `ExternalHedgeExecutionReadiness:v1` dependencies used to preserve fail-closed external
    treasury exposure, policy, eligible-instrument, forward-curve, and readiness posture in
-   currency-overlay diagnostics.
+   currency-overlay diagnostics, plus `ExternalOrderExecutionAcknowledgement:v1` for fail-closed
+   external OMS acknowledgement boundary evidence.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
    implemented rebalance supportability, artifact, and workflow route families, and
@@ -64,6 +76,11 @@ Current watchlist:
 1. `lotus-manage` stateful source consumption must stay aligned with certified producer
    declarations. New source products should be added here only after source-owner approval,
    trust metadata, tests, and live proof exist.
-2. Market-data request payloads remain source-data-authority sensitive, but `MarketDataWindow` is not
-   currently approved for `lotus-manage` in the upstream producer declaration. Do not declare it here
-   until upstream approval and required trust metadata are explicit.
+2. Market-data request payloads remain source-data-authority sensitive, but raw `MarketDataWindow`
+   is not currently approved for `lotus-manage` in the upstream producer declaration. Manage
+   declares only the bounded `MarketDataCoverageWindow:v1` supportability product and must not
+   treat it as raw market-data or valuation-methodology ownership.
+3. `BenchmarkAssignment:v1` is referenced in mandate-health source lineage but is not currently
+   approved for `lotus-manage` in the upstream producer declaration. Keep it out of the
+   machine-readable consumer declaration until the source owner explicitly approves Manage
+   consumption.

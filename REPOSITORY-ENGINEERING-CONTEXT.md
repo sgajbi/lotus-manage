@@ -57,6 +57,16 @@ Current repository posture:
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`,
     and `TransactionCostCurve:v1` through
     `/integration/portfolios/{portfolio_id}/transaction-cost-curve`.
+    The repo-native domain-data-product consumer declaration now also records the broader current
+    source-consumer surface for mandate health, construction, proof-pack, wave, outcome-review,
+    PM-quality, and portfolio-memory paths, including projected cashflow, liquidity/income
+    reference evidence, external treasury/OMS fail-closed posture,
+    CIO model-change cohorts, PM-book membership, risk-event/tactical cohorts, transaction-cost
+    curves, and regime-scenario evaluation. This is declaration truth only; it does not make Manage
+    the source owner for market data, valuation, risk, performance, tax, financial planning,
+    scenario methodology, treasury, execution, OMS, fill, or settlement facts.
+    `BenchmarkAssignment:v1` remains a declaration watchlist item until upstream producer approval
+    explicitly includes `lotus-manage`.
 11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
     RFC-0038, RFC-0039, RFC-0040, the manage-owned explicit portfolio-list wave scope of
     RFC-0041, Gateway RFC-0098 wave composition, and the first-wave Workbench wave command center

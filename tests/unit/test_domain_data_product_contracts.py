@@ -47,8 +47,15 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert payload["consumer_repository"] == "lotus-manage"
     assert set(by_name) == {
         "PortfolioStateSnapshot",
+        "DpmModelPortfolioTarget",
+        "DiscretionaryMandateBinding",
+        "InstrumentEligibilityProfile",
+        "PortfolioTaxLotWindow",
+        "MarketDataCoverageWindow",
+        "DpmSourceReadiness",
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
+        "PortfolioCashflowProjection",
         "ClientIncomeNeedsSchedule",
         "LiquidityReserveRequirement",
         "PlannedWithdrawalSchedule",
@@ -57,14 +64,36 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "ExternalFXForwardCurve",
         "ExternalEligibleHedgeInstrument",
         "ExternalHedgeExecutionReadiness",
+        "ExternalOrderExecutionAcknowledgement",
         "RiskEventAffectedCohort",
+        "CioModelChangeAffectedCohort",
         "TacticalHouseViewAffectedCohort",
         "PortfolioManagerBookMembership",
+        "TransactionCostCurve",
+        "RegimeScenarioPackEvaluation",
     }
     assert (
         by_name["PortfolioStateSnapshot"]["consumption_mode"] == "caller_supplied_contract_payload"
     )
     assert by_name["PortfolioStateSnapshot"]["failure_posture"] == "fail_closed"
+    assert by_name["DpmModelPortfolioTarget"]["producer_repository"] == "lotus-core"
+    assert by_name["DpmModelPortfolioTarget"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["DpmModelPortfolioTarget"]["failure_posture"] == "fail_closed"
+    assert by_name["DiscretionaryMandateBinding"]["producer_repository"] == "lotus-core"
+    assert by_name["DiscretionaryMandateBinding"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["DiscretionaryMandateBinding"]["failure_posture"] == "fail_closed"
+    assert by_name["InstrumentEligibilityProfile"]["producer_repository"] == "lotus-core"
+    assert by_name["InstrumentEligibilityProfile"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["InstrumentEligibilityProfile"]["failure_posture"] == "fail_closed"
+    assert by_name["PortfolioTaxLotWindow"]["producer_repository"] == "lotus-core"
+    assert by_name["PortfolioTaxLotWindow"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["PortfolioTaxLotWindow"]["failure_posture"] == "degrade_or_block"
+    assert by_name["MarketDataCoverageWindow"]["producer_repository"] == "lotus-core"
+    assert by_name["MarketDataCoverageWindow"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["MarketDataCoverageWindow"]["failure_posture"] == "degrade_or_block"
+    assert by_name["DpmSourceReadiness"]["producer_repository"] == "lotus-core"
+    assert by_name["DpmSourceReadiness"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["DpmSourceReadiness"]["failure_posture"] == "fail_closed"
     assert by_name["ClientRestrictionProfile"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["ClientRestrictionProfile"]["failure_posture"] == "degrade_or_block"
     assert (
@@ -73,6 +102,9 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert (
         by_name["SustainabilityPreferenceProfile"]["failure_posture"] == "degrade_or_pending_review"
     )
+    assert by_name["PortfolioCashflowProjection"]["producer_repository"] == "lotus-core"
+    assert by_name["PortfolioCashflowProjection"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["PortfolioCashflowProjection"]["failure_posture"] == "degrade_or_pending_review"
     assert by_name["ClientIncomeNeedsSchedule"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["ClientIncomeNeedsSchedule"]["failure_posture"] == "degrade"
     assert by_name["LiquidityReserveRequirement"]["consumption_mode"] == "stateful_core_sourcing"
@@ -98,15 +130,30 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         by_name["ExternalHedgeExecutionReadiness"]["consumption_mode"] == "stateful_core_sourcing"
     )
     assert by_name["ExternalHedgeExecutionReadiness"]["failure_posture"] == "fail_closed"
+    assert by_name["ExternalOrderExecutionAcknowledgement"]["producer_repository"] == "lotus-core"
+    assert (
+        by_name["ExternalOrderExecutionAcknowledgement"]["consumption_mode"]
+        == "stateful_core_sourcing"
+    )
+    assert by_name["ExternalOrderExecutionAcknowledgement"]["failure_posture"] == "fail_closed"
     assert by_name["RiskEventAffectedCohort"]["producer_repository"] == "lotus-risk"
     assert by_name["RiskEventAffectedCohort"]["consumption_mode"] == "api_read"
     assert by_name["RiskEventAffectedCohort"]["failure_posture"] == "fail_closed"
+    assert by_name["CioModelChangeAffectedCohort"]["producer_repository"] == "lotus-core"
+    assert by_name["CioModelChangeAffectedCohort"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["CioModelChangeAffectedCohort"]["failure_posture"] == "fail_closed"
     assert by_name["TacticalHouseViewAffectedCohort"]["producer_repository"] == "lotus-advise"
     assert by_name["TacticalHouseViewAffectedCohort"]["consumption_mode"] == "api_read"
     assert by_name["TacticalHouseViewAffectedCohort"]["failure_posture"] == "fail_closed"
     assert by_name["PortfolioManagerBookMembership"]["producer_repository"] == "lotus-core"
     assert by_name["PortfolioManagerBookMembership"]["consumption_mode"] == "api_read"
     assert by_name["PortfolioManagerBookMembership"]["failure_posture"] == "fail_closed"
+    assert by_name["TransactionCostCurve"]["producer_repository"] == "lotus-core"
+    assert by_name["TransactionCostCurve"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["TransactionCostCurve"]["failure_posture"] == "degrade"
+    assert by_name["RegimeScenarioPackEvaluation"]["producer_repository"] == "lotus-risk"
+    assert by_name["RegimeScenarioPackEvaluation"]["consumption_mode"] == "api_read"
+    assert by_name["RegimeScenarioPackEvaluation"]["failure_posture"] == "degrade_or_pending_review"
 
     request_models = REQUEST_MODELS_PATH.read_text(encoding="utf-8")
     assert "portfolio_snapshot: PortfolioSnapshot" in request_models
@@ -123,8 +170,15 @@ def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profil
     upstream_family_map = UPSTREAM_FAMILY_MAP_PATH.read_text(encoding="utf-8")
 
     assert live_dependencies == {
+        "DpmModelPortfolioTarget",
+        "DiscretionaryMandateBinding",
+        "InstrumentEligibilityProfile",
+        "PortfolioTaxLotWindow",
+        "MarketDataCoverageWindow",
+        "DpmSourceReadiness",
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
+        "PortfolioCashflowProjection",
         "ClientIncomeNeedsSchedule",
         "LiquidityReserveRequirement",
         "PlannedWithdrawalSchedule",
@@ -133,6 +187,9 @@ def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profil
         "ExternalFXForwardCurve",
         "ExternalEligibleHedgeInstrument",
         "ExternalHedgeExecutionReadiness",
+        "ExternalOrderExecutionAcknowledgement",
+        "CioModelChangeAffectedCohort",
+        "TransactionCostCurve",
     }
     assert "modeled, feature-gated outbound resolver seam" in upstream_family_map
     assert (

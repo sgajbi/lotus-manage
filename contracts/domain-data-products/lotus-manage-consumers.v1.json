@@ -27,6 +27,156 @@
       "failure_posture": "fail_closed"
     },
     {
+      "product_name": "DpmModelPortfolioTarget",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Resolve model portfolio target weights, model version, target bands, and source lineage for stateful discretionary mandate execution without making lotus-manage the model-governance authority.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "DiscretionaryMandateBinding",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Resolve mandate, model, policy-pack, booking-center, jurisdiction, review cadence, and objective binding for stateful DPM workflows while preserving lotus-core as mandate administration authority.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "InstrumentEligibilityProfile",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Resolve buy/sell eligibility, shelf status, restriction reasons, settlement, liquidity-tier, issuer, asset-class, and country-of-risk source evidence for DPM universe and diagnostics without local eligibility ownership.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "PortfolioTaxLotWindow",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned tax-lot window evidence for tax-aware construction diagnostics and source-readiness posture without tax advice, tax optimization, or tax-reporting certification claims.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_block"
+    },
+    {
+      "product_name": "MarketDataCoverageWindow",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned price and FX coverage freshness posture for stateful DPM source readiness and mandate health without valuation methodology or FX attribution ownership.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_block"
+    },
+    {
+      "product_name": "DpmSourceReadiness",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Resolve composed DPM source-readiness posture, missing source families, and data-quality mapping for stateful mandate workflows without locally reassembling source-owner readiness semantics.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
       "product_name": "ClientRestrictionProfile",
       "producer_repository": "lotus-core",
       "required_product_version": "v1",
@@ -80,6 +230,30 @@
       },
       "consumption_mode": "stateful_core_sourcing",
       "business_purpose": "Preserve source-backed sustainability preferences in construction alternatives and proof packs, including allocation review posture, without inferring unsupported ESG classifications.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
+    },
+    {
+      "product_name": "PortfolioCashflowProjection",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned projected net-cashflow pressure in mandate-health lineage and liquidity-aware construction diagnostics without cashflow forecasting, funding recommendation, or financial-planning advice claims.",
       "validation_lanes": [
         "feature",
         "pr-merge"
@@ -279,6 +453,30 @@
       "failure_posture": "fail_closed"
     },
     {
+      "product_name": "ExternalOrderExecutionAcknowledgement",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve fail-closed external OMS acknowledgement posture in construction diagnostics, outcome-review evidence, report input, AI evidence input, and portfolio-memory boundary events without claiming execution, fills, settlement, or OMS ingestion.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
       "product_name": "RiskEventAffectedCohort",
       "producer_repository": "lotus-risk",
       "required_product_version": "v1",
@@ -295,6 +493,28 @@
       },
       "consumption_mode": "api_read",
       "business_purpose": "Resolve source-owned risk-event affected portfolio cohorts for discretionary rebalance wave preview and creation while preserving lotus-risk lineage, supportability, request fingerprint, and reason codes without recalculating risk-event impact in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "CioModelChangeAffectedCohort",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Resolve source-owned CIO model-change affected-mandate cohorts for rebalance wave preview and creation without caller-supplied portfolio fabrication or local cohort discovery.",
       "validation_lanes": [
         "feature",
         "pr-merge"
@@ -345,6 +565,53 @@
         "pr-merge"
       ],
       "failure_posture": "fail_closed"
+    },
+    {
+      "product_name": "TransactionCostCurve",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "data_quality_status",
+        "latest_evidence_timestamp",
+        "source_batch_fingerprint",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Preserve source-owned observed transaction-cost curve evidence for cost-aware construction comparison and proof-pack turnover/cost supportability without predictive execution, market-impact, venue-routing, or OMS claims.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade"
+    },
+    {
+      "product_name": "RegimeScenarioPackEvaluation",
+      "producer_repository": "lotus-risk",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "lineage_version",
+        "request_fingerprint",
+        "source_services"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "api_read",
+      "business_purpose": "Resolve source-owned regime scenario-pack evaluation for regime-stress-aware construction and proof-pack scenario evidence without local scenario methodology, contribution, CIO approval, effective-period, or applicability calculation.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
     }
   ]
 }
