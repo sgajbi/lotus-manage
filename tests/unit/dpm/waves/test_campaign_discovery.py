@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -36,6 +36,11 @@ from src.core.waves.campaign_assignment_plan import (
 from src.core.waves.campaign_assignment_actions import (
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
+)
+from src.core.waves.campaign_assignment_tasks import (
+    build_bulk_review_campaign_definition_assignment_task_page,
+    open_bulk_review_campaign_definition_assignment_task,
+    transition_bulk_review_campaign_definition_assignment_task,
 )
 from src.core.waves.campaign_maker_checker_controls import (
     build_bulk_review_campaign_definition_maker_checker_control_page,
@@ -614,6 +619,515 @@ def test_campaign_assignment_actions_require_active_definition() -> None:
             sla_posture="ON_TRACK",
             correlation_id="corr-campaign-assignment-action-001",
         )
+
+
+def test_campaign_assignment_tasks_open_transition_and_page_current_state() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    acknowledged = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ACKNOWLEDGED",
+        transition_ref="BRC-TASK-2026-05-001:ack",
+        transitioned_by="pm_001",
+        transition_reason="Assigned PM acknowledged the task.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+    )
+    escalated = transition_bulk_review_campaign_definition_assignment_task(
+        definition=acknowledged,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ESCALATED",
+        transition_ref="BRC-TASK-2026-05-001:esc",
+        transitioned_by="ops",
+        transition_reason="Governance evidence requires operations attention.",
+        assigned_actor_ids=["ops_lead"],
+        escalation_tier="OPS",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-task-transition-002",
+    )
+    replay = transition_bulk_review_campaign_definition_assignment_task(
+        definition=escalated,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ESCALATED",
+        transition_ref="BRC-TASK-2026-05-001:esc",
+        transitioned_by="ops",
+        transition_reason="Governance evidence requires operations attention.",
+        assigned_actor_ids=["ops_lead"],
+        escalation_tier="OPS",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-task-transition-002",
+    )
+
+    assert replay is escalated
+    assert escalated.assignment_tasks[0].status == "ACKNOWLEDGED"
+    assert escalated.assignment_tasks[0].assigned_actor_ids == ["ops_lead"]
+    assert escalated.assignment_tasks[0].escalation_tier == "OPS"
+    assert len(escalated.assignment_tasks[0].transitions) == 3
+    assert "oms_execution" in escalated.assignment_tasks[0].forbidden_actions
+    assert escalated.content_hash.startswith("sha256:")
+
+    page = build_bulk_review_campaign_definition_assignment_task_page(
+        definition=escalated,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignDefinitionAssignmentTaskPage"
+    assert page.count == 1
+    assert page.open_task_count == 1
+    assert page.status_counts == {"ACKNOWLEDGED": 1}
+    assert page.escalation_tier_counts == {"OPS": 1}
+    assert page.sla_posture_counts == {"ATTENTION": 1}
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason_code"),
+    [
+        ({"task_ref": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED"),
+        ({"opened_by": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTOR_REQUIRED"),
+        ({"task_reason": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REASON_REQUIRED"),
+        ({"assigned_actor_ids": []}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED"),
+        ({"correlation_id": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CORRELATION_REQUIRED"),
+    ],
+)
+def test_campaign_assignment_tasks_validate_open_request(
+    overrides: dict[str, object],
+    reason_code: str,
+) -> None:
+    request = {
+        "definition": _definition(),
+        "task_ref": "BRC-TASK-2026-05-001",
+        "task_type": "ASSIGNMENT",
+        "opened_by": "ops",
+        "task_reason": "Campaign requires PM acknowledgement.",
+        "assigned_actor_ids": ["pm_001"],
+        "escalation_tier": "PM",
+        "sla_posture": "ON_TRACK",
+        "correlation_id": "corr-campaign-assignment-task-001",
+    } | overrides
+
+    with pytest.raises(ValueError, match=reason_code):
+        open_bulk_review_campaign_definition_assignment_task(**request)
+
+
+def test_campaign_assignment_tasks_reject_invalid_transitions_and_closed_mutation() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    resolved = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="RESOLVED",
+        transition_ref="BRC-TASK-2026-05-001:resolved",
+        transitioned_by="pm_001",
+        transition_reason="Campaign task completed.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CLOSED_TRANSITION_FORBIDDEN",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=resolved,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="STARTED",
+            transition_ref="BRC-TASK-2026-05-001:start",
+            transitioned_by="pm_001",
+            transition_reason="Invalid closed task mutation.",
+            correlation_id="corr-campaign-assignment-task-transition-002",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="missing-task",
+            transition_type="ACKNOWLEDGED",
+            transition_ref="missing:ack",
+            transitioned_by="pm_001",
+            transition_reason="Missing task.",
+            correlation_id="corr-campaign-assignment-task-transition-003",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=resolved,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="CANCELLED",
+            transition_ref="BRC-TASK-2026-05-001:resolved",
+            transitioned_by="ops",
+            transition_reason="Conflicting transition ref.",
+            correlation_id="corr-campaign-assignment-task-transition-conflict",
+        )
+
+
+def test_campaign_assignment_tasks_replay_and_conflict_on_task_ref() -> None:
+    request = {
+        "definition": _definition(),
+        "task_ref": "BRC-TASK-2026-05-001",
+        "task_type": "ASSIGNMENT",
+        "opened_by": "ops",
+        "task_reason": "Campaign requires PM acknowledgement.",
+        "assigned_actor_ids": ["pm_001"],
+        "escalation_tier": "PM",
+        "sla_posture": "ON_TRACK",
+        "correlation_id": "corr-campaign-assignment-task-001",
+    }
+    opened = open_bulk_review_campaign_definition_assignment_task(**request)
+    replay = open_bulk_review_campaign_definition_assignment_task(
+        **(request | {"definition": opened})
+    )
+
+    assert replay is opened
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT",
+    ):
+        open_bulk_review_campaign_definition_assignment_task(
+            **(
+                request
+                | {
+                    "definition": opened,
+                    "task_reason": "Conflicting duplicate task ref.",
+                }
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason_code"),
+    [
+        (
+            {"transition_ref": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_REQUIRED",
+        ),
+        (
+            {"transitioned_by": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_ACTOR_REQUIRED",
+        ),
+        (
+            {"transition_reason": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REASON_REQUIRED",
+        ),
+        (
+            {"correlation_id": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_CORRELATION_REQUIRED",
+        ),
+    ],
+)
+def test_campaign_assignment_tasks_validate_transition_required_fields(
+    overrides: dict[str, object],
+    reason_code: str,
+) -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    request = {
+        "definition": opened,
+        "task_ref": "BRC-TASK-2026-05-001",
+        "transition_type": "ACKNOWLEDGED",
+        "transition_ref": "BRC-TASK-2026-05-001:ack",
+        "transitioned_by": "pm_001",
+        "transition_reason": "Assigned PM acknowledged the task.",
+        "correlation_id": "corr-campaign-assignment-task-transition-001",
+    } | overrides
+
+    with pytest.raises(ValueError, match=reason_code):
+        transition_bulk_review_campaign_definition_assignment_task(**request)
+
+
+def test_campaign_assignment_tasks_validate_transition_edges() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_OPENED_TRANSITION_FORBIDDEN",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="OPENED",
+            transition_ref="BRC-TASK-2026-05-001:opened-duplicate",
+            transitioned_by="ops",
+            transition_reason="Opening is only allowed through task creation.",
+            correlation_id="corr-campaign-assignment-task-transition-opened",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="REASSIGNED",
+            transition_ref="BRC-TASK-2026-05-001:reassign-missing",
+            transitioned_by="ops",
+            transition_reason="Reassignment must name the accountable actor.",
+            correlation_id="corr-campaign-assignment-task-transition-reassign-missing",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="DUE_DATE_CHANGED",
+            transition_ref="BRC-TASK-2026-05-001:due-missing",
+            transitioned_by="ops",
+            transition_reason="Due date changes must carry the new due time.",
+            correlation_id="corr-campaign-assignment-task-transition-due-missing",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_INVALID",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="UNBLOCKED",
+            transition_ref="BRC-TASK-2026-05-001:unblocked-invalid",
+            transitioned_by="ops",
+            transition_reason="Open tasks cannot be unblocked before they are blocked.",
+            correlation_id="corr-campaign-assignment-task-transition-unblocked-invalid",
+        )
+
+    due_at = datetime(2026, 5, 12, 8, tzinfo=timezone.utc)
+    due_changed = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="DUE_DATE_CHANGED",
+        transition_ref="BRC-TASK-2026-05-001:due",
+        transitioned_by="ops",
+        transition_reason="Operations set the campaign assignment due date.",
+        due_at=due_at,
+        correlation_id="corr-campaign-assignment-task-transition-due",
+    )
+    blocked = transition_bulk_review_campaign_definition_assignment_task(
+        definition=due_changed,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="BLOCKED",
+        transition_ref="BRC-TASK-2026-05-001:blocked",
+        transitioned_by="pm_001",
+        transition_reason="PM is waiting for source-owned campaign evidence.",
+        sla_posture="BREACHED_OR_BLOCKED",
+        correlation_id="corr-campaign-assignment-task-transition-blocked",
+    )
+    unblocked = transition_bulk_review_campaign_definition_assignment_task(
+        definition=blocked,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="UNBLOCKED",
+        transition_ref="BRC-TASK-2026-05-001:unblocked",
+        transitioned_by="ops",
+        transition_reason="Source-owned campaign evidence is now available.",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-transition-unblocked",
+    )
+
+    assert unblocked.assignment_tasks[0].status == "IN_PROGRESS"
+    assert unblocked.assignment_tasks[0].due_at == due_at
+    assert unblocked.assignment_tasks[0].sla_posture == "ON_TRACK"
+
+
+def test_campaign_assignment_tasks_reject_empty_reassignment_assignees() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="REASSIGNED",
+            transition_ref="BRC-TASK-2026-05-001:reassign-empty",
+            transitioned_by="ops",
+            transition_reason="Reassignment must retain accountable actors.",
+            assigned_actor_ids=[],
+            correlation_id="corr-campaign-assignment-task-transition-reassign-empty",
+        )
+
+
+def test_campaign_assignment_tasks_reject_inactive_definition_for_open_and_transition() -> None:
+    retired = _definition().model_copy(
+        update={
+            "status": "RETIRED",
+            "retired_at": "2026-05-21T10:00:00+08:00",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTIVE_REQUIRED",
+    ):
+        open_bulk_review_campaign_definition_assignment_task(
+            definition=retired,
+            task_ref="BRC-TASK-2026-05-001",
+            task_type="ASSIGNMENT",
+            opened_by="ops",
+            task_reason="Campaign requires PM acknowledgement.",
+            assigned_actor_ids=["pm_001"],
+            escalation_tier="PM",
+            sla_posture="ON_TRACK",
+            correlation_id="corr-campaign-assignment-task-001",
+        )
+
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    retired_with_task = opened.model_copy(
+        update={
+            "status": "RETIRED",
+            "retired_at": "2026-05-21T10:00:00+08:00",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTIVE_REQUIRED",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=retired_with_task,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="ACKNOWLEDGED",
+            transition_ref="BRC-TASK-2026-05-001:ack",
+            transitioned_by="pm_001",
+            transition_reason="Assigned PM acknowledged the task.",
+            correlation_id="corr-campaign-assignment-task-transition-001",
+        )
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"transition_type": "STARTED"},
+        {"transitioned_by": "ops"},
+        {"transition_reason": "Conflicting replay reason."},
+        {"correlation_id": "corr-campaign-assignment-task-transition-conflict"},
+        {"assigned_actor_ids": ["pm_002"]},
+        {"escalation_tier": "OPS"},
+        {"sla_posture": "BREACHED_OR_BLOCKED"},
+        {"due_at": datetime(2026, 5, 12, 8, tzinfo=timezone.utc)},
+        {
+            "source_refs": [
+                DpmWaveSourceRef(
+                    source_system="lotus-manage",
+                    source_type="CAMPAIGN_ASSIGNMENT_TASK",
+                    source_id="brc-task-conflicting-source-ref",
+                )
+            ]
+        },
+    ],
+)
+def test_campaign_assignment_tasks_reject_conflicting_transition_replays(
+    overrides: dict[str, object],
+) -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    acknowledged = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ACKNOWLEDGED",
+        transition_ref="BRC-TASK-2026-05-001:ack",
+        transitioned_by="pm_001",
+        transition_reason="Assigned PM acknowledged the task.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+    )
+    request = {
+        "definition": acknowledged,
+        "task_ref": "BRC-TASK-2026-05-001",
+        "transition_type": "ACKNOWLEDGED",
+        "transition_ref": "BRC-TASK-2026-05-001:ack",
+        "transitioned_by": "pm_001",
+        "transition_reason": "Assigned PM acknowledged the task.",
+        "correlation_id": "corr-campaign-assignment-task-transition-001",
+    } | overrides
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT",
+    ):
+        transition_bulk_review_campaign_definition_assignment_task(**request)
 
 
 def test_campaign_maker_checker_controls_record_actor_separation() -> None:

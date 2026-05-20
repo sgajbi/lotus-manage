@@ -153,6 +153,15 @@ flowchart LR
   trade approval, order generation, routing, client contact, maker-checker workflow, or OMS claims.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
   returns a bounded `BulkReviewCampaignDefinitionAssignmentActionPage` audit page.
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+  opens a controlled Manage-side assignment or escalation task with current status, assignees,
+  escalation tier, SLA posture, optional due date, and append-only opening transition evidence.
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`
+  records conflict-safe assignment-task transitions and updates only Manage-side task state, not
+  approval state, maker-checker workflow, trade approval, client contact, order, or OMS posture.
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+  returns a bounded `BulkReviewCampaignDefinitionAssignmentTaskPage` with status, escalation, SLA,
+  and open-task counts.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
   records append-only maker-checker control evidence with actor separation required for completed
   reviews, without trade approval, order generation, routing, client contact, external workflow

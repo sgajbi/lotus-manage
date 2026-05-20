@@ -1621,6 +1621,9 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
@@ -1708,6 +1711,12 @@ Functional coverage:
   `BulkReviewCampaignDefinitionAssignmentActionPage` with current assigned actors, escalation tier,
   and SLA posture without approval-state mutation, maker-checker workflow, trade approval, order
   generation, routing, client contact, or OMS claims,
+- assignment tasks open controlled Manage-side assignment and escalation task state, record
+  conflict-safe append-only transitions, and expose
+  `BulkReviewCampaignDefinitionAssignmentTaskPage` with current status, open-task counts,
+  escalation-tier counts, SLA-posture counts, assignees, due date, and source refs without
+  approval-state mutation, maker-checker workflow, trade approval, order generation, routing,
+  client contact, external workflow orchestration, or OMS claims,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without adding maker-checker, order, or OMS claims,
