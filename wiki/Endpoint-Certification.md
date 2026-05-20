@@ -1913,7 +1913,9 @@ Functional behavior:
   `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, and a canonical handoff hash without
   rendering reports, archive records, client messages, delivery records, or OMS execution claims.
 - AI evidence input returns bounded source-backed facts, permitted use, forbidden actions, source
-  refs, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
+  refs deduplicated across persisted review lineage, expected/realized snapshots,
+  dimension-results, and metric-level evidence, structured
+  `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
   `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, and a canonical handoff hash without
   generating prompts, memos, recommendations, approvals, client communications, or execution
   instructions.

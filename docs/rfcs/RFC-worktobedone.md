@@ -4133,7 +4133,8 @@ RFC-0042 is `DONE - MANAGE BACKEND COMPLETE; FIRST-WAVE PRODUCT REALIZATION COMP
 ENRICHMENT REMAINS`. `lotus-manage` owns the implementation-backed outcome-review authority:
 source-backed preview/create/retrieve/search, immutable persistence and append-only events,
 source-refresh eventing, supportability diagnostics, deterministic report-input and AI-evidence
-input handoff contracts, certified OpenAPI, and live manage proof under
+input handoff contracts with deduplicated review, snapshot, dimension-result, and metric-level
+source refs, certified OpenAPI, and live manage proof under
 `output/rfc0042-outcome-proof/20260505-024352/` plus hardening proof under
 `output/rfc0042-outcome-proof/20260505-025613/`. Gateway, Workbench, report/render/archive, and
 AI first-wave realization is now implemented and merged in the owning repositories. Remaining
