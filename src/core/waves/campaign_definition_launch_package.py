@@ -11,6 +11,9 @@ from src.core.waves.campaign_definition_readiness import (
     build_bulk_review_campaign_definition_preview_readiness,
 )
 from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_LAUNCH_PACKAGE_OPERATING_BOUNDARIES,
+)
 
 
 CampaignDefinitionLaunchState = Literal["READY", "BLOCKED"]
@@ -112,13 +115,7 @@ def build_bulk_review_campaign_definition_launch_package(
             "Idempotency-Key": idempotency_key,
             "X-Correlation-Id": correlation_id,
         },
-        "operating_boundaries": [
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_MEMBERSHIP_RECALCULATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(CAMPAIGN_LAUNCH_PACKAGE_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)

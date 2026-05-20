@@ -663,22 +663,22 @@ Current repository posture:
     as an operator-safe read model that composes persisted campaign discovery posture,
     fail-closed preview readiness, lifecycle events, launch history, and optional launch-package
     guidance without global portfolio-universe discovery, source-fact recalculation,
-    maker-checker workflow, trade approval, order generation, or OMS claims. Manage also exposes
+    maker-checker control-state mutation, trade approval, order generation, or OMS claims. Manage also exposes
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
     as a bounded fail-closed supportability check over lifecycle status, requested as-of date,
     source-backed candidate eligibility, governance approval, expiry, and optional actor
     entitlement before new preview/create use. Manage also exposes
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`
     as a bounded operator package with readiness, preview/create request drafts, idempotency
-    header guidance, correlation id guidance, and explicit no-OMS/no-maker-checker boundaries.
+    header guidance, correlation id guidance, and explicit no-OMS/no-maker-checker-control-state-mutation boundaries.
     Manage can now also launch a durable wave from a ready persisted definition through
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`,
     reusing launch-package readiness and deterministic launch idempotency while failing closed
     before persistence when lifecycle, expiry, governance, candidate, or actor entitlement posture
     is not ready. Successful launches append bounded launch-history records to the persisted
     definition and lifecycle-event projection so operators can audit wave id, actor, requested
-    as-of date, correlation id, and deterministic idempotency without adding maker-checker,
-    trade-approval, routing, or OMS claims.
+    as-of date, correlation id, and deterministic idempotency without mutating maker-checker control
+    state, adding trade-approval, routing, or OMS claims.
     Manage also exposes first-class bounded launch-history audit pages at
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`
     with pagination, total count, wave id, actor, requested as-of date, correlation id,
@@ -691,28 +691,28 @@ Current repository posture:
     preserving `APPROVED`, `REJECTED`, and `REQUIRES_REMEDIATION` posture with deterministic
     decision ids and content hashes while rejecting conflicting decision refs. This mutates
     campaign approval posture evidence only and does not approve trades, generate or route orders,
-    contact clients, run maker-checker workflow, or claim OMS execution.
+    contact clients, mutate maker-checker control state, or claim OMS execution.
     Manage also exposes a bounded operating queue at
     `GET /api/v1/rebalance/waves/campaign-operating-queue`, classifying persisted campaign
     definitions as ready to launch, attention required, or closed from existing discovery,
     preview-readiness, lifecycle, and launch-history posture without global portfolio-universe
-    discovery, source-fact recalculation, maker-checker workflow, trade approval, order
+    discovery, source-fact recalculation, maker-checker control-state mutation, trade approval, order
     generation, or OMS claims.
     Manage also exposes a bounded read-only approval attention inbox at
     `GET /api/v1/rebalance/waves/campaign-approval-inbox`, classifying persisted campaign
     definitions as approval complete, approval required, approval incomplete, expiry attention,
     entitlement attention, or closed from existing governance evidence and readiness posture without
-    adding maker-checker workflow, approving trades, generating orders, or claiming OMS execution.
+    mutating maker-checker control state, approving trades, generating orders, or claiming OMS execution.
     Manage also exposes a bounded read-only cross-actor campaign workflow board at
     `GET /api/v1/rebalance/waves/campaign-workflow-board`, composing the existing operating queue
     and approval inbox into actor-aware next-action rows for launch, approval-decision capture,
     approval evidence remediation, expiry refresh, entitlement review, or closed posture without
     discovering the global portfolio universe, recalculating source facts, mutating approval state,
-    creating maker-checker workflow, approving trades, generating orders, or claiming OMS execution.
+    mutating maker-checker control state, approving trades, generating orders, or claiming OMS execution.
     Manage also exposes a bounded read-only campaign assignment plan at
     `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing, escalation
     tier, SLA posture, and reason codes from the workflow board without mutating assignment state,
-    creating escalation tasks, creating maker-checker workflow, approving trades, generating
+    creating escalation tasks, mutating maker-checker control state, approving trades, generating
     orders, or claiming OMS execution.
     Manage now also exposes append-only campaign assignment and escalation actions at
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
@@ -721,7 +721,7 @@ Current repository posture:
     These actions record assignment, reassignment, escalation, de-escalation, and resolution
     posture with deterministic action ids, conflict-safe action refs, assigned actor ids,
     escalation tier, SLA posture, correlation id, and optional source refs. They mutate assignment
-    posture evidence only and do not mutate approval state, create maker-checker workflow, approve
+    posture evidence only and do not mutate approval state, mutate maker-checker control state, approve
     trades, generate or route orders, contact clients, or claim OMS execution.
     Manage now also exposes controlled campaign assignment and escalation tasks at
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`,
@@ -732,7 +732,7 @@ Current repository posture:
     These tasks preserve current status, assignees, escalation tier, SLA posture, optional due
     date, deterministic task/transition ids, conflict-safe refs, and append-only transition
     evidence while mutating only Manage-side assignment task state, not approval state,
-    maker-checker workflow, trade approval, order generation/routing, client contact, external
+    maker-checker control-state mutation, trade approval, order generation/routing, client contact, external
     workflow orchestration, or OMS execution.
     Manage now also exposes append-only campaign maker-checker controls at
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`

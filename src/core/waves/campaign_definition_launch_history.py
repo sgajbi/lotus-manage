@@ -9,6 +9,9 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionLaunchRecord,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_LAUNCH_HISTORY_OPERATING_BOUNDARIES,
+)
 
 
 class DpmBulkReviewCampaignDefinitionLaunchHistoryPage(BaseModel):
@@ -28,12 +31,7 @@ class DpmBulkReviewCampaignDefinitionLaunchHistoryPage(BaseModel):
     count: int = Field(description="Number of launch records returned in this page.")
     total_count: int = Field(description="Total launch records available for this definition.")
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(CAMPAIGN_LAUNCH_HISTORY_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims that this launch history must not imply.",
     )
 

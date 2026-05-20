@@ -1701,22 +1701,22 @@ Functional coverage:
   header guidance, and explicit no-recalculation/no-OMS operating boundaries without creating a
   wave,
 - ready-only launch appends bounded launch history with wave id, actor, requested as-of date,
-  correlation id, and deterministic idempotency key without maker-checker or OMS claims,
+  correlation id, and deterministic idempotency key without maker-checker control-state mutation or OMS claims,
 - launch-history pages expose append-only launch audit records, total count, pagination, and
   explicit no-order/no-OMS boundaries without requiring consumers to fetch full definitions,
 - approval decisions append bounded approval posture evidence to active definitions and expose a
-  paged `BulkReviewCampaignDefinitionApprovalDecisionPage` without maker-checker workflow, trade
+  paged `BulkReviewCampaignDefinitionApprovalDecisionPage` without maker-checker control-state mutation, trade
   approval, order generation, routing, client contact, or OMS claims,
 - assignment actions append bounded assignment, reassignment, escalation, de-escalation, and
   resolution posture evidence to active definitions and expose a paged
   `BulkReviewCampaignDefinitionAssignmentActionPage` with current assigned actors, escalation tier,
-  and SLA posture without approval-state mutation, maker-checker workflow, trade approval, order
+  and SLA posture without approval-state mutation, maker-checker control-state mutation, trade approval, order
   generation, routing, client contact, or OMS claims,
 - assignment tasks open controlled Manage-side assignment and escalation task state, record
   conflict-safe append-only transitions, and expose
   `BulkReviewCampaignDefinitionAssignmentTaskPage` with current status, open-task counts,
   escalation-tier counts, SLA-posture counts, assignees, due date, and source refs without
-  approval-state mutation, maker-checker workflow, trade approval, order generation, routing,
+  approval-state mutation, maker-checker control-state mutation, trade approval, order generation, routing,
   client contact, external workflow orchestration, or OMS claims,
 - workflow automation readiness composes assignment-plan posture and controlled assignment-task
   state into `BulkReviewCampaignWorkflowAutomation:v1` rows for opening, monitoring, or escalating
@@ -1725,7 +1725,7 @@ Functional coverage:
   claims,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
-  launch-history posture without adding maker-checker, order, or OMS claims,
+  launch-history posture without mutating maker-checker control state, order, or OMS claims,
 - campaign approval inbox pages classify persisted campaign definitions into approval-complete,
   approval-required, approval-incomplete, expiry-attention, entitlement-attention, and closed rows
   by composing governance evidence and preview-readiness posture without mutating approval state or
