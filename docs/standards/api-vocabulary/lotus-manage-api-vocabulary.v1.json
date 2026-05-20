@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-20T04:06:16.511353+00:00",
+  "generatedAt": "2026-05-20T04:28:05.838714+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3355,6 +3355,54 @@
       "preferredName": "error",
       "description": "Failure details when status is FAILED.",
       "example": "error_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.escalation_reason_codes",
+      "canonicalTerm": "escalation_reason_codes",
+      "preferredName": "escalation_reason_codes",
+      "description": "Reason codes explaining the assignment or escalation posture.",
+      "example": [
+        "sample_escalation_reason_codes_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.escalation_tier",
+      "canonicalTerm": "escalation_tier",
+      "preferredName": "escalation_tier",
+      "description": "Canonical escalation tier used by lotus-manage APIs.",
+      "example": null,
+      "type": "object",
+      "locations": [
+        "query",
+        "body"
+      ],
+      "observedTypes": [
+        "object",
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.escalation_tier_counts",
+      "canonicalTerm": "escalation_tier_counts",
+      "preferredName": "escalation_tier_counts",
+      "description": "Assignment-plan row counts by escalation tier for the returned page.",
+      "example": {
+        "sample_key": "sample_value"
+      },
       "type": "object",
       "locations": [
         "body"
@@ -11125,6 +11173,36 @@
       ]
     },
     {
+      "semanticId": "lotus.sla_posture",
+      "canonicalTerm": "sla_posture",
+      "preferredName": "sla_posture",
+      "description": "Operational SLA posture for triage; this does not create a task or mutate state.",
+      "example": "ON_TRACK",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.sla_posture_counts",
+      "canonicalTerm": "sla_posture_counts",
+      "preferredName": "sla_posture_counts",
+      "description": "Assignment-plan row counts by SLA posture for the returned page.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.snapshot_id",
       "canonicalTerm": "snapshot_id",
       "preferredName": "snapshot_id",
@@ -13484,6 +13562,22 @@
       ]
     },
     {
+      "semanticId": "lotus.workflow_board",
+      "canonicalTerm": "workflow_board",
+      "preferredName": "workflow_board",
+      "description": "Cross-actor campaign workflow row for one persisted bulk-review campaign definition.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmBulkReviewCampaignWorkflowBoardItem",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmBulkReviewCampaignWorkflowBoardItem"
+      ]
+    },
+    {
       "semanticId": "lotus.workflow_decision_count",
       "canonicalTerm": "workflow_decision_count",
       "preferredName": "workflow_decision_count",
@@ -15757,6 +15851,138 @@
       "allowedValues": [],
       "semanticId": "lotus.board_status",
       "attributeRef": "#/attributeCatalog/lotus.board_status"
+    },
+    {
+      "name": "next_action",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional filter for one derived operator next action.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.next_action",
+      "attributeRef": "#/attributeCatalog/lotus.next_action"
+    },
+    {
+      "name": "include_closed",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "boolean",
+      "description": "Canonical include closed used by lotus-manage APIs.",
+      "example": true,
+      "allowedValues": [],
+      "semanticId": "lotus.include_closed",
+      "attributeRef": "#/attributeCatalog/lotus.include_closed"
+    },
+    {
+      "name": "limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Canonical limit used by lotus-manage APIs.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.limit",
+      "attributeRef": "#/attributeCatalog/lotus.limit"
+    },
+    {
+      "name": "offset",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Canonical offset used by lotus-manage APIs.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.offset",
+      "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "campaign_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Canonical campaign id used by lotus-manage APIs.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_id",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+    },
+    {
+      "name": "campaign_status",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Canonical campaign status used by lotus-manage APIs.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.campaign_status",
+      "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+    },
+    {
+      "name": "as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Canonical as of date used by lotus-manage APIs.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+    },
+    {
+      "name": "requested_as_of_date",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's persisted campaign as-of date is used.",
+      "example": "2025-03-31",
+      "allowedValues": [],
+      "semanticId": "lotus.requested_as_of_date",
+      "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+    },
+    {
+      "name": "actor_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional actor id to evaluate against campaign entitlement evidence.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.actor_id",
+      "attributeRef": "#/attributeCatalog/lotus.actor_id"
+    },
+    {
+      "name": "active_on",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional ISO date used to classify discovery expiry posture.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.active_on",
+      "attributeRef": "#/attributeCatalog/lotus.active_on"
+    },
+    {
+      "name": "escalation_tier",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional filter for one read-only escalation tier.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.escalation_tier",
+      "attributeRef": "#/attributeCatalog/lotus.escalation_tier"
     },
     {
       "name": "next_action",
@@ -69966,6 +70192,1373 @@
             "type": "object",
             "semanticId": "lotus.next_action_counts",
             "attributeRef": "#/attributeCatalog/lotus.next_action_counts"
+          },
+          {
+            "name": "content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "lotus_manage_rebalance_waves",
+      "method": "GET",
+      "path": "/api/v1/rebalance/waves/campaign-assignment-plan",
+      "operationId": "list_bulk_review_campaign_assignment_plan_api_v1_rebalance_waves_campaign_assignment_plan_get",
+      "summary": "List bulk-review campaign assignment plan",
+      "request": {
+        "fields": [
+          {
+            "name": "campaign_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "campaign_status",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "requested_as_of_date",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "actor_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "active_on",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.active_on",
+            "attributeRef": "#/attributeCatalog/lotus.active_on"
+          },
+          {
+            "name": "escalation_tier",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.escalation_tier",
+            "attributeRef": "#/attributeCatalog/lotus.escalation_tier"
+          },
+          {
+            "name": "next_action",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.next_action",
+            "attributeRef": "#/attributeCatalog/lotus.next_action"
+          },
+          {
+            "name": "include_closed",
+            "location": "query",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.include_closed",
+            "attributeRef": "#/attributeCatalog/lotus.include_closed"
+          },
+          {
+            "name": "limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          }
+        ]
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.items",
+            "attributeRef": "#/attributeCatalog/lotus.items"
+          },
+          {
+            "name": "items[].product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].assigned_actor_ids",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.assigned_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.assigned_actor_ids"
+          },
+          {
+            "name": "items[].next_action",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.next_action",
+            "attributeRef": "#/attributeCatalog/lotus.next_action"
+          },
+          {
+            "name": "items[].escalation_tier",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.escalation_tier",
+            "attributeRef": "#/attributeCatalog/lotus.escalation_tier"
+          },
+          {
+            "name": "items[].sla_posture",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.sla_posture",
+            "attributeRef": "#/attributeCatalog/lotus.sla_posture"
+          },
+          {
+            "name": "items[].escalation_reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.escalation_reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.escalation_reason_codes"
+          },
+          {
+            "name": "items[].workflow_board",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignWorkflowBoardItem",
+            "semanticId": "lotus.workflow_board",
+            "attributeRef": "#/attributeCatalog/lotus.workflow_board"
+          },
+          {
+            "name": "items[].workflow_board.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].workflow_board.requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].workflow_board.board_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.board_status",
+            "attributeRef": "#/attributeCatalog/lotus.board_status"
+          },
+          {
+            "name": "items[].workflow_board.next_action",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.next_action",
+            "attributeRef": "#/attributeCatalog/lotus.next_action"
+          },
+          {
+            "name": "items[].workflow_board.board_reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.board_reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.board_reason_codes"
+          },
+          {
+            "name": "items[].workflow_board.assigned_actor_ids",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.assigned_actor_ids",
+            "attributeRef": "#/attributeCatalog/lotus.assigned_actor_ids"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignOperatingQueueItem",
+            "semanticId": "lotus.operating_queue",
+            "attributeRef": "#/attributeCatalog/lotus.operating_queue"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.queue_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.queue_status",
+            "attributeRef": "#/attributeCatalog/lotus.queue_status"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.queue_reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.queue_reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.queue_reason_codes"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignDiscoveryItem",
+            "semanticId": "lotus.discovery",
+            "attributeRef": "#/attributeCatalog/lotus.discovery"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.campaign_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.eligible_portfolio_types",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.eligible_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.eligible_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.governance_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.governance_status",
+            "attributeRef": "#/attributeCatalog/lotus.governance_status"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.expiry_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.expiry_state",
+            "attributeRef": "#/attributeCatalog/lotus.expiry_state"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.superseded_by_campaign_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.superseded_by_campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.superseded_by_campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.superseded_by_campaign_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.superseded_by_campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.superseded_by_campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.superseded_by_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.superseded_by_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.discovery.preview_reference",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.preview_reference",
+            "attributeRef": "#/attributeCatalog/lotus.preview_reference"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignDefinitionPreviewReadiness",
+            "semanticId": "lotus.preview_readiness",
+            "attributeRef": "#/attributeCatalog/lotus.preview_readiness"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.campaign_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.definition_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.definition_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.definition_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.preview_create_allowed",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.preview_create_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.preview_create_allowed"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.eligible_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.eligible_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.excluded_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.excluded_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.excluded_candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.eligible_portfolio_types",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.governance_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.governance_status",
+            "attributeRef": "#/attributeCatalog/lotus.governance_status"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.expiry_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.expiry_state",
+            "attributeRef": "#/attributeCatalog/lotus.expiry_state"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.lifecycle_event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.lifecycle_event_count",
+            "attributeRef": "#/attributeCatalog/lotus.lifecycle_event_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.preview_readiness.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.lifecycle_event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.lifecycle_event_count",
+            "attributeRef": "#/attributeCatalog/lotus.lifecycle_event_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.launch_history_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.launch_history_count",
+            "attributeRef": "#/attributeCatalog/lotus.launch_history_count"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.latest_launch_wave_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_launch_wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.latest_launch_wave_id"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.latest_launched_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_launched_at",
+            "attributeRef": "#/attributeCatalog/lotus.latest_launched_at"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.operating_boundaries",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.operating_boundaries",
+            "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
+          },
+          {
+            "name": "items[].workflow_board.operating_queue.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignApprovalInboxItem",
+            "semanticId": "lotus.approval_inbox",
+            "attributeRef": "#/attributeCatalog/lotus.approval_inbox"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.inbox_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.inbox_status",
+            "attributeRef": "#/attributeCatalog/lotus.inbox_status"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.inbox_reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.inbox_reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.inbox_reason_codes"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignDiscoveryItem",
+            "semanticId": "lotus.discovery",
+            "attributeRef": "#/attributeCatalog/lotus.discovery"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.display_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.display_name",
+            "attributeRef": "#/attributeCatalog/lotus.display_name"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.campaign_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.eligible_portfolio_types",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.eligible_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.eligible_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.governance_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.governance_status",
+            "attributeRef": "#/attributeCatalog/lotus.governance_status"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.expiry_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.expiry_state",
+            "attributeRef": "#/attributeCatalog/lotus.expiry_state"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.superseded_by_campaign_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.superseded_by_campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.superseded_by_campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.superseded_by_campaign_version",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.superseded_by_campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.superseded_by_campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.superseded_by_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.superseded_by_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.superseded_by_content_hash"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.discovery.preview_reference",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.preview_reference",
+            "attributeRef": "#/attributeCatalog/lotus.preview_reference"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness",
+            "location": "body",
+            "required": true,
+            "type": "DpmBulkReviewCampaignDefinitionPreviewReadiness",
+            "semanticId": "lotus.preview_readiness",
+            "attributeRef": "#/attributeCatalog/lotus.preview_readiness"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_name",
+            "attributeRef": "#/attributeCatalog/lotus.product_name"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.product_version",
+            "attributeRef": "#/attributeCatalog/lotus.product_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.campaign_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_id",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_id"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.campaign_version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_version",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_version"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.campaign_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.campaign_status",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_status"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.definition_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.definition_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.definition_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.requested_as_of_date",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.requested_as_of_date",
+            "attributeRef": "#/attributeCatalog/lotus.requested_as_of_date"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.actor_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.actor_id",
+            "attributeRef": "#/attributeCatalog/lotus.actor_id"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.preview_create_allowed",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.preview_create_allowed",
+            "attributeRef": "#/attributeCatalog/lotus.preview_create_allowed"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.supportability_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.reason_codes",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.eligible_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.eligible_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.excluded_candidate_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.excluded_candidate_count",
+            "attributeRef": "#/attributeCatalog/lotus.excluded_candidate_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.eligible_portfolio_types",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.eligible_portfolio_types",
+            "attributeRef": "#/attributeCatalog/lotus.eligible_portfolio_types"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.governance_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.governance_status",
+            "attributeRef": "#/attributeCatalog/lotus.governance_status"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.expiry_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.expiry_state",
+            "attributeRef": "#/attributeCatalog/lotus.expiry_state"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.actor_entitlement_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.actor_entitlement_state",
+            "attributeRef": "#/attributeCatalog/lotus.actor_entitlement_state"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.lifecycle_event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.lifecycle_event_count",
+            "attributeRef": "#/attributeCatalog/lotus.lifecycle_event_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.source_ref_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.preview_readiness.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.approval_ref",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approval_ref",
+            "attributeRef": "#/attributeCatalog/lotus.approval_ref"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.approved_by",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_by",
+            "attributeRef": "#/attributeCatalog/lotus.approved_by"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.approved_at",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.approved_at",
+            "attributeRef": "#/attributeCatalog/lotus.approved_at"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.expires_on",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.expires_on",
+            "attributeRef": "#/attributeCatalog/lotus.expires_on"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.access_purpose",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.access_purpose",
+            "attributeRef": "#/attributeCatalog/lotus.access_purpose"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.entitled_actor_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.entitled_actor_count",
+            "attributeRef": "#/attributeCatalog/lotus.entitled_actor_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.approval_source_ref_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.approval_source_ref_count",
+            "attributeRef": "#/attributeCatalog/lotus.approval_source_ref_count"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.operating_boundaries",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.operating_boundaries",
+            "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
+          },
+          {
+            "name": "items[].workflow_board.approval_inbox.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].workflow_board.operating_boundaries",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.operating_boundaries",
+            "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
+          },
+          {
+            "name": "items[].workflow_board.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].operating_boundaries",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.operating_boundaries",
+            "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
+          },
+          {
+            "name": "items[].content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.limit",
+            "attributeRef": "#/attributeCatalog/lotus.limit"
+          },
+          {
+            "name": "offset",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.offset",
+            "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.count",
+            "attributeRef": "#/attributeCatalog/lotus.count"
+          },
+          {
+            "name": "escalation_tier_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.escalation_tier_counts",
+            "attributeRef": "#/attributeCatalog/lotus.escalation_tier_counts"
+          },
+          {
+            "name": "sla_posture_counts",
+            "location": "body",
+            "required": true,
+            "type": "object",
+            "semanticId": "lotus.sla_posture_counts",
+            "attributeRef": "#/attributeCatalog/lotus.sla_posture_counts"
           },
           {
             "name": "content_hash",

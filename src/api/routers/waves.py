@@ -97,9 +97,11 @@ from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     CampaignApprovalDecisionType,
     CampaignApprovalInboxStatus,
+    CampaignAssignmentEscalationTier,
     CampaignWorkflowBoardStatus,
     CampaignWorkflowNextAction,
     DpmBulkReviewCampaignApprovalInboxPage,
+    DpmBulkReviewCampaignAssignmentPlanPage,
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     DpmBulkReviewCampaignDefinitionConflictError,
@@ -124,6 +126,7 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_approval_decision_page,
     record_bulk_review_campaign_definition_approval_decision,
     build_bulk_review_campaign_approval_inbox_page,
+    build_bulk_review_campaign_assignment_plan_page,
     build_bulk_review_campaign_definition_workflow_overview,
     build_bulk_review_campaign_operating_queue_page,
     build_bulk_review_campaign_workflow_board_page,
@@ -1633,6 +1636,79 @@ def list_bulk_review_campaign_workflow_board(
         active_on=active_on_date,
         include_closed=include_closed,
         board_status=board_status,
+        next_action=next_action,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/campaign-assignment-plan",
+    response_model=DpmBulkReviewCampaignAssignmentPlanPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign assignment plan",
+    description=(
+        "Returns a read-only assignment and escalation plan over persisted "
+        "`BulkReviewCampaignDefinition:v1` records. The plan derives assigned actors, escalation "
+        "tier, SLA posture, and reason codes from the existing workflow board without mutating "
+        "assignment state, creating escalation tasks, discovering the global portfolio universe, "
+        "recalculating source facts, mutating approval state, creating maker-checker workflow, "
+        "approving trades, generating orders, or claiming OMS execution."
+    ),
+)
+def list_bulk_review_campaign_assignment_plan(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
+    as_of_date: str | None = Query(default=None),
+    requested_as_of_date: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's "
+            "persisted campaign as-of date is used."
+        ),
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    active_on: str | None = Query(
+        default=None,
+        description="Optional ISO date used to classify discovery expiry posture.",
+    ),
+    escalation_tier: CampaignAssignmentEscalationTier | None = Query(
+        default=None,
+        description="Optional filter for one read-only escalation tier.",
+    ),
+    next_action: CampaignWorkflowNextAction | None = Query(
+        default=None,
+        description="Optional filter for one derived operator next action.",
+    ),
+    include_closed: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignAssignmentPlanPage:
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    definitions = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return build_bulk_review_campaign_assignment_plan_page(
+        definitions=definitions,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        active_on=active_on_date,
+        include_closed=include_closed,
+        escalation_tier=escalation_tier,
         next_action=next_action,
         limit=limit,
         offset=offset,

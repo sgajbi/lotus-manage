@@ -175,7 +175,11 @@ orders, or claiming OMS execution. Manage also supports a read-only cross-actor 
 inbox into actor-aware next-action rows for launch, approval-decision capture, approval evidence
 remediation, expiry refresh, entitlement review, or closed posture without discovering the global
 portfolio universe, mutating approval state, creating maker-checker workflow, approving trades,
-generating orders, or claiming OMS execution. Manage also supports
+generating orders, or claiming OMS execution. Manage also supports a read-only assignment and
+escalation plan at `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing,
+escalation tier, SLA posture, and reason codes from the workflow board without mutating assignment
+state, creating escalation tasks, creating maker-checker workflow, approving trades, generating
+orders, or claiming OMS execution. Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
 and superseding older definitions with active replacement versions at

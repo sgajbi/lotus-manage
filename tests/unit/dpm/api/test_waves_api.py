@@ -2514,6 +2514,96 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_assignment_plan_summarizes_escalation_posture() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        ready_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        approval_required_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-assignment-approval-required-20260510/versions/2026.05"
+        )
+        unauthorized_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-assignment-entitlement-20260510/versions/2026.05"
+        )
+
+        ready_put = client.put(ready_route, json=_bulk_review_campaign_definition_request())
+        approval_required_put = client.put(
+            approval_required_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Approval required assignment plan row",
+                "governance": None,
+                "correlation_id": "corr-campaign-definition-assignment-approval-required",
+            },
+        )
+        unauthorized_put = client.put(
+            unauthorized_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Entitlement assignment plan row",
+                "governance": {
+                    **_bulk_review_campaign_governance(),
+                    "entitled_actor_ids": ["ops"],
+                },
+                "correlation_id": "corr-campaign-definition-assignment-entitlement",
+            },
+        )
+
+        plan = client.get(
+            "/api/v1/rebalance/waves/campaign-assignment-plan?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+        )
+        filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-assignment-plan?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&escalation_tier=GOVERNANCE"
+        )
+        invalid = client.get("/api/v1/rebalance/waves/campaign-assignment-plan?active_on=bad-date")
+
+    assert ready_put.status_code == 200
+    assert approval_required_put.status_code == 200
+    assert unauthorized_put.status_code == 200
+
+    assert plan.status_code == 200
+    payload = plan.json()
+    assert payload["product_name"] == "BulkReviewCampaignAssignmentPlan"
+    tiers = {item["campaign_id"]: item["escalation_tier"] for item in payload["items"]}
+    assert tiers == {
+        "campaign-holdings-apple-tesla-20260510": "PM",
+        "campaign-holdings-assignment-approval-required-20260510": "GOVERNANCE",
+        "campaign-holdings-assignment-entitlement-20260510": "OPS",
+    }
+    assert payload["escalation_tier_counts"] == {"PM": 1, "GOVERNANCE": 1, "OPS": 1}
+    assert payload["sla_posture_counts"] == {
+        "ON_TRACK": 1,
+        "ATTENTION": 1,
+        "BREACHED_OR_BLOCKED": 1,
+    }
+    ready_item = next(
+        item
+        for item in payload["items"]
+        if item["campaign_id"] == "campaign-holdings-apple-tesla-20260510"
+    )
+    assert ready_item["workflow_board"]["next_action"] == "LAUNCH_CAMPAIGN"
+    assert "NO_ESCALATION_TASK_CREATION" in ready_item["operating_boundaries"]
+
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == 1
+    assert filtered.json()["items"][0]["escalation_tier"] == "GOVERNANCE"
+
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())

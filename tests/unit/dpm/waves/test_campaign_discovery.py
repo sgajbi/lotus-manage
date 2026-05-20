@@ -27,6 +27,10 @@ from src.core.waves.campaign_workflow_board import (
     build_bulk_review_campaign_workflow_board_item,
     build_bulk_review_campaign_workflow_board_page,
 )
+from src.core.waves.campaign_assignment_plan import (
+    build_bulk_review_campaign_assignment_plan_item,
+    build_bulk_review_campaign_assignment_plan_page,
+)
 
 
 def _definition(
@@ -357,5 +361,68 @@ def test_campaign_workflow_board_page_filters_next_action_and_counts() -> None:
     assert page.count == 1
     assert page.status_counts == {"ATTENTION_FOR_ACTOR": 1}
     assert page.next_action_counts == {"RECORD_APPROVAL_DECISION": 1}
+    assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
+    assert page.content_hash.startswith("sha256:")
+
+
+def test_campaign_assignment_plan_derives_escalation_tiers() -> None:
+    ready = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    approval_required = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(approval_ref=None, approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    unauthorized = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(entitled_actor_ids=["ops"]),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    assert ready.product_name == "BulkReviewCampaignAssignmentPlanItem"
+    assert ready.escalation_tier == "PM"
+    assert ready.sla_posture == "ON_TRACK"
+    assert ready.escalation_reason_codes == ["CAMPAIGN_READY_FOR_ASSIGNED_ACTOR"]
+    assert ready.workflow_board.next_action == "LAUNCH_CAMPAIGN"
+    assert "NO_ASSIGNMENT_STATE_MUTATION" in ready.operating_boundaries
+    assert ready.content_hash.startswith("sha256:")
+
+    assert approval_required.escalation_tier == "GOVERNANCE"
+    assert approval_required.sla_posture == "ATTENTION"
+    assert approval_required.escalation_reason_codes == [
+        "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_NOT_SUPPLIED"
+    ]
+
+    assert unauthorized.escalation_tier == "OPS"
+    assert unauthorized.sla_posture == "BREACHED_OR_BLOCKED"
+    assert unauthorized.assigned_actor_ids == ["ops"]
+
+
+def test_campaign_assignment_plan_page_filters_tier_and_counts() -> None:
+    page = build_bulk_review_campaign_assignment_plan_page(
+        definitions=[
+            _definition(),
+            _definition(approval_ref=None, approved_by=None, approved_at=None),
+        ],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        include_closed=False,
+        escalation_tier="GOVERNANCE",
+        next_action=None,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignAssignmentPlan"
+    assert page.count == 1
+    assert page.escalation_tier_counts == {"GOVERNANCE": 1}
+    assert page.sla_posture_counts == {"ATTENTION": 1}
     assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
     assert page.content_hash.startswith("sha256:")
