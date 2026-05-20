@@ -153,6 +153,11 @@ flowchart LR
   trade approval, order generation, routing, client contact, maker-checker control-state mutation, or OMS claims.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
   returns a bounded `BulkReviewCampaignDefinitionAssignmentActionPage` audit page.
+- `GET /api/v1/rebalance/waves/campaign-workflow-automation`
+  returns bounded read-only `BulkReviewCampaignWorkflowAutomation:v1` readiness rows with
+  machine-readable `BulkReviewCampaignWorkflowCapabilityPosture:v1`, separating supported Manage
+  assignment-task readiness and controlled endpoint-only task mutation from unsupported external
+  workflow orchestration.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
   opens a controlled Manage-side assignment or escalation task with current status, assignees,
   escalation tier, SLA posture, optional due date, and append-only opening transition evidence.

@@ -756,7 +756,11 @@ Current repository posture:
     control ids, conflict-safe control refs, reviewer role, control outcome, correlation id, and
     optional source refs. The control ledger mutates campaign control evidence only and does not
     approve trades, generate or route orders, contact clients, orchestrate external workflow
-    systems, or claim OMS execution. Global portfolio-universe campaign discovery,
+    systems, or claim OMS execution. Workflow-automation responses now carry
+    `BulkReviewCampaignWorkflowCapabilityPosture:v1` at page and row level, explicitly separating
+    supported Manage assignment-task readiness and controlled endpoint-only task mutation from
+    unsupported external workflow orchestration and deferred external workflow ownership. Global
+    portfolio-universe campaign discovery,
     broader workflow automation beyond controlled Manage-side assignment tasks, wave
     risk/performance analytics posture, and
     external OMS execution remain unpromoted until owning implementations are live-proven. Manage consumes `lotus-core`

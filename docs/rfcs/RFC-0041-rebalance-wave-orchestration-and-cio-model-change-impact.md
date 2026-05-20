@@ -1104,10 +1104,13 @@ deterministic proposed task type and task ref for idempotent use of the existing
 endpoint; active rows surface non-closed task refs for monitoring; blocked rows surface blocked or
 breached task refs for escalation. The domain helper lives in
 `src/core/waves/campaign_workflow_automation.py`, so automation-readiness classification stays out
-of the API router. This narrows RFC41-WTBD-003's workflow-automation gap without automatic task
-mutation, external workflow orchestration, maker-checker control-state mutation, client contact,
-trade approval, order generation, global portfolio-universe discovery, membership recalculation,
-or OMS execution claims.
+of the API router. The response now includes `BulkReviewCampaignWorkflowCapabilityPosture:v1` at
+page and row level, making supported Manage assignment-task readiness, controlled endpoint-only task
+mutation, unsupported external workflow orchestration, and deferred external workflow owner posture
+machine-readable even on empty pages. This narrows RFC41-WTBD-003's workflow-automation gap without
+automatic task mutation, external workflow orchestration, maker-checker control-state mutation,
+client contact, trade approval, order generation, global portfolio-universe discovery, membership
+recalculation, or OMS execution claims.
 
 2026-05-20 campaign maker-checker control addendum:
 
