@@ -1577,7 +1577,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "src/core/waves/campaign_assignment_tasks.py" in work_to_be_done
     assert "BulkReviewCampaignDefinitionAssignmentTaskPage" in work_to_be_done
     assert "bounded read-only campaign approval-attention inbox" in work_to_be_done
-    assert "maker-checker workflow beyond append-only approval decisions" in work_to_be_done
+    assert "broader workflow automation beyond controlled Manage-side assignment tasks" in (
+        work_to_be_done
+    )
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
     assert "RFC40-WTBD-001 - Gateway Proof-Pack Composition" in work_to_be_done
     assert "Completed, merged, CI-proven, and wiki-published through `lotus-gateway` PR #195" in (

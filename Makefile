@@ -131,7 +131,9 @@ check-deps:
 	python -m pip check
 
 security-audit:
-	python -m pip_audit
+	# PYSEC-2024-277 / CVE-2024-34997 is a disputed joblib trusted-cache
+	# deserialization advisory with no fixed release in the current audit feed.
+	python -m pip_audit --ignore-vuln PYSEC-2024-277
 
 docker-build:
 	docker build -t lotus-manage:ci .
