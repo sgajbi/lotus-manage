@@ -709,9 +709,13 @@ Current repository posture:
     approval evidence remediation, expiry refresh, entitlement review, or closed posture without
     discovering the global portfolio universe, recalculating source facts, mutating approval state,
     creating maker-checker workflow, approving trades, generating orders, or claiming OMS execution.
-    Maker-checker workflow beyond append-only approval decisions, richer cross-actor campaign
-    assignment/escalation workflow beyond the read-only board, wave risk/performance analytics
-    posture, global portfolio-universe campaign discovery, and external OMS execution remain
+    Manage also exposes a bounded read-only campaign assignment plan at
+    `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing, escalation
+    tier, SLA posture, and reason codes from the workflow board without mutating assignment state,
+    creating escalation tasks, creating maker-checker workflow, approving trades, generating
+    orders, or claiming OMS execution. Maker-checker workflow beyond append-only approval
+    decisions, mutable assignment/escalation task lifecycle beyond the read-only plan, wave
+    risk/performance analytics posture, global portfolio-universe campaign discovery, and external OMS execution remain
     unpromoted until owning implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
     diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
