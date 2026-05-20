@@ -664,7 +664,10 @@ Current repository posture:
     records; it exposes campaign identity, governance posture, expiry posture, source-ref count,
     source-backed candidate counts, preview references, and machine-readable
     `BulkReviewCampaignUniversePosture:v1` boundaries that mark global portfolio-universe
-    discovery as unsupported without recalculating campaign membership or owning source facts.
+    discovery as unsupported without recalculating campaign membership or owning source facts. The
+    posture now also carries deferred source-owner posture, required future
+    `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide candidate-discovery
+    capabilities, and a deterministic content hash.
     Manage can retire
     persisted campaign definitions through
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;

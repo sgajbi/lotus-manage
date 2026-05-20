@@ -68,6 +68,13 @@ narrows RFC41-WTBD-003's mutable assignment/escalation gap without promoting app
 mutation, maker-checker control-state mutation, trade approval, order generation/routing, client contact,
 external workflow orchestration, OMS execution, or global portfolio-universe discovery.
 
+Campaign universe-boundary posture addendum: `BulkReviewCampaignUniversePosture:v1` now carries a
+deterministic content hash, deferred global portfolio-universe source-owner posture, required future
+`GlobalPortfolioUniverseCampaignCandidateSet:v1`, and blocked capability codes for bank-wide
+portfolio scans, candidate discovery, eligibility calculation, source-fact recalculation, and
+membership recomputation. This keeps `GET /api/v1/rebalance/waves/campaign-discovery` bounded to
+persisted source-backed campaign candidates while making the global discovery gap machine-readable.
+
 PM operating quality portfolio-memory review-action projection addendum: Portfolio memory now
 projects bounded `PM_QUALITY_REVIEW_ACTION` events for immutable review actions whose reviewed
 score-run has source-owned Core PM-book membership evidence for the requested portfolio. The

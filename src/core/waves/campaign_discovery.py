@@ -5,7 +5,45 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
+
+GLOBAL_CAMPAIGN_UNIVERSE_REQUIRED_SOURCE_PRODUCT = "GlobalPortfolioUniverseCampaignCandidateSet:v1"
+GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES = [
+    "bank_wide_portfolio_universe_scan",
+    "candidate_portfolio_discovery",
+    "candidate_eligibility_calculation",
+    "source_fact_recalculation",
+    "membership_recomputation",
+]
+
+
+def _campaign_universe_posture_payload(
+    *,
+    candidate_source_ref_posture: Literal["SOURCE_BACKED", "NO_CANDIDATES"],
+    source_systems: list[str],
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "product_name": "BulkReviewCampaignUniversePosture",
+        "product_version": "v1",
+        "source_scope": "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
+        "global_portfolio_universe_discovery": "UNSUPPORTED",
+        "global_portfolio_universe_owner_posture": "DEFERRED_SOURCE_OWNER",
+        "required_source_product": GLOBAL_CAMPAIGN_UNIVERSE_REQUIRED_SOURCE_PRODUCT,
+        "candidate_source_ref_posture": candidate_source_ref_posture,
+        "source_systems": source_systems,
+        "blocked_capabilities": GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES,
+        "operating_boundaries": [
+            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
+            "NO_SOURCE_FACT_RECALCULATION",
+            "NO_MEMBERSHIP_RECOMPUTATION",
+            "NO_ORDER_GENERATION",
+            "NO_OMS_EXECUTION_CLAIM",
+        ],
+        "content_hash": "",
+    }
+    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    return payload
 
 
 class DpmBulkReviewCampaignUniversePosture(BaseModel):
@@ -27,6 +65,20 @@ class DpmBulkReviewCampaignUniversePosture(BaseModel):
             "portfolios for bulk-review campaigns."
         ),
     )
+    global_portfolio_universe_owner_posture: Literal["DEFERRED_SOURCE_OWNER"] = Field(
+        default="DEFERRED_SOURCE_OWNER",
+        description=(
+            "Future bank-wide candidate discovery requires an explicit source owner. Manage "
+            "does not become the portfolio-universe authority through this read model."
+        ),
+    )
+    required_source_product: Literal["GlobalPortfolioUniverseCampaignCandidateSet:v1"] = Field(
+        default="GlobalPortfolioUniverseCampaignCandidateSet:v1",
+        description=(
+            "Future source-owned product required before global portfolio-universe campaign "
+            "discovery can be promoted."
+        ),
+    )
     candidate_source_ref_posture: Literal["SOURCE_BACKED", "NO_CANDIDATES"] = Field(
         description=(
             "Whether the persisted candidate set carries source refs. Campaign definitions reject "
@@ -36,6 +88,13 @@ class DpmBulkReviewCampaignUniversePosture(BaseModel):
     source_systems: list[str] = Field(
         description="Sorted source systems represented by persisted candidate source refs.",
         examples=[["lotus-core", "lotus-risk"]],
+    )
+    blocked_capabilities: list[str] = Field(
+        default_factory=lambda: list(GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES),
+        description=(
+            "Capability families explicitly not provided by the persisted campaign-discovery "
+            "read model."
+        ),
     )
     operating_boundaries: list[str] = Field(
         default_factory=lambda: [
@@ -50,6 +109,7 @@ class DpmBulkReviewCampaignUniversePosture(BaseModel):
             "part of the API contract, not free-text guidance."
         ),
     )
+    content_hash: str = Field(description="Deterministic hash of the universe posture payload.")
 
 
 class DpmBulkReviewCampaignDiscoveryItem(BaseModel):
@@ -171,9 +231,11 @@ def build_bulk_review_campaign_universe_posture(
             if source_ref.source_system.strip()
         }
     )
-    return DpmBulkReviewCampaignUniversePosture(
-        candidate_source_ref_posture="SOURCE_BACKED" if source_systems else "NO_CANDIDATES",
-        source_systems=source_systems,
+    return DpmBulkReviewCampaignUniversePosture.model_validate(
+        _campaign_universe_posture_payload(
+            candidate_source_ref_posture="SOURCE_BACKED" if source_systems else "NO_CANDIDATES",
+            source_systems=source_systems,
+        )
     )
 
 
