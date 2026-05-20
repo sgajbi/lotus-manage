@@ -13,21 +13,25 @@ from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityGovernanceApproval,
     DpmPmQualityPolicyConflictError,
+    DpmPmQualityReviewActionConflictError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityWeight,
     DpmPmQualityFairnessSegmentInput,
     build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
+    build_pm_quality_review_action,
 )
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
+    InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
 )
 from src.infrastructure.pm_quality import postgres as postgres_module
 from src.infrastructure.pm_quality.postgres import (
     PostgresDpmPmQualityFairnessAnalysisRepository,
     PostgresDpmPmQualityPolicyRepository,
+    PostgresDpmPmQualityReviewActionRepository,
     PostgresDpmPmQualityScoreRunRepository,
 )
 
@@ -123,6 +127,21 @@ def _fairness_analysis():
     )
 
 
+def _review_action():
+    score_run = _score_run()
+    return build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+
+
 class _FakeCursor:
     def __init__(self, row: dict[str, Any] | None = None, rows: list[dict[str, Any]] | None = None):
         self._row = row
@@ -140,6 +159,7 @@ class _FakePolicyConnection:
         self.policies: dict[tuple[str, str], dict[str, Any]] = {}
         self.score_runs: dict[str, dict[str, Any]] = {}
         self.fairness_analyses: dict[str, dict[str, Any]] = {}
+        self.review_actions: dict[str, dict[str, Any]] = {}
         self.commits = 0
         self.rollbacks = 0
         self.closed = False
@@ -197,6 +217,37 @@ class _FakePolicyConnection:
             return _FakeCursor(self.fairness_analyses.get(str(params[0])))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses"):
             rows = self._filter_fairness_analyses(normalized=normalized, params=params)
+            return _FakeCursor(rows=rows)
+        if normalized.startswith("INSERT INTO dpm_pm_quality_review_actions"):
+            review_action_id = str(params[0])
+            if review_action_id not in self.review_actions:
+                self.review_actions[review_action_id] = {
+                    "review_action_id": review_action_id,
+                    "review_action_ref": str(params[1]),
+                    "target_type": str(params[2]),
+                    "target_id": str(params[3]),
+                    "policy_id": str(params[4]),
+                    "policy_version": str(params[5]),
+                    "as_of_date": str(params[6]),
+                    "target_state": str(params[7]),
+                    "action_type": str(params[8]),
+                    "action_state": str(params[9]),
+                    "content_hash": str(params[10]),
+                    "generated_at": str(params[11]),
+                    "actor_id": str(params[12]),
+                    "payload_json": json.loads(str(params[14])),
+                }
+            return _FakeCursor()
+        if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_review_actions"):
+            row = self.review_actions.get(str(params[0]))
+            return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if (
+            normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions WHERE")
+            and "review_action_id = %s" in normalized
+        ):
+            return _FakeCursor(self.review_actions.get(str(params[0])))
+        if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions"):
+            rows = self._filter_review_actions(normalized=normalized, params=params)
             return _FakeCursor(rows=rows)
         if normalized.startswith("INSERT INTO dpm_pm_quality_policies"):
             key = (str(params[0]), str(params[1]))
@@ -280,6 +331,26 @@ class _FakePolicyConnection:
         offset = int(params[-1])
         return rows[offset : offset + limit]
 
+    def _filter_review_actions(
+        self,
+        *,
+        normalized: str,
+        params: Sequence[Any],
+    ) -> list[dict[str, Any]]:
+        rows = list(self.review_actions.values())
+        param_index = 0
+        for column in ("target_type", "target_id", "policy_id", "as_of_date", "action_state"):
+            if f"{column} = %s" in normalized:
+                rows = [row for row in rows if row[column] == str(params[param_index])]
+                param_index += 1
+        rows.sort(
+            key=lambda row: (row["generated_at"], row["review_action_id"]),
+            reverse=True,
+        )
+        limit = int(params[-2])
+        offset = int(params[-1])
+        return rows[offset : offset + limit]
+
     def commit(self) -> None:
         self.commits += 1
 
@@ -333,6 +404,21 @@ def fake_postgres_fairness_analysis_repository(
         lambda: (type("Psycopg", (), {"connect": lambda *_, **__: connection}), object()),
     )
     return PostgresDpmPmQualityFairnessAnalysisRepository(dsn="postgresql://unit-test"), connection
+
+
+@pytest.fixture
+def fake_postgres_review_action_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[PostgresDpmPmQualityReviewActionRepository, _FakePolicyConnection]:
+    connection = _FakePolicyConnection()
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: True)
+    monkeypatch.setattr(postgres_module, "apply_postgres_migrations", lambda **_: None)
+    monkeypatch.setattr(
+        postgres_module,
+        "_import_psycopg",
+        lambda: (type("Psycopg", (), {"connect": lambda *_, **__: connection}), object()),
+    )
+    return PostgresDpmPmQualityReviewActionRepository(dsn="postgresql://unit-test"), connection
 
 
 def test_in_memory_pm_quality_repository_persists_immutable_policies() -> None:
@@ -534,6 +620,79 @@ def test_postgres_pm_quality_fairness_analysis_repository_conflict_and_configura
     monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
     with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
         PostgresDpmPmQualityFairnessAnalysisRepository(dsn="postgresql://unit-test")
+
+
+def test_in_memory_pm_quality_repository_persists_immutable_review_actions() -> None:
+    repository = InMemoryDpmPmQualityReviewActionRepository()
+    action = _review_action()
+
+    repository.save_review_action(action=action)
+    repository.save_review_action(action=action)
+
+    stored = repository.get_review_action(review_action_id=action.review_action_id)
+    assert stored == action
+
+    changed = action.model_copy(update={"content_hash": "sha256:different"})
+    with pytest.raises(DpmPmQualityReviewActionConflictError):
+        repository.save_review_action(action=changed)
+
+
+def test_in_memory_pm_quality_repository_lists_review_actions() -> None:
+    repository = InMemoryDpmPmQualityReviewActionRepository()
+    action = _review_action()
+    repository.save_review_action(action=action)
+
+    assert repository.list_review_actions(target_type="SCORE_RUN") == [action]
+    assert repository.list_review_actions(target_id=action.target_id) == [action]
+    assert repository.list_review_actions(policy_id="pmq_sg_dpm") == [action]
+    assert repository.list_review_actions(as_of_date="missing") == []
+    assert repository.list_review_actions(action_state=action.action_state) == [action]
+    assert repository.list_review_actions(limit=1, offset=1) == []
+
+
+def test_postgres_pm_quality_review_action_repository_round_trips_actions(
+    fake_postgres_review_action_repository: tuple[
+        PostgresDpmPmQualityReviewActionRepository, _FakePolicyConnection
+    ],
+) -> None:
+    repository, connection = fake_postgres_review_action_repository
+    action = _review_action()
+
+    repository.save_review_action(action=action)
+    repository.save_review_action(action=action)
+
+    assert repository.get_review_action(review_action_id=action.review_action_id) == action
+    assert repository.get_review_action(review_action_id="missing") is None
+    assert repository.list_review_actions(target_type="SCORE_RUN") == [action]
+    assert repository.list_review_actions(target_id=action.target_id) == [action]
+    assert repository.list_review_actions(policy_id="pmq_sg_dpm") == [action]
+    assert repository.list_review_actions(as_of_date="missing") == []
+    assert repository.list_review_actions(action_state=action.action_state) == [action]
+    assert connection.commits == 2
+
+
+def test_postgres_pm_quality_review_action_repository_conflict_and_configuration_paths(
+    fake_postgres_review_action_repository: tuple[
+        PostgresDpmPmQualityReviewActionRepository, _FakePolicyConnection
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository, connection = fake_postgres_review_action_repository
+    action = _review_action()
+    repository.save_review_action(action=action)
+
+    changed = action.model_copy(update={"content_hash": "sha256:different"})
+    with pytest.raises(DpmPmQualityReviewActionConflictError, match="IMMUTABLE"):
+        repository.save_review_action(action=changed)
+
+    assert connection.rollbacks == 1
+
+    with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED"):
+        PostgresDpmPmQualityReviewActionRepository(dsn="")
+
+    monkeypatch.setattr(postgres_module, "has_psycopg", lambda: False)
+    with pytest.raises(RuntimeError, match="DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING"):
+        PostgresDpmPmQualityReviewActionRepository(dsn="postgresql://unit-test")
 
 
 def test_pm_quality_postgres_helpers_normalize_payloads_and_import_driver(

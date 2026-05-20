@@ -523,6 +523,17 @@ Current repository posture:
     addressed evidence immutably, and returns stored evidence without recomputation. It does not
     infer protected classes or create PM rankings, HR, compensation, conduct, approval,
     client-contact, execution, or OMS decisions.
+    Manage also supports bounded PM operating quality review-action preview and immutable
+    create/read/list lifecycle at
+    `POST /api/v1/rebalance/pm-operating-quality/review-actions/preview`,
+    `POST /api/v1/rebalance/pm-operating-quality/review-actions`,
+    `GET /api/v1/rebalance/pm-operating-quality/review-actions`, and
+    `GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}` through
+    `PmOperatingQualityReviewAction:v1`: callers reference an existing persisted score run or
+    fairness analysis, supply a bounded review action, bank review reference, rationale, actor, and
+    optional source refs; Manage preserves the target content hash and records an immutable ledger
+    row without mutating score runs, recomputing fairness posture, ranking PMs, making HR,
+    compensation, conduct, client-contact, trade, order, OMS, or execution decisions.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy, score-run, fairness-analysis, and PM-quality summary
@@ -587,8 +598,8 @@ Current repository posture:
     support-only output, and no score calculation, PM ranking, HR, compensation, conduct,
     client-contact, trade-approval, execution, OMS, or invented-source-fact claim. Gateway and
     Workbench PM-quality summary invocation are bounded product-realized through Gateway PR #213
-    and Workbench PR #245; persisted summary history and review-action workflow remain future
-    product depth, not part of the current support claim.
+    and Workbench PR #245; persisted summary history and approval workflow beyond immutable review
+    actions remain future product depth, not part of the current support claim.
     CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through

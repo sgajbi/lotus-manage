@@ -167,11 +167,17 @@
         "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
         "/api/v1/rebalance/pm-operating-quality/score-runs",
         "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+        "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+        "/api/v1/rebalance/pm-operating-quality/review-actions",
+        "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
         "/api/v1/rebalance/portfolio-memory/{portfolio_id}"
       ],
       "freshness_policy": {
         "freshness_class": "intraday",
-        "max_allowed_age_description": "PM operating quality score runs are generated from explicit bank policy, bank approval and fairness-review evidence, current source-backed evidence supplied or referenced by the request, and optional lotus-core PortfolioManagerBookMembership:v1 scope materialization. Portfolio memory projects bounded score-run lineage only when persisted Core PM-book member evidence includes the requested portfolio."
+        "max_allowed_age_description": "PM operating quality score runs are generated from explicit bank policy, bank approval and fairness-review evidence, current source-backed evidence supplied or referenced by the request, and optional lotus-core PortfolioManagerBookMembership:v1 scope materialization. Fairness analyses are generated from persisted score runs and source-defined operating segments. Review actions are immutable ledger rows over existing score-run or fairness-analysis evidence and preserve target content hashes without recalculating scores or recomputing fairness posture. Portfolio memory projects bounded score-run lineage only when persisted Core PM-book member evidence includes the requested portfolio."
       },
       "completeness_policy": {
         "default_status": "complete",

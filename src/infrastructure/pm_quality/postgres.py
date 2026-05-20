@@ -10,10 +10,12 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
+    DpmPmQualityReviewAction,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityPolicyConflictError,
+    DpmPmQualityReviewActionConflictError,
     DpmPmQualityScoreRunConflictError,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
@@ -344,6 +346,125 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
                 tuple(args),
             ).fetchall()
         return [load_model_json(DpmPmQualityFairnessAnalysis, _payload(row)) for row in rows]
+
+    def _connect(self) -> Any:
+        psycopg, dict_row = _import_psycopg()
+        return psycopg.connect(self._dsn, row_factory=dict_row)
+
+    def _init_db(self) -> None:
+        with closing(self._connect()) as connection:
+            apply_postgres_migrations(connection=connection, namespace="dpm")
+
+
+class PostgresDpmPmQualityReviewActionRepository:
+    def __init__(self, *, dsn: str) -> None:
+        if not dsn:
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED")
+        if not has_psycopg():
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING")
+        self._dsn = dsn
+        self._init_db()
+
+    def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+        with closing(self._connect()) as connection:
+            connection.execute(
+                """
+                INSERT INTO dpm_pm_quality_review_actions (
+                    review_action_id, review_action_ref, target_type, target_id,
+                    policy_id, policy_version, as_of_date, target_state, action_type,
+                    action_state, content_hash, generated_at, actor_id, correlation_id,
+                    payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (review_action_id) DO NOTHING
+                """,
+                (
+                    action.review_action_id,
+                    action.review_action_ref,
+                    action.target_type,
+                    action.target_id,
+                    action.policy_id,
+                    action.policy_version,
+                    action.as_of_date,
+                    action.target_state,
+                    action.action_type,
+                    action.action_state,
+                    action.content_hash,
+                    action.generated_at.isoformat(),
+                    action.actor_id,
+                    action.correlation_id,
+                    dump_model_json(action),
+                ),
+            )
+            persisted = connection.execute(
+                """
+                SELECT content_hash
+                FROM dpm_pm_quality_review_actions
+                WHERE review_action_id = %s
+                """,
+                (action.review_action_id,),
+            ).fetchone()
+            if persisted is None or persisted["content_hash"] != action.content_hash:
+                connection.rollback()
+                raise DpmPmQualityReviewActionConflictError(
+                    "PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT"
+                )
+            connection.commit()
+
+    def get_review_action(
+        self,
+        *,
+        review_action_id: str,
+    ) -> DpmPmQualityReviewAction | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM dpm_pm_quality_review_actions
+                WHERE review_action_id = %s
+                """,
+                (review_action_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return load_model_json(DpmPmQualityReviewAction, _payload(row))
+
+    def list_review_actions(
+        self,
+        *,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        action_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityReviewAction]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        for column, value in (
+            ("target_type", target_type),
+            ("target_id", target_id),
+            ("policy_id", policy_id),
+            ("as_of_date", as_of_date),
+            ("action_state", action_state),
+        ):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                args.append(value)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT payload_json
+                FROM dpm_pm_quality_review_actions
+                {where}
+                ORDER BY generated_at DESC, review_action_id DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(args),
+            ).fetchall()
+        return [load_model_json(DpmPmQualityReviewAction, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()

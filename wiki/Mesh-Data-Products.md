@@ -27,9 +27,10 @@
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 
 - Product ID: `lotus-manage:PmOperatingQualityScoreRun:v1`
-- Product role: governed PM operating quality policy administration, score-run preview, and
-  immutable persisted lifecycle generated from explicit bank policy, source-backed evidence, and
-  optional persisted outcome reviews. Optional `pm_book_scope` materializes source-owned lotus-core
+- Product role: governed PM operating quality policy administration, score-run preview,
+  immutable persisted score-run lifecycle, bounded fairness-analysis lifecycle, and immutable
+  review-action ledger generated from explicit bank policy, source-backed evidence, and optional
+  persisted outcome reviews. Optional `pm_book_scope` materializes source-owned lotus-core
   `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`. Enabled policies carry
   bank approval and fairness-review evidence into score-run `governance_evidence`.
 - Implemented route families:
@@ -38,13 +39,21 @@
   - `/api/v1/rebalance/pm-operating-quality/score-runs/preview`
   - `/api/v1/rebalance/pm-operating-quality/score-runs`
   - `/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`
+  - `/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`
+  - `/api/v1/rebalance/pm-operating-quality/fairness-analyses`
+  - `/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`
+  - `/api/v1/rebalance/pm-operating-quality/review-actions/preview`
+  - `/api/v1/rebalance/pm-operating-quality/review-actions`
+  - `/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Boundary: scoring is disabled by default, missing required evidence blocks the run, and HR,
   compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, source-owner risk,
   performance, execution, and tax methodology remain outside the product contract. PM-book scope
   materialization fails closed for unavailable, incomplete, degraded, or empty source membership.
   Governance approval fails closed for missing approval, invalid or expired expiry, and
-  unauthorized actors.
+  unauthorized actors. Review actions preserve target score-run or fairness-analysis content hashes
+  without recalculating scores, recomputing fairness, ranking PMs, or creating HR, compensation,
+  conduct, client-contact, trade, order, OMS, or execution decisions.
 
 - Product ID: `lotus-manage:PmOperatingQualityFairnessAnalysis:v1`
 - Product role: governed PM operating quality fairness-analysis evidence generated from persisted
@@ -54,8 +63,7 @@
   - `/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`
   - `/api/v1/rebalance/pm-operating-quality/fairness-analyses`
   - `/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`
-- Source declaration: planned mesh promotion after the wider PM-quality product surface is
-  Gateway/Workbench-realized; current Manage truth is implementation-backed API evidence.
+- Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Boundary: Manage validates common policy/as-of scope, minimum scorable segment counts, and
   governed average-score spread over caller-supplied source segments only. It does not infer
   protected classes, discover segments locally, rank PMs, or create HR, compensation, conduct,

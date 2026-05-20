@@ -9,12 +9,15 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
+    DpmPmQualityReviewAction,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
+    DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
 )
@@ -163,6 +166,57 @@ class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysi
                 reverse=True,
             )
             return deepcopy(analyses[offset : offset + limit])
+
+
+class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionRepository):
+    def __init__(self) -> None:
+        self._lock = Lock()
+        self._actions: dict[str, DpmPmQualityReviewAction] = {}
+
+    def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+        with self._lock:
+            existing = self._actions.get(action.review_action_id)
+            if existing is not None and existing.content_hash != action.content_hash:
+                raise DpmPmQualityReviewActionConflictError(
+                    "PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT"
+                )
+            self._actions[action.review_action_id] = deepcopy(action)
+
+    def get_review_action(
+        self,
+        *,
+        review_action_id: str,
+    ) -> DpmPmQualityReviewAction | None:
+        with self._lock:
+            action = self._actions.get(review_action_id)
+            return deepcopy(action) if action is not None else None
+
+    def list_review_actions(
+        self,
+        *,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        action_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityReviewAction]:
+        with self._lock:
+            actions = [
+                action
+                for action in self._actions.values()
+                if (target_type is None or action.target_type == target_type)
+                and (target_id is None or action.target_id == target_id)
+                and (policy_id is None or action.policy_id == policy_id)
+                and (as_of_date is None or action.as_of_date == as_of_date)
+                and (action_state is None or action.action_state == action_state)
+            ]
+            actions.sort(
+                key=lambda action: (action.generated_at, action.review_action_id),
+                reverse=True,
+            )
+            return deepcopy(actions[offset : offset + limit])
 
 
 def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:

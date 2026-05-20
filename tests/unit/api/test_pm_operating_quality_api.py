@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from src.api.dependencies import get_outcome_review_repository
 from src.api.dependencies import get_pm_quality_fairness_analysis_repository
 from src.api.dependencies import get_pm_quality_policy_repository
+from src.api.dependencies import get_pm_quality_review_action_repository
 from src.api.dependencies import get_pm_quality_score_run_repository
 from src.api.main import app
 from src.api.routers import pm_operating_quality as pmq_router
@@ -17,6 +18,7 @@ from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
+    InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
 )
 from src.core.pm_quality import (
@@ -915,6 +917,81 @@ def test_pm_operating_quality_api_creates_gets_and_lists_fairness_analyses() -> 
     assert missing.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:missing"
 
 
+def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> None:
+    score_repository = InMemoryDpmPmQualityScoreRunRepository()
+    fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
+    review_repository = InMemoryDpmPmQualityReviewActionRepository()
+    score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
+    score_repository.save_score_run(score_run=score_run)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
+    app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
+        fairness_repository
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: review_repository
+
+    try:
+        with TestClient(app) as client:
+            request = {
+                "target_type": "SCORE_RUN",
+                "target_id": score_run.score_run_id,
+                "action_type": "REQUEST_EVIDENCE_REMEDIATION",
+                "review_action_ref": "PMQ-REVIEW-2026-05-001",
+                "review_reason": "Evidence remediation required before supervisory closure.",
+                "remediation_due_date": "2026-06-15",
+                "actor_id": "ops",
+                "source_refs": [
+                    {
+                        "source_system": "bank-governance",
+                        "source_type": "PM_QUALITY_REVIEW_MINUTES",
+                        "source_id": "pmq-review-minutes-001",
+                    }
+                ],
+            }
+            preview = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+                json=request,
+                headers={"X-Correlation-Id": "corr-pmq-review-preview"},
+            )
+            created = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions",
+                json=request,
+                headers={"X-Correlation-Id": "corr-pmq-review-create"},
+            )
+            review_action_id = created.json()["review_action"]["review_action_id"]
+            fetched = client.get(
+                f"/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}"
+            )
+            listed = client.get(
+                "/api/v1/rebalance/pm-operating-quality/review-actions"
+                "?target_type=SCORE_RUN&action_state=REVIEW_REQUIRED"
+            )
+            missing_target = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+                json={**request, "target_id": "missing"},
+            )
+            missing_action = client.get(
+                "/api/v1/rebalance/pm-operating-quality/review-actions/missing"
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert preview.status_code == 200
+    assert preview.json()["review_action"]["target_content_hash"] == score_run.content_hash
+    assert preview.json()["review_action"]["action_state"] == "REVIEW_REQUIRED"
+    assert created.status_code == 201
+    assert created.json()["review_action"]["correlation_id"] == "corr-pmq-review-create"
+    assert "NO_PM_RANKING" in created.json()["review_action"]["operating_boundaries"]
+    assert fetched.status_code == 200
+    assert fetched.json()["review_action"]["review_action_id"] == review_action_id
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+    assert listed.json()["review_actions"][0]["review_action_id"] == review_action_id
+    assert missing_target.status_code == 404
+    assert missing_target.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
+    assert missing_action.status_code == 404
+    assert missing_action.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_NOT_FOUND:missing"
+
+
 def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     balanced_1 = _source_only_score_run(pm_id="pm_bal_001", score=Decimal("92"))
@@ -1143,3 +1220,18 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert (
         "does not recompute score runs" in schema["paths"][fairness_get_path]["get"]["description"]
     )
+
+    review_preview_path = "/api/v1/rebalance/pm-operating-quality/review-actions/preview"
+    review_create_path = "/api/v1/rebalance/pm-operating-quality/review-actions"
+    review_get_path = "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}"
+    assert review_preview_path in schema["paths"]
+    assert review_create_path in schema["paths"]
+    assert review_get_path in schema["paths"]
+    assert "200" in schema["paths"][review_preview_path]["post"]["responses"]
+    assert "201" in schema["paths"][review_create_path]["post"]["responses"]
+    assert "200" in schema["paths"][review_create_path]["get"]["responses"]
+    assert "200" in schema["paths"][review_get_path]["get"]["responses"]
+    review_description = schema["paths"][review_preview_path]["post"]["description"]
+    assert all(marker in review_description for marker in ["What:", "When:", "How:"])
+    assert "does not recalculate scores" in review_description
+    assert "does not mutate" in schema["paths"][review_create_path]["post"]["description"]
