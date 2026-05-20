@@ -1681,7 +1681,8 @@ Functional coverage:
   fail-closed validation,
 - bounded persisted campaign discovery through `BulkReviewCampaignDiscovery:v1`, summarizing
   campaign identity, governance posture, expiry posture, source-ref count, source-backed candidate
-  counts, and preview references without discovering the global portfolio universe or recalculating
+  counts, preview references, and machine-readable `BulkReviewCampaignUniversePosture:v1`
+  boundaries that mark global portfolio-universe discovery as unsupported without recalculating
   membership,
 - retired campaign definitions remain available for audit and discovery under `RETIRED` status but
   cannot be used for new `BULK_REVIEW_CAMPAIGN` preview/create requests,

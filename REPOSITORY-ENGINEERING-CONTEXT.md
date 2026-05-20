@@ -657,8 +657,10 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-discovery` as a Manage-owned
     `BulkReviewCampaignDiscovery:v1` read model over persisted `BulkReviewCampaignDefinition:v1`
     records; it exposes campaign identity, governance posture, expiry posture, source-ref count,
-    source-backed candidate counts, and preview references without discovering the global portfolio
-    universe, recalculating campaign membership, or owning source facts. Manage can retire
+    source-backed candidate counts, preview references, and machine-readable
+    `BulkReviewCampaignUniversePosture:v1` boundaries that mark global portfolio-universe
+    discovery as unsupported without recalculating campaign membership or owning source facts.
+    Manage can retire
     persisted campaign definitions through
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
     retirement preserves the candidate set for audit, makes the definition visible as `RETIRED`,

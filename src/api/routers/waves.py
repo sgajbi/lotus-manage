@@ -1585,7 +1585,9 @@ def supersede_bulk_review_campaign_definition(
         "front-office operating read model. This endpoint summarizes campaign identity, governance "
         "posture, expiry posture, source-ref count, and source-backed candidate counts. It does not "
         "discover the global portfolio universe, calculate source facts, run maker-checker workflow, "
-        "or claim OMS execution."
+        "or claim OMS execution. Each item includes `BulkReviewCampaignUniversePosture:v1` so the "
+        "persisted-candidate source scope and unsupported global portfolio-universe boundary are "
+        "machine-readable."
     ),
 )
 def discover_bulk_review_campaigns(

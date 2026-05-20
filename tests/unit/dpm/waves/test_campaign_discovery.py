@@ -12,6 +12,7 @@ from src.core.waves.campaign_definitions import (
 )
 from src.core.waves.campaign_discovery import (
     build_bulk_review_campaign_discovery_item,
+    build_bulk_review_campaign_universe_posture,
     classify_bulk_review_campaign_expiry,
 )
 from src.core.waves.campaign_definition_workflow_overview import (
@@ -131,6 +132,11 @@ def test_campaign_discovery_item_projects_governance_and_candidate_posture() -> 
     assert item.candidate_count == 2
     assert item.eligible_candidate_count == 1
     assert item.source_ref_count == 2
+    assert item.universe_posture.source_scope == "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"
+    assert item.universe_posture.global_portfolio_universe_discovery == "UNSUPPORTED"
+    assert item.universe_posture.candidate_source_ref_posture == "SOURCE_BACKED"
+    assert item.universe_posture.source_systems == ["lotus-core"]
+    assert "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY" in item.universe_posture.operating_boundaries
     assert item.preview_reference == {
         "trigger_type": "BULK_REVIEW_CAMPAIGN",
         "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
@@ -152,6 +158,24 @@ def test_campaign_discovery_item_marks_incomplete_and_invalid_governance() -> No
 
     assert item.governance_status == "INCOMPLETE"
     assert item.expiry_state == "INVALID"
+
+
+def test_campaign_universe_posture_is_machine_readable_boundary() -> None:
+    posture = build_bulk_review_campaign_universe_posture(definition=_definition())
+
+    assert posture.product_name == "BulkReviewCampaignUniversePosture"
+    assert posture.product_version == "v1"
+    assert posture.source_scope == "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"
+    assert posture.global_portfolio_universe_discovery == "UNSUPPORTED"
+    assert posture.candidate_source_ref_posture == "SOURCE_BACKED"
+    assert posture.source_systems == ["lotus-core"]
+    assert posture.operating_boundaries == [
+        "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
+        "NO_SOURCE_FACT_RECALCULATION",
+        "NO_MEMBERSHIP_RECOMPUTATION",
+        "NO_ORDER_GENERATION",
+        "NO_OMS_EXECUTION_CLAIM",
+    ]
 
 
 def test_campaign_expiry_classifier_is_bounded_and_date_driven() -> None:
