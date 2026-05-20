@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import hashlib
-import json
 from datetime import date
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves.campaign_assignment_plan import (
     DpmBulkReviewCampaignAssignmentPlanItem,
     build_bulk_review_campaign_assignment_plan_item,
@@ -82,7 +82,7 @@ def _workflow_capability_posture_payload() -> dict[str, object]:
         "operating_boundaries": list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
-    payload["content_hash"] = _hash_payload(payload)
+    payload["content_hash"] = _content_hash(payload)
     return payload
 
 
@@ -302,7 +302,7 @@ def build_bulk_review_campaign_workflow_automation_item(
         "operating_boundaries": list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
-    payload["content_hash"] = _hash_payload(payload)
+    payload["content_hash"] = _content_hash(payload)
     return DpmBulkReviewCampaignWorkflowAutomationItem.model_validate(payload)
 
 
@@ -352,7 +352,7 @@ def build_bulk_review_campaign_workflow_automation_page(
         "capability_posture": _workflow_capability_posture().model_dump(mode="json"),
         "content_hash": "",
     }
-    payload["content_hash"] = _hash_payload(payload)
+    payload["content_hash"] = _content_hash(payload)
     return DpmBulkReviewCampaignWorkflowAutomationPage.model_validate(payload)
 
 
@@ -440,6 +440,5 @@ def _workflow_capability_posture() -> DpmBulkReviewCampaignWorkflowCapabilityPos
     )
 
 
-def _hash_payload(payload: dict[str, object]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+def _content_hash(payload: dict[str, object]) -> str:
+    return hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
