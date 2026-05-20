@@ -260,6 +260,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
         "/api/v1/rebalance/waves/campaign-operating-queue",
         "/api/v1/rebalance/waves/campaign-approval-inbox",
+        "/api/v1/rebalance/waves/campaign-workflow-board",
         "/api/v1/rebalance/waves/preview",
         "/api/v1/rebalance/waves",
     ]
@@ -286,6 +287,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     )
     assert (
         "Approval decisions provide append-only campaign approval posture evidence"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "The workflow board composes the existing operating queue and approval inbox"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
 

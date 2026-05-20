@@ -170,7 +170,12 @@ an approval attention inbox at `GET /api/v1/rebalance/waves/campaign-approval-in
 persisted definitions as approval complete, approval required, approval incomplete, expiry
 attention, entitlement attention, or closed from existing governance evidence and readiness posture
 without mutating approval state, creating maker-checker workflow, approving trades, generating
-orders, or claiming OMS execution. Manage also supports
+orders, or claiming OMS execution. Manage also supports a read-only cross-actor workflow board at
+`GET /api/v1/rebalance/waves/campaign-workflow-board`, composing the operating queue and approval
+inbox into actor-aware next-action rows for launch, approval-decision capture, approval evidence
+remediation, expiry refresh, entitlement review, or closed posture without discovering the global
+portfolio universe, mutating approval state, creating maker-checker workflow, approving trades,
+generating orders, or claiming OMS execution. Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
 and superseding older definitions with active replacement versions at

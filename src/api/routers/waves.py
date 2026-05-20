@@ -97,6 +97,8 @@ from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     CampaignApprovalDecisionType,
     CampaignApprovalInboxStatus,
+    CampaignWorkflowBoardStatus,
+    CampaignWorkflowNextAction,
     DpmBulkReviewCampaignApprovalInboxPage,
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
@@ -106,6 +108,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignOperatingQueuePage,
+    DpmBulkReviewCampaignWorkflowBoardPage,
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -123,6 +126,7 @@ from src.core.waves import (
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_definition_workflow_overview,
     build_bulk_review_campaign_operating_queue_page,
+    build_bulk_review_campaign_workflow_board_page,
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -1556,6 +1560,80 @@ def list_bulk_review_campaign_approval_inbox(
         active_on=active_on_date,
         include_closed=include_closed,
         inbox_status=inbox_status,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/campaign-workflow-board",
+    response_model=DpmBulkReviewCampaignWorkflowBoardPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign workflow board",
+    description=(
+        "Returns a read-only cross-actor workflow board over persisted "
+        "`BulkReviewCampaignDefinition:v1` records. The board composes the existing operating "
+        "queue and approval-attention inbox into actor-aware next-action rows for launch, "
+        "approval-decision capture, approval evidence remediation, expiry refresh, entitlement "
+        "review, or closed posture. It does not discover the global portfolio universe, "
+        "recalculate source facts, mutate approval state, create maker-checker workflow, approve "
+        "trades, generate orders, or claim OMS execution."
+    ),
+)
+def list_bulk_review_campaign_workflow_board(
+    campaign_id: str | None = Query(default=None),
+    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
+    as_of_date: str | None = Query(default=None),
+    requested_as_of_date: str | None = Query(
+        default=None,
+        description=(
+            "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's "
+            "persisted campaign as-of date is used."
+        ),
+        examples=["2026-05-10"],
+    ),
+    actor_id: str | None = Query(
+        default=None,
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+    ),
+    active_on: str | None = Query(
+        default=None,
+        description="Optional ISO date used to classify discovery expiry posture.",
+    ),
+    board_status: CampaignWorkflowBoardStatus | None = Query(
+        default=None,
+        description="Optional filter for one workflow-board posture.",
+    ),
+    next_action: CampaignWorkflowNextAction | None = Query(
+        default=None,
+        description="Optional filter for one derived operator next action.",
+    ),
+    include_closed: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignWorkflowBoardPage:
+    active_on_date = _parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    definitions = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return build_bulk_review_campaign_workflow_board_page(
+        definitions=definitions,
+        requested_as_of_date=requested_as_of_date,
+        actor_id=actor_id,
+        active_on=active_on_date,
+        include_closed=include_closed,
+        board_status=board_status,
+        next_action=next_action,
         limit=limit,
         offset=offset,
     )
