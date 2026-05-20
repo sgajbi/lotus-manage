@@ -121,6 +121,7 @@ from src.core.waves.campaign_assignment_plan import (
 from src.core.waves.campaign_workflow_automation import (
     CampaignWorkflowAutomationAction,
     CampaignWorkflowAutomationStatus,
+    DpmBulkReviewCampaignWorkflowCapabilityPosture,
     DpmBulkReviewCampaignWorkflowAutomationItem,
     DpmBulkReviewCampaignWorkflowAutomationPage,
     build_bulk_review_campaign_workflow_automation_item,
@@ -205,6 +206,7 @@ __all__ = [
     "DpmBulkReviewCampaignOperatingQueuePage",
     "DpmBulkReviewCampaignWorkflowBoardItem",
     "DpmBulkReviewCampaignWorkflowBoardPage",
+    "DpmBulkReviewCampaignWorkflowCapabilityPosture",
     "DpmBulkReviewCampaignWorkflowAutomationItem",
     "DpmBulkReviewCampaignWorkflowAutomationPage",
     "DpmBulkReviewCampaignDefinitionRepository",
