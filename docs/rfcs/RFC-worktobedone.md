@@ -518,6 +518,32 @@ Expected implementation wave:
 
 Implement product by product as new stateful source dependencies are introduced.
 
+2026-05-20 current-state consumer declaration hardening:
+
+`lotus-manage` now declares the full current implementation-backed source-consumer surface used by
+stateful DPM execution, mandate health, source readiness, proof packs, waves, outcome evidence, PM
+operating quality, and portfolio memory. The repo-native consumer declaration now includes
+`DpmModelPortfolioTarget:v1`, `DiscretionaryMandateBinding:v1`,
+`InstrumentEligibilityProfile:v1`, `PortfolioTaxLotWindow:v1`, `MarketDataCoverageWindow:v1`,
+`DpmSourceReadiness:v1`, `PortfolioCashflowProjection:v1`,
+`ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`,
+`PlannedWithdrawalSchedule:v1`, `ClientRestrictionProfile:v1`,
+`SustainabilityPreferenceProfile:v1`, `ExternalCurrencyExposure:v1`,
+`ExternalHedgePolicy:v1`, `ExternalFXForwardCurve:v1`,
+`ExternalEligibleHedgeInstrument:v1`, `ExternalHedgeExecutionReadiness:v1`,
+`ExternalOrderExecutionAcknowledgement:v1`, `CioModelChangeAffectedCohort:v1`,
+`PortfolioManagerBookMembership:v1`, `TransactionCostCurve:v1`,
+`RiskEventAffectedCohort:v1`, `TacticalHouseViewAffectedCohort:v1`, and
+`RegimeScenarioPackEvaluation:v1`.
+
+This is a governance hardening slice for current truth, not a new runtime feature. It advances
+RFC36-WTBD-004 by making repo-native mesh declarations match the implemented source-consumer
+surface and by preserving explicit fail-closed/degraded/pending-review posture per dependency. It
+does not promote `BenchmarkAssignment:v1` until the upstream source owner approves Manage as a
+consumer, and it does not promote raw market-data ownership, valuation methodology, risk
+methodology, performance methodology, tax advice, financial-planning advice, scenario methodology,
+execution, OMS acknowledgement ingestion, fills, settlement, or treasury action.
+
 Promotion proof:
 
 1. producer and consumer declarations validate,
