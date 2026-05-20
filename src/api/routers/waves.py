@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
 from decimal import Decimal
 from typing import Annotated, Literal, cast
 
@@ -43,7 +42,7 @@ from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_not_found_http_exception,
     campaign_definition_value_http_exception,
     get_campaign_definition_or_404,
-    invalid_campaign_discovery_date_http_exception,
+    parse_optional_campaign_discovery_date,
 )
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
@@ -653,7 +652,7 @@ def discover_bulk_review_campaigns(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDiscoveryPage:
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -723,7 +722,7 @@ def list_bulk_review_campaign_operating_queue(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignOperatingQueuePage:
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -790,7 +789,7 @@ def list_bulk_review_campaign_approval_inbox(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignApprovalInboxPage:
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -863,7 +862,7 @@ def list_bulk_review_campaign_workflow_board(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignWorkflowBoardPage:
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -936,7 +935,7 @@ def list_bulk_review_campaign_assignment_plan(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignAssignmentPlanPage:
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -1014,7 +1013,7 @@ def list_bulk_review_campaign_workflow_automation(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignWorkflowAutomationPage:
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -1553,7 +1552,7 @@ def get_bulk_review_campaign_definition_workflow_overview(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
-    active_on_date = _parse_optional_campaign_discovery_date(
+    active_on_date = parse_optional_campaign_discovery_date(
         value=active_on,
         field_name="active_on",
     )
@@ -1734,19 +1733,6 @@ def launch_bulk_review_campaign_definition(
             message="Bulk-review campaign definition launch audit could not be recorded.",
         ) from exc
     return wave_response(wave=wave, durable=True, idempotent_replay=replay)
-
-
-def _parse_optional_campaign_discovery_date(
-    *,
-    value: str | None,
-    field_name: str,
-) -> date | None:
-    if value is None:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except ValueError as exc:
-        raise invalid_campaign_discovery_date_http_exception(field_name) from exc
 
 
 @router.post(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from fastapi import HTTPException, status
 
 from src.core.waves import (
@@ -93,6 +95,19 @@ def invalid_campaign_discovery_date_http_exception(field_name: str) -> HTTPExcep
             "message": f"{field_name} must be an ISO date.",
         },
     )
+
+
+def parse_optional_campaign_discovery_date(
+    *,
+    value: str | None,
+    field_name: str,
+) -> date | None:
+    if value is None:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise invalid_campaign_discovery_date_http_exception(field_name) from exc
 
 
 def _campaign_definition_lifecycle_status_code(code: str) -> int:
