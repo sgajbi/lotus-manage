@@ -329,6 +329,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
         "/api/v1/rebalance/pm-operating-quality/review-actions",
         "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
+        "/api/v1/rebalance/portfolio-memory/search",
         "/api/v1/rebalance/portfolio-memory/{portfolio_id}",
     ]
     assert pm_quality["lineage_policy"]["lineage_required"] is True

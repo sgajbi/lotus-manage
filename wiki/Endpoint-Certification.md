@@ -1972,6 +1972,7 @@ python -m ruff check scripts/generate_rfc0042_outcome_evidence.py src/api/router
 
 Route:
 
+- `GET /api/v1/rebalance/portfolio-memory/search`
 - `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`
 
 Purpose:
@@ -1986,6 +1987,12 @@ risk/performance, execution, tax, cash, FX, construction, or order-routing calcu
 
 Functional behavior:
 
+- searches a bounded Manage-local portfolio-memory index across persisted proof packs, rebalance
+  waves, monitoring exceptions, outcome reviews, and optional caller-supplied portfolio ids,
+- filters the search index by event type, supportability state, and represented source system,
+- returns search summaries with event counts, event-type counts, latest event posture, source
+  systems, reason codes, content hash, total count, scanned portfolio count, and an explicit support
+  boundary,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
@@ -2011,6 +2018,8 @@ Non-functional posture:
 
 - Read-only and side-effect free.
 - Uses bounded `limit` validation to protect response size.
+- The search route is not global portfolio-universe discovery; it scans only Manage-local persisted
+  evidence plus explicit caller-supplied portfolio ids.
 - Does not expose raw upstream payloads.
 - Does not recalculate construction, risk, performance, tax, cash, FX, or execution methodology
   from construction alternative events.

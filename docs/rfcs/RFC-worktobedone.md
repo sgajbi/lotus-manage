@@ -690,7 +690,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
-| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus construction alternatives, report, AI, archive, PM-quality lineage, and structured external execution boundary evidence | Manage/Gateway/Workbench portfolio memory, persisted construction alternative set and selected-alternative lineage, report-owned source events, AI workflow-pack source events, archive generated-document/client-delivery source events, bounded PM quality score-run lineage, explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred source-event posture, and `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence exist. Full OMS execution/acknowledgement/fill/settlement event projection and broader cross-app search/discovery remain future source-owner scope. |
+| RFC37-WTBD-007 | Portfolio memory across mandate, construction, proof-pack, wave, outcome, report, AI, and generated-document events | Cross-app, with manage as workflow/evidence participant | Partially implemented first-wave read model plus bounded Manage-local search, construction alternatives, report, AI, archive, PM-quality lineage, and structured external execution boundary evidence | Manage/Gateway/Workbench portfolio memory, bounded Manage-local `GET /api/v1/rebalance/portfolio-memory/search`, persisted construction alternative set and selected-alternative lineage, report-owned source events, AI workflow-pack source events, archive generated-document/client-delivery source events, bounded PM quality score-run lineage, explicit fail-closed `ExternalOrderExecutionAcknowledgement:v1` deferred source-event posture, and `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence exist. Full OMS execution/acknowledgement/fill/settlement event projection, global portfolio-universe discovery, and broader cross-app source-event search/discovery remain future source-owner scope. |
 
 ### RFC37 Gold-Pass Audit And RFC Reintegration - 2026-05-09
 
@@ -1049,6 +1049,13 @@ rebalance wave events, internal operations handoffs, outcome-review events, and 
 archive publish their own source-event family postures, while Manage records source-family posture
 without reconstructing their events.
 
+Manage now also exposes `GET /api/v1/rebalance/portfolio-memory/search` as a bounded
+Manage-local portfolio-memory index over persisted proof packs, rebalance waves, monitoring
+exceptions, outcome reviews, and explicit caller-supplied portfolio identifiers. The index returns
+summary counts, latest event posture, supportability, source systems, reason codes, and content
+hashes without discovering the global portfolio universe, querying external source-owner event
+stores, projecting OMS acknowledgement/fill/settlement events, or recalculating source truth.
+
 The construction-memory slice adds `CONSTRUCTION_ALTERNATIVE_SET` and
 `CONSTRUCTION_ALTERNATIVE_SELECTED` events from the persisted RFC-0039 construction repository.
 The projection preserves alternative set id, selected alternative id, method counts, input mode,
@@ -1068,10 +1075,10 @@ family.
 
 Why work remains:
 
-RFC-0037's full portfolio-memory ambition still needs broader cross-app event discovery and search,
-source-owner events outside the persisted Manage construction repository, and bank-owned OMS
-execution/acknowledgement/fill/settlement event families. Those cannot be fabricated in Manage
-from source-product supportability posture.
+RFC-0037's full portfolio-memory ambition still needs global portfolio-universe discovery, broader
+cross-app source-event discovery and search, source-owner events outside persisted Manage evidence,
+and bank-owned OMS execution/acknowledgement/fill/settlement event families. Those cannot be
+fabricated in Manage from source-product supportability posture.
 
 Dependencies before implementation:
 

@@ -131,6 +131,10 @@ AI, and archive families, explicitly marks OMS execution as deferred, and points
 separate Manage-owned PM operating quality score-run lifecycle product. Persisted PM quality score
 runs with source-owned Core PM-book membership now project bounded portfolio-memory lineage events
 for matching portfolios without copying raw score payloads or creating portfolio-level rankings. The
+portfolio-memory API also exposes `GET /api/v1/rebalance/portfolio-memory/search` as a bounded
+Manage-local index over persisted proof-pack, wave, monitoring-exception, outcome-review, and
+explicit caller-supplied portfolio identifiers; it is not global portfolio-universe discovery and
+does not project OMS acknowledgement, fill, settlement, or execution-status events. The
 portfolio-memory response also carries structured
 `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked OMS capabilities, the
 required future execution/OMS owner, and `ExternalOrderExecutionAcknowledgement:v1` as the required

@@ -643,6 +643,87 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     )
 
 
+def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_discovery() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    construction_repository = _construction_repository()
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
+    app.dependency_overrides[get_construction_repository] = lambda: construction_repository
+    app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
+    app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: pm_quality_repository
+    app.openapi_schema = None
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={
+                "event_type": "WAVE_HANDOFF_READY",
+                "source_system": "lotus-manage",
+                "limit": 10,
+            },
+        )
+        openapi = client.get("/openapi.json")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["returned_count"] == 1
+    assert payload["total_count"] == 1
+    assert payload["scanned_portfolio_count"] == 1
+    assert payload["items"][0]["portfolio_id"] == PORTFOLIO_ID
+    assert payload["items"][0]["event_count"] >= 6
+    assert payload["items"][0]["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
+    assert payload["items"][0]["latest_event_time"] is not None
+    assert payload["items"][0]["content_hash"].startswith("sha256:")
+    assert "does not discover the global portfolio universe" in payload["support_boundary"]
+    assert "project OMS" in payload["support_boundary"]
+    assert openapi.status_code == 200
+    openapi_json = openapi.json()
+    assert "/api/v1/rebalance/portfolio-memory/search" in openapi_json["paths"]
+    search_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchPage"]
+    assert (
+        "global portfolio-universe discovery product"
+        in (search_schema["properties"]["items"]["description"])
+    )
+
+
+def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
+    proof_pack_repository = InMemoryDpmProofPackRepository()
+    wave_repository = InMemoryDpmWaveRepository()
+    outcome_repository = InMemoryDpmOutcomeReviewRepository()
+    mandate_repository = InMemoryDpmMandateRepository()
+    construction_repository = _construction_repository()
+    app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
+    app.dependency_overrides[get_construction_repository] = lambda: construction_repository
+    app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
+    app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={
+                "portfolio_ids": PORTFOLIO_ID,
+                "event_type": "CONSTRUCTION_ALTERNATIVE_SELECTED",
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["returned_count"] == 1
+    assert payload["scanned_portfolio_count"] == 1
+    assert payload["items"][0]["event_type_counts"] == {
+        "CONSTRUCTION_ALTERNATIVE_SET": 1,
+        "CONSTRUCTION_ALTERNATIVE_SELECTED": 1,
+    }
+    assert "lotus-manage" in payload["items"][0]["source_systems"]
+
+
 def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
     wave = _wave()
     outcome_ref = DpmOutcomeSourceRef(

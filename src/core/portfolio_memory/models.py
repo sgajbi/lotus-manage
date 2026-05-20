@@ -233,3 +233,58 @@ class DpmPortfolioMemory(BaseModel):
     )
     content_hash: str = Field(description="Canonical hash of the returned memory view.")
     generated_at: str = Field(description="UTC timestamp when the read model was generated.")
+
+
+class DpmPortfolioMemorySearchItem(BaseModel):
+    portfolio_id: str = Field(
+        description="Portfolio identifier represented in the Manage-local memory index.",
+        examples=["PB_SG_GLOBAL_BAL_001"],
+    )
+    event_count: int = Field(description="Returned memory event count for this portfolio.")
+    supportability_state: PortfolioMemorySupportabilityState = Field(
+        description="Worst supportability state represented by this portfolio's memory events."
+    )
+    event_type_counts: dict[str, int] = Field(
+        description="Returned event count by portfolio-memory event type."
+    )
+    source_systems: list[str] = Field(
+        description="Source systems represented by this portfolio's returned events."
+    )
+    reason_codes: list[str] = Field(description="Bounded aggregate reason codes.")
+    latest_event_time: str | None = Field(
+        default=None,
+        description="Latest event timestamp in the returned portfolio-memory view.",
+    )
+    latest_event_type: PortfolioMemoryEventType | None = Field(
+        default=None,
+        description="Latest event type in the returned portfolio-memory view.",
+    )
+    content_hash: str = Field(description="Canonical hash of the portfolio-memory view.")
+
+
+class DpmPortfolioMemorySearchPage(BaseModel):
+    items: list[DpmPortfolioMemorySearchItem] = Field(
+        description=(
+            "Bounded page of Manage-local portfolio-memory summaries. The page indexes only "
+            "persisted Manage evidence and caller-supplied portfolio identifiers; it is not a "
+            "global portfolio-universe discovery product."
+        )
+    )
+    limit: int = Field(description="Requested page size.", examples=[50])
+    offset: int = Field(description="Requested page offset.", examples=[0])
+    returned_count: int = Field(description="Number of search items returned.", examples=[1])
+    total_count: int = Field(
+        description="Total matching Manage-local portfolio-memory summaries before pagination.",
+        examples=[1],
+    )
+    scanned_portfolio_count: int = Field(
+        description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
+        examples=[3],
+    )
+    generated_at: str = Field(description="UTC timestamp when the search page was generated.")
+    support_boundary: str = Field(
+        description=("Explicit no-claim boundary for the bounded memory search surface."),
+        examples=[
+            "Manage-local memory search does not discover the global portfolio universe or project OMS events."
+        ],
+    )
