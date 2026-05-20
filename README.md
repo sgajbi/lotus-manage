@@ -247,6 +247,15 @@ compares segment average scores against a governed spread threshold, persists co
 evidence immutably, and returns stored evidence without recomputing score runs. It does not infer
 protected classes, rank PMs, or create HR, compensation, conduct, approval, client-contact,
 execution, or OMS decisions. Downstream UI remains future expansion.
+The review-action route family now supports preview and immutable create/read/list lifecycle at
+`POST /api/v1/rebalance/pm-operating-quality/review-actions/preview`,
+`POST /api/v1/rebalance/pm-operating-quality/review-actions`,
+`GET /api/v1/rebalance/pm-operating-quality/review-actions`, and
+`GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`. It emits
+bounded `PmOperatingQualityReviewAction:v1` ledger rows over existing score-run or
+fairness-analysis evidence, preserving target content hashes and bank review references without
+mutating score runs, recomputing fairness posture, ranking PMs, creating HR/compensation/conduct
+decisions, contacting clients, approving trades, routing orders, or claiming OMS execution.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,

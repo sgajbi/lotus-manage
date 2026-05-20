@@ -238,6 +238,12 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
         "/api/v1/rebalance/pm-operating-quality/score-runs",
         "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+        "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+        "/api/v1/rebalance/pm-operating-quality/review-actions",
+        "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
         "/api/v1/rebalance/portfolio-memory/{portfolio_id}",
     ]
     assert pm_quality["lineage_policy"]["lineage_required"] is True
@@ -248,6 +254,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     )
     assert (
         "Portfolio memory projects bounded score-run lineage"
+        in (pm_quality["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "Review actions are immutable ledger rows"
         in (pm_quality["freshness_policy"]["max_allowed_age_description"])
     )
 

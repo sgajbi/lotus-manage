@@ -6,6 +6,7 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
+    DpmPmQualityReviewAction,
 )
 
 
@@ -15,6 +16,10 @@ class DpmPmQualityScoreRunConflictError(Exception):
 
 class DpmPmQualityFairnessAnalysisConflictError(Exception):
     """Raised when immutable fairness-analysis identity conflicts."""
+
+
+class DpmPmQualityReviewActionConflictError(Exception):
+    """Raised when immutable review-action identity conflicts."""
 
 
 class DpmPmQualityPolicyConflictError(Exception):
@@ -92,3 +97,28 @@ class DpmPmQualityFairnessAnalysisRepository(Protocol):
         offset: int = 0,
     ) -> list[DpmPmQualityFairnessAnalysis]:
         """Return a bounded page of persisted fairness analyses."""
+
+
+class DpmPmQualityReviewActionRepository(Protocol):
+    def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+        """Persist an immutable PM operating-quality review action."""
+
+    def get_review_action(
+        self,
+        *,
+        review_action_id: str,
+    ) -> DpmPmQualityReviewAction | None:
+        """Return a review action by id, or None when absent."""
+
+    def list_review_actions(
+        self,
+        *,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        action_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityReviewAction]:
+        """Return a bounded page of persisted review actions."""

@@ -1021,12 +1021,14 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "DpmOutcomeReportInput" in rfc
     assert "DpmOutcomeAiEvidenceInput" in rfc
     assert (
-        "PM operating quality policy, score-run, and fairness-analysis lifecycle | Supported as "
+        "PM operating quality policy, score-run, fairness-analysis, and review-action lifecycle | Supported as "
         "separate Manage-owned first-wave product"
     ) in rfc
     assert "PmOperatingQualityScoreRun:v1" in rfc
     assert "PmOperatingQualityFairnessAnalysis:v1" in rfc
+    assert "PmOperatingQualityReviewAction:v1" in rfc
     assert "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview" in rfc
+    assert "/api/v1/rebalance/pm-operating-quality/review-actions/preview" in rfc
     assert "/api/v1/rebalance/pm-operating-quality/score-runs/preview" in rfc
     assert "PortfolioManagerBookMembership:v1" in rfc
     assert "pm_book_scope" in rfc
@@ -1430,7 +1432,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality product realization are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality product realization are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
@@ -1438,9 +1440,15 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         in work_to_be_done
     )
     assert "2026-05-16 fairness-analysis lifecycle addendum" in work_to_be_done
+    assert "2026-05-20 PM-quality review-action ledger addendum" in work_to_be_done
     assert "`POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`" in work_to_be_done
+    assert "`POST /api/v1/rebalance/pm-operating-quality/review-actions`" in work_to_be_done
     assert (
         "`GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`"
+        in work_to_be_done
+    )
+    assert (
+        "`GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`"
         in work_to_be_done
     )
     assert "book_scope_evidence" in work_to_be_done

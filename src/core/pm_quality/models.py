@@ -40,6 +40,26 @@ PmQualityFairnessSegmentType = Literal[
     "CUSTOM_SOURCE_SEGMENT",
 ]
 
+PmQualityReviewActionTargetType = Literal[
+    "SCORE_RUN",
+    "FAIRNESS_ANALYSIS",
+]
+
+PmQualityReviewActionType = Literal[
+    "ACKNOWLEDGE",
+    "REQUEST_EVIDENCE_REMEDIATION",
+    "ACCEPT_GOVERNANCE_EXCEPTION",
+    "ESCALATE_MODEL_RISK_REVIEW",
+    "CLOSE_REVIEW",
+]
+
+PmQualityReviewActionState = Literal[
+    "RECORDED",
+    "REVIEW_REQUIRED",
+    "ESCALATED",
+    "CLOSED",
+]
+
 
 class DpmPmQualityWeight(BaseModel):
     """One configured scoring dimension for PM operating quality."""
@@ -493,4 +513,79 @@ class DpmPmQualityFairnessAnalysis(BaseModel):
     content_hash: str = Field(description="Canonical fairness-analysis content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
     generated_by: str = Field(description="Actor or service that generated the analysis.")
+    correlation_id: str = Field(description="Correlation identifier.")
+
+
+class DpmPmQualityReviewAction(BaseModel):
+    """Immutable PM operating-quality review action over existing governed evidence."""
+
+    product_name: Literal["PmOperatingQualityReviewAction"] = Field(
+        default="PmOperatingQualityReviewAction",
+        description="Domain data product name emitted by lotus-manage.",
+    )
+    product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    review_action_id: str = Field(description="Stable content-addressed review-action identifier.")
+    review_action_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, committee, ticket, or evidence reference for this action.",
+        examples=["PMQ-REVIEW-2026-05-001"],
+    )
+    target_type: PmQualityReviewActionTargetType = Field(
+        description="PM operating-quality product family reviewed by this action."
+    )
+    target_id: str = Field(description="Persisted score-run or fairness-analysis identifier.")
+    target_content_hash: str = Field(description="Content hash of the reviewed evidence record.")
+    policy_id: str = Field(description="Policy identifier on the reviewed evidence.")
+    policy_version: str = Field(description="Policy version on the reviewed evidence.")
+    as_of_date: str = Field(description="Business as-of date on the reviewed evidence.")
+    target_state: PmQualityState = Field(description="State of the reviewed evidence.")
+    action_type: PmQualityReviewActionType = Field(description="Bounded review action.")
+    action_state: PmQualityReviewActionState = Field(
+        description="Bounded review-action state derived from action_type."
+    )
+    review_reason: str = Field(
+        min_length=1,
+        description="Human-authored review rationale or decision note.",
+    )
+    remediation_due_date: str | None = Field(
+        default=None,
+        description="Optional due date for evidence remediation or follow-up review.",
+        examples=["2026-06-15"],
+    )
+    actor_id: str = Field(
+        min_length=1,
+        description="Actor or service recording the review action.",
+    )
+    reason_codes: list[str] = Field(description="Bounded review-action reason codes.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Target evidence ref plus any bank review-action source refs."
+    )
+    forbidden_uses: list[str] = Field(
+        default_factory=lambda: [
+            "compensation_decision",
+            "hr_decision",
+            "conduct_enforcement",
+            "client_contact",
+            "trade_approval",
+            "order_routing",
+            "oms_execution",
+            "autonomous_pm_ranking",
+        ],
+        description="Uses explicitly outside this product contract.",
+    )
+    operating_boundaries: list[str] = Field(
+        default_factory=lambda: [
+            "IMMUTABLE_REVIEW_ACTION_LEDGER",
+            "NO_SCORE_RECALCULATION",
+            "NO_FAIRNESS_RECOMPUTATION",
+            "NO_PM_RANKING",
+            "NO_HR_COMPENSATION_OR_CONDUCT_DECISION",
+            "NO_CLIENT_CONTACT",
+            "NO_TRADE_APPROVAL",
+            "NO_ORDER_OR_OMS_EXECUTION",
+        ],
+        description="Unsupported downstream claims the review action must not imply.",
+    )
+    content_hash: str = Field(description="Canonical review-action content hash.")
+    generated_at: datetime = Field(description="UTC generation timestamp.")
     correlation_id: str = Field(description="Correlation identifier.")

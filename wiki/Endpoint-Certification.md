@@ -2065,7 +2065,7 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: PM operating quality policy, score-run, and fairness-analysis lifecycle
+## Certified endpoint: PM operating quality policy, score-run, fairness-analysis, and review-action lifecycle
 
 Route:
 
@@ -2080,6 +2080,10 @@ Route:
 - `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`
 - `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses`
 - `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`
+- `POST /api/v1/rebalance/pm-operating-quality/review-actions/preview`
+- `POST /api/v1/rebalance/pm-operating-quality/review-actions`
+- `GET /api/v1/rebalance/pm-operating-quality/review-actions`
+- `GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`
 
 Purpose:
 
@@ -2091,7 +2095,9 @@ lotus-core `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidenc
 Enabled policies require bank approval and fairness-review evidence; score-run preview/create emits
 `governance_evidence`. The fairness-analysis route family emits and persists bounded
 `PmOperatingQualityFairnessAnalysis:v1` from persisted score-run ids and source-defined operating
-segments for governance review.
+segments for governance review. The review-action route family emits and persists bounded
+`PmOperatingQualityReviewAction:v1` ledger rows over existing score-run or fairness-analysis
+evidence without mutating the reviewed evidence.
 
 Functional coverage:
 
@@ -2117,6 +2123,10 @@ Functional coverage:
   generated content hash, and forbidden-use posture,
 - persisted fairness analyses are immutable, content-addressed, listable by policy/as-of/state,
   and retrievable without recomputing score runs or segment posture,
+- review-action preview/create validates a persisted score-run or fairness-analysis target,
+  preserves target content hash, records a bounded bank review action, review reference, actor,
+  rationale, correlation id, source refs, generated content hash, forbidden-use posture, and
+  immutable/listable/retrievable ledger evidence without mutating target records,
 - portfolio memory advertises PM scoring as a separate product and projects only bounded
   source-backed score-run lineage events without numeric score metadata.
 
@@ -2129,8 +2139,9 @@ Non-functional posture:
 - Fairness-analysis preview/create/read/list does not infer protected classes, discover segments
   locally, rank PMs, or create HR, compensation, conduct, approval, client-contact, execution, or
   OMS decisions.
-- Downstream UI and Gateway/Workbench fairness-analysis product realization remain future
-  expansion.
+- Review-action preview/create/read/list does not recalculate scores, recompute fairness posture,
+  rank PMs, create HR, compensation, conduct, client-contact, trade, order, OMS, or execution
+  decisions.
 
 Evidence commands:
 

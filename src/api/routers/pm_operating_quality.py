@@ -18,6 +18,7 @@ from src.api.dependencies import (
     get_pm_quality_fairness_analysis_repository,
     get_outcome_review_repository,
     get_pm_quality_policy_repository,
+    get_pm_quality_review_action_repository,
     get_pm_quality_score_run_repository,
 )
 from src.core.outcomes import DpmOutcomeSourceRef
@@ -32,11 +33,18 @@ from src.core.pm_quality import (
     DpmPmQualityEvidenceItem,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
+    DpmPmQualityReviewAction,
+    DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
     DpmPmQualityValidationError,
     PmQualityFairnessSegmentType,
+    PmQualityReviewActionState,
+    PmQualityReviewActionTargetType,
+    PmQualityReviewActionType,
     build_pm_operating_quality_score_run,
+    build_pm_quality_review_action,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 
@@ -230,6 +238,67 @@ class DpmPmQualityFairnessAnalysisListResponse(BaseModel):
         description="Bounded page of persisted PM operating quality fairness analyses."
     )
     count: int = Field(description="Number of fairness analyses returned.")
+    limit: int = Field(description="Requested page size.")
+    offset: int = Field(description="Requested page offset.")
+
+
+class DpmPmQualityReviewActionRequest(BaseModel):
+    target_type: PmQualityReviewActionTargetType = Field(
+        description="PM operating-quality product family reviewed by this action.",
+        examples=["SCORE_RUN"],
+    )
+    target_id: str = Field(
+        min_length=1,
+        description="Persisted score-run or fairness-analysis identifier.",
+    )
+    action_type: PmQualityReviewActionType = Field(
+        description="Bounded bank review action.",
+        examples=["REQUEST_EVIDENCE_REMEDIATION"],
+    )
+    review_action_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, committee, ticket, or evidence reference for this action.",
+        examples=["PMQ-REVIEW-2026-05-001"],
+    )
+    review_reason: str = Field(
+        min_length=1,
+        description="Human-authored review rationale or decision note.",
+    )
+    remediation_due_date: str | None = Field(
+        default=None,
+        description="Optional due date for evidence remediation or follow-up review.",
+        examples=["2026-06-15"],
+    )
+    actor_id: str = Field(
+        min_length=1,
+        description="Actor or service recording the review action.",
+    )
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        default_factory=list,
+        description="Bank review-action source refs, such as committee minutes or tickets.",
+    )
+
+    @model_validator(mode="after")
+    def validate_review_action_request(self) -> "DpmPmQualityReviewActionRequest":
+        if self.remediation_due_date is not None:
+            try:
+                date.fromisoformat(self.remediation_due_date)
+            except ValueError as exc:
+                raise ValueError("remediation_due_date must be an ISO date") from exc
+        return self
+
+
+class DpmPmQualityReviewActionResponse(BaseModel):
+    review_action: DpmPmQualityReviewAction = Field(
+        description="Immutable PM operating-quality review action."
+    )
+
+
+class DpmPmQualityReviewActionListResponse(BaseModel):
+    review_actions: list[DpmPmQualityReviewAction] = Field(
+        description="Bounded page of persisted PM operating quality review actions."
+    )
+    count: int = Field(description="Number of review actions returned.")
     limit: int = Field(description="Requested page size.")
     offset: int = Field(description="Requested page offset.")
 
@@ -472,6 +541,170 @@ def get_pm_quality_fairness_analysis_endpoint(
             detail=f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{fairness_analysis_id}",
         )
     return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)
+
+
+@router.post(
+    "/review-actions/preview",
+    response_model=DpmPmQualityReviewActionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Preview PM operating quality review action",
+    description=(
+        "What: Build an immutable PM operating-quality review action over an existing persisted "
+        "score run or fairness analysis without saving it.\n"
+        "When: Use for supervisory, model-risk, evidence-remediation, or governance review before "
+        "recording the action.\n"
+        "How: Supply a persisted score-run or fairness-analysis id, a bounded action type, a bank "
+        "review reference, rationale, actor, and optional source refs. The response preserves the "
+        "target content hash and does not recalculate scores, recompute fairness, rank PMs, create "
+        "HR/compensation/conduct decisions, contact clients, approve trades, route orders, or "
+        "claim OMS execution."
+    ),
+)
+def preview_pm_quality_review_action_endpoint(
+    request: DpmPmQualityReviewActionRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(description="Optional correlation id.", examples=["corr-pmq-review-001"]),
+    ] = None,
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
+        get_pm_quality_fairness_analysis_repository
+    ),
+) -> DpmPmQualityReviewActionResponse:
+    review_action = _build_review_action(
+        request=request,
+        x_correlation_id=x_correlation_id,
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+    )
+    return DpmPmQualityReviewActionResponse(review_action=review_action)
+
+
+@router.post(
+    "/review-actions",
+    response_model=DpmPmQualityReviewActionResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create persisted PM operating quality review action",
+    description=(
+        "What: Build and persist an immutable PM operating-quality review action over an existing "
+        "score run or fairness analysis.\n"
+        "When: Use when a bank needs auditable review, remediation, escalation, exception, or "
+        "closure evidence for PM operating-quality outputs.\n"
+        "How: Supply the same contract as preview. The action is content-addressed and can be "
+        "listed or retrieved for governance review. It does not mutate the reviewed score run or "
+        "fairness analysis and does not create HR, compensation, conduct, client-contact, trade, "
+        "order, OMS, or autonomous-ranking decisions."
+    ),
+)
+def create_pm_quality_review_action_endpoint(
+    request: DpmPmQualityReviewActionRequest,
+    x_correlation_id: Annotated[
+        str | None,
+        Header(description="Optional correlation id.", examples=["corr-pmq-review-create"]),
+    ] = None,
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
+        get_pm_quality_fairness_analysis_repository
+    ),
+    review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+) -> DpmPmQualityReviewActionResponse:
+    review_action = _build_review_action(
+        request=request,
+        x_correlation_id=x_correlation_id,
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+    )
+    try:
+        review_action_repository.save_review_action(action=review_action)
+    except DpmPmQualityReviewActionConflictError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    return DpmPmQualityReviewActionResponse(review_action=review_action)
+
+
+@router.get(
+    "/review-actions",
+    response_model=DpmPmQualityReviewActionListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="List persisted PM operating quality review actions",
+    description=(
+        "What: Return a bounded page of persisted PM operating-quality review actions.\n"
+        "When: Use for supervisory control, model-risk review, audit, and supportability "
+        "diagnostics.\n"
+        "How: Filter by target, policy, as-of date, or action state. The response returns stored "
+        "review-action evidence only and does not recompute or mutate score runs or fairness "
+        "analyses."
+    ),
+)
+def list_pm_quality_review_actions_endpoint(
+    target_type: Annotated[
+        PmQualityReviewActionTargetType | None,
+        Query(description="Filter by reviewed product family."),
+    ] = None,
+    target_id: Annotated[str | None, Query(description="Filter by reviewed evidence id.")] = None,
+    policy_id: Annotated[str | None, Query(description="Filter by policy id.")] = None,
+    as_of_date: Annotated[str | None, Query(description="Filter by business as-of date.")] = None,
+    action_state: Annotated[
+        PmQualityReviewActionState | None,
+        Query(description="Filter by bounded review-action state."),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
+    offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
+    repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+) -> DpmPmQualityReviewActionListResponse:
+    review_actions = repository.list_review_actions(
+        target_type=target_type,
+        target_id=target_id,
+        policy_id=policy_id,
+        as_of_date=as_of_date,
+        action_state=action_state,
+        limit=limit,
+        offset=offset,
+    )
+    return DpmPmQualityReviewActionListResponse(
+        review_actions=review_actions,
+        count=len(review_actions),
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.get(
+    "/review-actions/{review_action_id}",
+    response_model=DpmPmQualityReviewActionResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get persisted PM operating quality review action",
+    description=(
+        "What: Return one persisted PM operating-quality review action by stable id.\n"
+        "When: Use for audit, supervisory control, model-risk review, and downstream governance "
+        "evidence retrieval.\n"
+        "How: The endpoint returns immutable stored review-action evidence and does not recompute "
+        "or mutate the reviewed score run or fairness analysis."
+    ),
+)
+def get_pm_quality_review_action_endpoint(
+    review_action_id: str,
+    repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+) -> DpmPmQualityReviewActionResponse:
+    review_action = repository.get_review_action(review_action_id=review_action_id)
+    if review_action is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"PM_QUALITY_REVIEW_ACTION_NOT_FOUND:{review_action_id}",
+        )
+    return DpmPmQualityReviewActionResponse(review_action=review_action)
 
 
 @router.put(
@@ -721,6 +954,47 @@ def _build_fairness_analysis(
         raise HTTPException(
             status_code=status_code,
             detail=exc.code,
+        ) from exc
+
+
+def _build_review_action(
+    *,
+    request: DpmPmQualityReviewActionRequest,
+    x_correlation_id: str | None,
+    score_run_repository: DpmPmQualityScoreRunRepository,
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository,
+) -> DpmPmQualityReviewAction:
+    target: DpmPmOperatingQualityScoreRun | DpmPmQualityFairnessAnalysis | None
+    if request.target_type == "SCORE_RUN":
+        target = score_run_repository.get_score_run(score_run_id=request.target_id)
+        if target is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{request.target_id}",
+            )
+    else:
+        target = fairness_repository.get_fairness_analysis(fairness_analysis_id=request.target_id)
+        if target is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{request.target_id}",
+            )
+    try:
+        return build_pm_quality_review_action(
+            target=target,
+            target_type=request.target_type,
+            action_type=request.action_type,
+            review_action_ref=request.review_action_ref,
+            review_reason=request.review_reason,
+            actor_id=request.actor_id,
+            source_refs=request.source_refs,
+            remediation_due_date=request.remediation_due_date,
+            correlation_id=x_correlation_id or request.actor_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
         ) from exc
 
 

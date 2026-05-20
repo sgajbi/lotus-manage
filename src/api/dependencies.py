@@ -12,6 +12,7 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityPolicyRepository,
+    DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunRepository,
 )
 from src.core.waves.repository import DpmWaveRepository
@@ -30,9 +31,11 @@ from src.infrastructure.outcomes import (
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityPolicyRepository,
+    InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
     PostgresDpmPmQualityFairnessAnalysisRepository,
     PostgresDpmPmQualityPolicyRepository,
+    PostgresDpmPmQualityReviewActionRepository,
     PostgresDpmPmQualityScoreRunRepository,
 )
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
@@ -51,6 +54,7 @@ _OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
 _PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
 _PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY = InMemoryDpmPmQualityFairnessAnalysisRepository()
+_PM_QUALITY_REVIEW_ACTION_REPOSITORY = InMemoryDpmPmQualityReviewActionRepository()
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
@@ -62,6 +66,9 @@ _POSTGRES_PM_QUALITY_SCORE_RUN_REPOSITORY: PostgresDpmPmQualityScoreRunRepositor
 _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY: (
     PostgresDpmPmQualityFairnessAnalysisRepository | None
 ) = None
+_POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY: PostgresDpmPmQualityReviewActionRepository | None = (
+    None
+)
 _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
 _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY: (
     PostgresDpmBulkReviewCampaignDefinitionRepository | None
@@ -164,6 +171,20 @@ def get_pm_quality_fairness_analysis_repository() -> DpmPmQualityFairnessAnalysi
             )
         return _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY
     return _PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY
+
+
+def get_pm_quality_review_action_repository() -> DpmPmQualityReviewActionRepository:
+    """Return the PM operating quality review-action repository for local and test runtimes."""
+
+    dsn = _repository_dsn("DPM_PM_QUALITY_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY
+        if _POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY is None:
+            _POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY = (
+                PostgresDpmPmQualityReviewActionRepository(dsn=dsn)
+            )
+        return _POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY
+    return _PM_QUALITY_REVIEW_ACTION_REPOSITORY
 
 
 def get_wave_repository() -> DpmWaveRepository:

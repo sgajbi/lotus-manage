@@ -16,6 +16,7 @@ from src.core.pm_quality import (
     DpmPmQualityWeight,
     build_pm_operating_quality_fairness_analysis,
     build_pm_operating_quality_score_run,
+    build_pm_quality_review_action,
 )
 from src.core.pm_quality import scoring
 from tests.unit.infrastructure.test_outcome_review_repository import _review
@@ -187,6 +188,42 @@ def test_pm_operating_quality_score_run_is_disabled_by_default() -> None:
     assert score_run.reason_codes == ["PM_QUALITY_POLICY_DISABLED"]
     assert "compensation_decision" in score_run.forbidden_uses
     assert score_run.governance_evidence is None
+
+
+def test_pm_quality_review_action_records_bounded_target_evidence() -> None:
+    score_run = _ready_score_run()
+
+    action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="REQUEST_EVIDENCE_REMEDIATION",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Evidence remediation requested before supervisory closure.",
+        actor_id="ops",
+        source_refs=[
+            DpmOutcomeSourceRef(
+                source_system="bank-governance",
+                source_type="PM_QUALITY_REVIEW_MINUTES",
+                source_id="pmq-review-minutes-001",
+            )
+        ],
+        remediation_due_date="2026-06-15",
+        correlation_id="corr-review-action",
+    )
+
+    assert action.product_name == "PmOperatingQualityReviewAction"
+    assert action.review_action_id.startswith("pmq_review_")
+    assert action.target_type == "SCORE_RUN"
+    assert action.target_id == score_run.score_run_id
+    assert action.target_content_hash == score_run.content_hash
+    assert action.action_state == "REVIEW_REQUIRED"
+    assert action.reason_codes == [
+        "PM_QUALITY_REVIEW_ACTION_REQUEST_EVIDENCE_REMEDIATION",
+        "PM_QUALITY_REVIEW_ACTION_STATE_REVIEW_REQUIRED",
+    ]
+    assert any(ref.source_type == "PmOperatingQualityScoreRun" for ref in action.source_refs)
+    assert "NO_SCORE_RECALCULATION" in action.operating_boundaries
+    assert "compensation_decision" in action.forbidden_uses
 
 
 def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs() -> None:
