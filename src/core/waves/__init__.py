@@ -21,6 +21,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
     DpmBulkReviewCampaignDefinitionLaunchRecord,
+    DpmBulkReviewCampaignDefinitionMakerCheckerControl,
 )
 from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
@@ -59,6 +60,13 @@ from src.core.waves.campaign_assignment_actions import (
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
+)
+from src.core.waves.campaign_maker_checker_controls import (
+    CampaignMakerCheckerControlAction,
+    CampaignMakerCheckerControlOutcome,
+    DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
+    build_bulk_review_campaign_definition_maker_checker_control_page,
+    record_bulk_review_campaign_definition_maker_checker_control,
 )
 from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
@@ -131,6 +139,8 @@ __all__ = [
     "CampaignApprovalInboxStatus",
     "CampaignAssignmentEscalationTier",
     "CampaignAssignmentSlaPosture",
+    "CampaignMakerCheckerControlAction",
+    "CampaignMakerCheckerControlOutcome",
     "CampaignWorkflowBoardStatus",
     "CampaignWorkflowNextAction",
     "DpmRebalanceWaveEvent",
@@ -148,6 +158,8 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionConflictError",
     "DpmBulkReviewCampaignDefinitionGovernance",
     "DpmBulkReviewCampaignDefinitionLaunchRecord",
+    "DpmBulkReviewCampaignDefinitionMakerCheckerControl",
+    "DpmBulkReviewCampaignDefinitionMakerCheckerControlPage",
     "DpmBulkReviewCampaignDiscoveryItem",
     "DpmBulkReviewCampaignDiscoveryPage",
     "DpmBulkReviewCampaignDefinitionLifecycleEvent",
@@ -192,8 +204,10 @@ __all__ = [
     "build_bulk_review_campaign_definition_launch_command",
     "build_bulk_review_campaign_definition_approval_decision_page",
     "build_bulk_review_campaign_definition_assignment_action_page",
+    "build_bulk_review_campaign_definition_maker_checker_control_page",
     "record_bulk_review_campaign_definition_approval_decision",
     "record_bulk_review_campaign_definition_assignment_action",
+    "record_bulk_review_campaign_definition_maker_checker_control",
     "record_bulk_review_campaign_definition_launch",
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",

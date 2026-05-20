@@ -26,6 +26,10 @@ from src.core.waves.campaign_assignment_actions import (
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
+from src.core.waves.campaign_maker_checker_controls import (
+    build_bulk_review_campaign_definition_maker_checker_control_page,
+    record_bulk_review_campaign_definition_maker_checker_control,
+)
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -476,6 +480,120 @@ def test_campaign_definition_assignment_actions_are_append_only() -> None:
             sla_posture="ON_TRACK",
             correlation_id="corr-campaign-assignment-action-conflict",
         )
+
+
+def test_campaign_definition_maker_checker_controls_are_append_only() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+    reviewed = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=submitted,
+        control_action="REVIEW_COMPLETED",
+        control_ref="BRC-MC-2026-05-002",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        reviewer_actor_id="cio_ops_committee",
+        required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+        control_outcome="PASSED",
+        control_reason="Independent reviewer accepted the campaign definition evidence.",
+        correlation_id="corr-campaign-maker-checker-control-002",
+    )
+    replayed = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=reviewed,
+        control_action="REVIEW_COMPLETED",
+        control_ref="BRC-MC-2026-05-002",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        reviewer_actor_id="cio_ops_committee",
+        required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+        control_outcome="PASSED",
+        control_reason="Independent reviewer accepted the campaign definition evidence.",
+        correlation_id="corr-campaign-maker-checker-control-002",
+    )
+    returned = repository.record_definition_maker_checker_control(definition=reviewed)
+    page = build_bulk_review_campaign_definition_maker_checker_control_page(
+        definition=reviewed,
+        limit=50,
+        offset=0,
+    )
+
+    assert returned == reviewed
+    assert replayed == reviewed
+    assert reviewed.content_hash != definition.content_hash
+    assert len(reviewed.maker_checker_controls) == 2
+    assert reviewed.maker_checker_controls[1].control_action == "REVIEW_COMPLETED"
+    assert "external_workflow_orchestration" in reviewed.maker_checker_controls[1].forbidden_actions
+    assert page.product_name == "BulkReviewCampaignDefinitionMakerCheckerControlPage"
+    assert page.latest_control_action == "REVIEW_COMPLETED"
+    assert page.current_control_outcome == "PASSED"
+    assert page.current_reviewer_actor_id == "cio_ops_committee"
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == reviewed
+    )
+
+
+def test_campaign_definition_maker_checker_repository_edges() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+
+    assert repository.record_definition_maker_checker_control(definition=submitted) is None
+
+    repository.save_definition(definition=submitted)
+    assert repository.record_definition_maker_checker_control(definition=submitted) == submitted
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    updated_retired = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-002",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-002",
+    )
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    repository.save_definition(definition=retired)
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        repository.record_definition_maker_checker_control(definition=updated_retired)
 
 
 def test_campaign_definition_launch_command_is_ready_only() -> None:
@@ -1089,6 +1207,124 @@ def test_postgres_campaign_definition_repository_records_assignment_actions() ->
 
     assert repository.record_definition_assignment_action(definition=assigned) == assigned
     assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_maker_checker_controls() -> None:
+    definition = _definition()
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.record_definition_maker_checker_control(definition=submitted) == submitted
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_maker_checker_control_edges() -> None:
+    definition = _definition()
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    missing_connection = _Connection([_Cursor(row=None)])
+    repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
+    assert repository.record_definition_maker_checker_control(definition=submitted) is None
+    assert missing_connection.rolled_back is True
+
+    replay_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": submitted.content_hash,
+                    "payload_json": submitted.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: replay_connection  # type: ignore[attr-defined, method-assign]
+    assert repository.record_definition_maker_checker_control(definition=submitted) == submitted
+    assert replay_connection.rolled_back is True
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    inactive_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "RETIRED",
+                    "content_hash": retired.content_hash,
+                    "payload_json": retired.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: inactive_connection  # type: ignore[attr-defined, method-assign]
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        repository.record_definition_maker_checker_control(definition=submitted)
+    assert inactive_connection.rolled_back is True
+
+    update_cursor = _Cursor()
+    update_cursor.rowcount = 0
+    rowcount_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            update_cursor,
+        ]
+    )
+    repository._connect = lambda: rowcount_connection  # type: ignore[attr-defined, method-assign]
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        repository.record_definition_maker_checker_control(definition=submitted)
+    assert rowcount_connection.rolled_back is True
 
 
 def test_postgres_campaign_definition_repository_retirement_edges() -> None:

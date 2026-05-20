@@ -2725,6 +2725,109 @@ def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> No
     assert "maker_checker_workflow" in payload["assignment_actions"][0]["forbidden_actions"]
 
 
+def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        submitted = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "SUBMITTED_FOR_REVIEW",
+                "control_ref": "BRC-MC-2026-05-001",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "control_outcome": "PENDING",
+                "control_reason": "Campaign definition submitted for independent review.",
+                "correlation_id": "corr-campaign-maker-checker-control-001",
+            },
+        )
+        reviewed = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "REVIEW_COMPLETED",
+                "control_ref": "BRC-MC-2026-05-002",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "reviewer_actor_id": "cio_ops_committee",
+                "required_reviewer_role": "CIO_OPERATIONS_REVIEWER",
+                "control_outcome": "PASSED",
+                "control_reason": "Independent reviewer accepted the campaign evidence.",
+                "correlation_id": "corr-campaign-maker-checker-control-002",
+                "source_refs": [
+                    {
+                        "source_system": "workflow",
+                        "source_type": "CampaignMakerCheckerControl",
+                        "source_id": "BRC-MC-2026-05-002",
+                    }
+                ],
+            },
+        )
+        replay = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "REVIEW_COMPLETED",
+                "control_ref": "BRC-MC-2026-05-002",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "reviewer_actor_id": "cio_ops_committee",
+                "required_reviewer_role": "CIO_OPERATIONS_REVIEWER",
+                "control_outcome": "PASSED",
+                "control_reason": "Independent reviewer accepted the campaign evidence.",
+                "correlation_id": "corr-campaign-maker-checker-control-002",
+                "source_refs": [
+                    {
+                        "source_system": "workflow",
+                        "source_type": "CampaignMakerCheckerControl",
+                        "source_id": "BRC-MC-2026-05-002",
+                    }
+                ],
+            },
+        )
+        same_actor = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "REVIEW_COMPLETED",
+                "control_ref": "BRC-MC-2026-05-003",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "reviewer_actor_id": "pm_001",
+                "control_outcome": "PASSED",
+                "control_reason": "Invalid same actor review.",
+                "correlation_id": "corr-campaign-maker-checker-control-same-actor",
+            },
+        )
+        listed = client.get(f"{route}/maker-checker-controls")
+
+    assert put_response.status_code == 200
+    assert submitted.status_code == 201
+    assert reviewed.status_code == 201
+    assert replay.status_code == 201
+    assert len(replay.json()["maker_checker_controls"]) == 2
+    assert same_actor.status_code == 422
+    assert (
+        same_actor.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED"
+    )
+
+    payload = listed.json()
+    assert listed.status_code == 200
+    assert payload["product_name"] == "BulkReviewCampaignDefinitionMakerCheckerControlPage"
+    assert payload["count"] == 2
+    assert payload["latest_control_action"] == "REVIEW_COMPLETED"
+    assert payload["current_control_outcome"] == "PASSED"
+    assert payload["current_reviewer_actor_id"] == "cio_ops_committee"
+    assert "oms_execution" in payload["maker_checker_controls"][0]["forbidden_actions"]
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())
