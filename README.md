@@ -283,8 +283,11 @@ When `pm_book_scope` is supplied, score-run preview/create materializes source-o
 `PortfolioManagerBookMembership:v1` evidence, records `book_scope_evidence` including bounded
 member portfolio ids, and fails closed for unavailable, incomplete, degraded, or empty PM-book
 membership. Persisted source-backed score runs are visible in portfolio memory as
-`PM_QUALITY_SCORE_RUN` lineage events only. The fairness-analysis route family now supports preview
-and immutable create/read/list lifecycle at
+`PM_QUALITY_SCORE_RUN` lineage events. Review actions over those score runs are visible as bounded
+`PM_QUALITY_REVIEW_ACTION` supervisory events that preserve target identity, hashes, states, source
+refs, actor, and action posture without projecting raw rationale, score values, PM rankings,
+client-contact, trade, order, OMS, or execution claims. The fairness-analysis route family now
+supports preview and immutable create/read/list lifecycle at
 `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`,
 `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`,
 `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses`, and

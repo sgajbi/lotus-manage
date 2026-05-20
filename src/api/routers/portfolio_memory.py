@@ -9,6 +9,7 @@ from src.api.dependencies import (
     get_campaign_definition_repository,
     get_mandate_repository,
     get_outcome_review_repository,
+    get_pm_quality_review_action_repository,
     get_pm_quality_score_run_repository,
     get_proof_pack_repository,
     get_wave_repository,
@@ -16,7 +17,10 @@ from src.api.dependencies import (
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.core.pm_quality.repository import DpmPmQualityScoreRunRepository
+from src.core.pm_quality.repository import (
+    DpmPmQualityReviewActionRepository,
+    DpmPmQualityScoreRunRepository,
+)
 from src.core.portfolio_memory import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.models import PortfolioMemorySupportabilityState
 from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
@@ -48,7 +52,7 @@ router = APIRouter(
         "the global portfolio universe, "
         "query external source-owner event stores, project OMS acknowledgement/fill/settlement "
         "events, or recalculate risk, performance, execution, tax, cash, FX, mandate-health, "
-        "PM-quality score, report, archive, or AI truth."
+        "PM-quality score/review-action, report, archive, or AI truth."
     ),
 )
 def search_portfolio_memory_index(
@@ -91,6 +95,9 @@ def search_portfolio_memory_index(
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -102,6 +109,7 @@ def search_portfolio_memory_index(
         mandate_repository=mandate_repository,
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
         campaign_definition_repository=campaign_definition_repository,
         portfolio_ids=portfolio_ids,
         event_type=event_type,
@@ -128,7 +136,7 @@ def search_portfolio_memory_index(
         "source refs, hashes, states, and reason codes, and "
         "publishes source-event family posture for supported and deferred source owners; it does "
         "not compute risk, performance, execution, tax, cash, mandate-health, PM quality scores, "
-        "or external order truth locally."
+        "PM review decisions, or external order truth locally."
     ),
 )
 def get_portfolio_memory(
@@ -142,6 +150,9 @@ def get_portfolio_memory(
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -154,6 +165,7 @@ def get_portfolio_memory(
         mandate_repository=mandate_repository,
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
         campaign_definition_repository=campaign_definition_repository,
         limit=limit,
     )

@@ -16,8 +16,14 @@ from src.core.mandates import (
     DpmSourceProductLineage,
 )
 from src.core.outcomes.models import DpmOutcomeEvent, DpmOutcomeSourceRef, DpmPostTradeOutcomeReview
-from src.core.pm_quality.models import DpmPmOperatingQualityScoreRun
-from src.core.pm_quality.repository import DpmPmQualityScoreRunRepository
+from src.core.pm_quality.models import (
+    DpmPmOperatingQualityScoreRun,
+    DpmPmQualityReviewAction,
+)
+from src.core.pm_quality.repository import (
+    DpmPmQualityReviewActionRepository,
+    DpmPmQualityScoreRunRepository,
+)
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
@@ -68,6 +74,7 @@ def build_portfolio_memory(
     mandate_repository: DpmMandateRepository | None = None,
     construction_repository: ConstructionRepository | None = None,
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository | None = None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None,
     limit: int = 100,
     generated_at: datetime | None = None,
@@ -132,6 +139,18 @@ def build_portfolio_memory(
                 limit=limit,
             )
         )
+    if (
+        pm_quality_score_run_repository is not None
+        and pm_quality_review_action_repository is not None
+    ):
+        events.extend(
+            _pm_quality_review_action_events(
+                portfolio_id=portfolio_id,
+                score_run_repository=pm_quality_score_run_repository,
+                review_action_repository=pm_quality_review_action_repository,
+                limit=limit,
+            )
+        )
 
     events = _dedupe_and_sort(events)[:limit]
     event_type_counts = _counts(event.event_type for event in events)
@@ -174,6 +193,7 @@ def search_portfolio_memory(
     mandate_repository: DpmMandateRepository | None = None,
     construction_repository: ConstructionRepository | None = None,
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository | None = None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None,
     portfolio_ids: list[str] | None = None,
     event_type: str | None = None,
@@ -206,6 +226,7 @@ def search_portfolio_memory(
             mandate_repository=mandate_repository,
             construction_repository=construction_repository,
             pm_quality_score_run_repository=pm_quality_score_run_repository,
+            pm_quality_review_action_repository=pm_quality_review_action_repository,
             campaign_definition_repository=campaign_definition_repository,
             limit=source_scan_limit,
             generated_at=generated_at,
@@ -522,6 +543,23 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
                 "memory projects only source-backed score-run lineage for portfolios included in "
                 "Core PM-book membership evidence and does not copy raw score payloads or create "
                 "portfolio-level rankings."
+            ),
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="pm_quality_review_action",
+            source_system="lotus-manage",
+            owner="lotus-manage PM operating quality product",
+            support_status="SUPPORTED",
+            event_types=["PM_QUALITY_REVIEW_ACTION"],
+            route="/api/v1/rebalance/pm-operating-quality/review-actions",
+            reason_code="PM_QUALITY_REVIEW_ACTION_SOURCE_EVENTS_SUPPORTED",
+            summary=(
+                "Persisted PM operating quality review actions are projected as bounded "
+                "supervisory evidence for portfolios included in the reviewed score-run's "
+                "Core PM-book membership evidence. Portfolio memory preserves target identity, "
+                "state, source refs, content hashes, and action posture without copying raw "
+                "review rationale, recalculating scores, recomputing fairness, ranking PMs, "
+                "or creating HR, conduct, client-contact, trade, order, or OMS claims."
             ),
         ),
     ]
@@ -1358,6 +1396,99 @@ def _pm_quality_score_run_event(
     )
 
 
+def _pm_quality_review_action_events(
+    *,
+    portfolio_id: str,
+    score_run_repository: DpmPmQualityScoreRunRepository,
+    review_action_repository: DpmPmQualityReviewActionRepository,
+    limit: int,
+) -> list[DpmPortfolioMemoryEvent]:
+    score_runs_by_id = {
+        score_run.score_run_id: score_run
+        for score_run in score_run_repository.list_score_runs(limit=limit)
+        if _score_run_includes_portfolio(score_run=score_run, portfolio_id=portfolio_id)
+    }
+    if not score_runs_by_id:
+        return []
+    return [
+        _pm_quality_review_action_event(action=action, score_run=score_runs_by_id[action.target_id])
+        for action in review_action_repository.list_review_actions(
+            target_type="SCORE_RUN",
+            limit=limit,
+        )
+        if action.target_id in score_runs_by_id
+    ]
+
+
+def _pm_quality_review_action_event(
+    *,
+    action: DpmPmQualityReviewAction,
+    score_run: DpmPmOperatingQualityScoreRun,
+) -> DpmPortfolioMemoryEvent:
+    source_refs = sorted(
+        [_from_outcome_source_ref(ref) for ref in action.source_refs],
+        key=lambda ref: (ref.source_system, ref.source_type, ref.source_id),
+    )
+    return DpmPortfolioMemoryEvent(
+        event_id=f"memory:pm_quality_review_action:{action.review_action_id}",
+        event_type="PM_QUALITY_REVIEW_ACTION",
+        event_time=action.generated_at.isoformat(),
+        actor=action.actor_id,
+        source_system="lotus-manage",
+        source_type="DPM_PM_OPERATING_QUALITY_REVIEW_ACTION",
+        source_id=action.review_action_id,
+        status=action.action_state,
+        supportability_state=_pm_quality_review_action_state(action),
+        summary=(
+            f"PM operating quality review action {action.action_type} recorded for "
+            f"{action.target_type} {action.target_id}."
+        ),
+        reason_codes=sorted({*action.reason_codes, action.action_type, action.action_state}),
+        source_refs=source_refs,
+        artifact_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="PmOperatingQualityReviewAction",
+                source_id=action.review_action_id,
+                source_version=action.product_version,
+                content_hash=action.content_hash,
+            ),
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="PmOperatingQualityScoreRun",
+                source_id=score_run.score_run_id,
+                source_version=score_run.product_version,
+                content_hash=score_run.content_hash,
+            ),
+        ],
+        content_hash=action.content_hash,
+        metadata={
+            "review_action_ref": action.review_action_ref,
+            "target_type": action.target_type,
+            "target_id": action.target_id,
+            "target_content_hash": action.target_content_hash,
+            "target_state": action.target_state,
+            "policy_id": action.policy_id,
+            "policy_version": action.policy_version,
+            "as_of_date": action.as_of_date,
+            "action_type": action.action_type,
+            "action_state": action.action_state,
+            "remediation_due_date": action.remediation_due_date,
+            "correlation_id": action.correlation_id,
+            "review_reason_projected": False,
+            "numeric_score_projected": False,
+            "score_recalculated": False,
+            "fairness_recomputed": False,
+            "pm_ranking_created": False,
+            "client_contact_claimed": False,
+            "trade_approval_claimed": False,
+            "external_execution_claimed": False,
+            "forbidden_uses": action.forbidden_uses,
+            "operating_boundaries": action.operating_boundaries,
+        },
+    )
+
+
 def _score_run_includes_portfolio(
     *,
     score_run: DpmPmOperatingQualityScoreRun,
@@ -1554,6 +1685,16 @@ def _monitoring_exception_state(
     if exception.severity.value == "WARNING":
         return "DEGRADED"
     return "PENDING_REVIEW"
+
+
+def _pm_quality_review_action_state(
+    action: DpmPmQualityReviewAction,
+) -> PortfolioMemorySupportabilityState:
+    if action.action_state == "ESCALATED":
+        return "DEGRADED"
+    if action.action_state == "REVIEW_REQUIRED":
+        return "PENDING_REVIEW"
+    return "READY"
 
 
 def _assignment_sla_state(sla_posture: str) -> PortfolioMemorySupportabilityState:

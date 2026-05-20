@@ -1371,9 +1371,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "output/rfc0042-outcome-proof/20260505-040212/" in roadmap
     assert "Remaining OMS stays downstream" in supported_features
     assert (
-        "Portfolio memory projects only bounded `PM_QUALITY_SCORE_RUN` lineage for persisted "
-        "source-backed score runs"
+        "Portfolio memory projects bounded `PM_QUALITY_SCORE_RUN` lineage and bounded "
+        "`PM_QUALITY_REVIEW_ACTION` supervisory events for persisted source-backed score runs"
     ) in supported_features
+    assert "without raw scores, raw rationale, PM rankings" in supported_features
     assert "Core `ExternalOrderExecutionAcknowledgement:v1` source-product posture" in (
         supported_features
     )
@@ -1435,7 +1436,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
-        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded portfolio-memory score-run lineage projection, Gateway BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality product realization are incorporated into "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded portfolio-memory score-run and review-action lineage projection, Gateway BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality product realization are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
