@@ -74,6 +74,14 @@ from src.core.waves.campaign_approval_inbox import (
     build_bulk_review_campaign_approval_inbox_item,
     build_bulk_review_campaign_approval_inbox_page,
 )
+from src.core.waves.campaign_workflow_board import (
+    CampaignWorkflowBoardStatus,
+    CampaignWorkflowNextAction,
+    DpmBulkReviewCampaignWorkflowBoardItem,
+    DpmBulkReviewCampaignWorkflowBoardPage,
+    build_bulk_review_campaign_workflow_board_item,
+    build_bulk_review_campaign_workflow_board_page,
+)
 from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -105,6 +113,8 @@ __all__ = [
     "DpmRebalanceWave",
     "CampaignApprovalDecisionType",
     "CampaignApprovalInboxStatus",
+    "CampaignWorkflowBoardStatus",
+    "CampaignWorkflowNextAction",
     "DpmRebalanceWaveEvent",
     "DpmRebalanceWaveItem",
     "DpmBulkReviewCampaignApprovalInboxItem",
@@ -129,6 +139,8 @@ __all__ = [
     "DpmBulkReviewCampaignDefinitionWaveRequestDraft",
     "DpmBulkReviewCampaignOperatingQueueItem",
     "DpmBulkReviewCampaignOperatingQueuePage",
+    "DpmBulkReviewCampaignWorkflowBoardItem",
+    "DpmBulkReviewCampaignWorkflowBoardPage",
     "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
     "DpmWaveExternalExecutionBoundaryEvidence",
@@ -166,6 +178,8 @@ __all__ = [
     "build_bulk_review_campaign_approval_inbox_page",
     "build_bulk_review_campaign_operating_queue_item",
     "build_bulk_review_campaign_operating_queue_page",
+    "build_bulk_review_campaign_workflow_board_item",
+    "build_bulk_review_campaign_workflow_board_page",
     "build_wave_report_input",
     "classify_wave_item_source_readiness",
     "classify_bulk_review_campaign_expiry",

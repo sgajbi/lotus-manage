@@ -1622,6 +1622,7 @@ Routes:
 - `GET /api/v1/rebalance/waves/campaign-discovery`
 - `GET /api/v1/rebalance/waves/campaign-operating-queue`
 - `GET /api/v1/rebalance/waves/campaign-approval-inbox`
+- `GET /api/v1/rebalance/waves/campaign-workflow-board`
 - `GET /api/v1/rebalance/waves/{wave_id}`
 - `GET /api/v1/rebalance/waves/{wave_id}/items`
 - `POST /api/v1/rebalance/waves/{wave_id}/source-check`

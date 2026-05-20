@@ -703,10 +703,16 @@ Current repository posture:
     definitions as approval complete, approval required, approval incomplete, expiry attention,
     entitlement attention, or closed from existing governance evidence and readiness posture without
     adding maker-checker workflow, approving trades, generating orders, or claiming OMS execution.
-    Maker-checker workflow beyond append-only approval decisions, broader cross-actor campaign
-    operating queues, wave risk/performance analytics posture, global portfolio-universe campaign
-    discovery, and external OMS execution remain unpromoted until owning implementations are
-    live-proven. Manage consumes `lotus-core`
+    Manage also exposes a bounded read-only cross-actor campaign workflow board at
+    `GET /api/v1/rebalance/waves/campaign-workflow-board`, composing the existing operating queue
+    and approval inbox into actor-aware next-action rows for launch, approval-decision capture,
+    approval evidence remediation, expiry refresh, entitlement review, or closed posture without
+    discovering the global portfolio universe, recalculating source facts, mutating approval state,
+    creating maker-checker workflow, approving trades, generating orders, or claiming OMS execution.
+    Maker-checker workflow beyond append-only approval decisions, richer cross-actor campaign
+    assignment/escalation workflow beyond the read-only board, wave risk/performance analytics
+    posture, global portfolio-universe campaign discovery, and external OMS execution remain
+    unpromoted until owning implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
     diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
     acknowledgements, confirm fills, or settle trades.

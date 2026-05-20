@@ -2394,6 +2394,126 @@ def test_bulk_review_campaign_approval_inbox_summarizes_governance_attention_row
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
 
+def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        ready_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        approval_required_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-approval-required-20260510/versions/2026.05"
+        )
+        unauthorized_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-entitlement-20260510/versions/2026.05"
+        )
+        retired_route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-board-retired-20260510/versions/2026.05"
+        )
+
+        ready_put = client.put(ready_route, json=_bulk_review_campaign_definition_request())
+        approval_required_put = client.put(
+            approval_required_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Approval required workflow board row",
+                "governance": None,
+                "correlation_id": "corr-campaign-definition-board-approval-required",
+            },
+        )
+        unauthorized_put = client.put(
+            unauthorized_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Entitlement workflow board row",
+                "governance": {
+                    **_bulk_review_campaign_governance(),
+                    "entitled_actor_ids": ["ops"],
+                },
+                "correlation_id": "corr-campaign-definition-board-entitlement",
+            },
+        )
+        retired_put = client.put(
+            retired_route,
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Retired workflow board row",
+                "correlation_id": "corr-campaign-definition-board-retired",
+            },
+        )
+        retire_response = client.post(
+            f"{retired_route}/retire",
+            json={
+                "retired_by": "ops",
+                "retirement_reason": "Campaign closed before board review.",
+                "correlation_id": "corr-campaign-definition-board-retire",
+            },
+        )
+
+        board = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-board?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&include_closed=true"
+        )
+        filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-board?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&next_action=RECORD_APPROVAL_DECISION"
+        )
+        invalid = client.get("/api/v1/rebalance/waves/campaign-workflow-board?active_on=bad-date")
+
+    assert ready_put.status_code == 200
+    assert approval_required_put.status_code == 200
+    assert unauthorized_put.status_code == 200
+    assert retired_put.status_code == 200
+    assert retire_response.status_code == 200
+
+    assert board.status_code == 200
+    payload = board.json()
+    assert payload["product_name"] == "BulkReviewCampaignWorkflowBoard"
+    actions = {item["campaign_id"]: item["next_action"] for item in payload["items"]}
+    assert actions == {
+        "campaign-holdings-apple-tesla-20260510": "LAUNCH_CAMPAIGN",
+        "campaign-holdings-approval-required-20260510": "RECORD_APPROVAL_DECISION",
+        "campaign-holdings-entitlement-20260510": "REVIEW_ACTOR_ENTITLEMENT",
+        "campaign-holdings-board-retired-20260510": "NO_ACTION_CLOSED",
+    }
+    assert payload["status_counts"] == {
+        "READY_FOR_ACTOR": 1,
+        "ATTENTION_FOR_ACTOR": 2,
+        "CLOSED": 1,
+    }
+    assert payload["next_action_counts"] == {
+        "LAUNCH_CAMPAIGN": 1,
+        "RECORD_APPROVAL_DECISION": 1,
+        "REVIEW_ACTOR_ENTITLEMENT": 1,
+        "NO_ACTION_CLOSED": 1,
+    }
+    ready_item = next(
+        item
+        for item in payload["items"]
+        if item["campaign_id"] == "campaign-holdings-apple-tesla-20260510"
+    )
+    assert ready_item["operating_queue"]["queue_status"] == "READY_TO_LAUNCH"
+    assert ready_item["approval_inbox"]["inbox_status"] == "APPROVAL_COMPLETE"
+    assert "NO_APPROVAL_STATE_MUTATION" in ready_item["operating_boundaries"]
+
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == 1
+    assert filtered.json()["items"][0]["next_action"] == "RECORD_APPROVAL_DECISION"
+
+    assert invalid.status_code == 422
+    assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())
