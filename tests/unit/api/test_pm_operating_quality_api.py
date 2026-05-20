@@ -10,6 +10,7 @@ from src.api.dependencies import get_pm_quality_fairness_analysis_repository
 from src.api.dependencies import get_pm_quality_policy_repository
 from src.api.dependencies import get_pm_quality_review_action_repository
 from src.api.dependencies import get_pm_quality_score_run_repository
+from src.api.dependencies import get_pm_quality_summary_invocation_repository
 from src.api.main import app
 from src.api.routers import pm_operating_quality as pmq_router
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
@@ -20,6 +21,7 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisConflictError,
@@ -27,7 +29,9 @@ from src.core.pm_quality import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityEvidenceItem,
     DpmPmQualityGovernanceApproval,
+    DpmPmQualityReviewActionConflictError,
     DpmPmQualityScoreRunConflictError,
+    DpmPmQualitySummaryInvocationConflictError,
     DpmPmQualityWeight,
     build_pm_operating_quality_score_run,
 )
@@ -381,6 +385,18 @@ class _ConflictingFairnessAnalysisRepository(InMemoryDpmPmQualityFairnessAnalysi
     def save_fairness_analysis(self, *, analysis: Any) -> None:
         raise DpmPmQualityFairnessAnalysisConflictError(
             "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
+        )
+
+
+class _ConflictingReviewActionRepository(InMemoryDpmPmQualityReviewActionRepository):
+    def save_review_action(self, *, action: Any) -> None:
+        raise DpmPmQualityReviewActionConflictError("PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT")
+
+
+class _ConflictingSummaryInvocationRepository(InMemoryDpmPmQualitySummaryInvocationRepository):
+    def save_summary_invocation(self, *, invocation: Any) -> None:
+        raise DpmPmQualitySummaryInvocationConflictError(
+            "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
         )
 
 
@@ -992,6 +1008,263 @@ def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> Non
     assert missing_action.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_NOT_FOUND:missing"
 
 
+def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_edges(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    score_repository = InMemoryDpmPmQualityScoreRunRepository()
+    score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
+    score_repository.save_score_run(score_run=score_run)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
+    app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
+        InMemoryDpmPmQualityFairnessAnalysisRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        _ConflictingReviewActionRepository()
+    )
+
+    request = {
+        "target_type": "SCORE_RUN",
+        "target_id": score_run.score_run_id,
+        "action_type": "ACKNOWLEDGE",
+        "review_action_ref": "PMQ-REVIEW-2026-05-001",
+        "review_reason": "Reviewed for supervisory closure.",
+        "actor_id": "ops",
+    }
+    try:
+        with TestClient(app) as client:
+            bad_due_date = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+                json={**request, "remediation_due_date": "not-a-date"},
+            )
+            missing_fairness_target = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+                json={**request, "target_type": "FAIRNESS_ANALYSIS", "target_id": "missing"},
+            )
+            conflict = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions",
+                json=request,
+            )
+
+            def _raise_value_error(**_kwargs: object) -> None:
+                raise ValueError("PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH")
+
+            monkeypatch.setattr(pmq_router, "build_pm_quality_review_action", _raise_value_error)
+            invalid_target = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+                json=request,
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert bad_due_date.status_code == 422
+    assert missing_fairness_target.status_code == 404
+    assert (
+        missing_fairness_target.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:missing"
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT"
+    assert invalid_target.status_code == 422
+    assert invalid_target.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH"
+
+
+def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -> None:
+    score_repository = InMemoryDpmPmQualityScoreRunRepository()
+    review_repository = InMemoryDpmPmQualityReviewActionRepository()
+    summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
+    score_repository.save_score_run(score_run=score_run)
+    review_action = pmq_router._build_review_action(
+        request=pmq_router.DpmPmQualityReviewActionRequest(
+            target_type="SCORE_RUN",
+            target_id=score_run.score_run_id,
+            action_type="ACKNOWLEDGE",
+            review_action_ref="PMQ-REVIEW-2026-05-001",
+            review_reason="Reviewed and acknowledged for support-summary evidence.",
+            actor_id="ops",
+        ),
+        x_correlation_id="corr-review",
+        score_run_repository=score_repository,
+        fairness_repository=InMemoryDpmPmQualityFairnessAnalysisRepository(),
+    )
+    review_repository.save_review_action(action=review_action)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: review_repository
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        summary_repository
+    )
+
+    request = {
+        "score_run_id": score_run.score_run_id,
+        "review_action_id": review_action.review_action_id,
+        "invocation_state": "COMPLETED",
+        "summary_ref": "PMQ-SUMMARY-2026-05-001",
+        "workflow_pack_name": "pm_quality_summary.pack",
+        "workflow_pack_version": "v1",
+        "workflow_run_id": "pmq-summary-run-001",
+        "summary_artifact_ref": "pmq-summary-artifact-001",
+        "summary_content_hash": "sha256:pmq-summary",
+        "requested_by": "ops",
+        "source_refs": [
+            {
+                "source_system": "lotus-ai",
+                "source_type": "pm_quality_summary.pack",
+                "source_id": "pmq-summary-run-001",
+                "source_version": "v1",
+                "content_hash": "sha256:pmq-summary",
+            }
+        ],
+    }
+    try:
+        with TestClient(app) as client:
+            preview = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json=request,
+                headers={"X-Correlation-Id": "corr-pmq-summary-preview"},
+            )
+            created = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+                json=request,
+                headers={"X-Correlation-Id": "corr-pmq-summary-create"},
+            )
+            summary_invocation_id = created.json()["summary_invocation"]["summary_invocation_id"]
+            fetched = client.get(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/"
+                f"{summary_invocation_id}"
+            )
+            listed = client.get(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+                params={"score_run_id": score_run.score_run_id, "invocation_state": "COMPLETED"},
+            )
+            missing_score_run = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json={**request, "score_run_id": "missing"},
+            )
+            missing_invocation = client.get(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/missing"
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert preview.status_code == 200
+    assert preview.json()["summary_invocation"]["score_run_content_hash"] == score_run.content_hash
+    assert created.status_code == 201
+    summary_invocation = created.json()["summary_invocation"]
+    assert summary_invocation["correlation_id"] == "corr-pmq-summary-create"
+    assert summary_invocation["summary_artifact_ref"] == "pmq-summary-artifact-001"
+    assert "NO_SUMMARY_TEXT_STORAGE" in summary_invocation["operating_boundaries"]
+    assert "summary_text_storage" in summary_invocation["forbidden_uses"]
+    assert fetched.status_code == 200
+    assert fetched.json()["summary_invocation"]["summary_invocation_id"] == summary_invocation_id
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 1
+    assert listed.json()["summary_invocations"][0]["summary_invocation_id"] == summary_invocation_id
+    assert missing_score_run.status_code == 404
+    assert missing_score_run.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
+    assert missing_invocation.status_code == 404
+    assert missing_invocation.json()["detail"] == "PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:missing"
+
+
+@pytest.mark.parametrize(
+    ("patch", "expected_detail"),
+    [
+        ({"score_run_id": "   "}, "score_run_id and review_action_id must be non-empty"),
+        (
+            {"summary_ref": "   "},
+            "summary_ref, workflow_pack_version, and requested_by must be non-empty",
+        ),
+        ({"summary_content_hash": "not-a-hash"}, "summary_content_hash must start with sha256:"),
+        (
+            {"workflow_pack_name": "unsupported.pack"},
+            "workflow_pack_name must be pm_quality_summary.pack",
+        ),
+    ],
+)
+def test_pm_operating_quality_api_summary_invocation_request_validation_edges(
+    patch: dict[str, object],
+    expected_detail: str,
+) -> None:
+    with pytest.raises(ValueError, match=expected_detail):
+        pmq_router.DpmPmQualitySummaryInvocationRequest.model_validate(
+            {
+                "score_run_id": "score-run-001",
+                "review_action_id": "review-action-001",
+                "summary_ref": "PMQ-SUMMARY-2026-05-001",
+                "workflow_pack_name": "pm_quality_summary.pack",
+                "workflow_pack_version": "v1",
+                "requested_by": "ops",
+                **patch,
+            }
+        )
+
+
+def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and_conflict() -> None:
+    score_repository = InMemoryDpmPmQualityScoreRunRepository()
+    review_repository = InMemoryDpmPmQualityReviewActionRepository()
+    score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
+    score_repository.save_score_run(score_run=score_run)
+    review_action = pmq_router._build_review_action(
+        request=pmq_router.DpmPmQualityReviewActionRequest(
+            target_type="SCORE_RUN",
+            target_id=score_run.score_run_id,
+            action_type="ACKNOWLEDGE",
+            review_action_ref="PMQ-REVIEW-2026-05-001",
+            review_reason="Reviewed and acknowledged for support-summary evidence.",
+            actor_id="ops",
+        ),
+        x_correlation_id="corr-review",
+        score_run_repository=score_repository,
+        fairness_repository=InMemoryDpmPmQualityFairnessAnalysisRepository(),
+    )
+    review_repository.save_review_action(action=review_action)
+    mismatched_review_action = review_action.model_copy(
+        update={
+            "review_action_id": "pmq_review_mismatch",
+            "target_content_hash": "sha256:other",
+        }
+    )
+    review_repository.save_review_action(action=mismatched_review_action)
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: review_repository
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        _ConflictingSummaryInvocationRepository()
+    )
+
+    request = {
+        "score_run_id": score_run.score_run_id,
+        "review_action_id": review_action.review_action_id,
+        "summary_ref": "PMQ-SUMMARY-2026-05-001",
+        "workflow_pack_name": "pm_quality_summary.pack",
+        "workflow_pack_version": "v1",
+        "requested_by": "ops",
+    }
+    try:
+        with TestClient(app) as client:
+            missing_review_action = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json={**request, "review_action_id": "missing"},
+            )
+            mismatched_review_action_response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json={**request, "review_action_id": mismatched_review_action.review_action_id},
+            )
+            conflict = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+                json=request,
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert missing_review_action.status_code == 404
+    assert missing_review_action.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_NOT_FOUND:missing"
+    assert mismatched_review_action_response.status_code == 422
+    assert (
+        mismatched_review_action_response.json()["detail"]
+        == "PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH"
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
+
+
 def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     balanced_1 = _source_only_score_run(pm_id="pm_bal_001", score=Decimal("92"))
@@ -1235,3 +1508,23 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert all(marker in review_description for marker in ["What:", "When:", "How:"])
     assert "does not recalculate scores" in review_description
     assert "does not mutate" in schema["paths"][review_create_path]["post"]["description"]
+
+    summary_preview_path = "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview"
+    summary_create_path = "/api/v1/rebalance/pm-operating-quality/summary-invocations"
+    summary_get_path = (
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}"
+    )
+    assert summary_preview_path in schema["paths"]
+    assert summary_create_path in schema["paths"]
+    assert summary_get_path in schema["paths"]
+    assert "200" in schema["paths"][summary_preview_path]["post"]["responses"]
+    assert "201" in schema["paths"][summary_create_path]["post"]["responses"]
+    assert "200" in schema["paths"][summary_create_path]["get"]["responses"]
+    assert "200" in schema["paths"][summary_get_path]["get"]["responses"]
+    summary_description = schema["paths"][summary_preview_path]["post"]["description"]
+    assert all(marker in summary_description for marker in ["What:", "When:", "How:"])
+    assert "does not store AI-generated narrative text" in summary_description
+    assert (
+        "does not expose generated summary text"
+        in schema["paths"][summary_create_path]["get"]["description"]
+    )

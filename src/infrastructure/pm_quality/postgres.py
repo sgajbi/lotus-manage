@@ -11,12 +11,14 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
     DpmPmQualityReviewAction,
+    DpmPmQualitySummaryInvocation,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityReviewActionConflictError,
     DpmPmQualityScoreRunConflictError,
+    DpmPmQualitySummaryInvocationConflictError,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -465,6 +467,129 @@ class PostgresDpmPmQualityReviewActionRepository:
                 tuple(args),
             ).fetchall()
         return [load_model_json(DpmPmQualityReviewAction, _payload(row)) for row in rows]
+
+    def _connect(self) -> Any:
+        psycopg, dict_row = _import_psycopg()
+        return psycopg.connect(self._dsn, row_factory=dict_row)
+
+    def _init_db(self) -> None:
+        with closing(self._connect()) as connection:
+            apply_postgres_migrations(connection=connection, namespace="dpm")
+
+
+class PostgresDpmPmQualitySummaryInvocationRepository:
+    def __init__(self, *, dsn: str) -> None:
+        if not dsn:
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DSN_REQUIRED")
+        if not has_psycopg():
+            raise RuntimeError("DPM_PM_QUALITY_POSTGRES_DRIVER_MISSING")
+        self._dsn = dsn
+        self._init_db()
+
+    def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+        with closing(self._connect()) as connection:
+            connection.execute(
+                """
+                INSERT INTO dpm_pm_quality_summary_invocations (
+                    summary_invocation_id, score_run_id, review_action_id, policy_id,
+                    policy_version, as_of_date, invocation_state, summary_ref,
+                    workflow_pack_name, workflow_pack_version, workflow_run_id,
+                    summary_artifact_ref, summary_content_hash, content_hash,
+                    generated_at, requested_by, correlation_id, payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (summary_invocation_id) DO NOTHING
+                """,
+                (
+                    invocation.summary_invocation_id,
+                    invocation.score_run_id,
+                    invocation.review_action_id,
+                    invocation.policy_id,
+                    invocation.policy_version,
+                    invocation.as_of_date,
+                    invocation.invocation_state,
+                    invocation.summary_ref,
+                    invocation.workflow_pack_name,
+                    invocation.workflow_pack_version,
+                    invocation.workflow_run_id,
+                    invocation.summary_artifact_ref,
+                    invocation.summary_content_hash,
+                    invocation.content_hash,
+                    invocation.generated_at.isoformat(),
+                    invocation.requested_by,
+                    invocation.correlation_id,
+                    dump_model_json(invocation),
+                ),
+            )
+            persisted = connection.execute(
+                """
+                SELECT content_hash
+                FROM dpm_pm_quality_summary_invocations
+                WHERE summary_invocation_id = %s
+                """,
+                (invocation.summary_invocation_id,),
+            ).fetchone()
+            if persisted is None or persisted["content_hash"] != invocation.content_hash:
+                connection.rollback()
+                raise DpmPmQualitySummaryInvocationConflictError(
+                    "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
+                )
+            connection.commit()
+
+    def get_summary_invocation(
+        self,
+        *,
+        summary_invocation_id: str,
+    ) -> DpmPmQualitySummaryInvocation | None:
+        with closing(self._connect()) as connection:
+            row = connection.execute(
+                """
+                SELECT payload_json
+                FROM dpm_pm_quality_summary_invocations
+                WHERE summary_invocation_id = %s
+                """,
+                (summary_invocation_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return load_model_json(DpmPmQualitySummaryInvocation, _payload(row))
+
+    def list_summary_invocations(
+        self,
+        *,
+        score_run_id: str | None = None,
+        review_action_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        invocation_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualitySummaryInvocation]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        for column, value in (
+            ("score_run_id", score_run_id),
+            ("review_action_id", review_action_id),
+            ("policy_id", policy_id),
+            ("as_of_date", as_of_date),
+            ("invocation_state", invocation_state),
+        ):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                args.append(value)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT payload_json
+                FROM dpm_pm_quality_summary_invocations
+                {where}
+                ORDER BY generated_at DESC, summary_invocation_id DESC
+                LIMIT %s OFFSET %s
+                """,
+                tuple(args),
+            ).fetchall()
+        return [load_model_json(DpmPmQualitySummaryInvocation, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()

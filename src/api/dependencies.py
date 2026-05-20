@@ -14,6 +14,7 @@ from src.core.pm_quality.repository import (
     DpmPmQualityPolicyRepository,
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunRepository,
+    DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.waves.repository import DpmWaveRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -33,10 +34,12 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    InMemoryDpmPmQualitySummaryInvocationRepository,
     PostgresDpmPmQualityFairnessAnalysisRepository,
     PostgresDpmPmQualityPolicyRepository,
     PostgresDpmPmQualityReviewActionRepository,
     PostgresDpmPmQualityScoreRunRepository,
+    PostgresDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
 from src.infrastructure.waves import (
@@ -55,6 +58,7 @@ _PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
 _PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY = InMemoryDpmPmQualityFairnessAnalysisRepository()
 _PM_QUALITY_REVIEW_ACTION_REPOSITORY = InMemoryDpmPmQualityReviewActionRepository()
+_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY = InMemoryDpmPmQualitySummaryInvocationRepository()
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None
@@ -69,6 +73,9 @@ _POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY: (
 _POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY: PostgresDpmPmQualityReviewActionRepository | None = (
     None
 )
+_POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY: (
+    PostgresDpmPmQualitySummaryInvocationRepository | None
+) = None
 _POSTGRES_WAVE_REPOSITORY: PostgresDpmWaveRepository | None = None
 _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY: (
     PostgresDpmBulkReviewCampaignDefinitionRepository | None
@@ -185,6 +192,20 @@ def get_pm_quality_review_action_repository() -> DpmPmQualityReviewActionReposit
             )
         return _POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY
     return _PM_QUALITY_REVIEW_ACTION_REPOSITORY
+
+
+def get_pm_quality_summary_invocation_repository() -> DpmPmQualitySummaryInvocationRepository:
+    """Return the PM quality summary-invocation repository for local and test runtimes."""
+
+    dsn = _repository_dsn("DPM_PM_QUALITY_POSTGRES_DSN")
+    if dsn:
+        global _POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY
+        if _POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY is None:
+            _POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY = (
+                PostgresDpmPmQualitySummaryInvocationRepository(dsn=dsn)
+            )
+        return _POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY
+    return _PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY
 
 
 def get_wave_repository() -> DpmWaveRepository:

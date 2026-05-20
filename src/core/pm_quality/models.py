@@ -60,6 +60,12 @@ PmQualityReviewActionState = Literal[
     "CLOSED",
 ]
 
+PmQualitySummaryInvocationState = Literal[
+    "REQUESTED",
+    "COMPLETED",
+    "FAILED",
+]
+
 
 class DpmPmQualityWeight(BaseModel):
     """One configured scoring dimension for PM operating quality."""
@@ -587,5 +593,95 @@ class DpmPmQualityReviewAction(BaseModel):
         description="Unsupported downstream claims the review action must not imply.",
     )
     content_hash: str = Field(description="Canonical review-action content hash.")
+    generated_at: datetime = Field(description="UTC generation timestamp.")
+    correlation_id: str = Field(description="Correlation identifier.")
+
+
+class DpmPmQualitySummaryInvocation(BaseModel):
+    """Append-only audit record for PM-quality support-summary invocation."""
+
+    product_name: Literal["PmOperatingQualitySummaryInvocation"] = Field(
+        default="PmOperatingQualitySummaryInvocation",
+        description="Domain data product name emitted by lotus-manage.",
+    )
+    product_version: Literal["v1"] = Field(default="v1", description="Product version.")
+    summary_invocation_id: str = Field(
+        description="Stable content-addressed summary-invocation identifier."
+    )
+    score_run_id: str = Field(description="Persisted score-run identifier summarized.")
+    score_run_content_hash: str = Field(description="Content hash of the summarized score run.")
+    review_action_id: str = Field(
+        description="Review action that gates the support-summary invocation."
+    )
+    review_action_content_hash: str = Field(
+        description="Content hash of the review action gating the invocation."
+    )
+    policy_id: str = Field(description="Policy identifier on the summarized score run.")
+    policy_version: str = Field(description="Policy version on the summarized score run.")
+    as_of_date: str = Field(description="Business as-of date on the summarized score run.")
+    invocation_state: PmQualitySummaryInvocationState = Field(
+        description="Bounded support-summary invocation state."
+    )
+    summary_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, support ticket, or downstream summary request reference.",
+        examples=["PMQ-SUMMARY-2026-05-001"],
+    )
+    workflow_pack_name: Literal["pm_quality_summary.pack"] = Field(
+        default="pm_quality_summary.pack",
+        description="AI-owned workflow pack name. Manage records history only.",
+    )
+    workflow_pack_version: str = Field(
+        default="v1",
+        description="AI-owned workflow pack version or compatible contract version.",
+    )
+    workflow_run_id: str | None = Field(
+        default=None,
+        description="Downstream AI workflow run id when available.",
+    )
+    summary_artifact_ref: str | None = Field(
+        default=None,
+        description="Downstream artifact reference when available. No narrative text is stored.",
+    )
+    summary_content_hash: str | None = Field(
+        default=None,
+        description="Hash of the downstream summary artifact when available.",
+    )
+    requested_by: str = Field(min_length=1, description="Actor or service requesting history.")
+    reason_codes: list[str] = Field(description="Bounded invocation reason codes.")
+    source_refs: list[DpmOutcomeSourceRef] = Field(
+        description="Score-run, review-action, workflow, and artifact source refs."
+    )
+    forbidden_uses: list[str] = Field(
+        default_factory=lambda: [
+            "summary_text_storage",
+            "score_recalculation",
+            "fairness_recomputation",
+            "compensation_decision",
+            "hr_decision",
+            "conduct_enforcement",
+            "client_contact",
+            "trade_approval",
+            "order_routing",
+            "oms_execution",
+            "autonomous_pm_ranking",
+        ],
+        description="Uses explicitly outside this product contract.",
+    )
+    operating_boundaries: list[str] = Field(
+        default_factory=lambda: [
+            "APPEND_ONLY_SUMMARY_INVOCATION_HISTORY",
+            "NO_SUMMARY_TEXT_STORAGE",
+            "NO_SCORE_RECALCULATION",
+            "NO_FAIRNESS_RECOMPUTATION",
+            "NO_PM_RANKING",
+            "NO_HR_COMPENSATION_OR_CONDUCT_DECISION",
+            "NO_CLIENT_CONTACT",
+            "NO_TRADE_APPROVAL",
+            "NO_ORDER_OR_OMS_EXECUTION",
+        ],
+        description="Unsupported downstream claims the summary history must not imply.",
+    )
+    content_hash: str = Field(description="Canonical summary-invocation content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
     correlation_id: str = Field(description="Correlation identifier.")

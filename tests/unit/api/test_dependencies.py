@@ -7,6 +7,7 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityPolicyRepository,
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
@@ -42,6 +43,10 @@ def test_repository_dependencies_return_default_singletons(monkeypatch) -> None:
     assert isinstance(
         dependencies.get_pm_quality_review_action_repository(),
         InMemoryDpmPmQualityReviewActionRepository,
+    )
+    assert isinstance(
+        dependencies.get_pm_quality_summary_invocation_repository(),
+        InMemoryDpmPmQualitySummaryInvocationRepository,
     )
     assert isinstance(
         dependencies.get_campaign_definition_repository(),
@@ -117,6 +122,10 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
         def __init__(self, *, dsn: str) -> None:
             created.append(("pm_quality_review_action", dsn))
 
+    class FakePmQualitySummaryInvocationRepository:
+        def __init__(self, *, dsn: str) -> None:
+            created.append(("pm_quality_summary_invocation", dsn))
+
     class FakeCampaignDefinitionRepository:
         def __init__(self, *, dsn: str) -> None:
             created.append(("campaign_definition", dsn))
@@ -130,6 +139,7 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
     monkeypatch.setattr(dependencies, "_POSTGRES_PM_QUALITY_POLICY_REPOSITORY", None)
     monkeypatch.setattr(dependencies, "_POSTGRES_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY", None)
     monkeypatch.setattr(dependencies, "_POSTGRES_PM_QUALITY_REVIEW_ACTION_REPOSITORY", None)
+    monkeypatch.setattr(dependencies, "_POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY", None)
     monkeypatch.setattr(dependencies, "_POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY", None)
     monkeypatch.setattr(
         dependencies,
@@ -158,6 +168,11 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
     )
     monkeypatch.setattr(
         dependencies,
+        "PostgresDpmPmQualitySummaryInvocationRepository",
+        FakePmQualitySummaryInvocationRepository,
+    )
+    monkeypatch.setattr(
+        dependencies,
         "PostgresDpmBulkReviewCampaignDefinitionRepository",
         FakeCampaignDefinitionRepository,
     )
@@ -183,6 +198,10 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
         FakePmQualityReviewActionRepository,
     )
     assert isinstance(
+        dependencies.get_pm_quality_summary_invocation_repository(),
+        FakePmQualitySummaryInvocationRepository,
+    )
+    assert isinstance(
         dependencies.get_campaign_definition_repository(),
         FakeCampaignDefinitionRepository,
     )
@@ -207,6 +226,10 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
         FakePmQualityReviewActionRepository,
     )
     assert isinstance(
+        dependencies.get_pm_quality_summary_invocation_repository(),
+        FakePmQualitySummaryInvocationRepository,
+    )
+    assert isinstance(
         dependencies.get_campaign_definition_repository(),
         FakeCampaignDefinitionRepository,
     )
@@ -216,6 +239,7 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
         ("pm_quality_policy", "postgresql://pm-quality"),
         ("pm_quality_fairness_analysis", "postgresql://pm-quality"),
         ("pm_quality_review_action", "postgresql://pm-quality"),
+        ("pm_quality_summary_invocation", "postgresql://pm-quality"),
         ("campaign_definition", "postgresql://supportability"),
     ]
 

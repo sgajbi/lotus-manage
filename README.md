@@ -308,6 +308,17 @@ bounded `PmOperatingQualityReviewAction:v1` ledger rows over existing score-run 
 fairness-analysis evidence, preserving target content hashes and bank review references without
 mutating score runs, recomputing fairness posture, ranking PMs, creating HR/compensation/conduct
 decisions, contacting clients, approving trades, routing orders, or claiming OMS execution.
+The support-summary history route family now supports review-gated preview and immutable
+create/read/list lifecycle at
+`POST /api/v1/rebalance/pm-operating-quality/summary-invocations/preview`,
+`POST /api/v1/rebalance/pm-operating-quality/summary-invocations`,
+`GET /api/v1/rebalance/pm-operating-quality/summary-invocations`, and
+`GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`. It emits
+bounded `PmOperatingQualitySummaryInvocation:v1` rows over persisted score-run and review-action
+evidence, recording workflow/run/artifact identity and hashes without storing generated AI
+narrative text, exposing raw review rationale, recalculating scores, recomputing fairness, ranking
+PMs, creating HR/compensation/conduct decisions, contacting clients, approving trades, routing
+orders, or claiming OMS execution.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,

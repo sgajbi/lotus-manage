@@ -978,6 +978,40 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
         "sha256:external-fx-forward-curve"
     )
     assert currency_context.external_fx_forward_curve_point_count == 0
+
+    exposure_only = construction_service._external_treasury_currency_overlay_context(
+        hedge_readiness=None,
+        currency_exposure=exposure,
+        hedge_policy=None,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+    hedge_policy_only = construction_service._external_treasury_currency_overlay_context(
+        hedge_readiness=None,
+        currency_exposure=None,
+        hedge_policy=hedge_policy,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+    eligible_instruments_only = construction_service._external_treasury_currency_overlay_context(
+        hedge_readiness=None,
+        currency_exposure=None,
+        hedge_policy=None,
+        eligible_hedge_instruments=eligible_hedge_instruments,
+        fx_forward_curve=None,
+    )
+
+    assert exposure_only is not None
+    assert (
+        exposure_only.external_currency_exposure_source_product_name == "ExternalCurrencyExposure"
+    )
+    assert hedge_policy_only is not None
+    assert hedge_policy_only.external_hedge_policy_source_product_name == "ExternalHedgePolicy"
+    assert eligible_instruments_only is not None
+    assert (
+        eligible_instruments_only.external_eligible_hedge_instrument_source_product_name
+        == "ExternalEligibleHedgeInstrument"
+    )
     assert currency_context.external_fx_forward_curve_points == []
     assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in currency_context.reason_codes
     assert "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED" in currency_context.reason_codes

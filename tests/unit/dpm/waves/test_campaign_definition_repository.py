@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 import pytest
 
 from src.core.waves import DpmWaveSourceRef
+from src.core.waves.campaign_definition_readiness import (
+    build_bulk_review_campaign_definition_preview_readiness,
+)
 from src.core.waves.campaign_definition_lifecycle import (
     DpmBulkReviewCampaignDefinitionLifecycleError,
     retire_bulk_review_campaign_definition,
@@ -300,6 +303,62 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
     )
 
 
+def test_campaign_definition_launch_review_and_assignment_lifecycle_conflicts() -> None:
+    definition = _definition()
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="dwv_campaign_launch_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-definition-launch-001",
+        idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
+    )
+    approved = record_bulk_review_campaign_definition_approval_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+    )
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+
+    for updated in [launched, approved, assigned]:
+        repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+        repository.save_definition(definition=retired)
+        with pytest.raises(
+            DpmBulkReviewCampaignDefinitionConflictError,
+            match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+        ):
+            if updated is launched:
+                repository.record_definition_launch(definition=updated)
+            elif updated is approved:
+                repository.record_definition_approval_decision(definition=updated)
+            else:
+                repository.record_definition_assignment_action(definition=updated)
+
+
 def test_campaign_definition_launch_history_page_is_bounded_audit_evidence() -> None:
     definition = record_bulk_review_campaign_definition_launch(
         definition=_definition(),
@@ -391,6 +450,19 @@ def test_campaign_definition_approval_decisions_are_append_only() -> None:
         )
         == approved
     )
+    assert (
+        repository.record_definition_approval_decision(
+            definition=DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **approved.model_dump(mode="python"),
+                    "campaign_id": "missing-campaign",
+                    "content_hash": "",
+                }
+            )
+        )
+        is None
+    )
+    assert repository.record_definition_approval_decision(definition=approved) == approved
 
     with pytest.raises(
         ValueError,
@@ -404,6 +476,126 @@ def test_campaign_definition_approval_decisions_are_append_only() -> None:
             decision_reason="Conflicting decision.",
             correlation_id="corr-campaign-approval-decision-002",
         )
+
+
+def test_campaign_definition_approval_decision_validation_edges() -> None:
+    definition = _definition()
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+
+    for patch, reason_code in [
+        ({"definition": retired}, "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTIVE_REQUIRED"),
+        ({"decision_ref": " "}, "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_REQUIRED"),
+        ({"decided_by": " "}, "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTOR_REQUIRED"),
+        ({"decision_reason": " "}, "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REASON_REQUIRED"),
+        ({"correlation_id": " "}, "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_CORRELATION_REQUIRED"),
+    ]:
+        request = {
+            "definition": definition,
+            "decision_type": "APPROVED",
+            "decision_ref": "BRC-APPROVAL-2026-05-001",
+            "decided_by": "cio_ops_committee",
+            "decision_reason": "Approved for bounded DPM campaign launch.",
+            "correlation_id": "corr-campaign-approval-decision-001",
+            **patch,
+        }
+        with pytest.raises(ValueError, match=reason_code):
+            record_bulk_review_campaign_definition_approval_decision(**request)
+
+
+def test_campaign_definition_preview_readiness_records_ineligible_and_entitlement_edges() -> None:
+    definition = _definition()
+    readiness = build_bulk_review_campaign_definition_preview_readiness(
+        definition=DpmBulkReviewCampaignDefinition.model_validate(
+            {
+                **definition.model_dump(mode="python"),
+                "as_of_date": "bad-date",
+                "eligible_portfolio_types": ["ADVISORY"],
+                "governance": {
+                    **definition.governance.model_dump(mode="python"),
+                    "expires_on": "2026-05-09",
+                    "entitled_actor_ids": ["pm_001"],
+                },
+                "content_hash": "",
+            }
+        ),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_002",
+    )
+
+    assert readiness.preview_create_allowed is False
+    assert "BULK_REVIEW_CAMPAIGN_DEFINITION_AS_OF_DATE_MISMATCH" in readiness.reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_MEMBERSHIP_EMPTY" in readiness.reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in readiness.reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in readiness.reason_codes
+    assert readiness.actor_entitlement_state == "UNAUTHORIZED"
+
+    actor_required = build_bulk_review_campaign_definition_preview_readiness(
+        definition=DpmBulkReviewCampaignDefinition.model_validate(
+            {
+                **definition.model_dump(mode="python"),
+                "governance": {
+                    **definition.governance.model_dump(mode="python"),
+                    "entitled_actor_ids": ["pm_001"],
+                },
+                "content_hash": "",
+            }
+        ),
+        requested_as_of_date="2026-05-10",
+        actor_id=None,
+    )
+
+    assert actor_required.actor_entitlement_state == "ACTOR_REQUIRED"
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_REQUIRED_FOR_ENTITLEMENT" in actor_required.reason_codes
+
+    structurally_incomplete = build_bulk_review_campaign_definition_preview_readiness(
+        definition=definition.model_copy(
+            update={
+                "status": "SUPERSEDED",
+                "eligible_portfolio_types": [],
+                "candidates": [],
+            }
+        ),
+        requested_as_of_date="bad-date",
+        actor_id="pm_001",
+    )
+
+    assert "BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED" in structurally_incomplete.reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED" in structurally_incomplete.reason_codes
+    assert (
+        "BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED" in structurally_incomplete.reason_codes
+    )
+    assert (
+        "BULK_REVIEW_CAMPAIGN_DEFINITION_REQUESTED_AS_OF_DATE_INVALID"
+        in structurally_incomplete.reason_codes
+    )
+
+    invalid_expiry = build_bulk_review_campaign_definition_preview_readiness(
+        definition=DpmBulkReviewCampaignDefinition.model_validate(
+            {
+                **definition.model_dump(mode="python"),
+                "governance": {
+                    **definition.governance.model_dump(mode="python"),
+                    "expires_on": "bad-date",
+                },
+                "content_hash": "",
+            }
+        ),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+    )
+
+    assert invalid_expiry.expiry_state == "INVALID"
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID" in invalid_expiry.reason_codes
 
 
 def test_campaign_definition_assignment_actions_are_append_only() -> None:
@@ -468,6 +660,18 @@ def test_campaign_definition_assignment_actions_are_append_only() -> None:
             campaign_version=definition.campaign_version,
         )
         == escalated
+    )
+    assert (
+        repository.record_definition_assignment_action(
+            definition=DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **escalated.model_dump(mode="python"),
+                    "campaign_id": "missing-campaign",
+                    "content_hash": "",
+                }
+            )
+        )
+        is None
     )
 
     with pytest.raises(
@@ -1311,6 +1515,130 @@ def test_postgres_campaign_definition_repository_records_assignment_actions() ->
 
     assert repository.record_definition_assignment_action(definition=assigned) == assigned
     assert connection.committed is True
+
+
+@pytest.mark.parametrize(
+    ("method_name", "updated_builder"),
+    [
+        (
+            "record_definition_launch",
+            lambda definition: record_bulk_review_campaign_definition_launch(
+                definition=definition,
+                wave_id="dwv_campaign_launch_001",
+                launched_by="pm_001",
+                requested_as_of_date="2026-05-10",
+                correlation_id="corr-campaign-definition-launch-001",
+                idempotency_key=(
+                    "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready"
+                ),
+            ),
+        ),
+        (
+            "record_definition_approval_decision",
+            lambda definition: record_bulk_review_campaign_definition_approval_decision(
+                definition=definition,
+                decision_type="APPROVED",
+                decision_ref="BRC-APPROVAL-2026-05-001",
+                decided_by="cio_ops_committee",
+                decision_reason="Approved for bounded DPM campaign launch.",
+                correlation_id="corr-campaign-approval-decision-001",
+            ),
+        ),
+        (
+            "record_definition_assignment_action",
+            lambda definition: record_bulk_review_campaign_definition_assignment_action(
+                definition=definition,
+                action_type="ASSIGNED",
+                action_ref="BRC-ASSIGN-2026-05-001",
+                recorded_by="ops",
+                action_reason="Route campaign to assigned PM.",
+                assigned_actor_ids=["pm_001"],
+                escalation_tier="PM",
+                sla_posture="ON_TRACK",
+                correlation_id="corr-campaign-assignment-action-001",
+            ),
+        ),
+    ],
+)
+def test_postgres_campaign_definition_repository_record_mutation_edges(
+    method_name: str,
+    updated_builder,
+) -> None:
+    definition = _definition()
+    updated = updated_builder(definition)
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+
+    missing_connection = _Connection([_Cursor(row=None)])
+    repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
+    assert getattr(repository, method_name)(definition=updated) is None
+    assert missing_connection.rolled_back is True
+
+    replay_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": updated.content_hash,
+                    "payload_json": updated.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: replay_connection  # type: ignore[attr-defined, method-assign]
+    assert getattr(repository, method_name)(definition=updated) == updated
+    assert replay_connection.rolled_back is True
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    inactive_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "RETIRED",
+                    "content_hash": retired.content_hash,
+                    "payload_json": retired.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: inactive_connection  # type: ignore[attr-defined, method-assign]
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        getattr(repository, method_name)(definition=updated)
+    assert inactive_connection.rolled_back is True
+
+    update_cursor = _Cursor()
+    update_cursor.rowcount = 0
+    rowcount_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            update_cursor,
+        ]
+    )
+    repository._connect = lambda: rowcount_connection  # type: ignore[attr-defined, method-assign]
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        getattr(repository, method_name)(definition=updated)
+    assert rowcount_connection.rolled_back is True
 
 
 def test_postgres_campaign_definition_repository_records_assignment_tasks() -> None:

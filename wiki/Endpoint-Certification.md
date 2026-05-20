@@ -2105,7 +2105,7 @@ python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_get_an
 python scripts/openapi_quality_gate.py
 ```
 
-## Certified endpoint: PM operating quality policy, score-run, fairness-analysis, and review-action lifecycle
+## Certified endpoint: PM operating quality policy, score-run, fairness-analysis, review-action, and summary-invocation lifecycle
 
 Route:
 
@@ -2124,6 +2124,10 @@ Route:
 - `POST /api/v1/rebalance/pm-operating-quality/review-actions`
 - `GET /api/v1/rebalance/pm-operating-quality/review-actions`
 - `GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`
+- `POST /api/v1/rebalance/pm-operating-quality/summary-invocations/preview`
+- `POST /api/v1/rebalance/pm-operating-quality/summary-invocations`
+- `GET /api/v1/rebalance/pm-operating-quality/summary-invocations`
+- `GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`
 
 Purpose:
 
@@ -2138,6 +2142,10 @@ Enabled policies require bank approval and fairness-review evidence; score-run p
 segments for governance review. The review-action route family emits and persists bounded
 `PmOperatingQualityReviewAction:v1` ledger rows over existing score-run or fairness-analysis
 evidence without mutating the reviewed evidence.
+The summary-invocation route family emits and persists bounded
+`PmOperatingQualitySummaryInvocation:v1` history over persisted score-run and review-action
+evidence, preserving workflow/run/artifact identity and hashes without storing generated AI
+narrative text.
 
 Functional coverage:
 
@@ -2167,6 +2175,11 @@ Functional coverage:
   preserves target content hash, records a bounded bank review action, review reference, actor,
   rationale, correlation id, source refs, generated content hash, forbidden-use posture, and
   immutable/listable/retrievable ledger evidence without mutating target records,
+- summary-invocation preview/create validates a persisted score-run target and persisted
+  review-action gate, preserves score-run and review-action content hashes, records bounded
+  workflow/run/artifact refs, optional artifact hash, requested-by actor, correlation id, source
+  refs, generated content hash, forbidden-use posture, and immutable/listable/retrievable history
+  without storing generated summary text,
 - portfolio memory advertises PM scoring as a separate product and projects only bounded
   source-backed score-run lineage events without numeric score metadata.
 
@@ -2182,6 +2195,9 @@ Non-functional posture:
 - Review-action preview/create/read/list does not recalculate scores, recompute fairness posture,
   rank PMs, create HR, compensation, conduct, client-contact, trade, order, OMS, or execution
   decisions.
+- Summary-invocation preview/create/read/list does not store generated AI narrative text, expose
+  raw review rationale, recalculate scores, recompute fairness posture, rank PMs, create HR,
+  compensation, conduct, client-contact, trade, order, OMS, or execution decisions.
 
 Evidence commands:
 
