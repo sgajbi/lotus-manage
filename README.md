@@ -335,14 +335,21 @@ orders, or claiming OMS execution.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,
-compensation, conduct, approval, client-contact, execution, or OMS decisions. Workbench PM-quality
-UI remains future owner scope and must consume Gateway only.
+compensation, conduct, approval, client-contact, execution, or OMS decisions. `lotus-gateway`
+PR #234 (`c74b3e1514e8875d1cf7a479280e9deddd51a8db`, Main Releasability Gate `26163382026`)
+adds bounded PM-quality review-action preview/create/list/get BFF routes. `lotus-workbench`
+PR #245 (`2af063b`) implements the Gateway-only policy, score-run, fairness-analysis, and
+support-summary surface, and Workbench PR #302 (`8052d92`) plus PR #303 (`3581b04`) implement
+read-only PM-quality review-action ledger/detail rendering. Governed Workbench review-action
+preview/create command UX remains future owner scope and must consume Gateway only.
 `lotus-ai` PR #70 (`1951f62`) adds `pm_quality_summary.pack@v1` for review-gated support-only
 summaries over Manage-owned `PmOperatingQualityScoreRun` evidence. The pack validates score-run
 identity, source refs, supportability posture, optional bounded portfolio-memory context, and
 forbidden-use controls, and it must not calculate scores, rank PMs, generate HR/compensation/
 conduct decisions, contact clients, approve trades, route orders, claim execution, or invent
-missing source facts. Gateway/Workbench product invocation remains future owner scope.
+missing source facts. Gateway/Workbench support-summary product invocation is implemented through
+the Gateway and Workbench PM-quality realization path above; governed Workbench review-action
+preview/create command UX remains future owner scope.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
