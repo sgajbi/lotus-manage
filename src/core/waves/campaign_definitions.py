@@ -170,6 +170,74 @@ class DpmBulkReviewCampaignDefinitionAssignmentAction(BaseModel):
     content_hash: str = Field(description="Deterministic hash of the assignment-action record.")
 
 
+class DpmBulkReviewCampaignDefinitionMakerCheckerControl(BaseModel):
+    """Append-only maker-checker control evidence for a bulk-review campaign definition."""
+
+    control_id: str = Field(
+        description="Stable content-addressed maker-checker control identity.",
+        examples=["brc_maker_checker_control_9f4e1a2b3c4d5e6f"],
+    )
+    control_action: Literal[
+        "SUBMITTED_FOR_REVIEW",
+        "REVIEWER_ASSIGNED",
+        "REVIEW_COMPLETED",
+        "CONTROL_EXCEPTION_RAISED",
+        "CONTROL_EXCEPTION_RESOLVED",
+    ] = Field(description="Bounded maker-checker control action.")
+    control_ref: str = Field(
+        description="Bank workflow, control, or ticket reference for the maker-checker action.",
+        examples=["BRC-MC-2026-05-001"],
+    )
+    recorded_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when Manage recorded the maker-checker control action.",
+    )
+    recorded_by: str = Field(
+        description="Actor who recorded the maker-checker control action.",
+        examples=["ops"],
+    )
+    submitter_actor_id: str | None = Field(
+        default=None,
+        description="Maker actor for the campaign approval control, when applicable.",
+        examples=["pm_001"],
+    )
+    reviewer_actor_id: str | None = Field(
+        default=None,
+        description="Checker actor for the campaign approval control, when applicable.",
+        examples=["cio_ops_committee"],
+    )
+    required_reviewer_role: str | None = Field(
+        default=None,
+        description="Required checker role or committee role for this control action.",
+        examples=["CIO_OPERATIONS_REVIEWER"],
+    )
+    control_outcome: Literal[
+        "PENDING",
+        "PASSED",
+        "FAILED",
+        "EXCEPTION_OPEN",
+        "EXCEPTION_RESOLVED",
+    ] = Field(description="Bounded control outcome after this action.")
+    control_reason: str = Field(description="Human-authored maker-checker control rationale.")
+    correlation_id: str = Field(examples=["corr-campaign-maker-checker-control-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Source refs for workflow tickets, review minutes, or control evidence.",
+    )
+    forbidden_actions: list[str] = Field(
+        default_factory=lambda: [
+            "trade_approval",
+            "order_generation",
+            "order_routing",
+            "oms_execution",
+            "client_contact",
+            "external_workflow_orchestration",
+        ],
+        description="Actions outside this maker-checker control evidence contract.",
+    )
+    content_hash: str = Field(description="Deterministic hash of the maker-checker record.")
+
+
 class DpmBulkReviewCampaignDefinition(BaseModel):
     """Manage-owned bulk-review campaign definition over source-backed candidates."""
 
@@ -247,6 +315,15 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
             "Append-only campaign assignment and escalation actions. These records mutate "
             "assignment posture only and do not create maker-checker workflow, approval state "
             "changes, trade approval, order routing, client contact, or OMS execution."
+        ),
+    )
+    maker_checker_controls: list[DpmBulkReviewCampaignDefinitionMakerCheckerControl] = Field(
+        default_factory=list,
+        description=(
+            "Append-only maker-checker control evidence for campaign approval operations. These "
+            "records enforce Manage-side actor-separation evidence without approving trades, "
+            "generating orders, routing orders, contacting clients, orchestrating an external "
+            "workflow engine, or claiming OMS execution."
         ),
     )
     content_hash: str = Field(default="")
@@ -336,5 +413,7 @@ def bulk_review_campaign_definition_hash(
         payload.pop("approval_decisions", None)
     if not payload.get("assignment_actions"):
         payload.pop("assignment_actions", None)
+    if not payload.get("maker_checker_controls"):
+        payload.pop("maker_checker_controls", None)
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()

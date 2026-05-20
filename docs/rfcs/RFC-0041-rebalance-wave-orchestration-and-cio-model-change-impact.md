@@ -1076,6 +1076,23 @@ contact clients, or claim OMS execution. The remaining RFC41-WTBD-003 campaign g
 global portfolio-universe campaign discovery, maker-checker workflow, and broader workflow
 automation beyond the append-only assignment ledger.
 
+2026-05-20 campaign maker-checker control addendum:
+
+`lotus-manage` now exposes
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
+and
+`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
+as a bounded append-only `BulkReviewCampaignDefinitionMakerCheckerControlPage` ledger. The domain
+helper lives in `src/core/waves/campaign_maker_checker_controls.py` and records submission,
+reviewer assignment, completed review, control exception, and control-exception resolution
+evidence with deterministic control ids, conflict-safe control refs, reviewer role, control
+outcome, correlation id, source refs, and explicit forbidden actions. Completed reviews require
+distinct submitter and reviewer actors. This mutates campaign control evidence only; it does not
+approve trades, generate or route orders, contact clients, orchestrate external workflow systems,
+or claim OMS execution. The remaining RFC41-WTBD-003 campaign gap is therefore global
+portfolio-universe campaign discovery and mutable assignment/escalation workflow beyond the
+append-only ledgers.
+
 Gold-pass decision:
 
 RFC-0041 reaches the expected standard for manage-owned wave authority and the bounded first-wave
@@ -1085,7 +1102,7 @@ tactical house-view source-product consumption, and bounded manage campaign memb
 real and governed, with campaign-definition retirement and supersession now added as bounded
 lifecycle controls, lifecycle-event projection added as bounded audit posture, workflow-board
 projection plus assignment-plan projection added as read-only cross-actor operating posture, and
-assignment-action records added as append-only assignment/escalation posture evidence. Global
-campaign discovery, approval state mutation, maker-checker workflow, broader workflow automation
-beyond the append-only assignment ledger, and external execution remain explicit future scope, not
+assignment-action records plus maker-checker control records added as append-only operating
+posture evidence. Global campaign discovery, approval state mutation, broader mutable workflow
+automation beyond the append-only ledgers, and external execution remain explicit future scope, not
 hidden defects in the supported wave path.

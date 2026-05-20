@@ -722,10 +722,18 @@ Current repository posture:
     posture with deterministic action ids, conflict-safe action refs, assigned actor ids,
     escalation tier, SLA posture, correlation id, and optional source refs. They mutate assignment
     posture evidence only and do not mutate approval state, create maker-checker workflow, approve
-    trades, generate or route orders, contact clients, or claim OMS execution. Maker-checker
-    workflow beyond append-only approval decisions, global portfolio-universe campaign discovery,
-    wave risk/performance analytics posture, and external OMS execution remain unpromoted until
-    owning implementations are live-proven. Manage consumes `lotus-core`
+    trades, generate or route orders, contact clients, or claim OMS execution.
+    Manage now also exposes append-only campaign maker-checker controls at
+    `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
+    plus a bounded audit page at
+    `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
+    Completed reviews require distinct submitter and reviewer actors and preserve deterministic
+    control ids, conflict-safe control refs, reviewer role, control outcome, correlation id, and
+    optional source refs. The control ledger mutates campaign control evidence only and does not
+    approve trades, generate or route orders, contact clients, orchestrate external workflow
+    systems, or claim OMS execution. Global portfolio-universe campaign discovery,
+    broader mutable campaign workflow automation, wave risk/performance analytics posture, and
+    external OMS execution remain unpromoted until owning implementations are live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
     diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
     acknowledgements, confirm fills, or settle trades.

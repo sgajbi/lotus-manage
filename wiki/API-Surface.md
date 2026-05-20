@@ -148,6 +148,17 @@ flowchart LR
   approval, order generation, routing, client contact, maker-checker workflow, or OMS claims.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
   returns a bounded `BulkReviewCampaignDefinitionApprovalDecisionPage` audit page.
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
+  records append-only assignment and escalation posture evidence without approval-state mutation,
+  trade approval, order generation, routing, client contact, maker-checker workflow, or OMS claims.
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
+  returns a bounded `BulkReviewCampaignDefinitionAssignmentActionPage` audit page.
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
+  records append-only maker-checker control evidence with actor separation required for completed
+  reviews, without trade approval, order generation, routing, client contact, external workflow
+  orchestration, or OMS claims.
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
+  returns a bounded `BulkReviewCampaignDefinitionMakerCheckerControlPage` audit page.
 
 These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
 `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. CIO model-change

@@ -37,6 +37,10 @@ from src.core.waves.campaign_assignment_actions import (
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
+from src.core.waves.campaign_maker_checker_controls import (
+    build_bulk_review_campaign_definition_maker_checker_control_page,
+    record_bulk_review_campaign_definition_maker_checker_control,
+)
 
 
 def _definition(
@@ -609,4 +613,247 @@ def test_campaign_assignment_actions_require_active_definition() -> None:
             escalation_tier="PM",
             sla_posture="ON_TRACK",
             correlation_id="corr-campaign-assignment-action-001",
+        )
+
+
+def test_campaign_maker_checker_controls_record_actor_separation() -> None:
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=_definition(),
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+    reviewed = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=submitted,
+        control_action="REVIEW_COMPLETED",
+        control_ref="BRC-MC-2026-05-002",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        reviewer_actor_id="cio_ops_committee",
+        required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+        control_outcome="PASSED",
+        control_reason="Independent reviewer accepted the campaign definition evidence.",
+        correlation_id="corr-campaign-maker-checker-control-002",
+    )
+    replay = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=reviewed,
+        control_action="REVIEW_COMPLETED",
+        control_ref="BRC-MC-2026-05-002",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        reviewer_actor_id="cio_ops_committee",
+        required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+        control_outcome="PASSED",
+        control_reason="Independent reviewer accepted the campaign definition evidence.",
+        correlation_id="corr-campaign-maker-checker-control-002",
+    )
+
+    assert replay is reviewed
+    assert len(reviewed.maker_checker_controls) == 2
+    assert reviewed.maker_checker_controls[0].control_id.startswith("brc_maker_checker_control_")
+    assert "oms_execution" in reviewed.maker_checker_controls[0].forbidden_actions
+    assert reviewed.content_hash.startswith("sha256:")
+
+    page = build_bulk_review_campaign_definition_maker_checker_control_page(
+        definition=reviewed,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignDefinitionMakerCheckerControlPage"
+    assert page.count == 2
+    assert page.latest_control_action == "REVIEW_COMPLETED"
+    assert page.current_control_outcome == "PASSED"
+    assert page.current_reviewer_actor_id == "cio_ops_committee"
+
+
+def test_campaign_maker_checker_controls_record_reviewer_assignment_and_exceptions() -> None:
+    assigned = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=_definition(),
+        control_action="REVIEWER_ASSIGNED",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        reviewer_actor_id="cio_ops_committee",
+        required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+        control_outcome="PENDING",
+        control_reason="Independent reviewer assigned for campaign definition control.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+    exception_open = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=assigned,
+        control_action="CONTROL_EXCEPTION_RAISED",
+        control_ref="BRC-MC-2026-05-002",
+        recorded_by="ops",
+        control_outcome="EXCEPTION_OPEN",
+        control_reason="Control evidence requires remediation.",
+        correlation_id="corr-campaign-maker-checker-control-002",
+    )
+    exception_resolved = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=exception_open,
+        control_action="CONTROL_EXCEPTION_RESOLVED",
+        control_ref="BRC-MC-2026-05-003",
+        recorded_by="ops",
+        control_outcome="EXCEPTION_RESOLVED",
+        control_reason="Control evidence remediation accepted.",
+        correlation_id="corr-campaign-maker-checker-control-003",
+    )
+
+    page = build_bulk_review_campaign_definition_maker_checker_control_page(
+        definition=exception_resolved,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.count == 3
+    assert page.latest_control_action == "CONTROL_EXCEPTION_RESOLVED"
+    assert page.current_control_outcome == "EXCEPTION_RESOLVED"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason_code"),
+    [
+        (
+            {"control_ref": " "},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_REQUIRED",
+        ),
+        (
+            {"recorded_by": " "},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_ACTOR_REQUIRED",
+        ),
+        (
+            {"control_reason": " "},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REASON_REQUIRED",
+        ),
+        (
+            {"correlation_id": " "},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_CORRELATION_REQUIRED",
+        ),
+        (
+            {"submitter_actor_id": None},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMITTER_REQUIRED",
+        ),
+        (
+            {"control_outcome": "PASSED"},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_OUTCOME_INVALID",
+        ),
+        (
+            {"control_action": "REVIEWER_ASSIGNED", "submitter_actor_id": None},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_REQUIRED",
+        ),
+        (
+            {
+                "control_action": "REVIEWER_ASSIGNED",
+                "submitter_actor_id": None,
+                "reviewer_actor_id": "cio_ops_committee",
+                "required_reviewer_role": "CIO_OPERATIONS_REVIEWER",
+                "control_outcome": "PASSED",
+            },
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ASSIGNMENT_OUTCOME_INVALID",
+        ),
+        (
+            {"control_action": "REVIEW_COMPLETED", "reviewer_actor_id": None},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTORS_REQUIRED",
+        ),
+        (
+            {"control_action": "REVIEW_COMPLETED", "reviewer_actor_id": "pm_001"},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED",
+        ),
+        (
+            {"control_action": "REVIEW_COMPLETED", "reviewer_actor_id": "cio_ops_committee"},
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEW_OUTCOME_INVALID",
+        ),
+        (
+            {
+                "control_action": "CONTROL_EXCEPTION_RAISED",
+                "submitter_actor_id": None,
+                "control_outcome": "PENDING",
+            },
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_EXCEPTION_OUTCOME_INVALID",
+        ),
+        (
+            {
+                "control_action": "CONTROL_EXCEPTION_RESOLVED",
+                "submitter_actor_id": None,
+                "control_outcome": "PENDING",
+            },
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_EXCEPTION_RESOLUTION_INVALID",
+        ),
+    ],
+)
+def test_campaign_maker_checker_controls_validate_required_fields(
+    overrides: dict[str, object],
+    reason_code: str,
+) -> None:
+    request = {
+        "definition": _definition(),
+        "control_action": "SUBMITTED_FOR_REVIEW",
+        "control_ref": "BRC-MC-2026-05-001",
+        "recorded_by": "ops",
+        "submitter_actor_id": "pm_001",
+        "reviewer_actor_id": None,
+        "required_reviewer_role": None,
+        "control_outcome": "PENDING",
+        "control_reason": "Campaign definition submitted for independent review.",
+        "correlation_id": "corr-campaign-maker-checker-control-001",
+    } | overrides
+
+    with pytest.raises(ValueError, match=reason_code):
+        record_bulk_review_campaign_definition_maker_checker_control(**request)
+
+
+def test_campaign_maker_checker_controls_reject_conflicting_refs_and_inactive_definitions() -> None:
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=_definition(),
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT",
+    ):
+        record_bulk_review_campaign_definition_maker_checker_control(
+            definition=submitted,
+            control_action="CONTROL_EXCEPTION_RAISED",
+            control_ref="BRC-MC-2026-05-001",
+            recorded_by="ops",
+            control_outcome="EXCEPTION_OPEN",
+            control_reason="Conflicting reuse.",
+            correlation_id="corr-campaign-maker-checker-control-conflict",
+        )
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition().model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_ACTIVE_REQUIRED",
+    ):
+        record_bulk_review_campaign_definition_maker_checker_control(
+            definition=retired,
+            control_action="SUBMITTED_FOR_REVIEW",
+            control_ref="BRC-MC-2026-05-002",
+            recorded_by="ops",
+            submitter_actor_id="pm_001",
+            control_outcome="PENDING",
+            control_reason="Campaign definition submitted for independent review.",
+            correlation_id="corr-campaign-maker-checker-control-002",
         )

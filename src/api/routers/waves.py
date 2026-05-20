@@ -100,6 +100,8 @@ from src.core.waves import (
     CampaignApprovalInboxStatus,
     CampaignAssignmentEscalationTier,
     CampaignAssignmentSlaPosture,
+    CampaignMakerCheckerControlAction,
+    CampaignMakerCheckerControlOutcome,
     CampaignWorkflowBoardStatus,
     CampaignWorkflowNextAction,
     DpmBulkReviewCampaignApprovalInboxPage,
@@ -107,6 +109,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
@@ -128,8 +131,10 @@ from src.core.waves import (
     record_bulk_review_campaign_definition_launch,
     build_bulk_review_campaign_definition_approval_decision_page,
     build_bulk_review_campaign_definition_assignment_action_page,
+    build_bulk_review_campaign_definition_maker_checker_control_page,
     record_bulk_review_campaign_definition_approval_decision,
     record_bulk_review_campaign_definition_assignment_action,
+    record_bulk_review_campaign_definition_maker_checker_control,
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_assignment_plan_page,
     build_bulk_review_campaign_definition_workflow_overview,
@@ -530,6 +535,52 @@ class DpmBulkReviewCampaignDefinitionAssignmentActionRequest(BaseModel):
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
         description="Optional assignment evidence refs such as queue or ticket ids.",
+    )
+
+
+class DpmBulkReviewCampaignDefinitionMakerCheckerControlRequest(BaseModel):
+    control_action: CampaignMakerCheckerControlAction = Field(
+        description="Bounded campaign maker-checker control action.",
+        examples=["REVIEW_COMPLETED"],
+    )
+    control_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, control, or ticket reference for this control action.",
+        examples=["BRC-MC-2026-05-001"],
+    )
+    recorded_by: str = Field(
+        min_length=1,
+        description="Actor recording the campaign maker-checker control action.",
+        examples=["ops"],
+    )
+    submitter_actor_id: str | None = Field(
+        default=None,
+        description="Maker actor for the control. Required for submissions and completed reviews.",
+        examples=["pm_001"],
+    )
+    reviewer_actor_id: str | None = Field(
+        default=None,
+        description="Checker actor for the control. Required for assignments and completed reviews.",
+        examples=["cio_ops_committee"],
+    )
+    required_reviewer_role: str | None = Field(
+        default=None,
+        description="Required checker role or committee role for this control action.",
+        examples=["CIO_OPERATIONS_REVIEWER"],
+    )
+    control_outcome: CampaignMakerCheckerControlOutcome = Field(
+        description="Bounded control outcome after this action.",
+        examples=["PASSED"],
+    )
+    control_reason: str = Field(
+        min_length=1,
+        description="Human-authored campaign maker-checker control rationale.",
+        examples=["Independent reviewer approved the campaign definition control evidence."],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-maker-checker-control-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Optional control evidence refs such as workflow tickets or review minutes.",
     )
 
 
@@ -1936,6 +1987,88 @@ def list_bulk_review_campaign_definition_assignment_actions(
         campaign_version=campaign_version,
     )
     return build_bulk_review_campaign_definition_assignment_action_page(
+        definition=definition,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_201_CREATED,
+    summary="Record bulk-review campaign maker-checker control",
+    description=(
+        "Records append-only maker-checker control evidence on one active Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. Completed reviews require distinct submitter and "
+        "reviewer actors. This evidence does not approve trades, generate orders, route orders, "
+        "contact clients, orchestrate external workflow systems, or claim OMS execution."
+    ),
+)
+def record_bulk_review_campaign_definition_maker_checker_control_endpoint(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionMakerCheckerControlRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    try:
+        updated = record_bulk_review_campaign_definition_maker_checker_control(
+            definition=definition,
+            control_action=request.control_action,
+            control_ref=request.control_ref,
+            recorded_by=request.recorded_by,
+            submitter_actor_id=request.submitter_actor_id,
+            reviewer_actor_id=request.reviewer_actor_id,
+            required_reviewer_role=request.required_reviewer_role,
+            control_outcome=request.control_outcome,
+            control_reason=request.control_reason,
+            correlation_id=request.correlation_id,
+            source_refs=request.source_refs,
+        )
+        persisted = repository.record_definition_maker_checker_control(definition=updated)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if persisted is None:
+        raise campaign_definition_not_found_http_exception()
+    return persisted
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls",
+    response_model=DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign maker-checker controls",
+    description=(
+        "Returns a bounded append-only maker-checker control page for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. The response summarizes current control posture "
+        "without trade approval, order generation, order routing, client contact, external "
+        "workflow orchestration, or OMS execution claims."
+    ),
+)
+def list_bulk_review_campaign_definition_maker_checker_controls(
+    campaign_id: str,
+    campaign_version: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionMakerCheckerControlPage:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    return build_bulk_review_campaign_definition_maker_checker_control_page(
         definition=definition,
         limit=limit,
         offset=offset,

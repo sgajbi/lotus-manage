@@ -66,3 +66,10 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
         raise NotImplementedError
+
+    def record_definition_maker_checker_control(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError
