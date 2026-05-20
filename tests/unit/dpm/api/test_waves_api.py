@@ -2746,13 +2746,22 @@ def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readine
     assert "NO_MAKER_CHECKER_WORKFLOW" not in ready_item["operating_boundaries"]
     assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in ready_item["operating_boundaries"]
     assert payload["capability_posture"]["external_workflow_orchestration"] == "UNSUPPORTED"
+    assert payload["capability_posture"]["external_workflow_events_projected"] is False
     assert (
         payload["capability_posture"]["external_workflow_owner_posture"] == "DEFERRED_SOURCE_OWNER"
     )
+    assert payload["capability_posture"]["required_source_product"] == (
+        "ExternalWorkflowOrchestrationRecord:v1"
+    )
+    assert (
+        "external_workflow_task_creation" in (payload["capability_posture"]["blocked_capabilities"])
+    )
+    assert payload["capability_posture"]["content_hash"].startswith("sha256:")
     assert (
         ready_item["capability_posture"]["manage_assignment_task_mutation"]
         == "CONTROLLED_ENDPOINT_ONLY"
     )
+    assert ready_item["capability_posture"] == payload["capability_posture"]
     assert (
         "NO_EXTERNAL_WORKFLOW_ORCHESTRATION"
         in ready_item["capability_posture"]["operating_boundaries"]

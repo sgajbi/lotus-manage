@@ -773,8 +773,18 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
         candidate.capability_posture.manage_assignment_task_mutation == "CONTROLLED_ENDPOINT_ONLY"
     )
     assert candidate.capability_posture.external_workflow_orchestration == "UNSUPPORTED"
+    assert candidate.capability_posture.external_workflow_events_projected is False
     assert candidate.capability_posture.external_workflow_owner_posture == "DEFERRED_SOURCE_OWNER"
+    assert candidate.capability_posture.required_source_product == (
+        "ExternalWorkflowOrchestrationRecord:v1"
+    )
+    assert "external_workflow_task_creation" in candidate.capability_posture.blocked_capabilities
+    assert (
+        "external_workflow_state_synchronization"
+        in candidate.capability_posture.blocked_capabilities
+    )
     assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in candidate.capability_posture.operating_boundaries
+    assert candidate.capability_posture.content_hash.startswith("sha256:")
 
     assert active.automation_status == "MANUAL_REVIEW_REQUIRED"
     assert active.automation_action == "MONITOR_ACTIVE_TASK"
@@ -808,6 +818,12 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
         "ESCALATE_ASSIGNMENT_TASK": 1,
     }
     assert page.capability_posture.external_workflow_orchestration == "UNSUPPORTED"
+    assert page.capability_posture.external_workflow_events_projected is False
+    assert page.capability_posture.required_source_product == (
+        "ExternalWorkflowOrchestrationRecord:v1"
+    )
+    assert "external_workflow_escalation" in page.capability_posture.blocked_capabilities
+    assert page.capability_posture.content_hash == candidate.capability_posture.content_hash
 
     empty_page = build_bulk_review_campaign_workflow_automation_page(
         definitions=[],
@@ -824,6 +840,11 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
     assert empty_page.items == []
     assert empty_page.capability_posture.manage_assignment_task_readiness == "SUPPORTED"
     assert empty_page.capability_posture.external_workflow_orchestration == "UNSUPPORTED"
+    assert empty_page.capability_posture.external_workflow_events_projected is False
+    assert empty_page.capability_posture.blocked_capabilities == (
+        candidate.capability_posture.blocked_capabilities
+    )
+    assert empty_page.capability_posture.content_hash == candidate.capability_posture.content_hash
 
 
 def test_campaign_workflow_automation_filters_actions_and_closed_rows() -> None:

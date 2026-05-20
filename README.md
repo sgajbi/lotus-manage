@@ -198,7 +198,10 @@ escalating Manage-owned assignment tasks without mutating tasks, orchestrating e
 contacting clients, mutating maker-checker control state, approving trades, generating orders, or
 claiming OMS execution. The response includes machine-readable `capability_posture` so consumers
 can distinguish supported Manage assignment-task readiness and controlled endpoint-only task
-mutation from unsupported external workflow orchestration. Manage also supports append-only
+mutation from unsupported external workflow orchestration; the posture names blocked external
+workflow task creation, assignment, synchronization, escalation, and completion capabilities,
+requires future `ExternalWorkflowOrchestrationRecord:v1` source ownership, and carries a
+deterministic content hash. Manage also supports append-only
 assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

@@ -1929,7 +1929,9 @@ def list_bulk_review_campaign_assignment_plan(
         "recalculate source facts, mutate approval state, mutate maker-checker control state, "
         "contact clients, approve trades, generate orders, or claim OMS execution. The response "
         "includes `capability_posture` so consumers can distinguish supported Manage assignment "
-        "readiness from unsupported external workflow orchestration even when the page is empty."
+        "readiness from unsupported external workflow orchestration even when the page is empty; "
+        "that posture names blocked external workflow capabilities, the required future "
+        "`ExternalWorkflowOrchestrationRecord:v1` source product, and a deterministic content hash."
     ),
 )
 def list_bulk_review_campaign_workflow_automation(

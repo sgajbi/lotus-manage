@@ -764,7 +764,11 @@ Current repository posture:
     systems, or claim OMS execution. Workflow-automation responses now carry
     `BulkReviewCampaignWorkflowCapabilityPosture:v1` at page and row level, explicitly separating
     supported Manage assignment-task readiness and controlled endpoint-only task mutation from
-    unsupported external workflow orchestration and deferred external workflow ownership. Global
+    unsupported external workflow orchestration and deferred external workflow ownership. The
+    posture also names blocked external workflow task creation, assignment, synchronization,
+    escalation, and completion capabilities, requires future
+    `ExternalWorkflowOrchestrationRecord:v1` source ownership, and carries a deterministic content
+    hash. Global
     portfolio-universe campaign discovery,
     broader workflow automation beyond controlled Manage-side assignment tasks, wave
     risk/performance analytics posture, and
