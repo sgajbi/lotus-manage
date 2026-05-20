@@ -319,9 +319,14 @@ Audience use:
 
 ## WTBD Product-Readiness Roadmap
 
-`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-19 clean mainline
-snapshot after `lotus-manage` PR #286, the RFC39-WTBD-008 external treasury reclassification, and
-the RFC37 partial-classification normalization, it tracks 59 WTBD items: 45 done on merged/published truth, 8 partial or in progress, and 6 remaining or open. The next execution wave should focus on product
+`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-20 clean mainline
+snapshot after `lotus-manage` PR #317, the RFC39-WTBD-008 external treasury reclassification, the
+RFC37 partial-classification normalization, and the source-owned performance MWR FX-evidence
+advance from `lotus-performance` PR #168, it tracks 59 WTBD items: 45 done on merged/published
+truth, 8 partial or in progress, and 6 remaining or open. The count does not move for PR #168
+because it advances an existing RFC42-WTBD-006 partial row rather than closing stateful per-input
+FX evidence, broader FX methodology, predictive execution, or OMS acknowledgement gaps. The next
+execution wave should focus on product
 surfaces that materially improve bank-buyable demo and operating value without inventing
 unsupported source truth.
 
@@ -336,6 +341,15 @@ visible grouping granularity by recomputing a date/currency panel from summed we
 weight-averaged local/FX returns before Karnosky-Singer effects are applied. Manage, Gateway,
 Workbench, reporting, and AI consumers must preserve this source-owned total rather than
 reconstructing FX attribution from visible rows.
+
+Current performance MWR FX-evidence source-owner proof additionally includes `lotus-performance`
+PR #168 / wiki `6fb7209`, which adds stateless `source_preconverted_fx_evidence` validation and
+response evidence for per-input source/reporting amounts, currencies, FX rates, pairs, dates,
+sources, versions, conversion policies, timestamps, and fingerprints. Stateful MWR remains
+single-reporting-currency without per-input FX metadata. Manage, Gateway, Workbench, reporting,
+and AI consumers must preserve this source-owned evidence posture rather than converting MWR FX,
+sourcing rates, recalculating mixed-currency capital timing, or promoting missing stateful FX
+metadata as ready evidence.
 
 Current risk historical-attribution supportability proof additionally includes `lotus-risk` PR
 #139 / wiki `421ae79`, which makes `HistoricalRiskAttributionReport:v1` degrade response-level

@@ -70,6 +70,16 @@ and weight-averaged local/FX returns before applying Karnosky-Singer formulas. T
 methodology truth consumed by Manage; it does not add Manage-local FX attribution, tax,
 execution/OMS, or Workbench product claims.
 
+2026-05-20 source-owner MWR FX-evidence update: `lotus-performance` PR #168 (`781415f`, wiki
+`6fb7209`, Main Releasability Gate `26135968611`) adds stateless
+`source_preconverted_fx_evidence` for MWR requests. Performance now validates complete per-input
+source/reporting amounts, currencies, FX rates, pairs, dates, sources, versions, conversion
+policies, timestamps, and fingerprints before emitting complete source-preconverted FX metadata.
+Stateful MWR remains single-reporting-currency without per-input FX metadata. Manage consumes this
+as source-owner evidence truth only and still does not perform MWR FX conversion, FX-rate sourcing,
+FX attribution, mixed-currency capital-timing methodology, execution/OMS, or Workbench product
+claims.
+
 2026-05-16 source-owner historical-attribution supportability update: `lotus-risk` PR #139
 (`40ac7a5`, wiki `421ae79`) tightens `HistoricalRiskAttributionReport:v1` so attribution-set
 quality flags degrade response-level calculation supportability. Manage consumes that degraded

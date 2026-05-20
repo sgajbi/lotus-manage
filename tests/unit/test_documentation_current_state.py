@@ -339,8 +339,11 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 45 done on merged/published truth, 8 partial" in supported_features
+    assert "59 WTBD items: 45 done on merged/published" in supported_features
+    assert "truth, 8 partial or in progress" in supported_features
     assert "6 remaining or open" in supported_features
+    assert "source-owned performance MWR FX-evidence" in supported_features
+    assert "advances an existing RFC42-WTBD-006 partial row" in supported_features
 
 
 def test_indexed_rfc_and_adr_files_exist() -> None:
@@ -1469,10 +1472,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
-    assert "Snapshot basis: the 2026-05-18 clean mainline" in work_to_be_done
-    assert "`lotus-manage` PR #286 (`6a4e199e31466dd9cf1a3b882072803c364a51e4`)" in (
-        work_to_be_done
-    )
+    assert "Snapshot basis: the 2026-05-20 clean mainline" in work_to_be_done
+    assert "`lotus-manage` PR #317" in work_to_be_done
+    assert "`3cbfd886873805f5957ae188b7ef6c68c93ab5a6`" in work_to_be_done
+    assert "`lotus-performance` PR #168 (`781415f`, wiki `6fb7209`)" in (work_to_be_done)
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 45 |" in work_to_be_done
     assert "| Partial / in progress | 8 |" in work_to_be_done
@@ -1927,6 +1930,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "and `lotus-manage` PR #126" in work_to_be_done
     assert "RFC41-WTBD-004 - Risk And Performance Aggregate Enrichment" in work_to_be_done
     assert "Latest WTBD-006 performance MWR source-truth proof" in work_to_be_done
+    assert "Latest WTBD-006 performance MWR source-preconverted FX-evidence proof" in (
+        work_to_be_done
+    )
+    assert "`source_preconverted_fx_evidence`" in work_to_be_done
+    assert '`currency_mode="SOURCE_PRECONVERTED_WITH_FX_EVIDENCE"`' in work_to_be_done
+    assert "stateful upstream per-input FX conversion" in work_to_be_done
     assert "Latest WTBD-006 performance contribution source-truth proof" in work_to_be_done
     assert "Latest WTBD-006 performance attribution source-truth proof" in work_to_be_done
     assert "Latest WTBD-006 core realized-outcome source-boundary proof" in work_to_be_done
@@ -2107,7 +2116,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 45 done on merged/published truth, 8 partial" in (supported_features)
+    assert "59 WTBD items: 45 done on merged/published" in supported_features
+    assert "truth, 8 partial or in progress" in supported_features
+    assert "source-owned performance MWR FX-evidence" in supported_features
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (
