@@ -3339,7 +3339,7 @@ members. Optional campaign governance evidence now preserves approval reference,
 approval time, expiry date, access purpose, source refs, and actor entitlement allow-list; expired
 campaigns, incomplete approval evidence, invalid expiry dates, and unauthorized actors fail closed.
 Manage does not discover the full book, calculate holdings/risk/performance/advisory reasons,
-run a maker-checker workflow, or claim broad campaign workflow support.
+mutate maker-checker control state, or claim broad campaign workflow support.
 
 This slice adds the bounded tactical house-view manage-consumer result. `lotus-advise` owns the
 governed bank-wide `TacticalHouseViewAffectedCohort:v1` source product for bank-authored tactical
@@ -3382,7 +3382,7 @@ remains visible through list/get/discovery for audit, and fails closed for new
 `BULK_REVIEW_CAMPAIGN` preview/create. Supersession is implemented in the domain lifecycle module
 `src/core/waves/campaign_definition_lifecycle.py`, keeping lifecycle rules out of the API router.
 This is still a bounded Manage-owned lifecycle control only; it does not discover a global
-portfolio universe, calculate source-owned facts, run maker-checker workflow, or claim OMS
+portfolio universe, calculate source-owned facts, mutate maker-checker control state, or claim OMS
 execution.
 
 2026-05-16 campaign-definition lifecycle-event projection addendum:
@@ -3395,7 +3395,7 @@ correlation id, status-after, content hash, and replacement version/hash for sup
 The event-builder lives in `src/core/waves/campaign_definition_events.py`, keeping read-model
 projection out of the API router. This is a read-only audit surface over Manage-owned campaign
 definition lifecycle truth; it does not discover campaign membership, calculate source facts,
-create maker-checker workflow state, or claim OMS execution.
+mutate maker-checker control state, or claim OMS execution.
 
 2026-05-17 campaign-definition preview-readiness addendum:
 
@@ -3407,7 +3407,7 @@ source-backed candidate eligibility, governance approval completeness, expiry po
 actor entitlement, lifecycle-event count, source-ref count, and deterministic content hash. The
 readiness builder lives in `src/core/waves/campaign_definition_readiness.py`, keeping business
 logic out of the router. It fails closed with reason codes instead of recalculating membership,
-discovering a global portfolio universe, creating maker-checker workflow, approving trades, or
+discovering a global portfolio universe, mutating maker-checker control state, approving trades, or
 claiming OMS execution.
 
 2026-05-17 campaign-definition launch-package addendum:
@@ -3421,13 +3421,13 @@ the exact `BULK_REVIEW_CAMPAIGN` preview/create request draft, durable-create id
 correlation headers, operating-boundary reason codes, and a deterministic package hash. The
 builder lives in `src/core/waves/campaign_definition_launch_package.py`, keeping launch-package
 assembly out of the router. It does not create a wave, recalculate campaign membership, discover a
-global portfolio universe, create maker-checker workflow, approve trades, or claim OMS execution.
+global portfolio universe, mutate maker-checker control state, approve trades, or claim OMS execution.
 The launch endpoint consumes the same package, creates one durable `BULK_REVIEW_CAMPAIGN` wave
 only when launch state is `READY`, replays with the deterministic launch idempotency key, and fails
 closed before persistence when readiness is blocked. Successful launches append bounded launch
 history to the persisted definition and project `LAUNCHED` lifecycle events with wave id, actor,
-requested as-of date, correlation id, and idempotency key, without adding maker-checker,
-trade-approval, order-routing, or OMS claims.
+requested as-of date, correlation id, and idempotency key, without mutating maker-checker control
+state, adding trade-approval, order-routing, or OMS claims.
 
 2026-05-17 campaign-definition launch-history audit-page addendum:
 
@@ -3435,7 +3435,8 @@ trade-approval, order-routing, or OMS claims.
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`.
 The endpoint returns `BulkReviewCampaignDefinitionLaunchHistory:v1` with paged append-only launch
 records, total count, wave id, actor, requested as-of date, correlation id, idempotency key, and
-explicit no-maker-checker/no-trade-approval/no-order/no-OMS operating boundaries. The page builder
+explicit no-maker-checker-control-state-mutation/no-trade-approval/no-order/no-OMS operating
+boundaries. The page builder
 lives in `src/core/waves/campaign_definition_launch_history.py`, so downstream consumers can read
 launch audit posture without fetching the full definition payload or inferring launch records from
 generic lifecycle events. It does not recalculate membership, discover a global portfolio universe,
@@ -3452,7 +3453,7 @@ optional launch-package guidance for a requested as-of date and actor. The build
 router and reusing the existing discovery, readiness, lifecycle-event, launch-history, and
 launch-package domain modules. It gives Gateway/Workbench a single operator-safe read model for
 campaign-definition workflow state while preserving the no-global-universe, no-source-recalculation,
-no-maker-checker, no-trade-approval, no-order, and no-OMS boundaries.
+no-maker-checker-control-state-mutation, no-trade-approval, no-order, and no-OMS boundaries.
 
 2026-05-20 campaign operating-queue addendum:
 
@@ -3464,7 +3465,7 @@ campaign discovery, fail-closed preview readiness, lifecycle event counts, and l
 posture. The builder lives in `src/core/waves/campaign_operating_queue.py`, so queue policy stays
 out of the API router and reuses existing campaign read models instead of duplicating readiness or
 membership logic. This is an operator read model only: it does not discover the global portfolio
-universe, recalculate source facts, mutate approval state, run maker-checker workflow, approve
+universe, recalculate source facts, mutate approval state, mutate maker-checker control state, approve
 trades, generate orders, route orders, or claim OMS execution.
 
 2026-05-20 campaign approval-attention inbox addendum:
@@ -3477,7 +3478,7 @@ records into `APPROVAL_COMPLETE`, `APPROVAL_REQUIRED`, `APPROVAL_INCOMPLETE`,
 discovery and fail-closed preview readiness posture. The builder lives in
 `src/core/waves/campaign_approval_inbox.py`, so approval-attention routing stays out of the API
 router and reuses governed definition/readiness truth. This is an attention read model only: it
-does not mutate approval state, implement maker-checker workflow, approve trades, generate orders,
+does not mutate approval state, mutate maker-checker control state, approve trades, generate orders,
 route orders, or claim OMS execution.
 
 2026-05-20 campaign approval-decision ledger addendum:
@@ -3492,7 +3493,7 @@ and rejects conflicting reuse of a `decision_ref`. The page returns
 `BulkReviewCampaignDefinitionApprovalDecisionPage` with latest-decision posture and pagination.
 The builder lives in `src/core/waves/campaign_definition_approval_decisions.py`, so approval
 posture mutation stays in domain code and repository adapters only persist an updated definition.
-This is campaign approval posture evidence only: it does not implement maker-checker workflow,
+This is campaign approval posture evidence only: it does not mutate maker-checker control state,
 approve trades, generate or route orders, contact clients, discover the global portfolio universe,
 recalculate membership, or claim OMS execution.
 
@@ -3519,7 +3520,7 @@ remain future depth.
 `GET /api/v1/rebalance/waves/campaign-assignment-plan`. The endpoint returns
 `BulkReviewCampaignAssignmentPlan:v1`, deriving actor routing, escalation tier, SLA posture, and
 reason codes from the workflow board without mutating assignment state, creating escalation tasks,
-mutating approval state, creating maker-checker workflow, approving trades, generating orders, or
+mutating approval state, mutating maker-checker control state, approving trades, generating orders, or
 claiming OMS execution. The builder lives in `src/core/waves/campaign_assignment_plan.py`, and it
 reuses `BulkReviewCampaignWorkflowBoard:v1` so assignment/escalation classification stays
 composed from existing read models instead of duplicating readiness, approval, queue, or lifecycle
@@ -3550,7 +3551,7 @@ task lifecycle state out of the API router and infrastructure adapters.
 
 This advances RFC41-WTBD-003 from read-only assignment planning and append-only posture ledgers
 into a bounded mutable Manage-side task lifecycle. It mutates only assignment task state and does
-not mutate approval state, create maker-checker workflow, approve trades, generate or route
+not mutate approval state, mutate maker-checker control state, approve trades, generate or route
 orders, contact clients, orchestrate external workflow systems, discover the global portfolio
 universe, recalculate membership, or claim OMS execution. RFC41-WTBD-003 remains partial for
 global portfolio-universe campaign discovery and broader workflow automation beyond controlled

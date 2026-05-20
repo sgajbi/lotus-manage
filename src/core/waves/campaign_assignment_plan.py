@@ -13,6 +13,9 @@ from src.core.waves.campaign_workflow_board import (
     DpmBulkReviewCampaignWorkflowBoardItem,
     build_bulk_review_campaign_workflow_board_item,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_ASSIGNMENT_PLAN_OPERATING_BOUNDARIES,
+)
 
 
 CampaignAssignmentEscalationTier = Literal["NONE", "PM", "OPS", "GOVERNANCE"]
@@ -56,18 +59,7 @@ class DpmBulkReviewCampaignAssignmentPlanItem(BaseModel):
         description="Source workflow-board row used to derive the assignment plan."
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "READ_ONLY_ASSIGNMENT_PLAN",
-            "NO_ASSIGNMENT_STATE_MUTATION",
-            "NO_ESCALATION_TASK_CREATION",
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(CAMPAIGN_ASSIGNMENT_PLAN_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims the assignment plan must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the assignment-plan row.")
@@ -121,18 +113,7 @@ def build_bulk_review_campaign_assignment_plan_item(
         "sla_posture": sla_posture,
         "escalation_reason_codes": reason_codes,
         "workflow_board": board.model_dump(mode="json"),
-        "operating_boundaries": [
-            "READ_ONLY_ASSIGNMENT_PLAN",
-            "NO_ASSIGNMENT_STATE_MUTATION",
-            "NO_ESCALATION_TASK_CREATION",
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(CAMPAIGN_ASSIGNMENT_PLAN_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)

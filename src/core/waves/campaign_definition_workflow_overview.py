@@ -28,6 +28,9 @@ from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
     build_bulk_review_campaign_discovery_item,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_WORKFLOW_OVERVIEW_OPERATING_BOUNDARIES,
+)
 
 
 class DpmBulkReviewCampaignDefinitionWorkflowOverview(BaseModel):
@@ -64,14 +67,7 @@ class DpmBulkReviewCampaignDefinitionWorkflowOverview(BaseModel):
         ),
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(CAMPAIGN_WORKFLOW_OVERVIEW_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims the overview must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the overview payload.")
@@ -128,14 +124,7 @@ def build_bulk_review_campaign_definition_workflow_overview(
         "lifecycle_events": lifecycle_events.model_dump(mode="json"),
         "launch_history": launch_history.model_dump(mode="json"),
         "launch_package": launch_package.model_dump(mode="json") if launch_package else None,
-        "operating_boundaries": [
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(CAMPAIGN_WORKFLOW_OVERVIEW_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)

@@ -456,7 +456,7 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
         default_factory=list,
         description=(
             "Append-only campaign assignment and escalation actions. These records mutate "
-            "assignment posture only and do not create maker-checker workflow, approval state "
+            "assignment posture only and do not mutate maker-checker control state, approval state "
             "changes, trade approval, order routing, client contact, or OMS execution."
         ),
     )

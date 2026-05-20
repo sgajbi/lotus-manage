@@ -145,12 +145,12 @@ flowchart LR
   and records append-only launch history on the persisted definition.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
   records append-only campaign approval posture evidence on an active definition without trade
-  approval, order generation, routing, client contact, maker-checker workflow, or OMS claims.
+  approval, order generation, routing, client contact, maker-checker control-state mutation, or OMS claims.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
   returns a bounded `BulkReviewCampaignDefinitionApprovalDecisionPage` audit page.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
   records append-only assignment and escalation posture evidence without approval-state mutation,
-  trade approval, order generation, routing, client contact, maker-checker workflow, or OMS claims.
+  trade approval, order generation, routing, client contact, maker-checker control-state mutation, or OMS claims.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
   returns a bounded `BulkReviewCampaignDefinitionAssignmentActionPage` audit page.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
@@ -158,7 +158,7 @@ flowchart LR
   escalation tier, SLA posture, optional due date, and append-only opening transition evidence.
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`
   records conflict-safe assignment-task transitions and updates only Manage-side task state, not
-  approval state, maker-checker workflow, trade approval, client contact, order, or OMS posture.
+  approval state, maker-checker control-state mutation, trade approval, client contact, order, or OMS posture.
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
   returns a bounded `BulkReviewCampaignDefinitionAssignmentTaskPage` with status, escalation, SLA,
   and open-task counts.

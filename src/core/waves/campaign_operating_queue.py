@@ -22,6 +22,9 @@ from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
     build_bulk_review_campaign_discovery_item,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_OPERATING_QUEUE_BOUNDARIES,
+)
 
 
 class DpmBulkReviewCampaignOperatingQueueItem(BaseModel):
@@ -66,14 +69,7 @@ class DpmBulkReviewCampaignOperatingQueueItem(BaseModel):
         description="Most recent launch timestamp, when launch history exists.",
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(CAMPAIGN_OPERATING_QUEUE_BOUNDARIES),
         description="Unsupported downstream claims the operating queue must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the queue item payload.")
@@ -142,14 +138,7 @@ def build_bulk_review_campaign_operating_queue_item(
         "launch_history_count": len(definition.launch_history),
         "latest_launch_wave_id": latest_launch.wave_id if latest_launch else None,
         "latest_launched_at": latest_launch.launched_at.isoformat() if latest_launch else None,
-        "operating_boundaries": [
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(CAMPAIGN_OPERATING_QUEUE_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)

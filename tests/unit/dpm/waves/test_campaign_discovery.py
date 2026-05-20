@@ -346,7 +346,8 @@ def test_campaign_workflow_board_derives_actor_next_actions() -> None:
     assert ready.assigned_actor_ids == ["pm_001"]
     assert ready.operating_queue.queue_status == "READY_TO_LAUNCH"
     assert ready.approval_inbox.inbox_status == "APPROVAL_COMPLETE"
-    assert "NO_MAKER_CHECKER_WORKFLOW" in ready.operating_boundaries
+    assert "NO_MAKER_CHECKER_CONTROL_STATE_MUTATION" in ready.operating_boundaries
+    assert "NO_MAKER_CHECKER_WORKFLOW" not in ready.operating_boundaries
     assert ready.content_hash.startswith("sha256:")
 
     assert approval_required.board_status == "ATTENTION_FOR_ACTOR"

@@ -177,16 +177,16 @@ claims. Manage also supports
 an approval attention inbox at `GET /api/v1/rebalance/waves/campaign-approval-inbox`, classifying
 persisted definitions as approval complete, approval required, approval incomplete, expiry
 attention, entitlement attention, or closed from existing governance evidence and readiness posture
-without mutating approval state, creating maker-checker workflow, approving trades, generating
+without mutating approval state, mutating maker-checker control state, approving trades, generating
 orders, or claiming OMS execution. Manage also supports a read-only cross-actor workflow board at
 `GET /api/v1/rebalance/waves/campaign-workflow-board`, composing the operating queue and approval
 inbox into actor-aware next-action rows for launch, approval-decision capture, approval evidence
 remediation, expiry refresh, entitlement review, or closed posture without discovering the global
-portfolio universe, mutating approval state, creating maker-checker workflow, approving trades,
+portfolio universe, mutating approval state, mutating maker-checker control state, approving trades,
 generating orders, or claiming OMS execution. Manage also supports a read-only assignment and
 escalation plan at `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing,
 escalation tier, SLA posture, and reason codes from the workflow board without mutating assignment
-state, creating escalation tasks, creating maker-checker workflow, approving trades, generating
+state, creating escalation tasks, mutating maker-checker control state, approving trades, generating
 orders, or claiming OMS execution. Manage also supports read-only workflow automation readiness at
 `GET /api/v1/rebalance/waves/campaign-workflow-automation`, composing assignment-plan posture and
 existing controlled assignment-task state into deterministic candidates for opening, monitoring, or
@@ -197,7 +197,7 @@ actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with
 assigned actors, escalation tier, SLA posture, correlation id, source refs, deterministic action ids,
-and conflict-safe action refs; it does not mutate approval state, create maker-checker workflow,
+and conflict-safe action refs; it does not mutate approval state, mutate maker-checker control state,
 approve trades, generate or route orders, contact clients, or claim OMS execution. Manage also supports
 controlled assignment and escalation tasks at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`,
@@ -207,7 +207,7 @@ and task listing at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`,
 mutating only Manage-side assignment task state with append-only transition evidence, current
 status, assignees, escalation tier, SLA posture, due-date posture, deterministic task/transition
-ids, and conflict-safe refs; it does not mutate approval state, create maker-checker workflow,
+ids, and conflict-safe refs; it does not mutate approval state, mutate maker-checker control state,
 approve trades, generate or route orders, contact clients, orchestrate external workflow systems,
 or claim OMS execution. Manage also supports
 append-only maker-checker control evidence at
@@ -228,7 +228,7 @@ package guidance;
 and recording append-only approval decisions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
 plus listing them at the same route with `GET`, mutating campaign approval posture evidence only
-without trade approval, order generation/routing, client contact, maker-checker workflow, or OMS
+without trade approval, order generation/routing, client contact, maker-checker control-state mutation, or OMS
 execution claims;
 and checking fail-closed preview readiness at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`

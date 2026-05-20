@@ -16,6 +16,9 @@ from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
     build_bulk_review_campaign_discovery_item,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_APPROVAL_INBOX_OPERATING_BOUNDARIES,
+)
 
 
 CampaignApprovalInboxStatus = Literal[
@@ -69,14 +72,7 @@ class DpmBulkReviewCampaignApprovalInboxItem(BaseModel):
         description="Count of governance source refs proving approval or control evidence.",
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "READ_ONLY_APPROVAL_ATTENTION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(CAMPAIGN_APPROVAL_INBOX_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims the approval inbox must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the approval inbox row.")
@@ -140,14 +136,7 @@ def build_bulk_review_campaign_approval_inbox_item(
         "access_purpose": governance.access_purpose if governance else None,
         "entitled_actor_count": len(governance.entitled_actor_ids) if governance else 0,
         "approval_source_ref_count": len(governance.source_refs) if governance else 0,
-        "operating_boundaries": [
-            "READ_ONLY_APPROVAL_ATTENTION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(CAMPAIGN_APPROVAL_INBOX_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)

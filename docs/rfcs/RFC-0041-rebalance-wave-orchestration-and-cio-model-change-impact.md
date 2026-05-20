@@ -1056,7 +1056,7 @@ client contact, or OMS execution.
 read-only `BulkReviewCampaignAssignmentPlan:v1` surface. It derives actor routing, escalation
 tier, SLA posture, and reason codes from the workflow board through
 `src/core/waves/campaign_assignment_plan.py`, without mutating assignment state, creating
-escalation tasks, mutating approval state, creating maker-checker workflow, approving trades,
+escalation tasks, mutating approval state, mutating maker-checker control state, approving trades,
 generating orders, or claiming OMS execution. This advances the assignment/escalation surface to a
 dedicated operator read model while keeping mutable workflow ownership deferred.
 
@@ -1071,10 +1071,10 @@ helper lives in `src/core/waves/campaign_assignment_actions.py` and records assi
 reassignment, escalation, de-escalation, and resolution posture with deterministic action ids,
 conflict-safe action refs, assigned actors, escalation tier, SLA posture, correlation id, source
 refs, and explicit forbidden actions. This mutates assignment posture evidence only; it does not
-mutate approval state, create maker-checker workflow, approve trades, generate or route orders,
+mutate approval state, mutate maker-checker control state, approve trades, generate or route orders,
 contact clients, or claim OMS execution. The remaining RFC41-WTBD-003 campaign gap is therefore
-global portfolio-universe campaign discovery, maker-checker workflow, and broader workflow
-automation beyond the append-only assignment ledger.
+global portfolio-universe campaign discovery and broader workflow automation beyond controlled
+Manage-side assignment tasks and append-only evidence ledgers.
 
 2026-05-20 campaign assignment-task lifecycle addendum:
 
@@ -1088,7 +1088,7 @@ helper lives in `src/core/waves/campaign_assignment_tasks.py` and records curren
 assignees, escalation tier, SLA posture, optional due date, deterministic task/transition ids,
 conflict-safe refs, actor/reason/correlation evidence, source refs, and append-only transition
 history. This mutates only Manage-side assignment task state; it does not mutate approval state,
-create maker-checker workflow, approve trades, generate or route orders, contact clients,
+mutate maker-checker control state, approve trades, generate or route orders, contact clients,
 orchestrate external workflow systems, discover the global portfolio universe, recalculate
 membership, or claim OMS execution. The remaining RFC41-WTBD-003 campaign gap is therefore global
 portfolio-universe campaign discovery and broader workflow automation beyond controlled

@@ -1803,7 +1803,8 @@ def test_bulk_review_campaign_definition_launch_package_builds_preview_and_creat
     assert payload["create_headers"]["Idempotency-Key"].startswith(
         "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:"
     )
-    assert "NO_MAKER_CHECKER_WORKFLOW" in payload["operating_boundaries"]
+    assert "NO_MAKER_CHECKER_CONTROL_STATE_MUTATION" in payload["operating_boundaries"]
+    assert "NO_MAKER_CHECKER_WORKFLOW" not in payload["operating_boundaries"]
     assert "NO_OMS_EXECUTION_CLAIM" in payload["operating_boundaries"]
     assert payload["content_hash"].startswith("sha256:")
 
@@ -2228,7 +2229,11 @@ def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_clo
     assert active_payload["status_counts"] == {"READY_TO_LAUNCH": 1}
     assert active_payload["items"][0]["queue_status"] == "READY_TO_LAUNCH"
     assert active_payload["items"][0]["preview_readiness"]["preview_create_allowed"] is True
-    assert "NO_MAKER_CHECKER_WORKFLOW" in active_payload["items"][0]["operating_boundaries"]
+    assert (
+        "NO_MAKER_CHECKER_CONTROL_STATE_MUTATION"
+        in active_payload["items"][0]["operating_boundaries"]
+    )
+    assert "NO_MAKER_CHECKER_WORKFLOW" not in active_payload["items"][0]["operating_boundaries"]
 
     assert all_queue.status_code == 200
     all_payload = all_queue.json()

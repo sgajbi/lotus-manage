@@ -16,6 +16,9 @@ from src.core.waves.campaign_operating_queue import (
     DpmBulkReviewCampaignOperatingQueueItem,
     build_bulk_review_campaign_operating_queue_item,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_WORKFLOW_BOARD_OPERATING_BOUNDARIES,
+)
 
 
 CampaignWorkflowBoardStatus = Literal[
@@ -72,16 +75,7 @@ class DpmBulkReviewCampaignWorkflowBoardItem(BaseModel):
         description="Existing read-only approval attention posture."
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "READ_ONLY_WORKFLOW_BOARD",
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(CAMPAIGN_WORKFLOW_BOARD_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims the workflow board must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the workflow-board row.")
@@ -145,16 +139,7 @@ def build_bulk_review_campaign_workflow_board_item(
         "assigned_actor_ids": assigned_actor_ids,
         "operating_queue": operating_queue.model_dump(mode="json"),
         "approval_inbox": approval_inbox.model_dump(mode="json"),
-        "operating_boundaries": [
-            "READ_ONLY_WORKFLOW_BOARD",
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(CAMPAIGN_WORKFLOW_BOARD_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)
