@@ -23,6 +23,8 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemoryExternalExecutionBoundaryEvidence,
+    DpmPortfolioMemorySearchItem,
+    DpmPortfolioMemorySearchPage,
     DpmPortfolioMemorySourceEventFamilyPosture,
     DpmPortfolioMemorySourceRef,
     PORTFOLIO_MEMORY_ACCESS_CLASSIFICATION,
@@ -144,6 +146,132 @@ def build_portfolio_memory(
     payload = memory.model_dump(mode="json")
     payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
     return DpmPortfolioMemory.model_validate(payload)
+
+
+def search_portfolio_memory(
+    *,
+    proof_pack_repository: DpmProofPackRepository,
+    wave_repository: DpmWaveRepository,
+    outcome_review_repository: DpmOutcomeReviewRepository,
+    mandate_repository: DpmMandateRepository | None = None,
+    construction_repository: ConstructionRepository | None = None,
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+    portfolio_ids: list[str] | None = None,
+    event_type: str | None = None,
+    supportability_state: PortfolioMemorySupportabilityState | None = None,
+    source_system: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+    source_scan_limit: int = 500,
+    generated_at: datetime | None = None,
+) -> DpmPortfolioMemorySearchPage:
+    """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
+
+    generated_at = generated_at or datetime.now(timezone.utc)
+    candidate_ids = _memory_candidate_portfolio_ids(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=portfolio_ids,
+        source_scan_limit=source_scan_limit,
+    )
+    items: list[DpmPortfolioMemorySearchItem] = []
+    for portfolio_id in candidate_ids:
+        memory = build_portfolio_memory(
+            portfolio_id=portfolio_id,
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
+            construction_repository=construction_repository,
+            pm_quality_score_run_repository=pm_quality_score_run_repository,
+            limit=source_scan_limit,
+            generated_at=generated_at,
+        )
+        if memory.event_count == 0:
+            continue
+        if event_type is not None and event_type not in memory.event_type_counts:
+            continue
+        if supportability_state is not None and memory.supportability_state != supportability_state:
+            continue
+        if source_system is not None and source_system not in memory.source_systems:
+            continue
+        latest_event = memory.events[0] if memory.events else None
+        items.append(
+            DpmPortfolioMemorySearchItem(
+                portfolio_id=memory.portfolio_id,
+                event_count=memory.event_count,
+                supportability_state=memory.supportability_state,
+                event_type_counts=memory.event_type_counts,
+                source_systems=memory.source_systems,
+                reason_codes=memory.reason_codes,
+                latest_event_time=latest_event.event_time if latest_event else None,
+                latest_event_type=latest_event.event_type if latest_event else None,
+                content_hash=memory.content_hash,
+            )
+        )
+
+    items = sorted(
+        items,
+        key=lambda item: (item.latest_event_time or "", item.portfolio_id),
+        reverse=True,
+    )
+    total_count = len(items)
+    page = items[offset : offset + limit]
+    return DpmPortfolioMemorySearchPage(
+        items=page,
+        limit=limit,
+        offset=offset,
+        returned_count=len(page),
+        total_count=total_count,
+        scanned_portfolio_count=len(candidate_ids),
+        generated_at=generated_at.isoformat(),
+        support_boundary=(
+            "Manage-local memory search indexes persisted Manage evidence and explicit "
+            "caller-supplied portfolio identifiers only; it does not discover the global "
+            "portfolio universe, query external source-owner event stores, project OMS "
+            "acknowledgement/fill/settlement events, or recalculate source truth."
+        ),
+    )
+
+
+def _memory_candidate_portfolio_ids(
+    *,
+    proof_pack_repository: DpmProofPackRepository,
+    wave_repository: DpmWaveRepository,
+    outcome_review_repository: DpmOutcomeReviewRepository,
+    mandate_repository: DpmMandateRepository | None,
+    portfolio_ids: list[str] | None,
+    source_scan_limit: int,
+) -> list[str]:
+    candidates: set[str] = {
+        portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
+    }
+    candidates.update(
+        proof_pack.portfolio_id
+        for proof_pack in proof_pack_repository.list_proof_packs(limit=source_scan_limit)
+    )
+    candidates.update(
+        item.portfolio_id
+        for wave in wave_repository.list_waves(limit=source_scan_limit)
+        for item in wave.items
+    )
+    candidates.update(
+        review.portfolio_id
+        for review in outcome_review_repository.list_outcome_reviews(limit=source_scan_limit)
+    )
+    if mandate_repository is not None:
+        exceptions, _cursor = mandate_repository.list_monitoring_exceptions(
+            monitoring_run_id=None,
+            mandate_id=None,
+            portfolio_id=None,
+            state=None,
+            limit=source_scan_limit,
+            cursor=None,
+        )
+        candidates.update(exception.portfolio_id for exception in exceptions)
+    return sorted(candidates)
 
 
 def _portfolio_memory_governance_policy() -> dict[str, str]:

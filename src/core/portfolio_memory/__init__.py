@@ -4,6 +4,8 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemoryExternalExecutionBoundaryEvidence,
+    DpmPortfolioMemorySearchItem,
+    DpmPortfolioMemorySearchPage,
     DpmPortfolioMemorySourceRef,
 )
 from src.core.portfolio_memory.handoffs import (
@@ -16,6 +18,8 @@ __all__ = [
     "DpmPortfolioMemory",
     "DpmPortfolioMemoryEvent",
     "DpmPortfolioMemoryExternalExecutionBoundaryEvidence",
+    "DpmPortfolioMemorySearchItem",
+    "DpmPortfolioMemorySearchPage",
     "DpmPortfolioMemoryReportContext",
     "DpmPortfolioMemoryReportEventRef",
     "DpmPortfolioMemorySourceRef",
