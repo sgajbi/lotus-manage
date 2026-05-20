@@ -54,16 +54,21 @@ retained only as evidence index and sequencing control.
 
 ## Mainline WTBD Control Snapshot
 
-Snapshot basis: the 2026-05-18 clean mainline after `lotus-manage` PR #286 (`6a4e199e31466dd9cf1a3b882072803c364a51e4`) reclassified the external OMS/execution boundary as partial
-and the wiki source was published at commit `3062697`. Later classification updates reclassified
-RFC39-WTBD-008 as partial because external treasury contracts, active fail-closed source postures,
-and Manage consumption are merged while runtime external treasury ingestion remains pending. This
-update also normalizes RFC37-WTBD-002, RFC37-WTBD-003, and RFC37-WTBD-007 as partial, matching the
-detail rows: bounded first-wave product paths, cross-app product surfaces, and portfolio-memory
-lineage exist, while the full copilot workspace, broader front-office realization, full portfolio
-memory, OMS execution/fill/settlement projection, PM scoring, and remaining source-owner depth
-remain future scope. The current classification is 59 total WTBD items: 45 done on
-merged/published truth, 8 partial or in progress, and 6 remaining/open.
+Snapshot basis: the 2026-05-20 clean mainline after `lotus-manage` PR #317
+(`3cbfd886873805f5957ae188b7ef6c68c93ab5a6`) incorporated bounded campaign approval-decision
+truth and wiki source was published at commit `37c623f`. Earlier classification updates
+reclassified RFC39-WTBD-008 as partial because external treasury contracts, active fail-closed
+source postures, and Manage consumption are merged while runtime external treasury ingestion
+remains pending. The classification also normalizes RFC37-WTBD-002, RFC37-WTBD-003, and
+RFC37-WTBD-007 as partial, matching the detail rows: bounded first-wave product paths, cross-app
+product surfaces, and portfolio-memory lineage exist, while the full copilot workspace, broader
+front-office realization, full portfolio memory, OMS execution/fill/settlement projection,
+PM scoring, and remaining source-owner depth remain future scope. The current classification is
+59 total WTBD items: 45 done on merged/published truth, 8 partial or in progress, and
+6 remaining/open. `lotus-performance` PR #168 (`781415f`, wiki `6fb7209`) advances the existing
+RFC42-WTBD-006 partial row with source-owned stateless MWR source-preconverted FX evidence, but it
+does not move the count because stateful per-input FX evidence, broader FX methodology, predictive
+execution, and OMS remain unfinished.
 Earlier source slices include the RFC40-WTBD-009
 selected-alternative regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI
 workflow-pack truth reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the
@@ -5883,6 +5888,36 @@ Latest WTBD-006 performance currency-attribution totals aggregation proof:
    implemented performance attribution path, predictive execution, OMS acknowledgements,
    tax advice, tax optimization, and broader live portfolio-archetype validation remain
    source-owner or future-RFC work.
+
+Latest WTBD-006 performance MWR source-preconverted FX-evidence proof:
+
+1. `lotus-performance` PR #168 was merged to `main` as
+   `781415f9b5a442a9afbb0b7034e8bd28cc76343c` and published wiki commit `6fb7209`;
+   it adds stateless `source_preconverted_fx_evidence` to MWR requests and preserves
+   per-market-value and per-cashflow source amount/currency, reporting amount/currency, FX rate,
+   FX pair, rate date, source, version, conversion policy, timestamp, and fingerprint evidence,
+2. the source-owner MWR service validates that source-preconverted evidence is complete and
+   internally consistent, failing closed for missing beginning/ending market-value evidence,
+   mismatched cashflow counts or dates, reporting amount or currency mismatches, same-currency
+   non-1 FX rates, and blank source/policy/version/fingerprint fields,
+3. stateless MWR responses now emit `currency_mode="SOURCE_PRECONVERTED_WITH_FX_EVIDENCE"` and
+   `conversion_evidence_status="complete_source_preconverted_fx_metadata"` when caller-supplied
+   preconverted inputs include complete FX metadata,
+4. stateful MWR remains single-reporting-currency with
+   `upstream_preconverted_missing_per_input_fx_metadata`; `lotus-performance` still does not
+   convert FX inside the MWR engine and computes over one reporting-currency schedule only,
+5. performance proof passed focused MWR integration/OpenAPI/docs tests, unit/integration/e2e
+   suites, lint, typecheck, OpenAPI gate, API vocabulary gate, no-alias gate, domain-product
+   validation, platform context validators, wiki drift check/publish, Feature Lane, PR Merge Gate,
+   Docker validation, and Main Releasability Gate
+   `https://github.com/sgajbi/lotus-performance/actions/runs/26135968611`,
+6. manage consumes this as source-owner evidence truth only: no MWR FX conversion,
+   FX-rate sourcing, FX attribution, reporting-currency restatement, or mixed-currency capital
+   timing methodology is implemented or duplicated in Manage,
+7. this advances RFC42-WTBD-006 but does not close it: stateful upstream per-input FX conversion
+   evidence, broader FX methodology outside implemented performance-owned paths, predictive
+   execution, OMS acknowledgements, tax advice, tax optimization, and broader live
+   portfolio-archetype validation remain source-owner or future-RFC work.
 
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
 

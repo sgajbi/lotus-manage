@@ -399,6 +399,13 @@ Current repository posture:
     dimension recompute the date/currency panel from summed weights and weight-averaged local/FX
     returns before applying Karnosky-Singer formulas. Manage consumes that as source-owner
     methodology truth only and still does not reconstruct FX attribution from visible rows.
+    The related `lotus-performance` PR #168 (`781415f`, wiki `6fb7209`) adds stateless MWR
+    source-preconverted FX evidence: performance validates per-input source/reporting amounts,
+    currencies, FX rates, pairs, dates, sources, versions, conversion policies, timestamps, and
+    fingerprints before emitting complete source-preconverted FX metadata. Stateful MWR remains
+    single-reporting-currency without per-input FX metadata, and Manage consumes this as
+    source-owner evidence truth only without performing MWR FX conversion, FX-rate sourcing, or
+    mixed-currency capital-timing methodology locally.
     The related `lotus-risk` PR #139 (`40ac7a5`, wiki `421ae79`) tightens
     `HistoricalRiskAttributionReport:v1` supportability so any attribution set with source-owned
     quality flags degrades response-level `metadata.calculation_supportability`. Manage preserves
