@@ -902,6 +902,7 @@ def test_pm_quality_postgres_helpers_normalize_payloads_and_import_driver(
     assert dict_row is fake_rows.dict_row
     assert postgres_module._payload({"payload_json": {"a": 1}}) == {"a": 1}
     assert postgres_module._payload({"payload_json": 3}) == "3"
+    assert postgres_module._payload({"payload_json": '{"a":1}'}) == '{"a":1}'
 
 
 def test_in_memory_pm_quality_repository_persists_immutable_score_runs() -> None:

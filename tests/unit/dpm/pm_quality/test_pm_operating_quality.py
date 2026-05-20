@@ -226,6 +226,19 @@ def test_pm_quality_review_action_records_bounded_target_evidence() -> None:
     assert "NO_SCORE_RECALCULATION" in action.operating_boundaries
     assert "compensation_decision" in action.forbidden_uses
 
+    with pytest.raises(ValueError, match="PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH"):
+        build_pm_quality_review_action(
+            target=score_run,
+            target_type="FAIRNESS_ANALYSIS",
+            action_type="ACKNOWLEDGE",
+            review_action_ref="PMQ-REVIEW-2026-05-002",
+            review_reason="Mismatched target type.",
+            actor_id="ops",
+            source_refs=[],
+            remediation_due_date=None,
+            correlation_id="corr-review-action-mismatch",
+        )
+
 
 def test_pm_quality_summary_invocation_records_history_without_summary_text() -> None:
     score_run = _ready_score_run()
@@ -281,6 +294,41 @@ def test_pm_quality_summary_invocation_records_history_without_summary_text() ->
             requested_by="ops",
             source_refs=[],
             correlation_id="corr-summary-mismatch",
+        )
+
+    with pytest.raises(ValueError, match="PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH"):
+        build_pm_quality_summary_invocation(
+            score_run=score_run,
+            review_action=review_action.model_copy(update={"target_content_hash": "sha256:other"}),
+            invocation_state="REQUESTED",
+            summary_ref="PMQ-SUMMARY-2026-05-003",
+            requested_by="ops",
+            source_refs=[],
+            correlation_id="corr-summary-hash-mismatch",
+        )
+
+    with pytest.raises(ValueError, match="PM_QUALITY_SUMMARY_WORKFLOW_PACK_UNSUPPORTED"):
+        build_pm_quality_summary_invocation(
+            score_run=score_run,
+            review_action=review_action,
+            invocation_state="REQUESTED",
+            summary_ref="PMQ-SUMMARY-2026-05-004",
+            workflow_pack_name="unsupported.pack",
+            requested_by="ops",
+            source_refs=[],
+            correlation_id="corr-summary-pack-unsupported",
+        )
+
+    with pytest.raises(ValueError, match="PM_QUALITY_SUMMARY_CONTENT_HASH_INVALID"):
+        build_pm_quality_summary_invocation(
+            score_run=score_run,
+            review_action=review_action,
+            invocation_state="REQUESTED",
+            summary_ref="PMQ-SUMMARY-2026-05-005",
+            summary_content_hash="not-a-sha256-hash",
+            requested_by="ops",
+            source_refs=[],
+            correlation_id="corr-summary-invalid-hash",
         )
 
 
@@ -836,6 +884,32 @@ def test_pm_quality_fairness_analysis_classifies_blocked_pending_and_ready_postu
     assert pending.reason_codes == ["PM_QUALITY_FAIRNESS_SPREAD_REVIEW_REQUIRED"]
     assert ready.state == "READY"
     assert ready.reason_codes == ["PM_QUALITY_FAIRNESS_WITHIN_GOVERNED_SPREAD"]
+
+    action = build_pm_quality_review_action(
+        target=ready,
+        target_type="FAIRNESS_ANALYSIS",
+        action_type="ESCALATE_MODEL_RISK_REVIEW",
+        review_action_ref="PMQ-FAIRNESS-REVIEW-2026-05-001",
+        review_reason="Escalate fairness spread evidence for model-risk review.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-fairness-review",
+    )
+    assert action.target_id == ready.fairness_analysis_id
+
+    with pytest.raises(ValueError, match="PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH"):
+        build_pm_quality_review_action(
+            target=ready,
+            target_type="SCORE_RUN",
+            action_type="ACKNOWLEDGE",
+            review_action_ref="PMQ-FAIRNESS-REVIEW-2026-05-002",
+            review_reason="Mismatched fairness target type.",
+            actor_id="ops",
+            source_refs=[],
+            remediation_due_date=None,
+            correlation_id="corr-fairness-review-mismatch",
+        )
 
 
 def test_pm_quality_fairness_analysis_blocks_segments_below_minimum_count() -> None:
