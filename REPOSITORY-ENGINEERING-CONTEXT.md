@@ -497,7 +497,12 @@ Current repository posture:
     capabilities, required future execution/OMS owner, required
     `ExternalOrderExecutionAcknowledgement:v1` source product, and deterministic content hash so
     downstream consumers can render the no-acknowledgement/no-fill/no-settlement posture without
-    inferring unsupported execution events.
+    inferring unsupported execution events. It also carries structured
+    `DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY` evidence with blocked client-contact,
+    message-generation, delivery-confirmation, client-approval, and communication-audit
+    capabilities, required future client-communication owner, required
+    `ClientCommunicationRecord:v1` source product, and deterministic content hash so consumers do
+    not infer client communication events from portfolio-memory lineage.
     `lotus-report` PR #92 adds the report-side bounded
     `portfolio_memory_context` consumer for proof-pack, rebalance-wave, and outcome-review report
     jobs without reconstructing manage-owned portfolio-memory events, and `lotus-report` PR #93
@@ -794,9 +799,12 @@ Current repository posture:
     `client_approval_projected=false`, blocked client contact/message/delivery/audit capabilities,
     required future client-communication owner, required `ClientCommunicationRecord:v1` source
     product, and deterministic content hash so downstream report, AI, support, and operations
-    consumers do not infer client contact from outcome-review evidence. Portfolio memory separately exposes
-    that Core source product as a deferred source-event family posture only; it does not project
-    acknowledgement, fill, settlement, or execution-status events. Live
+    consumers do not infer client contact from outcome-review evidence. Portfolio memory separately
+    exposes the Core execution source product and future client-communication owner as deferred
+    source-event family postures, plus structured external-execution and client-communication
+    boundary evidence; it does not project acknowledgement, fill, settlement, execution-status,
+    client-contact, client-message, client-delivery, client-approval, or communication-audit
+    events. Live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on

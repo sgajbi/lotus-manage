@@ -51,8 +51,9 @@ router = APIRouter(
         "event type, supportability state, and represented source system. It does not discover "
         "the global portfolio universe, "
         "query external source-owner event stores, project OMS acknowledgement/fill/settlement "
-        "events, or recalculate risk, performance, execution, tax, cash, FX, mandate-health, "
-        "PM-quality score/review-action, report, archive, or AI truth."
+        "events, project client contact/message/delivery/approval events, or recalculate risk, "
+        "performance, execution, tax, cash, FX, mandate-health, PM-quality score/review-action, "
+        "report, archive, or AI truth."
     ),
 )
 def search_portfolio_memory_index(
@@ -136,7 +137,7 @@ def search_portfolio_memory_index(
         "source refs, hashes, states, and reason codes, and "
         "publishes source-event family posture for supported and deferred source owners; it does "
         "not compute risk, performance, execution, tax, cash, mandate-health, PM quality scores, "
-        "PM review decisions, or external order truth locally."
+        "PM review decisions, external order truth, or client communication truth locally."
     ),
 )
 def get_portfolio_memory(

@@ -577,6 +577,16 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     )
     assert family_posture["ai_workflow_pack"].source_system == "lotus-ai"
     assert family_posture["generated_document_archive"].source_system == "lotus-archive"
+    assert family_posture["client_communication"].support_status == "DEFERRED_SOURCE_OWNER"
+    assert family_posture["client_communication"].event_types == []
+    assert family_posture["client_communication"].source_system == (
+        "future-client-communication-owner"
+    )
+    assert (
+        family_posture["client_communication"].reason_code
+        == "CLIENT_COMMUNICATION_SOURCE_EVENTS_NOT_SUPPORTED"
+    )
+    assert "No client contact" in family_posture["client_communication"].summary
     assert family_posture["construction_alternatives"].support_status == "SUPPORTED"
     assert family_posture["construction_alternatives"].event_types == [
         "CONSTRUCTION_ALTERNATIVE_SET",
@@ -654,6 +664,22 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert "oms_acknowledgement" in memory.external_execution_boundary.blocked_capabilities
     assert "execution_status_projection" in memory.external_execution_boundary.blocked_capabilities
     assert memory.external_execution_boundary.content_hash.startswith("sha256:")
+    assert memory.client_communication_boundary.boundary_id == (
+        "DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert memory.client_communication_boundary.supportability_state == "BLOCKED"
+    assert memory.client_communication_boundary.client_communication_events_projected is False
+    assert memory.client_communication_boundary.client_delivery_events_projected is False
+    assert memory.client_communication_boundary.client_approval_events_projected is False
+    assert memory.client_communication_boundary.required_owner == (
+        "future client-communication owner"
+    )
+    assert memory.client_communication_boundary.required_source_product == (
+        "ClientCommunicationRecord:v1"
+    )
+    assert "client_contact" in memory.client_communication_boundary.blocked_capabilities
+    assert "communication_audit" in memory.client_communication_boundary.blocked_capabilities
+    assert memory.client_communication_boundary.content_hash.startswith("sha256:")
     mandate_events = {
         event.event_type: event
         for event in memory.events
@@ -854,6 +880,20 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "no-raw-payload source-event family."
         ),
     }
+    assert family_posture["client_communication"] == {
+        "family_key": "client_communication",
+        "source_system": "future-client-communication-owner",
+        "owner": "future client-communication owner",
+        "support_status": "DEFERRED_SOURCE_OWNER",
+        "event_types": [],
+        "route": None,
+        "reason_code": "CLIENT_COMMUNICATION_SOURCE_EVENTS_NOT_SUPPORTED",
+        "summary": (
+            "No client contact, message generation, delivery confirmation, client approval, "
+            "or communication-audit events are projected until a governed "
+            "client-communication owner publishes a no-raw-payload source-event family."
+        ),
+    }
     assert family_posture["pm_scoring"]["support_status"] == "SUPPORTED"
     assert family_posture["pm_scoring"] == {
         "family_key": "pm_scoring",
@@ -921,6 +961,35 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
         "content_hash": payload["external_execution_boundary"]["content_hash"],
     }
     assert payload["external_execution_boundary"]["content_hash"].startswith("sha256:")
+    assert payload["client_communication_boundary"] == {
+        "boundary_id": "DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmPortfolioMemory",
+        "source_product_version": "v1",
+        "client_communication_events_projected": False,
+        "client_delivery_events_projected": False,
+        "client_approval_events_projected": False,
+        "reason_code": "PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_EVENTS_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "client_contact",
+            "client_message_generation",
+            "client_delivery",
+            "delivery_confirmation",
+            "client_approval",
+            "communication_audit",
+        ],
+        "required_owner": "future client-communication owner",
+        "required_source_product": "ClientCommunicationRecord:v1",
+        "summary": (
+            "Portfolio memory preserves internal Manage, report, AI, archive, and PM-quality "
+            "lineage only; client contact, client message generation, client delivery "
+            "confirmation, client approval, and communication audit events remain blocked until "
+            "a certified client-communication owner publishes governed source events."
+        ),
+        "content_hash": payload["client_communication_boundary"]["content_hash"],
+    }
+    assert payload["client_communication_boundary"]["content_hash"].startswith("sha256:")
     pm_quality_events = [
         event for event in payload["events"] if event["event_type"] == "PM_QUALITY_SCORE_RUN"
     ]
@@ -954,6 +1023,7 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     memory_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemory"]
     assert "source_event_family_posture" in memory_schema["properties"]
     assert "external_execution_boundary" in memory_schema["properties"]
+    assert "client_communication_boundary" in memory_schema["properties"]
     boundary_schema = openapi_json["components"]["schemas"][
         "DpmPortfolioMemoryExternalExecutionBoundaryEvidence"
     ]
@@ -966,8 +1036,15 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     ]
     assert "hidden portfolio-memory truth" in posture_schema["properties"]["summary"]["description"]
     assert (
-        "external order acknowledgement, and PM-quality projection boundaries"
+        "external order acknowledgement, client communication, and PM-quality projection boundaries"
         in memory_schema["properties"]["source_event_family_posture"]["description"]
+    )
+    communication_boundary_schema = openapi_json["components"]["schemas"][
+        "DpmPortfolioMemoryClientCommunicationBoundaryEvidence"
+    ]
+    assert (
+        "Client communication capabilities blocked from portfolio-memory projection."
+        in communication_boundary_schema["properties"]["blocked_capabilities"]["description"]
     )
 
 

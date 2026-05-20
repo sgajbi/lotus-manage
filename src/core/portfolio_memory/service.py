@@ -27,6 +27,7 @@ from src.core.pm_quality.repository import (
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
+    DpmPortfolioMemoryClientCommunicationBoundaryEvidence,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemoryExternalExecutionBoundaryEvidence,
     DpmPortfolioMemorySearchItem,
@@ -176,6 +177,7 @@ def build_portfolio_memory(
         governance_policy=_portfolio_memory_governance_policy(),
         source_event_family_posture=_source_event_family_posture(),
         external_execution_boundary=_external_execution_boundary_evidence(),
+        client_communication_boundary=_client_communication_boundary_evidence(),
         events=events,
         content_hash="",
         generated_at=generated_at.isoformat(),
@@ -368,6 +370,40 @@ def _external_execution_boundary_evidence() -> DpmPortfolioMemoryExternalExecuti
     return DpmPortfolioMemoryExternalExecutionBoundaryEvidence.model_validate(payload)
 
 
+def _client_communication_boundary_evidence() -> (
+    DpmPortfolioMemoryClientCommunicationBoundaryEvidence
+):
+    payload = {
+        "boundary_id": "DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmPortfolioMemory",
+        "source_product_version": "v1",
+        "client_communication_events_projected": False,
+        "client_delivery_events_projected": False,
+        "client_approval_events_projected": False,
+        "reason_code": "PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_EVENTS_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "client_contact",
+            "client_message_generation",
+            "client_delivery",
+            "delivery_confirmation",
+            "client_approval",
+            "communication_audit",
+        ],
+        "required_owner": "future client-communication owner",
+        "required_source_product": "ClientCommunicationRecord:v1",
+        "summary": (
+            "Portfolio memory preserves internal Manage, report, AI, archive, and PM-quality "
+            "lineage only; client contact, client message generation, client delivery "
+            "confirmation, client approval, and communication audit events remain blocked until "
+            "a certified client-communication owner publishes governed source events."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmPortfolioMemoryClientCommunicationBoundaryEvidence.model_validate(payload)
+
+
 def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPosture]:
     return [
         DpmPortfolioMemorySourceEventFamilyPosture(
@@ -499,6 +535,20 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
             route="/documents/{document_id}/source-events",
             reason_code="GENERATED_DOCUMENT_SOURCE_EVENTS_SUPPORTED",
             summary="Generated-document archive and client-delivery lineage are source-owned by archive.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="client_communication",
+            source_system="future-client-communication-owner",
+            owner="future client-communication owner",
+            support_status="DEFERRED_SOURCE_OWNER",
+            event_types=[],
+            route=None,
+            reason_code="CLIENT_COMMUNICATION_SOURCE_EVENTS_NOT_SUPPORTED",
+            summary=(
+                "No client contact, message generation, delivery confirmation, client approval, "
+                "or communication-audit events are projected until a governed "
+                "client-communication owner publishes a no-raw-payload source-event family."
+            ),
         ),
         DpmPortfolioMemorySourceEventFamilyPosture(
             family_key="external_oms_execution",
