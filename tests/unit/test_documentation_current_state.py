@@ -1445,6 +1445,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
         "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded immutable support-summary invocation history, bounded portfolio-memory score-run and review-action lineage projection, Gateway policy/score-run/fairness-analysis/support-summary BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary product realization are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
+    ) is False
+    assert (
+        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded immutable support-summary invocation history, bounded portfolio-memory score-run and review-action lineage projection, Gateway policy/score-run/fairness-analysis/support-summary/review-action BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary plus read-only review-action product realization are incorporated into "
+        "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
         "Completed for the bounded bank-buyable support claim: policy administration, score-run preview, immutable create/read/list score-run lifecycle"
@@ -1473,6 +1478,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`peer_group_policy` and `lookback_window_policy`" in work_to_be_done
     assert "PmOperatingQualityScoreRun:v1" in work_to_be_done
     assert "`lotus-gateway` PR #213 (`62ce4c4`)" in work_to_be_done
+    assert "`lotus-gateway` PR #234 (`c74b3e1514e8875d1cf7a479280e9deddd51a8db`" in work_to_be_done
+    assert "`lotus-workbench` PR #302 (`8052d92`)" in work_to_be_done
+    assert "PR #303 (`3581b04`)" in work_to_be_done
+    assert "review-action preview/create front-office command UX" in work_to_be_done
     assert "`a4c9db9`" in work_to_be_done
     assert "`lotus-ai` PR #70 (`1951f62`, wiki `038a1a1`)" in work_to_be_done
     assert "`pm_quality_summary.pack@v1`" in work_to_be_done

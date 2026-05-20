@@ -571,12 +571,15 @@ Current repository posture:
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy, score-run, fairness-analysis, and PM-quality summary
     truth without Gateway-local scoring, ranking, policy administration, HR, compensation,
-    conduct, approval, client-contact, execution, or OMS claims. `lotus-workbench` PR #245
-    (`2af063b`, wiki `2ba368d`, Main Releasability Gate `25991445845`) completes the bounded
+    conduct, approval, client-contact, execution, or OMS claims. `lotus-gateway` PR #234
+    (`c74b3e1514e8875d1cf7a479280e9deddd51a8db`, Main Releasability Gate `26163382026`) adds
+    bounded PM-quality review-action preview/create/list/get BFF routes. `lotus-workbench` PR
+    #245 (`2af063b`, wiki `2ba368d`, Main Releasability Gate `25991445845`) completes the bounded
     Gateway-only PM operating quality surface for policy/score-run evidence, fairness-analysis
-    preview/create/list/detail, and review-gated PM-quality support-summary invocation without
-    browser-side score, segment-average, fairness-spread, protected-class, ranking, HR, conduct,
-    client-contact, trade, order, OMS, or execution logic.
+    preview/create/list/detail, and review-gated PM-quality support-summary invocation; Workbench
+    PR #302 (`8052d92`) and PR #303 (`3581b04`) add read-only review-action ledger/detail
+    rendering and boundary tests, with latest Workbench Main Releasability Gate `26181712790`.
+    Governed Workbench review-action preview/create command UX remains future owner scope.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,
