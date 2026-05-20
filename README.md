@@ -179,7 +179,12 @@ generating orders, or claiming OMS execution. Manage also supports a read-only a
 escalation plan at `GET /api/v1/rebalance/waves/campaign-assignment-plan`, deriving actor routing,
 escalation tier, SLA posture, and reason codes from the workflow board without mutating assignment
 state, creating escalation tasks, creating maker-checker workflow, approving trades, generating
-orders, or claiming OMS execution. Manage also supports append-only assignment and escalation
+orders, or claiming OMS execution. Manage also supports read-only workflow automation readiness at
+`GET /api/v1/rebalance/waves/campaign-workflow-automation`, composing assignment-plan posture and
+existing controlled assignment-task state into deterministic candidates for opening, monitoring, or
+escalating Manage-owned assignment tasks without mutating tasks, orchestrating external workflow,
+contacting clients, creating maker-checker workflow, approving trades, generating orders, or claiming
+OMS execution. Manage also supports append-only assignment and escalation
 actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with
@@ -230,8 +235,8 @@ using deterministic launch idempotency; and listing append-only launch history a
 with wave id, actor, requested as-of date, correlation id, idempotency key, pagination, and
 explicit no-order/no-OMS operating boundaries;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
-fail closed for new preview/create requests. Global portfolio-universe campaign discovery, broader
-workflow automation beyond controlled Manage-side assignment tasks and append-only ledgers,
+fail closed for new preview/create requests. Global portfolio-universe campaign discovery, external
+workflow orchestration beyond Manage-side task readiness and append-only evidence ledgers,
 richer owning-service risk/performance
 aggregate enrichment, and external OMS execution remain unpromoted.
 `lotus-ai` now owns the first-wave `dpm_pm_memo.pack@v1`, `dpm_wave_pm_memo.pack@v1`,

@@ -33,6 +33,10 @@ from src.core.waves.campaign_assignment_plan import (
     build_bulk_review_campaign_assignment_plan_item,
     build_bulk_review_campaign_assignment_plan_page,
 )
+from src.core.waves.campaign_workflow_automation import (
+    build_bulk_review_campaign_workflow_automation_item,
+    build_bulk_review_campaign_workflow_automation_page,
+)
 from src.core.waves.campaign_assignment_actions import (
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
@@ -687,6 +691,127 @@ def test_campaign_assignment_tasks_open_transition_and_page_current_state() -> N
     assert page.status_counts == {"ACKNOWLEDGED": 1}
     assert page.escalation_tier_counts == {"OPS": 1}
     assert page.sla_posture_counts == {"ATTENTION": 1}
+
+
+def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blocks() -> None:
+    candidate = build_bulk_review_campaign_workflow_automation_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+    )
+
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    active = build_bulk_review_campaign_workflow_automation_item(
+        definition=opened,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+    )
+    blocked_definition = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="BLOCKED",
+        transition_ref="BRC-TASK-2026-05-001:blocked",
+        transitioned_by="pm_001",
+        transition_reason="Governance evidence is incomplete.",
+        sla_posture="BREACHED_OR_BLOCKED",
+        correlation_id="corr-campaign-assignment-task-transition-blocked",
+    )
+    blocked = build_bulk_review_campaign_workflow_automation_item(
+        definition=blocked_definition,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+    )
+
+    assert candidate.product_name == "BulkReviewCampaignWorkflowAutomationItem"
+    assert candidate.automation_status == "AUTOMATION_CANDIDATE"
+    assert candidate.automation_action == "OPEN_ASSIGNMENT_TASK"
+    assert candidate.proposed_task_type == "ASSIGNMENT"
+    assert candidate.proposed_task_ref is not None
+    assert "NO_AUTOMATIC_TASK_MUTATION" in candidate.operating_boundaries
+
+    assert active.automation_status == "MANUAL_REVIEW_REQUIRED"
+    assert active.automation_action == "MONITOR_ACTIVE_TASK"
+    assert active.active_task_refs == ["BRC-TASK-2026-05-001"]
+
+    assert blocked.automation_status == "BLOCKED"
+    assert blocked.automation_action == "ESCALATE_ASSIGNMENT_TASK"
+    assert blocked.blocked_task_refs == ["BRC-TASK-2026-05-001"]
+
+    page = build_bulk_review_campaign_workflow_automation_page(
+        definitions=[_definition(), opened, blocked_definition],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+        include_closed=False,
+        automation_status=None,
+        automation_action=None,
+        limit=50,
+        offset=0,
+    )
+
+    assert page.product_name == "BulkReviewCampaignWorkflowAutomation"
+    assert page.automation_status_counts == {
+        "AUTOMATION_CANDIDATE": 1,
+        "MANUAL_REVIEW_REQUIRED": 1,
+        "BLOCKED": 1,
+    }
+    assert page.automation_action_counts == {
+        "OPEN_ASSIGNMENT_TASK": 1,
+        "MONITOR_ACTIVE_TASK": 1,
+        "ESCALATE_ASSIGNMENT_TASK": 1,
+    }
+
+
+def test_campaign_workflow_automation_filters_actions_and_closed_rows() -> None:
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition().model_dump(mode="python"),
+            "campaign_id": "campaign-holdings-retired-automation-20260510",
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-automation",
+            "content_hash": "",
+        }
+    )
+
+    closed_item = build_bulk_review_campaign_workflow_automation_item(
+        definition=retired,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+    )
+    filtered = build_bulk_review_campaign_workflow_automation_page(
+        definitions=[_definition(), retired],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+        include_closed=True,
+        automation_status=None,
+        automation_action="NO_AUTOMATION_CLOSED",
+        limit=50,
+        offset=0,
+    )
+
+    assert closed_item.automation_status == "CLOSED"
+    assert closed_item.automation_action == "NO_AUTOMATION_CLOSED"
+    assert closed_item.proposed_task_ref is None
+    assert filtered.count == 1
+    assert filtered.items[0].campaign_id == "campaign-holdings-retired-automation-20260510"
 
 
 @pytest.mark.parametrize(
