@@ -52,3 +52,10 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
         raise NotImplementedError
+
+    def record_definition_approval_decision(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError

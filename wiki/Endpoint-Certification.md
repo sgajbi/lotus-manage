@@ -1617,6 +1617,8 @@ Routes:
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`
 - `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness`
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
 - `GET /api/v1/rebalance/waves/campaign-discovery`
 - `GET /api/v1/rebalance/waves/campaign-operating-queue`
 - `GET /api/v1/rebalance/waves/campaign-approval-inbox`
@@ -1692,6 +1694,9 @@ Functional coverage:
   correlation id, and deterministic idempotency key without maker-checker or OMS claims,
 - launch-history pages expose append-only launch audit records, total count, pagination, and
   explicit no-order/no-OMS boundaries without requiring consumers to fetch full definitions,
+- approval decisions append bounded approval posture evidence to active definitions and expose a
+  paged `BulkReviewCampaignDefinitionApprovalDecisionPage` without maker-checker workflow, trade
+  approval, order generation, routing, client contact, or OMS claims,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without adding maker-checker, order, or OMS claims,

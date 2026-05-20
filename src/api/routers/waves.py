@@ -95,9 +95,11 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
+    CampaignApprovalDecisionType,
     CampaignApprovalInboxStatus,
     DpmBulkReviewCampaignApprovalInboxPage,
     DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
@@ -116,6 +118,8 @@ from src.core.waves import (
     build_bulk_review_campaign_definition_launch_command,
     build_bulk_review_campaign_definition_launch_history_page,
     record_bulk_review_campaign_definition_launch,
+    build_bulk_review_campaign_definition_approval_decision_page,
+    record_bulk_review_campaign_definition_approval_decision,
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_definition_workflow_overview,
     build_bulk_review_campaign_operating_queue_page,
@@ -447,6 +451,33 @@ class DpmBulkReviewCampaignDefinitionLaunchRequest(BaseModel):
             "Optional correlation id for the durable wave. When omitted, Manage derives the same "
             "deterministic correlation id used by the launch package."
         ),
+    )
+
+
+class DpmBulkReviewCampaignDefinitionApprovalDecisionRequest(BaseModel):
+    decision_type: CampaignApprovalDecisionType = Field(
+        description="Bounded campaign approval decision.",
+        examples=["APPROVED"],
+    )
+    decision_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, committee, or ticket reference for this decision.",
+        examples=["BRC-APPROVAL-2026-05-001"],
+    )
+    decided_by: str = Field(
+        min_length=1,
+        description="Actor recording the campaign approval decision.",
+        examples=["cio_ops_committee"],
+    )
+    decision_reason: str = Field(
+        min_length=1,
+        description="Human-authored campaign approval decision rationale.",
+        examples=["Campaign definition approved for bounded DPM review launch."],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-approval-decision-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Optional decision evidence refs such as committee minutes or ticket ids.",
     )
 
 
@@ -1550,6 +1581,84 @@ def get_bulk_review_campaign_definition(
         campaign_version=campaign_version,
     )
     return definition
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_201_CREATED,
+    summary="Record bulk-review campaign approval decision",
+    description=(
+        "Records an append-only approval decision on one active Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. This mutates campaign approval evidence only: it "
+        "does not run maker-checker workflow, approve trades, generate orders, route orders, "
+        "contact clients, or claim OMS execution."
+    ),
+)
+def record_bulk_review_campaign_definition_approval_decision_endpoint(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    try:
+        updated = record_bulk_review_campaign_definition_approval_decision(
+            definition=definition,
+            decision_type=request.decision_type,
+            decision_ref=request.decision_ref,
+            decided_by=request.decided_by,
+            decision_reason=request.decision_reason,
+            correlation_id=request.correlation_id,
+            source_refs=request.source_refs,
+        )
+        persisted = repository.record_definition_approval_decision(definition=updated)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if persisted is None:
+        raise campaign_definition_not_found_http_exception()
+    return persisted
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
+    response_model=DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign approval decisions",
+    description=(
+        "Returns a bounded append-only approval-decision page for one persisted Manage-owned "
+        "`BulkReviewCampaignDefinition:v1`. The response summarizes approval posture without "
+        "creating maker-checker workflow, trade approval, order generation, order routing, client "
+        "contact, or OMS execution claims."
+    ),
+)
+def list_bulk_review_campaign_definition_approval_decisions(
+    campaign_id: str,
+    campaign_version: str,
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    return build_bulk_review_campaign_definition_approval_decision_page(
+        definition=definition,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @router.get(

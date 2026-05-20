@@ -16,6 +16,7 @@ from src.core.waves.models import (
 )
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionApprovalDecision,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
     DpmBulkReviewCampaignDefinitionLaunchRecord,
@@ -45,6 +46,12 @@ from src.core.waves.campaign_definition_launch_execution import (
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchCommand,
     build_bulk_review_campaign_definition_launch_command,
+)
+from src.core.waves.campaign_definition_approval_decisions import (
+    CampaignApprovalDecisionType,
+    DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
+    build_bulk_review_campaign_definition_approval_decision_page,
+    record_bulk_review_campaign_definition_approval_decision,
 )
 from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
@@ -96,12 +103,15 @@ from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
 __all__ = [
     "DpmRebalanceWave",
+    "CampaignApprovalDecisionType",
     "CampaignApprovalInboxStatus",
     "DpmRebalanceWaveEvent",
     "DpmRebalanceWaveItem",
     "DpmBulkReviewCampaignApprovalInboxItem",
     "DpmBulkReviewCampaignApprovalInboxPage",
     "DpmBulkReviewCampaignDefinition",
+    "DpmBulkReviewCampaignDefinitionApprovalDecision",
+    "DpmBulkReviewCampaignDefinitionApprovalDecisionPage",
     "DpmBulkReviewCampaignDefinitionCandidate",
     "DpmBulkReviewCampaignDefinitionConflictError",
     "DpmBulkReviewCampaignDefinitionGovernance",
@@ -146,6 +156,8 @@ __all__ = [
     "build_bulk_review_campaign_definition_lifecycle_events",
     "build_bulk_review_campaign_definition_launch_history_page",
     "build_bulk_review_campaign_definition_launch_command",
+    "build_bulk_review_campaign_definition_approval_decision_page",
+    "record_bulk_review_campaign_definition_approval_decision",
     "record_bulk_review_campaign_definition_launch",
     "build_bulk_review_campaign_definition_launch_package",
     "build_bulk_review_campaign_definition_preview_readiness",

@@ -1872,6 +1872,53 @@ def test_bulk_review_campaign_definition_workflow_overview_fails_closed_without_
     assert payload["launch_package"] is None
 
 
+def test_bulk_review_campaign_definition_approval_decisions_record_and_list() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        decision = client.post(
+            f"{route}/approval-decisions",
+            json={
+                "decision_type": "APPROVED",
+                "decision_ref": "BRC-APPROVAL-2026-05-001",
+                "decided_by": "cio_ops_committee",
+                "decision_reason": "Approved for bounded DPM campaign launch.",
+                "correlation_id": "corr-campaign-approval-decision-001",
+                "source_refs": [
+                    {
+                        "source_system": "lotus-manage",
+                        "source_type": "BulkReviewCampaignApprovalMinutes",
+                        "source_id": "minutes-001",
+                    }
+                ],
+            },
+        )
+        listed = client.get(f"{route}/approval-decisions")
+
+    assert put_response.status_code == 200
+    assert decision.status_code == 201
+    decision_payload = decision.json()
+    assert len(decision_payload["approval_decisions"]) == 1
+    assert decision_payload["approval_decisions"][0]["decision_type"] == "APPROVED"
+    assert "trade_approval" in decision_payload["approval_decisions"][0]["forbidden_actions"]
+    assert decision_payload["content_hash"] != put_response.json()["content_hash"]
+    assert listed.status_code == 200
+    listed_payload = listed.json()
+    assert listed_payload["product_name"] == "BulkReviewCampaignDefinitionApprovalDecisionPage"
+    assert listed_payload["latest_decision_type"] == "APPROVED"
+    assert listed_payload["count"] == 1
+    assert listed_payload["approval_decisions"][0]["decision_ref"] == "BRC-APPROVAL-2026-05-001"
+
+
 def test_bulk_review_campaign_definition_launch_package_fails_closed_when_not_ready() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     expired_request = _bulk_review_campaign_definition_request()
