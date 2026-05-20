@@ -143,6 +143,11 @@ flowchart LR
 - `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch`
   creates a durable `BULK_REVIEW_CAMPAIGN` wave only when launch-package readiness is `READY`
   and records append-only launch history on the persisted definition.
+- `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
+  records append-only campaign approval posture evidence on an active definition without trade
+  approval, order generation, routing, client contact, maker-checker workflow, or OMS claims.
+- `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
+  returns a bounded `BulkReviewCampaignDefinitionApprovalDecisionPage` audit page.
 
 These are manage-owned backend authority endpoints. PM-book wave discovery is supported for
 `PM_BOOK_REVIEW` through lotus-core `PortfolioManagerBookMembership:v1`. CIO model-change

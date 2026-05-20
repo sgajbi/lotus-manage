@@ -71,6 +71,48 @@ class DpmBulkReviewCampaignDefinitionLaunchRecord(BaseModel):
     )
 
 
+class DpmBulkReviewCampaignDefinitionApprovalDecision(BaseModel):
+    """Append-only approval decision evidence for a bulk-review campaign definition."""
+
+    decision_id: str = Field(
+        description="Stable content-addressed approval-decision identity.",
+        examples=["brc_approval_decision_9f4e1a2b3c4d5e6f"],
+    )
+    decision_type: Literal["APPROVED", "REJECTED", "REQUIRES_REMEDIATION"] = Field(
+        description="Bounded campaign approval decision."
+    )
+    decision_ref: str = Field(
+        description="Bank workflow, committee, or ticket reference for the decision.",
+        examples=["BRC-APPROVAL-2026-05-001"],
+    )
+    decided_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when Manage recorded the approval decision.",
+    )
+    decided_by: str = Field(
+        description="Actor who recorded the approval decision.",
+        examples=["cio_ops_committee"],
+    )
+    decision_reason: str = Field(description="Human-authored approval decision rationale.")
+    correlation_id: str = Field(examples=["corr-campaign-approval-decision-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Source refs for committee minutes, ticket evidence, or control records.",
+    )
+    forbidden_actions: list[str] = Field(
+        default_factory=lambda: [
+            "maker_checker_workflow",
+            "trade_approval",
+            "order_generation",
+            "order_routing",
+            "oms_execution",
+            "client_contact",
+        ],
+        description="Actions outside this approval-decision evidence contract.",
+    )
+    content_hash: str = Field(description="Deterministic hash of the approval decision record.")
+
+
 class DpmBulkReviewCampaignDefinition(BaseModel):
     """Manage-owned bulk-review campaign definition over source-backed candidates."""
 
@@ -132,6 +174,14 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
         description=(
             "Append-only durable launch audit records. These records prove Manage-created waves "
             "from this definition without implying maker-checker, trade approval, or OMS execution."
+        ),
+    )
+    approval_decisions: list[DpmBulkReviewCampaignDefinitionApprovalDecision] = Field(
+        default_factory=list,
+        description=(
+            "Append-only campaign approval-decision evidence. These records mutate campaign "
+            "approval posture only and do not approve trades, generate orders, route orders, "
+            "or claim OMS execution."
         ),
     )
     content_hash: str = Field(default="")
@@ -217,5 +267,7 @@ def bulk_review_campaign_definition_hash(
     if not include_hash:
         payload["content_hash"] = ""
     payload["created_at"] = ""
+    if not payload.get("approval_decisions"):
+        payload.pop("approval_decisions", None)
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()

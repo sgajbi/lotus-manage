@@ -667,6 +667,14 @@ Current repository posture:
     with pagination, total count, wave id, actor, requested as-of date, correlation id,
     idempotency key, and explicit no-order/no-OMS boundaries so downstream consumers do not need to
     fetch full definitions or infer launch rows from generic lifecycle events.
+    Manage also exposes append-only campaign approval-decision evidence at
+    `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`
+    plus a bounded approval-decision audit page at
+    `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`,
+    preserving `APPROVED`, `REJECTED`, and `REQUIRES_REMEDIATION` posture with deterministic
+    decision ids and content hashes while rejecting conflicting decision refs. This mutates
+    campaign approval posture evidence only and does not approve trades, generate or route orders,
+    contact clients, run maker-checker workflow, or claim OMS execution.
     Manage also exposes a bounded operating queue at
     `GET /api/v1/rebalance/waves/campaign-operating-queue`, classifying persisted campaign
     definitions as ready to launch, attention required, or closed from existing discovery,
@@ -677,11 +685,11 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-approval-inbox`, classifying persisted campaign
     definitions as approval complete, approval required, approval incomplete, expiry attention,
     entitlement attention, or closed from existing governance evidence and readiness posture without
-    mutating approval state, adding maker-checker workflow, approving trades, generating orders, or
-    claiming OMS execution.
-    Approval state mutation, maker-checker workflow, broader cross-actor campaign operating queues,
-    wave risk/performance analytics posture, and external OMS execution remain unpromoted until
-    owning implementations are live-proven. Manage consumes `lotus-core`
+    adding maker-checker workflow, approving trades, generating orders, or claiming OMS execution.
+    Maker-checker workflow beyond append-only approval decisions, broader cross-actor campaign
+    operating queues, wave risk/performance analytics posture, global portfolio-universe campaign
+    discovery, and external OMS execution remain unpromoted until owning implementations are
+    live-proven. Manage consumes `lotus-core`
     `ExternalOrderExecutionAcknowledgement:v1` only as fail-closed construction authority
     diagnostics and does not generate orders, route venues, certify best execution, ingest OMS
     acknowledgements, confirm fills, or settle trades.

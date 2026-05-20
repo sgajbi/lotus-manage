@@ -18,10 +18,15 @@ from src.core.waves.campaign_definition_launch_execution import (
     DpmBulkReviewCampaignDefinitionLaunchBlocked,
     build_bulk_review_campaign_definition_launch_command,
 )
+from src.core.waves.campaign_definition_approval_decisions import (
+    build_bulk_review_campaign_definition_approval_decision_page,
+    record_bulk_review_campaign_definition_approval_decision,
+)
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
+    bulk_review_campaign_definition_hash,
 )
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionConflictError
 from src.infrastructure.waves.campaign_definitions import (
@@ -126,6 +131,17 @@ def test_campaign_definition_validation_rejects_bad_candidates_and_hash() -> Non
             correlation_id="corr-campaign-definition-001",
             content_hash="sha256:bad",
         )
+
+
+def test_campaign_definition_hash_preserves_pre_approval_decision_payloads() -> None:
+    definition = _definition()
+    persisted_payload = definition.model_dump(mode="json")
+    persisted_payload.pop("approval_decisions", None)
+
+    reloaded = DpmBulkReviewCampaignDefinition.model_validate(persisted_payload)
+
+    assert reloaded.approval_decisions == []
+    assert bulk_review_campaign_definition_hash(reloaded) == definition.content_hash
 
 
 def test_campaign_definition_retired_and_superseded_validation_edges() -> None:
@@ -302,6 +318,79 @@ def test_campaign_definition_launch_history_page_is_bounded_audit_evidence() -> 
     assert "NO_OMS_EXECUTION_CLAIM" in page.operating_boundaries
     assert empty_page.count == 0
     assert empty_page.total_count == 1
+
+
+def test_campaign_definition_approval_decisions_are_append_only() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+
+    approved = record_bulk_review_campaign_definition_approval_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+        source_refs=[
+            DpmWaveSourceRef(
+                source_system="lotus-manage",
+                source_type="BulkReviewCampaignApprovalMinutes",
+                source_id="minutes-001",
+            )
+        ],
+    )
+    replayed = record_bulk_review_campaign_definition_approval_decision(
+        definition=approved,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+        source_refs=[
+            DpmWaveSourceRef(
+                source_system="lotus-manage",
+                source_type="BulkReviewCampaignApprovalMinutes",
+                source_id="minutes-001",
+            )
+        ],
+    )
+    returned = repository.record_definition_approval_decision(definition=approved)
+    page = build_bulk_review_campaign_definition_approval_decision_page(
+        definition=approved,
+        limit=1,
+        offset=0,
+    )
+
+    assert returned == approved
+    assert replayed == approved
+    assert approved.content_hash != definition.content_hash
+    assert len(approved.approval_decisions) == 1
+    assert approved.approval_decisions[0].decision_type == "APPROVED"
+    assert "trade_approval" in approved.approval_decisions[0].forbidden_actions
+    assert page.product_name == "BulkReviewCampaignDefinitionApprovalDecisionPage"
+    assert page.latest_decision_type == "APPROVED"
+    assert page.count == 1
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == approved
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT",
+    ):
+        record_bulk_review_campaign_definition_approval_decision(
+            definition=approved,
+            decision_type="REJECTED",
+            decision_ref="BRC-APPROVAL-2026-05-001",
+            decided_by="cio_ops_committee",
+            decision_reason="Conflicting decision.",
+            correlation_id="corr-campaign-approval-decision-002",
+        )
 
 
 def test_campaign_definition_launch_command_is_ready_only() -> None:
@@ -853,6 +942,35 @@ def test_postgres_campaign_definition_repository_records_launch_history() -> Non
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
     assert repository.record_definition_launch(definition=launched) == launched
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_approval_decisions() -> None:
+    definition = _definition()
+    approved = record_bulk_review_campaign_definition_approval_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.record_definition_approval_decision(definition=approved) == approved
     assert connection.committed is True
 
 
