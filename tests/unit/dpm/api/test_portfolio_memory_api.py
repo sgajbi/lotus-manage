@@ -6,6 +6,7 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
+    get_campaign_definition_repository,
     get_construction_repository,
     get_mandate_repository,
     get_outcome_review_repository,
@@ -48,12 +49,27 @@ from src.core.waves.models import (
     DpmWaveSourceRef,
     DpmWaveTrigger,
 )
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionAssignmentAction,
+    DpmBulkReviewCampaignDefinitionAssignmentTask,
+    DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+    DpmBulkReviewCampaignDefinitionCandidate,
+    DpmBulkReviewCampaignDefinitionGovernance,
+    DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+)
+from src.core.waves.campaign_definition_approval_decisions import (
+    record_bulk_review_campaign_definition_approval_decision,
+)
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
-from src.infrastructure.waves import InMemoryDpmWaveRepository
+from src.infrastructure.waves import (
+    InMemoryDpmBulkReviewCampaignDefinitionRepository,
+    InMemoryDpmWaveRepository,
+)
 from tests.unit.dpm.construction.test_alternative_engine import _ready_rebalance_result
 from tests.unit.dpm.proof_packs.test_proof_pack_repository import _proof_pack
 from tests.unit.infrastructure.test_outcome_review_repository import _review
@@ -320,11 +336,160 @@ def _wave() -> DpmRebalanceWave:
     )
 
 
+def _campaign_definition() -> DpmBulkReviewCampaignDefinition:
+    source_ref = DpmWaveSourceRef(
+        source_system="lotus-core",
+        source_type="PortfolioManagerBookMembership",
+        source_id="pm-book-snapshot-20260513",
+        source_version="v1",
+        supportability_state="READY",
+        content_hash="sha256:pm-book-campaign",
+    )
+    definition = DpmBulkReviewCampaignDefinition(
+        campaign_id="campaign-memory-review-20260513",
+        campaign_version="2026.05",
+        display_name="Memory-backed campaign review",
+        as_of_date="2026-05-13",
+        rationale="Review discretionary portfolios affected by a source-backed campaign.",
+        eligible_portfolio_types=["DISCRETIONARY"],
+        candidates=[
+            DpmBulkReviewCampaignDefinitionCandidate(
+                portfolio_id=PORTFOLIO_ID,
+                mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+                portfolio_manager_id="pm_001",
+                portfolio_type="DISCRETIONARY",
+                source_refs=[source_ref],
+            )
+        ],
+        governance=DpmBulkReviewCampaignDefinitionGovernance(
+            approval_ref="BRC-APPROVAL-2026-05",
+            approved_by="cio_ops_committee",
+            approved_at="2026-05-13T08:30:00+00:00",
+            expires_on="2026-06-30",
+            entitled_actor_ids=["pm_001"],
+            access_purpose="SUPERVISORY_BULK_REVIEW",
+            source_refs=[
+                DpmWaveSourceRef(
+                    source_system="lotus-manage",
+                    source_type="BULK_REVIEW_CAMPAIGN_APPROVAL_RECORD",
+                    source_id="BRC-APPROVAL-2026-05",
+                    source_version="2026.05",
+                    supportability_state="READY",
+                    content_hash="sha256:campaign-approval",
+                )
+            ],
+        ),
+        source_refs=[
+            DpmWaveSourceRef(
+                source_system="lotus-manage",
+                source_type="BULK_REVIEW_CAMPAIGN_DEFINITION_RECORD",
+                source_id="campaign-memory-review-20260513",
+                source_version="2026.05",
+                supportability_state="READY",
+                content_hash="sha256:campaign-definition-record",
+            )
+        ],
+        created_at=datetime(2026, 5, 13, 8, 0, tzinfo=timezone.utc),
+        created_by="ops",
+        correlation_id="corr-campaign-memory-definition",
+    )
+    definition = record_bulk_review_campaign_definition_approval_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-DECISION-2026-05",
+        decided_by="cio_ops_committee",
+        decision_reason="Campaign candidate evidence is source-backed.",
+        correlation_id="corr-campaign-memory-approval",
+        source_refs=[
+            DpmWaveSourceRef(
+                source_system="lotus-manage",
+                source_type="BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_RECORD",
+                source_id="BRC-DECISION-2026-05",
+                source_version="2026.05",
+                supportability_state="READY",
+                content_hash="sha256:campaign-approval-decision",
+            )
+        ],
+    )
+    transition = DpmBulkReviewCampaignDefinitionAssignmentTaskTransition(
+        transition_id="brc_assignment_task_transition_memory_001",
+        transition_type="OPENED",
+        transition_ref="BRC-TASK-2026-05-001:opened",
+        transitioned_at=datetime(2026, 5, 13, 9, 20, tzinfo=timezone.utc),
+        transitioned_by="ops",
+        from_status=None,
+        to_status="OPEN",
+        transition_reason="Open PM review task.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-memory-task-opened",
+        content_hash="sha256:campaign-task-transition",
+    )
+    return DpmBulkReviewCampaignDefinition.model_validate(
+        definition.model_copy(
+            update={
+                "assignment_actions": [
+                    DpmBulkReviewCampaignDefinitionAssignmentAction(
+                        action_id="brc_assignment_action_memory_001",
+                        action_type="ASSIGNED",
+                        action_ref="BRC-ASSIGN-2026-05-001",
+                        recorded_at=datetime(2026, 5, 13, 9, 0, tzinfo=timezone.utc),
+                        recorded_by="ops",
+                        action_reason="Assign source-backed candidate to PM review.",
+                        assigned_actor_ids=["pm_001"],
+                        escalation_tier="PM",
+                        sla_posture="ON_TRACK",
+                        correlation_id="corr-campaign-memory-assignment",
+                        content_hash="sha256:campaign-assignment-action",
+                    )
+                ],
+                "assignment_tasks": [
+                    DpmBulkReviewCampaignDefinitionAssignmentTask(
+                        task_id="brc_assignment_task_memory_001",
+                        task_ref="BRC-TASK-2026-05-001",
+                        task_type="ASSIGNMENT",
+                        status="OPEN",
+                        opened_at=datetime(2026, 5, 13, 9, 15, tzinfo=timezone.utc),
+                        opened_by="ops",
+                        task_reason="PM must review campaign candidate.",
+                        assigned_actor_ids=["pm_001"],
+                        escalation_tier="PM",
+                        sla_posture="ON_TRACK",
+                        correlation_id="corr-campaign-memory-task",
+                        transitions=[transition],
+                        content_hash="sha256:campaign-assignment-task",
+                    )
+                ],
+                "maker_checker_controls": [
+                    DpmBulkReviewCampaignDefinitionMakerCheckerControl(
+                        control_id="brc_maker_checker_memory_001",
+                        control_action="REVIEW_COMPLETED",
+                        control_ref="BRC-MC-2026-05-001",
+                        recorded_at=datetime(2026, 5, 13, 9, 30, tzinfo=timezone.utc),
+                        recorded_by="ops",
+                        submitter_actor_id="pm_001",
+                        reviewer_actor_id="cio_ops_committee",
+                        required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+                        control_outcome="PASSED",
+                        control_reason="Maker and checker actors are distinct.",
+                        correlation_id="corr-campaign-memory-maker-checker",
+                        content_hash="sha256:campaign-maker-checker",
+                    )
+                ],
+                "content_hash": "",
+            }
+        ).model_dump(mode="python")
+    )
+
+
 def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    campaign_repository.save_definition(definition=_campaign_definition())
 
     memory = build_portfolio_memory(
         portfolio_id=PORTFOLIO_ID,
@@ -334,6 +499,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         mandate_repository=mandate_repository,
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_repository,
+        campaign_definition_repository=campaign_repository,
         generated_at=datetime(2026, 5, 7, 10, 0, tzinfo=timezone.utc),
     )
 
@@ -359,6 +525,11 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.event_type_counts["CONSTRUCTION_ALTERNATIVE_SET"] == 1
     assert memory.event_type_counts["CONSTRUCTION_ALTERNATIVE_SELECTED"] == 1
     assert memory.event_type_counts["WAVE_HANDOFF_READY"] == 1
+    assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
+    assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION"] == 1
+    assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION"] == 1
+    assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK"] == 1
+    assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL"] == 1
     assert memory.event_type_counts["OUTCOME_REVIEW_CREATED"] == 1
     assert memory.event_type_counts["PM_QUALITY_SCORE_RUN"] == 1
     assert "lotus-manage" in memory.source_systems
@@ -377,6 +548,17 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         "CONSTRUCTION_ALTERNATIVE_SET",
         "CONSTRUCTION_ALTERNATIVE_SELECTED",
     ]
+    assert family_posture["bulk_review_campaign_workflow"].support_status == "SUPPORTED"
+    assert family_posture["bulk_review_campaign_workflow"].event_types == [
+        "BULK_REVIEW_CAMPAIGN_DEFINITION",
+        "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+        "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
+    ]
+    assert "without discovering the global portfolio universe" in (
+        family_posture["bulk_review_campaign_workflow"].summary
+    )
     assert (
         "without copying raw request payloads"
         in family_posture["construction_alternatives"].summary
@@ -449,6 +631,38 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         for event in memory.events
         if event.event_type in {"CONSTRUCTION_ALTERNATIVE_SET", "CONSTRUCTION_ALTERNATIVE_SELECTED"}
     }
+    campaign_events = {
+        event.event_type: event
+        for event in memory.events
+        if event.event_type.startswith("BULK_REVIEW_CAMPAIGN_")
+    }
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_DEFINITION"].metadata[
+            "global_portfolio_universe_discovered"
+        ]
+        is False
+    )
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_DEFINITION"].metadata[
+            "raw_campaign_payload_projected"
+        ]
+        is False
+    )
+    assert campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK"].supportability_state == (
+        "PENDING_REVIEW"
+    )
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION"].metadata[
+            "external_workflow_orchestration_claimed"
+        ]
+        is False
+    )
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL"].metadata[
+            "external_execution_claimed"
+        ]
+        is False
+    )
     assert construction_events["CONSTRUCTION_ALTERNATIVE_SET"].content_hash == (
         "sha256:construction-memory"
     )
@@ -494,12 +708,15 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    campaign_repository.save_definition(definition=_campaign_definition())
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
     app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
     app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: pm_quality_repository
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
     app.openapi_schema = None
 
     with TestClient(app) as client:
@@ -518,6 +735,8 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert payload["event_type_counts"]["CONSTRUCTION_ALTERNATIVE_SET"] == 1
     assert payload["event_type_counts"]["CONSTRUCTION_ALTERNATIVE_SELECTED"] == 1
     assert payload["event_type_counts"]["PM_QUALITY_SCORE_RUN"] == 1
+    assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
+    assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL"] == 1
     family_posture = {
         posture["family_key"]: posture for posture in payload["source_event_family_posture"]
     }
@@ -583,6 +802,10 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "portfolio-level rankings."
         ),
     }
+    assert family_posture["bulk_review_campaign_workflow"]["support_status"] == "SUPPORTED"
+    assert family_posture["bulk_review_campaign_workflow"]["reason_code"] == (
+        "BULK_REVIEW_CAMPAIGN_WORKFLOW_SOURCE_EVENTS_SUPPORTED"
+    )
     assert payload["external_execution_boundary"] == {
         "boundary_id": "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY",
         "supportability_state": "BLOCKED",
@@ -615,6 +838,13 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     pm_quality_events = [
         event for event in payload["events"] if event["event_type"] == "PM_QUALITY_SCORE_RUN"
     ]
+    campaign_definition_events = [
+        event
+        for event in payload["events"]
+        if event["event_type"] == "BULK_REVIEW_CAMPAIGN_DEFINITION"
+    ]
+    assert campaign_definition_events[0]["metadata"]["membership_recalculated"] is False
+    assert campaign_definition_events[0]["metadata"]["external_execution_claimed"] is False
     assert pm_quality_events[0]["metadata"]["numeric_score_projected"] is False
     assert "score" not in pm_quality_events[0]["metadata"]
     assert all(event["event_identity"] for event in payload["events"])
@@ -648,12 +878,15 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    campaign_repository.save_definition(definition=_campaign_definition())
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
     app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
     app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
     app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: pm_quality_repository
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
     app.openapi_schema = None
 
     with TestClient(app) as client:
@@ -675,6 +908,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["items"][0]["portfolio_id"] == PORTFOLIO_ID
     assert payload["items"][0]["event_count"] >= 6
     assert payload["items"][0]["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
+    assert payload["items"][0]["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
     assert payload["items"][0]["latest_event_time"] is not None
     assert payload["items"][0]["content_hash"].startswith("sha256:")
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
@@ -695,6 +929,7 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
     outcome_repository = InMemoryDpmOutcomeReviewRepository()
     mandate_repository = InMemoryDpmMandateRepository()
     construction_repository = _construction_repository()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
     app.dependency_overrides[get_construction_repository] = lambda: construction_repository
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
@@ -703,6 +938,7 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
         InMemoryDpmPmQualityScoreRunRepository()
     )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
 
     with TestClient(app) as client:
         response = client.get(
@@ -722,6 +958,44 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
         "CONSTRUCTION_ALTERNATIVE_SELECTED": 1,
     }
     assert "lotus-manage" in payload["items"][0]["source_systems"]
+
+
+def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_global_discovery() -> (
+    None
+):
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    campaign_repository.save_definition(definition=_campaign_definition())
+    app.dependency_overrides[get_proof_pack_repository] = lambda: InMemoryDpmProofPackRepository()
+    app.dependency_overrides[get_construction_repository] = lambda: InMemoryConstructionRepository()
+    app.dependency_overrides[get_wave_repository] = lambda: InMemoryDpmWaveRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={"event_type": "BULK_REVIEW_CAMPAIGN_DEFINITION"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["returned_count"] == 1
+    assert payload["scanned_portfolio_count"] == 1
+    assert payload["items"][0]["portfolio_id"] == PORTFOLIO_ID
+    assert payload["items"][0]["event_type_counts"] == {
+        "BULK_REVIEW_CAMPAIGN_DEFINITION": 1,
+        "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION": 1,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION": 1,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK": 1,
+        "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL": 1,
+    }
+    assert "does not discover the global portfolio universe" in payload["support_boundary"]
 
 
 def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:

@@ -48,6 +48,14 @@ from src.core.waves.models import (
     DpmWaveHandoffRef,
     DpmWaveSourceRef,
 )
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionAssignmentAction,
+    DpmBulkReviewCampaignDefinitionAssignmentTask,
+    DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+    DpmBulkReviewCampaignDefinitionApprovalDecision,
+)
+from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
 
 
@@ -60,6 +68,7 @@ def build_portfolio_memory(
     mandate_repository: DpmMandateRepository | None = None,
     construction_repository: ConstructionRepository | None = None,
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None,
     limit: int = 100,
     generated_at: datetime | None = None,
 ) -> DpmPortfolioMemory:
@@ -95,6 +104,15 @@ def build_portfolio_memory(
         limit=limit,
     ):
         events.extend(_wave_events(wave=wave, portfolio_id=portfolio_id))
+
+    if campaign_definition_repository is not None:
+        events.extend(
+            _campaign_definition_events(
+                portfolio_id=portfolio_id,
+                campaign_definition_repository=campaign_definition_repository,
+                limit=limit,
+            )
+        )
 
     outcome_reviews = outcome_review_repository.list_outcome_reviews(
         portfolio_id=portfolio_id,
@@ -156,6 +174,7 @@ def search_portfolio_memory(
     mandate_repository: DpmMandateRepository | None = None,
     construction_repository: ConstructionRepository | None = None,
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None,
     portfolio_ids: list[str] | None = None,
     event_type: str | None = None,
     supportability_state: PortfolioMemorySupportabilityState | None = None,
@@ -173,6 +192,7 @@ def search_portfolio_memory(
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
+        campaign_definition_repository=campaign_definition_repository,
         portfolio_ids=portfolio_ids,
         source_scan_limit=source_scan_limit,
     )
@@ -186,6 +206,7 @@ def search_portfolio_memory(
             mandate_repository=mandate_repository,
             construction_repository=construction_repository,
             pm_quality_score_run_repository=pm_quality_score_run_repository,
+            campaign_definition_repository=campaign_definition_repository,
             limit=source_scan_limit,
             generated_at=generated_at,
         )
@@ -242,6 +263,7 @@ def _memory_candidate_portfolio_ids(
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
     mandate_repository: DpmMandateRepository | None,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None,
     portfolio_ids: list[str] | None,
     source_scan_limit: int,
 ) -> list[str]:
@@ -271,6 +293,14 @@ def _memory_candidate_portfolio_ids(
             cursor=None,
         )
         candidates.update(exception.portfolio_id for exception in exceptions)
+    if campaign_definition_repository is not None:
+        candidates.update(
+            candidate.portfolio_id
+            for definition in campaign_definition_repository.list_definitions(
+                limit=source_scan_limit
+            )
+            for candidate in definition.candidates
+        )
     return sorted(candidates)
 
 
@@ -373,6 +403,27 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
             route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
             reason_code="REBALANCE_WAVE_SOURCE_EVENTS_SUPPORTED",
             summary="Rebalance wave lifecycle and internal handoff events are projected.",
+        ),
+        DpmPortfolioMemorySourceEventFamilyPosture(
+            family_key="bulk_review_campaign_workflow",
+            source_system="lotus-manage",
+            owner="lotus-manage campaign definition product",
+            support_status="SUPPORTED",
+            event_types=[
+                "BULK_REVIEW_CAMPAIGN_DEFINITION",
+                "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
+                "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
+                "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+                "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
+            ],
+            route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
+            reason_code="BULK_REVIEW_CAMPAIGN_WORKFLOW_SOURCE_EVENTS_SUPPORTED",
+            summary=(
+                "Bulk-review campaign definitions and Manage-side approval, assignment, task, "
+                "and maker-checker evidence are projected from persisted campaign truth without "
+                "discovering the global portfolio universe, recalculating membership, "
+                "or orchestrating external workflow, client-contact, order, or OMS actions."
+            ),
         ),
         DpmPortfolioMemorySourceEventFamilyPosture(
             family_key="post_trade_outcome_review",
@@ -911,6 +962,289 @@ def _handoff_event(
     )
 
 
+def _campaign_definition_events(
+    *,
+    portfolio_id: str,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
+    limit: int,
+) -> list[DpmPortfolioMemoryEvent]:
+    definitions = [
+        definition
+        for definition in campaign_definition_repository.list_definitions(limit=limit)
+        if any(candidate.portfolio_id == portfolio_id for candidate in definition.candidates)
+    ]
+    events: list[DpmPortfolioMemoryEvent] = []
+    for definition in definitions:
+        events.append(_campaign_definition_event(definition=definition, portfolio_id=portfolio_id))
+        events.extend(
+            _campaign_approval_decision_event(definition=definition, decision=decision)
+            for decision in definition.approval_decisions
+        )
+        events.extend(
+            _campaign_assignment_action_event(definition=definition, action=action)
+            for action in definition.assignment_actions
+        )
+        events.extend(
+            _campaign_assignment_task_event(definition=definition, task=task)
+            for task in definition.assignment_tasks
+        )
+        events.extend(
+            _campaign_maker_checker_control_event(definition=definition, control=control)
+            for control in definition.maker_checker_controls
+        )
+    return events
+
+
+def _campaign_definition_event(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    portfolio_id: str,
+) -> DpmPortfolioMemoryEvent:
+    matching_candidates = [
+        candidate for candidate in definition.candidates if candidate.portfolio_id == portfolio_id
+    ]
+    return DpmPortfolioMemoryEvent(
+        event_id=(
+            "memory:campaign_definition:"
+            f"{definition.campaign_id}:{definition.campaign_version}:definition"
+        ),
+        event_type="BULK_REVIEW_CAMPAIGN_DEFINITION",
+        event_time=definition.created_at.isoformat(),
+        actor=definition.created_by,
+        source_system="lotus-manage",
+        source_type="BULK_REVIEW_CAMPAIGN_DEFINITION",
+        source_id=f"{definition.campaign_id}:{definition.campaign_version}",
+        status=definition.status,
+        supportability_state=_state(definition.status),
+        summary=(
+            f"Bulk-review campaign definition {definition.campaign_id} "
+            f"version {definition.campaign_version} is {definition.status}."
+        ),
+        reason_codes=sorted(
+            {
+                "BULK_REVIEW_CAMPAIGN_DEFINITION_PERSISTED",
+                definition.status,
+                *(
+                    ref.supportability_state
+                    for ref in _campaign_definition_source_refs(
+                        definition=definition,
+                        portfolio_id=portfolio_id,
+                    )
+                    if ref.supportability_state
+                ),
+            }
+        ),
+        source_refs=_campaign_definition_source_refs(
+            definition=definition,
+            portfolio_id=portfolio_id,
+        ),
+        artifact_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="BulkReviewCampaignDefinition",
+                source_id=f"{definition.campaign_id}:{definition.campaign_version}",
+                source_version=definition.product_version,
+                content_hash=definition.content_hash,
+            )
+        ],
+        content_hash=definition.content_hash,
+        metadata={
+            "campaign_id": definition.campaign_id,
+            "campaign_version": definition.campaign_version,
+            "as_of_date": definition.as_of_date,
+            "candidate_count": len(definition.candidates),
+            "matching_candidate_count": len(matching_candidates),
+            "eligible_portfolio_types": definition.eligible_portfolio_types,
+            "governance_evidence_present": definition.governance is not None,
+            "approval_decision_count": len(definition.approval_decisions),
+            "assignment_action_count": len(definition.assignment_actions),
+            "assignment_task_count": len(definition.assignment_tasks),
+            "maker_checker_control_count": len(definition.maker_checker_controls),
+            "global_portfolio_universe_discovered": False,
+            "membership_recalculated": False,
+            "raw_campaign_payload_projected": False,
+            "external_workflow_orchestration_claimed": False,
+            "client_contact_claimed": False,
+            "external_execution_claimed": False,
+        },
+    )
+
+
+def _campaign_approval_decision_event(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    decision: DpmBulkReviewCampaignDefinitionApprovalDecision,
+) -> DpmPortfolioMemoryEvent:
+    return DpmPortfolioMemoryEvent(
+        event_id=(
+            "memory:campaign_definition:"
+            f"{definition.campaign_id}:{definition.campaign_version}:approval:{decision.decision_id}"
+        ),
+        event_type="BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
+        event_time=decision.decided_at.isoformat(),
+        actor=decision.decided_by,
+        source_system="lotus-manage",
+        source_type="BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
+        source_id=decision.decision_id,
+        status=decision.decision_type,
+        supportability_state=_state(decision.decision_type),
+        summary=f"Bulk-review campaign approval decision {decision.decision_type} recorded.",
+        reason_codes=[
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_RECORDED",
+            decision.decision_type,
+        ],
+        source_refs=[_from_wave_source_ref(ref) for ref in decision.source_refs],
+        artifact_refs=[_campaign_definition_artifact_ref(definition)],
+        content_hash=decision.content_hash,
+        metadata={
+            "campaign_id": definition.campaign_id,
+            "campaign_version": definition.campaign_version,
+            "decision_ref": decision.decision_ref,
+            "correlation_id": decision.correlation_id,
+            "forbidden_actions": decision.forbidden_actions,
+            "trade_approval_claimed": False,
+            "external_execution_claimed": False,
+        },
+    )
+
+
+def _campaign_assignment_action_event(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    action: DpmBulkReviewCampaignDefinitionAssignmentAction,
+) -> DpmPortfolioMemoryEvent:
+    return DpmPortfolioMemoryEvent(
+        event_id=(
+            "memory:campaign_definition:"
+            f"{definition.campaign_id}:{definition.campaign_version}:assignment-action:{action.action_id}"
+        ),
+        event_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
+        event_time=action.recorded_at.isoformat(),
+        actor=action.recorded_by,
+        source_system="lotus-manage",
+        source_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
+        source_id=action.action_id,
+        status=action.action_type,
+        supportability_state=_assignment_sla_state(action.sla_posture),
+        summary=f"Bulk-review campaign assignment action {action.action_type} recorded.",
+        reason_codes=[
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_RECORDED",
+            action.action_type,
+            action.sla_posture,
+        ],
+        source_refs=[_from_wave_source_ref(ref) for ref in action.source_refs],
+        artifact_refs=[_campaign_definition_artifact_ref(definition)],
+        content_hash=action.content_hash,
+        metadata={
+            "campaign_id": definition.campaign_id,
+            "campaign_version": definition.campaign_version,
+            "action_ref": action.action_ref,
+            "assigned_actor_count": len(action.assigned_actor_ids),
+            "escalation_tier": action.escalation_tier,
+            "sla_posture": action.sla_posture,
+            "correlation_id": action.correlation_id,
+            "forbidden_actions": action.forbidden_actions,
+            "external_workflow_orchestration_claimed": False,
+            "client_contact_claimed": False,
+            "external_execution_claimed": False,
+        },
+    )
+
+
+def _campaign_assignment_task_event(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+) -> DpmPortfolioMemoryEvent:
+    return DpmPortfolioMemoryEvent(
+        event_id=(
+            "memory:campaign_definition:"
+            f"{definition.campaign_id}:{definition.campaign_version}:assignment-task:{task.task_id}"
+        ),
+        event_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+        event_time=task.opened_at.isoformat(),
+        actor=task.opened_by,
+        source_system="lotus-manage",
+        source_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+        source_id=task.task_id,
+        status=task.status,
+        supportability_state=_assignment_task_state(task.status, task.sla_posture),
+        summary=f"Bulk-review campaign assignment task {task.task_ref} is {task.status}.",
+        reason_codes=[
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_RECORDED",
+            task.status,
+            task.sla_posture,
+        ],
+        source_refs=[_from_wave_source_ref(ref) for ref in task.source_refs],
+        artifact_refs=[_campaign_definition_artifact_ref(definition)],
+        content_hash=task.content_hash,
+        metadata={
+            "campaign_id": definition.campaign_id,
+            "campaign_version": definition.campaign_version,
+            "task_ref": task.task_ref,
+            "task_type": task.task_type,
+            "assigned_actor_count": len(task.assigned_actor_ids),
+            "escalation_tier": task.escalation_tier,
+            "sla_posture": task.sla_posture,
+            "transition_count": len(task.transitions),
+            "correlation_id": task.correlation_id,
+            "forbidden_actions": task.forbidden_actions,
+            "external_workflow_orchestration_claimed": False,
+            "approval_state_mutation_claimed": False,
+            "client_contact_claimed": False,
+            "external_execution_claimed": False,
+        },
+    )
+
+
+def _campaign_maker_checker_control_event(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    control: DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+) -> DpmPortfolioMemoryEvent:
+    return DpmPortfolioMemoryEvent(
+        event_id=(
+            "memory:campaign_definition:"
+            f"{definition.campaign_id}:{definition.campaign_version}:maker-checker:{control.control_id}"
+        ),
+        event_type="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
+        event_time=control.recorded_at.isoformat(),
+        actor=control.recorded_by,
+        source_system="lotus-manage",
+        source_type="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
+        source_id=control.control_id,
+        status=control.control_outcome,
+        supportability_state=_maker_checker_state(control.control_outcome),
+        summary=(
+            f"Bulk-review campaign maker-checker control {control.control_action} "
+            f"recorded with {control.control_outcome} outcome."
+        ),
+        reason_codes=[
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_RECORDED",
+            control.control_action,
+            control.control_outcome,
+        ],
+        source_refs=[_from_wave_source_ref(ref) for ref in control.source_refs],
+        artifact_refs=[_campaign_definition_artifact_ref(definition)],
+        content_hash=control.content_hash,
+        metadata={
+            "campaign_id": definition.campaign_id,
+            "campaign_version": definition.campaign_version,
+            "control_ref": control.control_ref,
+            "control_action": control.control_action,
+            "submitter_actor_id_present": control.submitter_actor_id is not None,
+            "reviewer_actor_id_present": control.reviewer_actor_id is not None,
+            "required_reviewer_role": control.required_reviewer_role,
+            "correlation_id": control.correlation_id,
+            "forbidden_actions": control.forbidden_actions,
+            "trade_approval_claimed": False,
+            "external_workflow_orchestration_claimed": False,
+            "client_contact_claimed": False,
+            "external_execution_claimed": False,
+        },
+    )
+
+
 def _outcome_review_events(
     *,
     review: DpmPostTradeOutcomeReview,
@@ -1128,6 +1462,38 @@ def _wave_source_refs(
     return sorted(refs, key=lambda ref: (ref.source_system, ref.source_type, ref.source_id))
 
 
+def _campaign_definition_source_refs(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    portfolio_id: str,
+) -> list[DpmPortfolioMemorySourceRef]:
+    refs = [_from_wave_source_ref(ref) for ref in definition.source_refs]
+    if definition.governance is not None:
+        refs.extend(_from_wave_source_ref(ref) for ref in definition.governance.source_refs)
+    for candidate in definition.candidates:
+        if candidate.portfolio_id == portfolio_id:
+            refs.extend(_from_wave_source_ref(ref) for ref in candidate.source_refs)
+    unique = {
+        (ref.source_system, ref.source_type, ref.source_id, ref.source_version): ref for ref in refs
+    }
+    return sorted(
+        unique.values(),
+        key=lambda ref: (ref.source_system, ref.source_type, ref.source_id),
+    )
+
+
+def _campaign_definition_artifact_ref(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> DpmPortfolioMemorySourceRef:
+    return DpmPortfolioMemorySourceRef(
+        source_system="lotus-manage",
+        source_type="BulkReviewCampaignDefinition",
+        source_id=f"{definition.campaign_id}:{definition.campaign_version}",
+        source_version=definition.product_version,
+        content_hash=definition.content_hash,
+    )
+
+
 def _from_proof_pack_source_ref(ref: DpmProofPackSourceRef) -> DpmPortfolioMemorySourceRef:
     return DpmPortfolioMemorySourceRef(
         source_system=ref.source_system,
@@ -1188,6 +1554,35 @@ def _monitoring_exception_state(
     if exception.severity.value == "WARNING":
         return "DEGRADED"
     return "PENDING_REVIEW"
+
+
+def _assignment_sla_state(sla_posture: str) -> PortfolioMemorySupportabilityState:
+    if sla_posture == "BREACHED_OR_BLOCKED":
+        return "DEGRADED"
+    return "READY"
+
+
+def _assignment_task_state(
+    status: str,
+    sla_posture: str,
+) -> PortfolioMemorySupportabilityState:
+    if status == "CANCELLED":
+        return "BLOCKED"
+    if status == "BLOCKED" or sla_posture == "BREACHED_OR_BLOCKED":
+        return "DEGRADED"
+    if status in {"OPEN", "ACKNOWLEDGED", "IN_PROGRESS"}:
+        return "PENDING_REVIEW"
+    return "READY"
+
+
+def _maker_checker_state(control_outcome: str) -> PortfolioMemorySupportabilityState:
+    if control_outcome == "FAILED":
+        return "BLOCKED"
+    if control_outcome == "EXCEPTION_OPEN":
+        return "DEGRADED"
+    if control_outcome == "PENDING":
+        return "PENDING_REVIEW"
+    return "READY"
 
 
 def _wave_event_metadata(event: DpmRebalanceWaveEvent) -> dict[str, object]:

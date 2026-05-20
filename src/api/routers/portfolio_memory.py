@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query
 
 from src.api.dependencies import (
     get_construction_repository,
+    get_campaign_definition_repository,
     get_mandate_repository,
     get_outcome_review_repository,
     get_pm_quality_score_run_repository,
@@ -20,6 +21,7 @@ from src.core.portfolio_memory import DpmPortfolioMemory, DpmPortfolioMemorySear
 from src.core.portfolio_memory.models import PortfolioMemorySupportabilityState
 from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
 from src.core.proof_packs.repository import DpmProofPackRepository
+from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
 
 
@@ -40,9 +42,10 @@ router = APIRouter(
         "portfolios with existing Manage memory evidence before loading a single portfolio "
         "timeline.\n"
         "How: The endpoint scans persisted proof packs, rebalance waves, monitoring exceptions, "
-        "and outcome reviews, then composes each matching portfolio with the same source-backed "
-        "memory assembler used by the detail route. It can filter by event type, supportability "
-        "state, and represented source system. It does not discover the global portfolio universe, "
+        "campaign definitions, and outcome reviews, then composes each matching portfolio with "
+        "the same source-backed memory assembler used by the detail route. It can filter by "
+        "event type, supportability state, and represented source system. It does not discover "
+        "the global portfolio universe, "
         "query external source-owner event stores, project OMS acknowledgement/fill/settlement "
         "events, or recalculate risk, performance, execution, tax, cash, FX, mandate-health, "
         "PM-quality score, report, archive, or AI truth."
@@ -88,6 +91,9 @@ def search_portfolio_memory_index(
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
 ) -> DpmPortfolioMemorySearchPage:
     return search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
@@ -96,6 +102,7 @@ def search_portfolio_memory_index(
         mandate_repository=mandate_repository,
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_score_run_repository,
+        campaign_definition_repository=campaign_definition_repository,
         portfolio_ids=portfolio_ids,
         event_type=event_type,
         supportability_state=cast(PortfolioMemorySupportabilityState | None, supportability_state),
@@ -117,7 +124,8 @@ def search_portfolio_memory_index(
         "When: Use when PM, CIO, operations, audit, Gateway, or Workbench consumers need a "
         "single queryable memory view for a portfolio without reconstructing source truth.\n"
         "How: The endpoint composes persisted RFC-0038, RFC-0039, RFC-0040, RFC-0041, and "
-        "RFC-0042 records. It preserves source refs, hashes, states, and reason codes, and "
+        "RFC-0042 records, including bounded campaign-definition workflow evidence. It preserves "
+        "source refs, hashes, states, and reason codes, and "
         "publishes source-event family posture for supported and deferred source owners; it does "
         "not compute risk, performance, execution, tax, cash, mandate-health, PM quality scores, "
         "or external order truth locally."
@@ -134,6 +142,9 @@ def get_portfolio_memory(
     pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
 ) -> DpmPortfolioMemory:
     return build_portfolio_memory(
         portfolio_id=portfolio_id,
@@ -143,5 +154,6 @@ def get_portfolio_memory(
         mandate_repository=mandate_repository,
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_score_run_repository,
+        campaign_definition_repository=campaign_definition_repository,
         limit=limit,
     )
