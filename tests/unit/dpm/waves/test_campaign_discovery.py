@@ -741,6 +741,8 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
     assert candidate.proposed_task_type == "ASSIGNMENT"
     assert candidate.proposed_task_ref is not None
     assert "NO_AUTOMATIC_TASK_MUTATION" in candidate.operating_boundaries
+    assert "NO_AUTOMATIC_MAKER_CHECKER_MUTATION" in candidate.operating_boundaries
+    assert "NO_MAKER_CHECKER_WORKFLOW" not in candidate.operating_boundaries
 
     assert active.automation_status == "MANUAL_REVIEW_REQUIRED"
     assert active.automation_action == "MONITOR_ACTIVE_TASK"

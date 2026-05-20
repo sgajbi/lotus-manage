@@ -191,8 +191,8 @@ orders, or claiming OMS execution. Manage also supports read-only workflow autom
 `GET /api/v1/rebalance/waves/campaign-workflow-automation`, composing assignment-plan posture and
 existing controlled assignment-task state into deterministic candidates for opening, monitoring, or
 escalating Manage-owned assignment tasks without mutating tasks, orchestrating external workflow,
-contacting clients, creating maker-checker workflow, approving trades, generating orders, or claiming
-OMS execution. Manage also supports append-only assignment and escalation
+contacting clients, mutating maker-checker control state, approving trades, generating orders, or
+claiming OMS execution. Manage also supports append-only assignment and escalation
 actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

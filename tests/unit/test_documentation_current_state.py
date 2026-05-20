@@ -1591,6 +1591,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "campaign workflow-automation readiness addendum" in work_to_be_done
     assert "src/core/waves/campaign_workflow_automation.py" in work_to_be_done
     assert "BulkReviewCampaignWorkflowAutomation:v1" in work_to_be_done
+    assert "mutate maker-checker control state" in work_to_be_done
     assert "bounded read-only campaign approval-attention inbox" in work_to_be_done
     assert "external workflow orchestration beyond Manage-side task readiness" in (work_to_be_done)
     assert "GET /api/v1/rebalance/portfolio-memory/{portfolio_id}" in work_to_be_done
@@ -2327,6 +2328,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`GET /api/v1/rebalance/waves/campaign-workflow-automation`" in supported_features
     assert "`BulkReviewCampaignWorkflowAutomation:v1`" in supported_features
     assert "src/core/waves/campaign_workflow_automation.py" in supported_features
+    assert "maker-checker control-state mutation" in supported_features
     assert "retire definitions so they remain auditable under `RETIRED` status" in (
         supported_features
     )

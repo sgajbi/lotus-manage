@@ -1105,9 +1105,9 @@ endpoint; active rows surface non-closed task refs for monitoring; blocked rows 
 breached task refs for escalation. The domain helper lives in
 `src/core/waves/campaign_workflow_automation.py`, so automation-readiness classification stays out
 of the API router. This narrows RFC41-WTBD-003's workflow-automation gap without automatic task
-mutation, external workflow orchestration, maker-checker workflow, client contact, trade approval,
-order generation, global portfolio-universe discovery, membership recalculation, or OMS execution
-claims.
+mutation, external workflow orchestration, maker-checker control-state mutation, client contact,
+trade approval, order generation, global portfolio-universe discovery, membership recalculation,
+or OMS execution claims.
 
 2026-05-20 campaign maker-checker control addendum:
 

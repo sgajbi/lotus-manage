@@ -3571,8 +3571,8 @@ router and preserving reusable domain logic.
 
 This advances RFC41-WTBD-003 beyond controlled assignment-task mutation into a bounded
 Manage-side automation-readiness projection. It does not mutate tasks, orchestrate external
-workflow systems, create maker-checker workflow, contact clients, approve trades, generate or route
-orders, discover the global portfolio universe, recalculate membership, or claim OMS execution.
+workflow systems, mutate maker-checker control state, contact clients, approve trades, generate or
+route orders, discover the global portfolio universe, recalculate membership, or claim OMS execution.
 RFC41-WTBD-003 remains partial for global portfolio-universe campaign discovery and any external
 workflow orchestration beyond Manage-side task readiness and append-only evidence ledgers.
 
