@@ -1683,7 +1683,9 @@ Functional coverage:
   campaign identity, governance posture, expiry posture, source-ref count, source-backed candidate
   counts, preview references, and machine-readable `BulkReviewCampaignUniversePosture:v1`
   boundaries that mark global portfolio-universe discovery as unsupported without recalculating
-  membership,
+  membership; the posture names deferred source ownership, required future
+  `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide candidate-discovery
+  capabilities, and a deterministic content hash,
 - retired campaign definitions remain available for audit and discovery under `RETIRED` status but
   cannot be used for new `BULK_REVIEW_CAMPAIGN` preview/create requests,
 - superseded campaign definitions remain available for audit and discovery under `SUPERSEDED`

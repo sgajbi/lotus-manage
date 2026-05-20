@@ -2124,8 +2124,17 @@ def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> No
         "product_version": "v1",
         "source_scope": "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
         "global_portfolio_universe_discovery": "UNSUPPORTED",
+        "global_portfolio_universe_owner_posture": "DEFERRED_SOURCE_OWNER",
+        "required_source_product": "GlobalPortfolioUniverseCampaignCandidateSet:v1",
         "candidate_source_ref_posture": "SOURCE_BACKED",
         "source_systems": ["lotus-advise", "lotus-core"],
+        "blocked_capabilities": [
+            "bank_wide_portfolio_universe_scan",
+            "candidate_portfolio_discovery",
+            "candidate_eligibility_calculation",
+            "source_fact_recalculation",
+            "membership_recomputation",
+        ],
         "operating_boundaries": [
             "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
             "NO_SOURCE_FACT_RECALCULATION",
@@ -2133,7 +2142,9 @@ def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> No
             "NO_ORDER_GENERATION",
             "NO_OMS_EXECUTION_CLAIM",
         ],
+        "content_hash": item["universe_posture"]["content_hash"],
     }
+    assert item["universe_posture"]["content_hash"].startswith("sha256:")
     assert item["preview_reference"] == {
         "trigger_type": "BULK_REVIEW_CAMPAIGN",
         "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
