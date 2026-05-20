@@ -61,8 +61,9 @@ from src.api.routers.wave_campaign_source_resolution import (
     request_with_campaign_definition,
     resolve_bulk_review_campaign_portfolios,
 )
-from src.api.routers.wave_cio_model_change_projection import (
-    build_cio_model_change_resolved_portfolios,
+from src.api.routers.wave_core_source_resolution import (
+    resolve_cio_model_change_portfolios,
+    resolve_pm_book_portfolios,
 )
 from src.api.routers.wave_http_errors import (
     wave_lookup_http_exception,
@@ -72,7 +73,6 @@ from src.api.routers.wave_date_validation import parse_wave_as_of_date
 from src.api.routers.wave_portfolio_type_validation import (
     normalize_required_portfolio_types,
 )
-from src.api.routers.wave_pm_book_projection import build_pm_book_resolved_portfolios
 from src.api.routers.wave_required_text_validation import normalize_required_text
 from src.api.routers.wave_risk_event_validation import (
     build_risk_event_candidate_payloads,
@@ -82,8 +82,6 @@ from src.api.routers.wave_source_dependency_http import (
     source_authority_unavailable_http_exception,
     source_dependency_failed_http_exception,
     source_unavailable_http_exception,
-    upstream_dependency_failed_http_exception,
-    upstream_unavailable_http_exception,
 )
 from src.api.routers.wave_source_refs import (
     source_refs_payload,
@@ -159,7 +157,6 @@ from src.core.waves.campaign_definition_events import (
     DpmBulkReviewCampaignDefinitionLifecycleEventPage,
     build_bulk_review_campaign_definition_lifecycle_events,
 )
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
     LotusRiskAuthorityUnavailableError,
@@ -293,11 +290,16 @@ def _portfolio_inputs_for_request(
     if request.trigger_type == "EXPLICIT_PORTFOLIO_LIST":
         return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
     if request.trigger_type == "PM_BOOK_REVIEW":
-        return _resolve_pm_book_portfolios(request=request, correlation_id=correlation_id)
-    if request.trigger_type == "CIO_MODEL_CHANGE":
-        return _resolve_cio_model_change_portfolios(
+        return resolve_pm_book_portfolios(
             request=request,
             correlation_id=correlation_id,
+            core_resolver_factory=build_core_resolver_client,
+        )
+    if request.trigger_type == "CIO_MODEL_CHANGE":
+        return resolve_cio_model_change_portfolios(
+            request=request,
+            correlation_id=correlation_id,
+            core_resolver_factory=build_core_resolver_client,
         )
     if request.trigger_type == "RISK_EVENT":
         return _resolve_risk_event_portfolios(
@@ -318,108 +320,6 @@ def _portfolio_inputs_for_request(
         )
         return resolve_bulk_review_campaign_portfolios(request=resolved_request)
     return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
-
-
-def _resolve_pm_book_portfolios(
-    *,
-    request: DpmWavePreviewRequest,
-    correlation_id: str,
-) -> list[dict[str, object]]:
-    if request.portfolios:
-        raise wave_service.DpmWaveValidationError(
-            "PM_BOOK_REVIEW_REJECTS_CALLER_PORTFOLIOS",
-            "PM_BOOK_REVIEW resolves the affected portfolio set from lotus-core.",
-        )
-    portfolio_manager_id = normalize_required_text(
-        request.portfolio_manager_id,
-        required_code="PM_BOOK_REVIEW_PORTFOLIO_MANAGER_REQUIRED",
-        required_message="PM_BOOK_REVIEW requires portfolio_manager_id.",
-    )
-    as_of_date = parse_wave_as_of_date(request.as_of_date)
-    portfolio_types = normalize_required_portfolio_types(
-        request.portfolio_types,
-        required_code="PM_BOOK_REVIEW_PORTFOLIO_TYPES_REQUIRED",
-        required_message="PM_BOOK_REVIEW requires at least one portfolio type.",
-    )
-    try:
-        membership = build_core_resolver_client().resolve_portfolio_manager_book_membership(
-            portfolio_manager_id=portfolio_manager_id,
-            as_of_date=as_of_date,
-            tenant_id=request.tenant_id,
-            booking_center_code=request.booking_center_code,
-            portfolio_types=portfolio_types,
-            include_inactive=False,
-            correlation_id=correlation_id,
-        )
-    except DpmCoreResolverUnavailableError as exc:
-        raise upstream_unavailable_http_exception(
-            exc,
-            default_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
-        ) from exc
-    except DpmCoreResolverError as exc:
-        raise upstream_dependency_failed_http_exception(
-            exc,
-            default_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
-        ) from exc
-    if membership.supportability.state != "READY":
-        raise source_dependency_failed_http_exception(
-            code=membership.supportability.reason,
-            message="PM-book membership is not source-ready.",
-        )
-    if not membership.members:
-        raise source_dependency_failed_http_exception(
-            code="DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
-            message="PM-book membership returned no affected portfolios.",
-        )
-    return build_pm_book_resolved_portfolios(membership)
-
-
-def _resolve_cio_model_change_portfolios(
-    *,
-    request: DpmWavePreviewRequest,
-    correlation_id: str,
-) -> list[dict[str, object]]:
-    if request.portfolios:
-        raise wave_service.DpmWaveValidationError(
-            "CIO_MODEL_CHANGE_REJECTS_CALLER_PORTFOLIOS",
-            "CIO_MODEL_CHANGE resolves the affected portfolio set from lotus-core.",
-        )
-    model_portfolio_id = normalize_required_text(
-        request.model_portfolio_id,
-        required_code="CIO_MODEL_CHANGE_MODEL_PORTFOLIO_REQUIRED",
-        required_message="CIO_MODEL_CHANGE requires model_portfolio_id.",
-    )
-    as_of_date = parse_wave_as_of_date(request.as_of_date)
-    try:
-        cohort = build_core_resolver_client().resolve_cio_model_change_affected_cohort(
-            model_portfolio_id=model_portfolio_id,
-            as_of_date=as_of_date,
-            tenant_id=request.tenant_id,
-            booking_center_code=request.booking_center_code,
-            include_inactive_mandates=False,
-            correlation_id=correlation_id,
-        )
-    except DpmCoreResolverUnavailableError as exc:
-        raise upstream_unavailable_http_exception(
-            exc,
-            default_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
-        ) from exc
-    except DpmCoreResolverError as exc:
-        raise upstream_dependency_failed_http_exception(
-            exc,
-            default_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
-        ) from exc
-    if cohort.supportability.state != "READY":
-        raise source_dependency_failed_http_exception(
-            code=cohort.supportability.reason,
-            message="CIO model-change affected cohort is not source-ready.",
-        )
-    if not cohort.affected_mandates:
-        raise source_dependency_failed_http_exception(
-            code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_EMPTY",
-            message="CIO model-change affected cohort returned no portfolios.",
-        )
-    return build_cio_model_change_resolved_portfolios(cohort)
 
 
 def _resolve_tactical_house_view_portfolios(
