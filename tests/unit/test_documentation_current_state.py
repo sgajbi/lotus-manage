@@ -1438,9 +1438,18 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
         "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded portfolio-memory score-run and review-action lineage projection, Gateway BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality product realization are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
+    ) is False
+    assert (
+        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
+        "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded portfolio-memory score-run and review-action lineage projection, Gateway policy/score-run/fairness-analysis/support-summary BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary product realization are incorporated into "
+        "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
     assert (
         "Completed for the bounded bank-buyable support claim: policy administration, score-run preview, immutable create/read/list score-run lifecycle"
+        in work_to_be_done
+    ) is False
+    assert (
+        "Completed for the bounded Manage backend and first-wave product support claim: policy administration, score-run preview, immutable create/read/list score-run lifecycle"
         in work_to_be_done
     )
     assert "2026-05-16 fairness-analysis lifecycle addendum" in work_to_be_done
@@ -1474,8 +1483,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "RFC Work To Be Done Ledger" in work_to_be_done
     assert "## Mainline WTBD Control Snapshot" in work_to_be_done
     assert "Snapshot basis: the 2026-05-20 clean mainline" in work_to_be_done
-    assert "`lotus-manage` PR #317" in work_to_be_done
-    assert "`3cbfd886873805f5957ae188b7ef6c68c93ab5a6`" in work_to_be_done
+    assert "`lotus-manage` PR #317" not in work_to_be_done
+    assert "`3cbfd886873805f5957ae188b7ef6c68c93ab5a6`" not in work_to_be_done
+    assert "`lotus-manage` PR #329" in work_to_be_done
+    assert "`e03be66c58e881024938eb5a63f4fb373e914c00`" in work_to_be_done
     assert "`lotus-performance` PR #168 (`781415f`, wiki `6fb7209`)" in (work_to_be_done)
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published truth | 45 |" in work_to_be_done
