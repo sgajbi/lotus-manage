@@ -170,6 +170,149 @@ class DpmBulkReviewCampaignDefinitionAssignmentAction(BaseModel):
     content_hash: str = Field(description="Deterministic hash of the assignment-action record.")
 
 
+class DpmBulkReviewCampaignDefinitionAssignmentTaskTransition(BaseModel):
+    """Append-only transition evidence for a campaign assignment task."""
+
+    transition_id: str = Field(
+        description="Stable content-addressed task-transition identity.",
+        examples=["brc_assignment_task_transition_9f4e1a2b3c4d5e6f"],
+    )
+    transition_type: Literal[
+        "OPENED",
+        "ACKNOWLEDGED",
+        "STARTED",
+        "BLOCKED",
+        "UNBLOCKED",
+        "RESOLVED",
+        "CANCELLED",
+        "REASSIGNED",
+        "ESCALATED",
+        "DUE_DATE_CHANGED",
+    ] = Field(description="Bounded campaign assignment task transition.")
+    transition_ref: str = Field(
+        description="Bank workflow, ticket, or queue reference for the task transition.",
+        examples=["BRC-TASK-2026-05-001:ack"],
+    )
+    transitioned_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when Manage recorded the task transition.",
+    )
+    transitioned_by: str = Field(
+        description="Actor recording the task transition.",
+        examples=["ops"],
+    )
+    from_status: (
+        Literal[
+            "OPEN",
+            "ACKNOWLEDGED",
+            "IN_PROGRESS",
+            "BLOCKED",
+            "RESOLVED",
+            "CANCELLED",
+        ]
+        | None
+    ) = Field(description="Task status before this transition.")
+    to_status: Literal[
+        "OPEN",
+        "ACKNOWLEDGED",
+        "IN_PROGRESS",
+        "BLOCKED",
+        "RESOLVED",
+        "CANCELLED",
+    ] = Field(description="Task status after this transition.")
+    transition_reason: str = Field(description="Human-authored task-transition rationale.")
+    assigned_actor_ids: list[str] = Field(
+        default_factory=list,
+        description="Current assigned actors after this transition.",
+    )
+    escalation_tier: Literal["NONE", "PM", "OPS", "GOVERNANCE"] = Field(
+        description="Current escalation tier after this transition."
+    )
+    sla_posture: Literal["ON_TRACK", "ATTENTION", "BREACHED_OR_BLOCKED"] = Field(
+        description="Current SLA posture after this transition."
+    )
+    due_at: datetime | None = Field(
+        default=None,
+        description="Optional task due timestamp after this transition.",
+    )
+    correlation_id: str = Field(examples=["corr-campaign-assignment-task-transition-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Source refs for ticket, queue, committee, or control evidence.",
+    )
+    content_hash: str = Field(description="Deterministic hash of the task transition record.")
+
+
+class DpmBulkReviewCampaignDefinitionAssignmentTask(BaseModel):
+    """Stateful Manage-side assignment or escalation task for a bulk-review campaign definition."""
+
+    task_id: str = Field(
+        description="Stable task identity derived from campaign id, version, and task ref.",
+        examples=["brc_assignment_task_9f4e1a2b3c4d5e6f"],
+    )
+    task_ref: str = Field(
+        description="Bank workflow, ticket, or queue reference for this assignment task.",
+        examples=["BRC-TASK-2026-05-001"],
+    )
+    task_type: Literal[
+        "ASSIGNMENT",
+        "APPROVAL_REMEDIATION",
+        "ENTITLEMENT_REVIEW",
+        "EXPIRY_REVIEW",
+        "ESCALATION",
+    ] = Field(description="Bounded campaign assignment task type.")
+    status: Literal[
+        "OPEN",
+        "ACKNOWLEDGED",
+        "IN_PROGRESS",
+        "BLOCKED",
+        "RESOLVED",
+        "CANCELLED",
+    ] = Field(description="Current controlled task status.")
+    opened_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp when Manage opened the task.",
+    )
+    opened_by: str = Field(description="Actor who opened the task.", examples=["ops"])
+    task_reason: str = Field(description="Human-authored task rationale.")
+    assigned_actor_ids: list[str] = Field(
+        description="Current task assignees.",
+        examples=[["pm_001"]],
+    )
+    escalation_tier: Literal["NONE", "PM", "OPS", "GOVERNANCE"] = Field(
+        description="Current task escalation tier."
+    )
+    sla_posture: Literal["ON_TRACK", "ATTENTION", "BREACHED_OR_BLOCKED"] = Field(
+        description="Current task SLA posture."
+    )
+    due_at: datetime | None = Field(
+        default=None,
+        description="Optional task due timestamp.",
+    )
+    correlation_id: str = Field(examples=["corr-campaign-assignment-task-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Source refs for ticket, queue, committee, or control evidence.",
+    )
+    transitions: list[DpmBulkReviewCampaignDefinitionAssignmentTaskTransition] = Field(
+        description="Append-only transition ledger for this assignment task."
+    )
+    forbidden_actions: list[str] = Field(
+        default_factory=lambda: [
+            "approval_state_mutation",
+            "maker_checker_workflow",
+            "trade_approval",
+            "order_generation",
+            "order_routing",
+            "oms_execution",
+            "client_contact",
+            "external_workflow_orchestration",
+        ],
+        description="Actions outside this assignment-task lifecycle contract.",
+    )
+    content_hash: str = Field(description="Deterministic hash of the current task state.")
+
+
 class DpmBulkReviewCampaignDefinitionMakerCheckerControl(BaseModel):
     """Append-only maker-checker control evidence for a bulk-review campaign definition."""
 
@@ -317,6 +460,15 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
             "changes, trade approval, order routing, client contact, or OMS execution."
         ),
     )
+    assignment_tasks: list[DpmBulkReviewCampaignDefinitionAssignmentTask] = Field(
+        default_factory=list,
+        description=(
+            "Controlled campaign assignment and escalation tasks. These records mutate only "
+            "Manage-side task state with append-only transition evidence and do not mutate "
+            "approval state, create trade approvals, generate or route orders, contact clients, "
+            "or claim OMS execution."
+        ),
+    )
     maker_checker_controls: list[DpmBulkReviewCampaignDefinitionMakerCheckerControl] = Field(
         default_factory=list,
         description=(
@@ -413,6 +565,8 @@ def bulk_review_campaign_definition_hash(
         payload.pop("approval_decisions", None)
     if not payload.get("assignment_actions"):
         payload.pop("assignment_actions", None)
+    if not payload.get("assignment_tasks"):
+        payload.pop("assignment_tasks", None)
     if not payload.get("maker_checker_controls"):
         payload.pop("maker_checker_controls", None)
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)

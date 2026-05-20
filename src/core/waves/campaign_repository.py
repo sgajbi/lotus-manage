@@ -67,6 +67,13 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
     ) -> DpmBulkReviewCampaignDefinition | None:
         raise NotImplementedError
 
+    def record_definition_assignment_task(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError
+
     def record_definition_maker_checker_control(
         self,
         *,

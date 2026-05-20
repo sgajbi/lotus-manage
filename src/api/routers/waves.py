@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Literal, cast
 
@@ -100,6 +100,9 @@ from src.core.waves import (
     CampaignApprovalInboxStatus,
     CampaignAssignmentEscalationTier,
     CampaignAssignmentSlaPosture,
+    CampaignAssignmentTaskStatus,
+    CampaignAssignmentTaskTransitionType,
+    CampaignAssignmentTaskType,
     CampaignMakerCheckerControlAction,
     CampaignMakerCheckerControlOutcome,
     CampaignWorkflowBoardStatus,
@@ -109,6 +112,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
@@ -131,9 +135,12 @@ from src.core.waves import (
     record_bulk_review_campaign_definition_launch,
     build_bulk_review_campaign_definition_approval_decision_page,
     build_bulk_review_campaign_definition_assignment_action_page,
+    build_bulk_review_campaign_definition_assignment_task_page,
     build_bulk_review_campaign_definition_maker_checker_control_page,
     record_bulk_review_campaign_definition_approval_decision,
     record_bulk_review_campaign_definition_assignment_action,
+    open_bulk_review_campaign_definition_assignment_task,
+    transition_bulk_review_campaign_definition_assignment_task,
     record_bulk_review_campaign_definition_maker_checker_control,
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_assignment_plan_page,
@@ -535,6 +542,97 @@ class DpmBulkReviewCampaignDefinitionAssignmentActionRequest(BaseModel):
     source_refs: list[DpmWaveSourceRef] = Field(
         default_factory=list,
         description="Optional assignment evidence refs such as queue or ticket ids.",
+    )
+
+
+class DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest(BaseModel):
+    task_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, ticket, or queue reference for this assignment task.",
+        examples=["BRC-TASK-2026-05-001"],
+    )
+    task_type: CampaignAssignmentTaskType = Field(
+        description="Bounded assignment task type.",
+        examples=["ASSIGNMENT"],
+    )
+    opened_by: str = Field(
+        min_length=1,
+        description="Actor opening the assignment task.",
+        examples=["ops"],
+    )
+    task_reason: str = Field(
+        min_length=1,
+        description="Human-authored task rationale.",
+        examples=["Campaign requires assigned PM acknowledgement before launch."],
+    )
+    assigned_actor_ids: list[str] = Field(
+        description="Current task assignees.",
+        examples=[["pm_001"]],
+    )
+    escalation_tier: CampaignAssignmentEscalationTier = Field(
+        description="Current task escalation tier.",
+        examples=["PM"],
+    )
+    sla_posture: CampaignAssignmentSlaPosture = Field(
+        description="Current task SLA posture.",
+        examples=["ON_TRACK"],
+    )
+    due_at: datetime | None = Field(
+        default=None,
+        description="Optional task due timestamp.",
+        examples=["2026-05-11T08:00:00Z"],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-assignment-task-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Optional task evidence refs such as queue or ticket ids.",
+    )
+
+
+class DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest(BaseModel):
+    transition_type: CampaignAssignmentTaskTransitionType = Field(
+        description="Bounded task transition.",
+        examples=["ACKNOWLEDGED"],
+    )
+    transition_ref: str = Field(
+        min_length=1,
+        description="Bank workflow, ticket, or queue reference for this transition.",
+        examples=["BRC-TASK-2026-05-001:ack"],
+    )
+    transitioned_by: str = Field(
+        min_length=1,
+        description="Actor recording the task transition.",
+        examples=["pm_001"],
+    )
+    transition_reason: str = Field(
+        min_length=1,
+        description="Human-authored transition rationale.",
+        examples=["Assigned PM acknowledged the campaign review task."],
+    )
+    assigned_actor_ids: list[str] | None = Field(
+        default=None,
+        description="Optional replacement assignees for reassignment or escalation transitions.",
+        examples=[["pm_001", "ops_lead"]],
+    )
+    escalation_tier: CampaignAssignmentEscalationTier | None = Field(
+        default=None,
+        description="Optional replacement escalation tier after this transition.",
+        examples=["OPS"],
+    )
+    sla_posture: CampaignAssignmentSlaPosture | None = Field(
+        default=None,
+        description="Optional replacement SLA posture after this transition.",
+        examples=["ATTENTION"],
+    )
+    due_at: datetime | None = Field(
+        default=None,
+        description="Optional replacement due timestamp.",
+        examples=["2026-05-12T08:00:00Z"],
+    )
+    correlation_id: str = Field(examples=["corr-campaign-assignment-task-transition-001"])
+    source_refs: list[DpmWaveSourceRef] = Field(
+        default_factory=list,
+        description="Optional transition evidence refs such as queue or ticket ids.",
     )
 
 
@@ -1988,6 +2086,144 @@ def list_bulk_review_campaign_definition_assignment_actions(
     )
     return build_bulk_review_campaign_definition_assignment_action_page(
         definition=definition,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_201_CREATED,
+    summary="Open bulk-review campaign assignment task",
+    description=(
+        "Opens a controlled Manage-side assignment or escalation task on one active "
+        "`BulkReviewCampaignDefinition:v1`. The task lifecycle mutates assignment task state "
+        "only and retains append-only transition evidence; it does not mutate approval state, "
+        "run maker-checker workflow, approve trades, generate orders, route orders, contact "
+        "clients, orchestrate external workflow systems, or claim OMS execution."
+    ),
+)
+def open_bulk_review_campaign_definition_assignment_task_endpoint(
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    try:
+        updated = open_bulk_review_campaign_definition_assignment_task(
+            definition=definition,
+            task_ref=request.task_ref,
+            task_type=request.task_type,
+            opened_by=request.opened_by,
+            task_reason=request.task_reason,
+            assigned_actor_ids=request.assigned_actor_ids,
+            escalation_tier=request.escalation_tier,
+            sla_posture=request.sla_posture,
+            due_at=request.due_at,
+            correlation_id=request.correlation_id,
+            source_refs=request.source_refs,
+        )
+        persisted = repository.record_definition_assignment_task(definition=updated)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if persisted is None:
+        raise campaign_definition_not_found_http_exception()
+    return persisted
+
+
+@router.post(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_201_CREATED,
+    summary="Transition bulk-review campaign assignment task",
+    description=(
+        "Records a controlled transition for one Manage-side assignment task and updates its "
+        "current task state. Transitions are conflict-safe by transition ref and retain an "
+        "append-only ledger without mutating approval state, approving trades, generating or "
+        "routing orders, contacting clients, orchestrating external workflow systems, or claiming "
+        "OMS execution."
+    ),
+)
+def transition_bulk_review_campaign_definition_assignment_task_endpoint(
+    campaign_id: str,
+    campaign_version: str,
+    task_ref: str,
+    request: DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    try:
+        updated = transition_bulk_review_campaign_definition_assignment_task(
+            definition=definition,
+            task_ref=task_ref,
+            transition_type=request.transition_type,
+            transition_ref=request.transition_ref,
+            transitioned_by=request.transitioned_by,
+            transition_reason=request.transition_reason,
+            assigned_actor_ids=request.assigned_actor_ids,
+            escalation_tier=request.escalation_tier,
+            sla_posture=request.sla_posture,
+            due_at=request.due_at,
+            correlation_id=request.correlation_id,
+            source_refs=request.source_refs,
+        )
+        persisted = repository.record_definition_assignment_task(definition=updated)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if persisted is None:
+        raise campaign_definition_not_found_http_exception()
+    return persisted
+
+
+@router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks",
+    response_model=DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+    status_code=status.HTTP_200_OK,
+    summary="List bulk-review campaign assignment tasks",
+    description=(
+        "Returns a bounded page of controlled Manage-side assignment and escalation tasks for one "
+        "persisted `BulkReviewCampaignDefinition:v1`. The response summarizes current status, "
+        "escalation, and SLA posture without creating maker-checker workflow, mutating approval "
+        "state, trade approval, order generation, order routing, client contact, external "
+        "workflow orchestration, or OMS execution claims."
+    ),
+)
+def list_bulk_review_campaign_definition_assignment_tasks(
+    campaign_id: str,
+    campaign_version: str,
+    status: CampaignAssignmentTaskStatus | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
+    definition = get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+    return build_bulk_review_campaign_definition_assignment_task_page(
+        definition=definition,
+        status_filter=status,
         limit=limit,
         offset=offset,
     )

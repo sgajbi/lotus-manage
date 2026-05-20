@@ -2725,6 +2725,124 @@ def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> No
     assert "maker_checker_workflow" in payload["assignment_actions"][0]["forbidden_actions"]
 
 
+def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        opened = client.post(
+            f"{route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-2026-05-001",
+                "task_type": "ASSIGNMENT",
+                "opened_by": "ops",
+                "task_reason": "Campaign requires PM acknowledgement.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-task-001",
+            },
+        )
+        acknowledged = client.post(
+            f"{route}/assignment-tasks/BRC-TASK-2026-05-001/transitions",
+            json={
+                "transition_type": "ACKNOWLEDGED",
+                "transition_ref": "BRC-TASK-2026-05-001:ack",
+                "transitioned_by": "pm_001",
+                "transition_reason": "Assigned PM acknowledged the task.",
+                "correlation_id": "corr-campaign-assignment-task-transition-001",
+            },
+        )
+        escalated = client.post(
+            f"{route}/assignment-tasks/BRC-TASK-2026-05-001/transitions",
+            json={
+                "transition_type": "ESCALATED",
+                "transition_ref": "BRC-TASK-2026-05-001:esc",
+                "transitioned_by": "ops",
+                "transition_reason": "Governance evidence requires operations attention.",
+                "assigned_actor_ids": ["ops_lead"],
+                "escalation_tier": "OPS",
+                "sla_posture": "ATTENTION",
+                "correlation_id": "corr-campaign-assignment-task-transition-002",
+            },
+        )
+        replay = client.post(
+            f"{route}/assignment-tasks/BRC-TASK-2026-05-001/transitions",
+            json={
+                "transition_type": "ESCALATED",
+                "transition_ref": "BRC-TASK-2026-05-001:esc",
+                "transitioned_by": "ops",
+                "transition_reason": "Governance evidence requires operations attention.",
+                "assigned_actor_ids": ["ops_lead"],
+                "escalation_tier": "OPS",
+                "sla_posture": "ATTENTION",
+                "correlation_id": "corr-campaign-assignment-task-transition-002",
+            },
+        )
+        conflict = client.post(
+            f"{route}/assignment-tasks/BRC-TASK-2026-05-001/transitions",
+            json={
+                "transition_type": "RESOLVED",
+                "transition_ref": "BRC-TASK-2026-05-001:esc",
+                "transitioned_by": "ops",
+                "transition_reason": "Conflicting transition ref.",
+                "correlation_id": "corr-campaign-assignment-task-transition-conflict",
+            },
+        )
+        missing_assignee = client.post(
+            f"{route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-2026-05-002",
+                "task_type": "ASSIGNMENT",
+                "opened_by": "ops",
+                "task_reason": "Missing assignee.",
+                "assigned_actor_ids": [],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-task-002",
+            },
+        )
+        listed = client.get(f"{route}/assignment-tasks")
+        filtered = client.get(f"{route}/assignment-tasks?status=ACKNOWLEDGED")
+
+    assert put_response.status_code == 200
+    assert opened.status_code == 201
+    assert acknowledged.status_code == 201
+    assert escalated.status_code == 201
+    assert replay.status_code == 201
+    assert len(replay.json()["assignment_tasks"][0]["transitions"]) == 3
+    assert conflict.status_code == 422
+    assert (
+        conflict.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT"
+    )
+    assert missing_assignee.status_code == 422
+    assert (
+        missing_assignee.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED"
+    )
+
+    payload = listed.json()
+    assert listed.status_code == 200
+    assert payload["product_name"] == "BulkReviewCampaignDefinitionAssignmentTaskPage"
+    assert payload["count"] == 1
+    assert payload["open_task_count"] == 1
+    assert payload["status_counts"] == {"ACKNOWLEDGED": 1}
+    assert payload["escalation_tier_counts"] == {"OPS": 1}
+    assert payload["sla_posture_counts"] == {"ATTENTION": 1}
+    assert "oms_execution" in payload["assignment_tasks"][0]["forbidden_actions"]
+    assert filtered.status_code == 200
+    assert filtered.json()["count"] == 1
+
+
 def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 

@@ -1076,6 +1076,24 @@ contact clients, or claim OMS execution. The remaining RFC41-WTBD-003 campaign g
 global portfolio-universe campaign discovery, maker-checker workflow, and broader workflow
 automation beyond the append-only assignment ledger.
 
+2026-05-20 campaign assignment-task lifecycle addendum:
+
+`lotus-manage` now exposes
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`,
+`POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`,
+and
+`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+as a bounded controlled `BulkReviewCampaignDefinitionAssignmentTaskPage` lifecycle. The domain
+helper lives in `src/core/waves/campaign_assignment_tasks.py` and records current task status,
+assignees, escalation tier, SLA posture, optional due date, deterministic task/transition ids,
+conflict-safe refs, actor/reason/correlation evidence, source refs, and append-only transition
+history. This mutates only Manage-side assignment task state; it does not mutate approval state,
+create maker-checker workflow, approve trades, generate or route orders, contact clients,
+orchestrate external workflow systems, discover the global portfolio universe, recalculate
+membership, or claim OMS execution. The remaining RFC41-WTBD-003 campaign gap is therefore global
+portfolio-universe campaign discovery and broader workflow automation beyond controlled
+Manage-side assignment tasks.
+
 2026-05-20 campaign maker-checker control addendum:
 
 `lotus-manage` now exposes
@@ -1090,8 +1108,8 @@ outcome, correlation id, source refs, and explicit forbidden actions. Completed 
 distinct submitter and reviewer actors. This mutates campaign control evidence only; it does not
 approve trades, generate or route orders, contact clients, orchestrate external workflow systems,
 or claim OMS execution. The remaining RFC41-WTBD-003 campaign gap is therefore global
-portfolio-universe campaign discovery and mutable assignment/escalation workflow beyond the
-append-only ledgers.
+portfolio-universe campaign discovery and broader workflow automation beyond controlled
+Manage-side assignment tasks.
 
 Gold-pass decision:
 

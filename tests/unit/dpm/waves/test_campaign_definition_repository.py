@@ -26,6 +26,11 @@ from src.core.waves.campaign_assignment_actions import (
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
+from src.core.waves.campaign_assignment_tasks import (
+    build_bulk_review_campaign_definition_assignment_task_page,
+    open_bulk_review_campaign_definition_assignment_task,
+    transition_bulk_review_campaign_definition_assignment_task,
+)
 from src.core.waves.campaign_maker_checker_controls import (
     build_bulk_review_campaign_definition_maker_checker_control_page,
     record_bulk_review_campaign_definition_maker_checker_control,
@@ -480,6 +485,105 @@ def test_campaign_definition_assignment_actions_are_append_only() -> None:
             sla_posture="ON_TRACK",
             correlation_id="corr-campaign-assignment-action-conflict",
         )
+
+
+def test_campaign_definition_assignment_tasks_persist_current_state_and_transition_ledger() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    started = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="STARTED",
+        transition_ref="BRC-TASK-2026-05-001:start",
+        transitioned_by="pm_001",
+        transition_reason="PM started campaign review.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+    )
+    returned = repository.record_definition_assignment_task(definition=started)
+    page = build_bulk_review_campaign_definition_assignment_task_page(
+        definition=started,
+        limit=50,
+        offset=0,
+    )
+
+    assert returned == started
+    assert started.content_hash != definition.content_hash
+    assert started.assignment_tasks[0].status == "IN_PROGRESS"
+    assert len(started.assignment_tasks[0].transitions) == 2
+    assert page.product_name == "BulkReviewCampaignDefinitionAssignmentTaskPage"
+    assert page.status_counts == {"IN_PROGRESS": 1}
+    assert page.open_task_count == 1
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == started
+    )
+
+
+def test_campaign_definition_assignment_task_repository_edges() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    assert repository.record_definition_assignment_task(definition=opened) is None
+
+    repository.save_definition(definition=opened)
+    assert repository.record_definition_assignment_task(definition=opened) == opened
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    updated_retired = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-002",
+        task_type="ESCALATION",
+        opened_by="ops",
+        task_reason="Campaign requires operations escalation.",
+        assigned_actor_ids=["ops_lead"],
+        escalation_tier="OPS",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-task-002",
+    )
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    repository.save_definition(definition=retired)
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        repository.record_definition_assignment_task(definition=updated_retired)
 
 
 def test_campaign_definition_maker_checker_controls_are_append_only() -> None:
@@ -1207,6 +1311,126 @@ def test_postgres_campaign_definition_repository_records_assignment_actions() ->
 
     assert repository.record_definition_assignment_action(definition=assigned) == assigned
     assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_assignment_tasks() -> None:
+    definition = _definition()
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            _Cursor(),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    assert repository.record_definition_assignment_task(definition=opened) == opened
+    assert connection.committed is True
+
+
+def test_postgres_campaign_definition_repository_records_assignment_task_edges() -> None:
+    definition = _definition()
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    missing_connection = _Connection([_Cursor(row=None)])
+    repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
+    assert repository.record_definition_assignment_task(definition=opened) is None
+    assert missing_connection.rolled_back is True
+
+    replay_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": opened.content_hash,
+                    "payload_json": opened.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: replay_connection  # type: ignore[attr-defined, method-assign]
+    assert repository.record_definition_assignment_task(definition=opened) == opened
+    assert replay_connection.rolled_back is True
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    inactive_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "RETIRED",
+                    "content_hash": retired.content_hash,
+                    "payload_json": retired.model_dump(mode="json"),
+                }
+            )
+        ]
+    )
+    repository._connect = lambda: inactive_connection  # type: ignore[attr-defined, method-assign]
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        repository.record_definition_assignment_task(definition=opened)
+    assert inactive_connection.rolled_back is True
+
+    update_cursor = _Cursor()
+    update_cursor.rowcount = 0
+    rowcount_connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": definition.content_hash,
+                    "payload_json": definition.model_dump(mode="json"),
+                }
+            ),
+            update_cursor,
+        ]
+    )
+    repository._connect = lambda: rowcount_connection  # type: ignore[attr-defined, method-assign]
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+    ):
+        repository.record_definition_assignment_task(definition=opened)
+    assert rowcount_connection.rolled_back is True
 
 
 def test_postgres_campaign_definition_repository_records_maker_checker_controls() -> None:
