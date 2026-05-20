@@ -315,7 +315,23 @@ def _find_forbidden_field_names(value: Any) -> set[str]:
 
 def _dedupe_source_refs(review: DpmPostTradeOutcomeReview) -> list[DpmOutcomeSourceRef]:
     refs_by_key: dict[tuple[str, str, str], DpmOutcomeSourceRef] = {}
-    for ref in review.source_lineage:
+    refs = [
+        *review.source_lineage,
+        *review.expected_snapshot.source_lineage,
+        *review.realized_snapshot.source_lineage,
+        *(ref for result in review.dimension_results for ref in result.source_refs),
+        *(
+            ref
+            for metric in review.expected_snapshot.expected_values.values()
+            for ref in metric.source_refs
+        ),
+        *(
+            ref
+            for metric in review.realized_snapshot.realized_values.values()
+            for ref in metric.source_refs
+        ),
+    ]
+    for ref in refs:
         refs_by_key[(ref.source_system, ref.source_type, ref.source_id)] = ref
     return list(refs_by_key.values())
 

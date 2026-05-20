@@ -155,6 +155,11 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert ai_input["client_communication_boundary"]["boundary_id"] == (
                 "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
             )
+            assert {ref["source_id"] for ref in ai_input["source_refs"]} >= {
+                "expected",
+                "realized",
+                "metric",
+            }
             assert "place_orders" in ai_input["forbidden_actions"]
             assert "score_portfolio_manager" in ai_input["forbidden_actions"]
 

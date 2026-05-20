@@ -268,7 +268,8 @@ evidence with review-required guardrails. RFC-0042 is
 authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
-and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
+deduplicated AI-evidence source lineage across review, snapshot, dimension-result, and metric-level
+refs, and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
 hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
 state-filter validation evidence. Full post-trade outcome product support remains downstream until
 Gateway/Workbench implementation where surfaced is complete and canonically proven. RFC-0043 is
@@ -545,7 +546,9 @@ Operationally important truths:
     `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage may support internal PM, CIO,
     compliance, operations, report, and AI review workflows, but it does not contact clients,
     generate client-ready messages, collect client approval, confirm delivery, or certify client
-    communication audit truth.
+    communication audit truth. AI-evidence handoff source refs are bounded to persisted
+    outcome-review lineage and deduplicated review, snapshot, dimension-result, and metric-level
+    evidence refs.
 
 ## Documentation Map
 

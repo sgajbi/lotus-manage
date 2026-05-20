@@ -88,9 +88,15 @@ def test_outcome_report_input_carries_portfolio_memory_without_changing_hash() -
 def test_outcome_ai_evidence_input_is_bounded_and_forbids_actions() -> None:
     ai_input = build_ai_evidence_input(_review())
 
+    source_ids = {ref.source_id for ref in ai_input.source_refs}
+
     assert ai_input.evidence_ref.source_type == OUTCOME_AI_EVIDENCE_REF_TYPE
     assert ai_input.evidence_ref.content_hash == ai_input.content_hash
     assert ai_input.content_hash.startswith("sha256:")
+    assert source_ids >= {"expected", "realized", "metric"}
+    assert len(ai_input.source_refs) == len(
+        {(ref.source_system, ref.source_type, ref.source_id) for ref in ai_input.source_refs}
+    )
     assert "place_orders" in ai_input.forbidden_actions
     assert "approve_rebalance" in ai_input.forbidden_actions
     assert "score_portfolio_manager" in ai_input.forbidden_actions
