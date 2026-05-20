@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone
 import pytest
 
 from src.core.waves import DpmWaveSourceRef
+from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -803,6 +804,15 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
     )
     assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in candidate.capability_posture.operating_boundaries
     assert candidate.capability_posture.content_hash.startswith("sha256:")
+    assert candidate.capability_posture.content_hash == hash_canonical_payload(
+        strip_keys(
+            candidate.capability_posture.model_dump(mode="json"),
+            exclude={"content_hash"},
+        )
+    )
+    assert candidate.content_hash == hash_canonical_payload(
+        strip_keys(candidate.model_dump(mode="json"), exclude={"content_hash"})
+    )
 
     assert active.automation_status == "MANUAL_REVIEW_REQUIRED"
     assert active.automation_action == "MONITOR_ACTIVE_TASK"
@@ -842,6 +852,9 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
     )
     assert "external_workflow_escalation" in page.capability_posture.blocked_capabilities
     assert page.capability_posture.content_hash == candidate.capability_posture.content_hash
+    assert page.content_hash == hash_canonical_payload(
+        strip_keys(page.model_dump(mode="json"), exclude={"content_hash"})
+    )
 
     empty_page = build_bulk_review_campaign_workflow_automation_page(
         definitions=[],
