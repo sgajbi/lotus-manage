@@ -2722,6 +2722,8 @@ def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readine
     assert ready_item["automation_action"] == "OPEN_ASSIGNMENT_TASK"
     assert ready_item["proposed_task_type"] == "ASSIGNMENT"
     assert ready_item["proposed_task_ref"].startswith("BRC-AUTO-202605-")
+    assert "NO_AUTOMATIC_MAKER_CHECKER_MUTATION" in ready_item["operating_boundaries"]
+    assert "NO_MAKER_CHECKER_WORKFLOW" not in ready_item["operating_boundaries"]
     assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in ready_item["operating_boundaries"]
 
     assert filtered.status_code == 200

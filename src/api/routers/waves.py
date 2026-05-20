@@ -1924,8 +1924,8 @@ def list_bulk_review_campaign_assignment_plan(
         "with existing controlled assignment-task state to identify where Manage may safely "
         "propose opening, monitoring, or escalating its own assignment tasks. It does not mutate "
         "tasks, orchestrate external workflow, discover the global portfolio universe, "
-        "recalculate source facts, mutate approval state, create maker-checker workflow, contact "
-        "clients, approve trades, generate orders, or claim OMS execution."
+        "recalculate source facts, mutate approval state, mutate maker-checker control state, "
+        "contact clients, approve trades, generate orders, or claim OMS execution."
     ),
 )
 def list_bulk_review_campaign_workflow_automation(

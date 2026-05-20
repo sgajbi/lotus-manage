@@ -1721,7 +1721,8 @@ Functional coverage:
 - workflow automation readiness composes assignment-plan posture and controlled assignment-task
   state into `BulkReviewCampaignWorkflowAutomation:v1` rows for opening, monitoring, or escalating
   Manage-owned assignment tasks without automatic task mutation, external workflow orchestration,
-  maker-checker workflow, client contact, trade approval, order generation, or OMS claims,
+  maker-checker control-state mutation, client contact, trade approval, order generation, or OMS
+  claims,
 - campaign operating queue pages classify persisted campaign definitions into launch-ready,
   attention-required, and closed rows by composing discovery, preview-readiness, lifecycle, and
   launch-history posture without adding maker-checker, order, or OMS claims,

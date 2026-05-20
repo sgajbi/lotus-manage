@@ -36,6 +36,19 @@ CampaignWorkflowAutomationAction = Literal[
 
 _CLOSED_TASK_STATUSES = {"RESOLVED", "CANCELLED"}
 _BLOCKED_TASK_STATUSES = {"BLOCKED"}
+WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES = [
+    "READ_ONLY_WORKFLOW_AUTOMATION_PLAN",
+    "NO_AUTOMATIC_TASK_MUTATION",
+    "NO_EXTERNAL_WORKFLOW_ORCHESTRATION",
+    "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
+    "NO_SOURCE_FACT_RECALCULATION",
+    "NO_APPROVAL_STATE_MUTATION",
+    "NO_AUTOMATIC_MAKER_CHECKER_MUTATION",
+    "NO_CLIENT_CONTACT",
+    "NO_TRADE_APPROVAL",
+    "NO_ORDER_GENERATION",
+    "NO_OMS_EXECUTION_CLAIM",
+]
 
 
 class DpmBulkReviewCampaignWorkflowAutomationItem(BaseModel):
@@ -84,19 +97,7 @@ class DpmBulkReviewCampaignWorkflowAutomationItem(BaseModel):
         description="Source assignment-plan row used to derive automation readiness."
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: [
-            "READ_ONLY_WORKFLOW_AUTOMATION_PLAN",
-            "NO_AUTOMATIC_TASK_MUTATION",
-            "NO_EXTERNAL_WORKFLOW_ORCHESTRATION",
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_CLIENT_CONTACT",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        default_factory=lambda: list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims this automation projection must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the automation row.")
@@ -165,19 +166,7 @@ def build_bulk_review_campaign_workflow_automation_item(
         "blocked_task_refs": [task.task_ref for task in blocked_tasks],
         "automation_reason_codes": reason_codes,
         "assignment_plan": assignment_plan.model_dump(mode="json"),
-        "operating_boundaries": [
-            "READ_ONLY_WORKFLOW_AUTOMATION_PLAN",
-            "NO_AUTOMATIC_TASK_MUTATION",
-            "NO_EXTERNAL_WORKFLOW_ORCHESTRATION",
-            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-            "NO_SOURCE_FACT_RECALCULATION",
-            "NO_APPROVAL_STATE_MUTATION",
-            "NO_MAKER_CHECKER_WORKFLOW",
-            "NO_CLIENT_CONTACT",
-            "NO_TRADE_APPROVAL",
-            "NO_ORDER_GENERATION",
-            "NO_OMS_EXECUTION_CLAIM",
-        ],
+        "operating_boundaries": list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)
