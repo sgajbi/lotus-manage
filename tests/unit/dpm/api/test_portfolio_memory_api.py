@@ -1133,6 +1133,22 @@ def test_portfolio_memory_report_context_rejects_inconsistent_bounded_metadata()
     ):
         DpmPortfolioMemoryReportContext.model_validate(blank_governance)
 
+    mismatched_retention = context.model_dump(mode="json")
+    mismatched_retention["event_refs"][0]["retention_policy"] = "OTHER_RETENTION"
+    with pytest.raises(
+        ValidationError,
+        match="event_refs must match governance_policy.retention_policy",
+    ):
+        DpmPortfolioMemoryReportContext.model_validate(mismatched_retention)
+
+    mismatched_access = context.model_dump(mode="json")
+    mismatched_access["event_refs"][0]["access_classification"] = "PUBLIC"
+    with pytest.raises(
+        ValidationError,
+        match="event_refs must match governance_policy.access_classification",
+    ):
+        DpmPortfolioMemoryReportContext.model_validate(mismatched_access)
+
 
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()

@@ -28,6 +28,12 @@ PORTFOLIO_MEMORY_REPORT_CONTEXT_REQUIRED_GOVERNANCE_KEYS = frozenset(
         "source_authority_policy",
     }
 )
+PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_GOVERNANCE_FIELDS = {
+    "retention_policy": "retention_policy",
+    "redaction_policy": "redaction_policy",
+    "audit_policy": "audit_policy",
+    "access_classification": "access_classification",
+}
 
 
 class DpmPortfolioMemoryReportEventRef(BaseModel):
@@ -150,6 +156,23 @@ class DpmPortfolioMemoryReportContext(BaseModel):
                 "governance_policy values must be non-blank for keys: "
                 f"{', '.join(sorted(blank_governance_keys))}."
             )
+
+        for (
+            event_ref_field,
+            governance_key,
+        ) in PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_GOVERNANCE_FIELDS.items():
+            expected_value = self.governance_policy[governance_key]
+            mismatched_refs = [
+                event_ref.event_identity
+                for event_ref in self.event_refs
+                if getattr(event_ref, event_ref_field) != expected_value
+            ]
+            if mismatched_refs:
+                raise ValueError(
+                    "event_refs must match governance_policy."
+                    f"{governance_key} for {event_ref_field}: "
+                    f"{', '.join(mismatched_refs)}."
+                )
 
         return self
 

@@ -2058,9 +2058,10 @@ Functional behavior:
   explicit event timestamps, selection ranks, event-ref limit, selection policy, returned-count,
   omitted-count, and truncation posture. Bounded counters are non-negative, and selection ranks
   are contiguous and one-based. The governance policy must carry identity-scheme, retention,
-  redaction, audit, access, and source-authority posture, so downstream report and AI consumers
-  can reconcile lineage context without loading the full memory view or inferring raw source, OMS, client communication,
-  global-discovery, or source-methodology support,
+  redaction, audit, access, and source-authority posture. Per-event retention, redaction, audit,
+  and access fields must match that governance envelope, so downstream report and AI consumers can
+  reconcile lineage context without loading the full memory view or inferring raw source, OMS,
+  client communication, global-discovery, or source-methodology support,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,

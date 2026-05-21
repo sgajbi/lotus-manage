@@ -160,9 +160,10 @@ handoff contexts preserve the source memory view hash, expose an explicit no-cla
 refs with event timestamps and selection ranks plus explicit event-ref limit, selection policy,
 returned-count, omitted-count, and truncation posture. Those bounded counters are non-negative,
 selection ranks are contiguous and one-based, and the governance policy must carry identity-scheme,
-retention, redaction, audit, access, and source-authority posture, so downstream consumers can
-reconcile lineage context without loading the full memory view or inferring raw source, OMS,
-client communication, global-discovery, or source-methodology support.
+retention, redaction, audit, access, and source-authority posture. Per-event retention, redaction,
+audit, and access fields must match that governance envelope, so downstream consumers can reconcile
+lineage context without loading the full memory view or inferring raw source, OMS, client
+communication, global-discovery, or source-methodology support.
 Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
 are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
 query-string formatting.
