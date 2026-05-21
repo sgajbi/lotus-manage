@@ -10,6 +10,7 @@ from typing import cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service, proof_pack_service
+from src.core.common.boundary_promotion import EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS
 from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
@@ -883,6 +884,7 @@ def _external_execution_boundary(
         ],
         "required_owner": "future execution/OMS owner",
         "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "promotion_requirements": list(EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS),
         "summary": (
             "Persisted handoff evidence contains an unsafe external execution claim; downstream "
             "report input must remain blocked."

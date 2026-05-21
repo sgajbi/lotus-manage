@@ -460,6 +460,17 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
         assert boundary["execution_acknowledgement_count_projected"] == 0
         assert boundary["required_owner"] == "future execution/OMS owner"
         assert boundary["required_source_product"] == "ExternalOrderExecutionAcknowledgement:v1"
+        assert boundary["promotion_requirements"] == [
+            "certified_execution_oms_source_owner",
+            "ExternalOrderExecutionAcknowledgement:v1",
+            "source_product_contract",
+            "producer_lineage_and_freshness_controls",
+            "acknowledgement_fill_settlement_reconciliation_controls",
+            "manage_consumer_declaration",
+            "gateway_bff_realization",
+            "workbench_gateway_only_realization",
+            "operations_audit_and_exception_reconciliation_evidence",
+        ]
         assert boundary["blocked_capabilities"] == [
             "best_execution",
             "fills",
@@ -473,6 +484,17 @@ def test_outcome_review_supportability_exposes_external_execution_boundary() -> 
         assert client_boundary["client_approval_projected"] is False
         assert client_boundary["required_owner"] == "future client-communication owner"
         assert client_boundary["required_source_product"] == "ClientCommunicationRecord:v1"
+        assert client_boundary["promotion_requirements"] == [
+            "certified_client_communication_source_owner",
+            "ClientCommunicationRecord:v1",
+            "source_product_contract",
+            "producer_lineage_and_freshness_controls",
+            "delivery_approval_and_audit_reconciliation_controls",
+            "manage_consumer_declaration",
+            "gateway_bff_realization",
+            "workbench_gateway_only_realization",
+            "client_communication_consent_and_evidence_controls",
+        ]
         assert client_boundary["blocked_capabilities"] == [
             "client_approval",
             "client_contact",

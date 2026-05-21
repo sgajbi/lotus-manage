@@ -3,6 +3,10 @@
 from datetime import datetime, timezone
 from typing import Iterable
 
+from src.core.common.boundary_promotion import (
+    CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS,
+    EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS,
+)
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.construction.models import (
     ConstructionAlternativeSelection,
@@ -359,6 +363,7 @@ def _external_execution_boundary_evidence() -> DpmPortfolioMemoryExternalExecuti
         ],
         "required_owner": "future execution/OMS owner",
         "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "promotion_requirements": list(EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS),
         "summary": (
             "Portfolio memory preserves source-backed Manage, report, AI, archive, and PM-quality "
             "lineage only; external execution, OMS acknowledgement, fill, settlement, and "
@@ -393,6 +398,7 @@ def _client_communication_boundary_evidence() -> (
         ],
         "required_owner": "future client-communication owner",
         "required_source_product": "ClientCommunicationRecord:v1",
+        "promotion_requirements": list(CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS),
         "summary": (
             "Portfolio memory preserves internal Manage, report, AI, archive, and PM-quality "
             "lineage only; client contact, client message generation, client delivery "

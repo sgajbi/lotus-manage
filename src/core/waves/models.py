@@ -348,6 +348,19 @@ class DpmWaveExternalExecutionBoundaryEvidence(BaseModel):
         description="Source product required before Manage can consume execution acknowledgement truth.",
         examples=["ExternalOrderExecutionAcknowledgement:v1"],
     )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "Governance, source-product, lineage, reconciliation, consumer, and downstream "
+            "realization requirements that must be met before wave handoff can be promoted from "
+            "internal operations evidence to external execution support."
+        ),
+        examples=[
+            [
+                "certified_execution_oms_source_owner",
+                "ExternalOrderExecutionAcknowledgement:v1",
+            ]
+        ],
+    )
     summary: str = Field(description="Operator-facing no-claim boundary summary.")
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
