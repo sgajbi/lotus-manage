@@ -141,6 +141,14 @@ class DpmOutcomeAiEvidenceInput(BaseModel):
         description="AI-safe dimension evidence."
     )
     source_refs: list[DpmOutcomeSourceRef] = Field(description="AI-safe source references.")
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = Field(
+        default=None,
+        description=(
+            "Optional Manage-owned portfolio-memory lineage context for downstream AI evidence. "
+            "This context carries its own content hash and support boundary and is excluded from "
+            "the outcome AI-evidence hash to avoid recursive lineage."
+        ),
+    )
     external_execution_boundary: DpmOutcomeExternalExecutionBoundaryEvidence = Field(
         description=(
             "Fail-closed external execution/OMS boundary evidence carried for downstream AI "
@@ -207,7 +215,11 @@ def build_report_input(
     return DpmOutcomeReportInput.model_validate(payload)
 
 
-def build_ai_evidence_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeAiEvidenceInput:
+def build_ai_evidence_input(
+    review: DpmPostTradeOutcomeReview,
+    *,
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = None,
+) -> DpmOutcomeAiEvidenceInput:
     removed: set[str] = set()
     review_window = _sanitize_for_ai(review.review_window.model_dump(mode="json"), removed)
     dimensions = [
@@ -240,6 +252,7 @@ def build_ai_evidence_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeAiEv
         reason_codes=review.supportability.reason_codes,
         dimensions=dimensions,
         source_refs=_dedupe_source_refs(review),
+        portfolio_memory_context=portfolio_memory_context,
         external_execution_boundary=build_outcome_external_execution_boundary(review),
         client_communication_boundary=build_outcome_client_communication_boundary(review),
         evidence_ref=_handoff_ref(
@@ -249,7 +262,9 @@ def build_ai_evidence_input(review: DpmPostTradeOutcomeReview) -> DpmOutcomeAiEv
         content_hash="",
     ).model_dump(mode="json")
     assert_no_ai_forbidden_fields(payload)
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    payload["content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"content_hash", "portfolio_memory_context"})
+    )
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmOutcomeAiEvidenceInput.model_validate(payload)
 

@@ -196,9 +196,20 @@ def get_ai_evidence_input(
     *,
     outcome_review_id: str,
     repository: DpmOutcomeReviewRepository,
+    proof_pack_repository: DpmProofPackRepository | None = None,
+    wave_repository: DpmWaveRepository | None = None,
+    mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmOutcomeAiEvidenceInput:
+    review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
     return build_ai_evidence_input(
-        get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
+        review,
+        portfolio_memory_context=_portfolio_memory_context_for_report(
+            review=review,
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=repository,
+            mandate_repository=mandate_repository,
+        ),
     )
 
 

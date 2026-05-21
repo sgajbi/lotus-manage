@@ -155,6 +155,11 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert ai_input["client_communication_boundary"]["boundary_id"] == (
                 "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
             )
+            assert ai_input["portfolio_memory_context"] == report_input["portfolio_memory_context"]
+            assert (
+                "does not project raw source payloads"
+                in ai_input["portfolio_memory_context"]["support_boundary"]
+            )
             assert {ref["source_id"] for ref in ai_input["source_refs"]} >= {
                 "expected",
                 "realized",
@@ -224,6 +229,11 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert all(marker in ai["description"] for marker in ["What:", "When:", "How:"])
     ai_schema = schema["components"]["schemas"]["DpmOutcomeAiEvidenceInput"]
     assert "client_communication_boundary" in ai_schema["properties"]
+    assert "portfolio_memory_context" in ai_schema["properties"]
+    assert (
+        "downstream AI evidence"
+        in ai_schema["properties"]["portfolio_memory_context"]["description"]
+    )
 
     guided_get_paths = [
         ("/api/v1/rebalance/outcome-reviews", "get"),

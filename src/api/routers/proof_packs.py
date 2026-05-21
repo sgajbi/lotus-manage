@@ -348,11 +348,17 @@ def get_proof_pack_ai_evidence_input(
         Path(description="Proof-pack identifier.", examples=["dpp_rr_001"]),
     ],
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmProofPackAiEvidenceInput:
     try:
         return proof_pack_service.get_ai_evidence_input(
             proof_pack_id=proof_pack_id,
             proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
         )
     except Exception as exc:
         http_exc = proof_pack_service.to_api_http_exception(exc)
