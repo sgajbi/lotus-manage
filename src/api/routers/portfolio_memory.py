@@ -11,6 +11,7 @@ from src.api.dependencies import (
     get_outcome_review_repository,
     get_pm_quality_review_action_repository,
     get_pm_quality_score_run_repository,
+    get_pm_quality_summary_invocation_repository,
     get_proof_pack_repository,
     get_wave_repository,
 )
@@ -20,6 +21,7 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality.repository import (
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunRepository,
+    DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.portfolio_memory import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.models import PortfolioMemorySupportabilityState
@@ -99,6 +101,9 @@ def search_portfolio_memory_index(
     pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
         get_pm_quality_review_action_repository
     ),
+    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -111,6 +116,7 @@ def search_portfolio_memory_index(
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_score_run_repository,
         pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
         campaign_definition_repository=campaign_definition_repository,
         portfolio_ids=portfolio_ids,
         event_type=event_type,
@@ -154,6 +160,9 @@ def get_portfolio_memory(
     pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
         get_pm_quality_review_action_repository
     ),
+    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -167,6 +176,7 @@ def get_portfolio_memory(
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_score_run_repository,
         pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
         campaign_definition_repository=campaign_definition_repository,
         limit=limit,
     )

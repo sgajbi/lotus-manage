@@ -23,6 +23,7 @@ PortfolioMemoryEventType = Literal[
     "OUTCOME_REVIEW_EVENT",
     "PM_QUALITY_SCORE_RUN",
     "PM_QUALITY_REVIEW_ACTION",
+    "PM_QUALITY_SUMMARY_INVOCATION",
 ]
 
 PortfolioMemorySupportabilityState = Literal[

@@ -12,6 +12,7 @@ from src.api.dependencies import (
     get_outcome_review_repository,
     get_pm_quality_review_action_repository,
     get_pm_quality_score_run_repository,
+    get_pm_quality_summary_invocation_repository,
     get_proof_pack_repository,
     get_wave_repository,
 )
@@ -38,8 +39,10 @@ from src.core.pm_quality.models import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityBookScopeEvidence,
     DpmPmQualityReviewAction,
+    DpmPmQualitySummaryInvocation,
 )
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
+from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 from src.core.portfolio_memory import service as portfolio_memory_service
 from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
 from src.core.proof_packs import DpmProofPackEvidenceRef
@@ -70,6 +73,7 @@ from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
+    InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.waves import (
@@ -260,6 +264,34 @@ def _pm_quality_review_action() -> DpmPmQualityReviewAction:
         remediation_due_date="2026-05-20",
         correlation_id="corr-pmq-review-action-memory",
         generated_at=datetime(2026, 5, 12, 11, 0, tzinfo=timezone.utc),
+    )
+
+
+def _pm_quality_summary_invocation() -> DpmPmQualitySummaryInvocation:
+    score_run = _pm_quality_score_run()
+    review_action = _pm_quality_review_action()
+    return build_pm_quality_summary_invocation(
+        score_run=score_run,
+        review_action=review_action,
+        invocation_state="COMPLETED",
+        summary_ref="PMQ-SUMMARY-2026-05-001",
+        workflow_pack_name="pm_quality_summary.pack",
+        workflow_pack_version="v1",
+        workflow_run_id="pmq-summary-run-001",
+        summary_artifact_ref="pmq-summary-artifact-001",
+        summary_content_hash="sha256:pmq-summary-artifact-001",
+        requested_by="cio_ops_committee",
+        source_refs=[
+            DpmOutcomeSourceRef(
+                source_system="lotus-ai",
+                source_type="pm_quality_summary.pack",
+                source_id="pmq-summary-run-001",
+                source_version="v1",
+                content_hash="sha256:pmq-summary-artifact-001",
+            )
+        ],
+        correlation_id="corr-pmq-summary-memory",
+        generated_at=datetime(2026, 5, 12, 11, 30, tzinfo=timezone.utc),
     )
 
 
@@ -520,6 +552,10 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
     pm_quality_review_repository = InMemoryDpmPmQualityReviewActionRepository()
     pm_quality_review_repository.save_review_action(action=_pm_quality_review_action())
+    pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    pm_quality_summary_repository.save_summary_invocation(
+        invocation=_pm_quality_summary_invocation()
+    )
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
 
@@ -532,6 +568,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         construction_repository=construction_repository,
         pm_quality_score_run_repository=pm_quality_repository,
         pm_quality_review_action_repository=pm_quality_review_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_repository,
         campaign_definition_repository=campaign_repository,
         generated_at=datetime(2026, 5, 7, 10, 0, tzinfo=timezone.utc),
     )
@@ -566,6 +603,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.event_type_counts["OUTCOME_REVIEW_CREATED"] == 1
     assert memory.event_type_counts["PM_QUALITY_SCORE_RUN"] == 1
     assert memory.event_type_counts["PM_QUALITY_REVIEW_ACTION"] == 1
+    assert memory.event_type_counts["PM_QUALITY_SUMMARY_INVOCATION"] == 1
     assert "lotus-manage" in memory.source_systems
     assert "lotus-core" in memory.source_systems
     assert "SOURCE_READY" in memory.reason_codes
@@ -650,6 +688,20 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     )
     assert "without copying raw review rationale" in (
         family_posture["pm_quality_review_action"].summary
+    )
+    assert family_posture["pm_quality_summary_invocation"].source_system == "lotus-manage"
+    assert family_posture["pm_quality_summary_invocation"].support_status == "SUPPORTED"
+    assert family_posture["pm_quality_summary_invocation"].event_types == [
+        "PM_QUALITY_SUMMARY_INVOCATION"
+    ]
+    assert family_posture["pm_quality_summary_invocation"].route == (
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations"
+    )
+    assert family_posture["pm_quality_summary_invocation"].reason_code == (
+        "PM_QUALITY_SUMMARY_INVOCATION_SOURCE_EVENTS_SUPPORTED"
+    )
+    assert "without storing generated summary text" in (
+        family_posture["pm_quality_summary_invocation"].summary
     )
     assert memory.external_execution_boundary.boundary_id == (
         "DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY"
@@ -737,6 +789,33 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert (
         "NO_SCORE_RECALCULATION" in (pm_quality_review_events[0].metadata["operating_boundaries"])
     )
+    pm_quality_summary_events = [
+        event for event in memory.events if event.event_type == "PM_QUALITY_SUMMARY_INVOCATION"
+    ]
+    assert pm_quality_summary_events[0].source_id == (
+        _pm_quality_summary_invocation().summary_invocation_id
+    )
+    assert pm_quality_summary_events[0].supportability_state == "READY"
+    assert pm_quality_summary_events[0].metadata["summary_text_stored"] is False
+    assert pm_quality_summary_events[0].metadata["summary_text_exposed"] is False
+    assert pm_quality_summary_events[0].metadata["summary_text_projected"] is False
+    assert pm_quality_summary_events[0].metadata["downstream_summary_ux_projected"] is False
+    assert pm_quality_summary_events[0].metadata["prompt_reconstructed"] is False
+    assert pm_quality_summary_events[0].metadata["model_response_reconstructed"] is False
+    assert pm_quality_summary_events[0].metadata["numeric_score_projected"] is False
+    assert pm_quality_summary_events[0].metadata["score_recalculated"] is False
+    assert pm_quality_summary_events[0].metadata["fairness_recomputed"] is False
+    assert pm_quality_summary_events[0].metadata["client_contact_claimed"] is False
+    assert pm_quality_summary_events[0].metadata["external_execution_claimed"] is False
+    assert pm_quality_summary_events[0].metadata["summary_text_boundary_id"] == (
+        "PM_QUALITY_SUMMARY_TEXT_BOUNDARY"
+    )
+    assert (
+        pm_quality_summary_events[0]
+        .metadata["summary_text_boundary_content_hash"]
+        .startswith("sha256:")
+    )
+    assert "summary_text" not in pm_quality_summary_events[0].metadata
     construction_events = {
         event.event_type: event
         for event in memory.events
@@ -821,6 +900,10 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
     pm_quality_review_repository = InMemoryDpmPmQualityReviewActionRepository()
     pm_quality_review_repository.save_review_action(action=_pm_quality_review_action())
+    pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    pm_quality_summary_repository.save_summary_invocation(
+        invocation=_pm_quality_summary_invocation()
+    )
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
@@ -831,6 +914,9 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: pm_quality_repository
     app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
         pm_quality_review_repository
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        pm_quality_summary_repository
     )
     app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
     app.openapi_schema = None
@@ -852,6 +938,7 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert payload["event_type_counts"]["CONSTRUCTION_ALTERNATIVE_SELECTED"] == 1
     assert payload["event_type_counts"]["PM_QUALITY_SCORE_RUN"] == 1
     assert payload["event_type_counts"]["PM_QUALITY_REVIEW_ACTION"] == 1
+    assert payload["event_type_counts"]["PM_QUALITY_SUMMARY_INVOCATION"] == 1
     assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
     assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL"] == 1
     family_posture = {
@@ -948,6 +1035,24 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
             "state, source refs, content hashes, and action posture without copying raw "
             "review rationale, recalculating scores, recomputing fairness, ranking PMs, "
             "or creating HR, conduct, client-contact, trade, order, or OMS claims."
+        ),
+    }
+    assert family_posture["pm_quality_summary_invocation"] == {
+        "family_key": "pm_quality_summary_invocation",
+        "source_system": "lotus-manage",
+        "owner": "lotus-manage PM operating quality product",
+        "support_status": "SUPPORTED",
+        "event_types": ["PM_QUALITY_SUMMARY_INVOCATION"],
+        "route": "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+        "reason_code": "PM_QUALITY_SUMMARY_INVOCATION_SOURCE_EVENTS_SUPPORTED",
+        "summary": (
+            "Persisted PM operating quality summary invocations are projected as bounded "
+            "workflow invocation lineage for portfolios included in the summarized score-run's "
+            "Core PM-book membership evidence. Portfolio memory preserves score-run, "
+            "review-action, workflow-run, artifact refs, hashes, and summary-text boundary "
+            "posture without storing generated summary text, reconstructing prompts or model "
+            "responses, recalculating scores, recomputing fairness, ranking PMs, contacting "
+            "clients, approving trades, routing orders, or claiming OMS execution."
         ),
     }
     assert family_posture["bulk_review_campaign_workflow"]["support_status"] == "SUPPORTED"
@@ -1058,6 +1163,31 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert pm_quality_review_events[0]["metadata"]["external_execution_claimed"] is False
     assert "review_reason" not in pm_quality_review_events[0]["metadata"]
     assert "score" not in pm_quality_review_events[0]["metadata"]
+    pm_quality_summary_events = [
+        event
+        for event in payload["events"]
+        if event["event_type"] == "PM_QUALITY_SUMMARY_INVOCATION"
+    ]
+    assert pm_quality_summary_events[0]["metadata"]["summary_text_stored"] is False
+    assert pm_quality_summary_events[0]["metadata"]["summary_text_exposed"] is False
+    assert pm_quality_summary_events[0]["metadata"]["summary_text_projected"] is False
+    assert pm_quality_summary_events[0]["metadata"]["downstream_summary_ux_projected"] is False
+    assert pm_quality_summary_events[0]["metadata"]["prompt_reconstructed"] is False
+    assert pm_quality_summary_events[0]["metadata"]["model_response_reconstructed"] is False
+    assert pm_quality_summary_events[0]["metadata"]["review_reason_projected"] is False
+    assert pm_quality_summary_events[0]["metadata"]["numeric_score_projected"] is False
+    assert pm_quality_summary_events[0]["metadata"]["score_recalculated"] is False
+    assert pm_quality_summary_events[0]["metadata"]["fairness_recomputed"] is False
+    assert pm_quality_summary_events[0]["metadata"]["pm_ranking_created"] is False
+    assert pm_quality_summary_events[0]["metadata"]["client_contact_claimed"] is False
+    assert pm_quality_summary_events[0]["metadata"]["external_execution_claimed"] is False
+    assert pm_quality_summary_events[0]["metadata"]["summary_text_boundary_id"] == (
+        "PM_QUALITY_SUMMARY_TEXT_BOUNDARY"
+    )
+    assert pm_quality_summary_events[0]["metadata"][
+        "summary_text_boundary_content_hash"
+    ].startswith("sha256:")
+    assert "summary_text" not in pm_quality_summary_events[0]["metadata"]
     assert all(event["event_identity"] for event in payload["events"])
     assert all(event["redaction_policy"] == "NO_RAW_PAYLOADS" for event in payload["events"])
     assert any(event["event_type"] == "OUTCOME_REVIEW_EVENT" for event in payload["events"])
@@ -1108,6 +1238,9 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
         InMemoryDpmPmQualityReviewActionRepository()
     )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
     app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
     app.openapi_schema = None
 
@@ -1126,7 +1259,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     payload = response.json()
     assert payload["returned_count"] == 1
     assert payload["total_count"] == 1
-    assert payload["scanned_portfolio_count"] == 1
+    assert payload["scanned_portfolio_count"] == 2
     assert payload["items"][0]["portfolio_id"] == PORTFOLIO_ID
     assert payload["items"][0]["event_count"] >= 6
     assert payload["items"][0]["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
@@ -1163,6 +1296,9 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
     app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
         InMemoryDpmPmQualityReviewActionRepository()
     )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
     app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
 
     with TestClient(app) as client:
@@ -1185,6 +1321,39 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
     assert "lotus-manage" in payload["items"][0]["source_systems"]
 
 
+def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_scope() -> None:
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    pm_quality_summary_repository.save_summary_invocation(
+        invocation=_pm_quality_summary_invocation()
+    )
+
+    page = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        pm_quality_score_run_repository=pm_quality_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_repository,
+        event_type="PM_QUALITY_SUMMARY_INVOCATION",
+    )
+
+    assert page.returned_count == 2
+    assert page.scanned_portfolio_count == 2
+    assert {item.portfolio_id for item in page.items} == {
+        PORTFOLIO_ID,
+        "PB_SG_GLOBAL_INC_002",
+    }
+    assert all(
+        item.event_type_counts
+        == {
+            "PM_QUALITY_SCORE_RUN": 1,
+            "PM_QUALITY_SUMMARY_INVOCATION": 1,
+        }
+        for item in page.items
+    )
+
+
 def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_global_discovery() -> (
     None
 ):
@@ -1202,6 +1371,9 @@ def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_
     )
     app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
         InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
     )
     app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
 

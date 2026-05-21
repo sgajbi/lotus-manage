@@ -133,8 +133,11 @@ also records a canonical front-office risk-drawdown `partial` boundary tracked a
 The portfolio-memory API now publishes source-event family posture for supported manage, report,
 AI, and archive families, explicitly marks OMS execution as deferred, and points PM scoring to the
 separate Manage-owned PM operating quality score-run lifecycle product. Persisted PM quality score
-runs with source-owned Core PM-book membership now project bounded portfolio-memory lineage events
-for matching portfolios without copying raw score payloads or creating portfolio-level rankings. The
+runs with source-owned Core PM-book membership now project bounded portfolio-memory lineage events,
+review actions over those runs project bounded supervisory events, and support-summary invocations
+over those runs project bounded workflow-lineage events for matching portfolios without copying raw
+score payloads, raw review rationale, generated summary text, prompt bodies, model responses, or
+creating portfolio-level rankings or downstream summary UX. The
 portfolio-memory API also exposes `GET /api/v1/rebalance/portfolio-memory/search` as a bounded
 Manage-local index over persisted proof-pack, wave, monitoring-exception, campaign-definition,
 outcome-review, and explicit caller-supplied portfolio identifiers; it is not global
@@ -321,7 +324,12 @@ membership. Persisted source-backed score runs are visible in portfolio memory a
 `PM_QUALITY_SCORE_RUN` lineage events. Review actions over those score runs are visible as bounded
 `PM_QUALITY_REVIEW_ACTION` supervisory events that preserve target identity, hashes, states, source
 refs, actor, and action posture without projecting raw rationale, score values, PM rankings,
-client-contact, trade, order, OMS, or execution claims. The fairness-analysis route family now
+client-contact, trade, order, OMS, or execution claims. Support-summary invocations over those
+score runs are visible as bounded `PM_QUALITY_SUMMARY_INVOCATION` lineage events that preserve
+score-run, review-action, workflow-run, artifact refs, hashes, and the summary-text boundary
+posture without storing or exposing generated summary text, reconstructing prompts or model
+responses, projecting downstream summary UX, ranking PMs, contacting clients, approving trades,
+routing orders, or claiming OMS execution. The fairness-analysis route family now
 supports preview and immutable create/read/list lifecycle at
 `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`,
 `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`,
