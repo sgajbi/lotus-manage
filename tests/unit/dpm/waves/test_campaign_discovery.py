@@ -133,6 +133,7 @@ def test_campaign_discovery_item_projects_governance_and_candidate_posture() -> 
     assert item.candidate_count == 2
     assert item.eligible_candidate_count == 1
     assert item.source_ref_count == 2
+    assert item.universe_posture.discovery_mode == "PERSISTED_DEFINITION_ONLY"
     assert item.universe_posture.source_scope == "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"
     assert item.universe_posture.global_portfolio_universe_discovery == "UNSUPPORTED"
     assert item.universe_posture.global_portfolio_universe_owner_posture == (
@@ -144,6 +145,11 @@ def test_campaign_discovery_item_projects_governance_and_candidate_posture() -> 
     assert item.universe_posture.candidate_source_ref_posture == "SOURCE_BACKED"
     assert item.universe_posture.source_systems == ["lotus-core"]
     assert "candidate_portfolio_discovery" in item.universe_posture.blocked_capabilities
+    assert "certified_source_owner" in item.universe_posture.promotion_requirements
+    assert (
+        "GlobalPortfolioUniverseCampaignCandidateSet:v1"
+        in item.universe_posture.promotion_requirements
+    )
     assert "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY" in item.universe_posture.operating_boundaries
     assert item.universe_posture.content_hash.startswith("sha256:")
     assert item.preview_reference == {
@@ -174,6 +180,7 @@ def test_campaign_universe_posture_is_machine_readable_boundary() -> None:
 
     assert posture.product_name == "BulkReviewCampaignUniversePosture"
     assert posture.product_version == "v1"
+    assert posture.discovery_mode == "PERSISTED_DEFINITION_ONLY"
     assert posture.source_scope == "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"
     assert posture.global_portfolio_universe_discovery == "UNSUPPORTED"
     assert posture.global_portfolio_universe_owner_posture == "DEFERRED_SOURCE_OWNER"
@@ -186,6 +193,15 @@ def test_campaign_universe_posture_is_machine_readable_boundary() -> None:
         "candidate_eligibility_calculation",
         "source_fact_recalculation",
         "membership_recomputation",
+    ]
+    assert posture.promotion_requirements == [
+        "certified_source_owner",
+        "GlobalPortfolioUniverseCampaignCandidateSet:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
     ]
     assert posture.operating_boundaries == [
         "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",

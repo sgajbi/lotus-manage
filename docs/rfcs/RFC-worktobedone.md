@@ -3384,10 +3384,11 @@ persisted campaign discovery through `BulkReviewCampaignDiscovery:v1` at
 `GET /api/v1/rebalance/waves/campaign-discovery`, summarizing campaign identity, governance
 posture, expiry posture, source-ref count, source-backed candidate counts, and preview references
 without discovering the global portfolio universe or recalculating membership. Each item carries
-hashed `BulkReviewCampaignUniversePosture:v1` boundary evidence that names deferred global
-portfolio-universe source ownership, required future
-`GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide candidate-discovery
-capabilities, and the persisted-candidate-only source scope. `lotus-gateway` PR
+hashed `BulkReviewCampaignUniversePosture:v1` boundary evidence that names
+`PERSISTED_DEFINITION_ONLY` discovery mode, deferred global portfolio-universe source ownership,
+required future `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide
+candidate-discovery capabilities, promotion requirements for any future global-universe support,
+and the persisted-candidate-only source scope. `lotus-gateway` PR
 #212 now composes the manage-owned campaign-definition list/get/upsert APIs under
 `/api/v1/dpm/command-center/waves/campaign-definitions*`, and PR #231 (`ea6c036`, Main
 Releasability Gate `25989936539`) extends bounded lifecycle-events, launch-history, launch-package,

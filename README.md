@@ -174,9 +174,10 @@ also exposes persisted campaign discovery at
 `GET /api/v1/rebalance/waves/campaign-discovery`, summarizing `BulkReviewCampaignDefinition:v1`
 identity, governance posture, expiry posture, source-ref count, and source-backed candidate counts
 without discovering the global portfolio universe or recalculating membership. Each row carries
-hashed `BulkReviewCampaignUniversePosture:v1` evidence naming deferred source ownership, required
-future `GlobalPortfolioUniverseCampaignCandidateSet:v1`, and blocked bank-wide candidate-discovery
-capabilities. Manage also supports
+hashed `BulkReviewCampaignUniversePosture:v1` evidence naming `PERSISTED_DEFINITION_ONLY`
+discovery mode, deferred source ownership, required future
+`GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide candidate-discovery
+capabilities, and promotion requirements for any future global-universe support. Manage also supports
 an operating queue at `GET /api/v1/rebalance/waves/campaign-operating-queue`, classifying persisted
 definitions as ready to launch, attention required, or closed from existing discovery,
 preview-readiness, lifecycle, and launch-history posture without creating maker-checker or OMS

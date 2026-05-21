@@ -2122,6 +2122,7 @@ def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> No
     assert item["universe_posture"] == {
         "product_name": "BulkReviewCampaignUniversePosture",
         "product_version": "v1",
+        "discovery_mode": "PERSISTED_DEFINITION_ONLY",
         "source_scope": "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
         "global_portfolio_universe_discovery": "UNSUPPORTED",
         "global_portfolio_universe_owner_posture": "DEFERRED_SOURCE_OWNER",
@@ -2134,6 +2135,15 @@ def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> No
             "candidate_eligibility_calculation",
             "source_fact_recalculation",
             "membership_recomputation",
+        ],
+        "promotion_requirements": [
+            "certified_source_owner",
+            "GlobalPortfolioUniverseCampaignCandidateSet:v1",
+            "source_product_contract",
+            "producer_lineage_and_freshness_controls",
+            "manage_consumer_declaration",
+            "gateway_bff_realization",
+            "workbench_gateway_only_realization",
         ],
         "operating_boundaries": [
             "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
