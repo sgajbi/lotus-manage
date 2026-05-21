@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
 
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from src.api.dependencies import (
     get_campaign_definition_repository,
@@ -44,7 +46,10 @@ from src.core.pm_quality.models import (
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 from src.core.portfolio_memory import service as portfolio_memory_service
-from src.core.portfolio_memory.handoffs import build_portfolio_memory_report_context
+from src.core.portfolio_memory.handoffs import (
+    DpmPortfolioMemoryReportContext,
+    build_portfolio_memory_report_context,
+)
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
     build_portfolio_memory_event_lookup,
@@ -1070,6 +1075,49 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
     assert len(full_context.event_refs) > len(narrower_context.event_refs)
 
 
+def test_portfolio_memory_report_context_rejects_inconsistent_bounded_metadata() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+    )
+    context = build_portfolio_memory_report_context(memory, event_limit=2)
+
+    inconsistent_returned = context.model_dump(mode="json")
+    inconsistent_returned["event_refs_returned"] = 1
+    with pytest.raises(ValidationError, match="event_refs_returned must equal"):
+        DpmPortfolioMemoryReportContext.model_validate(inconsistent_returned)
+
+    inconsistent_omitted = context.model_dump(mode="json")
+    inconsistent_omitted["event_refs_omitted"] = 0
+    with pytest.raises(ValidationError, match="event_refs_omitted must equal"):
+        DpmPortfolioMemoryReportContext.model_validate(inconsistent_omitted)
+
+    inconsistent_truncation = context.model_dump(mode="json")
+    inconsistent_truncation["event_refs_truncated"] = not context.event_refs_truncated
+    with pytest.raises(ValidationError, match="event_refs_truncated must match"):
+        DpmPortfolioMemoryReportContext.model_validate(inconsistent_truncation)
+
+    invalid_rank = context.model_dump(mode="json")
+    invalid_rank["event_refs"][0]["event_ref_selection_rank"] = 2
+    with pytest.raises(ValidationError, match="contiguous one-based ranks"):
+        DpmPortfolioMemoryReportContext.model_validate(invalid_rank)
+
+    non_positive_rank = context.model_dump(mode="json")
+    non_positive_rank["event_refs"][0]["event_ref_selection_rank"] = 0
+    with pytest.raises(ValidationError, match="greater than or equal to 1"):
+        DpmPortfolioMemoryReportContext.model_validate(non_positive_rank)
+
+    negative_count = context.model_dump(mode="json")
+    negative_count["event_count"] = -1
+    with pytest.raises(ValidationError, match="greater than or equal to 0"):
+        DpmPortfolioMemoryReportContext.model_validate(negative_count)
+
+
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
@@ -1692,6 +1740,10 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert "event_refs_returned" in report_context_schema["properties"]
     assert "event_refs_omitted" in report_context_schema["properties"]
     assert "event_refs_truncated" in report_context_schema["properties"]
+    assert report_context_schema["properties"]["event_count"]["minimum"] == 0
+    assert report_context_schema["properties"]["event_ref_limit"]["minimum"] == 0
+    assert report_context_schema["properties"]["event_refs_returned"]["minimum"] == 0
+    assert report_context_schema["properties"]["event_refs_omitted"]["minimum"] == 0
     assert (
         "Explicit no-claim boundary"
         in report_context_schema["properties"]["support_boundary"]["description"]
@@ -1703,6 +1755,7 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     event_ref_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryReportEventRef"]
     assert "event_time" in event_ref_schema["properties"]
     assert "event_ref_selection_rank" in event_ref_schema["properties"]
+    assert event_ref_schema["properties"]["event_ref_selection_rank"]["minimum"] == 1
 
 
 def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
