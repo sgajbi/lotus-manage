@@ -1342,6 +1342,70 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "Unsupported event types are rejected" in event_type_parameter["description"]
 
 
+def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    construction_repository = _construction_repository()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    campaign_repository.save_definition(definition=_campaign_definition())
+    app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
+    app.dependency_overrides[get_construction_repository] = lambda: construction_repository
+    app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
+    app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
+    app.openapi_schema = None
+
+    with TestClient(app) as client:
+        search_response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={"event_type": "WAVE_HANDOFF_READY", "source_system": "lotus-manage"},
+        )
+        event_id = search_response.json()["items"][0]["latest_matching_event_id"]
+        lookup_response = client.get(
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{event_id}"
+        )
+        missing_response = client.get(
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/not-a-memory-event"
+        )
+        openapi = client.get("/openapi.json")
+
+    assert search_response.status_code == 200
+    assert lookup_response.status_code == 200
+    payload = lookup_response.json()
+    assert payload["portfolio_id"] == PORTFOLIO_ID
+    assert payload["event_id"] == "memory:wave:dwv_001:handoff:dwh_001"
+    assert payload["event_identity"].startswith(
+        "lotus-manage:DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF:dwh_001:"
+    )
+    assert payload["event"]["event_type"] == "WAVE_HANDOFF_READY"
+    assert payload["event"]["source_type"] == "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"
+    assert payload["event"]["source_id"] == "dwh_001"
+    assert payload["event"]["content_hash"] == "sha256:handoff-memory"
+    assert payload["memory_content_hash"].startswith("sha256:")
+    assert "does not discover the global portfolio universe" in payload["support_boundary"]
+    assert "external source-owner event stores" in payload["support_boundary"]
+    assert missing_response.status_code == 404
+    assert missing_response.json()["detail"].startswith("PORTFOLIO_MEMORY_EVENT_NOT_FOUND")
+    assert "external source-owner event stores" in missing_response.json()["detail"]
+    openapi_json = openapi.json()
+    assert (
+        "/api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}"
+        in openapi_json["paths"]
+    )
+    event_lookup_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryEventLookup"]
+    assert "memory_content_hash" in event_lookup_schema["properties"]
+    assert "support_boundary" in event_lookup_schema["properties"]
+
+
 def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
     proof_pack_repository = InMemoryDpmProofPackRepository()
     wave_repository = InMemoryDpmWaveRepository()

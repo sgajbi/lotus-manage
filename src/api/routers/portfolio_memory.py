@@ -25,6 +25,7 @@ from src.core.pm_quality.repository import (
 )
 from src.core.portfolio_memory import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.models import (
+    DpmPortfolioMemoryEventLookup,
     PortfolioMemoryEventType,
     PortfolioMemorySupportabilityState,
 )
@@ -141,6 +142,85 @@ def search_portfolio_memory_index(
         limit=limit,
         offset=offset,
         source_scan_limit=source_scan_limit,
+    )
+
+
+@router.get(
+    "/{portfolio_id}/events/{event_id}",
+    response_model=DpmPortfolioMemoryEventLookup,
+    summary="Get one portfolio-memory event",
+    description=(
+        "What: Return one exact source-backed portfolio-memory event for a portfolio using the "
+        "stable event id surfaced by the timeline or search API.\n"
+        "When: Use when PM, CIO, operations, audit, Gateway, or Workbench consumers need to "
+        "drill down from a search hit into the exact event row without loading unrelated "
+        "portfolio-memory rows.\n"
+        "How: The endpoint composes the same Manage-local memory view as the detail route, "
+        "selects the requested event id, and returns the event with the memory content hash for "
+        "reconciliation. It does not discover the global portfolio universe, query external "
+        "source-owner event stores, project OMS acknowledgement/fill/settlement events, project "
+        "client contact/message/delivery/approval events, or recalculate risk, performance, "
+        "execution, tax, cash, FX, mandate-health, PM-quality, report, archive, or AI truth."
+    ),
+)
+def get_portfolio_memory_event(
+    portfolio_id: str,
+    event_id: str,
+    limit: int = Query(default=500, ge=1, le=1000, description="Maximum events to scan."),
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmPortfolioMemoryEventLookup:
+    memory = build_portfolio_memory(
+        portfolio_id=portfolio_id,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
+        pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+        campaign_definition_repository=campaign_definition_repository,
+        limit=limit,
+    )
+    for event in memory.events:
+        if event.event_id == event_id:
+            return DpmPortfolioMemoryEventLookup(
+                portfolio_id=portfolio_id,
+                event_id=event_id,
+                event_identity=event.event_identity,
+                event=event,
+                memory_content_hash=memory.content_hash,
+                generated_at=memory.generated_at,
+                support_boundary=(
+                    "Manage-local memory event lookup selects exact events from persisted Manage "
+                    "evidence only; it does not discover the global portfolio universe, query "
+                    "external source-owner event stores, project OMS acknowledgement/fill/"
+                    "settlement events, or recalculate source truth."
+                ),
+            )
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=(
+            f"PORTFOLIO_MEMORY_EVENT_NOT_FOUND: {event_id}; "
+            f"portfolio_id={portfolio_id}; scanned_event_count={memory.event_count}; "
+            "Manage-local lookup does not query external source-owner event stores."
+        ),
     )
 
 
