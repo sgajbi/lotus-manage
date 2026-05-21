@@ -243,7 +243,7 @@ def search_portfolio_memory(
         portfolio_ids=portfolio_ids,
         source_scan_limit=source_scan_limit,
     )
-    items: list[DpmPortfolioMemorySearchItem] = []
+    search_rows: list[tuple[DpmPortfolioMemorySearchItem, list[DpmPortfolioMemoryEvent]]] = []
     for portfolio_id in candidate_ids:
         memory = build_portfolio_memory(
             portfolio_id=portfolio_id,
@@ -290,60 +290,66 @@ def search_portfolio_memory(
             continue
         latest_event = memory.events[0] if memory.events else None
         latest_matching_event = matching_events[0] if matching_events else None
-        items.append(
-            DpmPortfolioMemorySearchItem(
-                portfolio_id=memory.portfolio_id,
-                event_count=memory.event_count,
-                supportability_state=memory.supportability_state,
-                event_type_counts=memory.event_type_counts,
-                source_systems=memory.source_systems,
-                reason_codes=memory.reason_codes,
-                latest_event_time=latest_event.event_time if latest_event else None,
-                latest_event_type=latest_event.event_type if latest_event else None,
-                matching_event_count=len(matching_events),
-                latest_matching_event_time=(
-                    latest_matching_event.event_time if latest_matching_event else None
+        search_rows.append(
+            (
+                DpmPortfolioMemorySearchItem(
+                    portfolio_id=memory.portfolio_id,
+                    event_count=memory.event_count,
+                    supportability_state=memory.supportability_state,
+                    event_type_counts=memory.event_type_counts,
+                    source_systems=memory.source_systems,
+                    reason_codes=memory.reason_codes,
+                    latest_event_time=latest_event.event_time if latest_event else None,
+                    latest_event_type=latest_event.event_type if latest_event else None,
+                    matching_event_count=len(matching_events),
+                    latest_matching_event_time=(
+                        latest_matching_event.event_time if latest_matching_event else None
+                    ),
+                    latest_matching_event_type=(
+                        latest_matching_event.event_type if latest_matching_event else None
+                    ),
+                    latest_matching_event_id=(
+                        latest_matching_event.event_id if latest_matching_event else None
+                    ),
+                    latest_matching_event_identity=(
+                        latest_matching_event.event_identity if latest_matching_event else None
+                    ),
+                    latest_matching_event_source_system=(
+                        latest_matching_event.source_system if latest_matching_event else None
+                    ),
+                    latest_matching_event_source_type=(
+                        latest_matching_event.source_type if latest_matching_event else None
+                    ),
+                    latest_matching_event_source_id=(
+                        latest_matching_event.source_id if latest_matching_event else None
+                    ),
+                    latest_matching_event_content_hash=(
+                        latest_matching_event.content_hash if latest_matching_event else None
+                    ),
+                    content_hash=memory.content_hash,
                 ),
-                latest_matching_event_type=(
-                    latest_matching_event.event_type if latest_matching_event else None
-                ),
-                latest_matching_event_id=(
-                    latest_matching_event.event_id if latest_matching_event else None
-                ),
-                latest_matching_event_identity=(
-                    latest_matching_event.event_identity if latest_matching_event else None
-                ),
-                latest_matching_event_source_system=(
-                    latest_matching_event.source_system if latest_matching_event else None
-                ),
-                latest_matching_event_source_type=(
-                    latest_matching_event.source_type if latest_matching_event else None
-                ),
-                latest_matching_event_source_id=(
-                    latest_matching_event.source_id if latest_matching_event else None
-                ),
-                latest_matching_event_content_hash=(
-                    latest_matching_event.content_hash if latest_matching_event else None
-                ),
-                content_hash=memory.content_hash,
+                matching_events,
             )
         )
 
-    items = sorted(
-        items,
-        key=lambda item: (item.latest_event_time or "", item.portfolio_id),
+    search_rows = sorted(
+        search_rows,
+        key=lambda row: (row[0].latest_event_time or "", row[0].portfolio_id),
         reverse=True,
     )
-    total_count = len(items)
-    supportability_state_counts = _counts(item.supportability_state for item in items)
+    total_count = len(search_rows)
+    supportability_state_counts = _counts(
+        item.supportability_state for item, _events in search_rows
+    )
     event_type_counts: dict[str, int] = {}
     source_system_counts: dict[str, int] = {}
-    for item in items:
-        for event_type, count in item.event_type_counts.items():
-            event_type_counts[event_type] = event_type_counts.get(event_type, 0) + count
+    for item, matching_events in search_rows:
+        for event in matching_events:
+            event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
         for source_system in item.source_systems:
             source_system_counts[source_system] = source_system_counts.get(source_system, 0) + 1
-    page = items[offset : offset + limit]
+    page_rows = search_rows[offset : offset + limit]
+    page = [item for item, _events in page_rows]
     return DpmPortfolioMemorySearchPage(
         items=page,
         limit=limit,
