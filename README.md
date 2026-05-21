@@ -154,7 +154,10 @@ also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, a
 bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
 from counts. Each portfolio-memory view and search page carries a deterministic `content_hash`
 that excludes `generated_at` so audit review can reconcile equivalent source-backed views and
-result pages without timestamp churn. Proof-pack and outcome-review report and AI evidence
+result pages without timestamp churn. Portfolio-memory aggregate event count, event-type counts,
+source-system coverage, reason-code rollups, supportability state, and governance posture are
+validated against returned event rows so audit consumers do not receive inconsistent summary truth.
+Proof-pack and outcome-review report and AI evidence
 handoff contexts preserve the source memory view hash, expose an explicit no-claim
 `support_boundary`, and also expose a bounded `context_content_hash` over the report-safe event
 refs with event timestamps and selection ranks plus explicit event-ref limit, selection policy,
