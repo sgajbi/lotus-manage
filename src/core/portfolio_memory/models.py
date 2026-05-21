@@ -374,6 +374,36 @@ class DpmPortfolioMemorySearchItem(BaseModel):
             "search result matched without changing the latest overall event posture."
         ),
     )
+    latest_matching_event_id: str | None = Field(
+        default=None,
+        description=(
+            "Stable event id for the latest matching portfolio-memory event so audit and operator "
+            "consumers can load or reconcile the exact matching timeline row."
+        ),
+    )
+    latest_matching_event_identity: str | None = Field(
+        default=None,
+        description=(
+            "Cross-app event identity for the latest matching event, derived from source system, "
+            "source type, source id, and content-hash posture."
+        ),
+    )
+    latest_matching_event_source_system: str | None = Field(
+        default=None,
+        description="Source system that owns the latest matching portfolio-memory event.",
+    )
+    latest_matching_event_source_type: str | None = Field(
+        default=None,
+        description="Source artifact or event type for the latest matching portfolio-memory event.",
+    )
+    latest_matching_event_source_id: str | None = Field(
+        default=None,
+        description="Source identifier for the latest matching portfolio-memory event.",
+    )
+    latest_matching_event_content_hash: str | None = Field(
+        default=None,
+        description="Canonical source content hash for the latest matching event when available.",
+    )
     content_hash: str = Field(description="Canonical hash of the portfolio-memory view.")
 
 

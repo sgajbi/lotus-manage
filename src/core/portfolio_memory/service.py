@@ -307,6 +307,24 @@ def search_portfolio_memory(
                 latest_matching_event_type=(
                     latest_matching_event.event_type if latest_matching_event else None
                 ),
+                latest_matching_event_id=(
+                    latest_matching_event.event_id if latest_matching_event else None
+                ),
+                latest_matching_event_identity=(
+                    latest_matching_event.event_identity if latest_matching_event else None
+                ),
+                latest_matching_event_source_system=(
+                    latest_matching_event.source_system if latest_matching_event else None
+                ),
+                latest_matching_event_source_type=(
+                    latest_matching_event.source_type if latest_matching_event else None
+                ),
+                latest_matching_event_source_id=(
+                    latest_matching_event.source_id if latest_matching_event else None
+                ),
+                latest_matching_event_content_hash=(
+                    latest_matching_event.content_hash if latest_matching_event else None
+                ),
                 content_hash=memory.content_hash,
             )
         )

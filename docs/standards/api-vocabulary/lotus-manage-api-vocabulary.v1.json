@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T14:16:08.402923+00:00",
+  "generatedAt": "2026-05-21T14:31:32.926921+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -6841,6 +6841,90 @@
       "preferredName": "latest_launched_at",
       "description": "Most recent launch timestamp, when launch history exists.",
       "example": "latest_launched_at_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_content_hash",
+      "canonicalTerm": "latest_matching_event_content_hash",
+      "preferredName": "latest_matching_event_content_hash",
+      "description": "Canonical source content hash for the latest matching event when available.",
+      "example": "latest_matching_event_content_hash_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_id",
+      "canonicalTerm": "latest_matching_event_id",
+      "preferredName": "latest_matching_event_id",
+      "description": "Stable event id for the latest matching portfolio-memory event so audit and operator consumers can load or reconcile the exact matching timeline row.",
+      "example": "LATEST_MATCHING_EVENT_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_identity",
+      "canonicalTerm": "latest_matching_event_identity",
+      "preferredName": "latest_matching_event_identity",
+      "description": "Cross-app event identity for the latest matching event, derived from source system, source type, source id, and content-hash posture.",
+      "example": "latest_matching_event_identity_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_source_id",
+      "canonicalTerm": "latest_matching_event_source_id",
+      "preferredName": "latest_matching_event_source_id",
+      "description": "Source identifier for the latest matching portfolio-memory event.",
+      "example": "LATEST_MATCHING_EVENT_SOURCE_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_source_system",
+      "canonicalTerm": "latest_matching_event_source_system",
+      "preferredName": "latest_matching_event_source_system",
+      "description": "Source system that owns the latest matching portfolio-memory event.",
+      "example": "latest_matching_event_source_system_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_source_type",
+      "canonicalTerm": "latest_matching_event_source_type",
+      "preferredName": "latest_matching_event_source_type",
+      "description": "Source artifact or event type for the latest matching portfolio-memory event.",
+      "example": "latest_matching_event_source_type_example",
       "type": "object",
       "locations": [
         "body"
@@ -116874,6 +116958,54 @@
             "type": "object",
             "semanticId": "lotus.latest_matching_event_type",
             "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_type"
+          },
+          {
+            "name": "items[].latest_matching_event_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_id",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_id"
+          },
+          {
+            "name": "items[].latest_matching_event_identity",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_identity",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_identity"
+          },
+          {
+            "name": "items[].latest_matching_event_source_system",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_source_system",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_source_system"
+          },
+          {
+            "name": "items[].latest_matching_event_source_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_source_type",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_source_type"
+          },
+          {
+            "name": "items[].latest_matching_event_source_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_source_id",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_source_id"
+          },
+          {
+            "name": "items[].latest_matching_event_content_hash",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_content_hash"
           },
           {
             "name": "items[].content_hash",

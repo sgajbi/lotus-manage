@@ -1299,6 +1299,16 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["items"][0]["matching_event_count"] == 1
     assert payload["items"][0]["latest_matching_event_time"] is not None
     assert payload["items"][0]["latest_matching_event_type"] == "WAVE_HANDOFF_READY"
+    assert payload["items"][0]["latest_matching_event_id"] == "memory:wave:dwv_001:handoff:dwh_001"
+    assert payload["items"][0]["latest_matching_event_identity"].startswith(
+        "lotus-manage:DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF:dwh_001:"
+    )
+    assert payload["items"][0]["latest_matching_event_source_system"] == "lotus-manage"
+    assert payload["items"][0]["latest_matching_event_source_type"] == (
+        "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"
+    )
+    assert payload["items"][0]["latest_matching_event_source_id"] == "dwh_001"
+    assert payload["items"][0]["latest_matching_event_content_hash"] == "sha256:handoff-memory"
     assert payload["items"][0]["content_hash"].startswith("sha256:")
     assert payload["supportability_state_counts"] == {"DEGRADED": 1}
     assert payload["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
@@ -1320,6 +1330,8 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     search_item_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchItem"]
     assert "matching_event_count" in search_item_schema["properties"]
     assert "latest_matching_event_type" in search_item_schema["properties"]
+    assert "latest_matching_event_identity" in search_item_schema["properties"]
+    assert "latest_matching_event_source_system" in search_item_schema["properties"]
     event_type_parameter = next(
         parameter
         for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
@@ -1372,6 +1384,10 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
     }
     assert payload["items"][0]["matching_event_count"] == 1
     assert payload["items"][0]["latest_matching_event_type"] == "CONSTRUCTION_ALTERNATIVE_SELECTED"
+    assert payload["items"][0]["latest_matching_event_source_type"] == (
+        "DPM_CONSTRUCTION_ALTERNATIVE_SELECTION"
+    )
+    assert payload["items"][0]["latest_matching_event_source_id"] == "casel_memory_001"
     assert "lotus-manage" in payload["items"][0]["source_systems"]
 
 
@@ -1445,6 +1461,11 @@ def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_
     assert all(
         item.latest_matching_event_type == "PM_QUALITY_SUMMARY_INVOCATION" for item in page.items
     )
+    assert all(
+        item.latest_matching_event_source_type == "DPM_PM_OPERATING_QUALITY_SUMMARY_INVOCATION"
+        for item in page.items
+    )
+    assert all(item.latest_matching_event_identity is not None for item in page.items)
 
 
 def test_portfolio_memory_search_requires_source_system_on_matching_event_type() -> None:
@@ -1620,6 +1641,12 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
     assert empty_filtered.items[0].matching_event_count == 0
     assert empty_filtered.items[0].latest_matching_event_time is None
     assert empty_filtered.items[0].latest_matching_event_type is None
+    assert empty_filtered.items[0].latest_matching_event_id is None
+    assert empty_filtered.items[0].latest_matching_event_identity is None
+    assert empty_filtered.items[0].latest_matching_event_source_system is None
+    assert empty_filtered.items[0].latest_matching_event_source_type is None
+    assert empty_filtered.items[0].latest_matching_event_source_id is None
+    assert empty_filtered.items[0].latest_matching_event_content_hash is None
     assert default_filtered.returned_count == 0
 
 
