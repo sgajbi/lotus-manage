@@ -152,7 +152,9 @@ archive handoff evidence is not hidden from audit search facets. Pagination meta
 also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
 `source_scan_limit` used for each Manage-local evidence repository so consumers can continue
 bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
-from counts. Each portfolio-memory view and search page carries a deterministic `content_hash`
+from counts. Search pages validate returned-count, total-count, has-more, next-offset,
+supportability-count, source-system-count, and matching-event-count posture against the returned
+rows. Each portfolio-memory view and search page carries a deterministic `content_hash`
 that excludes `generated_at` so audit review can reconcile equivalent source-backed views and
 result pages without timestamp churn. Portfolio-memory aggregate event count, event-type counts,
 source-system coverage, reason-code rollups, supportability state, and governance posture are
