@@ -8,6 +8,13 @@ from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.models import DpmPortfolioMemory, DpmPortfolioMemoryEvent
 
 PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_LIMIT = 12
+PORTFOLIO_MEMORY_REPORT_CONTEXT_SUPPORT_BOUNDARY = (
+    "Portfolio-memory report context is bounded lineage evidence for downstream report and AI "
+    "handoffs. It preserves report-safe event refs and hashes only; it does not project raw "
+    "source payloads, query external source-owner event stores, discover the global portfolio "
+    "universe, reconstruct source-owner methodology, project OMS acknowledgement/fill/settlement "
+    "events, or project client communication events."
+)
 
 
 class DpmPortfolioMemoryReportEventRef(BaseModel):
@@ -35,6 +42,13 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     source_systems: list[str] = Field(description="Source systems represented by the memory view.")
     reason_codes: list[str] = Field(description="Aggregate bounded reason codes.")
     content_hash: str = Field(description="Canonical source-backed memory view hash.")
+    support_boundary: str = Field(
+        description=(
+            "Explicit no-claim boundary for a bounded portfolio-memory surface, including "
+            "unsupported source payload, global discovery, source-owner methodology, OMS, "
+            "and client-communication projections."
+        )
+    )
     context_content_hash: str = Field(
         description=(
             "Canonical hash of this bounded report-context envelope, including event refs and "
@@ -64,6 +78,7 @@ def build_portfolio_memory_report_context(
         source_systems=memory.source_systems,
         reason_codes=memory.reason_codes,
         content_hash=memory.content_hash,
+        support_boundary=PORTFOLIO_MEMORY_REPORT_CONTEXT_SUPPORT_BOUNDARY,
         context_content_hash="sha256:pending",
         governance_policy=memory.governance_policy,
         event_refs=[_event_ref(event) for event in memory.events[: max(0, event_limit)]],

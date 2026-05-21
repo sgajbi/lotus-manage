@@ -155,8 +155,10 @@ bounded searches without reconstructing continuation logic, filter posture, or s
 from counts. Each portfolio-memory view and search page carries a deterministic `content_hash`
 that excludes `generated_at` so audit review can reconcile equivalent source-backed views and
 result pages without timestamp churn. Report and AI handoff contexts preserve the source memory
-view hash and also expose a bounded `context_content_hash` over the report-safe event refs so
-downstream consumers can reconcile lineage context without loading the full memory view.
+view hash, expose an explicit no-claim `support_boundary`, and also expose a bounded
+`context_content_hash` over the report-safe event refs so downstream consumers can reconcile
+lineage context without loading the full memory view or inferring raw source, OMS, client
+communication, global-discovery, or source-methodology support.
 Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
 are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
 query-string formatting.

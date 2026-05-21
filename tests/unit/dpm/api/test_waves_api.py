@@ -5633,6 +5633,10 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert report_payload["portfolio_memory_context"]["portfolio_id"] == PORTFOLIO_ID
     assert report_payload["portfolio_memory_context"]["event_count"] >= 1
     assert report_payload["portfolio_memory_context"]["context_content_hash"].startswith("sha256:")
+    assert (
+        "does not project raw source payloads"
+        in (report_payload["portfolio_memory_context"]["support_boundary"])
+    )
     assert any(
         event["event_type"] == "WAVE_CREATED"
         for event in report_payload["portfolio_memory_context"]["event_refs"]
