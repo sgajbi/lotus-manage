@@ -4,6 +4,12 @@ from datetime import date
 
 from fastapi import HTTPException, status
 
+from src.api.routers.wave_campaign_models import (
+    DpmBulkReviewCampaignDefinitionPage,
+    DpmBulkReviewCampaignDefinitionRequest,
+    DpmBulkReviewCampaignDefinitionRetirementRequest,
+    DpmBulkReviewCampaignDefinitionSupersessionRequest,
+)
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
@@ -12,6 +18,8 @@ from src.core.waves import (
 )
 from src.core.waves.campaign_definition_lifecycle import (
     DpmBulkReviewCampaignDefinitionLifecycleError,
+    retire_bulk_review_campaign_definition,
+    supersede_bulk_review_campaign_definition,
 )
 
 
@@ -37,6 +45,128 @@ def get_campaign_definition_or_404(
             detail=_CAMPAIGN_DEFINITION_NOT_FOUND_DETAIL,
         )
     return definition
+
+
+def get_campaign_definition_response(
+    *,
+    campaign_id: str,
+    campaign_version: str,
+    repository: DpmBulkReviewCampaignDefinitionRepository,
+) -> DpmBulkReviewCampaignDefinition:
+    return get_campaign_definition_or_404(
+        repository=repository,
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
+    )
+
+
+def put_campaign_definition_response(
+    *,
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository,
+) -> DpmBulkReviewCampaignDefinition:
+    try:
+        definition = DpmBulkReviewCampaignDefinition(
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            display_name=request.display_name,
+            status=request.status,
+            as_of_date=request.as_of_date,
+            rationale=request.rationale,
+            eligible_portfolio_types=request.eligible_portfolio_types,
+            candidates=request.candidates,
+            governance=request.governance,
+            source_refs=request.source_refs,
+            created_by=request.created_by,
+            correlation_id=request.correlation_id,
+        )
+        repository.save_definition(definition=definition)
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    return definition
+
+
+def list_campaign_definitions_response(
+    *,
+    campaign_id: str | None,
+    campaign_status: str | None,
+    as_of_date: str | None,
+    limit: int,
+    offset: int,
+    repository: DpmBulkReviewCampaignDefinitionRepository,
+) -> DpmBulkReviewCampaignDefinitionPage:
+    items = repository.list_definitions(
+        campaign_id=campaign_id,
+        status=campaign_status,
+        as_of_date=as_of_date,
+        limit=limit,
+        offset=offset,
+    )
+    return DpmBulkReviewCampaignDefinitionPage(
+        items=items,
+        limit=limit,
+        offset=offset,
+        count=len(items),
+    )
+
+
+def retire_campaign_definition_response(
+    *,
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionRetirementRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository,
+) -> DpmBulkReviewCampaignDefinition:
+    try:
+        retired = retire_bulk_review_campaign_definition(
+            repository=repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            retired_by=request.retired_by,
+            retirement_reason=request.retirement_reason,
+            correlation_id=request.correlation_id,
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
+        raise campaign_definition_lifecycle_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if retired is None:
+        raise campaign_definition_not_found_http_exception()
+    return retired
+
+
+def supersede_campaign_definition_response(
+    *,
+    campaign_id: str,
+    campaign_version: str,
+    request: DpmBulkReviewCampaignDefinitionSupersessionRequest,
+    repository: DpmBulkReviewCampaignDefinitionRepository,
+) -> DpmBulkReviewCampaignDefinition:
+    try:
+        superseded = supersede_bulk_review_campaign_definition(
+            repository=repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            replacement_version=request.superseded_by_campaign_version,
+            superseded_by=request.superseded_by,
+            supersession_reason=request.supersession_reason,
+            correlation_id=request.correlation_id,
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
+        raise campaign_definition_lifecycle_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
+    if superseded is None:
+        raise campaign_definition_not_found_http_exception()
+    return superseded
 
 
 def campaign_definition_not_found_http_exception() -> HTTPException:
