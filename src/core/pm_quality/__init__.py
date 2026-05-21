@@ -1,6 +1,7 @@
 """PM operating quality domain package."""
 
 from src.core.pm_quality.models import (
+    DpmPmQualityApprovalWorkflowBoundaryEvidence,
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityBookScopeEvidence,
@@ -24,6 +25,7 @@ from src.core.pm_quality.models import (
     PmQualityReviewActionType,
     PmQualityState,
     PmQualitySummaryInvocationState,
+    build_pm_quality_approval_workflow_boundary,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
@@ -49,6 +51,7 @@ from src.core.pm_quality.summary_history import build_pm_quality_summary_invocat
 __all__ = [
     "DpmPmOperatingQualityPolicy",
     "DpmPmOperatingQualityScoreRun",
+    "DpmPmQualityApprovalWorkflowBoundaryEvidence",
     "DpmPmQualityBookScopeEvidence",
     "DpmPmQualityFairnessAnalysis",
     "DpmPmQualityFairnessAnalysisConflictError",
@@ -84,6 +87,7 @@ __all__ = [
     "PmQualitySummaryInvocationState",
     "build_pm_operating_quality_fairness_analysis",
     "build_pm_operating_quality_score_run",
+    "build_pm_quality_approval_workflow_boundary",
     "build_pm_quality_review_action",
     "build_pm_quality_summary_invocation",
 ]

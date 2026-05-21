@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from src.core.common.canonical import hash_canonical_payload
 from src.core.outcomes import DpmOutcomeSourceRef
 
 PmQualityIndicator = Literal[
@@ -522,6 +523,84 @@ class DpmPmQualityFairnessAnalysis(BaseModel):
     correlation_id: str = Field(description="Correlation identifier.")
 
 
+class DpmPmQualityApprovalWorkflowBoundaryEvidence(BaseModel):
+    """Fail-closed approval-workflow boundary for PM-quality review actions."""
+
+    boundary_id: Literal["PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY"] = Field(
+        default="PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY",
+        description="Stable unsupported approval-workflow boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for broader approval workflow evidence.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported approval-workflow boundary evidence.",
+    )
+    source_product_name: Literal["PmOperatingQualityReviewAction"] = Field(
+        default="PmOperatingQualityReviewAction",
+        description=(
+            "Manage-owned source product that records immutable PM-quality review actions "
+            "without owning a broader CIO, HR, conduct, client-contact, trade, or OMS approval workflow."
+        ),
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    approval_workflow_projected: Literal[False] = Field(
+        default=False,
+        description="Review-action evidence never projects a broader approval workflow.",
+    )
+    trade_approval_projected: Literal[False] = Field(
+        default=False,
+        description="Review-action evidence never projects trade approval.",
+    )
+    client_approval_projected: Literal[False] = Field(
+        default=False,
+        description="Review-action evidence never projects client approval.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the PM-quality approval-workflow boundary.",
+        examples=["PM_QUALITY_APPROVAL_WORKFLOW_NOT_SUPPORTED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Approval workflow capabilities blocked from review-action promotion.",
+        examples=[
+            [
+                "cio_approval_workflow",
+                "trade_approval",
+                "hr_decision",
+                "client_approval",
+            ]
+        ],
+    )
+    required_owner: str = Field(
+        description="Future owner required before approval-workflow truth can be promoted.",
+        examples=["future PM-quality approval-workflow owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume approval-workflow truth.",
+        examples=["PmQualityApprovalWorkflowRecord:v1"],
+    )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "Governance, source-product, entitlement, lineage, downstream realization, and audit "
+            "requirements that must be met before PM-quality review actions can be promoted from "
+            "immutable ledger evidence to broader approval-workflow support."
+        ),
+        examples=[
+            [
+                "certified_pm_quality_approval_workflow_source_owner",
+                "PmQualityApprovalWorkflowRecord:v1",
+            ]
+        ],
+    )
+    summary: str = Field(description="Operator-facing no-approval-workflow boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmPmQualityReviewAction(BaseModel):
     """Immutable PM operating-quality review action over existing governed evidence."""
 
@@ -582,6 +661,7 @@ class DpmPmQualityReviewAction(BaseModel):
     operating_boundaries: list[str] = Field(
         default_factory=lambda: [
             "IMMUTABLE_REVIEW_ACTION_LEDGER",
+            "NO_APPROVAL_WORKFLOW",
             "NO_SCORE_RECALCULATION",
             "NO_FAIRNESS_RECOMPUTATION",
             "NO_PM_RANKING",
@@ -591,6 +671,14 @@ class DpmPmQualityReviewAction(BaseModel):
             "NO_ORDER_OR_OMS_EXECUTION",
         ],
         description="Unsupported downstream claims the review action must not imply.",
+    )
+    approval_workflow_boundary: DpmPmQualityApprovalWorkflowBoundaryEvidence = Field(
+        default_factory=lambda: build_pm_quality_approval_workflow_boundary(),
+        description=(
+            "Structured fail-closed evidence proving this review action is an immutable "
+            "supervisory ledger row, not a broader approval workflow, trade approval, "
+            "client approval, HR, conduct, order, OMS, or execution decision."
+        ),
     )
     content_hash: str = Field(description="Canonical review-action content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
@@ -685,3 +773,50 @@ class DpmPmQualitySummaryInvocation(BaseModel):
     content_hash: str = Field(description="Canonical summary-invocation content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
     correlation_id: str = Field(description="Correlation identifier.")
+
+
+def build_pm_quality_approval_workflow_boundary() -> DpmPmQualityApprovalWorkflowBoundaryEvidence:
+    payload = {
+        "boundary_id": "PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "PmOperatingQualityReviewAction",
+        "source_product_version": "v1",
+        "approval_workflow_projected": False,
+        "trade_approval_projected": False,
+        "client_approval_projected": False,
+        "reason_code": "PM_QUALITY_APPROVAL_WORKFLOW_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "cio_approval_workflow",
+            "approval_state_mutation",
+            "policy_approval",
+            "model_risk_approval",
+            "hr_decision",
+            "compensation_decision",
+            "conduct_enforcement",
+            "client_contact",
+            "client_approval",
+            "trade_approval",
+            "order_routing",
+            "oms_execution",
+        ],
+        "required_owner": "future PM-quality approval-workflow owner",
+        "required_source_product": "PmQualityApprovalWorkflowRecord:v1",
+        "promotion_requirements": [
+            "certified_pm_quality_approval_workflow_source_owner",
+            "PmQualityApprovalWorkflowRecord:v1",
+            "approval_state_lifecycle_contract",
+            "approver_entitlement_and_segregation_controls",
+            "lineage_freshness_and_content_hashes",
+            "downstream_gateway_workbench_realization",
+            "approval_audit_and_exception_reconciliation",
+        ],
+        "summary": (
+            "PM-quality review actions are immutable supervisory ledger rows over existing "
+            "score-run or fairness-analysis evidence. They do not approve policies, mutate "
+            "approval workflow state, approve trades, contact clients, create HR or conduct "
+            "decisions, route orders, or claim OMS execution."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmPmQualityApprovalWorkflowBoundaryEvidence.model_validate(payload)

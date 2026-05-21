@@ -996,7 +996,15 @@ def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> Non
     assert preview.json()["review_action"]["action_state"] == "REVIEW_REQUIRED"
     assert created.status_code == 201
     assert created.json()["review_action"]["correlation_id"] == "corr-pmq-review-create"
+    assert "NO_APPROVAL_WORKFLOW" in created.json()["review_action"]["operating_boundaries"]
     assert "NO_PM_RANKING" in created.json()["review_action"]["operating_boundaries"]
+    approval_boundary = created.json()["review_action"]["approval_workflow_boundary"]
+    assert approval_boundary["boundary_id"] == "PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY"
+    assert approval_boundary["approval_workflow_projected"] is False
+    assert approval_boundary["trade_approval_projected"] is False
+    assert "trade_approval" in approval_boundary["blocked_capabilities"]
+    assert approval_boundary["required_source_product"] == "PmQualityApprovalWorkflowRecord:v1"
+    assert approval_boundary["content_hash"].startswith("sha256:")
     assert fetched.status_code == 200
     assert fetched.json()["review_action"]["review_action_id"] == review_action_id
     assert listed.status_code == 200
@@ -1508,6 +1516,14 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert all(marker in review_description for marker in ["What:", "When:", "How:"])
     assert "does not recalculate scores" in review_description
     assert "does not mutate" in schema["paths"][review_create_path]["post"]["description"]
+    review_schema = schema["components"]["schemas"]["DpmPmQualityReviewAction"]
+    assert "approval_workflow_boundary" in review_schema["properties"]
+    assert "DpmPmQualityApprovalWorkflowBoundaryEvidence" in schema["components"]["schemas"]
+    approval_boundary_schema = schema["components"]["schemas"][
+        "DpmPmQualityApprovalWorkflowBoundaryEvidence"
+    ]
+    assert "approval-workflow boundary" in approval_boundary_schema["description"]
+    assert "required_source_product" in approval_boundary_schema["properties"]
 
     summary_preview_path = "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview"
     summary_create_path = "/api/v1/rebalance/pm-operating-quality/summary-invocations"
