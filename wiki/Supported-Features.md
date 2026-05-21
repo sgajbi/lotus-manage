@@ -57,6 +57,14 @@ refs. This narrows RFC41-WTBD-003's maker-checker gap without promoting trade ap
 generation/routing, client contact, external workflow orchestration, OMS execution, or global
 portfolio-universe discovery.
 
+Campaign workflow-automation promotion posture addendum: `BulkReviewCampaignWorkflowCapabilityPosture:v1`
+now carries machine-readable `promotion_requirements` for certified external workflow source
+ownership, `ExternalWorkflowOrchestrationRecord:v1`, source-product contract publication, producer
+lineage and freshness controls, Manage consumer declaration, Gateway/Workbench realization, and
+external workflow audit/reconciliation evidence. The endpoint remains read-only Manage-side
+assignment readiness; these requirements prevent bounded task-readiness support from being
+mistaken for external workflow orchestration.
+
 Campaign assignment-task lifecycle addendum: Manage now supports controlled
 `BulkReviewCampaignDefinitionAssignmentTaskPage` evidence through
 `POST` and `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`

@@ -2777,6 +2777,16 @@ def test_bulk_review_campaign_workflow_automation_summarizes_manage_task_readine
     assert (
         "external_workflow_task_creation" in (payload["capability_posture"]["blocked_capabilities"])
     )
+    assert payload["capability_posture"]["promotion_requirements"] == [
+        "certified_external_workflow_source_owner",
+        "ExternalWorkflowOrchestrationRecord:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "external_workflow_audit_and_reconciliation_evidence",
+    ]
     assert payload["capability_posture"]["content_hash"].startswith("sha256:")
     assert (
         ready_item["capability_posture"]["manage_assignment_task_mutation"]
