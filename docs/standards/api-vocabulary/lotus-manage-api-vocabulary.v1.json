@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T19:59:33.629168+00:00",
+  "generatedAt": "2026-05-21T20:31:51.010249+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5723,7 +5723,7 @@
       "semanticId": "lotus.governance_policy",
       "canonicalTerm": "governance_policy",
       "preferredName": "governance_policy",
-      "description": "Portfolio-memory retention, redaction, access, audit, and source policy.",
+      "description": "Portfolio-memory governance policy carrying event_identity_scheme, retention_policy, redaction_policy, audit_policy, access_classification, and source_authority_policy.",
       "example": {
         "sample_key": "sample_value"
       },

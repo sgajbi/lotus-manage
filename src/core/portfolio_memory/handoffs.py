@@ -18,6 +18,16 @@ PORTFOLIO_MEMORY_REPORT_CONTEXT_SUPPORT_BOUNDARY = (
 PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_SELECTION_POLICY = (
     "LATEST_EVENTS_BY_EVENT_TIME_DESC_THEN_EVENT_ID_DESC"
 )
+PORTFOLIO_MEMORY_REPORT_CONTEXT_REQUIRED_GOVERNANCE_KEYS = frozenset(
+    {
+        "event_identity_scheme",
+        "retention_policy",
+        "redaction_policy",
+        "audit_policy",
+        "access_classification",
+        "source_authority_policy",
+    }
+)
 
 
 class DpmPortfolioMemoryReportEventRef(BaseModel):
@@ -95,7 +105,11 @@ class DpmPortfolioMemoryReportContext(BaseModel):
         )
     )
     governance_policy: dict[str, str] = Field(
-        description="Portfolio-memory retention, redaction, access, audit, and source policy."
+        description=(
+            "Portfolio-memory governance policy carrying event_identity_scheme, "
+            "retention_policy, redaction_policy, audit_policy, access_classification, and "
+            "source_authority_policy."
+        )
     )
     event_refs: list[DpmPortfolioMemoryReportEventRef] = Field(
         description="Bounded event refs for report lineage."
@@ -118,6 +132,24 @@ class DpmPortfolioMemoryReportContext(BaseModel):
         observed_ranks = [event_ref.event_ref_selection_rank for event_ref in self.event_refs]
         if observed_ranks != expected_ranks:
             raise ValueError("event_ref_selection_rank values must be contiguous one-based ranks.")
+
+        missing_governance_keys = (
+            PORTFOLIO_MEMORY_REPORT_CONTEXT_REQUIRED_GOVERNANCE_KEYS - self.governance_policy.keys()
+        )
+        if missing_governance_keys:
+            raise ValueError(
+                "governance_policy missing required keys: "
+                f"{', '.join(sorted(missing_governance_keys))}."
+            )
+
+        blank_governance_keys = [
+            key for key, value in self.governance_policy.items() if not value.strip()
+        ]
+        if blank_governance_keys:
+            raise ValueError(
+                "governance_policy values must be non-blank for keys: "
+                f"{', '.join(sorted(blank_governance_keys))}."
+            )
 
         return self
 

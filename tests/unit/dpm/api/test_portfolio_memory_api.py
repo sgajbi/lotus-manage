@@ -1117,6 +1117,22 @@ def test_portfolio_memory_report_context_rejects_inconsistent_bounded_metadata()
     with pytest.raises(ValidationError, match="greater than or equal to 0"):
         DpmPortfolioMemoryReportContext.model_validate(negative_count)
 
+    missing_governance = context.model_dump(mode="json")
+    missing_governance["governance_policy"].pop("source_authority_policy")
+    with pytest.raises(
+        ValidationError,
+        match="governance_policy missing required keys: source_authority_policy",
+    ):
+        DpmPortfolioMemoryReportContext.model_validate(missing_governance)
+
+    blank_governance = context.model_dump(mode="json")
+    blank_governance["governance_policy"]["audit_policy"] = " "
+    with pytest.raises(
+        ValidationError,
+        match="governance_policy values must be non-blank for keys: audit_policy",
+    ):
+        DpmPortfolioMemoryReportContext.model_validate(blank_governance)
+
 
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
@@ -1744,6 +1760,9 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert report_context_schema["properties"]["event_ref_limit"]["minimum"] == 0
     assert report_context_schema["properties"]["event_refs_returned"]["minimum"] == 0
     assert report_context_schema["properties"]["event_refs_omitted"]["minimum"] == 0
+    governance_description = report_context_schema["properties"]["governance_policy"]["description"]
+    assert "event_identity_scheme" in governance_description
+    assert "source_authority_policy" in governance_description
     assert (
         "Explicit no-claim boundary"
         in report_context_schema["properties"]["support_boundary"]["description"]
