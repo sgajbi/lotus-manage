@@ -1,7 +1,7 @@
 """Source-backed portfolio memory read-model assembly."""
 
 from datetime import datetime, timezone
-from typing import Iterable
+from typing import Iterable, cast
 
 from src.core.common.boundary_promotion import (
     CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS,
@@ -72,6 +72,15 @@ from src.core.waves.campaign_definitions import (
 )
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
+
+
+def normalize_portfolio_memory_search_filter(value: str | None) -> str | None:
+    """Normalize optional string search filters without inventing aliases."""
+
+    if value is None:
+        return None
+    stripped_value = value.strip()
+    return stripped_value or None
 
 
 def build_portfolio_memory(
@@ -231,6 +240,12 @@ def search_portfolio_memory(
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
 
     generated_at = generated_at or datetime.now(timezone.utc)
+    normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
+    normalized_supportability_state = cast(
+        PortfolioMemorySupportabilityState | None,
+        normalize_portfolio_memory_search_filter(cast(str | None, supportability_state)),
+    )
+    normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
     explicit_candidate_ids = {
         portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
     }
@@ -261,31 +276,43 @@ def search_portfolio_memory(
             generated_at=generated_at,
         )
         if memory.event_count == 0:
-            if supportability_state != "EMPTY" or portfolio_id not in explicit_candidate_ids:
+            if (
+                normalized_supportability_state != "EMPTY"
+                or portfolio_id not in explicit_candidate_ids
+            ):
                 continue
-        if event_type is not None and event_type not in memory.event_type_counts:
+        if (
+            normalized_event_type is not None
+            and normalized_event_type not in memory.event_type_counts
+        ):
             continue
-        if supportability_state is not None and memory.supportability_state != supportability_state:
+        if (
+            normalized_supportability_state is not None
+            and memory.supportability_state != normalized_supportability_state
+        ):
             continue
-        if source_system is not None and source_system not in memory.source_systems:
+        if (
+            normalized_source_system is not None
+            and normalized_source_system not in memory.source_systems
+        ):
             continue
         matching_events = [
             event
             for event in memory.events
             if _event_matches_search_filters(
                 event=event,
-                event_type=event_type,
-                supportability_state=supportability_state,
-                source_system=source_system,
+                event_type=normalized_event_type,
+                supportability_state=normalized_supportability_state,
+                source_system=normalized_source_system,
             )
         ]
         if (
             (
-                event_type is not None
-                or source_system is not None
-                or supportability_state is not None
+                normalized_event_type is not None
+                or normalized_source_system is not None
+                or normalized_supportability_state is not None
             )
-            and supportability_state != "EMPTY"
+            and normalized_supportability_state != "EMPTY"
             and not matching_events
         ):
             continue
@@ -375,9 +402,9 @@ def search_portfolio_memory(
         scanned_portfolio_count=len(candidate_ids),
         applied_filters=DpmPortfolioMemorySearchAppliedFilters(
             portfolio_ids=sorted(explicit_candidate_ids),
-            event_type=event_type,
-            supportability_state=supportability_state,
-            source_system=source_system,
+            event_type=normalized_event_type,
+            supportability_state=normalized_supportability_state,
+            source_system=normalized_source_system,
         ),
         supportability_state_counts=dict(sorted(supportability_state_counts.items())),
         event_type_counts=dict(sorted(event_type_counts.items())),

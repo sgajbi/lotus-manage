@@ -29,7 +29,11 @@ from src.core.portfolio_memory.models import (
     PortfolioMemoryEventType,
     PortfolioMemorySupportabilityState,
 )
-from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
+from src.core.portfolio_memory.service import (
+    build_portfolio_memory,
+    normalize_portfolio_memory_search_filter,
+    search_portfolio_memory,
+)
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
@@ -82,13 +86,19 @@ def search_portfolio_memory_index(
     ),
     supportability_state: str | None = Query(
         default=None,
-        pattern="^(READY|PENDING_REVIEW|DEGRADED|BLOCKED|EMPTY)$",
-        description="Optional aggregate supportability-state filter.",
+        pattern=r"^\s*(READY|PENDING_REVIEW|DEGRADED|BLOCKED|EMPTY)\s*$",
+        description=(
+            "Optional aggregate supportability-state filter. Leading and trailing whitespace is "
+            "normalized before matching."
+        ),
         examples=["READY"],
     ),
     source_system: str | None = Query(
         default=None,
-        description="Optional represented source-system filter.",
+        description=(
+            "Optional represented source-system filter. Leading and trailing whitespace is "
+            "normalized before matching."
+        ),
         examples=["lotus-manage"],
     ),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum summaries to return."),
@@ -117,11 +127,17 @@ def search_portfolio_memory_index(
         get_campaign_definition_repository
     ),
 ) -> DpmPortfolioMemorySearchPage:
-    if event_type is not None and event_type not in _PORTFOLIO_MEMORY_EVENT_TYPE_SET:
+    normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
+    normalized_supportability_state = normalize_portfolio_memory_search_filter(supportability_state)
+    normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
+    if (
+        normalized_event_type is not None
+        and normalized_event_type not in _PORTFOLIO_MEMORY_EVENT_TYPE_SET
+    ):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=(
-                f"UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: {event_type}; "
+                f"UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: {normalized_event_type}; "
                 f"supported_event_types={','.join(_PORTFOLIO_MEMORY_EVENT_TYPES)}"
             ),
         )
@@ -136,9 +152,11 @@ def search_portfolio_memory_index(
         pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
         campaign_definition_repository=campaign_definition_repository,
         portfolio_ids=portfolio_ids,
-        event_type=event_type,
-        supportability_state=cast(PortfolioMemorySupportabilityState | None, supportability_state),
-        source_system=source_system,
+        event_type=normalized_event_type,
+        supportability_state=cast(
+            PortfolioMemorySupportabilityState | None, normalized_supportability_state
+        ),
+        source_system=normalized_source_system,
         limit=limit,
         offset=offset,
         source_scan_limit=source_scan_limit,

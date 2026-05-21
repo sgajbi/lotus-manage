@@ -1364,6 +1364,70 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "Unsupported event types are rejected" in event_type_parameter["description"]
 
 
+def test_portfolio_memory_search_normalizes_text_filters_before_matching() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    construction_repository = _construction_repository()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
+    app.dependency_overrides[get_construction_repository] = lambda: construction_repository
+    app.dependency_overrides[get_wave_repository] = lambda: wave_repository
+    app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_repository
+    app.dependency_overrides[get_mandate_repository] = lambda: mandate_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={
+                "event_type": " WAVE_HANDOFF_READY ",
+                "source_system": " lotus-manage ",
+            },
+        )
+        empty_response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={
+                "portfolio_ids": "EMPTY_PORTFOLIO",
+                "supportability_state": " EMPTY ",
+            },
+        )
+        unsupported_response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={"event_type": " NOT_A_MEMORY_EVENT "},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["returned_count"] == 1
+    assert payload["applied_filters"] == {
+        "portfolio_ids": [],
+        "event_type": "WAVE_HANDOFF_READY",
+        "supportability_state": None,
+        "source_system": "lotus-manage",
+    }
+    assert payload["items"][0]["latest_matching_event_type"] == "WAVE_HANDOFF_READY"
+    assert empty_response.status_code == 200
+    assert empty_response.json()["returned_count"] == 1
+    assert empty_response.json()["applied_filters"] == {
+        "portfolio_ids": ["EMPTY_PORTFOLIO"],
+        "event_type": None,
+        "supportability_state": "EMPTY",
+        "source_system": None,
+    }
+    assert unsupported_response.status_code == 422
+    assert unsupported_response.json()["detail"].startswith(
+        "UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: NOT_A_MEMORY_EVENT"
+    )
+
+
 def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
@@ -1701,11 +1765,21 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         portfolio_ids=[PORTFOLIO_ID],
         source_system="not-a-source-system",
     )
+    blank_source_unfiltered = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        source_system=" ",
+    )
 
     assert empty_filtered.returned_count == 0
     assert event_type_filtered.returned_count == 0
     assert state_filtered.returned_count == 0
     assert source_filtered.returned_count == 0
+    assert blank_source_unfiltered.returned_count == 1
+    assert blank_source_unfiltered.applied_filters.source_system is None
 
 
 def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios() -> None:
