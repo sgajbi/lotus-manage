@@ -923,6 +923,55 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     )
 
 
+def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    first_generated_at = datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc)
+    later_generated_at = datetime(2026, 5, 21, 11, 0, tzinfo=timezone.utc)
+
+    first_memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        generated_at=first_generated_at,
+    )
+    later_memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        generated_at=later_generated_at,
+    )
+    first_page = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        event_type="WAVE_HANDOFF_READY",
+        source_system="lotus-manage",
+        generated_at=first_generated_at,
+    )
+    later_page = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        event_type="WAVE_HANDOFF_READY",
+        source_system="lotus-manage",
+        generated_at=later_generated_at,
+    )
+
+    assert first_memory.generated_at != later_memory.generated_at
+    assert first_memory.content_hash == later_memory.content_hash
+    assert first_page.generated_at != later_page.generated_at
+    assert first_page.content_hash == later_page.content_hash
+    assert first_page.items[0].content_hash == later_page.items[0].content_hash
+
+
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()

@@ -2042,6 +2042,8 @@ Functional behavior:
 - returns one exact source-backed portfolio-memory event by portfolio id and event id, including
   the event identity, memory content hash, and explicit no-claim boundary for audit drilldown from
   a search hit,
+- emits portfolio-memory view and search-page content hashes that exclude `generated_at`, so
+  equivalent source-backed views remain replay-stable for audit reconciliation,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
