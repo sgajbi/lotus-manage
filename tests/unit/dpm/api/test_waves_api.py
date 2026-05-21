@@ -5637,6 +5637,10 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert report_payload["portfolio_memory_context"]["event_refs_returned"] == len(
         report_payload["portfolio_memory_context"]["event_refs"]
     )
+    assert report_payload["portfolio_memory_context"]["event_refs_omitted"] == (
+        report_payload["portfolio_memory_context"]["event_count"]
+        - report_payload["portfolio_memory_context"]["event_refs_returned"]
+    )
     assert isinstance(report_payload["portfolio_memory_context"]["event_refs_truncated"], bool)
     assert (
         "does not project raw source payloads"
