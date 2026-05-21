@@ -230,6 +230,9 @@ def search_portfolio_memory(
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
 
     generated_at = generated_at or datetime.now(timezone.utc)
+    explicit_candidate_ids = {
+        portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
+    }
     candidate_ids = _memory_candidate_portfolio_ids(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
@@ -257,7 +260,8 @@ def search_portfolio_memory(
             generated_at=generated_at,
         )
         if memory.event_count == 0:
-            continue
+            if supportability_state != "EMPTY" or portfolio_id not in explicit_candidate_ids:
+                continue
         if event_type is not None and event_type not in memory.event_type_counts:
             continue
         if supportability_state is not None and memory.supportability_state != supportability_state:

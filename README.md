@@ -144,9 +144,10 @@ outcome-review, PM-quality, and explicit caller-supplied portfolio identifiers. 
 include pre-pagination facet counts for supportability state, event type, and represented source
 system so consumers can triage the bounded result set without loading every portfolio timeline.
 Unsupported event-type filters are rejected at the API boundary instead of being interpreted as an
-empty source result; the search route is not global portfolio-universe discovery and does not
-project OMS acknowledgement, fill, settlement, or execution-status events. Persisted bulk-review
-campaign definitions now project
+empty source result. Empty supportability summaries are returned only for explicit caller-supplied
+portfolio identifiers when `supportability_state=EMPTY` is requested; the search route is not
+global portfolio-universe discovery and does not project OMS acknowledgement, fill, settlement, or
+execution-status events. Persisted bulk-review campaign definitions now project
 bounded portfolio memory events for definition, approval-decision, assignment-action,
 assignment-task, and maker-checker control evidence without copying raw campaign payloads,
 recalculating membership, or claiming external workflow orchestration, client contact, order

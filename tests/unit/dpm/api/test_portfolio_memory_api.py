@@ -1553,6 +1553,77 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
     assert source_filtered.returned_count == 0
 
 
+def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios() -> None:
+    empty_filtered = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        mandate_repository=InMemoryDpmMandateRepository(),
+        portfolio_ids=["EMPTY_PORTFOLIO", " "],
+        supportability_state="EMPTY",
+    )
+    default_filtered = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        mandate_repository=InMemoryDpmMandateRepository(),
+        portfolio_ids=["EMPTY_PORTFOLIO"],
+    )
+
+    assert empty_filtered.returned_count == 1
+    assert empty_filtered.total_count == 1
+    assert empty_filtered.scanned_portfolio_count == 1
+    assert empty_filtered.supportability_state_counts == {"EMPTY": 1}
+    assert empty_filtered.event_type_counts == {}
+    assert empty_filtered.source_system_counts == {}
+    assert empty_filtered.items[0].portfolio_id == "EMPTY_PORTFOLIO"
+    assert empty_filtered.items[0].event_count == 0
+    assert empty_filtered.items[0].supportability_state == "EMPTY"
+    assert empty_filtered.items[0].latest_event_time is None
+    assert empty_filtered.items[0].latest_event_type is None
+    assert default_filtered.returned_count == 0
+
+
+def test_portfolio_memory_search_api_returns_explicit_empty_portfolio_when_requested() -> None:
+    app.dependency_overrides[get_proof_pack_repository] = lambda: InMemoryDpmProofPackRepository()
+    app.dependency_overrides[get_construction_repository] = lambda: InMemoryConstructionRepository()
+    app.dependency_overrides[get_wave_repository] = lambda: InMemoryDpmWaveRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: (
+        InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={
+                "portfolio_ids": "EMPTY_PORTFOLIO",
+                "supportability_state": "EMPTY",
+            },
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["returned_count"] == 1
+    assert payload["supportability_state_counts"] == {"EMPTY": 1}
+    assert payload["items"][0]["portfolio_id"] == "EMPTY_PORTFOLIO"
+    assert payload["items"][0]["event_count"] == 0
+    assert payload["items"][0]["supportability_state"] == "EMPTY"
+    assert payload["items"][0]["latest_event_time"] is None
+
+
 def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
     wave = _wave()
     outcome_ref = DpmOutcomeSourceRef(

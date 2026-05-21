@@ -2023,6 +2023,8 @@ Functional behavior:
 - filters the search index by event type, supportability state, and represented source system,
 - rejects unsupported event-type filters with an explicit
   `UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE` error instead of returning a misleading empty page,
+- returns `EMPTY` search summaries only for explicit caller-supplied portfolio ids when
+  `supportability_state=EMPTY` is requested, preserving the no-global-universe-discovery boundary,
 - returns search summaries with event counts, event-type counts, latest event posture, source
   systems, reason codes, content hash, total count, scanned portfolio count, pre-pagination
   supportability-state, event-type, and source-system facet counts, and an explicit support
