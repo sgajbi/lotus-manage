@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T15:51:54.360611+00:00",
+  "generatedAt": "2026-05-21T16:08:54.347728+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -643,6 +643,22 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.applied_filters",
+      "canonicalTerm": "applied_filters",
+      "preferredName": "applied_filters",
+      "description": "Canonical applied filters used by lotus-manage APIs.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmPortfolioMemorySearchAppliedFilters",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmPortfolioMemorySearchAppliedFilters"
       ]
     },
     {
@@ -9323,10 +9339,12 @@
       "example": null,
       "type": "object",
       "locations": [
-        "query"
+        "query",
+        "body"
       ],
       "observedTypes": [
-        "object"
+        "object",
+        "array"
       ]
     },
     {
@@ -117182,6 +117200,46 @@
             "type": "integer",
             "semanticId": "lotus.scanned_portfolio_count",
             "attributeRef": "#/attributeCatalog/lotus.scanned_portfolio_count"
+          },
+          {
+            "name": "applied_filters",
+            "location": "body",
+            "required": true,
+            "type": "DpmPortfolioMemorySearchAppliedFilters",
+            "semanticId": "lotus.applied_filters",
+            "attributeRef": "#/attributeCatalog/lotus.applied_filters"
+          },
+          {
+            "name": "applied_filters.portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_ids"
+          },
+          {
+            "name": "applied_filters.event_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.event_type",
+            "attributeRef": "#/attributeCatalog/lotus.event_type"
+          },
+          {
+            "name": "applied_filters.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "applied_filters.source_system",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
           },
           {
             "name": "supportability_state_counts",
