@@ -22,7 +22,6 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveResponse,
     DpmWaveSearchResponse,
     DpmWaveSupportabilityResponse,
-    wave_response,
 )
 from src.api.routers.wave_request_models import (
     DpmWavePreviewRequest,
@@ -33,7 +32,6 @@ from src.api.routers.wave_request_models import (
 )
 from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_conflict_http_exception,
-    campaign_definition_launch_blocked_http_exception,
     campaign_definition_lifecycle_http_exception,
     campaign_definition_not_found_http_exception,
     campaign_definition_value_http_exception,
@@ -52,14 +50,13 @@ from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionRetirementRequest,
     DpmBulkReviewCampaignDefinitionSupersessionRequest,
 )
+from src.api.routers.wave_campaign_launch_http import (
+    launch_bulk_review_campaign_definition_response,
+)
 from src.api.routers.wave_create_preview_http import create_wave_response, preview_wave_response
-from src.api.routers.wave_http_errors import wave_validation_http_exception
 from src.api.routers.wave_openapi_examples import (
     SOURCE_CHECK_WAVE_EXAMPLE,
     WAVE_EXAMPLE,
-)
-from src.api.routers.wave_portfolio_resolution import (
-    resolve_portfolio_inputs_for_request,
 )
 from src.api.routers.wave_read_http import (
     get_wave_detail_response,
@@ -99,7 +96,6 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDiscoveryPage,
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
-    DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionLaunchPackage,
     DpmBulkReviewCampaignOperatingQueuePage,
     DpmBulkReviewCampaignWorkflowBoardPage,
@@ -112,9 +108,7 @@ from src.core.waves import (
     build_bulk_review_campaign_discovery_item,
     build_bulk_review_campaign_definition_preview_readiness,
     build_bulk_review_campaign_definition_launch_package,
-    build_bulk_review_campaign_definition_launch_command,
     build_bulk_review_campaign_definition_launch_history_page,
-    record_bulk_review_campaign_definition_launch,
     build_bulk_review_campaign_definition_approval_decision_page,
     build_bulk_review_campaign_definition_assignment_action_page,
     build_bulk_review_campaign_definition_assignment_task_page,
@@ -1369,62 +1363,15 @@ def launch_bulk_review_campaign_definition(
         get_campaign_definition_repository
     ),
 ) -> DpmWaveResponse:
-    definition = get_campaign_definition_or_404(
-        repository=campaign_definition_repository,
+    return launch_bulk_review_campaign_definition_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        request=request,
+        mandate_repository=mandate_repository,
+        wave_repository=wave_repository,
+        campaign_definition_repository=campaign_definition_repository,
+        core_resolver_factory=build_core_resolver_client,
     )
-    try:
-        launch_command = build_bulk_review_campaign_definition_launch_command(
-            definition=definition,
-            requested_as_of_date=request.requested_as_of_date,
-            actor_id=request.actor_id,
-            correlation_id=request.correlation_id,
-        )
-    except DpmBulkReviewCampaignDefinitionLaunchBlocked as exc:
-        raise campaign_definition_launch_blocked_http_exception(exc) from exc
-    wave_request = DpmWavePreviewRequest.model_validate(
-        launch_command.create_request.model_dump(mode="json")
-    )
-    try:
-        portfolios = resolve_portfolio_inputs_for_request(
-            request=wave_request,
-            correlation_id=launch_command.correlation_id,
-            advise_authority_client=None,
-            risk_authority_client=None,
-            campaign_definition_repository=campaign_definition_repository,
-            core_resolver_factory=build_core_resolver_client,
-        )
-        wave, replay = wave_service.create_wave(
-            trigger_type=wave_request.trigger_type,
-            trigger_id=wave_request.trigger_id,
-            rationale=wave_request.rationale,
-            as_of_date=wave_request.as_of_date,
-            actor_id=wave_request.actor_id,
-            correlation_id=launch_command.correlation_id,
-            portfolios=portfolios,
-            idempotency_key=launch_command.idempotency_key,
-            mandate_repository=mandate_repository,
-            wave_repository=wave_repository,
-        )
-        launched_definition = record_bulk_review_campaign_definition_launch(
-            definition=definition,
-            wave_id=wave.wave_id,
-            launched_by=wave_request.actor_id,
-            requested_as_of_date=wave_request.as_of_date,
-            correlation_id=launch_command.correlation_id,
-            idempotency_key=launch_command.idempotency_key,
-        )
-        if launched_definition.content_hash != definition.content_hash:
-            campaign_definition_repository.record_definition_launch(definition=launched_definition)
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc, conflict_codes=()) from exc
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(
-            exc,
-            message="Bulk-review campaign definition launch audit could not be recorded.",
-        ) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replay)
 
 
 @router.post(
