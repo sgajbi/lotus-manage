@@ -225,6 +225,10 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert all(
         event["event_time"] for event in report_input["portfolio_memory_context"]["event_refs"]
     )
+    assert [
+        event["event_ref_selection_rank"]
+        for event in report_input["portfolio_memory_context"]["event_refs"]
+    ] == list(range(1, len(report_input["portfolio_memory_context"]["event_refs"]) + 1))
     assert (
         report_input["client_communication_boundary"]["boundary_id"]
         == "DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY"

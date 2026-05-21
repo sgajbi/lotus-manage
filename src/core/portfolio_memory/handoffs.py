@@ -24,6 +24,11 @@ class DpmPortfolioMemoryReportEventRef(BaseModel):
     event_identity: str = Field(description="Stable source-backed portfolio-memory event identity.")
     event_type: str = Field(description="Portfolio-memory event type.")
     event_time: str = Field(description="UTC event timestamp used for bounded ref selection.")
+    event_ref_selection_rank: int = Field(
+        description=(
+            "One-based rank assigned by the bounded event-ref selection policy after sorting."
+        )
+    )
     source_system: str = Field(description="System that owns the source event.")
     source_type: str = Field(description="Source artifact or event type.")
     source_id: str = Field(description="Source identifier.")
@@ -99,7 +104,10 @@ def build_portfolio_memory_report_context(
     """Project portfolio memory into report-safe lineage without raw source payloads."""
 
     bounded_event_limit = max(0, event_limit)
-    event_refs = [_event_ref(event) for event in memory.events[:bounded_event_limit]]
+    event_refs = [
+        _event_ref(event, event_ref_selection_rank=index)
+        for index, event in enumerate(memory.events[:bounded_event_limit], start=1)
+    ]
     event_refs_returned = len(event_refs)
     event_refs_omitted = max(0, memory.event_count - event_refs_returned)
     payload = DpmPortfolioMemoryReportContext(
@@ -125,11 +133,14 @@ def build_portfolio_memory_report_context(
     return DpmPortfolioMemoryReportContext.model_validate(payload)
 
 
-def _event_ref(event: DpmPortfolioMemoryEvent) -> DpmPortfolioMemoryReportEventRef:
+def _event_ref(
+    event: DpmPortfolioMemoryEvent, *, event_ref_selection_rank: int
+) -> DpmPortfolioMemoryReportEventRef:
     return DpmPortfolioMemoryReportEventRef(
         event_identity=event.event_identity,
         event_type=event.event_type,
         event_time=event.event_time,
+        event_ref_selection_rank=event_ref_selection_rank,
         source_system=event.source_system,
         source_type=event.source_type,
         source_id=event.source_id,

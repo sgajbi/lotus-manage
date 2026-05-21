@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T19:43:54.881718+00:00",
+  "generatedAt": "2026-05-21T19:59:33.629168+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -4075,6 +4075,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.event_ref_selection_rank",
+      "canonicalTerm": "event_ref_selection_rank",
+      "preferredName": "event_ref_selection_rank",
+      "description": "One-based rank assigned by the bounded event-ref selection policy after sorting.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -65572,6 +65586,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_time"
           },
           {
+            "name": "portfolio_memory_context.event_refs[].event_ref_selection_rank",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_selection_rank",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_rank"
+          },
+          {
             "name": "portfolio_memory_context.event_refs[].source_system",
             "location": "body",
             "required": true,
@@ -66209,6 +66231,14 @@
             "type": "string",
             "semanticId": "lotus.event_time",
             "attributeRef": "#/attributeCatalog/lotus.event_time"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_ref_selection_rank",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_selection_rank",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_rank"
           },
           {
             "name": "portfolio_memory_context.event_refs[].source_system",
@@ -107011,6 +107041,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_time"
           },
           {
+            "name": "portfolio_memory_context.event_refs[].event_ref_selection_rank",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_selection_rank",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_rank"
+          },
+          {
             "name": "portfolio_memory_context.event_refs[].source_system",
             "location": "body",
             "required": true,
@@ -114315,6 +114353,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_time"
           },
           {
+            "name": "portfolio_memory_context.event_refs[].event_ref_selection_rank",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_selection_rank",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_rank"
+          },
+          {
             "name": "portfolio_memory_context.event_refs[].source_system",
             "location": "body",
             "required": true,
@@ -114856,6 +114902,14 @@
             "type": "string",
             "semanticId": "lotus.event_time",
             "attributeRef": "#/attributeCatalog/lotus.event_time"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_ref_selection_rank",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_selection_rank",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_rank"
           },
           {
             "name": "portfolio_memory_context.event_refs[].source_system",
