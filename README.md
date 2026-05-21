@@ -159,9 +159,10 @@ handoff contexts preserve the source memory view hash, expose an explicit no-cla
 `support_boundary`, and also expose a bounded `context_content_hash` over the report-safe event
 refs with event timestamps and selection ranks plus explicit event-ref limit, selection policy,
 returned-count, omitted-count, and truncation posture. Those bounded counters are non-negative,
-and selection ranks are contiguous and one-based, so downstream consumers can reconcile lineage
-context without loading the full memory view or inferring raw source, OMS, client communication,
-global-discovery, or source-methodology support.
+selection ranks are contiguous and one-based, and the governance policy must carry identity-scheme,
+retention, redaction, audit, access, and source-authority posture, so downstream consumers can
+reconcile lineage context without loading the full memory view or inferring raw source, OMS,
+client communication, global-discovery, or source-methodology support.
 Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
 are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
 query-string formatting.

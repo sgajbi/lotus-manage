@@ -75,10 +75,12 @@ def test_outcome_report_input_carries_portfolio_memory_without_changing_hash() -
             "support_boundary": "Portfolio-memory report context test boundary.",
             "context_content_hash": "sha256:portfolio-memory-report-context",
             "governance_policy": {
+                "event_identity_scheme": "source_system:source_type:source_id:content_hash_or_content_hash_unavailable",
                 "retention_policy": "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y",
                 "redaction_policy": "NO_RAW_PAYLOADS",
                 "audit_policy": "AUDIT_READ_AND_EXPORT",
                 "access_classification": "CLIENT_CONFIDENTIAL_INTERNAL",
+                "source_authority_policy": "portfolio memory projects source-owned facts",
             },
             "event_refs": [
                 {
@@ -125,10 +127,12 @@ def test_outcome_ai_evidence_input_carries_portfolio_memory_without_changing_has
             "support_boundary": "Portfolio-memory report context test boundary.",
             "context_content_hash": "sha256:portfolio-memory-report-context",
             "governance_policy": {
+                "event_identity_scheme": "source_system:source_type:source_id:content_hash_or_content_hash_unavailable",
                 "retention_policy": "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y",
                 "redaction_policy": "NO_RAW_PAYLOADS",
                 "audit_policy": "AUDIT_READ_AND_EXPORT",
                 "access_classification": "CLIENT_CONFIDENTIAL_INTERNAL",
+                "source_authority_policy": "portfolio memory projects source-owned facts",
             },
             "event_refs": [
                 {
