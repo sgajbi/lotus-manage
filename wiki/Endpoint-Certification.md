@@ -1588,6 +1588,11 @@ Non-functional posture:
 - Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
   `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
   not inferred from these refs.
+- Proof-pack report-input and AI-evidence handoffs carry structured
+  `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence. The boundary names blocked
+  client-contact, client-message-generation, client-approval, delivery-confirmation, and
+  communication-audit capabilities plus the required future `ClientCommunicationRecord:v1` source
+  product and promotion requirements.
 
 Evidence commands:
 
@@ -2302,6 +2307,9 @@ Non-functional posture:
 
 - `lotus-manage` exposes report input only; `lotus-report` owns report materialization.
 - The payload includes Markdown and section evidence derived from immutable proof-pack truth.
+- The payload carries `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence and does not become
+  a client-ready communication, client approval request, delivery confirmation, or communication
+  audit record.
 
 Evidence commands:
 
@@ -2342,6 +2350,9 @@ Non-functional posture:
 - `lotus-manage` exposes bounded evidence only; RFC-0043 and `lotus-ai` own memo generation.
 - The payload must not be treated as approval, PM scoring, execution instruction, or client
   communication.
+- The payload carries `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence alongside forbidden
+  actions so downstream AI consumers can render the no-client-contact posture without inferring a
+  hidden communication workflow.
 
 Evidence commands:
 

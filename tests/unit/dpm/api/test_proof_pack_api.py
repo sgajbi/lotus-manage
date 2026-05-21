@@ -204,6 +204,29 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert report_input["portfolio_memory_context"]["governance_policy"]["audit_policy"] == (
         "AUDIT_READ_AND_EXPORT"
     )
+    assert (
+        report_input["client_communication_boundary"]["boundary_id"]
+        == "DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert report_input["client_communication_boundary"]["supportability_state"] == "BLOCKED"
+    assert (
+        report_input["client_communication_boundary"]["required_source_product"]
+        == "ClientCommunicationRecord:v1"
+    )
+    assert report_input["client_communication_boundary"]["client_communication_projected"] is False
+    assert report_input["client_communication_boundary"]["client_approval_projected"] is False
+    assert "client_contact" in report_input["client_communication_boundary"]["blocked_capabilities"]
+    assert report_input["client_communication_boundary"]["promotion_requirements"] == [
+        "certified_client_communication_source_owner",
+        "ClientCommunicationRecord:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "delivery_approval_and_audit_reconciliation_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "client_communication_consent_and_evidence_controls",
+    ]
     assert {
         event["event_type"] for event in report_input["portfolio_memory_context"]["event_refs"]
     } >= {"PROOF_PACK_CREATED", "MANDATE_HEALTH_SNAPSHOT"}
@@ -220,6 +243,9 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert "place_orders" in ai_input["forbidden_actions"]
     assert "score_portfolio_manager" in ai_input["forbidden_actions"]
     assert "generate_client_message" in ai_input["forbidden_actions"]
+    assert (
+        ai_input["client_communication_boundary"] == report_input["client_communication_boundary"]
+    )
 
 
 def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
@@ -445,3 +471,8 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     assert "RegimeScenarioPackEvaluation:v1" in str(regime_context_schema)
     assert "does not calculate scenario methodology" in str(regime_context_schema)
     assert "Reserved for Slice 7" not in str(operation)
+    report_schema = openapi["components"]["schemas"]["DpmProofPackReportInput"]
+    ai_schema = openapi["components"]["schemas"]["DpmProofPackAiEvidenceInput"]
+    assert "client_communication_boundary" in report_schema["properties"]
+    assert "client_communication_boundary" in ai_schema["properties"]
+    assert "DpmProofPackClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]

@@ -123,7 +123,11 @@ metadata, immutable persistence, certified APIs, source-backed mandate-context a
 RFC-0038 mandate evidence, and canonical Postgres-backed live proof. Gateway
 composition and Workbench review UX are implemented in their owning apps; report materialization is
 implemented in `lotus-render`, `lotus-report`, and `lotus-archive`; and governed AI PM memo support
-is implemented in `lotus-ai`, `lotus-gateway`, and `lotus-workbench`. The post-merge gold-pass audit
+is implemented in `lotus-ai`, `lotus-gateway`, and `lotus-workbench`. Proof-pack report-input and
+AI-evidence handoffs carry structured `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence so
+downstream consumers can see that proof packs support internal review only, not client contact,
+client-ready message generation, client approval, delivery confirmation, or communication audit
+truth. The post-merge gold-pass audit
 also records a canonical front-office risk-drawdown `partial` boundary tracked as
 `sgajbi/lotus-gateway#182`, so no unsupported proof-pack source enrichment is claimed here.
 The portfolio-memory API now publishes source-event family posture for supported manage, report,
@@ -581,6 +585,9 @@ Operationally important truths:
     `DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage wave evidence stops at internal
     operations handoff and does not contact clients, generate client-ready wave messages, collect
     client approval, confirm delivery, or certify communication audit truth.
+12. proof-pack report-input and AI-evidence handoffs expose structured
+    `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence with the same source-owner,
+    delivery/audit, consent, and downstream-realization promotion bar.
 
 ## Documentation Map
 

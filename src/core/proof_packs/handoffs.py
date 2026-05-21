@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from src.core.common.boundary_promotion import CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.proof_packs.markdown import render_proof_pack_markdown
@@ -76,6 +77,13 @@ class DpmProofPackReportInput(BaseModel):
         ),
     )
     redaction_policy: str = Field(description="Redaction policy applied to report input.")
+    client_communication_boundary: "DpmProofPackClientCommunicationBoundaryEvidence" = Field(
+        description=(
+            "Structured fail-closed evidence proving this proof-pack handoff is internal "
+            "pre-trade review evidence and does not cross into client communication, client "
+            "approval, delivery confirmation, or communication audit truth."
+        )
+    )
     evidence_ref: DpmProofPackEvidenceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical report-input hash.")
 
@@ -107,8 +115,77 @@ class DpmProofPackAiEvidenceInput(BaseModel):
     reason_codes: list[str] = Field(description="Aggregate proof-pack reason codes.")
     sections: list[DpmProofPackAiEvidenceSection] = Field(description="AI-safe evidence sections.")
     source_refs: list[DpmProofPackSourceRef] = Field(description="AI-safe source references.")
+    client_communication_boundary: "DpmProofPackClientCommunicationBoundaryEvidence" = Field(
+        description=(
+            "Structured fail-closed evidence proving this AI evidence input cannot be used for "
+            "client contact, client-ready message generation, client approval, delivery "
+            "confirmation, or communication audit truth."
+        )
+    )
     evidence_ref: DpmProofPackEvidenceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical AI-evidence input hash.")
+
+
+class DpmProofPackClientCommunicationBoundaryEvidence(BaseModel):
+    boundary_id: str = Field(
+        default="DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY",
+        description="Stable unsupported client communication boundary identifier.",
+    )
+    supportability_state: str = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for client communication.",
+    )
+    source_system: str = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported boundary evidence.",
+    )
+    source_product_name: str = Field(
+        default="DpmPreTradeProofPack",
+        description="Manage-owned source product that stops at internal pre-trade evidence.",
+    )
+    source_product_version: str = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    client_communication_projected: bool = Field(
+        default=False,
+        description="Always false: proof-pack handoffs do not project client-contact events.",
+    )
+    client_approval_projected: bool = Field(
+        default=False,
+        description="Always false: proof-pack handoffs do not project client approval events.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the client communication boundary.",
+        examples=["PROOF_PACK_CLIENT_COMMUNICATION_NOT_SUPPORTED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Client communication capabilities blocked by this boundary evidence.",
+        examples=[["client_contact", "client_message_generation", "client_approval"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before client communication can be promoted.",
+        examples=["future client-communication owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume client communication truth.",
+        examples=["ClientCommunicationRecord:v1"],
+    )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "Governance, source-product, lineage, reconciliation, consumer, downstream "
+            "realization, consent, and evidence requirements that must be met before pre-trade "
+            "proof-pack evidence can be promoted to client communication support."
+        ),
+        examples=[
+            [
+                "certified_client_communication_source_owner",
+                "ClientCommunicationRecord:v1",
+            ]
+        ],
+    )
+    summary: str = Field(description="Operator-facing no-client-communication boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
 
 def build_report_input(
@@ -154,6 +231,7 @@ def build_report_input(
         source_hashes=proof_pack.source_hashes,
         portfolio_memory_context=portfolio_memory_context,
         redaction_policy="NO_RAW_PAYLOADS",
+        client_communication_boundary=_client_communication_boundary(),
         evidence_ref=_placeholder_ref(
             ref_type=REPORT_INPUT_REF_TYPE,
             proof_pack_id=proof_pack.proof_pack_id,
@@ -209,6 +287,7 @@ def build_ai_evidence_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackAiE
         reason_codes=proof_pack.supportability.reason_codes,
         sections=sections,
         source_refs=_dedupe_source_refs(proof_pack),
+        client_communication_boundary=_client_communication_boundary(),
         evidence_ref=_placeholder_ref(
             ref_type=AI_EVIDENCE_REF_TYPE,
             proof_pack_id=proof_pack.proof_pack_id,
@@ -219,6 +298,36 @@ def build_ai_evidence_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackAiE
     payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmProofPackAiEvidenceInput.model_validate(payload)
+
+
+def _client_communication_boundary() -> DpmProofPackClientCommunicationBoundaryEvidence:
+    payload: dict[str, Any] = {
+        "boundary_id": "DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmPreTradeProofPack",
+        "source_product_version": "v1",
+        "client_communication_projected": False,
+        "client_approval_projected": False,
+        "reason_code": "PROOF_PACK_CLIENT_COMMUNICATION_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "client_contact",
+            "client_message_generation",
+            "client_approval",
+            "delivery_confirmation",
+            "communication_audit",
+        ],
+        "required_owner": "future client-communication owner",
+        "required_source_product": "ClientCommunicationRecord:v1",
+        "promotion_requirements": list(CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS),
+        "summary": (
+            "Proof-pack evidence supports internal PM, compliance, operations, report, and AI "
+            "review only. It does not contact clients, generate client-ready messages, collect "
+            "client approval, confirm delivery, or certify communication audit truth."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmProofPackClientCommunicationBoundaryEvidence.model_validate(payload)
 
 
 def assert_no_ai_forbidden_fields(payload: Any) -> None:

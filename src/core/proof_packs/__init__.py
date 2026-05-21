@@ -9,6 +9,7 @@ from src.core.proof_packs.builder import (
 from src.core.proof_packs.handoffs import (
     AI_EVIDENCE_REF_TYPE,
     REPORT_INPUT_REF_TYPE,
+    DpmProofPackClientCommunicationBoundaryEvidence,
     DpmProofPackAiEvidenceInput,
     DpmProofPackAiEvidenceSection,
     DpmProofPackReportInput,
@@ -41,6 +42,7 @@ __all__ = [
     "DpmProofPackDecisionTimelineEvent",
     "DpmProofPackAiEvidenceInput",
     "DpmProofPackAiEvidenceSection",
+    "DpmProofPackClientCommunicationBoundaryEvidence",
     "DpmProofPackEvidenceRef",
     "DpmProofPackReportInput",
     "DpmProofPackReportSection",

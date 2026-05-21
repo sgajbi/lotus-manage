@@ -91,6 +91,24 @@ def test_report_input_is_deterministic_and_contains_render_ready_context() -> No
     assert first.markdown_summary.startswith("# Pre-Trade Proof Pack")
     assert len(first.sections) == len(proof_pack.sections)
     assert first.redaction_policy == "NO_RAW_PAYLOADS"
+    assert (
+        first.client_communication_boundary.boundary_id
+        == "DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert first.client_communication_boundary.supportability_state == "BLOCKED"
+    assert first.client_communication_boundary.client_communication_projected is False
+    assert first.client_communication_boundary.client_approval_projected is False
+    assert first.client_communication_boundary.required_source_product == (
+        "ClientCommunicationRecord:v1"
+    )
+    assert "client_contact" in first.client_communication_boundary.blocked_capabilities
+    assert "certified_client_communication_source_owner" in (
+        first.client_communication_boundary.promotion_requirements
+    )
+    assert "client_communication_consent_and_evidence_controls" in (
+        first.client_communication_boundary.promotion_requirements
+    )
+    assert first.client_communication_boundary.content_hash.startswith("sha256:")
 
 
 def test_report_input_carries_portfolio_memory_without_changing_evidence_hash() -> None:
@@ -152,6 +170,16 @@ def test_ai_evidence_input_is_bounded_and_removes_forbidden_fields() -> None:
     assert "place_orders" in ai_input.forbidden_actions
     assert "score_portfolio_manager" in ai_input.forbidden_actions
     assert "generate_client_message" in ai_input.forbidden_actions
+    assert (
+        ai_input.client_communication_boundary.boundary_id
+        == "DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert ai_input.client_communication_boundary.supportability_state == "BLOCKED"
+    assert ai_input.client_communication_boundary.client_communication_projected is False
+    assert ai_input.client_communication_boundary.client_approval_projected is False
+    assert "client_message_generation" in (
+        ai_input.client_communication_boundary.blocked_capabilities
+    )
     assert_no_ai_forbidden_fields(payload)
 
 

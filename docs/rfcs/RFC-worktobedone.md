@@ -2765,6 +2765,18 @@ outcome-review and RFC-0043 guardrail posture. Focused API and handoff tests pin
 proof-pack evidence cannot be misread as permission for PM scoring, client-message generation,
 trade approval, order placement, control override, or invented evidence.
 
+2026-05-21 client-communication boundary hardening result:
+
+`DpmProofPackReportInput` and `DpmProofPackAiEvidenceInput` now also emit structured
+`DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence with blocked client-contact,
+client-message-generation, client-approval, delivery-confirmation, and communication-audit
+capabilities, required future client-communication owner, required `ClientCommunicationRecord:v1`
+source product, and promotion requirements for certified source ownership, delivery/audit
+reconciliation, consent/evidence controls, Manage consumer declaration, and Gateway/Workbench
+realization. This keeps proof packs as internal pre-trade evidence and prevents downstream report,
+archive, AI, support, and operations consumers from inferring hidden client communication or client
+approval truth.
+
 #### RFC40-WTBD-006 - Broader Risk And Performance Proof-Pack Enrichment
 
 Target business outcome:
