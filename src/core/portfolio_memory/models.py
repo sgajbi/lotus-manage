@@ -324,7 +324,12 @@ class DpmPortfolioMemory(BaseModel):
     events: list[DpmPortfolioMemoryEvent] = Field(
         description="Ordered source-backed portfolio-memory events."
     )
-    content_hash: str = Field(description="Canonical hash of the returned memory view.")
+    content_hash: str = Field(
+        description=(
+            "Canonical hash of the returned memory view excluding generated_at, so audit "
+            "consumers can reconcile equivalent source-backed views without timestamp churn."
+        )
+    )
     generated_at: str = Field(description="UTC timestamp when the read model was generated.")
 
 
@@ -431,7 +436,12 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         default=None,
         description="Canonical source content hash for the latest matching event when available.",
     )
-    content_hash: str = Field(description="Canonical hash of the portfolio-memory view.")
+    content_hash: str = Field(
+        description=(
+            "Canonical hash of the portfolio-memory view excluding generated_at, so search rows "
+            "remain replay-stable when the underlying source-backed memory is unchanged."
+        )
+    )
 
 
 class DpmPortfolioMemorySearchAppliedFilters(BaseModel):

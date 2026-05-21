@@ -205,7 +205,9 @@ def build_portfolio_memory(
         generated_at=generated_at.isoformat(),
     )
     payload = memory.model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    payload["content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"content_hash", "generated_at"})
+    )
     return DpmPortfolioMemory.model_validate(payload)
 
 
