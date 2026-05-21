@@ -139,6 +139,10 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert report_input["portfolio_memory_context"]["event_refs_returned"] == len(
                 report_input["portfolio_memory_context"]["event_refs"]
             )
+            assert report_input["portfolio_memory_context"]["event_refs_omitted"] == (
+                report_input["portfolio_memory_context"]["event_count"]
+                - report_input["portfolio_memory_context"]["event_refs_returned"]
+            )
             assert isinstance(
                 report_input["portfolio_memory_context"]["event_refs_truncated"], bool
             )

@@ -48,6 +48,12 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     event_refs_returned: int = Field(
         description="Number of event refs actually projected into this handoff context."
     )
+    event_refs_omitted: int = Field(
+        description=(
+            "Number of source memory events omitted from this bounded handoff context after "
+            "applying the event-ref limit."
+        )
+    )
     event_refs_truncated: bool = Field(
         description=(
             "Whether the source memory view contains more events than this bounded handoff "
@@ -85,6 +91,8 @@ def build_portfolio_memory_report_context(
 
     bounded_event_limit = max(0, event_limit)
     event_refs = [_event_ref(event) for event in memory.events[:bounded_event_limit]]
+    event_refs_returned = len(event_refs)
+    event_refs_omitted = max(0, memory.event_count - event_refs_returned)
     payload = DpmPortfolioMemoryReportContext(
         portfolio_id=memory.portfolio_id,
         supportability_state=memory.supportability_state,
@@ -93,8 +101,9 @@ def build_portfolio_memory_report_context(
         reason_codes=memory.reason_codes,
         content_hash=memory.content_hash,
         event_ref_limit=bounded_event_limit,
-        event_refs_returned=len(event_refs),
-        event_refs_truncated=memory.event_count > len(event_refs),
+        event_refs_returned=event_refs_returned,
+        event_refs_omitted=event_refs_omitted,
+        event_refs_truncated=event_refs_omitted > 0,
         support_boundary=PORTFOLIO_MEMORY_REPORT_CONTEXT_SUPPORT_BOUNDARY,
         context_content_hash="sha256:pending",
         governance_policy=memory.governance_policy,

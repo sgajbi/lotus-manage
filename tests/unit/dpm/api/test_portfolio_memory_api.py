@@ -1046,9 +1046,11 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
     assert full_context.context_content_hash != narrower_context.context_content_hash
     assert full_context.event_ref_limit == 12
     assert full_context.event_refs_returned == len(full_context.event_refs)
+    assert full_context.event_refs_omitted == 0
     assert full_context.event_refs_truncated is False
     assert narrower_context.event_ref_limit == 1
     assert narrower_context.event_refs_returned == 1
+    assert narrower_context.event_refs_omitted == narrower_context.event_count - 1
     assert narrower_context.event_refs_truncated is True
     assert "does not project raw source payloads" in full_context.support_boundary
     assert "project OMS acknowledgement/fill/settlement events" in full_context.support_boundary
@@ -1675,6 +1677,7 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert "support_boundary" in report_context_schema["properties"]
     assert "event_ref_limit" in report_context_schema["properties"]
     assert "event_refs_returned" in report_context_schema["properties"]
+    assert "event_refs_omitted" in report_context_schema["properties"]
     assert "event_refs_truncated" in report_context_schema["properties"]
     assert (
         "Explicit no-claim boundary"

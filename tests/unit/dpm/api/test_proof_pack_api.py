@@ -206,6 +206,10 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert report_input["portfolio_memory_context"]["event_refs_returned"] == len(
         report_input["portfolio_memory_context"]["event_refs"]
     )
+    assert report_input["portfolio_memory_context"]["event_refs_omitted"] == (
+        report_input["portfolio_memory_context"]["event_count"]
+        - report_input["portfolio_memory_context"]["event_refs_returned"]
+    )
     assert isinstance(report_input["portfolio_memory_context"]["event_refs_truncated"], bool)
     assert (
         "does not project raw source payloads"
