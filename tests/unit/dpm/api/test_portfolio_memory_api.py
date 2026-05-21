@@ -1297,6 +1297,10 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["items"][0]["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
     assert payload["items"][0]["latest_event_time"] is not None
     assert payload["items"][0]["content_hash"].startswith("sha256:")
+    assert payload["supportability_state_counts"] == {"DEGRADED": 1}
+    assert payload["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
+    assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
+    assert payload["source_system_counts"]["lotus-manage"] == 1
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
     assert "project OMS" in payload["support_boundary"]
     assert openapi.status_code == 200
@@ -1307,6 +1311,9 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         "global portfolio-universe discovery product"
         in (search_schema["properties"]["items"]["description"])
     )
+    assert "supportability_state_counts" in search_schema["properties"]
+    assert "event_type_counts" in search_schema["properties"]
+    assert "source_system_counts" in search_schema["properties"]
 
 
 def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
@@ -1383,6 +1390,38 @@ def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_
         }
         for item in page.items
     )
+
+
+def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination() -> None:
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    pm_quality_summary_repository.save_summary_invocation(
+        invocation=_pm_quality_summary_invocation()
+    )
+
+    page = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        pm_quality_score_run_repository=pm_quality_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_repository,
+        event_type="PM_QUALITY_SUMMARY_INVOCATION",
+        limit=1,
+    )
+
+    assert page.returned_count == 1
+    assert page.total_count == 2
+    assert page.supportability_state_counts == {"READY": 2}
+    assert page.event_type_counts == {
+        "PM_QUALITY_SCORE_RUN": 2,
+        "PM_QUALITY_SUMMARY_INVOCATION": 2,
+    }
+    assert page.source_system_counts == {
+        "lotus-ai": 2,
+        "lotus-core": 2,
+        "lotus-manage": 2,
+    }
 
 
 def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_global_discovery() -> (

@@ -285,6 +285,14 @@ def search_portfolio_memory(
         reverse=True,
     )
     total_count = len(items)
+    supportability_state_counts = _counts(item.supportability_state for item in items)
+    event_type_counts: dict[str, int] = {}
+    source_system_counts: dict[str, int] = {}
+    for item in items:
+        for event_type, count in item.event_type_counts.items():
+            event_type_counts[event_type] = event_type_counts.get(event_type, 0) + count
+        for source_system in item.source_systems:
+            source_system_counts[source_system] = source_system_counts.get(source_system, 0) + 1
     page = items[offset : offset + limit]
     return DpmPortfolioMemorySearchPage(
         items=page,
@@ -293,6 +301,9 @@ def search_portfolio_memory(
         returned_count=len(page),
         total_count=total_count,
         scanned_portfolio_count=len(candidate_ids),
+        supportability_state_counts=dict(sorted(supportability_state_counts.items())),
+        event_type_counts=dict(sorted(event_type_counts.items())),
+        source_system_counts=dict(sorted(source_system_counts.items())),
         generated_at=generated_at.isoformat(),
         support_boundary=(
             "Manage-local memory search indexes persisted Manage evidence and explicit "

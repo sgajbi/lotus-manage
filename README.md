@@ -140,12 +140,15 @@ score payloads, raw review rationale, generated summary text, prompt bodies, mod
 creating portfolio-level rankings or downstream summary UX. The
 portfolio-memory API also exposes `GET /api/v1/rebalance/portfolio-memory/search` as a bounded
 Manage-local index over persisted proof-pack, wave, monitoring-exception, campaign-definition,
-outcome-review, and explicit caller-supplied portfolio identifiers; it is not global
-portfolio-universe discovery and does not project OMS acknowledgement, fill, settlement, or
-execution-status events. Persisted bulk-review campaign definitions now project bounded portfolio
-memory events for definition, approval-decision, assignment-action, assignment-task, and
-maker-checker control evidence without copying raw campaign payloads, recalculating membership,
-or claiming external workflow orchestration, client contact, order routing, or OMS execution. The
+outcome-review, PM-quality, and explicit caller-supplied portfolio identifiers. Search responses
+include pre-pagination facet counts for supportability state, event type, and represented source
+system so consumers can triage the bounded result set without loading every portfolio timeline; it
+is not global portfolio-universe discovery and does not project OMS acknowledgement, fill,
+settlement, or execution-status events. Persisted bulk-review campaign definitions now project
+bounded portfolio memory events for definition, approval-decision, assignment-action,
+assignment-task, and maker-checker control evidence without copying raw campaign payloads,
+recalculating membership, or claiming external workflow orchestration, client contact, order
+routing, or OMS execution. The
 portfolio-memory response also carries structured
 `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked OMS capabilities, the
 required future execution/OMS owner, and `ExternalOrderExecutionAcknowledgement:v1` as the required

@@ -2022,7 +2022,8 @@ Functional behavior:
   waves, monitoring exceptions, outcome reviews, and optional caller-supplied portfolio ids,
 - filters the search index by event type, supportability state, and represented source system,
 - returns search summaries with event counts, event-type counts, latest event posture, source
-  systems, reason codes, content hash, total count, scanned portfolio count, and an explicit support
+  systems, reason codes, content hash, total count, scanned portfolio count, pre-pagination
+  supportability-state, event-type, and source-system facet counts, and an explicit support
   boundary,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,

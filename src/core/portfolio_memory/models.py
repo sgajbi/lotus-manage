@@ -374,6 +374,32 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
         examples=[3],
     )
+    supportability_state_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Aggregate count of matching portfolio-memory summaries by supportability state before "
+            "pagination. Counts are derived from Manage-local search results only and are not a "
+            "global portfolio-universe census."
+        ),
+        examples=[{"READY": 2, "PENDING_REVIEW": 1}],
+    )
+    event_type_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Aggregate count of matching portfolio-memory events by event type before pagination. "
+            "Counts are derived from returned Manage-local memory evidence and do not imply "
+            "external source-owner event search."
+        ),
+        examples=[{"WAVE_HANDOFF_READY": 1, "OUTCOME_REVIEW_CREATED": 1}],
+    )
+    source_system_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Aggregate count of matching portfolio-memory summaries by represented source system "
+            "before pagination. Counts are derived from Manage-local evidence only."
+        ),
+        examples=[{"lotus-manage": 2, "lotus-core": 1}],
+    )
     generated_at: str = Field(description="UTC timestamp when the search page was generated.")
     support_boundary: str = Field(
         description=("Explicit no-claim boundary for the bounded memory search surface."),
