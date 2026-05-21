@@ -201,6 +201,7 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     )
     assert report_input["portfolio_memory_context"]["portfolio_id"] == "pf_1"
     assert report_input["portfolio_memory_context"]["content_hash"].startswith("sha256:")
+    assert report_input["portfolio_memory_context"]["context_content_hash"].startswith("sha256:")
     assert report_input["portfolio_memory_context"]["governance_policy"]["audit_policy"] == (
         "AUDIT_READ_AND_EXPORT"
     )

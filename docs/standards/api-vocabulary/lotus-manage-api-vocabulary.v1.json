@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T17:43:53.793556+00:00",
+  "generatedAt": "2026-05-21T18:00:58.564727+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -2435,6 +2435,20 @@
       ],
       "observedTypes": [
         "object",
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.context_content_hash",
+      "canonicalTerm": "context_content_hash",
+      "preferredName": "context_content_hash",
+      "description": "Canonical hash of this bounded report-context envelope, including event refs and the source memory content hash, so downstream report and AI consumers can reconcile equivalent lineage contexts without relying on the full memory view.",
+      "example": "sample_context_content_hash",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
         "string"
       ]
     },
@@ -65392,6 +65406,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.context_content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.context_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.context_content_hash"
+          },
+          {
             "name": "portfolio_memory_context.governance_policy",
             "location": "body",
             "required": true,
@@ -106551,6 +106573,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.context_content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.context_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.context_content_hash"
+          },
+          {
             "name": "portfolio_memory_context.governance_policy",
             "location": "body",
             "required": true,
@@ -113789,6 +113819,14 @@
             "type": "string",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.context_content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.context_content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.context_content_hash"
           },
           {
             "name": "portfolio_memory_context.governance_policy",

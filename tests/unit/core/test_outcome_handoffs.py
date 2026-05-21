@@ -67,6 +67,7 @@ def test_outcome_report_input_carries_portfolio_memory_without_changing_hash() -
             "source_systems": ["lotus-manage"],
             "reason_codes": ["outcome_review_ready"],
             "content_hash": "sha256:portfolio-memory",
+            "context_content_hash": "sha256:portfolio-memory-report-context",
             "governance_policy": {
                 "retention_policy": "DPM_PORTFOLIO_MEMORY_SOURCE_LINEAGE_7Y",
                 "redaction_policy": "NO_RAW_PAYLOADS",

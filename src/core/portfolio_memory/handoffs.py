@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.models import DpmPortfolioMemory, DpmPortfolioMemoryEvent
 
 PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_LIMIT = 12
@@ -34,6 +35,13 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     source_systems: list[str] = Field(description="Source systems represented by the memory view.")
     reason_codes: list[str] = Field(description="Aggregate bounded reason codes.")
     content_hash: str = Field(description="Canonical source-backed memory view hash.")
+    context_content_hash: str = Field(
+        description=(
+            "Canonical hash of this bounded report-context envelope, including event refs and "
+            "the source memory content hash, so downstream report and AI consumers can reconcile "
+            "equivalent lineage contexts without relying on the full memory view."
+        )
+    )
     governance_policy: dict[str, str] = Field(
         description="Portfolio-memory retention, redaction, access, audit, and source policy."
     )
@@ -49,16 +57,21 @@ def build_portfolio_memory_report_context(
 ) -> DpmPortfolioMemoryReportContext:
     """Project portfolio memory into report-safe lineage without raw source payloads."""
 
-    return DpmPortfolioMemoryReportContext(
+    payload = DpmPortfolioMemoryReportContext(
         portfolio_id=memory.portfolio_id,
         supportability_state=memory.supportability_state,
         event_count=memory.event_count,
         source_systems=memory.source_systems,
         reason_codes=memory.reason_codes,
         content_hash=memory.content_hash,
+        context_content_hash="sha256:pending",
         governance_policy=memory.governance_policy,
         event_refs=[_event_ref(event) for event in memory.events[: max(0, event_limit)]],
+    ).model_dump(mode="json")
+    payload["context_content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"context_content_hash"})
     )
+    return DpmPortfolioMemoryReportContext.model_validate(payload)
 
 
 def _event_ref(event: DpmPortfolioMemoryEvent) -> DpmPortfolioMemoryReportEventRef:

@@ -44,6 +44,7 @@ from src.core.pm_quality.models import (
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 from src.core.portfolio_memory import service as portfolio_memory_service
+from src.core.portfolio_memory.handoffs import build_portfolio_memory_report_context
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
     build_portfolio_memory_event_lookup,
@@ -1024,6 +1025,28 @@ def test_portfolio_memory_event_lookup_hash_excludes_generated_at() -> None:
     )
 
 
+def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+    )
+
+    full_context = build_portfolio_memory_report_context(memory, event_limit=12)
+    narrower_context = build_portfolio_memory_report_context(memory, event_limit=1)
+
+    assert full_context.content_hash == memory.content_hash
+    assert narrower_context.content_hash == memory.content_hash
+    assert full_context.context_content_hash.startswith("sha256:")
+    assert narrower_context.context_content_hash.startswith("sha256:")
+    assert full_context.context_content_hash != narrower_context.context_content_hash
+    assert len(full_context.event_refs) > len(narrower_context.event_refs)
+
+
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
@@ -1638,6 +1661,12 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
         "excluding generated_at" in event_lookup_schema["properties"]["content_hash"]["description"]
     )
     assert "support_boundary" in event_lookup_schema["properties"]
+    report_context_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryReportContext"]
+    assert "context_content_hash" in report_context_schema["properties"]
+    assert (
+        "bounded report-context envelope"
+        in report_context_schema["properties"]["context_content_hash"]["description"]
+    )
 
 
 def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
