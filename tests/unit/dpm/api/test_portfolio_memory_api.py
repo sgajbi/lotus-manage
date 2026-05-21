@@ -1290,6 +1290,8 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     payload = response.json()
     assert payload["returned_count"] == 1
     assert payload["total_count"] == 1
+    assert payload["has_more"] is False
+    assert payload["next_offset"] is None
     assert payload["scanned_portfolio_count"] == 2
     assert payload["items"][0]["portfolio_id"] == PORTFOLIO_ID
     assert payload["items"][0]["event_count"] >= 6
@@ -1329,6 +1331,8 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         in (search_schema["properties"]["items"]["description"])
     )
     assert "supportability_state_counts" in search_schema["properties"]
+    assert "has_more" in search_schema["properties"]
+    assert "next_offset" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
     assert "matching_event_supportability_state_counts" in search_schema["properties"]
     assert "matching_event_source_system_counts" in search_schema["properties"]
@@ -1584,6 +1588,8 @@ def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination
 
     assert page.returned_count == 1
     assert page.total_count == 2
+    assert page.has_more is True
+    assert page.next_offset == 1
     assert page.supportability_state_counts == {"READY": 2}
     assert page.event_type_counts == {"PM_QUALITY_SUMMARY_INVOCATION": 2}
     assert page.matching_event_supportability_state_counts == {"READY": 2}
@@ -1703,6 +1709,8 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
 
     assert empty_filtered.returned_count == 1
     assert empty_filtered.total_count == 1
+    assert empty_filtered.has_more is False
+    assert empty_filtered.next_offset is None
     assert empty_filtered.scanned_portfolio_count == 1
     assert empty_filtered.supportability_state_counts == {"EMPTY": 1}
     assert empty_filtered.event_type_counts == {}

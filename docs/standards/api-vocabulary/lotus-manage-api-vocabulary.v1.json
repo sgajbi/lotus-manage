@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T15:36:55.674994+00:00",
+  "generatedAt": "2026-05-21T15:51:54.360611+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5741,6 +5741,20 @@
       ]
     },
     {
+      "semanticId": "lotus.has_more",
+      "canonicalTerm": "has_more",
+      "preferredName": "has_more",
+      "description": "Whether additional matching Manage-local portfolio-memory summaries are available after this page.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
       "semanticId": "lotus.hashes",
       "canonicalTerm": "hashes",
       "preferredName": "hashes",
@@ -8430,6 +8444,20 @@
       "preferredName": "next_cursor",
       "description": "Opaque cursor for retrieving the next result page.",
       "example": "next_cursor_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.next_offset",
+      "canonicalTerm": "next_offset",
+      "preferredName": "next_offset",
+      "description": "Offset to request the next page when has_more is true; null when this page exhausts the bounded Manage-local result set.",
+      "example": "next_offset_example",
       "type": "object",
       "locations": [
         "body"
@@ -117130,6 +117158,22 @@
             "type": "integer",
             "semanticId": "lotus.total_count",
             "attributeRef": "#/attributeCatalog/lotus.total_count"
+          },
+          {
+            "name": "has_more",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.has_more",
+            "attributeRef": "#/attributeCatalog/lotus.has_more"
+          },
+          {
+            "name": "next_offset",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.next_offset",
+            "attributeRef": "#/attributeCatalog/lotus.next_offset"
           },
           {
             "name": "scanned_portfolio_count",

@@ -446,6 +446,21 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         description="Total matching Manage-local portfolio-memory summaries before pagination.",
         examples=[1],
     )
+    has_more: bool = Field(
+        description=(
+            "Whether additional matching Manage-local portfolio-memory summaries are available "
+            "after this page."
+        ),
+        examples=[False],
+    )
+    next_offset: int | None = Field(
+        default=None,
+        description=(
+            "Offset to request the next page when has_more is true; null when this page exhausts "
+            "the bounded Manage-local result set."
+        ),
+        examples=[50],
+    )
     scanned_portfolio_count: int = Field(
         description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
         examples=[3],
