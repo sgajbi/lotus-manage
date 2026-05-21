@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
+from src.core.waves.campaign_discovery import (
+    GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES,
+    GLOBAL_CAMPAIGN_UNIVERSE_PROMOTION_REQUIREMENTS,
+    GLOBAL_CAMPAIGN_UNIVERSE_REQUIRED_SOURCE_PRODUCT,
+)
 from src.core.waves.models import (
     DpmWaveClientCommunicationBoundaryEvidence,
     DpmWaveExternalExecutionBoundaryEvidence,
@@ -105,11 +110,91 @@ class DpmWaveReportInput(BaseModel):
             "or delivery confirmation."
         )
     )
+    campaign_universe_boundary: "DpmWaveCampaignUniverseBoundaryEvidence | None" = Field(
+        default=None,
+        description=(
+            "Structured fail-closed evidence for BULK_REVIEW_CAMPAIGN waves proving Manage uses "
+            "persisted source-backed campaign-definition candidates only and does not discover "
+            "the global portfolio universe, recalculate source facts, or recompute membership."
+        ),
+    )
     external_execution_claimed: bool = Field(
         description="Always false until an external OMS/execution owner is implemented."
     )
     evidence_ref: DpmWaveReportEvidenceRef = Field(description="Evidence reference for this input.")
     content_hash: str = Field(description="Canonical report-input hash.")
+
+
+class DpmWaveCampaignUniverseBoundaryEvidence(BaseModel):
+    boundary_id: Literal["DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY"] = Field(
+        default="DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY",
+        description="Stable unsupported global portfolio-universe campaign boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for global campaign universe discovery.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported boundary evidence.",
+    )
+    source_product_name: Literal["DpmWaveReportInput"] = Field(
+        default="DpmWaveReportInput",
+        description="Manage-owned report-input product that consumes persisted wave truth only.",
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    discovery_mode: Literal["PERSISTED_DEFINITION_ONLY"] = Field(
+        default="PERSISTED_DEFINITION_ONLY",
+        description=(
+            "Manage report-input handoff mode for campaign waves. It only preserves the already "
+            "persisted campaign candidate set represented by the wave."
+        ),
+    )
+    source_scope: Literal["PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"] = Field(
+        default="PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
+        description="Supported candidate source scope for this handoff.",
+    )
+    global_portfolio_universe_discovery: Literal["UNSUPPORTED"] = Field(
+        default="UNSUPPORTED",
+        description="Manage report inputs do not scan or discover the bank-wide portfolio universe.",
+    )
+    global_portfolio_universe_owner_posture: Literal["DEFERRED_SOURCE_OWNER"] = Field(
+        default="DEFERRED_SOURCE_OWNER",
+        description="Future bank-wide campaign discovery requires an explicit source owner.",
+    )
+    required_source_product: Literal["GlobalPortfolioUniverseCampaignCandidateSet:v1"] = Field(
+        default="GlobalPortfolioUniverseCampaignCandidateSet:v1",
+        description="Source product required before global campaign universe discovery can promote.",
+    )
+    candidate_source_ref_posture: Literal["SOURCE_BACKED", "NO_CANDIDATES"] = Field(
+        description="Whether the persisted campaign wave has candidate source references."
+    )
+    source_systems: list[str] = Field(
+        description="Sorted source systems represented by trigger and item source references.",
+        examples=[["lotus-core", "lotus-manage"]],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Global campaign discovery capabilities blocked by this boundary evidence.",
+        examples=[["bank_wide_portfolio_universe_scan", "membership_recomputation"]],
+    )
+    promotion_requirements: list[str] = Field(
+        description="Requirements before global portfolio-universe campaign discovery can promote.",
+        examples=[
+            [
+                "certified_source_owner",
+                "GlobalPortfolioUniverseCampaignCandidateSet:v1",
+            ]
+        ],
+    )
+    operating_boundaries: list[str] = Field(
+        description="Machine-readable no-claim boundaries for downstream report consumers.",
+        examples=[["NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY", "NO_MEMBERSHIP_RECOMPUTATION"]],
+    )
+    summary: str = Field(description="Operator-facing no-global-campaign-universe summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
 
 def build_wave_report_input(
@@ -159,6 +244,7 @@ def build_wave_report_input(
         client_communication_boundary=DpmWaveClientCommunicationBoundaryEvidence.model_validate(
             proof_pack_posture["client_communication_boundary"]
         ),
+        campaign_universe_boundary=_campaign_universe_boundary(wave),
         external_execution_claimed=False,
         evidence_ref=DpmWaveReportEvidenceRef(
             ref_type=WAVE_REPORT_INPUT_REF_TYPE,
@@ -173,6 +259,48 @@ def build_wave_report_input(
     )
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmWaveReportInput.model_validate(payload)
+
+
+def _campaign_universe_boundary(
+    wave: DpmRebalanceWave,
+) -> DpmWaveCampaignUniverseBoundaryEvidence | None:
+    if wave.trigger.trigger_type != "BULK_REVIEW_CAMPAIGN":
+        return None
+    source_refs = _dedupe_source_refs(wave)
+    source_systems = sorted(
+        {source_ref.source_system for source_ref in source_refs if source_ref.source_system.strip()}
+    )
+    payload: dict[str, Any] = {
+        "boundary_id": "DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmWaveReportInput",
+        "source_product_version": "v1",
+        "discovery_mode": "PERSISTED_DEFINITION_ONLY",
+        "source_scope": "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
+        "global_portfolio_universe_discovery": "UNSUPPORTED",
+        "global_portfolio_universe_owner_posture": "DEFERRED_SOURCE_OWNER",
+        "required_source_product": GLOBAL_CAMPAIGN_UNIVERSE_REQUIRED_SOURCE_PRODUCT,
+        "candidate_source_ref_posture": "SOURCE_BACKED" if source_refs else "NO_CANDIDATES",
+        "source_systems": source_systems,
+        "blocked_capabilities": list(GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES),
+        "promotion_requirements": list(GLOBAL_CAMPAIGN_UNIVERSE_PROMOTION_REQUIREMENTS),
+        "operating_boundaries": [
+            "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
+            "NO_SOURCE_FACT_RECALCULATION",
+            "NO_MEMBERSHIP_RECOMPUTATION",
+            "NO_ORDER_GENERATION",
+            "NO_OMS_EXECUTION_CLAIM",
+        ],
+        "summary": (
+            "Bulk-review campaign wave report inputs preserve persisted campaign-definition "
+            "candidate evidence only. They do not discover the global portfolio universe, "
+            "recalculate source facts, recompute membership, generate orders, or claim OMS "
+            "execution."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmWaveCampaignUniverseBoundaryEvidence.model_validate(payload)
 
 
 def _report_item(item: DpmRebalanceWaveItem) -> DpmWaveReportItem:

@@ -168,7 +168,12 @@ wiki-published. Wave proof-pack posture and report-input contracts now also carr
 `DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence, with promotion requirements for a future
 `ClientCommunicationRecord:v1` owner, delivery/approval/audit reconciliation, consent/evidence
 controls, and downstream realization before any client-contact, client-message, client-approval,
-delivery-confirmation, or communication-audit capability can be promoted. PM-book cohort discovery
+delivery-confirmation, or communication-audit capability can be promoted. `BULK_REVIEW_CAMPAIGN`
+wave report inputs now also carry nullable `DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY` evidence when
+applicable, making persisted-definition-only discovery, deferred global-universe source ownership,
+required `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide scan/candidate
+discovery/source-fact recalculation/membership recomputation capabilities, and no-order/no-OMS
+operating boundaries machine-readable for report, archive, and AI consumers. PM-book cohort discovery
 is implemented for `PM_BOOK_REVIEW` through the
 source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO model-change discovery is
 implemented through `CioModelChangeAffectedCohort:v1`; and bounded risk-event discovery is
@@ -588,6 +593,11 @@ Operationally important truths:
 12. proof-pack report-input and AI-evidence handoffs expose structured
     `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence with the same source-owner,
     delivery/audit, consent, and downstream-realization promotion bar.
+13. bulk-review campaign wave report-input handoffs expose structured
+    `DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY` evidence when the trigger is
+    `BULK_REVIEW_CAMPAIGN`. Manage preserves persisted source-backed campaign-definition
+    candidates only and does not discover the global portfolio universe, recalculate source facts,
+    recompute membership, generate orders, or claim OMS execution.
 
 ## Documentation Map
 

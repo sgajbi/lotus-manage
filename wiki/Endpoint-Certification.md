@@ -1790,6 +1790,12 @@ Functional coverage:
   redaction policy, wave/content hashes, the same structured external-execution and
   client-communication boundary evidence, and `external_execution_claimed=false` for downstream
   report generation,
+- report input returns nullable `DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY` evidence for
+  `BULK_REVIEW_CAMPAIGN` waves so report/archive/AI consumers can machine-read persisted
+  campaign-definition-only discovery, deferred global portfolio-universe source ownership,
+  required `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide scan/candidate
+  discovery/source-fact recalculation/membership recomputation capabilities, and no-order/no-OMS
+  operating boundaries,
 - report input fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` if persisted wave handoff
   evidence ever contains an external execution claim; proof-pack posture remains available for
   operator diagnosis, but unsupported OMS truth is not propagated downstream,

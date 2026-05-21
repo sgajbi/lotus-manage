@@ -62,6 +62,7 @@ from src.core.waves import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
     DpmWaveHandoffRef,
+    DpmWaveSourceRef,
     DpmWaveTrigger,
     DpmWaveVersionConflictError,
     WaveItemState,
@@ -5625,6 +5626,7 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         report_payload["client_communication_boundary"]
         == proof_payload["client_communication_boundary"]
     )
+    assert report_payload["campaign_universe_boundary"] is None
     assert report_payload["evidence_ref"]["ref_type"] == "DPM_WAVE_REPORT_INPUT"
     assert report_payload["evidence_ref"]["content_hash"] == report_payload["content_hash"]
     assert report_payload["content_hash"].startswith("sha256:")
@@ -5637,6 +5639,101 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
 
     assert missing.status_code == 404
     assert missing.json()["detail"]["code"] == "DPM_WAVE_NOT_FOUND"
+
+
+def test_bulk_review_campaign_wave_report_input_carries_universe_boundary() -> None:
+    wave_repository = InMemoryDpmWaveRepository()
+    wave = DpmRebalanceWave(
+        wave_id="dwv_campaign_report_boundary",
+        state="HANDOFF_READY",
+        trigger=DpmWaveTrigger(
+            trigger_type="BULK_REVIEW_CAMPAIGN",
+            trigger_id="campaign-holdings-apple-tesla-20260510:2026.05",
+            rationale="Review source-backed discretionary portfolios from a persisted campaign.",
+            source_refs=[
+                DpmWaveSourceRef(
+                    source_system="lotus-manage",
+                    source_type="BulkReviewCampaignDefinition",
+                    source_id="campaign-holdings-apple-tesla-20260510:2026.05",
+                    content_hash="sha256:campaign-definition",
+                )
+            ],
+        ),
+        as_of_date="2026-05-10",
+        created_by="pm_001",
+        correlation_id="corr-campaign-report-boundary",
+        items=[
+            DpmRebalanceWaveItem(
+                wave_item_id="dwi_campaign_report_boundary",
+                portfolio_id=PORTFOLIO_ID,
+                mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+                state="HANDOFF_READY",
+                proof_pack_id="dpp_campaign_report_boundary",
+                reason_codes=["BULK_REVIEW_CAMPAIGN_MEMBER", "WAVE_ITEM_HANDOFF_READY"],
+                source_refs=[
+                    DpmWaveSourceRef(
+                        source_system="lotus-core",
+                        source_type="HoldingsAsOf",
+                        source_id="holdings-asof-pb-sg-global-bal-001",
+                        content_hash="sha256:holdings",
+                    )
+                ],
+                diagnostics={
+                    "proof_pack_state": "READY",
+                    "external_execution_claimed": False,
+                },
+            )
+        ],
+        aggregate_metrics=DpmWaveAggregateMetrics(
+            item_count=1,
+            state_counts={"HANDOFF_READY": 1},
+            ready_item_count=1,
+            blocked_item_count=0,
+            review_required_item_count=0,
+            source_degraded_item_count=0,
+        ),
+        handoff_refs=[
+            DpmWaveHandoffRef(
+                handoff_ref_id="dwh_campaign_report_boundary",
+                wave_id="dwv_campaign_report_boundary",
+                item_ids=["dwi_campaign_report_boundary"],
+                actor_id="ops_001",
+                reason_code="READY_FOR_OPERATIONS_REVIEW",
+                correlation_id="corr-campaign-report-boundary-handoff",
+                external_execution_claimed=False,
+                content_hash="sha256:campaign-handoff",
+            )
+        ],
+    )
+    wave_repository.save_wave(wave=wave, idempotency_key=None, request_hash=None)
+
+    with _client(InMemoryDpmMandateRepository(), wave_repository) as client:
+        report_input = client.get(
+            "/api/v1/rebalance/waves/dwv_campaign_report_boundary/report-input"
+        )
+
+    assert report_input.status_code == 200
+    boundary = report_input.json()["campaign_universe_boundary"]
+    assert boundary["boundary_id"] == "DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY"
+    assert boundary["supportability_state"] == "BLOCKED"
+    assert boundary["discovery_mode"] == "PERSISTED_DEFINITION_ONLY"
+    assert boundary["source_scope"] == "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"
+    assert boundary["global_portfolio_universe_discovery"] == "UNSUPPORTED"
+    assert boundary["global_portfolio_universe_owner_posture"] == "DEFERRED_SOURCE_OWNER"
+    assert boundary["required_source_product"] == "GlobalPortfolioUniverseCampaignCandidateSet:v1"
+    assert boundary["candidate_source_ref_posture"] == "SOURCE_BACKED"
+    assert boundary["source_systems"] == ["lotus-core", "lotus-manage"]
+    assert boundary["blocked_capabilities"] == [
+        "bank_wide_portfolio_universe_scan",
+        "candidate_portfolio_discovery",
+        "candidate_eligibility_calculation",
+        "source_fact_recalculation",
+        "membership_recomputation",
+    ]
+    assert "GlobalPortfolioUniverseCampaignCandidateSet:v1" in (boundary["promotion_requirements"])
+    assert "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY" in boundary["operating_boundaries"]
+    assert "NO_MEMBERSHIP_RECOMPUTATION" in boundary["operating_boundaries"]
+    assert boundary["content_hash"].startswith("sha256:")
 
 
 def test_wave_report_input_rejects_external_execution_claims() -> None:
@@ -5788,5 +5885,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         report_input_schema_ref.rsplit("/", 1)[1]
     ]
     assert "client_communication_boundary" in report_input_schema["properties"]
+    assert "campaign_universe_boundary" in report_input_schema["properties"]
     assert "DpmWaveClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]
+    assert "DpmWaveCampaignUniverseBoundaryEvidence" in openapi["components"]["schemas"]
     assert "excludes portfolio identifiers" in supportability["description"]

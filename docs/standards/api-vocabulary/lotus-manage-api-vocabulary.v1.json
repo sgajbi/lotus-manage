@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T10:32:28.678671+00:00",
+  "generatedAt": "2026-05-21T11:15:19.153826+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1737,6 +1737,20 @@
       "observedTypes": [
         "object",
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.campaign_universe_boundary",
+      "canonicalTerm": "campaign_universe_boundary",
+      "preferredName": "campaign_universe_boundary",
+      "description": "Structured fail-closed evidence for BULK_REVIEW_CAMPAIGN waves proving Manage uses persisted source-backed campaign-definition candidates only and does not discover the global portfolio universe, recalculate source facts, or recompute membership.",
+      "example": "campaign_universe_boundary_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -106475,6 +106489,150 @@
           },
           {
             "name": "client_communication_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "campaign_universe_boundary",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.campaign_universe_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_universe_boundary"
+          },
+          {
+            "name": "campaign_universe_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "campaign_universe_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "campaign_universe_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "campaign_universe_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "campaign_universe_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "campaign_universe_boundary.discovery_mode",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.discovery_mode",
+            "attributeRef": "#/attributeCatalog/lotus.discovery_mode"
+          },
+          {
+            "name": "campaign_universe_boundary.source_scope",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_scope",
+            "attributeRef": "#/attributeCatalog/lotus.source_scope"
+          },
+          {
+            "name": "campaign_universe_boundary.global_portfolio_universe_discovery",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.global_portfolio_universe_discovery",
+            "attributeRef": "#/attributeCatalog/lotus.global_portfolio_universe_discovery"
+          },
+          {
+            "name": "campaign_universe_boundary.global_portfolio_universe_owner_posture",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.global_portfolio_universe_owner_posture",
+            "attributeRef": "#/attributeCatalog/lotus.global_portfolio_universe_owner_posture"
+          },
+          {
+            "name": "campaign_universe_boundary.required_source_product",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "campaign_universe_boundary.candidate_source_ref_posture",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.candidate_source_ref_posture",
+            "attributeRef": "#/attributeCatalog/lotus.candidate_source_ref_posture"
+          },
+          {
+            "name": "campaign_universe_boundary.source_systems",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.source_systems",
+            "attributeRef": "#/attributeCatalog/lotus.source_systems"
+          },
+          {
+            "name": "campaign_universe_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "campaign_universe_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "campaign_universe_boundary.operating_boundaries",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.operating_boundaries",
+            "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
+          },
+          {
+            "name": "campaign_universe_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "campaign_universe_boundary.content_hash",
             "location": "body",
             "required": true,
             "type": "string",
