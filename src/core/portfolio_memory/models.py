@@ -365,7 +365,10 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         description="Returned event count by portfolio-memory event type."
     )
     source_systems: list[str] = Field(
-        description="Source systems represented by this portfolio's returned events."
+        description=(
+            "Source systems represented by this portfolio's returned events, including event "
+            "owners, source refs, and artifact refs."
+        )
     )
     reason_codes: list[str] = Field(description="Bounded aggregate reason codes.")
     latest_event_time: str | None = Field(

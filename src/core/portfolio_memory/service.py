@@ -187,15 +187,7 @@ def build_portfolio_memory(
     event_type_counts = _counts(event.event_type for event in events)
     reason_codes = sorted({reason for event in events for reason in event.reason_codes})
     source_systems = sorted(
-        {
-            source_system
-            for event in events
-            for source_system in [
-                event.source_system,
-                *(ref.source_system for ref in event.source_refs),
-            ]
-            if source_system
-        }
+        {source_system for event in events for source_system in _event_source_systems(event)}
     )
     memory = DpmPortfolioMemory(
         portfolio_id=portfolio_id,
