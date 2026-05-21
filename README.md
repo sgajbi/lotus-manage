@@ -269,7 +269,10 @@ workflow task creation, assignment, synchronization, escalation, and completion 
 requires future `ExternalWorkflowOrchestrationRecord:v1` source ownership, lists the promotion
 requirements for certified source ownership, source-product contracts, lineage/freshness,
 consumer declaration, Gateway/Workbench realization, and external workflow audit/reconciliation
-evidence, and carries a deterministic content hash. Manage also supports append-only
+evidence, and carries a deterministic content hash. Campaign operating queue, approval inbox,
+workflow board, assignment plan, and workflow automation pages validate returned row count, page
+limit/offset, and posture/action count maps against the returned rows so audit summaries cannot
+drift from the page payload. Manage also supports append-only
 assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

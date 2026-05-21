@@ -5,7 +5,7 @@ import json
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
@@ -19,6 +19,7 @@ from src.core.waves.campaign_discovery import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_APPROVAL_INBOX_OPERATING_BOUNDARIES,
 )
+from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
 
 
 CampaignApprovalInboxStatus = Literal[
@@ -84,13 +85,23 @@ class DpmBulkReviewCampaignApprovalInboxPage(BaseModel):
     product_name: Literal["BulkReviewCampaignApprovalInbox"] = "BulkReviewCampaignApprovalInbox"
     product_version: Literal["v1"] = "v1"
     items: list[DpmBulkReviewCampaignApprovalInboxItem]
-    limit: int
-    offset: int
-    count: int
+    limit: int = Field(ge=1)
+    offset: int = Field(ge=0)
+    count: int = Field(ge=0)
     status_counts: dict[str, int] = Field(
         description="Inbox item counts by approval-attention posture for the returned page."
     )
     content_hash: str = Field(description="Canonical hash over the approval inbox page.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignApprovalInboxPage:
+        validate_page_count(count=self.count, item_count=len(self.items))
+        validate_count_map(
+            counts=self.status_counts,
+            observed_values=(item.inbox_status for item in self.items),
+            field_name="status_counts",
+        )
+        return self
 
 
 def build_bulk_review_campaign_approval_inbox_item(
