@@ -1296,6 +1296,9 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["items"][0]["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
     assert payload["items"][0]["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
     assert payload["items"][0]["latest_event_time"] is not None
+    assert payload["items"][0]["matching_event_count"] == 1
+    assert payload["items"][0]["latest_matching_event_time"] is not None
+    assert payload["items"][0]["latest_matching_event_type"] == "WAVE_HANDOFF_READY"
     assert payload["items"][0]["content_hash"].startswith("sha256:")
     assert payload["supportability_state_counts"] == {"DEGRADED": 1}
     assert payload["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
@@ -1314,6 +1317,9 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "supportability_state_counts" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
     assert "source_system_counts" in search_schema["properties"]
+    search_item_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchItem"]
+    assert "matching_event_count" in search_item_schema["properties"]
+    assert "latest_matching_event_type" in search_item_schema["properties"]
     event_type_parameter = next(
         parameter
         for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
@@ -1364,6 +1370,8 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
         "CONSTRUCTION_ALTERNATIVE_SET": 1,
         "CONSTRUCTION_ALTERNATIVE_SELECTED": 1,
     }
+    assert payload["items"][0]["matching_event_count"] == 1
+    assert payload["items"][0]["latest_matching_event_type"] == "CONSTRUCTION_ALTERNATIVE_SELECTED"
     assert "lotus-manage" in payload["items"][0]["source_systems"]
 
 
@@ -1433,6 +1441,34 @@ def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_
         }
         for item in page.items
     )
+    assert all(item.matching_event_count == 1 for item in page.items)
+    assert all(
+        item.latest_matching_event_type == "PM_QUALITY_SUMMARY_INVOCATION" for item in page.items
+    )
+
+
+def test_portfolio_memory_search_requires_source_system_on_matching_event_type() -> None:
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    pm_quality_summary_repository.save_summary_invocation(
+        invocation=_pm_quality_summary_invocation()
+    )
+
+    page = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        pm_quality_score_run_repository=pm_quality_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_repository,
+        event_type="PM_QUALITY_SUMMARY_INVOCATION",
+        source_system="lotus-core",
+    )
+
+    assert page.returned_count == 0
+    assert page.total_count == 0
+    assert page.event_type_counts == {}
+    assert page.source_system_counts == {}
 
 
 def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination() -> None:
@@ -1581,6 +1617,9 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
     assert empty_filtered.items[0].supportability_state == "EMPTY"
     assert empty_filtered.items[0].latest_event_time is None
     assert empty_filtered.items[0].latest_event_type is None
+    assert empty_filtered.items[0].matching_event_count == 0
+    assert empty_filtered.items[0].latest_matching_event_time is None
+    assert empty_filtered.items[0].latest_matching_event_type is None
     assert default_filtered.returned_count == 0
 
 

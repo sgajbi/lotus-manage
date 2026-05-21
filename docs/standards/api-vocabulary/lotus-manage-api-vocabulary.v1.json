@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T13:44:23.073494+00:00",
+  "generatedAt": "2026-05-21T14:16:08.402923+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -6850,6 +6850,34 @@
       ]
     },
     {
+      "semanticId": "lotus.latest_matching_event_time",
+      "canonicalTerm": "latest_matching_event_time",
+      "preferredName": "latest_matching_event_time",
+      "description": "Latest event timestamp among events that match the applied filters. This may differ from latest_event_time when an older event caused the search hit.",
+      "example": "2026-03-02T10:30:00Z",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.latest_matching_event_type",
+      "canonicalTerm": "latest_matching_event_type",
+      "preferredName": "latest_matching_event_type",
+      "description": "Latest event type among events that match the applied filters. This preserves why a search result matched without changing the latest overall event posture.",
+      "example": "latest_matching_event_type_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.latest_monitoring_run",
       "canonicalTerm": "latest_monitoring_run",
       "preferredName": "latest_monitoring_run",
@@ -7460,6 +7488,20 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.matching_event_count",
+      "canonicalTerm": "matching_event_count",
+      "preferredName": "matching_event_count",
+      "description": "Number of events in this portfolio-memory view that match the applied event, source system, and supportability filters. When no filters are supplied this equals event_count.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
       ]
     },
     {
@@ -116808,6 +116850,30 @@
             "type": "object",
             "semanticId": "lotus.latest_event_type",
             "attributeRef": "#/attributeCatalog/lotus.latest_event_type"
+          },
+          {
+            "name": "items[].matching_event_count",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.matching_event_count",
+            "attributeRef": "#/attributeCatalog/lotus.matching_event_count"
+          },
+          {
+            "name": "items[].latest_matching_event_time",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_time",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_time"
+          },
+          {
+            "name": "items[].latest_matching_event_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.latest_matching_event_type",
+            "attributeRef": "#/attributeCatalog/lotus.latest_matching_event_type"
           },
           {
             "name": "items[].content_hash",

@@ -352,6 +352,28 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         default=None,
         description="Latest event type in the returned portfolio-memory view.",
     )
+    matching_event_count: int = Field(
+        description=(
+            "Number of events in this portfolio-memory view that match the applied event, source "
+            "system, and supportability filters. When no filters are supplied this equals "
+            "event_count."
+        ),
+        examples=[1],
+    )
+    latest_matching_event_time: str | None = Field(
+        default=None,
+        description=(
+            "Latest event timestamp among events that match the applied filters. This may differ "
+            "from latest_event_time when an older event caused the search hit."
+        ),
+    )
+    latest_matching_event_type: PortfolioMemoryEventType | None = Field(
+        default=None,
+        description=(
+            "Latest event type among events that match the applied filters. This preserves why a "
+            "search result matched without changing the latest overall event posture."
+        ),
+    )
     content_hash: str = Field(description="Canonical hash of the portfolio-memory view.")
 
 
