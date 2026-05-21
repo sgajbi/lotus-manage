@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T12:24:04.691704+00:00",
+  "generatedAt": "2026-05-21T12:46:22.738348+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -12233,7 +12233,7 @@
       "semanticId": "lotus.source_event_family_posture",
       "canonicalTerm": "source_event_family_posture",
       "preferredName": "source_event_family_posture",
-      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit OMS, external order acknowledgement, client communication, and PM-quality projection boundaries.",
+      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit campaign task-transition, OMS, external order acknowledgement, client communication, and PM-quality projection boundaries.",
       "example": [
         "source_event_family_posture_item_example"
       ],

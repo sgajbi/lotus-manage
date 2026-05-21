@@ -599,6 +599,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION"] == 1
     assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION"] == 1
     assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK"] == 1
+    assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"] == 1
     assert memory.event_type_counts["BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL"] == 1
     assert memory.event_type_counts["OUTCOME_REVIEW_CREATED"] == 1
     assert memory.event_type_counts["PM_QUALITY_SCORE_RUN"] == 1
@@ -636,6 +637,7 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
         "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
         "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION",
         "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
     ]
     assert "without discovering the global portfolio universe" in (
@@ -842,6 +844,34 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
         "PENDING_REVIEW"
     )
     assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"].metadata[
+            "transition_reason_projected"
+        ]
+        is False
+    )
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"].metadata[
+            "external_workflow_orchestration_claimed"
+        ]
+        is False
+    )
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"].metadata[
+            "approval_state_mutation_claimed"
+        ]
+        is False
+    )
+    assert (
+        campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"].metadata[
+            "external_execution_claimed"
+        ]
+        is False
+    )
+    assert (
+        "transition_reason"
+        not in campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"].metadata
+    )
+    assert (
         campaign_events["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION"].metadata[
             "external_workflow_orchestration_claimed"
         ]
@@ -940,6 +970,7 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     assert payload["event_type_counts"]["PM_QUALITY_REVIEW_ACTION"] == 1
     assert payload["event_type_counts"]["PM_QUALITY_SUMMARY_INVOCATION"] == 1
     assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
+    assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION"] == 1
     assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL"] == 1
     family_posture = {
         posture["family_key"]: posture for posture in payload["source_event_family_posture"]
@@ -1210,7 +1241,7 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     ]
     assert "hidden portfolio-memory truth" in posture_schema["properties"]["summary"]["description"]
     assert (
-        "external order acknowledgement, client communication, and PM-quality projection boundaries"
+        "campaign task-transition, OMS, external order acknowledgement, client communication, and PM-quality projection boundaries"
         in memory_schema["properties"]["source_event_family_posture"]["description"]
     )
     communication_boundary_schema = openapi_json["components"]["schemas"][
@@ -1393,6 +1424,7 @@ def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_
         "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION": 1,
         "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION": 1,
         "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK": 1,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION": 1,
         "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL": 1,
     }
     assert "does not discover the global portfolio universe" in payload["support_boundary"]

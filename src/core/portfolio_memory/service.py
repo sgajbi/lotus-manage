@@ -65,6 +65,7 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentAction,
     DpmBulkReviewCampaignDefinitionAssignmentTask,
+    DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
     DpmBulkReviewCampaignDefinitionMakerCheckerControl,
     DpmBulkReviewCampaignDefinitionApprovalDecision,
 )
@@ -505,15 +506,17 @@ def _source_event_family_posture() -> list[DpmPortfolioMemorySourceEventFamilyPo
                 "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
                 "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
                 "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+                "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION",
                 "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
             ],
             route="/api/v1/rebalance/portfolio-memory/{portfolio_id}",
             reason_code="BULK_REVIEW_CAMPAIGN_WORKFLOW_SOURCE_EVENTS_SUPPORTED",
             summary=(
                 "Bulk-review campaign definitions and Manage-side approval, assignment, task, "
-                "and maker-checker evidence are projected from persisted campaign truth without "
-                "discovering the global portfolio universe, recalculating membership, "
-                "or orchestrating external workflow, client-contact, order, or OMS actions."
+                "task-transition, and maker-checker evidence are projected from persisted "
+                "campaign truth without discovering the global portfolio universe, "
+                "recalculating membership, or orchestrating external workflow, client-contact, "
+                "order, or OMS actions."
             ),
         ),
         DpmPortfolioMemorySourceEventFamilyPosture(
@@ -1129,6 +1132,15 @@ def _campaign_definition_events(
             for task in definition.assignment_tasks
         )
         events.extend(
+            _campaign_assignment_task_transition_event(
+                definition=definition,
+                task=task,
+                transition=transition,
+            )
+            for task in definition.assignment_tasks
+            for transition in task.transitions
+        )
+        events.extend(
             _campaign_maker_checker_control_event(definition=definition, control=control)
             for control in definition.maker_checker_controls
         )
@@ -1329,6 +1341,74 @@ def _campaign_assignment_task_event(
             "transition_count": len(task.transitions),
             "correlation_id": task.correlation_id,
             "forbidden_actions": task.forbidden_actions,
+            "external_workflow_orchestration_claimed": False,
+            "approval_state_mutation_claimed": False,
+            "client_contact_claimed": False,
+            "external_execution_claimed": False,
+        },
+    )
+
+
+def _campaign_assignment_task_transition_event(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+) -> DpmPortfolioMemoryEvent:
+    return DpmPortfolioMemoryEvent(
+        event_id=(
+            "memory:campaign_definition:"
+            f"{definition.campaign_id}:{definition.campaign_version}:"
+            f"assignment-task:{task.task_id}:transition:{transition.transition_id}"
+        ),
+        event_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION",
+        event_time=transition.transitioned_at.isoformat(),
+        actor=transition.transitioned_by,
+        source_system="lotus-manage",
+        source_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION",
+        source_id=transition.transition_id,
+        status=transition.to_status,
+        supportability_state=_assignment_task_state(
+            transition.to_status,
+            transition.sla_posture,
+        ),
+        summary=(
+            f"Bulk-review campaign assignment task {task.task_ref} transition "
+            f"{transition.transition_type} recorded."
+        ),
+        reason_codes=[
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_RECORDED",
+            transition.transition_type,
+            transition.to_status,
+            transition.sla_posture,
+        ],
+        source_refs=[_from_wave_source_ref(ref) for ref in transition.source_refs],
+        artifact_refs=[
+            _campaign_definition_artifact_ref(definition),
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-manage",
+                source_type="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+                source_id=task.task_id,
+                content_hash=task.content_hash,
+            ),
+        ],
+        content_hash=transition.content_hash,
+        metadata={
+            "campaign_id": definition.campaign_id,
+            "campaign_version": definition.campaign_version,
+            "task_id": task.task_id,
+            "task_ref": task.task_ref,
+            "task_type": task.task_type,
+            "transition_ref": transition.transition_ref,
+            "transition_type": transition.transition_type,
+            "from_status": transition.from_status,
+            "to_status": transition.to_status,
+            "assigned_actor_count": len(transition.assigned_actor_ids),
+            "escalation_tier": transition.escalation_tier,
+            "sla_posture": transition.sla_posture,
+            "due_at_present": transition.due_at is not None,
+            "correlation_id": transition.correlation_id,
+            "transition_reason_projected": False,
             "external_workflow_orchestration_claimed": False,
             "approval_state_mutation_claimed": False,
             "client_contact_claimed": False,

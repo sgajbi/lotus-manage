@@ -18,6 +18,7 @@ PortfolioMemoryEventType = Literal[
     "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION",
     "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION",
     "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK",
+    "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION",
     "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL",
     "OUTCOME_REVIEW_CREATED",
     "OUTCOME_REVIEW_EVENT",
@@ -305,8 +306,8 @@ class DpmPortfolioMemory(BaseModel):
         default_factory=list,
         description=(
             "Supported and deferred source-event families in the portfolio-memory contract, "
-            "including explicit OMS, external order acknowledgement, client communication, and "
-            "PM-quality projection boundaries."
+            "including explicit campaign task-transition, OMS, external order acknowledgement, "
+            "client communication, and PM-quality projection boundaries."
         ),
     )
     external_execution_boundary: DpmPortfolioMemoryExternalExecutionBoundaryEvidence = Field(
