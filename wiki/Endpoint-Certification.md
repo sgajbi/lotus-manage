@@ -2051,6 +2051,8 @@ Functional behavior:
 - returns one exact source-backed portfolio-memory event by portfolio id and event id, including
   the event identity, memory content hash, replay-stable lookup envelope hash, and explicit
   no-claim boundary for audit drilldown from a search hit,
+- validates portfolio-memory search-page returned-count, total-count, has-more, next-offset,
+  supportability-count, source-system-count, and matching-event-count posture against returned rows,
 - emits portfolio-memory view and search-page content hashes that exclude `generated_at`, so
   equivalent source-backed views remain replay-stable for audit reconciliation,
 - validates portfolio-memory aggregate event count, event-type counts, source-system coverage,

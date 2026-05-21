@@ -447,7 +447,7 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         description="Portfolio identifier represented in the Manage-local memory index.",
         examples=["PB_SG_GLOBAL_BAL_001"],
     )
-    event_count: int = Field(description="Returned memory event count for this portfolio.")
+    event_count: int = Field(ge=0, description="Returned memory event count for this portfolio.")
     supportability_state: PortfolioMemorySupportabilityState = Field(
         description="Worst supportability state represented by this portfolio's memory events."
     )
@@ -470,6 +470,7 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         description="Latest event type in the returned portfolio-memory view.",
     )
     matching_event_count: int = Field(
+        ge=0,
         description=(
             "Number of events in this portfolio-memory view that match the applied event, source "
             "system, and supportability filters. When no filters are supplied this equals "
@@ -528,6 +529,60 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         )
     )
 
+    @model_validator(mode="after")
+    def validate_search_item_metadata(self) -> "DpmPortfolioMemorySearchItem":
+        expected_event_count = sum(self.event_type_counts.values())
+        if self.event_count != expected_event_count:
+            raise ValueError("event_count must equal the sum of event_type_counts.")
+
+        if self.matching_event_count > self.event_count:
+            raise ValueError("matching_event_count must not exceed event_count.")
+
+        if self.source_systems != sorted(set(self.source_systems)):
+            raise ValueError("source_systems must be sorted and unique.")
+
+        if self.reason_codes != sorted(set(self.reason_codes)):
+            raise ValueError("reason_codes must be sorted and unique.")
+
+        latest_event_fields = [self.latest_event_time, self.latest_event_type]
+        if self.event_count == 0:
+            if self.supportability_state != "EMPTY":
+                raise ValueError("empty search items must use EMPTY supportability_state.")
+            if self.event_type_counts or self.source_systems or self.reason_codes:
+                raise ValueError("empty search items must not carry aggregate event metadata.")
+            if any(value is not None for value in latest_event_fields):
+                raise ValueError("empty search items must not carry latest event metadata.")
+        else:
+            if self.supportability_state == "EMPTY":
+                raise ValueError("non-empty search items must not use EMPTY supportability_state.")
+            if any(value is None for value in latest_event_fields):
+                raise ValueError("non-empty search items must carry latest event metadata.")
+
+        latest_matching_fields = [
+            self.latest_matching_event_time,
+            self.latest_matching_event_type,
+            self.latest_matching_event_id,
+            self.latest_matching_event_identity,
+            self.latest_matching_event_source_system,
+            self.latest_matching_event_source_type,
+            self.latest_matching_event_source_id,
+        ]
+        if self.matching_event_count == 0:
+            if any(value is not None for value in latest_matching_fields):
+                raise ValueError(
+                    "search items with no matching events must not carry latest matching event metadata."
+                )
+            if self.latest_matching_event_content_hash is not None:
+                raise ValueError(
+                    "search items with no matching events must not carry latest matching event content hash."
+                )
+        elif any(value is None for value in latest_matching_fields):
+            raise ValueError(
+                "search items with matching events must carry latest matching event metadata."
+            )
+
+        return self
+
 
 class DpmPortfolioMemorySearchAppliedFilters(BaseModel):
     portfolio_ids: list[str] = Field(
@@ -565,10 +620,11 @@ class DpmPortfolioMemorySearchPage(BaseModel):
             "global portfolio-universe discovery product."
         )
     )
-    limit: int = Field(description="Requested page size.", examples=[50])
-    offset: int = Field(description="Requested page offset.", examples=[0])
-    returned_count: int = Field(description="Number of search items returned.", examples=[1])
+    limit: int = Field(ge=1, description="Requested page size.", examples=[50])
+    offset: int = Field(ge=0, description="Requested page offset.", examples=[0])
+    returned_count: int = Field(ge=0, description="Number of search items returned.", examples=[1])
     total_count: int = Field(
+        ge=0,
         description="Total matching Manage-local portfolio-memory summaries before pagination.",
         examples=[1],
     )
@@ -581,6 +637,7 @@ class DpmPortfolioMemorySearchPage(BaseModel):
     )
     next_offset: int | None = Field(
         default=None,
+        ge=0,
         description=(
             "Offset to request the next page when has_more is true; null when this page exhausts "
             "the bounded Manage-local result set."
@@ -588,10 +645,12 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         examples=[50],
     )
     scanned_portfolio_count: int = Field(
+        ge=0,
         description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
         examples=[3],
     )
     source_scan_limit: int = Field(
+        ge=1,
         description=(
             "Maximum rows requested from each Manage-local evidence repository while building this "
             "bounded search page."
@@ -663,12 +722,97 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         ],
     )
 
+    @model_validator(mode="after")
+    def validate_search_page_metadata(self) -> "DpmPortfolioMemorySearchPage":
+        if self.returned_count != len(self.items):
+            raise ValueError("returned_count must equal the number of items.")
+
+        if self.returned_count > self.total_count:
+            raise ValueError("returned_count must not exceed total_count.")
+
+        expected_has_more = self.offset + self.returned_count < self.total_count
+        if self.has_more != expected_has_more:
+            raise ValueError("has_more must match pagination posture.")
+
+        if self.has_more:
+            expected_next_offset = self.offset + self.returned_count
+            if self.next_offset != expected_next_offset:
+                raise ValueError("next_offset must equal offset plus returned_count.")
+            if self.next_offset <= self.offset:
+                raise ValueError("next_offset must advance when has_more is true.")
+        elif self.next_offset is not None:
+            raise ValueError("next_offset must be null when has_more is false.")
+
+        _validate_non_negative_counts(
+            label="supportability_state_counts", counts=self.supportability_state_counts
+        )
+        _validate_non_negative_counts(label="event_type_counts", counts=self.event_type_counts)
+        _validate_non_negative_counts(
+            label="matching_event_supportability_state_counts",
+            counts=self.matching_event_supportability_state_counts,
+        )
+        _validate_non_negative_counts(
+            label="matching_event_source_system_counts",
+            counts=self.matching_event_source_system_counts,
+        )
+        _validate_non_negative_counts(
+            label="source_system_counts", counts=self.source_system_counts
+        )
+
+        if sum(self.supportability_state_counts.values()) != self.total_count:
+            raise ValueError("supportability_state_counts must sum to total_count.")
+
+        page_supportability_counts = _counts(item.supportability_state for item in self.items)
+        for state, count in page_supportability_counts.items():
+            if self.supportability_state_counts.get(state, 0) < count:
+                raise ValueError(
+                    "supportability_state_counts must cover returned page item states."
+                )
+
+        page_source_system_counts: dict[str, int] = {}
+        for item in self.items:
+            for source_system in item.source_systems:
+                page_source_system_counts[source_system] = (
+                    page_source_system_counts.get(source_system, 0) + 1
+                )
+        for source_system, count in page_source_system_counts.items():
+            if self.source_system_counts.get(source_system, 0) < count:
+                raise ValueError("source_system_counts must cover returned page item sources.")
+
+        if self.total_count == self.returned_count:
+            if self.supportability_state_counts != page_supportability_counts:
+                raise ValueError(
+                    "supportability_state_counts must match returned items when the page is complete."
+                )
+            if self.source_system_counts != page_source_system_counts:
+                raise ValueError(
+                    "source_system_counts must match returned items when the page is complete."
+                )
+            expected_matching_event_count = sum(item.matching_event_count for item in self.items)
+            if (
+                sum(self.matching_event_supportability_state_counts.values())
+                != expected_matching_event_count
+            ):
+                raise ValueError(
+                    "matching_event_supportability_state_counts must sum to matching events when the page is complete."
+                )
+
+        return self
+
 
 def _counts(values: Iterable[str]) -> dict[str, int]:
     counts: dict[str, int] = {}
     for value in values:
         counts[value] = counts.get(value, 0) + 1
     return counts
+
+
+def _validate_non_negative_counts(*, label: str, counts: dict[str, int]) -> None:
+    negative_keys = [key for key, value in counts.items() if value < 0]
+    if negative_keys:
+        raise ValueError(
+            f"{label} values must be non-negative for keys: {', '.join(negative_keys)}."
+        )
 
 
 def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:

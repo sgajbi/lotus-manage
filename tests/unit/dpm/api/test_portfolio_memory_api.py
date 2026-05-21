@@ -46,7 +46,7 @@ from src.core.pm_quality.models import (
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 from src.core.portfolio_memory import service as portfolio_memory_service
-from src.core.portfolio_memory.models import DpmPortfolioMemory
+from src.core.portfolio_memory.models import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.handoffs import (
     DpmPortfolioMemoryReportContext,
     build_portfolio_memory_report_context,
@@ -1658,6 +1658,58 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         if parameter["name"] == "event_type"
     )
     assert "Unsupported event types are rejected" in event_type_parameter["description"]
+
+
+def test_portfolio_memory_search_page_rejects_inconsistent_metadata() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    page = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        portfolio_ids=[PORTFOLIO_ID],
+        event_type="WAVE_HANDOFF_READY",
+        source_system="lotus-manage",
+        generated_at=datetime(2026, 5, 22, 10, 30, tzinfo=timezone.utc),
+    )
+
+    inconsistent_returned = page.model_dump(mode="json")
+    inconsistent_returned["returned_count"] = page.returned_count + 1
+    with pytest.raises(ValidationError, match="returned_count must equal"):
+        DpmPortfolioMemorySearchPage.model_validate(inconsistent_returned)
+
+    inconsistent_has_more = page.model_dump(mode="json")
+    inconsistent_has_more["has_more"] = True
+    inconsistent_has_more["next_offset"] = page.offset + page.returned_count
+    with pytest.raises(ValidationError, match="has_more must match"):
+        DpmPortfolioMemorySearchPage.model_validate(inconsistent_has_more)
+
+    inconsistent_next_offset = page.model_dump(mode="json")
+    inconsistent_next_offset["total_count"] = page.returned_count + 1
+    inconsistent_next_offset["supportability_state_counts"] = {
+        page.items[0].supportability_state: page.returned_count + 1
+    }
+    inconsistent_next_offset["has_more"] = True
+    inconsistent_next_offset["next_offset"] = page.offset
+    with pytest.raises(ValidationError, match="next_offset must equal"):
+        DpmPortfolioMemorySearchPage.model_validate(inconsistent_next_offset)
+
+    inconsistent_supportability_counts = page.model_dump(mode="json")
+    inconsistent_supportability_counts["supportability_state_counts"] = {}
+    with pytest.raises(ValidationError, match="supportability_state_counts must sum"):
+        DpmPortfolioMemorySearchPage.model_validate(inconsistent_supportability_counts)
+
+    inconsistent_source_counts = page.model_dump(mode="json")
+    inconsistent_source_counts["source_system_counts"] = {}
+    with pytest.raises(ValidationError, match="source_system_counts must cover"):
+        DpmPortfolioMemorySearchPage.model_validate(inconsistent_source_counts)
+
+    inconsistent_item = page.model_dump(mode="json")
+    inconsistent_item["items"][0]["matching_event_count"] = (
+        inconsistent_item["items"][0]["event_count"] + 1
+    )
+    with pytest.raises(ValidationError, match="matching_event_count must not exceed"):
+        DpmPortfolioMemorySearchPage.model_validate(inconsistent_item)
 
 
 def test_portfolio_memory_search_normalizes_text_filters_before_matching() -> None:
