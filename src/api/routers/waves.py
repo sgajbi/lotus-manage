@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Literal, cast
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, status
 
-from src.api.observability import record_wave_supportability
 from src.api.dependencies import (
     get_advise_authority_client,
     get_campaign_definition_repository,
@@ -66,6 +65,7 @@ from src.api.routers.wave_openapi_examples import (
 from src.api.routers.wave_portfolio_resolution import (
     resolve_portfolio_inputs_for_request,
 )
+from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -2249,34 +2249,8 @@ def get_wave_supportability(
     wave_id: str,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveSupportabilityResponse:
-    try:
-        payload = wave_service.wave_supportability(
-            wave_id=wave_id,
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        record_wave_supportability(
-            surface="rebalance/waves/supportability",
-            supportability_state="not_found",
-            reason="wave_not_found",
-        )
-        raise wave_lookup_http_exception(exc) from exc
-    supportability_state = str(payload["supportability_state"])
-    reason = str(payload["reason"])
-    record_wave_supportability(
-        surface="rebalance/waves/supportability",
-        supportability_state=supportability_state,
-        reason=reason,
+    return get_wave_supportability_response(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        logger=logger,
     )
-    logger.info(
-        "wave.supportability.inspected",
-        extra={
-            "extra_fields": {
-                "wave_state": payload["wave_state"],
-                "supportability_state": supportability_state,
-                "reason": reason,
-                "issue_count": len(cast(list[object], payload["issues"])),
-            }
-        },
-    )
-    return DpmWaveSupportabilityResponse.model_validate(payload)
