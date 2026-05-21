@@ -14,6 +14,7 @@ from src.core.pm_quality.models import (
     PmQualityReviewActionState,
     PmQualityReviewActionTargetType,
     PmQualityReviewActionType,
+    build_pm_quality_approval_workflow_boundary,
 )
 
 
@@ -59,6 +60,8 @@ def build_pm_quality_review_action(
             "hr_decision",
             "conduct_enforcement",
             "client_contact",
+            "approval_workflow",
+            "client_approval",
             "trade_approval",
             "order_routing",
             "oms_execution",
@@ -66,6 +69,7 @@ def build_pm_quality_review_action(
         ],
         "operating_boundaries": [
             "IMMUTABLE_REVIEW_ACTION_LEDGER",
+            "NO_APPROVAL_WORKFLOW",
             "NO_SCORE_RECALCULATION",
             "NO_FAIRNESS_RECOMPUTATION",
             "NO_PM_RANKING",
@@ -74,6 +78,9 @@ def build_pm_quality_review_action(
             "NO_TRADE_APPROVAL",
             "NO_ORDER_OR_OMS_EXECUTION",
         ],
+        "approval_workflow_boundary": build_pm_quality_approval_workflow_boundary().model_dump(
+            mode="json"
+        ),
         "generated_at": generated_at,
         "correlation_id": correlation_id.strip(),
     }

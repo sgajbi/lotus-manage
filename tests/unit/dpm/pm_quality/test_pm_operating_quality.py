@@ -223,7 +223,19 @@ def test_pm_quality_review_action_records_bounded_target_evidence() -> None:
         "PM_QUALITY_REVIEW_ACTION_STATE_REVIEW_REQUIRED",
     ]
     assert any(ref.source_type == "PmOperatingQualityScoreRun" for ref in action.source_refs)
+    assert "NO_APPROVAL_WORKFLOW" in action.operating_boundaries
     assert "NO_SCORE_RECALCULATION" in action.operating_boundaries
+    assert action.approval_workflow_boundary.boundary_id == (
+        "PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY"
+    )
+    assert action.approval_workflow_boundary.supportability_state == "BLOCKED"
+    assert action.approval_workflow_boundary.approval_workflow_projected is False
+    assert action.approval_workflow_boundary.trade_approval_projected is False
+    assert "cio_approval_workflow" in action.approval_workflow_boundary.blocked_capabilities
+    assert action.approval_workflow_boundary.required_source_product == (
+        "PmQualityApprovalWorkflowRecord:v1"
+    )
+    assert action.approval_workflow_boundary.content_hash.startswith("sha256:")
     assert "compensation_decision" in action.forbidden_uses
 
     with pytest.raises(ValueError, match="PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH"):

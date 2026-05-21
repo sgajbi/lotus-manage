@@ -345,7 +345,11 @@ The review-action route family now supports preview and immutable create/read/li
 bounded `PmOperatingQualityReviewAction:v1` ledger rows over existing score-run or
 fairness-analysis evidence, preserving target content hashes and bank review references without
 mutating score runs, recomputing fairness posture, ranking PMs, creating HR/compensation/conduct
-decisions, contacting clients, approving trades, routing orders, or claiming OMS execution.
+decisions, contacting clients, approving trades, routing orders, or claiming OMS execution. Each
+row carries structured `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence with a deterministic
+content hash, proving that immutable review-action evidence is not a CIO approval workflow,
+policy approval, client approval, trade approval, HR/conduct decision, order route, or OMS
+execution claim.
 The support-summary history route family now supports review-gated preview and immutable
 create/read/list lifecycle at
 `POST /api/v1/rebalance/pm-operating-quality/summary-invocations/preview`,
@@ -598,6 +602,11 @@ Operationally important truths:
     `BULK_REVIEW_CAMPAIGN`. Manage preserves persisted source-backed campaign-definition
     candidates only and does not discover the global portfolio universe, recalculate source facts,
     recompute membership, generate orders, or claim OMS execution.
+14. PM operating-quality review actions expose structured
+    `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence. Manage records immutable review-action
+    ledger rows over existing score-run or fairness-analysis evidence only; it does not mutate
+    approval workflow state, approve policies or trades, contact clients, create HR or conduct
+    decisions, route orders, or claim OMS execution.
 
 ## Documentation Map
 

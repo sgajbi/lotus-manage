@@ -53,7 +53,11 @@
   Governance approval fails closed for missing approval, invalid or expired expiry, and
   unauthorized actors. Review actions preserve target score-run or fairness-analysis content hashes
   without recalculating scores, recomputing fairness, ranking PMs, or creating HR, compensation,
-  conduct, client-contact, trade, order, OMS, or execution decisions.
+  conduct, client-contact, trade, order, OMS, or execution decisions. Review actions also carry
+  structured `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence with a deterministic content hash so
+  consumers can distinguish immutable ledger evidence from unsupported CIO approval workflow,
+  policy approval, client approval, trade approval, HR/conduct, order-routing, or OMS execution
+  claims.
 
 - Product ID: `lotus-manage:PmOperatingQualityFairnessAnalysis:v1`
 - Product role: governed PM operating quality fairness-analysis evidence generated from persisted

@@ -75,6 +75,9 @@ mainline validated. Approval workflow beyond immutable review actions remains fu
 RFC42-WTBD-006 partial row with source-owned stateless MWR source-preconverted FX evidence, but it
 does not move the count because stateful per-input FX evidence, broader FX methodology, predictive
 execution, and OMS remain unfinished.
+The PM-quality review-action approval-workflow boundary hardening slice adds structured
+`PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence to Manage review-action rows, advancing the
+residual approval-workflow non-claim without changing the WTBD counts.
 Earlier source slices include the RFC40-WTBD-009
 selected-alternative regime-scenario proof-pack preservation slice, the RFC-0043 owner-side AI
 workflow-pack truth reintegration slice, the RFC41-WTBD-003 manage risk-event consumer slice, the
@@ -4321,6 +4324,15 @@ fairness-analysis content hash, bounded bank review reference, rationale, actor,
 source refs. Stored reads do not recalculate scores, recompute fairness, rank PMs, create HR,
 compensation, conduct, client-contact, trade, order, OMS, or execution decisions, or claim a broader
 approval workflow beyond immutable review evidence.
+
+2026-05-21 PM-quality approval-workflow boundary hardening addendum:
+
+Review-action rows now carry structured `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence with a
+deterministic content hash, fail-closed supportability state, blocked capabilities, required future
+`PmQualityApprovalWorkflowRecord:v1` source product, and promotion requirements for any future
+approval-workflow support. This advances the residual approval-workflow boundary by making the
+no-approval-workflow posture machine-readable, but it does not close or promote approval workflow
+beyond immutable review actions.
 
 2026-05-20 PM-quality summary-invocation history addendum:
 
