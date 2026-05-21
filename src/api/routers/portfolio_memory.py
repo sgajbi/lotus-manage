@@ -1,8 +1,8 @@
 """API routes for RFC-0040 portfolio memory."""
 
-from typing import cast
+from typing import cast, get_args
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.dependencies import (
     get_construction_repository,
@@ -24,7 +24,10 @@ from src.core.pm_quality.repository import (
     DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.portfolio_memory import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
-from src.core.portfolio_memory.models import PortfolioMemorySupportabilityState
+from src.core.portfolio_memory.models import (
+    PortfolioMemoryEventType,
+    PortfolioMemorySupportabilityState,
+)
 from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -35,6 +38,8 @@ router = APIRouter(
     prefix="/rebalance/portfolio-memory",
     tags=["lotus-manage Portfolio Memory"],
 )
+_PORTFOLIO_MEMORY_EVENT_TYPES = tuple(get_args(PortfolioMemoryEventType))
+_PORTFOLIO_MEMORY_EVENT_TYPE_SET = set(_PORTFOLIO_MEMORY_EVENT_TYPES)
 
 
 @router.get(
@@ -68,7 +73,10 @@ def search_portfolio_memory_index(
     ),
     event_type: str | None = Query(
         default=None,
-        description="Optional portfolio-memory event type filter.",
+        description=(
+            "Optional portfolio-memory event type filter. Unsupported event types are rejected "
+            "instead of being interpreted as an empty source result."
+        ),
         examples=["WAVE_HANDOFF_READY"],
     ),
     supportability_state: str | None = Query(
@@ -108,6 +116,14 @@ def search_portfolio_memory_index(
         get_campaign_definition_repository
     ),
 ) -> DpmPortfolioMemorySearchPage:
+    if event_type is not None and event_type not in _PORTFOLIO_MEMORY_EVENT_TYPE_SET:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: {event_type}; "
+                f"supported_event_types={','.join(_PORTFOLIO_MEMORY_EVENT_TYPES)}"
+            ),
+        )
     return search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,

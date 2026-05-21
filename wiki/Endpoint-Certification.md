@@ -2021,6 +2021,8 @@ Functional behavior:
 - searches a bounded Manage-local portfolio-memory index across persisted proof packs, rebalance
   waves, monitoring exceptions, outcome reviews, and optional caller-supplied portfolio ids,
 - filters the search index by event type, supportability state, and represented source system,
+- rejects unsupported event-type filters with an explicit
+  `UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE` error instead of returning a misleading empty page,
 - returns search summaries with event counts, event-type counts, latest event posture, source
   systems, reason codes, content hash, total count, scanned portfolio count, pre-pagination
   supportability-state, event-type, and source-system facet counts, and an explicit support

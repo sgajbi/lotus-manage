@@ -142,9 +142,11 @@ portfolio-memory API also exposes `GET /api/v1/rebalance/portfolio-memory/search
 Manage-local index over persisted proof-pack, wave, monitoring-exception, campaign-definition,
 outcome-review, PM-quality, and explicit caller-supplied portfolio identifiers. Search responses
 include pre-pagination facet counts for supportability state, event type, and represented source
-system so consumers can triage the bounded result set without loading every portfolio timeline; it
-is not global portfolio-universe discovery and does not project OMS acknowledgement, fill,
-settlement, or execution-status events. Persisted bulk-review campaign definitions now project
+system so consumers can triage the bounded result set without loading every portfolio timeline.
+Unsupported event-type filters are rejected at the API boundary instead of being interpreted as an
+empty source result; the search route is not global portfolio-universe discovery and does not
+project OMS acknowledgement, fill, settlement, or execution-status events. Persisted bulk-review
+campaign definitions now project
 bounded portfolio memory events for definition, approval-decision, assignment-action,
 assignment-task, and maker-checker control evidence without copying raw campaign payloads,
 recalculating membership, or claiming external workflow orchestration, client contact, order

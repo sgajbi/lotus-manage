@@ -1314,6 +1314,14 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "supportability_state_counts" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
     assert "source_system_counts" in search_schema["properties"]
+    event_type_parameter = next(
+        parameter
+        for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
+            "parameters"
+        ]
+        if parameter["name"] == "event_type"
+    )
+    assert "Unsupported event types are rejected" in event_type_parameter["description"]
 
 
 def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
@@ -1357,6 +1365,41 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
         "CONSTRUCTION_ALTERNATIVE_SELECTED": 1,
     }
     assert "lotus-manage" in payload["items"][0]["source_systems"]
+
+
+def test_portfolio_memory_search_rejects_unsupported_event_type_filter() -> None:
+    app.dependency_overrides[get_proof_pack_repository] = lambda: InMemoryDpmProofPackRepository()
+    app.dependency_overrides[get_construction_repository] = lambda: InMemoryConstructionRepository()
+    app.dependency_overrides[get_wave_repository] = lambda: InMemoryDpmWaveRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: (
+        InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params={"event_type": "NOT_A_MEMORY_EVENT"},
+        )
+
+    assert response.status_code == 422
+    assert response.json()["detail"].startswith(
+        "UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: NOT_A_MEMORY_EVENT"
+    )
+    assert "PROOF_PACK_CREATED" in response.json()["detail"]
+    assert "PM_QUALITY_SUMMARY_INVOCATION" in response.json()["detail"]
 
 
 def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_scope() -> None:
