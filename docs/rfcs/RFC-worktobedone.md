@@ -3614,6 +3614,19 @@ hardens RFC41-WTBD-003 by making the global portfolio-universe gap machine-reada
 documentation-only caveat; it still does not promote global candidate discovery because source
 behavior and product evidence remain future owner work.
 
+2026-05-21 campaign report-input universe-boundary handoff addendum:
+
+`DpmWaveReportInput` now emits nullable `DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY` evidence for
+`BULK_REVIEW_CAMPAIGN` waves. The boundary records `PERSISTED_DEFINITION_ONLY` discovery mode,
+`PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES` source scope, `UNSUPPORTED` global portfolio-universe
+discovery, `DEFERRED_SOURCE_OWNER` owner posture, required
+`GlobalPortfolioUniverseCampaignCandidateSet:v1`, source systems represented by persisted wave
+source refs, blocked bank-wide portfolio-universe scan/candidate-discovery/source-fact
+recalculation/membership-recomputation capabilities, promotion requirements, and no-order/no-OMS
+operating boundaries. Non-campaign wave report inputs keep the field null. This extends the
+campaign-discovery universe posture into report/archive/AI handoffs without inventing global
+candidate discovery or recalculating campaign membership.
+
 2026-05-20 campaign workflow-automation readiness addendum:
 
 `lotus-manage` now exposes bounded read-only campaign workflow automation readiness at

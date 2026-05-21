@@ -133,6 +133,7 @@ from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionRepository,
 )
 from src.core.waves.handoffs import (
+    DpmWaveCampaignUniverseBoundaryEvidence,
     DpmWaveReportInputBoundaryError,
     DpmWaveReportEvidenceRef,
     DpmWaveReportEvent,
@@ -212,6 +213,7 @@ __all__ = [
     "DpmBulkReviewCampaignWorkflowAutomationPage",
     "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
+    "DpmWaveCampaignUniverseBoundaryEvidence",
     "DpmWaveClientCommunicationBoundaryEvidence",
     "DpmWaveExternalExecutionBoundaryEvidence",
     "DpmWaveHandoffRef",
