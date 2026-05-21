@@ -477,6 +477,16 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         ),
         examples=[{"READY": 2, "PENDING_REVIEW": 1}],
     )
+    matching_event_source_system_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Aggregate count of source systems represented on matching portfolio-memory events "
+            "before pagination. Counts include the event source system plus source and artifact "
+            "refs on events that satisfied the applied search filters, not every source system "
+            "represented by the portfolio memory summary."
+        ),
+        examples=[{"lotus-manage": 2, "lotus-core": 1}],
+    )
     source_system_counts: dict[str, int] = Field(
         default_factory=dict,
         description=(

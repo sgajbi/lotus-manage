@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T15:20:38.940119+00:00",
+  "generatedAt": "2026-05-21T15:36:55.674994+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -7588,6 +7588,22 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.matching_event_source_system_counts",
+      "canonicalTerm": "matching_event_source_system_counts",
+      "preferredName": "matching_event_source_system_counts",
+      "description": "Aggregate count of source systems represented on matching portfolio-memory events before pagination. Counts include the event source system plus source and artifact refs on events that satisfied the applied search filters, not every source system represented by the portfolio memory summary.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -117146,6 +117162,14 @@
             "type": "object",
             "semanticId": "lotus.matching_event_supportability_state_counts",
             "attributeRef": "#/attributeCatalog/lotus.matching_event_supportability_state_counts"
+          },
+          {
+            "name": "matching_event_source_system_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.matching_event_source_system_counts",
+            "attributeRef": "#/attributeCatalog/lotus.matching_event_source_system_counts"
           },
           {
             "name": "source_system_counts",

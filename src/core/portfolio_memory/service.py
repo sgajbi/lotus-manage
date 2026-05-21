@@ -343,6 +343,7 @@ def search_portfolio_memory(
     )
     event_type_counts: dict[str, int] = {}
     matching_event_supportability_state_counts: dict[str, int] = {}
+    matching_event_source_system_counts: dict[str, int] = {}
     source_system_counts: dict[str, int] = {}
     for item, matching_events in search_rows:
         for event in matching_events:
@@ -350,6 +351,10 @@ def search_portfolio_memory(
             matching_event_supportability_state_counts[event.supportability_state] = (
                 matching_event_supportability_state_counts.get(event.supportability_state, 0) + 1
             )
+            for event_source_system in _event_source_systems(event):
+                matching_event_source_system_counts[event_source_system] = (
+                    matching_event_source_system_counts.get(event_source_system, 0) + 1
+                )
         for source_system in item.source_systems:
             source_system_counts[source_system] = source_system_counts.get(source_system, 0) + 1
     page_rows = search_rows[offset : offset + limit]
@@ -365,6 +370,9 @@ def search_portfolio_memory(
         event_type_counts=dict(sorted(event_type_counts.items())),
         matching_event_supportability_state_counts=dict(
             sorted(matching_event_supportability_state_counts.items())
+        ),
+        matching_event_source_system_counts=dict(
+            sorted(matching_event_source_system_counts.items())
         ),
         source_system_counts=dict(sorted(source_system_counts.items())),
         generated_at=generated_at.isoformat(),
