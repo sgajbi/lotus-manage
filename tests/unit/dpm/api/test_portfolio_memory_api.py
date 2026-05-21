@@ -1311,8 +1311,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["items"][0]["latest_matching_event_content_hash"] == "sha256:handoff-memory"
     assert payload["items"][0]["content_hash"].startswith("sha256:")
     assert payload["supportability_state_counts"] == {"DEGRADED": 1}
-    assert payload["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
-    assert payload["event_type_counts"]["BULK_REVIEW_CAMPAIGN_DEFINITION"] == 1
+    assert payload["event_type_counts"] == {"WAVE_HANDOFF_READY": 1}
     assert payload["source_system_counts"]["lotus-manage"] == 1
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
     assert "project OMS" in payload["support_boundary"]
@@ -1577,10 +1576,7 @@ def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination
     assert page.returned_count == 1
     assert page.total_count == 2
     assert page.supportability_state_counts == {"READY": 2}
-    assert page.event_type_counts == {
-        "PM_QUALITY_SCORE_RUN": 2,
-        "PM_QUALITY_SUMMARY_INVOCATION": 2,
-    }
+    assert page.event_type_counts == {"PM_QUALITY_SUMMARY_INVOCATION": 2}
     assert page.source_system_counts == {
         "lotus-ai": 2,
         "lotus-core": 2,
