@@ -1358,6 +1358,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "latest_matching_event_type" in search_item_schema["properties"]
     assert "latest_matching_event_identity" in search_item_schema["properties"]
     assert "latest_matching_event_source_system" in search_item_schema["properties"]
+    assert "artifact refs" in search_item_schema["properties"]["source_systems"]["description"]
     event_type_parameter = next(
         parameter
         for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
@@ -1430,6 +1431,43 @@ def test_portfolio_memory_search_normalizes_text_filters_before_matching() -> No
     assert unsupported_response.json()["detail"].startswith(
         "UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: NOT_A_MEMORY_EVENT"
     )
+
+
+def test_portfolio_memory_search_counts_artifact_only_source_systems() -> None:
+    proof_pack_repository = InMemoryDpmProofPackRepository()
+    proof_pack_repository.save_proof_pack(
+        proof_pack=_proof_pack().model_copy(
+            update={
+                "portfolio_id": PORTFOLIO_ID,
+                "report_input_ref": DpmProofPackEvidenceRef(
+                    ref_type="REPORT_INPUT",
+                    ref_id="report-input-memory-001",
+                    source_system="lotus-report",
+                    content_hash="sha256:report-input-memory-001",
+                ),
+            }
+        ),
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+
+    page = search_portfolio_memory(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        event_type="PROOF_PACK_CREATED",
+        source_system="lotus-report",
+    )
+
+    assert page.returned_count == 1
+    assert page.total_count == 1
+    assert page.applied_filters.source_system == "lotus-report"
+    assert page.items[0].portfolio_id == PORTFOLIO_ID
+    assert page.items[0].matching_event_count == 1
+    assert page.items[0].latest_matching_event_type == "PROOF_PACK_CREATED"
+    assert "lotus-report" in page.items[0].source_systems
+    assert page.source_system_counts["lotus-report"] == 1
+    assert page.matching_event_source_system_counts["lotus-report"] == 1
 
 
 def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> None:

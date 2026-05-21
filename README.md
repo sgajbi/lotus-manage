@@ -146,7 +146,9 @@ type, matched-event supportability state, matched-event source systems, and repr
 system plus matching-event context and stable matching-event identity/source coordinates so
 consumers can distinguish the latest overall memory event, aggregate portfolio posture, and
 portfolio-level source-system coverage from the specific event that satisfied an
-event/source/supportability filter without loading every portfolio timeline. Pagination metadata
+event/source/supportability filter without loading every portfolio timeline. Portfolio-level
+source-system coverage includes event owners, source refs, and artifact refs so report, AI, and
+archive handoff evidence is not hidden from audit search facets. Pagination metadata
 also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
 `source_scan_limit` used for each Manage-local evidence repository so consumers can continue
 bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
