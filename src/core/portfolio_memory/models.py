@@ -328,6 +328,30 @@ class DpmPortfolioMemory(BaseModel):
     generated_at: str = Field(description="UTC timestamp when the read model was generated.")
 
 
+class DpmPortfolioMemoryEventLookup(BaseModel):
+    portfolio_id: str = Field(description="Portfolio identifier used for the memory lookup.")
+    event_id: str = Field(description="Stable portfolio-memory event identifier requested.")
+    event_identity: str = Field(
+        description=(
+            "Cross-app event identity for the returned event, derived from source system, "
+            "source type, source id, and content-hash posture."
+        )
+    )
+    event: DpmPortfolioMemoryEvent = Field(
+        description="Exact source-backed portfolio-memory event matching the requested event id."
+    )
+    memory_content_hash: str = Field(
+        description="Canonical hash of the portfolio-memory view from which the event was selected."
+    )
+    generated_at: str = Field(description="UTC timestamp when the lookup view was generated.")
+    support_boundary: str = Field(
+        description="Explicit no-claim boundary for the bounded memory event lookup surface.",
+        examples=[
+            "Manage-local memory event lookup does not query external source-owner event stores or project OMS events."
+        ],
+    )
+
+
 class DpmPortfolioMemorySearchItem(BaseModel):
     portfolio_id: str = Field(
         description="Portfolio identifier represented in the Manage-local memory index.",

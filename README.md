@@ -145,6 +145,11 @@ include pre-pagination facet counts for supportability state, event type, and re
 system plus matching-event context and stable matching-event identity/source coordinates so
 consumers can distinguish the latest overall memory event from the specific event that satisfied an
 event/source/supportability filter without loading every portfolio timeline.
+`GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}` provides the bounded
+drilldown counterpart for those search hits: it returns the exact source-backed memory event,
+event identity, memory content hash, and no-claim boundary without querying external source-owner
+event stores or projecting OMS, client communication, risk, performance, report, archive, or AI
+truth.
 Unsupported event-type filters are rejected at the API boundary instead of being interpreted as an
 empty source result. Empty supportability summaries are returned only for explicit caller-supplied
 portfolio identifiers when `supportability_state=EMPTY` is requested; the search route is not

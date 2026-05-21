@@ -2004,6 +2004,7 @@ python -m ruff check scripts/generate_rfc0042_outcome_evidence.py src/api/router
 Route:
 
 - `GET /api/v1/rebalance/portfolio-memory/search`
+- `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}`
 - `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`
 
 Purpose:
@@ -2030,6 +2031,9 @@ Functional behavior:
   coordinates, source systems, reason codes, content hash, total count, scanned portfolio count,
   pre-pagination supportability-state, event-type, and source-system facet counts, and an explicit
   support boundary,
+- returns one exact source-backed portfolio-memory event by portfolio id and event id, including
+  the event identity, memory content hash, and explicit no-claim boundary for audit drilldown from
+  a search hit,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
