@@ -1294,6 +1294,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["next_offset"] is None
     assert payload["scanned_portfolio_count"] == 2
     assert payload["source_scan_limit"] == 500
+    assert payload["content_hash"].startswith("sha256:")
     assert payload["applied_filters"] == {
         "portfolio_ids": [],
         "event_type": "WAVE_HANDOFF_READY",
@@ -1342,6 +1343,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "next_offset" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
     assert "source_scan_limit" in search_schema["properties"]
+    assert "content_hash" in search_schema["properties"]
     assert "applied_filters" in search_schema["properties"]
     assert "matching_event_supportability_state_counts" in search_schema["properties"]
     assert "matching_event_source_system_counts" in search_schema["properties"]
@@ -1637,11 +1639,26 @@ def test_portfolio_memory_search_requires_source_system_on_matching_event_type()
         event_type="PM_QUALITY_SUMMARY_INVOCATION",
         source_system="lotus-core",
         source_scan_limit=25,
+        generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+    )
+    later_page = search_portfolio_memory(
+        proof_pack_repository=InMemoryDpmProofPackRepository(),
+        wave_repository=InMemoryDpmWaveRepository(),
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        pm_quality_score_run_repository=pm_quality_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_repository,
+        event_type="PM_QUALITY_SUMMARY_INVOCATION",
+        source_system="lotus-core",
+        source_scan_limit=25,
+        generated_at=datetime(2026, 5, 21, 11, 0, tzinfo=timezone.utc),
     )
 
     assert page.returned_count == 0
     assert page.total_count == 0
     assert page.source_scan_limit == 25
+    assert page.content_hash.startswith("sha256:")
+    assert later_page.generated_at != page.generated_at
+    assert later_page.content_hash == page.content_hash
     assert page.applied_filters.event_type == "PM_QUALITY_SUMMARY_INVOCATION"
     assert page.applied_filters.source_system == "lotus-core"
     assert page.event_type_counts == {}

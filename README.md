@@ -150,7 +150,8 @@ event/source/supportability filter without loading every portfolio timeline. Pag
 also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
 `source_scan_limit` used for each Manage-local evidence repository so consumers can continue
 bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
-from counts.
+from counts. Each search page carries a deterministic `content_hash` that excludes `generated_at`
+so audit review can reconcile equivalent result pages without timestamp churn.
 Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
 are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
 query-string formatting.
