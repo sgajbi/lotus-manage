@@ -5653,6 +5653,10 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert all(
         event["event_time"] for event in report_payload["portfolio_memory_context"]["event_refs"]
     )
+    assert [
+        event["event_ref_selection_rank"]
+        for event in report_payload["portfolio_memory_context"]["event_refs"]
+    ] == list(range(1, len(report_payload["portfolio_memory_context"]["event_refs"]) + 1))
     assert any(
         event["event_type"] == "WAVE_CREATED"
         for event in report_payload["portfolio_memory_context"]["event_refs"]
