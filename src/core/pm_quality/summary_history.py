@@ -12,6 +12,7 @@ from src.core.pm_quality.models import (
     DpmPmQualityReviewAction,
     DpmPmQualitySummaryInvocation,
     PmQualitySummaryInvocationState,
+    build_pm_quality_summary_text_boundary,
 )
 
 
@@ -121,6 +122,8 @@ def build_pm_quality_summary_invocation(
         "operating_boundaries": [
             "APPEND_ONLY_SUMMARY_INVOCATION_HISTORY",
             "NO_SUMMARY_TEXT_STORAGE",
+            "NO_SUMMARY_TEXT_EXPOSURE",
+            "NO_DOWNSTREAM_SUMMARY_UX_CLAIM",
             "NO_SCORE_RECALCULATION",
             "NO_FAIRNESS_RECOMPUTATION",
             "NO_PM_RANKING",
@@ -129,6 +132,7 @@ def build_pm_quality_summary_invocation(
             "NO_TRADE_APPROVAL",
             "NO_ORDER_OR_OMS_EXECUTION",
         ],
+        "summary_text_boundary": build_pm_quality_summary_text_boundary().model_dump(mode="json"),
         "generated_at": generated_at,
         "correlation_id": correlation_id.strip(),
     }

@@ -4334,6 +4334,17 @@ approval-workflow support. This advances the residual approval-workflow boundary
 no-approval-workflow posture machine-readable, but it does not close or promote approval workflow
 beyond immutable review actions.
 
+2026-05-21 PM-quality summary-text boundary hardening addendum:
+
+Summary-invocation rows now carry structured `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence with a
+deterministic content hash, fail-closed supportability state, blocked generated-summary
+capabilities, required future `PmQualityGeneratedSummaryArtifact:v1` source product, and promotion
+requirements for any future generated-summary text support. This advances the residual persisted
+summary-history/downstream-UX boundary by making the no-summary-text-retention posture
+machine-readable, but it does not store or expose generated AI narrative text, reconstruct prompts
+or model responses, claim downstream summary UX, generate client messages, approve trades, route
+orders, or claim OMS execution.
+
 2026-05-20 PM-quality summary-invocation history addendum:
 
 `lotus-manage` now emits and persists immutable `PmOperatingQualitySummaryInvocation:v1` evidence at

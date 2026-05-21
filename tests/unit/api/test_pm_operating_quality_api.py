@@ -1160,6 +1160,18 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
     assert summary_invocation["correlation_id"] == "corr-pmq-summary-create"
     assert summary_invocation["summary_artifact_ref"] == "pmq-summary-artifact-001"
     assert "NO_SUMMARY_TEXT_STORAGE" in summary_invocation["operating_boundaries"]
+    assert "NO_SUMMARY_TEXT_EXPOSURE" in summary_invocation["operating_boundaries"]
+    assert "NO_DOWNSTREAM_SUMMARY_UX_CLAIM" in summary_invocation["operating_boundaries"]
+    summary_text_boundary = summary_invocation["summary_text_boundary"]
+    assert summary_text_boundary["boundary_id"] == "PM_QUALITY_SUMMARY_TEXT_BOUNDARY"
+    assert summary_text_boundary["summary_text_stored"] is False
+    assert summary_text_boundary["summary_text_exposed"] is False
+    assert summary_text_boundary["downstream_ux_projected"] is False
+    assert "summary_text_rendering" in summary_text_boundary["blocked_capabilities"]
+    assert summary_text_boundary["required_source_product"] == (
+        "PmQualityGeneratedSummaryArtifact:v1"
+    )
+    assert summary_text_boundary["content_hash"].startswith("sha256:")
     assert "summary_text_storage" in summary_invocation["forbidden_uses"]
     assert fetched.status_code == 200
     assert fetched.json()["summary_invocation"]["summary_invocation_id"] == summary_invocation_id
@@ -1544,3 +1556,11 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
         "does not expose generated summary text"
         in schema["paths"][summary_create_path]["get"]["description"]
     )
+    summary_schema = schema["components"]["schemas"]["DpmPmQualitySummaryInvocation"]
+    assert "summary_text_boundary" in summary_schema["properties"]
+    assert "DpmPmQualitySummaryTextBoundaryEvidence" in schema["components"]["schemas"]
+    summary_boundary_schema = schema["components"]["schemas"][
+        "DpmPmQualitySummaryTextBoundaryEvidence"
+    ]
+    assert "generated-summary-text boundary" in summary_boundary_schema["description"]
+    assert "downstream_ux_projected" in summary_boundary_schema["properties"]

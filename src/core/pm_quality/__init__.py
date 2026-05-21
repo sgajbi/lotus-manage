@@ -15,6 +15,7 @@ from src.core.pm_quality.models import (
     DpmPmQualityPeerGroupPolicy,
     DpmPmQualityReviewAction,
     DpmPmQualityScopeEvidence,
+    DpmPmQualitySummaryTextBoundaryEvidence,
     DpmPmQualitySummaryInvocation,
     DpmPmQualityWeight,
     PmQualityAccessPurpose,
@@ -26,6 +27,7 @@ from src.core.pm_quality.models import (
     PmQualityState,
     PmQualitySummaryInvocationState,
     build_pm_quality_approval_workflow_boundary,
+    build_pm_quality_summary_text_boundary,
 )
 from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
@@ -72,6 +74,7 @@ __all__ = [
     "DpmPmQualityScopeEvidence",
     "DpmPmQualityScoreRunConflictError",
     "DpmPmQualityScoreRunRepository",
+    "DpmPmQualitySummaryTextBoundaryEvidence",
     "DpmPmQualitySummaryInvocation",
     "DpmPmQualitySummaryInvocationConflictError",
     "DpmPmQualitySummaryInvocationRepository",
@@ -89,5 +92,6 @@ __all__ = [
     "build_pm_operating_quality_score_run",
     "build_pm_quality_approval_workflow_boundary",
     "build_pm_quality_review_action",
+    "build_pm_quality_summary_text_boundary",
     "build_pm_quality_summary_invocation",
 ]

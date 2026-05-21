@@ -295,6 +295,18 @@ def test_pm_quality_summary_invocation_records_history_without_summary_text() ->
         ref.source_type == "PmOperatingQualityReviewAction" for ref in invocation.source_refs
     )
     assert "NO_SUMMARY_TEXT_STORAGE" in invocation.operating_boundaries
+    assert "NO_SUMMARY_TEXT_EXPOSURE" in invocation.operating_boundaries
+    assert "NO_DOWNSTREAM_SUMMARY_UX_CLAIM" in invocation.operating_boundaries
+    assert invocation.summary_text_boundary.boundary_id == "PM_QUALITY_SUMMARY_TEXT_BOUNDARY"
+    assert invocation.summary_text_boundary.supportability_state == "BLOCKED"
+    assert invocation.summary_text_boundary.summary_text_stored is False
+    assert invocation.summary_text_boundary.summary_text_exposed is False
+    assert invocation.summary_text_boundary.downstream_ux_projected is False
+    assert "downstream_summary_ux" in invocation.summary_text_boundary.blocked_capabilities
+    assert invocation.summary_text_boundary.required_source_product == (
+        "PmQualityGeneratedSummaryArtifact:v1"
+    )
+    assert invocation.summary_text_boundary.content_hash.startswith("sha256:")
     assert "summary_text_storage" in invocation.forbidden_uses
 
     with pytest.raises(ValueError, match="PM_QUALITY_SUMMARY_REVIEW_ACTION_TARGET_MISMATCH"):

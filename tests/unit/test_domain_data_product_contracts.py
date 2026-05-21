@@ -329,6 +329,9 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
         "/api/v1/rebalance/pm-operating-quality/review-actions",
         "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}",
         "/api/v1/rebalance/portfolio-memory/search",
         "/api/v1/rebalance/portfolio-memory/{portfolio_id}",
     ]
@@ -344,6 +347,14 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     )
     assert (
         "Review actions are immutable ledger rows"
+        in (pm_quality["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "PM_QUALITY_SUMMARY_TEXT_BOUNDARY"
+        in (pm_quality["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "without storing or exposing generated summary text"
         in (pm_quality["freshness_policy"]["max_allowed_age_description"])
     )
 
