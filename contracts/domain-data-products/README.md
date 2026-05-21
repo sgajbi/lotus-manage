@@ -45,7 +45,8 @@ Current declarations:
    `BulkReviewCampaignDefinition:v1` definitions,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
    quality policy administration, bank approval and fairness-review governance evidence, optional
-   source-owned PM-book scope evidence, preview, and create/read/list score-run lifecycle routes.
+   source-owned PM-book scope evidence, preview, create/read/list score-run lifecycle,
+   review-action ledger, and summary-invocation history routes.
 
 Local validation:
 

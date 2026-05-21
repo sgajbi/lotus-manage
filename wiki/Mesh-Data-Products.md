@@ -29,8 +29,9 @@
 - Product ID: `lotus-manage:PmOperatingQualityScoreRun:v1`
 - Product role: governed PM operating quality policy administration, score-run preview,
   immutable persisted score-run lifecycle, bounded fairness-analysis lifecycle, and immutable
-  review-action ledger generated from explicit bank policy, source-backed evidence, and optional
-  persisted outcome reviews. Optional `pm_book_scope` materializes source-owned lotus-core
+  review-action ledger plus summary-invocation history generated from explicit bank policy,
+  source-backed evidence, and optional persisted outcome reviews. Optional `pm_book_scope`
+  materializes source-owned lotus-core
   `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`. Enabled policies carry
   bank approval and fairness-review evidence into score-run `governance_evidence`.
 - Implemented route families:
@@ -45,6 +46,9 @@
   - `/api/v1/rebalance/pm-operating-quality/review-actions/preview`
   - `/api/v1/rebalance/pm-operating-quality/review-actions`
   - `/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`
+  - `/api/v1/rebalance/pm-operating-quality/summary-invocations/preview`
+  - `/api/v1/rebalance/pm-operating-quality/summary-invocations`
+  - `/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Boundary: scoring is disabled by default, missing required evidence blocks the run, and HR,
   compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, source-owner risk,
@@ -58,6 +62,11 @@
   consumers can distinguish immutable ledger evidence from unsupported CIO approval workflow,
   policy approval, client approval, trade approval, HR/conduct, order-routing, or OMS execution
   claims.
+  Summary invocation rows carry structured `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence with a
+  deterministic content hash, proving Manage records workflow/run/artifact refs and hashes only
+  without storing or exposing generated summary text, reconstructing prompts or model responses,
+  projecting downstream summary UX, contacting clients, approving trades, routing orders, or
+  claiming OMS execution.
 
 - Product ID: `lotus-manage:PmOperatingQualityFairnessAnalysis:v1`
 - Product role: governed PM operating quality fairness-analysis evidence generated from persisted

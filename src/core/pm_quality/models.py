@@ -601,6 +601,83 @@ class DpmPmQualityApprovalWorkflowBoundaryEvidence(BaseModel):
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
 
+class DpmPmQualitySummaryTextBoundaryEvidence(BaseModel):
+    """Fail-closed generated-summary-text boundary for PM-quality summary history."""
+
+    boundary_id: Literal["PM_QUALITY_SUMMARY_TEXT_BOUNDARY"] = Field(
+        default="PM_QUALITY_SUMMARY_TEXT_BOUNDARY",
+        description="Stable unsupported generated-summary-text boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for generated summary text retention.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported generated-summary-text boundary evidence.",
+    )
+    source_product_name: Literal["PmOperatingQualitySummaryInvocation"] = Field(
+        default="PmOperatingQualitySummaryInvocation",
+        description=(
+            "Manage-owned source product that records support-summary invocation history "
+            "without retaining or exposing generated AI narrative text."
+        ),
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    summary_text_stored: Literal[False] = Field(
+        default=False,
+        description="Summary invocation history never stores generated narrative text.",
+    )
+    summary_text_exposed: Literal[False] = Field(
+        default=False,
+        description="Summary invocation history never exposes generated narrative text.",
+    )
+    downstream_ux_projected: Literal[False] = Field(
+        default=False,
+        description="Summary invocation history never projects downstream summary UX support.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the PM-quality summary-text boundary.",
+        examples=["PM_QUALITY_SUMMARY_TEXT_NOT_STORED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Generated-summary capabilities blocked from summary-history promotion.",
+        examples=[
+            [
+                "summary_text_storage",
+                "summary_text_rendering",
+                "downstream_summary_ux",
+            ]
+        ],
+    )
+    required_owner: str = Field(
+        description="Future owner required before generated-summary text can be promoted.",
+        examples=["lotus-ai and downstream product-surface owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume generated summary truth.",
+        examples=["PmQualityGeneratedSummaryArtifact:v1"],
+    )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "AI artifact, source-product, retention, redaction, lineage, downstream realization, "
+            "and audit requirements that must be met before PM-quality summary history can be "
+            "promoted from invocation-only history to generated-summary text support."
+        ),
+        examples=[
+            [
+                "certified_pm_quality_generated_summary_artifact_owner",
+                "PmQualityGeneratedSummaryArtifact:v1",
+            ]
+        ],
+    )
+    summary: str = Field(description="Operator-facing no-summary-text-retention boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmPmQualityReviewAction(BaseModel):
     """Immutable PM operating-quality review action over existing governed evidence."""
 
@@ -760,6 +837,8 @@ class DpmPmQualitySummaryInvocation(BaseModel):
         default_factory=lambda: [
             "APPEND_ONLY_SUMMARY_INVOCATION_HISTORY",
             "NO_SUMMARY_TEXT_STORAGE",
+            "NO_SUMMARY_TEXT_EXPOSURE",
+            "NO_DOWNSTREAM_SUMMARY_UX_CLAIM",
             "NO_SCORE_RECALCULATION",
             "NO_FAIRNESS_RECOMPUTATION",
             "NO_PM_RANKING",
@@ -769,6 +848,14 @@ class DpmPmQualitySummaryInvocation(BaseModel):
             "NO_ORDER_OR_OMS_EXECUTION",
         ],
         description="Unsupported downstream claims the summary history must not imply.",
+    )
+    summary_text_boundary: DpmPmQualitySummaryTextBoundaryEvidence = Field(
+        default_factory=lambda: build_pm_quality_summary_text_boundary(),
+        description=(
+            "Structured fail-closed evidence proving this summary-invocation history records "
+            "workflow/run/artifact refs and hashes only, not generated narrative text or "
+            "downstream summary UX truth."
+        ),
     )
     content_hash: str = Field(description="Canonical summary-invocation content hash.")
     generated_at: datetime = Field(description="UTC generation timestamp.")
@@ -820,3 +907,51 @@ def build_pm_quality_approval_workflow_boundary() -> DpmPmQualityApprovalWorkflo
     }
     payload["content_hash"] = hash_canonical_payload(payload)
     return DpmPmQualityApprovalWorkflowBoundaryEvidence.model_validate(payload)
+
+
+def build_pm_quality_summary_text_boundary() -> DpmPmQualitySummaryTextBoundaryEvidence:
+    payload = {
+        "boundary_id": "PM_QUALITY_SUMMARY_TEXT_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "PmOperatingQualitySummaryInvocation",
+        "source_product_version": "v1",
+        "summary_text_stored": False,
+        "summary_text_exposed": False,
+        "downstream_ux_projected": False,
+        "reason_code": "PM_QUALITY_SUMMARY_TEXT_NOT_STORED",
+        "blocked_capabilities": [
+            "summary_text_storage",
+            "summary_text_exposure",
+            "summary_text_rendering",
+            "downstream_summary_ux",
+            "prompt_reconstruction",
+            "model_response_reconstruction",
+            "raw_review_rationale_exposure",
+            "client_message_generation",
+            "client_contact",
+            "trade_approval",
+            "order_routing",
+            "oms_execution",
+        ],
+        "required_owner": "lotus-ai and downstream product-surface owner",
+        "required_source_product": "PmQualityGeneratedSummaryArtifact:v1",
+        "promotion_requirements": [
+            "certified_pm_quality_generated_summary_artifact_owner",
+            "PmQualityGeneratedSummaryArtifact:v1",
+            "generated_text_retention_and_redaction_policy",
+            "artifact_lineage_and_content_hashes",
+            "prompt_and_response_audit_controls",
+            "downstream_gateway_workbench_realization",
+            "no_client_message_or_execution_promotion",
+        ],
+        "summary": (
+            "PM-quality summary invocation history records only score-run, review-action, "
+            "workflow-run, artifact reference, and content-hash evidence. It does not store "
+            "generated AI narrative text, expose generated summary text, reconstruct prompts or "
+            "model responses, claim downstream summary UX, contact clients, approve trades, route "
+            "orders, or claim OMS execution."
+        ),
+    }
+    payload["content_hash"] = hash_canonical_payload(payload)
+    return DpmPmQualitySummaryTextBoundaryEvidence.model_validate(payload)

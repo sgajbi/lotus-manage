@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T11:34:35.867620+00:00",
+  "generatedAt": "2026-05-21T11:54:46.956350+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -3451,6 +3451,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.downstream_ux_projected",
+      "canonicalTerm": "downstream_ux_projected",
+      "preferredName": "downstream_ux_projected",
+      "description": "Summary invocation history never projects downstream summary UX support.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -12990,6 +13004,50 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.summary_text_boundary",
+      "canonicalTerm": "summary_text_boundary",
+      "preferredName": "summary_text_boundary",
+      "description": "Fail-closed generated-summary-text boundary for PM-quality summary history.",
+      "example": {
+        "key": "value"
+      },
+      "type": "DpmPmQualitySummaryTextBoundaryEvidence",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "DpmPmQualitySummaryTextBoundaryEvidence"
+      ]
+    },
+    {
+      "semanticId": "lotus.summary_text_exposed",
+      "canonicalTerm": "summary_text_exposed",
+      "preferredName": "summary_text_exposed",
+      "description": "Summary invocation history never exposes generated narrative text.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.summary_text_stored",
+      "canonicalTerm": "summary_text_stored",
+      "preferredName": "summary_text_stored",
+      "description": "Summary invocation history never stores generated narrative text.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -124899,6 +124957,134 @@
             "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
           },
           {
+            "name": "summary_invocation.summary_text_boundary",
+            "location": "body",
+            "required": false,
+            "type": "DpmPmQualitySummaryTextBoundaryEvidence",
+            "semanticId": "lotus.summary_text_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_boundary"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary_text_stored",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_stored",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_stored"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary_text_exposed",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_exposed",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_exposed"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.downstream_ux_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.downstream_ux_projected",
+            "attributeRef": "#/attributeCatalog/lotus.downstream_ux_projected"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "summary_invocation.content_hash",
             "location": "body",
             "required": true,
@@ -125298,6 +125484,134 @@
             "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
           },
           {
+            "name": "summary_invocation.summary_text_boundary",
+            "location": "body",
+            "required": false,
+            "type": "DpmPmQualitySummaryTextBoundaryEvidence",
+            "semanticId": "lotus.summary_text_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_boundary"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary_text_stored",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_stored",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_stored"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary_text_exposed",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_exposed",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_exposed"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.downstream_ux_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.downstream_ux_projected",
+            "attributeRef": "#/attributeCatalog/lotus.downstream_ux_projected"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "summary_invocation.content_hash",
             "location": "body",
             "required": true,
@@ -125617,6 +125931,134 @@
             "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
           },
           {
+            "name": "summary_invocations[].summary_text_boundary",
+            "location": "body",
+            "required": false,
+            "type": "DpmPmQualitySummaryTextBoundaryEvidence",
+            "semanticId": "lotus.summary_text_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_boundary"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.summary_text_stored",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_stored",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_stored"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.summary_text_exposed",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_exposed",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_exposed"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.downstream_ux_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.downstream_ux_projected",
+            "attributeRef": "#/attributeCatalog/lotus.downstream_ux_projected"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "summary_invocations[].summary_text_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
             "name": "summary_invocations[].content_hash",
             "location": "body",
             "required": true,
@@ -125910,6 +126352,134 @@
             "type": "array",
             "semanticId": "lotus.operating_boundaries",
             "attributeRef": "#/attributeCatalog/lotus.operating_boundaries"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary",
+            "location": "body",
+            "required": false,
+            "type": "DpmPmQualitySummaryTextBoundaryEvidence",
+            "semanticId": "lotus.summary_text_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_boundary"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary_text_stored",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_stored",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_stored"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary_text_exposed",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.summary_text_exposed",
+            "attributeRef": "#/attributeCatalog/lotus.summary_text_exposed"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.downstream_ux_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.downstream_ux_projected",
+            "attributeRef": "#/attributeCatalog/lotus.downstream_ux_projected"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "summary_invocation.summary_text_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
             "name": "summary_invocation.content_hash",

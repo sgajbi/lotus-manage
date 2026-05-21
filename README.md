@@ -360,7 +360,11 @@ bounded `PmOperatingQualitySummaryInvocation:v1` rows over persisted score-run a
 evidence, recording workflow/run/artifact identity and hashes without storing generated AI
 narrative text, exposing raw review rationale, recalculating scores, recomputing fairness, ranking
 PMs, creating HR/compensation/conduct decisions, contacting clients, approving trades, routing
-orders, or claiming OMS execution.
+orders, or claiming OMS execution. Each row carries structured
+`PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence with a deterministic content hash, proving Manage
+records invocation history only and does not store or expose generated summary text, project
+downstream summary UX, reconstruct prompts or model responses, generate client messages, approve
+trades, route orders, or claim OMS execution.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,
@@ -607,6 +611,11 @@ Operationally important truths:
     ledger rows over existing score-run or fairness-analysis evidence only; it does not mutate
     approval workflow state, approve policies or trades, contact clients, create HR or conduct
     decisions, route orders, or claim OMS execution.
+15. PM operating-quality summary invocations expose structured
+    `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence. Manage records workflow/run/artifact references
+    and hashes only; it does not store or expose generated summary text, project downstream
+    summary UX, reconstruct prompts or model responses, contact clients, generate client-ready
+    messages, approve trades, route orders, or claim OMS execution.
 
 ## Documentation Map
 

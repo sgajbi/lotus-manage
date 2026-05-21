@@ -1048,6 +1048,12 @@ Audit evidence:
    `cashflow_outlook.total_net_cashflow_base=-12000.0` with no warnings or partial failures,
    `npm run live:validate` passes on the canonical Workbench stack, Core PR Merge Gate passes, and
    `lotus-core.wiki` publication is synchronized at commit `3956cb6`.
+9. The 2026-05-21 PM-quality summary-text boundary hardening adds structured
+   `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence to `PmOperatingQualitySummaryInvocation:v1`, with a
+   deterministic content hash and fail-closed generated-summary supportability state. Manage
+   records workflow/run/artifact references and hashes only; it does not store or expose generated
+   summary text, reconstruct prompts or model responses, project downstream summary UX, generate
+   client messages, approve trades, route orders, or claim OMS execution.
 
 Gold-pass decision:
 
