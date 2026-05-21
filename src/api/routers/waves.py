@@ -50,6 +50,17 @@ from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionRetirementRequest,
     DpmBulkReviewCampaignDefinitionSupersessionRequest,
 )
+from src.api.routers.wave_campaign_action_http import (
+    list_campaign_definition_approval_decisions_response,
+    list_campaign_definition_assignment_actions_response,
+    list_campaign_definition_assignment_tasks_response,
+    list_campaign_definition_maker_checker_controls_response,
+    open_campaign_definition_assignment_task_response,
+    record_campaign_definition_approval_decision_response,
+    record_campaign_definition_assignment_action_response,
+    record_campaign_definition_maker_checker_control_response,
+    transition_campaign_definition_assignment_task_response,
+)
 from src.api.routers.wave_campaign_launch_http import (
     launch_bulk_review_campaign_definition_response,
 )
@@ -113,15 +124,6 @@ from src.core.waves import (
     DpmWaveReportInput,
     DpmWaveRepository,
     build_bulk_review_campaign_discovery_item,
-    build_bulk_review_campaign_definition_approval_decision_page,
-    build_bulk_review_campaign_definition_assignment_action_page,
-    build_bulk_review_campaign_definition_assignment_task_page,
-    build_bulk_review_campaign_definition_maker_checker_control_page,
-    record_bulk_review_campaign_definition_approval_decision,
-    record_bulk_review_campaign_definition_assignment_action,
-    open_bulk_review_campaign_definition_assignment_task,
-    transition_bulk_review_campaign_definition_assignment_task,
-    record_bulk_review_campaign_definition_maker_checker_control,
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_assignment_plan_page,
     build_bulk_review_campaign_operating_queue_page,
@@ -766,29 +768,12 @@ def record_bulk_review_campaign_definition_approval_decision_endpoint(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return record_campaign_definition_approval_decision_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        request=request,
+        repository=repository,
     )
-    try:
-        updated = record_bulk_review_campaign_definition_approval_decision(
-            definition=definition,
-            decision_type=request.decision_type,
-            decision_ref=request.decision_ref,
-            decided_by=request.decided_by,
-            decision_reason=request.decision_reason,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_approval_decision(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    if persisted is None:
-        raise campaign_definition_not_found_http_exception()
-    return persisted
 
 
 @router.get(
@@ -812,15 +797,12 @@ def list_bulk_review_campaign_definition_approval_decisions(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return list_campaign_definition_approval_decisions_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_approval_decision_page(
-        definition=definition,
         limit=limit,
         offset=offset,
+        repository=repository,
     )
 
 
@@ -844,32 +826,12 @@ def record_bulk_review_campaign_definition_assignment_action_endpoint(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return record_campaign_definition_assignment_action_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        request=request,
+        repository=repository,
     )
-    try:
-        updated = record_bulk_review_campaign_definition_assignment_action(
-            definition=definition,
-            action_type=request.action_type,
-            action_ref=request.action_ref,
-            recorded_by=request.recorded_by,
-            action_reason=request.action_reason,
-            assigned_actor_ids=request.assigned_actor_ids,
-            escalation_tier=request.escalation_tier,
-            sla_posture=request.sla_posture,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_assignment_action(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    if persisted is None:
-        raise campaign_definition_not_found_http_exception()
-    return persisted
 
 
 @router.get(
@@ -894,15 +856,12 @@ def list_bulk_review_campaign_definition_assignment_actions(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return list_campaign_definition_assignment_actions_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_assignment_action_page(
-        definition=definition,
         limit=limit,
         offset=offset,
+        repository=repository,
     )
 
 
@@ -927,33 +886,12 @@ def open_bulk_review_campaign_definition_assignment_task_endpoint(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return open_campaign_definition_assignment_task_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        request=request,
+        repository=repository,
     )
-    try:
-        updated = open_bulk_review_campaign_definition_assignment_task(
-            definition=definition,
-            task_ref=request.task_ref,
-            task_type=request.task_type,
-            opened_by=request.opened_by,
-            task_reason=request.task_reason,
-            assigned_actor_ids=request.assigned_actor_ids,
-            escalation_tier=request.escalation_tier,
-            sla_posture=request.sla_posture,
-            due_at=request.due_at,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_assignment_task(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    if persisted is None:
-        raise campaign_definition_not_found_http_exception()
-    return persisted
 
 
 @router.post(
@@ -978,34 +916,13 @@ def transition_bulk_review_campaign_definition_assignment_task_endpoint(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return transition_campaign_definition_assignment_task_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        task_ref=task_ref,
+        request=request,
+        repository=repository,
     )
-    try:
-        updated = transition_bulk_review_campaign_definition_assignment_task(
-            definition=definition,
-            task_ref=task_ref,
-            transition_type=request.transition_type,
-            transition_ref=request.transition_ref,
-            transitioned_by=request.transitioned_by,
-            transition_reason=request.transition_reason,
-            assigned_actor_ids=request.assigned_actor_ids,
-            escalation_tier=request.escalation_tier,
-            sla_posture=request.sla_posture,
-            due_at=request.due_at,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_assignment_task(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    if persisted is None:
-        raise campaign_definition_not_found_http_exception()
-    return persisted
 
 
 @router.get(
@@ -1031,16 +948,13 @@ def list_bulk_review_campaign_definition_assignment_tasks(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return list_campaign_definition_assignment_tasks_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_assignment_task_page(
-        definition=definition,
-        status_filter=status,
+        status=status,
         limit=limit,
         offset=offset,
+        repository=repository,
     )
 
 
@@ -1064,33 +978,12 @@ def record_bulk_review_campaign_definition_maker_checker_control_endpoint(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return record_campaign_definition_maker_checker_control_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        request=request,
+        repository=repository,
     )
-    try:
-        updated = record_bulk_review_campaign_definition_maker_checker_control(
-            definition=definition,
-            control_action=request.control_action,
-            control_ref=request.control_ref,
-            recorded_by=request.recorded_by,
-            submitter_actor_id=request.submitter_actor_id,
-            reviewer_actor_id=request.reviewer_actor_id,
-            required_reviewer_role=request.required_reviewer_role,
-            control_outcome=request.control_outcome,
-            control_reason=request.control_reason,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_maker_checker_control(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    if persisted is None:
-        raise campaign_definition_not_found_http_exception()
-    return persisted
 
 
 @router.get(
@@ -1114,15 +1007,12 @@ def list_bulk_review_campaign_definition_maker_checker_controls(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionMakerCheckerControlPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return list_campaign_definition_maker_checker_controls_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_maker_checker_control_page(
-        definition=definition,
         limit=limit,
         offset=offset,
+        repository=repository,
     )
 
 
