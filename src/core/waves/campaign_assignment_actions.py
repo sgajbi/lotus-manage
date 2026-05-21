@@ -5,13 +5,14 @@ import json
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentAction,
 )
 from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignAssignmentActionType = Literal[
     "ASSIGNED",
@@ -46,9 +47,14 @@ class DpmBulkReviewCampaignDefinitionAssignmentActionPage(BaseModel):
     current_sla_posture: CampaignAssignmentSlaPosture = Field(
         description="Current SLA posture derived from the latest action."
     )
-    count: int = Field(description="Number of assignment actions returned.")
-    limit: int = Field(description="Requested page size.")
-    offset: int = Field(description="Requested page offset.")
+    count: int = Field(ge=0, description="Number of assignment actions returned.")
+    limit: int = Field(ge=1, description="Requested page size.")
+    offset: int = Field(ge=0, description="Requested page offset.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
+        validate_page_count(count=self.count, item_count=len(self.assignment_actions))
+        return self
 
 
 def record_bulk_review_campaign_definition_assignment_action(

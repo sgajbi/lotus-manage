@@ -1751,6 +1751,10 @@ Functional coverage:
 - campaign operating queue, approval inbox, workflow board, assignment plan, and workflow
   automation pages validate returned row count, page limit/offset, and posture/action count maps
   against the returned rows so audit summaries cannot drift from the page payload,
+- append-only approval-decision, assignment-action, assignment-task, maker-checker-control, and
+  launch-history pages validate returned row count, page limit/offset, assignment-task count-map
+  coverage, open-task coverage, and launch-history total-count window posture so audit evidence
+  cannot carry internally inconsistent summaries,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can

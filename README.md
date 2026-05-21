@@ -272,7 +272,10 @@ consumer declaration, Gateway/Workbench realization, and external workflow audit
 evidence, and carries a deterministic content hash. Campaign operating queue, approval inbox,
 workflow board, assignment plan, and workflow automation pages validate returned row count, page
 limit/offset, and posture/action count maps against the returned rows so audit summaries cannot
-drift from the page payload. Manage also supports append-only
+drift from the page payload. Append-only approval-decision, assignment-action, assignment-task,
+maker-checker-control, and launch-history pages also validate returned row count, page
+limit/offset, assignment-task count-map coverage, open-task coverage, and launch-history total-count
+window posture so audit evidence cannot carry internally inconsistent summaries. Manage also supports append-only
 assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

@@ -5,13 +5,14 @@ import json
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecision,
 )
 from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignApprovalDecisionType = Literal["APPROVED", "REJECTED", "REQUIRES_REMEDIATION"]
 
@@ -29,9 +30,14 @@ class DpmBulkReviewCampaignDefinitionApprovalDecisionPage(BaseModel):
     latest_decision_type: CampaignApprovalDecisionType | None = Field(
         description="Most recent approval decision type in the returned definition."
     )
-    count: int = Field(description="Number of approval decisions returned.")
-    limit: int = Field(description="Requested page size.")
-    offset: int = Field(description="Requested page offset.")
+    count: int = Field(ge=0, description="Number of approval decisions returned.")
+    limit: int = Field(ge=1, description="Requested page size.")
+    offset: int = Field(ge=0, description="Requested page offset.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
+        validate_page_count(count=self.count, item_count=len(self.approval_decisions))
+        return self
 
 
 def record_bulk_review_campaign_definition_approval_decision(
