@@ -20,7 +20,6 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveItemsResponse,
     DpmWaveProofPackPostureResponse,
     DpmWaveResponse,
-    DpmWaveSearchItem,
     DpmWaveSearchResponse,
     DpmWaveSupportabilityResponse,
     wave_response,
@@ -68,6 +67,7 @@ from src.api.routers.wave_read_http import (
     get_wave_proof_pack_posture_response,
 )
 from src.api.routers.wave_report_input_http import get_wave_report_input_response
+from src.api.routers.wave_search_http import search_waves_response
 from src.api.routers.wave_selection_http import select_wave_item_alternative_response
 from src.api.routers.wave_simulation_http import simulate_wave_response
 from src.api.routers.wave_source_check_http import source_check_wave_response
@@ -1669,7 +1669,7 @@ def search_waves(
     ] = 0,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveSearchResponse:
-    items = wave_service.search_waves(
+    return search_waves_response(
         wave_repository=wave_repository,
         state=state,
         trigger_type=trigger_type,
@@ -1677,12 +1677,6 @@ def search_waves(
         supportability_state=supportability_state,
         limit=limit,
         offset=offset,
-    )
-    return DpmWaveSearchResponse(
-        items=[DpmWaveSearchItem.model_validate(item) for item in items],
-        limit=limit,
-        offset=offset,
-        returned_count=len(items),
     )
 
 
