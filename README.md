@@ -142,9 +142,9 @@ portfolio-memory API also exposes `GET /api/v1/rebalance/portfolio-memory/search
 Manage-local index over persisted proof-pack, wave, monitoring-exception, campaign-definition,
 outcome-review, PM-quality, and explicit caller-supplied portfolio identifiers. Search responses
 include pre-pagination facet counts for supportability state, event type, and represented source
-system plus matching-event context so consumers can distinguish the latest overall memory event
-from the specific event that satisfied an event/source/supportability filter without loading every
-portfolio timeline.
+system plus matching-event context and stable matching-event identity/source coordinates so
+consumers can distinguish the latest overall memory event from the specific event that satisfied an
+event/source/supportability filter without loading every portfolio timeline.
 Unsupported event-type filters are rejected at the API boundary instead of being interpreted as an
 empty source result. Empty supportability summaries are returned only for explicit caller-supplied
 portfolio identifiers when `supportability_state=EMPTY` is requested; the search route is not

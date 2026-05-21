@@ -2026,9 +2026,10 @@ Functional behavior:
 - returns `EMPTY` search summaries only for explicit caller-supplied portfolio ids when
   `supportability_state=EMPTY` is requested, preserving the no-global-universe-discovery boundary,
 - returns search summaries with event counts, event-type counts, latest overall event posture,
-  matching-event count, latest matching-event posture, source systems, reason codes, content hash,
-  total count, scanned portfolio count, pre-pagination supportability-state, event-type, and
-  source-system facet counts, and an explicit support boundary,
+  matching-event count, latest matching-event posture, latest matching-event id/identity/source
+  coordinates, source systems, reason codes, content hash, total count, scanned portfolio count,
+  pre-pagination supportability-state, event-type, and source-system facet counts, and an explicit
+  support boundary,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
