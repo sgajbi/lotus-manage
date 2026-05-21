@@ -468,6 +468,15 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         ),
         examples=[{"WAVE_HANDOFF_READY": 1, "OUTCOME_REVIEW_CREATED": 1}],
     )
+    matching_event_supportability_state_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Aggregate count of matching portfolio-memory events by supportability state before "
+            "pagination. Counts are derived from events that satisfied the applied search filters, "
+            "not from the portfolio aggregate supportability state."
+        ),
+        examples=[{"READY": 2, "PENDING_REVIEW": 1}],
+    )
     source_system_counts: dict[str, int] = Field(
         default_factory=dict,
         description=(

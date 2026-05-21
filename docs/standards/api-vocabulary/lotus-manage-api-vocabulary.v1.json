@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T14:48:18.195415+00:00",
+  "generatedAt": "2026-05-21T15:20:38.940119+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -7588,6 +7588,22 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.matching_event_supportability_state_counts",
+      "canonicalTerm": "matching_event_supportability_state_counts",
+      "preferredName": "matching_event_supportability_state_counts",
+      "description": "Aggregate count of matching portfolio-memory events by supportability state before pagination. Counts are derived from events that satisfied the applied search filters, not from the portfolio aggregate supportability state.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -117122,6 +117138,14 @@
             "type": "object",
             "semanticId": "lotus.event_type_counts",
             "attributeRef": "#/attributeCatalog/lotus.event_type_counts"
+          },
+          {
+            "name": "matching_event_supportability_state_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.matching_event_supportability_state_counts",
+            "attributeRef": "#/attributeCatalog/lotus.matching_event_supportability_state_counts"
           },
           {
             "name": "source_system_counts",
