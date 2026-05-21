@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T13:18:52.510593+00:00",
+  "generatedAt": "2026-05-21T13:44:23.073494+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -18773,7 +18773,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional portfolio-memory event type filter.",
+      "description": "Optional portfolio-memory event type filter. Unsupported event types are rejected instead of being interpreted as an empty source result.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
       "semanticId": "lotus.event_type",
