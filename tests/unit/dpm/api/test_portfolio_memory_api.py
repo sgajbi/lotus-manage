@@ -46,6 +46,7 @@ from src.core.pm_quality.models import (
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 from src.core.portfolio_memory import service as portfolio_memory_service
+from src.core.portfolio_memory.models import DpmPortfolioMemory
 from src.core.portfolio_memory.handoffs import (
     DpmPortfolioMemoryReportContext,
     build_portfolio_memory_report_context,
@@ -931,6 +932,69 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert not any(
         event.metadata.get("external_execution_claimed") is True for event in memory.events
     )
+
+
+def test_portfolio_memory_rejects_inconsistent_aggregate_metadata() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    construction_repository = _construction_repository()
+    memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
+        generated_at=datetime(2026, 5, 22, 10, 0, tzinfo=timezone.utc),
+    )
+
+    inconsistent_count = memory.model_dump(mode="json")
+    inconsistent_count["event_count"] = memory.event_count + 1
+    with pytest.raises(ValidationError, match="event_count must equal"):
+        DpmPortfolioMemory.model_validate(inconsistent_count)
+
+    inconsistent_type_counts = memory.model_dump(mode="json")
+    inconsistent_type_counts["event_type_counts"]["PROOF_PACK_CREATED"] = 99
+    with pytest.raises(ValidationError, match="event_type_counts must match"):
+        DpmPortfolioMemory.model_validate(inconsistent_type_counts)
+
+    inconsistent_source_systems = memory.model_dump(mode="json")
+    inconsistent_source_systems["source_systems"] = ["lotus-manage"]
+    with pytest.raises(ValidationError, match="source_systems must match"):
+        DpmPortfolioMemory.model_validate(inconsistent_source_systems)
+
+    inconsistent_reason_codes = memory.model_dump(mode="json")
+    inconsistent_reason_codes["reason_codes"] = ["SOURCE_READY"]
+    with pytest.raises(ValidationError, match="reason_codes must match"):
+        DpmPortfolioMemory.model_validate(inconsistent_reason_codes)
+
+    inconsistent_supportability = memory.model_dump(mode="json")
+    inconsistent_supportability["supportability_state"] = "READY"
+    with pytest.raises(ValidationError, match="supportability_state must match"):
+        DpmPortfolioMemory.model_validate(inconsistent_supportability)
+
+    missing_governance = memory.model_dump(mode="json")
+    missing_governance["governance_policy"].pop("source_authority_policy")
+    with pytest.raises(
+        ValidationError,
+        match="governance_policy missing required keys: source_authority_policy",
+    ):
+        DpmPortfolioMemory.model_validate(missing_governance)
+
+    blank_governance = memory.model_dump(mode="json")
+    blank_governance["governance_policy"]["audit_policy"] = " "
+    with pytest.raises(
+        ValidationError,
+        match="governance_policy values must be non-blank for keys: audit_policy",
+    ):
+        DpmPortfolioMemory.model_validate(blank_governance)
+
+    mismatched_event_governance = memory.model_dump(mode="json")
+    mismatched_event_governance["events"][0]["audit_policy"] = "AUDIT_DISABLED"
+    with pytest.raises(
+        ValidationError,
+        match="events must match governance_policy.audit_policy",
+    ):
+        DpmPortfolioMemory.model_validate(mismatched_event_governance)
 
 
 def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None:

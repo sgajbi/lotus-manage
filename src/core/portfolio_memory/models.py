@@ -1,6 +1,6 @@
 """Domain models for source-backed portfolio memory."""
 
-from typing import Any, Literal
+from typing import Any, Iterable, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -50,6 +50,22 @@ PORTFOLIO_MEMORY_SOURCE_AUTHORITY_POLICY = (
     "portfolio memory projects source-owned facts; consumers must not reconstruct risk, "
     "performance, mandate-health, execution, tax, cash, FX, report, or AI truth"
 )
+PORTFOLIO_MEMORY_REQUIRED_GOVERNANCE_KEYS = frozenset(
+    {
+        "event_identity_scheme",
+        "retention_policy",
+        "redaction_policy",
+        "audit_policy",
+        "access_classification",
+        "source_authority_policy",
+    }
+)
+PORTFOLIO_MEMORY_EVENT_GOVERNANCE_FIELDS = {
+    "retention_policy": "retention_policy",
+    "redaction_policy": "redaction_policy",
+    "audit_policy": "audit_policy",
+    "access_classification": "access_classification",
+}
 
 
 class DpmPortfolioMemoryExternalExecutionBoundaryEvidence(BaseModel):
@@ -332,6 +348,69 @@ class DpmPortfolioMemory(BaseModel):
     )
     generated_at: str = Field(description="UTC timestamp when the read model was generated.")
 
+    @model_validator(mode="after")
+    def validate_aggregate_metadata(self) -> "DpmPortfolioMemory":
+        if self.event_count != len(self.events):
+            raise ValueError("event_count must equal the number of events.")
+
+        expected_event_type_counts = _counts(event.event_type for event in self.events)
+        if self.event_type_counts != expected_event_type_counts:
+            raise ValueError("event_type_counts must match the returned events.")
+
+        expected_source_systems = sorted(
+            {
+                source_system
+                for event in self.events
+                for source_system in _event_source_systems(event)
+            }
+        )
+        if self.source_systems != expected_source_systems:
+            raise ValueError("source_systems must match the returned events.")
+
+        expected_reason_codes = sorted(
+            {reason for event in self.events for reason in event.reason_codes}
+        )
+        if self.reason_codes != expected_reason_codes:
+            raise ValueError("reason_codes must match the returned events.")
+
+        expected_supportability_state = _portfolio_memory_supportability_state(self.events)
+        if self.supportability_state != expected_supportability_state:
+            raise ValueError("supportability_state must match the returned events.")
+
+        missing_governance_keys = (
+            PORTFOLIO_MEMORY_REQUIRED_GOVERNANCE_KEYS - self.governance_policy.keys()
+        )
+        if missing_governance_keys:
+            raise ValueError(
+                "governance_policy missing required keys: "
+                f"{', '.join(sorted(missing_governance_keys))}."
+            )
+
+        blank_governance_keys = [
+            key for key, value in self.governance_policy.items() if not value.strip()
+        ]
+        if blank_governance_keys:
+            raise ValueError(
+                "governance_policy values must be non-blank for keys: "
+                f"{', '.join(sorted(blank_governance_keys))}."
+            )
+
+        for event_field, governance_key in PORTFOLIO_MEMORY_EVENT_GOVERNANCE_FIELDS.items():
+            expected_value = self.governance_policy[governance_key]
+            mismatched_events = [
+                event.event_identity
+                for event in self.events
+                if getattr(event, event_field) != expected_value
+            ]
+            if mismatched_events:
+                raise ValueError(
+                    "events must match governance_policy."
+                    f"{governance_key} for {event_field}: "
+                    f"{', '.join(mismatched_events)}."
+                )
+
+        return self
+
 
 class DpmPortfolioMemoryEventLookup(BaseModel):
     portfolio_id: str = Field(description="Portfolio identifier used for the memory lookup.")
@@ -583,3 +662,34 @@ class DpmPortfolioMemorySearchPage(BaseModel):
             "Manage-local memory search does not discover the global portfolio universe or project OMS events."
         ],
     )
+
+
+def _counts(values: Iterable[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
+    return {
+        source_system
+        for source_system in [
+            event.source_system,
+            *(ref.source_system for ref in event.source_refs),
+            *(ref.source_system for ref in event.artifact_refs),
+        ]
+        if source_system
+    }
+
+
+def _portfolio_memory_supportability_state(
+    events: list[DpmPortfolioMemoryEvent],
+) -> PortfolioMemorySupportabilityState:
+    if not events:
+        return "EMPTY"
+    states = {event.supportability_state for event in events}
+    for state in ("BLOCKED", "DEGRADED", "PENDING_REVIEW"):
+        if state in states:
+            return state
+    return "READY"
