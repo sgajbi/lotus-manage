@@ -53,6 +53,7 @@ from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionRetirementRequest,
     DpmBulkReviewCampaignDefinitionSupersessionRequest,
 )
+from src.api.routers.wave_create_preview_http import create_wave_response, preview_wave_response
 from src.api.routers.wave_http_errors import wave_validation_http_exception
 from src.api.routers.wave_openapi_examples import (
     SOURCE_CHECK_WAVE_EXAMPLE,
@@ -1484,28 +1485,15 @@ def preview_wave(
     ),
 ) -> DpmWaveResponse:
     correlation_id = x_correlation_id or f"corr_wave_preview_{request.trigger_id}"
-    try:
-        portfolios = resolve_portfolio_inputs_for_request(
-            request=request,
-            correlation_id=correlation_id,
-            advise_authority_client=advise_authority_client,
-            risk_authority_client=risk_authority_client,
-            campaign_definition_repository=campaign_definition_repository,
-            core_resolver_factory=build_core_resolver_client,
-        )
-        wave = wave_service.preview_wave(
-            trigger_type=request.trigger_type,
-            trigger_id=request.trigger_id,
-            rationale=request.rationale,
-            as_of_date=request.as_of_date,
-            actor_id=request.actor_id,
-            correlation_id=correlation_id,
-            portfolios=portfolios,
-            mandate_repository=mandate_repository,
-        )
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc, conflict_codes=()) from exc
-    return wave_response(wave=wave, durable=False)
+    return preview_wave_response(
+        request=request,
+        correlation_id=correlation_id,
+        mandate_repository=mandate_repository,
+        advise_authority_client=advise_authority_client,
+        risk_authority_client=risk_authority_client,
+        campaign_definition_repository=campaign_definition_repository,
+        core_resolver_factory=build_core_resolver_client,
+    )
 
 
 @router.post(
@@ -1583,30 +1571,17 @@ def create_wave(
     ),
 ) -> DpmWaveResponse:
     correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
-    try:
-        portfolios = resolve_portfolio_inputs_for_request(
-            request=request,
-            correlation_id=correlation_id,
-            advise_authority_client=advise_authority_client,
-            risk_authority_client=risk_authority_client,
-            campaign_definition_repository=campaign_definition_repository,
-            core_resolver_factory=build_core_resolver_client,
-        )
-        wave, replayed = wave_service.create_wave(
-            trigger_type=request.trigger_type,
-            trigger_id=request.trigger_id,
-            rationale=request.rationale,
-            as_of_date=request.as_of_date,
-            actor_id=request.actor_id,
-            correlation_id=correlation_id,
-            portfolios=portfolios,
-            idempotency_key=idempotency_key,
-            mandate_repository=mandate_repository,
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc, conflict_codes=("WAVE_CREATE_CONFLICT",)) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
+    return create_wave_response(
+        request=request,
+        idempotency_key=idempotency_key,
+        correlation_id=correlation_id,
+        mandate_repository=mandate_repository,
+        wave_repository=wave_repository,
+        advise_authority_client=advise_authority_client,
+        risk_authority_client=risk_authority_client,
+        campaign_definition_repository=campaign_definition_repository,
+        core_resolver_factory=build_core_resolver_client,
+    )
 
 
 @router.get(
