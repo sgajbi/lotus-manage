@@ -2040,8 +2040,8 @@ Functional behavior:
   refs, so report, AI, and archive handoff evidence remains visible to audit search without
   projecting raw downstream payloads,
 - returns one exact source-backed portfolio-memory event by portfolio id and event id, including
-  the event identity, memory content hash, and explicit no-claim boundary for audit drilldown from
-  a search hit,
+  the event identity, memory content hash, replay-stable lookup envelope hash, and explicit
+  no-claim boundary for audit drilldown from a search hit,
 - emits portfolio-memory view and search-page content hashes that exclude `generated_at`, so
   equivalent source-backed views remain replay-stable for audit reconciliation,
 - filters portfolio memory by source portfolio id,

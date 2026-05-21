@@ -160,9 +160,9 @@ are treated as absent, so audit consumers can rely on the echoed filter posture 
 query-string formatting.
 `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}` provides the bounded
 drilldown counterpart for those search hits: it returns the exact source-backed memory event,
-event identity, memory content hash, and no-claim boundary without querying external source-owner
-event stores or projecting OMS, client communication, risk, performance, report, archive, or AI
-truth.
+event identity, memory content hash, replay-stable lookup envelope hash, and no-claim boundary
+without querying external source-owner event stores or projecting OMS, client communication, risk,
+performance, report, archive, or AI truth.
 Unsupported event-type filters are rejected at the API boundary instead of being interpreted as an
 empty source result. Empty supportability summaries are returned only for explicit caller-supplied
 portfolio identifiers when `supportability_state=EMPTY` is requested; the search route is not

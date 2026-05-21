@@ -30,6 +30,7 @@ from src.core.portfolio_memory.models import (
     PortfolioMemorySupportabilityState,
 )
 from src.core.portfolio_memory.service import (
+    build_portfolio_memory_event_lookup,
     build_portfolio_memory,
     normalize_portfolio_memory_search_filter,
     search_portfolio_memory,
@@ -216,22 +217,18 @@ def get_portfolio_memory_event(
         campaign_definition_repository=campaign_definition_repository,
         limit=limit,
     )
-    for event in memory.events:
-        if event.event_id == event_id:
-            return DpmPortfolioMemoryEventLookup(
-                portfolio_id=portfolio_id,
-                event_id=event_id,
-                event_identity=event.event_identity,
-                event=event,
-                memory_content_hash=memory.content_hash,
-                generated_at=memory.generated_at,
-                support_boundary=(
-                    "Manage-local memory event lookup selects exact events from persisted Manage "
-                    "evidence only; it does not discover the global portfolio universe, query "
-                    "external source-owner event stores, project OMS acknowledgement/fill/"
-                    "settlement events, or recalculate source truth."
-                ),
-            )
+    lookup = build_portfolio_memory_event_lookup(
+        memory=memory,
+        event_id=event_id,
+        support_boundary=(
+            "Manage-local memory event lookup selects exact events from persisted Manage "
+            "evidence only; it does not discover the global portfolio universe, query "
+            "external source-owner event stores, project OMS acknowledgement/fill/"
+            "settlement events, or recalculate source truth."
+        ),
+    )
+    if lookup is not None:
+        return lookup
     raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=(

@@ -35,6 +35,7 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryClientCommunicationBoundaryEvidence,
     DpmPortfolioMemoryEvent,
+    DpmPortfolioMemoryEventLookup,
     DpmPortfolioMemoryExternalExecutionBoundaryEvidence,
     DpmPortfolioMemorySearchAppliedFilters,
     DpmPortfolioMemorySearchItem,
@@ -425,6 +426,35 @@ def search_portfolio_memory(
         strip_keys(page_for_hash.model_dump(mode="json"), exclude={"content_hash", "generated_at"})
     )
     return DpmPortfolioMemorySearchPage.model_validate(page_payload)
+
+
+def build_portfolio_memory_event_lookup(
+    *,
+    memory: DpmPortfolioMemory,
+    event_id: str,
+    support_boundary: str,
+) -> DpmPortfolioMemoryEventLookup | None:
+    """Select one portfolio-memory event and return a replay-stable lookup envelope."""
+
+    for event in memory.events:
+        if event.event_id != event_id:
+            continue
+        lookup = DpmPortfolioMemoryEventLookup(
+            portfolio_id=memory.portfolio_id,
+            event_id=event_id,
+            event_identity=event.event_identity,
+            event=event,
+            memory_content_hash=memory.content_hash,
+            content_hash="sha256:pending",
+            generated_at=memory.generated_at,
+            support_boundary=support_boundary,
+        )
+        payload = lookup.model_dump(mode="json")
+        payload["content_hash"] = hash_canonical_payload(
+            strip_keys(payload, exclude={"content_hash", "generated_at"})
+        )
+        return DpmPortfolioMemoryEventLookup.model_validate(payload)
+    return None
 
 
 def _memory_candidate_portfolio_ids(

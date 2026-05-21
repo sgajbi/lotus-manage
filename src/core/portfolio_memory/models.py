@@ -348,6 +348,12 @@ class DpmPortfolioMemoryEventLookup(BaseModel):
     memory_content_hash: str = Field(
         description="Canonical hash of the portfolio-memory view from which the event was selected."
     )
+    content_hash: str = Field(
+        description=(
+            "Canonical hash of the event lookup envelope excluding generated_at, so audit "
+            "consumers can reconcile equivalent drilldown responses without timestamp churn."
+        )
+    )
     generated_at: str = Field(description="UTC timestamp when the lookup view was generated.")
     support_boundary: str = Field(
         description="Explicit no-claim boundary for the bounded memory event lookup surface.",
