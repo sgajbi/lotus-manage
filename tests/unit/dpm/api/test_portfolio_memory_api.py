@@ -44,7 +44,11 @@ from src.core.pm_quality.models import (
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 from src.core.portfolio_memory import service as portfolio_memory_service
-from src.core.portfolio_memory.service import build_portfolio_memory, search_portfolio_memory
+from src.core.portfolio_memory.service import (
+    build_portfolio_memory,
+    build_portfolio_memory_event_lookup,
+    search_portfolio_memory,
+)
 from src.core.proof_packs import DpmProofPackEvidenceRef
 from src.core.waves.models import (
     DpmRebalanceWave,
@@ -972,6 +976,54 @@ def test_portfolio_memory_hashes_exclude_generated_at_for_audit_replay() -> None
     assert first_page.items[0].content_hash == later_page.items[0].content_hash
 
 
+def test_portfolio_memory_event_lookup_hash_excludes_generated_at() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    first_memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+    )
+    later_memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        generated_at=datetime(2026, 5, 21, 11, 0, tzinfo=timezone.utc),
+    )
+    event_id = "memory:wave:dwv_001:handoff:dwh_001"
+    support_boundary = "Manage-local lookup test boundary."
+
+    first_lookup = build_portfolio_memory_event_lookup(
+        memory=first_memory,
+        event_id=event_id,
+        support_boundary=support_boundary,
+    )
+    later_lookup = build_portfolio_memory_event_lookup(
+        memory=later_memory,
+        event_id=event_id,
+        support_boundary=support_boundary,
+    )
+
+    assert first_lookup is not None
+    assert later_lookup is not None
+    assert first_lookup.generated_at != later_lookup.generated_at
+    assert first_lookup.memory_content_hash == later_lookup.memory_content_hash
+    assert first_lookup.content_hash == later_lookup.content_hash
+    assert first_lookup.event_identity == later_lookup.event_identity
+    assert (
+        build_portfolio_memory_event_lookup(
+            memory=first_memory,
+            event_id="not-a-memory-event",
+            support_boundary=support_boundary,
+        )
+        is None
+    )
+
+
 def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
@@ -1568,6 +1620,7 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert payload["event"]["source_id"] == "dwh_001"
     assert payload["event"]["content_hash"] == "sha256:handoff-memory"
     assert payload["memory_content_hash"].startswith("sha256:")
+    assert payload["content_hash"].startswith("sha256:")
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
     assert "external source-owner event stores" in payload["support_boundary"]
     assert missing_response.status_code == 404
@@ -1580,6 +1633,10 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     )
     event_lookup_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryEventLookup"]
     assert "memory_content_hash" in event_lookup_schema["properties"]
+    assert "content_hash" in event_lookup_schema["properties"]
+    assert (
+        "excluding generated_at" in event_lookup_schema["properties"]["content_hash"]["description"]
+    )
     assert "support_boundary" in event_lookup_schema["properties"]
 
 
