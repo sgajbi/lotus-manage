@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T12:46:22.738348+00:00",
+  "generatedAt": "2026-05-21T13:18:52.510593+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -12604,6 +12604,22 @@
       ]
     },
     {
+      "semanticId": "lotus.source_system_counts",
+      "canonicalTerm": "source_system_counts",
+      "preferredName": "source_system_counts",
+      "description": "Aggregate count of matching portfolio-memory summaries by represented source system before pagination. Counts are derived from Manage-local evidence only.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.source_systems",
       "canonicalTerm": "source_systems",
       "preferredName": "source_systems",
@@ -13242,6 +13258,22 @@
       "observedTypes": [
         "object",
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.supportability_state_counts",
+      "canonicalTerm": "supportability_state_counts",
+      "preferredName": "supportability_state_counts",
+      "description": "Aggregate count of matching portfolio-memory summaries by supportability state before pagination. Counts are derived from Manage-local search results only and are not a global portfolio-universe census.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -116824,6 +116856,30 @@
             "type": "integer",
             "semanticId": "lotus.scanned_portfolio_count",
             "attributeRef": "#/attributeCatalog/lotus.scanned_portfolio_count"
+          },
+          {
+            "name": "supportability_state_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.supportability_state_counts",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state_counts"
+          },
+          {
+            "name": "event_type_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.event_type_counts",
+            "attributeRef": "#/attributeCatalog/lotus.event_type_counts"
+          },
+          {
+            "name": "source_system_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_system_counts",
+            "attributeRef": "#/attributeCatalog/lotus.source_system_counts"
           },
           {
             "name": "generated_at",
