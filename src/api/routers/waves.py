@@ -15,7 +15,6 @@ from src.api.dependencies import (
     get_risk_authority_client,
     get_wave_repository,
 )
-from src.api.request_models import RebalanceRequest
 from src.api.routers.wave_response_contracts import (
     DpmWaveDetailResponse,
     DpmWaveItemsResponse,
@@ -70,6 +69,7 @@ from src.api.routers.wave_read_http import (
     get_wave_items_response,
     get_wave_proof_pack_posture_response,
 )
+from src.api.routers.wave_simulation_http import build_wave_simulation_item_inputs
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.api.routers.wave_workflow_command_http import run_wave_workflow_command_response
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
@@ -1882,22 +1882,12 @@ def simulate_wave(
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    item_inputs: dict[str, RebalanceRequest | wave_service.DpmWaveSimulationInput] = {}
-    for item_input in request.item_inputs:
-        simulation_input = wave_service.DpmWaveSimulationInput(
-            stateless_input=item_input.stateless_input,
-            authority_context=item_input.authority_context,
-        )
-        if item_input.wave_item_id:
-            item_inputs[item_input.wave_item_id] = simulation_input
-        if item_input.portfolio_id:
-            item_inputs[item_input.portfolio_id] = simulation_input
     try:
         wave, replayed = wave_service.simulate_wave(
             wave_id=wave_id,
             actor_id=request.actor_id,
             correlation_id=x_correlation_id or f"corr_wave_simulate_{wave_id}",
-            item_inputs=item_inputs,
+            item_inputs=build_wave_simulation_item_inputs(request),
             methods=request.methods,
             construction_repository=construction_repository,
             run_service=run_service,
