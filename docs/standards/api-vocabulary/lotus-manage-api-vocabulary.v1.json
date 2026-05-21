@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T16:08:54.347728+00:00",
+  "generatedAt": "2026-05-21T16:24:52.194560+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -19005,7 +19005,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional aggregate supportability-state filter.",
+      "description": "Optional aggregate supportability-state filter. Leading and trailing whitespace is normalized before matching.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
       "semanticId": "lotus.supportability_state",
@@ -19017,7 +19017,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional represented source-system filter.",
+      "description": "Optional represented source-system filter. Leading and trailing whitespace is normalized before matching.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
       "semanticId": "lotus.source_system",

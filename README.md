@@ -149,6 +149,9 @@ portfolio-level source-system coverage from the specific event that satisfied an
 event/source/supportability filter without loading every portfolio timeline. Pagination metadata
 also returns `has_more`, `next_offset`, and the normalized `applied_filters` echo so consumers can
 continue bounded searches without reconstructing continuation logic or filter posture from counts.
+Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
+are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
+query-string formatting.
 `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}` provides the bounded
 drilldown counterpart for those search hits: it returns the exact source-backed memory event,
 event identity, memory content hash, and no-claim boundary without querying external source-owner

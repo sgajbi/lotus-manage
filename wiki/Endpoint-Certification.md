@@ -2022,6 +2022,8 @@ Functional behavior:
 - searches a bounded Manage-local portfolio-memory index across persisted proof packs, rebalance
   waves, monitoring exceptions, outcome reviews, and optional caller-supplied portfolio ids,
 - filters the search index by event type, supportability state, and represented source system,
+- normalizes leading/trailing whitespace on event-type, supportability-state, and represented
+  source-system filters before validation and matching, treating blank text filters as absent,
 - rejects unsupported event-type filters with an explicit
   `UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE` error instead of returning a misleading empty page,
 - returns `EMPTY` search summaries only for explicit caller-supplied portfolio ids when
