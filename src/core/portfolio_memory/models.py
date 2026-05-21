@@ -493,6 +493,13 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
         examples=[3],
     )
+    source_scan_limit: int = Field(
+        description=(
+            "Maximum rows requested from each Manage-local evidence repository while building this "
+            "bounded search page."
+        ),
+        examples=[500],
+    )
     applied_filters: DpmPortfolioMemorySearchAppliedFilters = Field(
         description=(
             "Normalized portfolio-memory search filters applied to this bounded page. This echo "

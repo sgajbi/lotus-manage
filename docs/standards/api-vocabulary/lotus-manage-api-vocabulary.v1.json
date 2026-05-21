@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T16:24:52.194560+00:00",
+  "generatedAt": "2026-05-21T16:40:02.504195+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -12743,7 +12743,8 @@
       "example": null,
       "type": "integer",
       "locations": [
-        "query"
+        "query",
+        "body"
       ],
       "observedTypes": [
         "integer"
@@ -117200,6 +117201,14 @@
             "type": "integer",
             "semanticId": "lotus.scanned_portfolio_count",
             "attributeRef": "#/attributeCatalog/lotus.scanned_portfolio_count"
+          },
+          {
+            "name": "source_scan_limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.source_scan_limit",
+            "attributeRef": "#/attributeCatalog/lotus.source_scan_limit"
           },
           {
             "name": "applied_filters",

@@ -400,6 +400,7 @@ def search_portfolio_memory(
         has_more=has_more,
         next_offset=next_offset if has_more else None,
         scanned_portfolio_count=len(candidate_ids),
+        source_scan_limit=source_scan_limit,
         applied_filters=DpmPortfolioMemorySearchAppliedFilters(
             portfolio_ids=sorted(explicit_candidate_ids),
             event_type=normalized_event_type,

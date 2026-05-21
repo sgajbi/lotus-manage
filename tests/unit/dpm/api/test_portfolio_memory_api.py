@@ -1293,6 +1293,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["has_more"] is False
     assert payload["next_offset"] is None
     assert payload["scanned_portfolio_count"] == 2
+    assert payload["source_scan_limit"] == 500
     assert payload["applied_filters"] == {
         "portfolio_ids": [],
         "event_type": "WAVE_HANDOFF_READY",
@@ -1340,6 +1341,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "has_more" in search_schema["properties"]
     assert "next_offset" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
+    assert "source_scan_limit" in search_schema["properties"]
     assert "applied_filters" in search_schema["properties"]
     assert "matching_event_supportability_state_counts" in search_schema["properties"]
     assert "matching_event_source_system_counts" in search_schema["properties"]
@@ -1634,10 +1636,12 @@ def test_portfolio_memory_search_requires_source_system_on_matching_event_type()
         pm_quality_summary_invocation_repository=pm_quality_summary_repository,
         event_type="PM_QUALITY_SUMMARY_INVOCATION",
         source_system="lotus-core",
+        source_scan_limit=25,
     )
 
     assert page.returned_count == 0
     assert page.total_count == 0
+    assert page.source_scan_limit == 25
     assert page.applied_filters.event_type == "PM_QUALITY_SUMMARY_INVOCATION"
     assert page.applied_filters.source_system == "lotus-core"
     assert page.event_type_counts == {}
@@ -1804,6 +1808,7 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
     assert empty_filtered.has_more is False
     assert empty_filtered.next_offset is None
     assert empty_filtered.scanned_portfolio_count == 1
+    assert empty_filtered.source_scan_limit == 500
     assert empty_filtered.applied_filters.portfolio_ids == ["EMPTY_PORTFOLIO"]
     assert empty_filtered.applied_filters.event_type is None
     assert empty_filtered.applied_filters.supportability_state == "EMPTY"

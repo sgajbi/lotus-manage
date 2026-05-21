@@ -147,8 +147,10 @@ system plus matching-event context and stable matching-event identity/source coo
 consumers can distinguish the latest overall memory event, aggregate portfolio posture, and
 portfolio-level source-system coverage from the specific event that satisfied an
 event/source/supportability filter without loading every portfolio timeline. Pagination metadata
-also returns `has_more`, `next_offset`, and the normalized `applied_filters` echo so consumers can
-continue bounded searches without reconstructing continuation logic or filter posture from counts.
+also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
+`source_scan_limit` used for each Manage-local evidence repository so consumers can continue
+bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
+from counts.
 Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
 are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
 query-string formatting.
