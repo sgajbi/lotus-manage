@@ -65,6 +65,11 @@ from src.api.routers.wave_openapi_examples import (
 from src.api.routers.wave_portfolio_resolution import (
     resolve_portfolio_inputs_for_request,
 )
+from src.api.routers.wave_read_http import (
+    get_wave_detail_response,
+    get_wave_items_response,
+    get_wave_proof_pack_posture_response,
+)
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
@@ -1724,14 +1729,10 @@ def get_wave_detail(
     wave_id: str,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveDetailResponse:
-    try:
-        payload = wave_service.retrieve_wave_detail(
-            wave_id=wave_id,
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    return DpmWaveDetailResponse.model_validate(payload)
+    return get_wave_detail_response(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 @router.get(
@@ -1753,14 +1754,10 @@ def get_wave_items(
     wave_id: str,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveItemsResponse:
-    try:
-        payload = wave_service.list_wave_items(
-            wave_id=wave_id,
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    return DpmWaveItemsResponse.model_validate(payload)
+    return get_wave_items_response(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 @router.post(
@@ -2175,14 +2172,10 @@ def get_wave_proof_pack_posture(
     wave_id: str,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveProofPackPostureResponse:
-    try:
-        payload = wave_service.proof_pack_posture(
-            wave_id=wave_id,
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    return DpmWaveProofPackPostureResponse.model_validate(payload)
+    return get_wave_proof_pack_posture_response(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 @router.get(
