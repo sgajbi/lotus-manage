@@ -154,6 +154,10 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
                 event["event_type"] == "OUTCOME_REVIEW_CREATED"
                 for event in report_input["portfolio_memory_context"]["event_refs"]
             )
+            assert all(
+                event["event_time"]
+                for event in report_input["portfolio_memory_context"]["event_refs"]
+            )
 
             ai = client.get(
                 f"/api/v1/rebalance/outcome-reviews/{outcome_review_id}/ai-evidence-input"

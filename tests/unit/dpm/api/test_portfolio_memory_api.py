@@ -1052,10 +1052,14 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
     assert full_context.event_refs_returned == len(full_context.event_refs)
     assert full_context.event_refs_omitted == 0
     assert full_context.event_refs_truncated is False
+    assert all(event_ref.event_time for event_ref in full_context.event_refs)
     assert narrower_context.event_ref_limit == 1
     assert narrower_context.event_refs_returned == 1
     assert narrower_context.event_refs_omitted == narrower_context.event_count - 1
     assert narrower_context.event_refs_truncated is True
+    assert [event_ref.event_time for event_ref in narrower_context.event_refs] == [
+        memory.events[0].event_time
+    ]
     assert "does not project raw source payloads" in full_context.support_boundary
     assert "project OMS acknowledgement/fill/settlement events" in full_context.support_boundary
     assert "project client communication events" in full_context.support_boundary
@@ -1692,6 +1696,8 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
         "bounded report-context envelope"
         in report_context_schema["properties"]["context_content_hash"]["description"]
     )
+    event_ref_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryReportEventRef"]
+    assert "event_time" in event_ref_schema["properties"]
 
 
 def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_events() -> None:
