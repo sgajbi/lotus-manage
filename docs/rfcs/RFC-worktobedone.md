@@ -4078,6 +4078,18 @@ continues to carry `external_execution_claimed=false`; contaminated handoff evid
 diagnosable through proof-pack posture but is still blocked from report-input propagation. This is
 fail-closed evidence only, not execution integration.
 
+2026-05-21 client-communication boundary hardening result:
+
+Wave proof-pack posture and `DpmWaveReportInput` now also include structured
+`DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence with a deterministic content hash, blocked
+client-contact, client-message-generation, client-approval, delivery-confirmation, and
+communication-audit capabilities, required future client-communication owner, required
+`ClientCommunicationRecord:v1` source product, and promotion requirements for certified source
+ownership, delivery/audit reconciliation, consent/evidence controls, Manage consumer declaration,
+and Gateway/Workbench realization. This prevents downstream report, archive, AI, support, and
+operations consumers from inferring hidden client-contact or client-approval truth from internal
+operations handoff evidence.
+
 Dependencies before implementation:
 
 1. execution/OMS owner and contract,

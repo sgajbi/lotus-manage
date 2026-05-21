@@ -160,7 +160,12 @@ internal handoff evidence, retrieve/search/item/proof-pack/report-input/supporta
 Postgres-backed evidence under `output/rfc0041-wave-proof/20260504-231914`. Gateway composition,
 Workbench first-wave command-center UX, and wave report materialization in `lotus-report`,
 `lotus-render`, and `lotus-archive` are implementation-backed, merged, validated, and
-wiki-published. PM-book cohort discovery is implemented for `PM_BOOK_REVIEW` through the
+wiki-published. Wave proof-pack posture and report-input contracts now also carry
+`DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence, with promotion requirements for a future
+`ClientCommunicationRecord:v1` owner, delivery/approval/audit reconciliation, consent/evidence
+controls, and downstream realization before any client-contact, client-message, client-approval,
+delivery-confirmation, or communication-audit capability can be promoted. PM-book cohort discovery
+is implemented for `PM_BOOK_REVIEW` through the
 source-owned lotus-core `PortfolioManagerBookMembership:v1` product; CIO model-change discovery is
 implemented through `CioModelChangeAffectedCohort:v1`; and bounded risk-event discovery is
 implemented for `RISK_EVENT` through lotus-risk `RiskEventAffectedCohort:v1` over caller-supplied
@@ -572,6 +577,10 @@ Operationally important truths:
     downstream realization requirements before promotion. AI-evidence handoff source refs are bounded to persisted
     outcome-review lineage and deduplicated review, snapshot, dimension-result, and metric-level
     evidence refs.
+11. wave proof-pack posture and report-input handoffs expose structured
+    `DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage wave evidence stops at internal
+    operations handoff and does not contact clients, generate client-ready wave messages, collect
+    client approval, confirm delivery, or certify communication audit truth.
 
 ## Documentation Map
 
