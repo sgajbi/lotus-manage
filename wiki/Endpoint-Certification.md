@@ -2044,6 +2044,9 @@ Functional behavior:
   no-claim boundary for audit drilldown from a search hit,
 - emits portfolio-memory view and search-page content hashes that exclude `generated_at`, so
   equivalent source-backed views remain replay-stable for audit reconciliation,
+- emits report/AI handoff portfolio-memory contexts with the source memory view hash plus a bounded
+  context envelope hash over report-safe event refs, so downstream report consumers can reconcile
+  lineage context without loading the full memory view,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,
