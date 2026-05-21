@@ -391,39 +391,46 @@ def search_portfolio_memory(
     page = [item for item, _events in page_rows]
     next_offset = offset + len(page)
     has_more = next_offset < total_count
-    return DpmPortfolioMemorySearchPage(
-        items=page,
-        limit=limit,
-        offset=offset,
-        returned_count=len(page),
-        total_count=total_count,
-        has_more=has_more,
-        next_offset=next_offset if has_more else None,
-        scanned_portfolio_count=len(candidate_ids),
-        source_scan_limit=source_scan_limit,
-        applied_filters=DpmPortfolioMemorySearchAppliedFilters(
+    page_payload = {
+        "items": page,
+        "limit": limit,
+        "offset": offset,
+        "returned_count": len(page),
+        "total_count": total_count,
+        "has_more": has_more,
+        "next_offset": next_offset if has_more else None,
+        "scanned_portfolio_count": len(candidate_ids),
+        "source_scan_limit": source_scan_limit,
+        "applied_filters": DpmPortfolioMemorySearchAppliedFilters(
             portfolio_ids=sorted(explicit_candidate_ids),
             event_type=normalized_event_type,
             supportability_state=normalized_supportability_state,
             source_system=normalized_source_system,
         ),
-        supportability_state_counts=dict(sorted(supportability_state_counts.items())),
-        event_type_counts=dict(sorted(event_type_counts.items())),
-        matching_event_supportability_state_counts=dict(
+        "supportability_state_counts": dict(sorted(supportability_state_counts.items())),
+        "event_type_counts": dict(sorted(event_type_counts.items())),
+        "matching_event_supportability_state_counts": dict(
             sorted(matching_event_supportability_state_counts.items())
         ),
-        matching_event_source_system_counts=dict(
+        "matching_event_source_system_counts": dict(
             sorted(matching_event_source_system_counts.items())
         ),
-        source_system_counts=dict(sorted(source_system_counts.items())),
-        generated_at=generated_at.isoformat(),
-        support_boundary=(
+        "source_system_counts": dict(sorted(source_system_counts.items())),
+        "generated_at": generated_at.isoformat(),
+        "support_boundary": (
             "Manage-local memory search indexes persisted Manage evidence and explicit "
             "caller-supplied portfolio identifiers only; it does not discover the global "
             "portfolio universe, query external source-owner event stores, project OMS "
             "acknowledgement/fill/settlement events, or recalculate source truth."
         ),
+    }
+    page_for_hash = DpmPortfolioMemorySearchPage.model_validate(
+        {**page_payload, "content_hash": "sha256:pending"}
     )
+    page_payload["content_hash"] = hash_canonical_payload(
+        strip_keys(page_for_hash.model_dump(mode="json"), exclude={"content_hash", "generated_at"})
+    )
+    return DpmPortfolioMemorySearchPage.model_validate(page_payload)
 
 
 def _memory_candidate_portfolio_ids(

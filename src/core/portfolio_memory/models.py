@@ -551,6 +551,12 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         ),
         examples=[{"lotus-manage": 2, "lotus-core": 1}],
     )
+    content_hash: str = Field(
+        description=(
+            "Canonical hash of the bounded search page excluding generated_at, so audit consumers "
+            "can reconcile the page posture without timestamp churn."
+        )
+    )
     generated_at: str = Field(description="UTC timestamp when the search page was generated.")
     support_boundary: str = Field(
         description=("Explicit no-claim boundary for the bounded memory search surface."),
