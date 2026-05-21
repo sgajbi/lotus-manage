@@ -53,6 +53,13 @@ from src.api.routers.wave_campaign_models import (
 from src.api.routers.wave_campaign_launch_http import (
     launch_bulk_review_campaign_definition_response,
 )
+from src.api.routers.wave_campaign_read_http import (
+    get_campaign_definition_launch_package_response,
+    get_campaign_definition_preview_readiness_response,
+    get_campaign_definition_workflow_overview_response,
+    list_campaign_definition_launch_history_response,
+    list_campaign_definition_lifecycle_events_response,
+)
 from src.api.routers.wave_create_preview_http import create_wave_response, preview_wave_response
 from src.api.routers.wave_openapi_examples import (
     SOURCE_CHECK_WAVE_EXAMPLE,
@@ -106,9 +113,6 @@ from src.core.waves import (
     DpmWaveReportInput,
     DpmWaveRepository,
     build_bulk_review_campaign_discovery_item,
-    build_bulk_review_campaign_definition_preview_readiness,
-    build_bulk_review_campaign_definition_launch_package,
-    build_bulk_review_campaign_definition_launch_history_page,
     build_bulk_review_campaign_definition_approval_decision_page,
     build_bulk_review_campaign_definition_assignment_action_page,
     build_bulk_review_campaign_definition_assignment_task_page,
@@ -120,7 +124,6 @@ from src.core.waves import (
     record_bulk_review_campaign_definition_maker_checker_control,
     build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_assignment_plan_page,
-    build_bulk_review_campaign_definition_workflow_overview,
     build_bulk_review_campaign_operating_queue_page,
     build_bulk_review_campaign_workflow_board_page,
     build_bulk_review_campaign_workflow_automation_page,
@@ -132,7 +135,6 @@ from src.core.waves.campaign_definition_lifecycle import (
 )
 from src.core.waves.campaign_definition_events import (
     DpmBulkReviewCampaignDefinitionLifecycleEventPage,
-    build_bulk_review_campaign_definition_lifecycle_events,
 )
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
@@ -1144,12 +1146,11 @@ def list_bulk_review_campaign_definition_lifecycle_events(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return list_campaign_definition_lifecycle_events_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
+        repository=repository,
     )
-    return build_bulk_review_campaign_definition_lifecycle_events(definition=definition)
 
 
 @router.get(
@@ -1174,15 +1175,12 @@ def list_bulk_review_campaign_definition_launch_history(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return list_campaign_definition_launch_history_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_launch_history_page(
-        definition=definition,
         limit=limit,
         offset=offset,
+        repository=repository,
     )
 
 
@@ -1232,24 +1230,17 @@ def get_bulk_review_campaign_definition_workflow_overview(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionWorkflowOverview:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return get_campaign_definition_workflow_overview_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    return build_bulk_review_campaign_definition_workflow_overview(
-        definition=definition,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
-        active_on=active_on_date,
+        active_on=active_on,
         launch_history_limit=launch_history_limit,
         launch_history_offset=launch_history_offset,
         include_launch_package=include_launch_package,
         correlation_id=correlation_id,
+        repository=repository,
     )
 
 
@@ -1282,15 +1273,12 @@ def get_bulk_review_campaign_definition_preview_readiness(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionPreviewReadiness:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return get_campaign_definition_preview_readiness_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_preview_readiness(
-        definition=definition,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
+        repository=repository,
     )
 
 
@@ -1327,16 +1315,13 @@ def get_bulk_review_campaign_definition_launch_package(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchPackage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
+    return get_campaign_definition_launch_package_response(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_launch_package(
-        definition=definition,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
         correlation_id=correlation_id,
+        repository=repository,
     )
 
 
