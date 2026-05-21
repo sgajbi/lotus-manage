@@ -16,6 +16,15 @@ GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES = [
     "source_fact_recalculation",
     "membership_recomputation",
 ]
+GLOBAL_CAMPAIGN_UNIVERSE_PROMOTION_REQUIREMENTS = [
+    "certified_source_owner",
+    "GlobalPortfolioUniverseCampaignCandidateSet:v1",
+    "source_product_contract",
+    "producer_lineage_and_freshness_controls",
+    "manage_consumer_declaration",
+    "gateway_bff_realization",
+    "workbench_gateway_only_realization",
+]
 
 
 def _campaign_universe_posture_payload(
@@ -26,6 +35,7 @@ def _campaign_universe_posture_payload(
     payload: dict[str, object] = {
         "product_name": "BulkReviewCampaignUniversePosture",
         "product_version": "v1",
+        "discovery_mode": "PERSISTED_DEFINITION_ONLY",
         "source_scope": "PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
         "global_portfolio_universe_discovery": "UNSUPPORTED",
         "global_portfolio_universe_owner_posture": "DEFERRED_SOURCE_OWNER",
@@ -33,6 +43,7 @@ def _campaign_universe_posture_payload(
         "candidate_source_ref_posture": candidate_source_ref_posture,
         "source_systems": source_systems,
         "blocked_capabilities": GLOBAL_CAMPAIGN_UNIVERSE_BLOCKED_CAPABILITIES,
+        "promotion_requirements": GLOBAL_CAMPAIGN_UNIVERSE_PROMOTION_REQUIREMENTS,
         "operating_boundaries": [
             "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
             "NO_SOURCE_FACT_RECALCULATION",
@@ -51,6 +62,13 @@ class DpmBulkReviewCampaignUniversePosture(BaseModel):
 
     product_name: Literal["BulkReviewCampaignUniversePosture"] = "BulkReviewCampaignUniversePosture"
     product_version: Literal["v1"] = "v1"
+    discovery_mode: Literal["PERSISTED_DEFINITION_ONLY"] = Field(
+        default="PERSISTED_DEFINITION_ONLY",
+        description=(
+            "Manage discovery mode for this row. Manage only lists persisted campaign definitions "
+            "and never scans the bank-wide portfolio universe."
+        ),
+    )
     source_scope: Literal["PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES"] = Field(
         default="PERSISTED_CAMPAIGN_DEFINITION_CANDIDATES",
         description=(
@@ -94,6 +112,13 @@ class DpmBulkReviewCampaignUniversePosture(BaseModel):
         description=(
             "Capability families explicitly not provided by the persisted campaign-discovery "
             "read model."
+        ),
+    )
+    promotion_requirements: list[str] = Field(
+        default_factory=lambda: list(GLOBAL_CAMPAIGN_UNIVERSE_PROMOTION_REQUIREMENTS),
+        description=(
+            "Machine-readable requirements that must be satisfied before bank-wide campaign "
+            "candidate discovery can be promoted beyond persisted definition rows."
         ),
     )
     operating_boundaries: list[str] = Field(

@@ -69,11 +69,13 @@ mutation, maker-checker control-state mutation, trade approval, order generation
 external workflow orchestration, OMS execution, or global portfolio-universe discovery.
 
 Campaign universe-boundary posture addendum: `BulkReviewCampaignUniversePosture:v1` now carries a
-deterministic content hash, deferred global portfolio-universe source-owner posture, required future
-`GlobalPortfolioUniverseCampaignCandidateSet:v1`, and blocked capability codes for bank-wide
-portfolio scans, candidate discovery, eligibility calculation, source-fact recalculation, and
-membership recomputation. This keeps `GET /api/v1/rebalance/waves/campaign-discovery` bounded to
-persisted source-backed campaign candidates while making the global discovery gap machine-readable.
+deterministic content hash, `PERSISTED_DEFINITION_ONLY` discovery mode, deferred global
+portfolio-universe source-owner posture, required future
+`GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked capability codes for bank-wide portfolio
+scans, candidate discovery, eligibility calculation, source-fact recalculation, and membership
+recomputation, plus promotion requirements for any future global-universe support. This keeps
+`GET /api/v1/rebalance/waves/campaign-discovery` bounded to persisted source-backed campaign
+candidates while making the global discovery gap machine-readable.
 
 PM operating quality portfolio-memory review-action projection addendum: Portfolio memory now
 projects bounded `PM_QUALITY_REVIEW_ACTION` events for immutable review actions whose reviewed
