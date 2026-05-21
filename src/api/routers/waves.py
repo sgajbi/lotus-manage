@@ -71,6 +71,7 @@ from src.api.routers.wave_read_http import (
     get_wave_proof_pack_posture_response,
 )
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
+from src.api.routers.wave_workflow_command_http import run_wave_workflow_command_response
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
@@ -1998,20 +1999,13 @@ def approve_wave(
     ] = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    try:
-        wave, replayed = wave_service.approve_wave(
-            wave_id=wave_id,
-            actor_id=request.actor_id,
-            reason_code=request.reason_code,
-            comment=request.comment,
-            correlation_id=x_correlation_id or f"corr_wave_approve_{wave_id}",
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
+    return run_wave_workflow_command_response(
+        command=wave_service.approve_wave,
+        wave_id=wave_id,
+        request=request,
+        correlation_id=x_correlation_id or f"corr_wave_approve_{wave_id}",
+        wave_repository=wave_repository,
+    )
 
 
 @router.post(
@@ -2044,20 +2038,13 @@ def stage_wave(
     ] = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    try:
-        wave, replayed = wave_service.stage_wave(
-            wave_id=wave_id,
-            actor_id=request.actor_id,
-            reason_code=request.reason_code,
-            comment=request.comment,
-            correlation_id=x_correlation_id or f"corr_wave_stage_{wave_id}",
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
+    return run_wave_workflow_command_response(
+        command=wave_service.stage_wave,
+        wave_id=wave_id,
+        request=request,
+        correlation_id=x_correlation_id or f"corr_wave_stage_{wave_id}",
+        wave_repository=wave_repository,
+    )
 
 
 @router.post(
@@ -2089,20 +2076,13 @@ def handoff_wave(
     ] = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    try:
-        wave, replayed = wave_service.handoff_wave(
-            wave_id=wave_id,
-            actor_id=request.actor_id,
-            reason_code=request.reason_code,
-            comment=request.comment,
-            correlation_id=x_correlation_id or f"corr_wave_handoff_{wave_id}",
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
+    return run_wave_workflow_command_response(
+        command=wave_service.handoff_wave,
+        wave_id=wave_id,
+        request=request,
+        correlation_id=x_correlation_id or f"corr_wave_handoff_{wave_id}",
+        wave_repository=wave_repository,
+    )
 
 
 @router.post(
@@ -2137,20 +2117,13 @@ def cancel_wave(
     ] = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    try:
-        wave, replayed = wave_service.cancel_wave(
-            wave_id=wave_id,
-            actor_id=request.actor_id,
-            reason_code=request.reason_code,
-            comment=request.comment,
-            correlation_id=x_correlation_id or f"corr_wave_cancel_{wave_id}",
-            wave_repository=wave_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
+    return run_wave_workflow_command_response(
+        command=wave_service.cancel_wave,
+        wave_id=wave_id,
+        request=request,
+        correlation_id=x_correlation_id or f"corr_wave_cancel_{wave_id}",
+        wave_repository=wave_repository,
+    )
 
 
 @router.get(
