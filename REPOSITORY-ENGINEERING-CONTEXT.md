@@ -578,8 +578,11 @@ Current repository posture:
     Gateway-only PM operating quality surface for policy/score-run evidence, fairness-analysis
     preview/create/list/detail, and review-gated PM-quality support-summary invocation; Workbench
     PR #302 (`8052d92`) and PR #303 (`3581b04`) add read-only review-action ledger/detail
-    rendering and boundary tests, with latest Workbench Main Releasability Gate `26181712790`.
-    Governed Workbench review-action preview/create command UX remains future owner scope.
+    rendering and boundary tests. Workbench PR #314 (`6bd43c8`) adds Gateway-only review-action
+    preview-before-create command UX, PR #315 (`806193f`) extracts the bounded command-control
+    component, PR #316 (`fdc37b5`) extracts the PM-quality API module, and the latest Workbench
+    Main Releasability Gate `26206758251` is green at
+    `1dfdeb14a24c1df25a6d4676c6d6c6506619efb3`.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,
