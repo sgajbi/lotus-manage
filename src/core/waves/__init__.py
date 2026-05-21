@@ -3,6 +3,7 @@
 from src.core.waves.models import (
     DpmRebalanceWave,
     DpmWaveAggregateMetrics,
+    DpmWaveClientCommunicationBoundaryEvidence,
     DpmWaveExternalExecutionBoundaryEvidence,
     DpmWaveHandoffRef,
     DpmWaveSourceAnalyticsSummary,
@@ -211,6 +212,7 @@ __all__ = [
     "DpmBulkReviewCampaignWorkflowAutomationPage",
     "DpmBulkReviewCampaignDefinitionRepository",
     "DpmWaveAggregateMetrics",
+    "DpmWaveClientCommunicationBoundaryEvidence",
     "DpmWaveExternalExecutionBoundaryEvidence",
     "DpmWaveHandoffRef",
     "DpmWaveSourceAnalyticsSummary",

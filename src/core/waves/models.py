@@ -365,6 +365,69 @@ class DpmWaveExternalExecutionBoundaryEvidence(BaseModel):
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
 
+class DpmWaveClientCommunicationBoundaryEvidence(BaseModel):
+    boundary_id: Literal["DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY"] = Field(
+        default="DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY",
+        description="Stable unsupported client communication boundary identifier.",
+    )
+    supportability_state: Literal["BLOCKED"] = Field(
+        default="BLOCKED",
+        description="Fail-closed supportability state for client communication.",
+    )
+    source_system: Literal["lotus-manage"] = Field(
+        default="lotus-manage",
+        description="System preserving the unsupported boundary evidence.",
+    )
+    source_product_name: Literal["DpmWaveInternalOperationsHandoff"] = Field(
+        default="DpmWaveInternalOperationsHandoff",
+        description="Manage-owned source product that stops at internal operations handoff.",
+    )
+    source_product_version: Literal["v1"] = Field(
+        default="v1",
+        description="Boundary evidence product version.",
+    )
+    client_communication_projected: Literal[False] = Field(
+        default=False,
+        description="Always false: wave report input does not project client-contact events.",
+    )
+    client_approval_projected: Literal[False] = Field(
+        default=False,
+        description="Always false: wave report input does not project client approval events.",
+    )
+    reason_code: str = Field(
+        description="Bounded reason code for the client communication boundary.",
+        examples=["WAVE_CLIENT_COMMUNICATION_NOT_SUPPORTED"],
+    )
+    blocked_capabilities: list[str] = Field(
+        description="Client communication capabilities blocked by this boundary evidence.",
+        examples=[["client_contact", "client_message_generation", "client_approval"]],
+    )
+    required_owner: str = Field(
+        description="Future owner required before client communication can be promoted.",
+        examples=["future client-communication owner"],
+    )
+    required_source_product: str = Field(
+        description="Source product required before Manage can consume client communication truth.",
+        examples=["ClientCommunicationRecord:v1"],
+    )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "Governance, source-product, lineage, reconciliation, consumer, downstream "
+            "realization, consent, and evidence requirements that must be met before wave "
+            "handoff can be promoted from internal operations evidence to client communication "
+            "support."
+        ),
+        examples=[
+            [
+                "certified_client_communication_source_owner",
+                "ClientCommunicationRecord:v1",
+            ]
+        ],
+    )
+    summary: str = Field(description="Operator-facing no-client-communication boundary summary.")
+    content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
+
+
 class DpmRebalanceWave(BaseModel):
     wave_id: str = Field(description="Stable rebalance wave identifier.", examples=["dwv_001"])
     wave_version: str = Field(

@@ -1777,11 +1777,14 @@ Functional coverage:
   required future execution/OMS owner, and the required
   `ExternalOrderExecutionAcknowledgement:v1` source product plus promotion requirements for
   certified OMS source ownership, reconciliation controls, consumer declaration, and downstream
-  realization,
+  realization, plus structured `DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence naming blocked
+  client-contact, message-generation, client-approval, delivery-confirmation, and
+  communication-audit capabilities with `ClientCommunicationRecord:v1` promotion requirements,
 - report input returns deterministic `DpmWaveReportInput` with wave identity, aggregate metrics,
   supportability, proof-pack posture, item rows, event rows, handoff refs, source refs,
-  redaction policy, wave/content hashes, the same structured external-execution boundary evidence,
-  and `external_execution_claimed=false` for downstream report generation,
+  redaction policy, wave/content hashes, the same structured external-execution and
+  client-communication boundary evidence, and `external_execution_claimed=false` for downstream
+  report generation,
 - report input fails closed with `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` if persisted wave handoff
   evidence ever contains an external execution claim; proof-pack posture remains available for
   operator diagnosis, but unsupported OMS truth is not propagated downstream,

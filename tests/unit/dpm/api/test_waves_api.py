@@ -5569,6 +5569,40 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         in proof_payload["external_execution_boundary"]["blocked_capabilities"]
     )
     assert proof_payload["external_execution_boundary"]["content_hash"].startswith("sha256:")
+    assert (
+        proof_payload["client_communication_boundary"]["boundary_id"]
+        == "DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY"
+    )
+    assert proof_payload["client_communication_boundary"]["supportability_state"] == "BLOCKED"
+    assert (
+        proof_payload["client_communication_boundary"]["reason_code"]
+        == "WAVE_CLIENT_COMMUNICATION_NOT_SUPPORTED"
+    )
+    assert (
+        proof_payload["client_communication_boundary"]["required_owner"]
+        == "future client-communication owner"
+    )
+    assert (
+        proof_payload["client_communication_boundary"]["required_source_product"]
+        == "ClientCommunicationRecord:v1"
+    )
+    assert proof_payload["client_communication_boundary"]["promotion_requirements"] == [
+        "certified_client_communication_source_owner",
+        "ClientCommunicationRecord:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "delivery_approval_and_audit_reconciliation_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "client_communication_consent_and_evidence_controls",
+    ]
+    assert (
+        "client_contact" in proof_payload["client_communication_boundary"]["blocked_capabilities"]
+    )
+    assert proof_payload["client_communication_boundary"]["client_communication_projected"] is False
+    assert proof_payload["client_communication_boundary"]["client_approval_projected"] is False
+    assert proof_payload["client_communication_boundary"]["content_hash"].startswith("sha256:")
     assert proof_payload["handoff_refs"][0]["handoff_ref_id"] == "dwh_read_001"
 
     assert report_input.status_code == 200
@@ -5586,6 +5620,10 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert (
         report_payload["external_execution_boundary"]
         == proof_payload["external_execution_boundary"]
+    )
+    assert (
+        report_payload["client_communication_boundary"]
+        == proof_payload["client_communication_boundary"]
     )
     assert report_payload["evidence_ref"]["ref_type"] == "DPM_WAVE_REPORT_INPUT"
     assert report_payload["evidence_ref"]["content_hash"] == report_payload["content_hash"]
@@ -5737,4 +5775,18 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "description"
     ]
     assert "Structured fail-closed no-OMS boundary evidence" in boundary_description
+    client_boundary_description = proof_pack_schema["properties"]["client_communication_boundary"][
+        "description"
+    ]
+    assert "Structured fail-closed no-client-communication boundary evidence" in (
+        client_boundary_description
+    )
+    report_input_schema_ref = report_input["responses"]["200"]["content"]["application/json"][
+        "schema"
+    ]["$ref"]
+    report_input_schema = openapi["components"]["schemas"][
+        report_input_schema_ref.rsplit("/", 1)[1]
+    ]
+    assert "client_communication_boundary" in report_input_schema["properties"]
+    assert "DpmWaveClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]
     assert "excludes portfolio identifiers" in supportability["description"]

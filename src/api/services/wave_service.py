@@ -10,7 +10,10 @@ from typing import cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service, proof_pack_service
-from src.core.common.boundary_promotion import EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS
+from src.core.common.boundary_promotion import (
+    CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS,
+    EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS,
+)
 from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
@@ -23,6 +26,7 @@ from src.core.waves import (
     DpmRebalanceWaveEvent,
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
+    DpmWaveClientCommunicationBoundaryEvidence,
     DpmWaveAlreadyExistsError,
     DpmWaveExternalExecutionBoundaryEvidence,
     DpmWaveHandoffRef,
@@ -857,6 +861,7 @@ def proof_pack_posture_for_wave(*, wave: DpmRebalanceWave) -> dict[str, object]:
         "external_execution_boundary": _external_execution_boundary(
             external_execution_claimed=external_execution_claimed
         ).model_dump(mode="json"),
+        "client_communication_boundary": _client_communication_boundary().model_dump(mode="json"),
     }
 
 
@@ -895,6 +900,37 @@ def _external_execution_boundary(
     }
     payload["content_hash"] = _request_hash(payload)
     return DpmWaveExternalExecutionBoundaryEvidence.model_validate(payload)
+
+
+def _client_communication_boundary() -> DpmWaveClientCommunicationBoundaryEvidence:
+    payload: dict[str, object] = {
+        "boundary_id": "DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY",
+        "supportability_state": "BLOCKED",
+        "source_system": "lotus-manage",
+        "source_product_name": "DpmWaveInternalOperationsHandoff",
+        "source_product_version": "v1",
+        "client_communication_projected": False,
+        "client_approval_projected": False,
+        "reason_code": "WAVE_CLIENT_COMMUNICATION_NOT_SUPPORTED",
+        "blocked_capabilities": [
+            "client_contact",
+            "client_message_generation",
+            "client_approval",
+            "delivery_confirmation",
+            "communication_audit",
+        ],
+        "required_owner": "future client-communication owner",
+        "required_source_product": "ClientCommunicationRecord:v1",
+        "promotion_requirements": list(CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS),
+        "summary": (
+            "Manage wave evidence stops at internal operations handoff; it does not project "
+            "client communication, client approval, delivery confirmation, or communication "
+            "audit truth until a governed client-communication owner and certified source "
+            "product exist."
+        ),
+    }
+    payload["content_hash"] = _request_hash(payload)
+    return DpmWaveClientCommunicationBoundaryEvidence.model_validate(payload)
 
 
 def _get_wave_or_raise(

@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.waves.models import (
+    DpmWaveClientCommunicationBoundaryEvidence,
     DpmWaveExternalExecutionBoundaryEvidence,
     DpmRebalanceWave,
     DpmRebalanceWaveEvent,
@@ -97,6 +98,13 @@ class DpmWaveReportInput(BaseModel):
             "operations handoff and does not cross into OMS execution."
         )
     )
+    client_communication_boundary: DpmWaveClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed evidence proving this report input stops at internal "
+            "operations handoff and does not cross into client communication, client approval, "
+            "or delivery confirmation."
+        )
+    )
     external_execution_claimed: bool = Field(
         description="Always false until an external OMS/execution owner is implemented."
     )
@@ -147,6 +155,9 @@ def build_wave_report_input(
         redaction_policy="NO_RAW_PAYLOADS",
         external_execution_boundary=DpmWaveExternalExecutionBoundaryEvidence.model_validate(
             proof_pack_posture["external_execution_boundary"]
+        ),
+        client_communication_boundary=DpmWaveClientCommunicationBoundaryEvidence.model_validate(
+            proof_pack_posture["client_communication_boundary"]
         ),
         external_execution_claimed=False,
         evidence_ref=DpmWaveReportEvidenceRef(

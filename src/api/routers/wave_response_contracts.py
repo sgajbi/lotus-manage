@@ -10,6 +10,7 @@ from src.core.waves import DpmRebalanceWave
 from src.core.waves.models import (
     DpmRebalanceWaveItem,
     DpmWaveAggregateMetrics,
+    DpmWaveClientCommunicationBoundaryEvidence,
     DpmWaveExternalExecutionBoundaryEvidence,
     DpmWaveHandoffRef,
 )
@@ -205,6 +206,12 @@ class DpmWaveProofPackPostureResponse(BaseModel):
         description=(
             "Structured fail-closed no-OMS boundary evidence for downstream reports, audit, and "
             "operator diagnosis."
+        )
+    )
+    client_communication_boundary: DpmWaveClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-client-communication boundary evidence for downstream "
+            "reports, audit, and operator diagnosis."
         )
     )
 
