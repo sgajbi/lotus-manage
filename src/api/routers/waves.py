@@ -70,7 +70,7 @@ from src.api.routers.wave_read_http import (
     get_wave_proof_pack_posture_response,
 )
 from src.api.routers.wave_selection_http import select_wave_item_alternative_response
-from src.api.routers.wave_simulation_http import build_wave_simulation_item_inputs
+from src.api.routers.wave_simulation_http import simulate_wave_response
 from src.api.routers.wave_source_check_http import source_check_wave_response
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.api.routers.wave_workflow_command_http import run_wave_workflow_command_response
@@ -1878,23 +1878,15 @@ def simulate_wave(
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
-    try:
-        wave, replayed = wave_service.simulate_wave(
-            wave_id=wave_id,
-            actor_id=request.actor_id,
-            correlation_id=x_correlation_id or f"corr_wave_simulate_{wave_id}",
-            item_inputs=build_wave_simulation_item_inputs(request),
-            methods=request.methods,
-            construction_repository=construction_repository,
-            run_service=run_service,
-            wave_repository=wave_repository,
-            risk_authority_client=risk_authority_client,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc) from exc
-    return wave_response(wave=wave, durable=True, idempotent_replay=replayed)
+    return simulate_wave_response(
+        wave_id=wave_id,
+        request=request,
+        correlation_id=x_correlation_id or f"corr_wave_simulate_{wave_id}",
+        construction_repository=construction_repository,
+        run_service=run_service,
+        wave_repository=wave_repository,
+        risk_authority_client=risk_authority_client,
+    )
 
 
 @router.post(
