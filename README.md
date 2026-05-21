@@ -157,8 +157,9 @@ that excludes `generated_at` so audit review can reconcile equivalent source-bac
 result pages without timestamp churn. Proof-pack and outcome-review report and AI evidence
 handoff contexts preserve the source memory view hash, expose an explicit no-claim
 `support_boundary`, and also expose a bounded `context_content_hash` over the report-safe event
-refs so downstream consumers can reconcile lineage context without loading the full memory view or
-inferring raw source, OMS, client communication, global-discovery, or source-methodology support.
+refs plus explicit event-ref limit, returned-count, and truncation posture so downstream consumers
+can reconcile lineage context without loading the full memory view or inferring raw source, OMS,
+client communication, global-discovery, or source-methodology support.
 Portfolio-memory text filters are trimmed before validation and matching, and blank text filters
 are treated as absent, so audit consumers can rely on the echoed filter posture rather than raw
 query-string formatting.

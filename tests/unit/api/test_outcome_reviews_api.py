@@ -135,6 +135,13 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
             assert report_input["portfolio_memory_context"]["portfolio_id"] == (
                 "PB_SG_GLOBAL_BAL_001"
             )
+            assert report_input["portfolio_memory_context"]["event_ref_limit"] == 12
+            assert report_input["portfolio_memory_context"]["event_refs_returned"] == len(
+                report_input["portfolio_memory_context"]["event_refs"]
+            )
+            assert isinstance(
+                report_input["portfolio_memory_context"]["event_refs_truncated"], bool
+            )
             assert any(
                 event["event_type"] == "OUTCOME_REVIEW_CREATED"
                 for event in report_input["portfolio_memory_context"]["event_refs"]
