@@ -2028,10 +2028,11 @@ Functional behavior:
   `supportability_state=EMPTY` is requested, preserving the no-global-universe-discovery boundary,
 - returns search summaries with event counts, event-type counts, latest overall event posture,
   matching-event count, latest matching-event posture, latest matching-event id/identity/source
-  coordinates, source systems, reason codes, content hash, total count, scanned portfolio count,
-  pre-pagination portfolio aggregate supportability-state, matched-event-type, matched-event
-  supportability-state, matched-event source-system, and portfolio-summary source-system facet
-  counts, and an explicit support boundary,
+  coordinates, source systems, reason codes, content hash, total count, returned count, requested
+  limit/offset, `has_more`, `next_offset`, scanned portfolio count, pre-pagination portfolio
+  aggregate supportability-state, matched-event-type, matched-event supportability-state,
+  matched-event source-system, and portfolio-summary source-system facet counts, and an explicit
+  support boundary,
 - returns one exact source-backed portfolio-memory event by portfolio id and event id, including
   the event identity, memory content hash, and explicit no-claim boundary for audit drilldown from
   a search hit,

@@ -359,12 +359,16 @@ def search_portfolio_memory(
             source_system_counts[source_system] = source_system_counts.get(source_system, 0) + 1
     page_rows = search_rows[offset : offset + limit]
     page = [item for item, _events in page_rows]
+    next_offset = offset + len(page)
+    has_more = next_offset < total_count
     return DpmPortfolioMemorySearchPage(
         items=page,
         limit=limit,
         offset=offset,
         returned_count=len(page),
         total_count=total_count,
+        has_more=has_more,
+        next_offset=next_offset if has_more else None,
         scanned_portfolio_count=len(candidate_ids),
         supportability_state_counts=dict(sorted(supportability_state_counts.items())),
         event_type_counts=dict(sorted(event_type_counts.items())),
