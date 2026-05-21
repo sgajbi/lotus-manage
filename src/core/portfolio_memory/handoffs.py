@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.models import DpmPortfolioMemory, DpmPortfolioMemoryEvent
@@ -25,9 +25,10 @@ class DpmPortfolioMemoryReportEventRef(BaseModel):
     event_type: str = Field(description="Portfolio-memory event type.")
     event_time: str = Field(description="UTC event timestamp used for bounded ref selection.")
     event_ref_selection_rank: int = Field(
+        ge=1,
         description=(
             "One-based rank assigned by the bounded event-ref selection policy after sorting."
-        )
+        ),
     )
     source_system: str = Field(description="System that owns the source event.")
     source_type: str = Field(description="Source artifact or event type.")
@@ -47,12 +48,16 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     supportability_state: str = Field(
         description="Aggregate portfolio-memory supportability state."
     )
-    event_count: int = Field(description="Total event count in the source memory projection.")
+    event_count: int = Field(
+        ge=0,
+        description="Total event count in the source memory projection.",
+    )
     source_systems: list[str] = Field(description="Source systems represented by the memory view.")
     reason_codes: list[str] = Field(description="Aggregate bounded reason codes.")
     content_hash: str = Field(description="Canonical source-backed memory view hash.")
     event_ref_limit: int = Field(
-        description="Maximum number of event refs projected into this bounded handoff context."
+        ge=0,
+        description="Maximum number of event refs projected into this bounded handoff context.",
     )
     event_ref_selection_policy: str = Field(
         description=(
@@ -60,13 +65,14 @@ class DpmPortfolioMemoryReportContext(BaseModel):
         )
     )
     event_refs_returned: int = Field(
-        description="Number of event refs actually projected into this handoff context."
+        ge=0, description="Number of event refs actually projected into this handoff context."
     )
     event_refs_omitted: int = Field(
+        ge=0,
         description=(
             "Number of source memory events omitted from this bounded handoff context after "
             "applying the event-ref limit."
-        )
+        ),
     )
     event_refs_truncated: bool = Field(
         description=(
@@ -94,6 +100,26 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     event_refs: list[DpmPortfolioMemoryReportEventRef] = Field(
         description="Bounded event refs for report lineage."
     )
+
+    @model_validator(mode="after")
+    def validate_bounded_event_ref_metadata(self) -> "DpmPortfolioMemoryReportContext":
+        expected_returned = len(self.event_refs)
+        if self.event_refs_returned != expected_returned:
+            raise ValueError("event_refs_returned must equal the number of event_refs.")
+
+        expected_omitted = max(0, self.event_count - self.event_refs_returned)
+        if self.event_refs_omitted != expected_omitted:
+            raise ValueError("event_refs_omitted must equal event_count minus event_refs_returned.")
+
+        if self.event_refs_truncated != (self.event_refs_omitted > 0):
+            raise ValueError("event_refs_truncated must match event_refs_omitted posture.")
+
+        expected_ranks = list(range(1, expected_returned + 1))
+        observed_ranks = [event_ref.event_ref_selection_rank for event_ref in self.event_refs]
+        if observed_ranks != expected_ranks:
+            raise ValueError("event_ref_selection_rank values must be contiguous one-based ranks.")
+
+        return self
 
 
 def build_portfolio_memory_report_context(

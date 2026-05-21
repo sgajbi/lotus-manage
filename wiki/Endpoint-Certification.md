@@ -2056,8 +2056,9 @@ Functional behavior:
 - emits report/AI handoff portfolio-memory contexts with the source memory view hash, an explicit
   no-claim support boundary, bounded context envelope hash over report-safe event refs, and
   explicit event timestamps, selection ranks, event-ref limit, selection policy, returned-count,
-  omitted-count, and truncation posture, so downstream report and AI consumers can reconcile
-  lineage context without loading the full memory view or inferring raw source, OMS, client communication,
+  omitted-count, and truncation posture. Bounded counters are non-negative, and selection ranks
+  are contiguous and one-based, so downstream report and AI consumers can reconcile lineage
+  context without loading the full memory view or inferring raw source, OMS, client communication,
   global-discovery, or source-methodology support,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
