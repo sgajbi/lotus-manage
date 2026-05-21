@@ -408,9 +408,18 @@ def get_outcome_review_report_input_endpoint(
 def get_outcome_review_ai_evidence_input_endpoint(
     outcome_review_id: str,
     repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmOutcomeAiEvidenceInput:
     try:
-        return get_ai_evidence_input(outcome_review_id=outcome_review_id, repository=repository)
+        return get_ai_evidence_input(
+            outcome_review_id=outcome_review_id,
+            repository=repository,
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            mandate_repository=mandate_repository,
+        )
     except DpmOutcomeReviewNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"

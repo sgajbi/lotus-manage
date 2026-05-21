@@ -251,6 +251,11 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert (
         ai_input["client_communication_boundary"] == report_input["client_communication_boundary"]
     )
+    assert ai_input["portfolio_memory_context"] == report_input["portfolio_memory_context"]
+    assert (
+        "does not project raw source payloads"
+        in ai_input["portfolio_memory_context"]["support_boundary"]
+    )
 
 
 def test_generate_selected_alternative_proof_pack(client: TestClient) -> None:
@@ -480,4 +485,9 @@ def test_proof_pack_openapi_documents_endpoints(client: TestClient) -> None:
     ai_schema = openapi["components"]["schemas"]["DpmProofPackAiEvidenceInput"]
     assert "client_communication_boundary" in report_schema["properties"]
     assert "client_communication_boundary" in ai_schema["properties"]
+    assert "portfolio_memory_context" in ai_schema["properties"]
+    assert (
+        "downstream AI evidence"
+        in ai_schema["properties"]["portfolio_memory_context"]["description"]
+    )
     assert "DpmProofPackClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]

@@ -272,12 +272,23 @@ def get_ai_evidence_input(
     *,
     proof_pack_id: str,
     proof_pack_repository: DpmProofPackRepository,
+    wave_repository: DpmWaveRepository | None = None,
+    outcome_review_repository: DpmOutcomeReviewRepository | None = None,
+    mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmProofPackAiEvidenceInput:
+    proof_pack = get_proof_pack(
+        proof_pack_id=proof_pack_id,
+        proof_pack_repository=proof_pack_repository,
+    )
     return build_ai_evidence_input(
-        get_proof_pack(
-            proof_pack_id=proof_pack_id,
+        proof_pack,
+        portfolio_memory_context=_portfolio_memory_context_for_report(
+            portfolio_id=proof_pack.portfolio_id,
             proof_pack_repository=proof_pack_repository,
-        )
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
+        ),
     )
 
 

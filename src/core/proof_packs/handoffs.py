@@ -115,6 +115,14 @@ class DpmProofPackAiEvidenceInput(BaseModel):
     reason_codes: list[str] = Field(description="Aggregate proof-pack reason codes.")
     sections: list[DpmProofPackAiEvidenceSection] = Field(description="AI-safe evidence sections.")
     source_refs: list[DpmProofPackSourceRef] = Field(description="AI-safe source references.")
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = Field(
+        default=None,
+        description=(
+            "Optional Manage-owned portfolio-memory lineage context for downstream AI evidence. "
+            "This context carries its own content hash and support boundary and is excluded from "
+            "the proof-pack AI-evidence hash to avoid recursive lineage."
+        ),
+    )
     client_communication_boundary: "DpmProofPackClientCommunicationBoundaryEvidence" = Field(
         description=(
             "Structured fail-closed evidence proving this AI evidence input cannot be used for "
@@ -245,7 +253,11 @@ def build_report_input(
     return DpmProofPackReportInput.model_validate(payload)
 
 
-def build_ai_evidence_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackAiEvidenceInput:
+def build_ai_evidence_input(
+    proof_pack: DpmPreTradeProofPack,
+    *,
+    portfolio_memory_context: DpmPortfolioMemoryReportContext | None = None,
+) -> DpmProofPackAiEvidenceInput:
     removed: set[str] = set()
     sections = [
         DpmProofPackAiEvidenceSection(
@@ -287,6 +299,7 @@ def build_ai_evidence_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackAiE
         reason_codes=proof_pack.supportability.reason_codes,
         sections=sections,
         source_refs=_dedupe_source_refs(proof_pack),
+        portfolio_memory_context=portfolio_memory_context,
         client_communication_boundary=_client_communication_boundary(),
         evidence_ref=_placeholder_ref(
             ref_type=AI_EVIDENCE_REF_TYPE,
@@ -295,7 +308,9 @@ def build_ai_evidence_input(proof_pack: DpmPreTradeProofPack) -> DpmProofPackAiE
         content_hash="",
     ).model_dump(mode="json")
     assert_no_ai_forbidden_fields(payload)
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
+    payload["content_hash"] = hash_canonical_payload(
+        strip_keys(payload, exclude={"content_hash", "portfolio_memory_context"})
+    )
     payload["evidence_ref"]["content_hash"] = payload["content_hash"]
     return DpmProofPackAiEvidenceInput.model_validate(payload)
 

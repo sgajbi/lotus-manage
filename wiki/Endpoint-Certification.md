@@ -1588,6 +1588,10 @@ Non-functional posture:
 - Report-input and AI-evidence refs are deterministic manage-owned handoff records when requested.
   `lotus-report` materialization and `lotus-ai` PM memo generation remain downstream-owned and are
   not inferred from these refs.
+- Proof-pack report-input and AI-evidence payloads can carry bounded
+  `portfolio_memory_context` lineage with source memory view hash, no-claim support boundary, and
+  context envelope hash while excluding that recursive lineage context from the handoff evidence
+  hash.
 - Proof-pack report-input and AI-evidence handoffs carry structured
   `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence. The boundary names blocked
   client-contact, client-message-generation, client-approval, delivery-confirmation, and
@@ -1936,9 +1940,11 @@ Functional behavior:
   refs deduplicated across persisted review lineage, expected/realized snapshots,
   dimension-results, and metric-level evidence, structured
   `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
-  `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, and a canonical handoff hash without
+  `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, optional bounded `portfolio_memory_context`
+  lineage with its own support boundary and context hash, and a canonical handoff hash without
   generating prompts, memos, recommendations, approvals, client communications, or execution
-  instructions.
+  instructions. Recursive portfolio-memory lineage is excluded from the AI evidence hash, matching
+  the report-input contract posture.
 - Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
 
 Non-functional posture:
