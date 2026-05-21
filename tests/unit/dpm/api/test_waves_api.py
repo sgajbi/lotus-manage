@@ -5553,6 +5553,17 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         proof_payload["external_execution_boundary"]["required_source_product"]
         == "ExternalOrderExecutionAcknowledgement:v1"
     )
+    assert proof_payload["external_execution_boundary"]["promotion_requirements"] == [
+        "certified_execution_oms_source_owner",
+        "ExternalOrderExecutionAcknowledgement:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "acknowledgement_fill_settlement_reconciliation_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "operations_audit_and_exception_reconciliation_evidence",
+    ]
     assert (
         "oms_acknowledgement"
         in proof_payload["external_execution_boundary"]["blocked_capabilities"]

@@ -173,6 +173,19 @@ class DpmOutcomeExternalExecutionBoundaryEvidence(BaseModel):
         description="Source product required before Manage can consume execution acknowledgement truth.",
         examples=["ExternalOrderExecutionAcknowledgement:v1"],
     )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "Governance, source-product, lineage, reconciliation, consumer, and downstream "
+            "realization requirements that must be met before external execution evidence can be "
+            "promoted from fail-closed boundary posture to supported product capability."
+        ),
+        examples=[
+            [
+                "certified_execution_oms_source_owner",
+                "ExternalOrderExecutionAcknowledgement:v1",
+            ]
+        ],
+    )
     summary: str = Field(description="Operator-facing no-claim outcome boundary summary.")
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")
 
@@ -226,6 +239,19 @@ class DpmOutcomeClientCommunicationBoundaryEvidence(BaseModel):
     required_source_product: str = Field(
         description="Source product required before Manage can consume client communication truth.",
         examples=["ClientCommunicationRecord:v1"],
+    )
+    promotion_requirements: list[str] = Field(
+        description=(
+            "Governance, source-product, lineage, delivery/audit, consumer, and downstream "
+            "realization requirements that must be met before client communication evidence can "
+            "be promoted from fail-closed boundary posture to supported product capability."
+        ),
+        examples=[
+            [
+                "certified_client_communication_source_owner",
+                "ClientCommunicationRecord:v1",
+            ]
+        ],
     )
     summary: str = Field(description="Operator-facing no-claim client communication summary.")
     content_hash: str = Field(description="Canonical hash of the boundary evidence payload.")

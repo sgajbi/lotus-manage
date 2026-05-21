@@ -65,6 +65,16 @@ external workflow audit/reconciliation evidence. The endpoint remains read-only 
 assignment readiness; these requirements prevent bounded task-readiness support from being
 mistaken for external workflow orchestration.
 
+External execution and client-communication boundary promotion addendum:
+`DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY`, `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY`,
+`DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY`,
+`DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY`, and
+`DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY` now carry machine-readable
+`promotion_requirements`. The requirements name certified source ownership, source-product
+contracts, lineage/freshness, reconciliation or consent/evidence controls, Manage consumer
+declarations, Gateway/Workbench realization, and audit evidence before any blocked OMS execution or
+client-communication capability can be promoted.
+
 Campaign assignment-task lifecycle addendum: Manage now supports controlled
 `BulkReviewCampaignDefinitionAssignmentTaskPage` evidence through
 `POST` and `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`

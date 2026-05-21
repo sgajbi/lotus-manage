@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from src.core.common.boundary_promotion import (
+    CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS,
+    EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS,
+)
 from src.core.common.canonical import hash_canonical_payload
 from src.core.outcomes.models import (
     DpmOutcomeClientCommunicationBoundaryEvidence,
@@ -62,6 +66,7 @@ def build_outcome_external_execution_boundary(
         "blocked_capabilities": _blocked_execution_capabilities(reason_codes),
         "required_owner": "future execution/OMS owner",
         "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "promotion_requirements": list(EXTERNAL_EXECUTION_PROMOTION_REQUIREMENTS),
         "summary": (
             "Outcome review may preserve fail-closed Core acknowledgement posture, but Manage does "
             "not certify best execution, route orders, project fills or settlement, reconcile OMS "
@@ -98,6 +103,7 @@ def build_outcome_client_communication_boundary(
         "blocked_capabilities": _blocked_client_communication_capabilities(reason_codes),
         "required_owner": "future client-communication owner",
         "required_source_product": "ClientCommunicationRecord:v1",
+        "promotion_requirements": list(CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS),
         "summary": (
             "Outcome review may support internal PM, CIO, compliance, operations, report, and AI "
             "review workflows, but Manage does not contact clients, generate client-ready "

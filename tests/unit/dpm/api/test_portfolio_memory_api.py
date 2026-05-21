@@ -661,6 +661,17 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.external_execution_boundary.required_source_product == (
         "ExternalOrderExecutionAcknowledgement:v1"
     )
+    assert memory.external_execution_boundary.promotion_requirements == [
+        "certified_execution_oms_source_owner",
+        "ExternalOrderExecutionAcknowledgement:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "acknowledgement_fill_settlement_reconciliation_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "operations_audit_and_exception_reconciliation_evidence",
+    ]
     assert "oms_acknowledgement" in memory.external_execution_boundary.blocked_capabilities
     assert "execution_status_projection" in memory.external_execution_boundary.blocked_capabilities
     assert memory.external_execution_boundary.content_hash.startswith("sha256:")
@@ -677,6 +688,17 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     assert memory.client_communication_boundary.required_source_product == (
         "ClientCommunicationRecord:v1"
     )
+    assert memory.client_communication_boundary.promotion_requirements == [
+        "certified_client_communication_source_owner",
+        "ClientCommunicationRecord:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "delivery_approval_and_audit_reconciliation_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "client_communication_consent_and_evidence_controls",
+    ]
     assert "client_contact" in memory.client_communication_boundary.blocked_capabilities
     assert "communication_audit" in memory.client_communication_boundary.blocked_capabilities
     assert memory.client_communication_boundary.content_hash.startswith("sha256:")
@@ -952,6 +974,17 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
         ],
         "required_owner": "future execution/OMS owner",
         "required_source_product": "ExternalOrderExecutionAcknowledgement:v1",
+        "promotion_requirements": [
+            "certified_execution_oms_source_owner",
+            "ExternalOrderExecutionAcknowledgement:v1",
+            "source_product_contract",
+            "producer_lineage_and_freshness_controls",
+            "acknowledgement_fill_settlement_reconciliation_controls",
+            "manage_consumer_declaration",
+            "gateway_bff_realization",
+            "workbench_gateway_only_realization",
+            "operations_audit_and_exception_reconciliation_evidence",
+        ],
         "summary": (
             "Portfolio memory preserves source-backed Manage, report, AI, archive, and PM-quality "
             "lineage only; external execution, OMS acknowledgement, fill, settlement, and "
@@ -981,6 +1014,17 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
         ],
         "required_owner": "future client-communication owner",
         "required_source_product": "ClientCommunicationRecord:v1",
+        "promotion_requirements": [
+            "certified_client_communication_source_owner",
+            "ClientCommunicationRecord:v1",
+            "source_product_contract",
+            "producer_lineage_and_freshness_controls",
+            "delivery_approval_and_audit_reconciliation_controls",
+            "manage_consumer_declaration",
+            "gateway_bff_realization",
+            "workbench_gateway_only_realization",
+            "client_communication_consent_and_evidence_controls",
+        ],
         "summary": (
             "Portfolio memory preserves internal Manage, report, AI, archive, and PM-quality "
             "lineage only; client contact, client message generation, client delivery "

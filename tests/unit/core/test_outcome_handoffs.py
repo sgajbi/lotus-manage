@@ -31,6 +31,12 @@ def test_outcome_report_input_is_deterministic_and_hash_linked() -> None:
     assert report_input.external_execution_boundary.required_source_product == (
         "ExternalOrderExecutionAcknowledgement:v1"
     )
+    assert "certified_execution_oms_source_owner" in (
+        report_input.external_execution_boundary.promotion_requirements
+    )
+    assert "operations_audit_and_exception_reconciliation_evidence" in (
+        report_input.external_execution_boundary.promotion_requirements
+    )
     assert report_input.client_communication_boundary.boundary_id == (
         "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
     )
@@ -40,6 +46,12 @@ def test_outcome_report_input_is_deterministic_and_hash_linked() -> None:
     assert "client_contact" in report_input.client_communication_boundary.blocked_capabilities
     assert report_input.client_communication_boundary.required_source_product == (
         "ClientCommunicationRecord:v1"
+    )
+    assert "certified_client_communication_source_owner" in (
+        report_input.client_communication_boundary.promotion_requirements
+    )
+    assert "client_communication_consent_and_evidence_controls" in (
+        report_input.client_communication_boundary.promotion_requirements
     )
     assert report_input.redaction_policy == "NO_RAW_PAYLOADS"
 
@@ -105,12 +117,18 @@ def test_outcome_ai_evidence_input_is_bounded_and_forbids_actions() -> None:
     )
     assert ai_input.external_execution_boundary.supportability_state == "BLOCKED"
     assert "oms_acknowledgement" in ai_input.external_execution_boundary.blocked_capabilities
+    assert "ExternalOrderExecutionAcknowledgement:v1" in (
+        ai_input.external_execution_boundary.promotion_requirements
+    )
     assert ai_input.client_communication_boundary.boundary_id == (
         "DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY"
     )
     assert ai_input.client_communication_boundary.supportability_state == "BLOCKED"
     assert "client_message_generation" in (
         ai_input.client_communication_boundary.blocked_capabilities
+    )
+    assert "ClientCommunicationRecord:v1" in (
+        ai_input.client_communication_boundary.promotion_requirements
     )
     assert ai_input.permitted_use.startswith("Draft support-only")
     assert_no_ai_forbidden_fields(ai_input.model_dump(mode="json"))

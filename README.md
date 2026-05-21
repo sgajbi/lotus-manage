@@ -143,11 +143,16 @@ portfolio-memory response also carries structured
 `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked OMS capabilities, the
 required future execution/OMS owner, and `ExternalOrderExecutionAcknowledgement:v1` as the required
 future source product before acknowledgement, fill, settlement, or execution-status events can be
-projected. It also carries structured
+projected; it also lists promotion requirements for certified OMS source ownership,
+source-product contracts, lineage/freshness, acknowledgement/fill/settlement reconciliation,
+Manage consumer declaration, Gateway/Workbench realization, and operations audit evidence. It also carries structured
 `DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY` evidence naming blocked client-contact,
 message-generation, delivery-confirmation, client-approval, and communication-audit capabilities,
 the required future client-communication owner, and `ClientCommunicationRecord:v1` as the required
-future source product before any client communication events can be projected.
+future source product before any client communication events can be projected; it lists promotion
+requirements for certified communication source ownership, source-product contracts,
+lineage/freshness, delivery/approval/audit reconciliation, Manage consumer declaration,
+Gateway/Workbench realization, and consent/evidence controls.
 RFC-0041 is implementation-backed and closed as `DONE`
 for manage-owned explicit portfolio-list rebalance waves: durable preview/create/source-check,
 RFC-0039-backed ready-item simulation, RFC-0040 proof-pack linkage, approval-with-exceptions,
@@ -555,14 +560,16 @@ Operationally important truths:
 9. source-owned external OMS acknowledgement posture is consumed as fail-closed evidence from
    `lotus-core` `ExternalOrderExecutionAcknowledgement:v1`; Manage records blocked diagnostics
    and exposes structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` evidence on supportability,
-   report-input, and AI-evidence handoffs only.
+   report-input, and AI-evidence handoffs only, including promotion requirements for certified
+   OMS source ownership, reconciliation controls, consumer declaration, and downstream realization.
    Manage does not generate orders, route venues, certify best execution, ingest OMS
    acknowledgements, confirm fills, project settlement, or reconcile execution status.
 10. outcome-review supportability, report-input, and AI-evidence handoffs also expose structured
     `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage may support internal PM, CIO,
     compliance, operations, report, and AI review workflows, but it does not contact clients,
     generate client-ready messages, collect client approval, confirm delivery, or certify client
-    communication audit truth. AI-evidence handoff source refs are bounded to persisted
+    communication audit truth; the boundary lists the source-owner, delivery/audit, consent, and
+    downstream realization requirements before promotion. AI-evidence handoff source refs are bounded to persisted
     outcome-review lineage and deduplicated review, snapshot, dimension-result, and metric-level
     evidence refs.
 

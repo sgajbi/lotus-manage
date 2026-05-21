@@ -1775,7 +1775,9 @@ Functional coverage:
 - proof-pack posture returns linked proof-pack refs, degraded proof-pack counts, handoff refs, and
   structured `DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked capabilities, the
   required future execution/OMS owner, and the required
-  `ExternalOrderExecutionAcknowledgement:v1` source product,
+  `ExternalOrderExecutionAcknowledgement:v1` source product plus promotion requirements for
+  certified OMS source ownership, reconciliation controls, consumer declaration, and downstream
+  realization,
 - report input returns deterministic `DpmWaveReportInput` with wave identity, aggregate metrics,
   supportability, proof-pack posture, item rows, event rows, handoff refs, source refs,
   redaction policy, wave/content hashes, the same structured external-execution boundary evidence,
@@ -1905,9 +1907,13 @@ Functional behavior:
   upstream payloads. It also returns structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY`
   evidence with blocked capabilities, required future execution/OMS owner, required
   `ExternalOrderExecutionAcknowledgement:v1` source product, execution-quality dimension posture,
-  acknowledgement-count posture, and deterministic content hash, plus structured
+  acknowledgement-count posture, deterministic content hash, and promotion requirements for
+  certified OMS source ownership, reconciliation controls, consumer declaration, and downstream
+  realization, plus structured
   `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence for unsupported client contact,
-  client-message, approval, delivery, and communication-audit truth.
+  client-message, approval, delivery, and communication-audit truth, including promotion
+  requirements for certified communication source ownership, delivery/audit controls, downstream
+  realization, and consent/evidence controls.
 - Report input returns deterministic report-ready facts, source hashes, supportability, dimension
   outcomes, structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
   `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, and a canonical handoff hash without
@@ -2020,11 +2026,13 @@ Functional behavior:
   events,
 - publishes structured `DPM_PORTFOLIO_MEMORY_EXTERNAL_EXECUTION_BOUNDARY` evidence naming blocked
   OMS capabilities, the required future execution/OMS owner, the required
-  `ExternalOrderExecutionAcknowledgement:v1` source product, and a deterministic content hash,
+  `ExternalOrderExecutionAcknowledgement:v1` source product, promotion requirements, and a
+  deterministic content hash,
 - publishes structured `DPM_PORTFOLIO_MEMORY_CLIENT_COMMUNICATION_BOUNDARY` evidence naming blocked
   client-contact, message-generation, delivery-confirmation, client-approval, and
   communication-audit capabilities, the required future client-communication owner, the required
-  `ClientCommunicationRecord:v1` source product, and a deterministic content hash,
+  `ClientCommunicationRecord:v1` source product, promotion requirements, and a deterministic
+  content hash,
 - derives event counts, source-system coverage, aggregate reason codes, and a deterministic
   content hash for the returned view,
 - returns `EMPTY` supportability when no persisted source events exist for the portfolio,
