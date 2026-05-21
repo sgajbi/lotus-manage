@@ -5,7 +5,7 @@ import json
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definition_events import (
     build_bulk_review_campaign_definition_lifecycle_events,
@@ -25,6 +25,7 @@ from src.core.waves.campaign_discovery import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_OPERATING_QUEUE_BOUNDARIES,
 )
+from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
 
 
 class DpmBulkReviewCampaignOperatingQueueItem(BaseModel):
@@ -81,13 +82,23 @@ class DpmBulkReviewCampaignOperatingQueuePage(BaseModel):
     product_name: Literal["BulkReviewCampaignOperatingQueue"] = "BulkReviewCampaignOperatingQueue"
     product_version: Literal["v1"] = "v1"
     items: list[DpmBulkReviewCampaignOperatingQueueItem]
-    limit: int
-    offset: int
-    count: int
+    limit: int = Field(ge=1)
+    offset: int = Field(ge=0)
+    count: int = Field(ge=0)
     status_counts: dict[str, int] = Field(
         description="Queue item counts by operating posture for the returned page."
     )
     content_hash: str = Field(description="Canonical hash over the queue page payload.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignOperatingQueuePage:
+        validate_page_count(count=self.count, item_count=len(self.items))
+        validate_count_map(
+            counts=self.status_counts,
+            observed_values=(item.queue_status for item in self.items),
+            field_name="status_counts",
+        )
+        return self
 
 
 def build_bulk_review_campaign_operating_queue_item(

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 
 import pytest
+from pydantic import BaseModel, ValidationError
 
 from src.core.waves import DpmWaveSourceRef
 from src.core.common.canonical import hash_canonical_payload, strip_keys
@@ -20,22 +21,27 @@ from src.core.waves.campaign_definition_workflow_overview import (
     build_bulk_review_campaign_definition_workflow_overview,
 )
 from src.core.waves.campaign_operating_queue import (
+    DpmBulkReviewCampaignOperatingQueuePage,
     build_bulk_review_campaign_operating_queue_item,
     build_bulk_review_campaign_operating_queue_page,
 )
 from src.core.waves.campaign_approval_inbox import (
+    DpmBulkReviewCampaignApprovalInboxPage,
     build_bulk_review_campaign_approval_inbox_item,
     build_bulk_review_campaign_approval_inbox_page,
 )
 from src.core.waves.campaign_workflow_board import (
+    DpmBulkReviewCampaignWorkflowBoardPage,
     build_bulk_review_campaign_workflow_board_item,
     build_bulk_review_campaign_workflow_board_page,
 )
 from src.core.waves.campaign_assignment_plan import (
+    DpmBulkReviewCampaignAssignmentPlanPage,
     build_bulk_review_campaign_assignment_plan_item,
     build_bulk_review_campaign_assignment_plan_page,
 )
 from src.core.waves.campaign_workflow_automation import (
+    DpmBulkReviewCampaignWorkflowAutomationPage,
     build_bulk_review_campaign_workflow_automation_item,
     build_bulk_review_campaign_workflow_automation_page,
 )
@@ -948,6 +954,119 @@ def test_campaign_workflow_automation_filters_actions_and_closed_rows() -> None:
     assert closed_item.proposed_task_ref is None
     assert filtered.count == 1
     assert filtered.items[0].campaign_id == "campaign-holdings-retired-automation-20260510"
+
+
+def test_campaign_operating_pages_reject_inconsistent_summary_metadata() -> None:
+    definition = _definition()
+    active_on = date(2026, 5, 10)
+
+    operating_queue = build_bulk_review_campaign_operating_queue_page(
+        definitions=[definition],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=active_on,
+        include_expired=False,
+        limit=50,
+        offset=0,
+    )
+    approval_inbox = build_bulk_review_campaign_approval_inbox_page(
+        definitions=[definition],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=active_on,
+        include_closed=False,
+        inbox_status=None,
+        limit=50,
+        offset=0,
+    )
+    workflow_board = build_bulk_review_campaign_workflow_board_page(
+        definitions=[definition],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=active_on,
+        include_closed=False,
+        board_status=None,
+        next_action=None,
+        limit=50,
+        offset=0,
+    )
+    assignment_plan = build_bulk_review_campaign_assignment_plan_page(
+        definitions=[definition],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=active_on,
+        include_closed=False,
+        escalation_tier=None,
+        next_action=None,
+        limit=50,
+        offset=0,
+    )
+    automation = build_bulk_review_campaign_workflow_automation_page(
+        definitions=[definition],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=active_on,
+        include_closed=False,
+        automation_status=None,
+        automation_action=None,
+        limit=50,
+        offset=0,
+    )
+
+    _assert_page_rejects(
+        DpmBulkReviewCampaignOperatingQueuePage,
+        operating_queue.model_dump(mode="json"),
+        "count",
+        2,
+        "count must equal the returned item count",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignOperatingQueuePage,
+        operating_queue.model_dump(mode="json"),
+        "status_counts",
+        {"ATTENTION_REQUIRED": 1},
+        "status_counts must match the returned page items",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignApprovalInboxPage,
+        approval_inbox.model_dump(mode="json"),
+        "status_counts",
+        {"APPROVAL_COMPLETE": -1},
+        "status_counts values must be non-negative",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignWorkflowBoardPage,
+        workflow_board.model_dump(mode="json"),
+        "next_action_counts",
+        {"RECORD_APPROVAL_DECISION": 1},
+        "next_action_counts must match the returned page items",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignAssignmentPlanPage,
+        assignment_plan.model_dump(mode="json"),
+        "sla_posture_counts",
+        {"ATTENTION": 1},
+        "sla_posture_counts must match the returned page items",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignWorkflowAutomationPage,
+        automation.model_dump(mode="json"),
+        "automation_action_counts",
+        {"NO_AUTOMATION_BLOCKED": 1},
+        "automation_action_counts must match the returned page items",
+    )
+
+
+def _assert_page_rejects(
+    page_model: type[BaseModel],
+    payload: dict[str, object],
+    field_name: str,
+    invalid_value: object,
+    match: str,
+) -> None:
+    invalid_payload = {**payload, field_name: invalid_value}
+    with pytest.raises(ValidationError, match=match):
+        page_model.model_validate(invalid_payload)
 
 
 @pytest.mark.parametrize(

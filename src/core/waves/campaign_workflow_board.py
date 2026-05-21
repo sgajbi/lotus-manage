@@ -5,7 +5,7 @@ import json
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_approval_inbox import (
     DpmBulkReviewCampaignApprovalInboxItem,
@@ -19,6 +19,7 @@ from src.core.waves.campaign_operating_queue import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_WORKFLOW_BOARD_OPERATING_BOUNDARIES,
 )
+from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
 
 
 CampaignWorkflowBoardStatus = Literal[
@@ -87,9 +88,9 @@ class DpmBulkReviewCampaignWorkflowBoardPage(BaseModel):
     product_name: Literal["BulkReviewCampaignWorkflowBoard"] = "BulkReviewCampaignWorkflowBoard"
     product_version: Literal["v1"] = "v1"
     items: list[DpmBulkReviewCampaignWorkflowBoardItem]
-    limit: int
-    offset: int
-    count: int
+    limit: int = Field(ge=1)
+    offset: int = Field(ge=0)
+    count: int = Field(ge=0)
     status_counts: dict[str, int] = Field(
         description="Workflow-board row counts by board status for the returned page."
     )
@@ -97,6 +98,21 @@ class DpmBulkReviewCampaignWorkflowBoardPage(BaseModel):
         description="Workflow-board row counts by derived next action for the returned page."
     )
     content_hash: str = Field(description="Canonical hash over the workflow-board page.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignWorkflowBoardPage:
+        validate_page_count(count=self.count, item_count=len(self.items))
+        validate_count_map(
+            counts=self.status_counts,
+            observed_values=(item.board_status for item in self.items),
+            field_name="status_counts",
+        )
+        validate_count_map(
+            counts=self.next_action_counts,
+            observed_values=(item.next_action for item in self.items),
+            field_name="next_action_counts",
+        )
+        return self
 
 
 def build_bulk_review_campaign_workflow_board_item(

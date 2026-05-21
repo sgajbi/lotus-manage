@@ -5,7 +5,7 @@ import json
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
 from src.core.waves.campaign_workflow_board import (
@@ -16,6 +16,7 @@ from src.core.waves.campaign_workflow_board import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_ASSIGNMENT_PLAN_OPERATING_BOUNDARIES,
 )
+from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
 
 
 CampaignAssignmentEscalationTier = Literal["NONE", "PM", "OPS", "GOVERNANCE"]
@@ -71,9 +72,9 @@ class DpmBulkReviewCampaignAssignmentPlanPage(BaseModel):
     product_name: Literal["BulkReviewCampaignAssignmentPlan"] = "BulkReviewCampaignAssignmentPlan"
     product_version: Literal["v1"] = "v1"
     items: list[DpmBulkReviewCampaignAssignmentPlanItem]
-    limit: int
-    offset: int
-    count: int
+    limit: int = Field(ge=1)
+    offset: int = Field(ge=0)
+    count: int = Field(ge=0)
     escalation_tier_counts: dict[str, int] = Field(
         description="Assignment-plan row counts by escalation tier for the returned page."
     )
@@ -81,6 +82,21 @@ class DpmBulkReviewCampaignAssignmentPlanPage(BaseModel):
         description="Assignment-plan row counts by SLA posture for the returned page."
     )
     content_hash: str = Field(description="Canonical hash over the assignment-plan page.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignAssignmentPlanPage:
+        validate_page_count(count=self.count, item_count=len(self.items))
+        validate_count_map(
+            counts=self.escalation_tier_counts,
+            observed_values=(item.escalation_tier for item in self.items),
+            field_name="escalation_tier_counts",
+        )
+        validate_count_map(
+            counts=self.sla_posture_counts,
+            observed_values=(item.sla_posture for item in self.items),
+            field_name="sla_posture_counts",
+        )
+        return self
 
 
 def build_bulk_review_campaign_assignment_plan_item(

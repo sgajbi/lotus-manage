@@ -4,7 +4,7 @@ import hashlib
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves.campaign_assignment_plan import (
@@ -21,6 +21,7 @@ from src.core.waves.campaign_definitions import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES,
 )
+from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
 
 
 CampaignWorkflowAutomationStatus = Literal[
@@ -250,9 +251,9 @@ class DpmBulkReviewCampaignWorkflowAutomationPage(BaseModel):
     )
     product_version: Literal["v1"] = "v1"
     items: list[DpmBulkReviewCampaignWorkflowAutomationItem]
-    limit: int
-    offset: int
-    count: int
+    limit: int = Field(ge=1)
+    offset: int = Field(ge=0)
+    count: int = Field(ge=0)
     automation_status_counts: dict[str, int] = Field(
         description="Automation row counts by status for the returned page."
     )
@@ -268,6 +269,21 @@ class DpmBulkReviewCampaignWorkflowAutomationPage(BaseModel):
         ),
     )
     content_hash: str = Field(description="Canonical hash over the automation page.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignWorkflowAutomationPage:
+        validate_page_count(count=self.count, item_count=len(self.items))
+        validate_count_map(
+            counts=self.automation_status_counts,
+            observed_values=(item.automation_status for item in self.items),
+            field_name="automation_status_counts",
+        )
+        validate_count_map(
+            counts=self.automation_action_counts,
+            observed_values=(item.automation_action for item in self.items),
+            field_name="automation_action_counts",
+        )
+        return self
 
 
 def build_bulk_review_campaign_workflow_automation_item(

@@ -1748,6 +1748,9 @@ Functional coverage:
   approval-required, approval-incomplete, expiry-attention, entitlement-attention, and closed rows
   by composing governance evidence and preview-readiness posture without mutating approval state or
   adding maker-checker, trade-approval, order, or OMS claims,
+- campaign operating queue, approval inbox, workflow board, assignment plan, and workflow
+  automation pages validate returned row count, page limit/offset, and posture/action count maps
+  against the returned rows so audit summaries cannot drift from the page payload,
 - truthful `SOURCE_BLOCKED` item state when affected-portfolio evidence is missing,
 - preview, create, and workflow mutation responses include a manage-owned product-safe
   `supportability` envelope derived from current item states, so Gateway and Workbench can
