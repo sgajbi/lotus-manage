@@ -53,10 +53,7 @@ from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionRetirementRequest,
     DpmBulkReviewCampaignDefinitionSupersessionRequest,
 )
-from src.api.routers.wave_http_errors import (
-    wave_lookup_http_exception,
-    wave_validation_http_exception,
-)
+from src.api.routers.wave_http_errors import wave_validation_http_exception
 from src.api.routers.wave_openapi_examples import (
     SOURCE_CHECK_WAVE_EXAMPLE,
     WAVE_EXAMPLE,
@@ -69,6 +66,7 @@ from src.api.routers.wave_read_http import (
     get_wave_items_response,
     get_wave_proof_pack_posture_response,
 )
+from src.api.routers.wave_report_input_http import get_wave_report_input_response
 from src.api.routers.wave_selection_http import select_wave_item_alternative_response
 from src.api.routers.wave_simulation_http import simulate_wave_response
 from src.api.routers.wave_source_check_http import source_check_wave_response
@@ -2149,18 +2147,13 @@ def get_wave_report_input(
     outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmWaveReportInput:
-    try:
-        return wave_service.get_report_input(
-            wave_id=wave_id,
-            wave_repository=wave_repository,
-            proof_pack_repository=proof_pack_repository,
-            outcome_review_repository=outcome_review_repository,
-            mandate_repository=mandate_repository,
-        )
-    except wave_service.DpmWaveLookupError as exc:
-        raise wave_lookup_http_exception(exc) from exc
-    except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc) from exc
+    return get_wave_report_input_response(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        proof_pack_repository=proof_pack_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+    )
 
 
 @router.get(
