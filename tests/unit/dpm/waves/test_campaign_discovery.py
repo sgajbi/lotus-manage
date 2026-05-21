@@ -818,6 +818,16 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
         "external_workflow_state_synchronization"
         in candidate.capability_posture.blocked_capabilities
     )
+    assert candidate.capability_posture.promotion_requirements == [
+        "certified_external_workflow_source_owner",
+        "ExternalWorkflowOrchestrationRecord:v1",
+        "source_product_contract",
+        "producer_lineage_and_freshness_controls",
+        "manage_consumer_declaration",
+        "gateway_bff_realization",
+        "workbench_gateway_only_realization",
+        "external_workflow_audit_and_reconciliation_evidence",
+    ]
     assert "NO_EXTERNAL_WORKFLOW_ORCHESTRATION" in candidate.capability_posture.operating_boundaries
     assert candidate.capability_posture.content_hash.startswith("sha256:")
     assert candidate.capability_posture.content_hash == hash_canonical_payload(
@@ -867,6 +877,10 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
         "ExternalWorkflowOrchestrationRecord:v1"
     )
     assert "external_workflow_escalation" in page.capability_posture.blocked_capabilities
+    assert (
+        "external_workflow_audit_and_reconciliation_evidence"
+        in page.capability_posture.promotion_requirements
+    )
     assert page.capability_posture.content_hash == candidate.capability_posture.content_hash
     assert page.content_hash == hash_canonical_payload(
         strip_keys(page.model_dump(mode="json"), exclude={"content_hash"})
@@ -890,6 +904,9 @@ def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blo
     assert empty_page.capability_posture.external_workflow_events_projected is False
     assert empty_page.capability_posture.blocked_capabilities == (
         candidate.capability_posture.blocked_capabilities
+    )
+    assert empty_page.capability_posture.promotion_requirements == (
+        candidate.capability_posture.promotion_requirements
     )
     assert empty_page.capability_posture.content_hash == candidate.capability_posture.content_hash
 

@@ -18,6 +18,9 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentTask,
 )
+from src.core.waves.campaign_operating_boundaries import (
+    CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES,
+)
 
 
 CampaignWorkflowAutomationStatus = Literal[
@@ -49,18 +52,15 @@ EXTERNAL_WORKFLOW_BLOCKED_CAPABILITIES = [
     "external_workflow_escalation",
     "external_workflow_completion",
 ]
-WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES = [
-    "READ_ONLY_WORKFLOW_AUTOMATION_PLAN",
-    "NO_AUTOMATIC_TASK_MUTATION",
-    "NO_EXTERNAL_WORKFLOW_ORCHESTRATION",
-    "NO_GLOBAL_PORTFOLIO_UNIVERSE_DISCOVERY",
-    "NO_SOURCE_FACT_RECALCULATION",
-    "NO_APPROVAL_STATE_MUTATION",
-    "NO_AUTOMATIC_MAKER_CHECKER_MUTATION",
-    "NO_CLIENT_CONTACT",
-    "NO_TRADE_APPROVAL",
-    "NO_ORDER_GENERATION",
-    "NO_OMS_EXECUTION_CLAIM",
+EXTERNAL_WORKFLOW_PROMOTION_REQUIREMENTS = [
+    "certified_external_workflow_source_owner",
+    "ExternalWorkflowOrchestrationRecord:v1",
+    "source_product_contract",
+    "producer_lineage_and_freshness_controls",
+    "manage_consumer_declaration",
+    "gateway_bff_realization",
+    "workbench_gateway_only_realization",
+    "external_workflow_audit_and_reconciliation_evidence",
 ]
 
 
@@ -75,11 +75,12 @@ def _workflow_capability_posture_payload() -> dict[str, object]:
         "external_workflow_owner_posture": "DEFERRED_SOURCE_OWNER",
         "required_source_product": EXTERNAL_WORKFLOW_REQUIRED_SOURCE_PRODUCT,
         "blocked_capabilities": list(EXTERNAL_WORKFLOW_BLOCKED_CAPABILITIES),
+        "promotion_requirements": list(EXTERNAL_WORKFLOW_PROMOTION_REQUIREMENTS),
         "controlled_assignment_task_endpoint": (
             "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
             "{campaign_version}/assignment-tasks"
         ),
-        "operating_boundaries": list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
+        "operating_boundaries": list(CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _content_hash(payload)
@@ -149,6 +150,20 @@ class DpmBulkReviewCampaignWorkflowCapabilityPosture(BaseModel):
         ),
         examples=[["external_workflow_task_creation", "external_workflow_escalation"]],
     )
+    promotion_requirements: list[str] = Field(
+        default_factory=lambda: list(EXTERNAL_WORKFLOW_PROMOTION_REQUIREMENTS),
+        description=(
+            "Governance, source-product, lineage, consumer, and downstream realization "
+            "requirements that must be met before external workflow orchestration can be promoted "
+            "from unsupported future depth to a supported product capability."
+        ),
+        examples=[
+            [
+                "certified_external_workflow_source_owner",
+                "ExternalWorkflowOrchestrationRecord:v1",
+            ]
+        ],
+    )
     controlled_assignment_task_endpoint: str = Field(
         default=(
             "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
@@ -157,7 +172,7 @@ class DpmBulkReviewCampaignWorkflowCapabilityPosture(BaseModel):
         description="Endpoint family for explicit controlled assignment-task state changes.",
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
+        default_factory=lambda: list(CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         description="Unsupported claims this capability posture must not imply.",
     )
     content_hash: str = Field(
@@ -221,7 +236,7 @@ class DpmBulkReviewCampaignWorkflowAutomationItem(BaseModel):
         description="Source assignment-plan row used to derive automation readiness."
     )
     operating_boundaries: list[str] = Field(
-        default_factory=lambda: list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
+        default_factory=lambda: list(CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims this automation projection must not imply.",
     )
     content_hash: str = Field(description="Canonical hash over the automation row.")
@@ -299,7 +314,7 @@ def build_bulk_review_campaign_workflow_automation_item(
         "automation_reason_codes": reason_codes,
         "capability_posture": _workflow_capability_posture().model_dump(mode="json"),
         "assignment_plan": assignment_plan.model_dump(mode="json"),
-        "operating_boundaries": list(WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
+        "operating_boundaries": list(CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _content_hash(payload)
