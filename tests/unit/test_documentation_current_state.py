@@ -11,10 +11,8 @@ WTBD_PARTIAL_IDS = {
     "RFC37-WTBD-002",
     "RFC37-WTBD-003",
     "RFC37-WTBD-007",
-    "RFC39-WTBD-008",
     "RFC41-WTBD-003",
     "RFC42-WTBD-006",
-    "RFC42-WTBD-007",
 }
 
 WTBD_OPEN_IDS = {
@@ -328,8 +326,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     done_ids = all_ids - WTBD_PARTIAL_IDS - WTBD_OPEN_IDS
 
     assert len(rows) == 59
-    assert len(done_ids) == 45
-    assert len(WTBD_PARTIAL_IDS) == 8
+    assert len(done_ids) == 47
+    assert len(WTBD_PARTIAL_IDS) == 6
     assert len(WTBD_OPEN_IDS) == 6
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
@@ -339,10 +337,10 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 45 done on merged/published" in supported_features
-    assert "truth, 8 partial or in progress" in supported_features
+    assert "59 WTBD items: 47 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 6 partial or in progress" in supported_features
     assert "6 remaining or open" in supported_features
-    assert "source-owned performance MWR FX-evidence" in supported_features
+    assert "`lotus-performance` PR #168" in supported_features
     assert "advances an existing RFC42-WTBD-006 partial row" in supported_features
 
 
@@ -1462,7 +1460,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     ) is False
     assert (
-        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005 and the bounded "
+        "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005, the Lotus-owned "
+        "RFC42-WTBD-007 external execution/OMS fail-closed boundary result, and the bounded "
         "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded immutable support-summary invocation history, bounded portfolio-memory score-run, review-action, and summary-invocation lineage projection, Gateway policy/score-run/fairness-analysis/support-summary/review-action BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary plus review-action ledger/detail and preview-before-create command UX are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
     )
@@ -1517,8 +1516,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`e03be66c58e881024938eb5a63f4fb373e914c00`" in work_to_be_done
     assert "`lotus-performance` PR #168 (`781415f`, wiki `6fb7209`)" in (work_to_be_done)
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published truth | 45 |" in work_to_be_done
-    assert "| Partial / in progress | 8 |" in work_to_be_done
+    assert "| Done on merged/published Lotus-owned truth | 47 |" in work_to_be_done
+    assert "| Partial / in progress | 6 |" in work_to_be_done
     assert "| Remaining / open | 6 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
@@ -2147,9 +2146,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         "empty exposure/policy/eligible-instrument/forward-curve rows, exposure count, "
         "policy-rule count, eligible-instrument count, curve-point count"
     ) in work_to_be_done
-    assert "unavailable external treasury readiness, currency-exposure, hedge-policy" in (
-        work_to_be_done
-    )
+    assert "This closes RFC39-WTBD-008 for Lotus-owned supportability" in (work_to_be_done)
     assert "eligible-instrument" in work_to_be_done
     assert "FX forward-curve" in work_to_be_done
     assert "2026-05-18 realized outcome source-consumer result" in work_to_be_done
@@ -2182,9 +2179,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 45 done on merged/published" in supported_features
-    assert "truth, 8 partial or in progress" in supported_features
-    assert "source-owned performance MWR FX-evidence" in supported_features
+    assert "59 WTBD items: 47 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 6 partial or in progress" in supported_features
+    assert "`lotus-performance` PR #168" in supported_features
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
     assert (

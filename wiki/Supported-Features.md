@@ -377,19 +377,20 @@ Audience use:
 
 ## WTBD Product-Readiness Roadmap
 
-`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-20 clean mainline
-snapshot after `lotus-manage` PR #327, the RFC39-WTBD-008 external treasury reclassification, the
-RFC37 partial-classification normalization, the source-owned performance MWR FX-evidence
-advance from `lotus-performance` PR #168, and the bounded Manage portfolio-memory search
-advance, it tracks 59 WTBD items: 45 done on merged/published
-truth, 8 partial or in progress, and 6 remaining or open. The count does not move for PR #168
-because it advances an existing RFC42-WTBD-006 partial row rather than closing stateful per-input
-FX evidence, broader FX methodology, predictive execution, or OMS acknowledgement gaps. Current
-Manage campaign portfolio-memory workflow projection also does not move the count because it
-advances existing RFC41-WTBD-003 and RFC40-WTBD-010 partial rows rather than closing global
-portfolio-universe discovery or external workflow automation. The next execution wave should focus
-on product surfaces that materially improve bank-buyable demo and operating value without inventing
-unsupported source truth.
+`docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
+completion recount, the ledger tracks 59 WTBD items: 47 done on merged/published Lotus-owned
+truth, 6 partial or in progress, and 6 remaining or open. Counts now distinguish Lotus-owned
+supportability completion from external bank-system promotion dependencies: RFC39-WTBD-008 and
+RFC42-WTBD-007 are done for Lotus-owned fail-closed source/consumer boundary support, while runtime
+external treasury ingestion and bank-owned OMS acknowledgement/fill/settlement reconciliation remain
+external-owner promotion dependencies and unsupported operational claims. The count does not move
+for `lotus-performance` PR #168 because it advances an existing RFC42-WTBD-006 partial row rather
+than closing stateful per-input FX evidence, broader FX methodology, predictive execution, or OMS
+methodology gaps. Current Manage campaign portfolio-memory workflow projection also does not move
+the count because it advances existing RFC41-WTBD-003 and RFC40-WTBD-010 partial rows rather than
+closing global portfolio-universe discovery or external workflow automation. The next execution
+wave should focus on product surfaces that materially improve bank-buyable demo and operating value
+without inventing unsupported source truth.
 
 | Priority | WTBD | Business value | Required proof before support claim |
 | ---: | --- | --- | --- |
