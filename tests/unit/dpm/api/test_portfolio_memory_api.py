@@ -1313,6 +1313,10 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["supportability_state_counts"] == {"DEGRADED": 1}
     assert payload["event_type_counts"] == {"WAVE_HANDOFF_READY": 1}
     assert payload["matching_event_supportability_state_counts"] == {"READY": 1}
+    assert payload["matching_event_source_system_counts"] == {
+        "lotus-core": 1,
+        "lotus-manage": 1,
+    }
     assert payload["source_system_counts"]["lotus-manage"] == 1
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
     assert "project OMS" in payload["support_boundary"]
@@ -1327,6 +1331,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "supportability_state_counts" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
     assert "matching_event_supportability_state_counts" in search_schema["properties"]
+    assert "matching_event_source_system_counts" in search_schema["properties"]
     assert "source_system_counts" in search_schema["properties"]
     search_item_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchItem"]
     assert "matching_event_count" in search_item_schema["properties"]
@@ -1555,6 +1560,7 @@ def test_portfolio_memory_search_requires_source_system_on_matching_event_type()
     assert page.total_count == 0
     assert page.event_type_counts == {}
     assert page.matching_event_supportability_state_counts == {}
+    assert page.matching_event_source_system_counts == {}
     assert page.source_system_counts == {}
 
 
@@ -1581,6 +1587,10 @@ def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination
     assert page.supportability_state_counts == {"READY": 2}
     assert page.event_type_counts == {"PM_QUALITY_SUMMARY_INVOCATION": 2}
     assert page.matching_event_supportability_state_counts == {"READY": 2}
+    assert page.matching_event_source_system_counts == {
+        "lotus-ai": 2,
+        "lotus-manage": 2,
+    }
     assert page.source_system_counts == {
         "lotus-ai": 2,
         "lotus-core": 2,
@@ -1697,6 +1707,7 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
     assert empty_filtered.supportability_state_counts == {"EMPTY": 1}
     assert empty_filtered.event_type_counts == {}
     assert empty_filtered.matching_event_supportability_state_counts == {}
+    assert empty_filtered.matching_event_source_system_counts == {}
     assert empty_filtered.source_system_counts == {}
     assert empty_filtered.items[0].portfolio_id == "EMPTY_PORTFOLIO"
     assert empty_filtered.items[0].event_count == 0
@@ -1750,6 +1761,7 @@ def test_portfolio_memory_search_api_returns_explicit_empty_portfolio_when_reque
     assert payload["returned_count"] == 1
     assert payload["supportability_state_counts"] == {"EMPTY": 1}
     assert payload["matching_event_supportability_state_counts"] == {}
+    assert payload["matching_event_source_system_counts"] == {}
     assert payload["items"][0]["portfolio_id"] == "EMPTY_PORTFOLIO"
     assert payload["items"][0]["event_count"] == 0
     assert payload["items"][0]["supportability_state"] == "EMPTY"
