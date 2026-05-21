@@ -42,6 +42,18 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     source_systems: list[str] = Field(description="Source systems represented by the memory view.")
     reason_codes: list[str] = Field(description="Aggregate bounded reason codes.")
     content_hash: str = Field(description="Canonical source-backed memory view hash.")
+    event_ref_limit: int = Field(
+        description="Maximum number of event refs projected into this bounded handoff context."
+    )
+    event_refs_returned: int = Field(
+        description="Number of event refs actually projected into this handoff context."
+    )
+    event_refs_truncated: bool = Field(
+        description=(
+            "Whether the source memory view contains more events than this bounded handoff "
+            "context projects."
+        )
+    )
     support_boundary: str = Field(
         description=(
             "Explicit no-claim boundary for a bounded portfolio-memory surface, including "
@@ -71,6 +83,8 @@ def build_portfolio_memory_report_context(
 ) -> DpmPortfolioMemoryReportContext:
     """Project portfolio memory into report-safe lineage without raw source payloads."""
 
+    bounded_event_limit = max(0, event_limit)
+    event_refs = [_event_ref(event) for event in memory.events[:bounded_event_limit]]
     payload = DpmPortfolioMemoryReportContext(
         portfolio_id=memory.portfolio_id,
         supportability_state=memory.supportability_state,
@@ -78,10 +92,13 @@ def build_portfolio_memory_report_context(
         source_systems=memory.source_systems,
         reason_codes=memory.reason_codes,
         content_hash=memory.content_hash,
+        event_ref_limit=bounded_event_limit,
+        event_refs_returned=len(event_refs),
+        event_refs_truncated=memory.event_count > len(event_refs),
         support_boundary=PORTFOLIO_MEMORY_REPORT_CONTEXT_SUPPORT_BOUNDARY,
         context_content_hash="sha256:pending",
         governance_policy=memory.governance_policy,
-        event_refs=[_event_ref(event) for event in memory.events[: max(0, event_limit)]],
+        event_refs=event_refs,
     ).model_dump(mode="json")
     payload["context_content_hash"] = hash_canonical_payload(
         strip_keys(payload, exclude={"context_content_hash"})

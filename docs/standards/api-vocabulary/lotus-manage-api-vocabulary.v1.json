@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T18:38:00.951234+00:00",
+  "generatedAt": "2026-05-21T18:52:05.496408+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -4050,6 +4050,20 @@
       ]
     },
     {
+      "semanticId": "lotus.event_ref_limit",
+      "canonicalTerm": "event_ref_limit",
+      "preferredName": "event_ref_limit",
+      "description": "Maximum number of event refs projected into this bounded handoff context.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
       "semanticId": "lotus.event_refs",
       "canonicalTerm": "event_refs",
       "preferredName": "event_refs",
@@ -4063,6 +4077,34 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.event_refs_returned",
+      "canonicalTerm": "event_refs_returned",
+      "preferredName": "event_refs_returned",
+      "description": "Number of event refs actually projected into this handoff context.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.event_refs_truncated",
+      "canonicalTerm": "event_refs_truncated",
+      "preferredName": "event_refs_truncated",
+      "description": "Whether the source memory view contains more events than this bounded handoff context projects.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -65406,6 +65448,30 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.event_ref_limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_limit",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_returned",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_refs_returned",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_returned"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_truncated",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.event_refs_truncated",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_truncated"
+          },
+          {
             "name": "portfolio_memory_context.support_boundary",
             "location": "body",
             "required": true,
@@ -65995,6 +66061,30 @@
             "type": "string",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.event_ref_limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_limit",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_returned",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_refs_returned",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_returned"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_truncated",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.event_refs_truncated",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_truncated"
           },
           {
             "name": "portfolio_memory_context.support_boundary",
@@ -106749,6 +106839,30 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.event_ref_limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_limit",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_returned",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_refs_returned",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_returned"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_truncated",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.event_refs_truncated",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_truncated"
+          },
+          {
             "name": "portfolio_memory_context.support_boundary",
             "location": "body",
             "required": true,
@@ -114005,6 +114119,30 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.event_ref_limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_limit",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_returned",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_refs_returned",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_returned"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_truncated",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.event_refs_truncated",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_truncated"
+          },
+          {
             "name": "portfolio_memory_context.support_boundary",
             "location": "body",
             "required": true,
@@ -114498,6 +114636,30 @@
             "type": "string",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.event_ref_limit",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_ref_limit",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_returned",
+            "location": "body",
+            "required": true,
+            "type": "integer",
+            "semanticId": "lotus.event_refs_returned",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_returned"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs_truncated",
+            "location": "body",
+            "required": true,
+            "type": "boolean",
+            "semanticId": "lotus.event_refs_truncated",
+            "attributeRef": "#/attributeCatalog/lotus.event_refs_truncated"
           },
           {
             "name": "portfolio_memory_context.support_boundary",

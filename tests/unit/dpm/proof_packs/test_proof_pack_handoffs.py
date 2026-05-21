@@ -122,6 +122,9 @@ def test_report_input_carries_portfolio_memory_without_changing_evidence_hash() 
             "source_systems": ["lotus-manage"],
             "reason_codes": ["proof_pack_ready"],
             "content_hash": "sha256:portfolio-memory",
+            "event_ref_limit": 12,
+            "event_refs_returned": 1,
+            "event_refs_truncated": False,
             "support_boundary": "Portfolio-memory report context test boundary.",
             "context_content_hash": "sha256:portfolio-memory-report-context",
             "governance_policy": {
@@ -165,6 +168,9 @@ def test_ai_evidence_input_carries_portfolio_memory_without_changing_evidence_ha
             "source_systems": ["lotus-manage"],
             "reason_codes": ["proof_pack_ready"],
             "content_hash": "sha256:portfolio-memory",
+            "event_ref_limit": 12,
+            "event_refs_returned": 1,
+            "event_refs_truncated": False,
             "support_boundary": "Portfolio-memory report context test boundary.",
             "context_content_hash": "sha256:portfolio-memory-report-context",
             "governance_policy": {

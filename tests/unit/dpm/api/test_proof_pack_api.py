@@ -202,6 +202,11 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert report_input["portfolio_memory_context"]["portfolio_id"] == "pf_1"
     assert report_input["portfolio_memory_context"]["content_hash"].startswith("sha256:")
     assert report_input["portfolio_memory_context"]["context_content_hash"].startswith("sha256:")
+    assert report_input["portfolio_memory_context"]["event_ref_limit"] == 12
+    assert report_input["portfolio_memory_context"]["event_refs_returned"] == len(
+        report_input["portfolio_memory_context"]["event_refs"]
+    )
+    assert isinstance(report_input["portfolio_memory_context"]["event_refs_truncated"], bool)
     assert (
         "does not project raw source payloads"
         in (report_input["portfolio_memory_context"]["support_boundary"])
