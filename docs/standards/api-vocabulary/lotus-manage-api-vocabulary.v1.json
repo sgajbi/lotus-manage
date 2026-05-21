@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T19:06:48.606923+00:00",
+  "generatedAt": "2026-05-21T19:26:44.901377+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -4061,6 +4061,20 @@
       ],
       "observedTypes": [
         "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.event_ref_selection_policy",
+      "canonicalTerm": "event_ref_selection_policy",
+      "preferredName": "event_ref_selection_policy",
+      "description": "Deterministic policy used to select bounded event refs from the source memory view.",
+      "example": "sample_event_ref_selection_policy",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -65470,6 +65484,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
           },
           {
+            "name": "portfolio_memory_context.event_ref_selection_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_ref_selection_policy",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_policy"
+          },
+          {
             "name": "portfolio_memory_context.event_refs_returned",
             "location": "body",
             "required": true,
@@ -66091,6 +66113,14 @@
             "type": "integer",
             "semanticId": "lotus.event_ref_limit",
             "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_ref_selection_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_ref_selection_policy",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_policy"
           },
           {
             "name": "portfolio_memory_context.event_refs_returned",
@@ -106877,6 +106907,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
           },
           {
+            "name": "portfolio_memory_context.event_ref_selection_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_ref_selection_policy",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_policy"
+          },
+          {
             "name": "portfolio_memory_context.event_refs_returned",
             "location": "body",
             "required": true,
@@ -114165,6 +114203,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
           },
           {
+            "name": "portfolio_memory_context.event_ref_selection_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_ref_selection_policy",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_policy"
+          },
+          {
             "name": "portfolio_memory_context.event_refs_returned",
             "location": "body",
             "required": true,
@@ -114690,6 +114736,14 @@
             "type": "integer",
             "semanticId": "lotus.event_ref_limit",
             "attributeRef": "#/attributeCatalog/lotus.event_ref_limit"
+          },
+          {
+            "name": "portfolio_memory_context.event_ref_selection_policy",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_ref_selection_policy",
+            "attributeRef": "#/attributeCatalog/lotus.event_ref_selection_policy"
           },
           {
             "name": "portfolio_memory_context.event_refs_returned",

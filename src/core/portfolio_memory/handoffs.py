@@ -15,6 +15,9 @@ PORTFOLIO_MEMORY_REPORT_CONTEXT_SUPPORT_BOUNDARY = (
     "universe, reconstruct source-owner methodology, project OMS acknowledgement/fill/settlement "
     "events, or project client communication events."
 )
+PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_SELECTION_POLICY = (
+    "LATEST_EVENTS_BY_EVENT_TIME_DESC_THEN_EVENT_ID_DESC"
+)
 
 
 class DpmPortfolioMemoryReportEventRef(BaseModel):
@@ -44,6 +47,11 @@ class DpmPortfolioMemoryReportContext(BaseModel):
     content_hash: str = Field(description="Canonical source-backed memory view hash.")
     event_ref_limit: int = Field(
         description="Maximum number of event refs projected into this bounded handoff context."
+    )
+    event_ref_selection_policy: str = Field(
+        description=(
+            "Deterministic policy used to select bounded event refs from the source memory view."
+        )
     )
     event_refs_returned: int = Field(
         description="Number of event refs actually projected into this handoff context."
@@ -101,6 +109,7 @@ def build_portfolio_memory_report_context(
         reason_codes=memory.reason_codes,
         content_hash=memory.content_hash,
         event_ref_limit=bounded_event_limit,
+        event_ref_selection_policy=PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_SELECTION_POLICY,
         event_refs_returned=event_refs_returned,
         event_refs_omitted=event_refs_omitted,
         event_refs_truncated=event_refs_omitted > 0,

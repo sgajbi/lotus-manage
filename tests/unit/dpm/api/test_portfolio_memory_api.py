@@ -1045,6 +1045,10 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
     assert narrower_context.context_content_hash.startswith("sha256:")
     assert full_context.context_content_hash != narrower_context.context_content_hash
     assert full_context.event_ref_limit == 12
+    assert (
+        full_context.event_ref_selection_policy
+        == "LATEST_EVENTS_BY_EVENT_TIME_DESC_THEN_EVENT_ID_DESC"
+    )
     assert full_context.event_refs_returned == len(full_context.event_refs)
     assert full_context.event_refs_omitted == 0
     assert full_context.event_refs_truncated is False
@@ -1676,6 +1680,7 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert "context_content_hash" in report_context_schema["properties"]
     assert "support_boundary" in report_context_schema["properties"]
     assert "event_ref_limit" in report_context_schema["properties"]
+    assert "event_ref_selection_policy" in report_context_schema["properties"]
     assert "event_refs_returned" in report_context_schema["properties"]
     assert "event_refs_omitted" in report_context_schema["properties"]
     assert "event_refs_truncated" in report_context_schema["properties"]
