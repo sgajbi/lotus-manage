@@ -1044,6 +1044,9 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
     assert full_context.context_content_hash.startswith("sha256:")
     assert narrower_context.context_content_hash.startswith("sha256:")
     assert full_context.context_content_hash != narrower_context.context_content_hash
+    assert "does not project raw source payloads" in full_context.support_boundary
+    assert "project OMS acknowledgement/fill/settlement events" in full_context.support_boundary
+    assert "project client communication events" in full_context.support_boundary
     assert len(full_context.event_refs) > len(narrower_context.event_refs)
 
 
@@ -1663,6 +1666,11 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert "support_boundary" in event_lookup_schema["properties"]
     report_context_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryReportContext"]
     assert "context_content_hash" in report_context_schema["properties"]
+    assert "support_boundary" in report_context_schema["properties"]
+    assert (
+        "Explicit no-claim boundary"
+        in report_context_schema["properties"]["support_boundary"]["description"]
+    )
     assert (
         "bounded report-context envelope"
         in report_context_schema["properties"]["context_content_hash"]["description"]

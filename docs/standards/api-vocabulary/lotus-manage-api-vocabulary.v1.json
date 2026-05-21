@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-21T18:00:58.564727+00:00",
+  "generatedAt": "2026-05-21T18:20:32.555300+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -13406,7 +13406,7 @@
       "semanticId": "lotus.support_boundary",
       "canonicalTerm": "support_boundary",
       "preferredName": "support_boundary",
-      "description": "Explicit no-claim boundary for the bounded memory search surface.",
+      "description": "Explicit no-claim boundary for a bounded portfolio-memory surface, including unsupported source payload, global discovery, source-owner methodology, OMS, and client-communication projections.",
       "example": "sample_support_boundary",
       "type": "string",
       "locations": [
@@ -65406,6 +65406,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.support_boundary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.support_boundary"
+          },
+          {
             "name": "portfolio_memory_context.context_content_hash",
             "location": "body",
             "required": true,
@@ -106573,6 +106581,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolio_memory_context.support_boundary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.support_boundary"
+          },
+          {
             "name": "portfolio_memory_context.context_content_hash",
             "location": "body",
             "required": true,
@@ -113819,6 +113835,14 @@
             "type": "string",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "portfolio_memory_context.support_boundary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.support_boundary"
           },
           {
             "name": "portfolio_memory_context.context_content_hash",
