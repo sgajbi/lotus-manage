@@ -5634,6 +5634,10 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
     assert report_payload["portfolio_memory_context"]["event_count"] >= 1
     assert report_payload["portfolio_memory_context"]["context_content_hash"].startswith("sha256:")
     assert report_payload["portfolio_memory_context"]["event_ref_limit"] == 12
+    assert (
+        report_payload["portfolio_memory_context"]["event_ref_selection_policy"]
+        == "LATEST_EVENTS_BY_EVENT_TIME_DESC_THEN_EVENT_ID_DESC"
+    )
     assert report_payload["portfolio_memory_context"]["event_refs_returned"] == len(
         report_payload["portfolio_memory_context"]["event_refs"]
     )

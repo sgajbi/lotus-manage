@@ -136,6 +136,10 @@ def test_outcome_review_api_preview_create_lookup_supportability_and_events() ->
                 "PB_SG_GLOBAL_BAL_001"
             )
             assert report_input["portfolio_memory_context"]["event_ref_limit"] == 12
+            assert (
+                report_input["portfolio_memory_context"]["event_ref_selection_policy"]
+                == "LATEST_EVENTS_BY_EVENT_TIME_DESC_THEN_EVENT_ID_DESC"
+            )
             assert report_input["portfolio_memory_context"]["event_refs_returned"] == len(
                 report_input["portfolio_memory_context"]["event_refs"]
             )

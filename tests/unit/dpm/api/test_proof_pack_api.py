@@ -203,6 +203,10 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert report_input["portfolio_memory_context"]["content_hash"].startswith("sha256:")
     assert report_input["portfolio_memory_context"]["context_content_hash"].startswith("sha256:")
     assert report_input["portfolio_memory_context"]["event_ref_limit"] == 12
+    assert (
+        report_input["portfolio_memory_context"]["event_ref_selection_policy"]
+        == "LATEST_EVENTS_BY_EVENT_TIME_DESC_THEN_EVENT_ID_DESC"
+    )
     assert report_input["portfolio_memory_context"]["event_refs_returned"] == len(
         report_input["portfolio_memory_context"]["event_refs"]
     )
