@@ -5650,6 +5650,9 @@ def test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_postur
         "does not project raw source payloads"
         in (report_payload["portfolio_memory_context"]["support_boundary"])
     )
+    assert all(
+        event["event_time"] for event in report_payload["portfolio_memory_context"]["event_refs"]
+    )
     assert any(
         event["event_type"] == "WAVE_CREATED"
         for event in report_payload["portfolio_memory_context"]["event_refs"]

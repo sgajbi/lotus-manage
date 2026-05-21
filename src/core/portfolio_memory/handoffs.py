@@ -23,6 +23,7 @@ PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_SELECTION_POLICY = (
 class DpmPortfolioMemoryReportEventRef(BaseModel):
     event_identity: str = Field(description="Stable source-backed portfolio-memory event identity.")
     event_type: str = Field(description="Portfolio-memory event type.")
+    event_time: str = Field(description="UTC event timestamp used for bounded ref selection.")
     source_system: str = Field(description="System that owns the source event.")
     source_type: str = Field(description="Source artifact or event type.")
     source_id: str = Field(description="Source identifier.")
@@ -128,6 +129,7 @@ def _event_ref(event: DpmPortfolioMemoryEvent) -> DpmPortfolioMemoryReportEventR
     return DpmPortfolioMemoryReportEventRef(
         event_identity=event.event_identity,
         event_type=event.event_type,
+        event_time=event.event_time,
         source_system=event.source_system,
         source_type=event.source_type,
         source_id=event.source_id,

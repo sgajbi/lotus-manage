@@ -1590,9 +1590,9 @@ Non-functional posture:
   not inferred from these refs.
 - Proof-pack report-input and AI-evidence payloads can carry bounded
   `portfolio_memory_context` lineage with source memory view hash, no-claim support boundary, and
-  context envelope hash plus explicit event-ref limit, selection policy, returned-count,
-  omitted-count, and truncation posture while excluding that recursive lineage context from the
-  handoff evidence hash.
+  context envelope hash over report-safe event refs with event timestamps plus explicit event-ref
+  limit, selection policy, returned-count, omitted-count, and truncation posture while excluding
+  that recursive lineage context from the handoff evidence hash.
 - Proof-pack report-input and AI-evidence handoffs carry structured
   `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence. The boundary names blocked
   client-contact, client-message-generation, client-approval, delivery-confirmation, and
@@ -1942,9 +1942,10 @@ Functional behavior:
   dimension-results, and metric-level evidence, structured
   `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and
   `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence, optional bounded `portfolio_memory_context`
-  lineage with its own support boundary, context hash, event-ref limit, selection policy,
-  returned-count, omitted-count, and truncation posture, and a canonical handoff hash without generating prompts, memos,
-  recommendations, approvals, client communications, or execution instructions. Recursive
+  lineage with its own support boundary, context hash over report-safe event refs with event
+  timestamps, event-ref limit, selection policy, returned-count, omitted-count, and truncation
+  posture, and a canonical handoff hash without generating prompts, memos, recommendations,
+  approvals, client communications, or execution instructions. Recursive
   portfolio-memory lineage is excluded from the AI evidence hash, matching the report-input
   contract posture.
 - Run and wave lookup routes are read-side conveniences over persisted outcome-review truth.
@@ -2054,9 +2055,10 @@ Functional behavior:
   equivalent source-backed views remain replay-stable for audit reconciliation,
 - emits report/AI handoff portfolio-memory contexts with the source memory view hash, an explicit
   no-claim support boundary, bounded context envelope hash over report-safe event refs, and
-  explicit event-ref limit, selection policy, returned-count, omitted-count, and truncation
-  posture, so downstream report and AI consumers can reconcile lineage context without loading the full memory view or inferring raw
-  source, OMS, client communication, global-discovery, or source-methodology support,
+  explicit event timestamps, event-ref limit, selection policy, returned-count, omitted-count, and
+  truncation posture, so downstream report and AI consumers can reconcile lineage context without
+  loading the full memory view or inferring raw source, OMS, client communication,
+  global-discovery, or source-methodology support,
 - filters portfolio memory by source portfolio id,
 - returns bounded events sorted newest first,
 - preserves source system, source type, source id, supportability state, reason codes, source refs,

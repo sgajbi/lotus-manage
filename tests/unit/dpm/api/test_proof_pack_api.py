@@ -222,6 +222,9 @@ def test_generate_get_and_render_direct_run_proof_pack(client: TestClient) -> No
     assert report_input["portfolio_memory_context"]["governance_policy"]["audit_policy"] == (
         "AUDIT_READ_AND_EXPORT"
     )
+    assert all(
+        event["event_time"] for event in report_input["portfolio_memory_context"]["event_refs"]
+    )
     assert (
         report_input["client_communication_boundary"]["boundary_id"]
         == "DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY"
