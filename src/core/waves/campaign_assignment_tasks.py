@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
@@ -13,6 +13,10 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
 )
 from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.campaign_page_validation import (
+    validate_count_map_covers,
+    validate_page_count,
+)
 
 CampaignAssignmentTaskType = Literal[
     "ASSIGNMENT",
@@ -70,10 +74,33 @@ class DpmBulkReviewCampaignDefinitionAssignmentTaskPage(BaseModel):
     status_counts: dict[str, int] = Field(description="Task count by current status.")
     escalation_tier_counts: dict[str, int] = Field(description="Task count by escalation tier.")
     sla_posture_counts: dict[str, int] = Field(description="Task count by SLA posture.")
-    open_task_count: int = Field(description="Number of non-closed tasks in the definition.")
-    count: int = Field(description="Number of tasks returned.")
-    limit: int = Field(description="Requested page size.")
-    offset: int = Field(description="Requested page offset.")
+    open_task_count: int = Field(ge=0, description="Number of non-closed tasks in the definition.")
+    count: int = Field(ge=0, description="Number of tasks returned.")
+    limit: int = Field(ge=1, description="Requested page size.")
+    offset: int = Field(ge=0, description="Requested page offset.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
+        validate_page_count(count=self.count, item_count=len(self.assignment_tasks))
+        validate_count_map_covers(
+            counts=self.status_counts,
+            observed_values=(task.status for task in self.assignment_tasks),
+            field_name="status_counts",
+        )
+        validate_count_map_covers(
+            counts=self.escalation_tier_counts,
+            observed_values=(task.escalation_tier for task in self.assignment_tasks),
+            field_name="escalation_tier_counts",
+        )
+        validate_count_map_covers(
+            counts=self.sla_posture_counts,
+            observed_values=(task.sla_posture for task in self.assignment_tasks),
+            field_name="sla_posture_counts",
+        )
+        total_task_count = sum(self.status_counts.values())
+        if self.open_task_count > total_task_count:
+            raise ValueError("open_task_count must be covered by status_counts")
+        return self
 
 
 def open_bulk_review_campaign_definition_assignment_task(

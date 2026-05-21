@@ -5,13 +5,14 @@ import json
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionMakerCheckerControl,
 )
 from src.core.waves.models import DpmWaveSourceRef
+from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignMakerCheckerControlAction = Literal[
     "SUBMITTED_FOR_REVIEW",
@@ -48,9 +49,14 @@ class DpmBulkReviewCampaignDefinitionMakerCheckerControlPage(BaseModel):
     current_reviewer_actor_id: str | None = Field(
         description="Most recent checker actor for the campaign control, when recorded."
     )
-    count: int = Field(description="Number of maker-checker controls returned.")
-    limit: int = Field(description="Requested page size.")
-    offset: int = Field(description="Requested page offset.")
+    count: int = Field(ge=0, description="Number of maker-checker controls returned.")
+    limit: int = Field(ge=1, description="Requested page size.")
+    offset: int = Field(ge=0, description="Requested page offset.")
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignDefinitionMakerCheckerControlPage:
+        validate_page_count(count=self.count, item_count=len(self.maker_checker_controls))
+        return self
 
 
 def record_bulk_review_campaign_definition_maker_checker_control(

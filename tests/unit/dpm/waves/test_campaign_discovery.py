@@ -46,17 +46,30 @@ from src.core.waves.campaign_workflow_automation import (
     build_bulk_review_campaign_workflow_automation_page,
 )
 from src.core.waves.campaign_assignment_actions import (
+    DpmBulkReviewCampaignDefinitionAssignmentActionPage,
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
 from src.core.waves.campaign_assignment_tasks import (
+    DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     build_bulk_review_campaign_definition_assignment_task_page,
     open_bulk_review_campaign_definition_assignment_task,
     transition_bulk_review_campaign_definition_assignment_task,
 )
 from src.core.waves.campaign_maker_checker_controls import (
+    DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
     build_bulk_review_campaign_definition_maker_checker_control_page,
     record_bulk_review_campaign_definition_maker_checker_control,
+)
+from src.core.waves.campaign_definition_approval_decisions import (
+    DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
+    build_bulk_review_campaign_definition_approval_decision_page,
+    record_bulk_review_campaign_definition_approval_decision,
+)
+from src.core.waves.campaign_definition_launch_history import (
+    DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
+    build_bulk_review_campaign_definition_launch_history_page,
+    record_bulk_review_campaign_definition_launch,
 )
 
 
@@ -1067,6 +1080,127 @@ def _assert_page_rejects(
     invalid_payload = {**payload, field_name: invalid_value}
     with pytest.raises(ValidationError, match=match):
         page_model.model_validate(invalid_payload)
+
+
+def test_campaign_audit_pages_reject_inconsistent_summary_metadata() -> None:
+    definition = _definition()
+    approved = record_bulk_review_campaign_definition_approval_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-DECISION-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Campaign approved for launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+    )
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    tasked = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    controlled = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=definition,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="pm_001",
+        control_reason="Submit campaign for checker review.",
+        correlation_id="corr-campaign-maker-checker-001",
+        control_outcome="PENDING",
+        submitter_actor_id="pm_001",
+    )
+    launched = record_bulk_review_campaign_definition_launch(
+        definition=definition,
+        wave_id="wave_20260510_001",
+        launched_by="pm_001",
+        requested_as_of_date="2026-05-10",
+        correlation_id="corr-campaign-launch-001",
+        idempotency_key="idem-campaign-launch-001",
+    )
+
+    approval_page = build_bulk_review_campaign_definition_approval_decision_page(
+        definition=approved,
+        limit=50,
+        offset=0,
+    )
+    assignment_action_page = build_bulk_review_campaign_definition_assignment_action_page(
+        definition=assigned,
+        limit=50,
+        offset=0,
+    )
+    assignment_task_page = build_bulk_review_campaign_definition_assignment_task_page(
+        definition=tasked,
+        limit=50,
+        offset=0,
+    )
+    maker_checker_page = build_bulk_review_campaign_definition_maker_checker_control_page(
+        definition=controlled,
+        limit=50,
+        offset=0,
+    )
+    launch_history_page = build_bulk_review_campaign_definition_launch_history_page(
+        definition=launched,
+        limit=50,
+        offset=0,
+    )
+
+    _assert_page_rejects(
+        DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
+        approval_page.model_dump(mode="json"),
+        "count",
+        2,
+        "count must equal the returned item count",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+        assignment_action_page.model_dump(mode="json"),
+        "count",
+        2,
+        "count must equal the returned item count",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+        assignment_task_page.model_dump(mode="json"),
+        "status_counts",
+        {"OPEN": 0},
+        "status_counts must cover the returned page items",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+        assignment_task_page.model_dump(mode="json"),
+        "open_task_count",
+        2,
+        "open_task_count must be covered by status_counts",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
+        maker_checker_page.model_dump(mode="json"),
+        "count",
+        2,
+        "count must equal the returned item count",
+    )
+    _assert_page_rejects(
+        DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
+        launch_history_page.model_dump(mode="json"),
+        "total_count",
+        0,
+        "total_count must be greater than or equal to count",
+    )
 
 
 @pytest.mark.parametrize(

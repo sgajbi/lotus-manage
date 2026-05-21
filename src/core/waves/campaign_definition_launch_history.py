@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
@@ -12,6 +12,7 @@ from src.core.waves.campaign_definitions import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_LAUNCH_HISTORY_OPERATING_BOUNDARIES,
 )
+from src.core.waves.campaign_page_validation import validate_page_count, validate_total_count
 
 
 class DpmBulkReviewCampaignDefinitionLaunchHistoryPage(BaseModel):
@@ -26,14 +27,22 @@ class DpmBulkReviewCampaignDefinitionLaunchHistoryPage(BaseModel):
     items: list[DpmBulkReviewCampaignDefinitionLaunchRecord] = Field(
         description="Append-only durable wave launch audit records for this definition."
     )
-    limit: int = Field(description="Maximum number of launch records returned.")
-    offset: int = Field(description="Zero-based launch-record offset.")
-    count: int = Field(description="Number of launch records returned in this page.")
-    total_count: int = Field(description="Total launch records available for this definition.")
+    limit: int = Field(ge=1, description="Maximum number of launch records returned.")
+    offset: int = Field(ge=0, description="Zero-based launch-record offset.")
+    count: int = Field(ge=0, description="Number of launch records returned in this page.")
+    total_count: int = Field(
+        ge=0, description="Total launch records available for this definition."
+    )
     operating_boundaries: list[str] = Field(
         default_factory=lambda: list(CAMPAIGN_LAUNCH_HISTORY_OPERATING_BOUNDARIES),
         description="Unsupported downstream claims that this launch history must not imply.",
     )
+
+    @model_validator(mode="after")
+    def validate_page_metadata(self) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
+        validate_page_count(count=self.count, item_count=len(self.items))
+        validate_total_count(total_count=self.total_count, count=self.count, offset=self.offset)
+        return self
 
 
 def build_bulk_review_campaign_definition_launch_history_page(
