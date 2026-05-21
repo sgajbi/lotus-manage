@@ -268,7 +268,28 @@ def search_portfolio_memory(
             continue
         if source_system is not None and source_system not in memory.source_systems:
             continue
+        matching_events = [
+            event
+            for event in memory.events
+            if _event_matches_search_filters(
+                event=event,
+                event_type=event_type,
+                supportability_state=supportability_state,
+                source_system=source_system,
+            )
+        ]
+        if (
+            (
+                event_type is not None
+                or source_system is not None
+                or supportability_state is not None
+            )
+            and supportability_state != "EMPTY"
+            and not matching_events
+        ):
+            continue
         latest_event = memory.events[0] if memory.events else None
+        latest_matching_event = matching_events[0] if matching_events else None
         items.append(
             DpmPortfolioMemorySearchItem(
                 portfolio_id=memory.portfolio_id,
@@ -279,6 +300,13 @@ def search_portfolio_memory(
                 reason_codes=memory.reason_codes,
                 latest_event_time=latest_event.event_time if latest_event else None,
                 latest_event_type=latest_event.event_type if latest_event else None,
+                matching_event_count=len(matching_events),
+                latest_matching_event_time=(
+                    latest_matching_event.event_time if latest_matching_event else None
+                ),
+                latest_matching_event_type=(
+                    latest_matching_event.event_type if latest_matching_event else None
+                ),
                 content_hash=memory.content_hash,
             )
         )
@@ -373,6 +401,34 @@ def _memory_candidate_portfolio_ids(
             for portfolio_id in score_run.book_scope_evidence.member_portfolio_ids
         )
     return sorted(candidates)
+
+
+def _event_matches_search_filters(
+    *,
+    event: DpmPortfolioMemoryEvent,
+    event_type: str | None,
+    supportability_state: PortfolioMemorySupportabilityState | None,
+    source_system: str | None,
+) -> bool:
+    if event_type is not None and event.event_type != event_type:
+        return False
+    if supportability_state is not None and event.supportability_state != supportability_state:
+        return False
+    if source_system is not None and source_system not in _event_source_systems(event):
+        return False
+    return True
+
+
+def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
+    return {
+        source_system
+        for source_system in [
+            event.source_system,
+            *(ref.source_system for ref in event.source_refs),
+            *(ref.source_system for ref in event.artifact_refs),
+        ]
+        if source_system
+    }
 
 
 def _portfolio_memory_governance_policy() -> dict[str, str]:
