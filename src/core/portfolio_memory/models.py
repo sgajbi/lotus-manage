@@ -431,6 +431,34 @@ class DpmPortfolioMemorySearchItem(BaseModel):
     content_hash: str = Field(description="Canonical hash of the portfolio-memory view.")
 
 
+class DpmPortfolioMemorySearchAppliedFilters(BaseModel):
+    portfolio_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Normalized caller-supplied portfolio identifiers after blank values are removed. "
+            "An empty list means the bounded Manage-local candidate set was used."
+        ),
+    )
+    event_type: str | None = Field(
+        default=None,
+        description="Event-type filter applied to matching portfolio-memory events, when supplied.",
+    )
+    supportability_state: PortfolioMemorySupportabilityState | None = Field(
+        default=None,
+        description=(
+            "Portfolio-memory supportability-state filter applied to summaries and matching "
+            "events, when supplied."
+        ),
+    )
+    source_system: str | None = Field(
+        default=None,
+        description=(
+            "Source-system filter applied to matching events, source refs, and artifact refs, "
+            "when supplied."
+        ),
+    )
+
+
 class DpmPortfolioMemorySearchPage(BaseModel):
     items: list[DpmPortfolioMemorySearchItem] = Field(
         description=(
@@ -464,6 +492,12 @@ class DpmPortfolioMemorySearchPage(BaseModel):
     scanned_portfolio_count: int = Field(
         description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
         examples=[3],
+    )
+    applied_filters: DpmPortfolioMemorySearchAppliedFilters = Field(
+        description=(
+            "Normalized portfolio-memory search filters applied to this bounded page. This echo "
+            "supports audit review and pagination without implying external source-owner search."
+        )
     )
     supportability_state_counts: dict[str, int] = Field(
         default_factory=dict,

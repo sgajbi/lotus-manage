@@ -2031,8 +2031,8 @@ Functional behavior:
   coordinates, source systems, reason codes, content hash, total count, returned count, requested
   limit/offset, `has_more`, `next_offset`, scanned portfolio count, pre-pagination portfolio
   aggregate supportability-state, matched-event-type, matched-event supportability-state,
-  matched-event source-system, and portfolio-summary source-system facet counts, and an explicit
-  support boundary,
+  matched-event source-system, portfolio-summary source-system facet counts, normalized applied
+  filters, and an explicit support boundary,
 - returns one exact source-backed portfolio-memory event by portfolio id and event id, including
   the event identity, memory content hash, and explicit no-claim boundary for audit drilldown from
   a search hit,

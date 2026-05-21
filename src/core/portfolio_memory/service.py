@@ -36,6 +36,7 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemoryClientCommunicationBoundaryEvidence,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemoryExternalExecutionBoundaryEvidence,
+    DpmPortfolioMemorySearchAppliedFilters,
     DpmPortfolioMemorySearchItem,
     DpmPortfolioMemorySearchPage,
     DpmPortfolioMemorySourceEventFamilyPosture,
@@ -355,8 +356,10 @@ def search_portfolio_memory(
                 matching_event_source_system_counts[event_source_system] = (
                     matching_event_source_system_counts.get(event_source_system, 0) + 1
                 )
-        for source_system in item.source_systems:
-            source_system_counts[source_system] = source_system_counts.get(source_system, 0) + 1
+        for represented_source_system in item.source_systems:
+            source_system_counts[represented_source_system] = (
+                source_system_counts.get(represented_source_system, 0) + 1
+            )
     page_rows = search_rows[offset : offset + limit]
     page = [item for item, _events in page_rows]
     next_offset = offset + len(page)
@@ -370,6 +373,12 @@ def search_portfolio_memory(
         has_more=has_more,
         next_offset=next_offset if has_more else None,
         scanned_portfolio_count=len(candidate_ids),
+        applied_filters=DpmPortfolioMemorySearchAppliedFilters(
+            portfolio_ids=sorted(explicit_candidate_ids),
+            event_type=event_type,
+            supportability_state=supportability_state,
+            source_system=source_system,
+        ),
         supportability_state_counts=dict(sorted(supportability_state_counts.items())),
         event_type_counts=dict(sorted(event_type_counts.items())),
         matching_event_supportability_state_counts=dict(

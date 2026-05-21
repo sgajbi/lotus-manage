@@ -1293,6 +1293,12 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["has_more"] is False
     assert payload["next_offset"] is None
     assert payload["scanned_portfolio_count"] == 2
+    assert payload["applied_filters"] == {
+        "portfolio_ids": [],
+        "event_type": "WAVE_HANDOFF_READY",
+        "supportability_state": None,
+        "source_system": "lotus-manage",
+    }
     assert payload["items"][0]["portfolio_id"] == PORTFOLIO_ID
     assert payload["items"][0]["event_count"] >= 6
     assert payload["items"][0]["event_type_counts"]["WAVE_HANDOFF_READY"] == 1
@@ -1334,9 +1340,15 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "has_more" in search_schema["properties"]
     assert "next_offset" in search_schema["properties"]
     assert "event_type_counts" in search_schema["properties"]
+    assert "applied_filters" in search_schema["properties"]
     assert "matching_event_supportability_state_counts" in search_schema["properties"]
     assert "matching_event_source_system_counts" in search_schema["properties"]
     assert "source_system_counts" in search_schema["properties"]
+    filter_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchAppliedFilters"]
+    assert "portfolio_ids" in filter_schema["properties"]
+    assert "event_type" in filter_schema["properties"]
+    assert "supportability_state" in filter_schema["properties"]
+    assert "source_system" in filter_schema["properties"]
     search_item_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchItem"]
     assert "matching_event_count" in search_item_schema["properties"]
     assert "latest_matching_event_type" in search_item_schema["properties"]
@@ -1562,6 +1574,8 @@ def test_portfolio_memory_search_requires_source_system_on_matching_event_type()
 
     assert page.returned_count == 0
     assert page.total_count == 0
+    assert page.applied_filters.event_type == "PM_QUALITY_SUMMARY_INVOCATION"
+    assert page.applied_filters.source_system == "lotus-core"
     assert page.event_type_counts == {}
     assert page.matching_event_supportability_state_counts == {}
     assert page.matching_event_source_system_counts == {}
@@ -1590,6 +1604,10 @@ def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination
     assert page.total_count == 2
     assert page.has_more is True
     assert page.next_offset == 1
+    assert page.applied_filters.event_type == "PM_QUALITY_SUMMARY_INVOCATION"
+    assert page.applied_filters.portfolio_ids == []
+    assert page.applied_filters.supportability_state is None
+    assert page.applied_filters.source_system is None
     assert page.supportability_state_counts == {"READY": 2}
     assert page.event_type_counts == {"PM_QUALITY_SUMMARY_INVOCATION": 2}
     assert page.matching_event_supportability_state_counts == {"READY": 2}
@@ -1712,6 +1730,10 @@ def test_portfolio_memory_search_empty_filter_returns_explicit_empty_portfolios(
     assert empty_filtered.has_more is False
     assert empty_filtered.next_offset is None
     assert empty_filtered.scanned_portfolio_count == 1
+    assert empty_filtered.applied_filters.portfolio_ids == ["EMPTY_PORTFOLIO"]
+    assert empty_filtered.applied_filters.event_type is None
+    assert empty_filtered.applied_filters.supportability_state == "EMPTY"
+    assert empty_filtered.applied_filters.source_system is None
     assert empty_filtered.supportability_state_counts == {"EMPTY": 1}
     assert empty_filtered.event_type_counts == {}
     assert empty_filtered.matching_event_supportability_state_counts == {}
@@ -1767,6 +1789,12 @@ def test_portfolio_memory_search_api_returns_explicit_empty_portfolio_when_reque
     assert response.status_code == 200
     payload = response.json()
     assert payload["returned_count"] == 1
+    assert payload["applied_filters"] == {
+        "portfolio_ids": ["EMPTY_PORTFOLIO"],
+        "event_type": None,
+        "supportability_state": "EMPTY",
+        "source_system": None,
+    }
     assert payload["supportability_state_counts"] == {"EMPTY": 1}
     assert payload["matching_event_supportability_state_counts"] == {}
     assert payload["matching_event_source_system_counts"] == {}
