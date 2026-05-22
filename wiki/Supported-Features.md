@@ -414,8 +414,8 @@ Audience use:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
-completion recount, the ledger tracks 59 WTBD items: 52 done on merged/published Lotus-owned
-truth, 6 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
+completion recount, the ledger tracks 59 WTBD items: 53 done on merged/published Lotus-owned
+truth, 5 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC38-WTBD-007 is done
 for bounded `MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1` source-context
 preservation, RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fail-closed
@@ -439,7 +439,13 @@ closing global portfolio-universe discovery or external workflow automation. RFC
 done for bounded source-owned analytics preservation because Manage preserves supplied broader
 risk/performance authority context, names implemented risk/performance source products in
 machine-readable source-analytics posture, and carries the supplied fields into wave/proof-pack
-lineage without local methodology calculation. RFC38-WTBD-007 is done for Lotus-owned bounded support because mandate-health snapshots now
+lineage without local methodology calculation. RFC37-WTBD-001 is now done for the Lotus-owned
+outcome-feedback loop because Manage outcome authority, Gateway/Workbench realization,
+report/render/archive materialization, governed AI narrative support, PM operating quality linkage,
+source-lineage search/facets, and external OMS/client-communication boundary evidence are merged in
+their owning repositories; richer source methodology remains tracked by RFC42-WTBD-006 and external
+OMS/client-communication runtime promotion remains an unsupported external-owner dependency.
+RFC38-WTBD-007 is done for Lotus-owned bounded support because mandate-health snapshots now
 emit typed `source_analytics_posture` evidence for supplied tracking-error/performance-attention
 signals and caller-supplied source health contexts, preserve stable source context refs, and use
 source-owned health-state/threshold posture without local risk or performance methodology. The next execution

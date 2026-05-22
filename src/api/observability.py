@@ -8,8 +8,7 @@ from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
-from prometheus_client import Counter
-from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
@@ -54,6 +53,11 @@ OUTCOME_REVIEW_SUPPORTABILITY_TOTAL = Counter(
     "lotus_manage_outcome_review_supportability_total",
     "lotus-manage outcome review API and supportability outcomes.",
     ["surface", "supportability_state", "reason"],
+)
+HTTP_REQUESTS_TOTAL = Counter(
+    "http_requests",
+    "HTTP requests processed by lotus-manage.",
+    ["method", "endpoint", "status_family"],
 )
 
 ACTION_REGISTER_SUPPORTABILITY_SURFACE = "rebalance/supportability/summary"
@@ -242,8 +246,17 @@ def setup_observability(app: FastAPI) -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
     root_logger.addHandler(handler)
+    HTTP_REQUESTS_TOTAL.labels(method="GET", endpoint="/metrics", status_family="2xx")
 
-    Instrumentator().instrument(app).expose(app)
+    @app.get(
+        "/metrics",
+        tags=["Monitoring"],
+        summary="Metrics",
+        operation_id="metrics_metrics_get",
+        response_description="Prometheus text exposition for lotus-manage metrics.",
+    )
+    def _metrics() -> Response:
+        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
     @app.middleware("http")
     async def _request_observability_middleware(
@@ -268,12 +281,18 @@ def setup_observability(app: FastAPI) -> None:
             response = await call_next(request)
         except Exception:
             latency_ms = round((time.perf_counter() - started) * 1000, 2)
+            endpoint = _route_template(request)
+            HTTP_REQUESTS_TOTAL.labels(
+                method=request.method,
+                endpoint=endpoint,
+                status_family="5xx",
+            ).inc()
             logger.info(
                 "request.completed",
                 extra={
                     "extra_fields": {
                         "http_method": request.method,
-                        "endpoint": _route_template(request),
+                        "endpoint": endpoint,
                         "status_code": 500,
                         "status_family": "5xx",
                         "latency_bucket_ms": _latency_bucket_ms(latency_ms),
@@ -286,14 +305,21 @@ def setup_observability(app: FastAPI) -> None:
             raise
 
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
+        endpoint = _route_template(request)
+        status_family = _status_family(response.status_code)
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=endpoint,
+            status_family=status_family,
+        ).inc()
         logger.info(
             "request.completed",
             extra={
                 "extra_fields": {
                     "http_method": request.method,
-                    "endpoint": _route_template(request),
+                    "endpoint": endpoint,
                     "status_code": response.status_code,
-                    "status_family": _status_family(response.status_code),
+                    "status_family": status_family,
                     "latency_bucket_ms": _latency_bucket_ms(latency_ms),
                 }
             },
