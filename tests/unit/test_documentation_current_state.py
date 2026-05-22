@@ -341,7 +341,9 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     assert "truth, 7 partial or in progress" in supported_features
     assert "4 remaining or open" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
-    assert "advances an existing RFC42-WTBD-006 partial row" in supported_features
+    assert "`lotus-performance` PR #168 or PR #170" in supported_features
+    assert "cross-currency stateful per-input FX evidence" in supported_features
+    assert "advance an existing RFC42-WTBD-006 partial" in supported_features
     assert "RFC38-WTBD-007 is done for Lotus-owned bounded support" in supported_features
 
 
@@ -2001,6 +2003,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     )
     assert "`source_preconverted_fx_evidence`" in work_to_be_done
     assert '`currency_mode="SOURCE_PRECONVERTED_WITH_FX_EVIDENCE"`' in work_to_be_done
+    assert "Latest WTBD-006 performance MWR single-currency stateful evidence proof" in (
+        work_to_be_done
+    )
+    assert 'conversion_evidence_status="not_required_single_currency_inputs"' in work_to_be_done
+    assert 'conversion_status="no_conversion_required"' in work_to_be_done
     assert "stateful upstream per-input FX conversion" in work_to_be_done
     assert "Latest WTBD-006 performance contribution source-truth proof" in work_to_be_done
     assert "Latest WTBD-006 performance attribution source-truth proof" in work_to_be_done

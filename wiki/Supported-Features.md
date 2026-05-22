@@ -414,9 +414,10 @@ preservation, and RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fa
 source/consumer boundary support, while runtime external treasury ingestion and bank-owned OMS
 acknowledgement/fill/settlement reconciliation remain external-owner promotion dependencies and
 unsupported operational claims. The count does not move
-for `lotus-performance` PR #168 because it advances an existing RFC42-WTBD-006 partial row rather
-than closing stateful per-input FX evidence, broader FX methodology, predictive execution, or OMS
-methodology gaps. Current Manage campaign portfolio-memory workflow projection also does not move
+for `lotus-performance` PR #168 or PR #170 because they advance an existing RFC42-WTBD-006 partial
+row rather than closing cross-currency stateful per-input FX evidence, broader FX methodology,
+predictive execution, or OMS methodology gaps. Current Manage campaign portfolio-memory workflow
+projection also does not move
 the count because it advances existing RFC41-WTBD-003 and RFC40-WTBD-010 partial rows rather than
 closing global portfolio-universe discovery or external workflow automation. RFC39-WTBD-005 is now
 partial rather than open because Manage preserves supplied risk/performance authority context and
@@ -448,6 +449,14 @@ single-reporting-currency without per-input FX metadata. Manage, Gateway, Workbe
 and AI consumers must preserve this source-owned evidence posture rather than converting MWR FX,
 sourcing rates, recalculating mixed-currency capital timing, or promoting missing stateful FX
 metadata as ready evidence.
+
+Current performance MWR single-currency stateful source-owner proof additionally includes
+`lotus-performance` PR #170 / wiki `ffc69f8`, which emits
+`not_required_single_currency_inputs` and `no_conversion_required` market-value evidence when
+stateful MWR source and reporting currencies match. Cross-currency stateful MWR still preserves the
+missing per-input FX metadata posture. Manage, Gateway, Workbench, reporting, and AI consumers must
+preserve this source-owned evidence posture rather than inferring FX rates, conversion policies, or
+mixed-currency capital-timing methodology.
 
 Current Manage source-consumer governance proof additionally keeps
 `contracts/domain-data-products/lotus-manage-consumers.v1.json` aligned to the current

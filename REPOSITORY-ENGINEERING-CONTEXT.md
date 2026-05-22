@@ -423,6 +423,12 @@ Current repository posture:
     single-reporting-currency without per-input FX metadata, and Manage consumes this as
     source-owner evidence truth only without performing MWR FX conversion, FX-rate sourcing, or
     mixed-currency capital-timing methodology locally.
+    The related `lotus-performance` PR #170 (`5eca912`, wiki `ffc69f8`) tightens stateful
+    single-currency MWR evidence so source/reporting-currency matches emit
+    `not_required_single_currency_inputs` and market values carry `no_conversion_required`.
+    Cross-currency stateful MWR still carries the missing per-input FX metadata posture; Manage
+    consumes both postures as source-owner evidence truth only and still does not infer FX rates,
+    conversion policy, or mixed-currency capital-timing methodology.
     The related `lotus-risk` PR #139 (`40ac7a5`, wiki `421ae79`) tightens
     `HistoricalRiskAttributionReport:v1` supportability so any attribution set with source-owned
     quality flags degrades response-level `metadata.calculation_supportability`. Manage preserves

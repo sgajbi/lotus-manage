@@ -80,6 +80,14 @@ as source-owner evidence truth only and still does not perform MWR FX conversion
 FX attribution, mixed-currency capital-timing methodology, execution/OMS, or Workbench product
 claims.
 
+2026-05-22 source-owner stateful MWR single-currency evidence update: `lotus-performance` PR #170
+(`5eca912`, wiki `ffc69f8`, Main Releasability Gate `26269040916`) now emits
+`not_required_single_currency_inputs` and `no_conversion_required` market-value evidence when
+stateful MWR source and reporting currencies match. Cross-currency stateful MWR remains explicitly
+gated by missing per-input FX metadata. Manage consumes both postures as source-owner evidence truth
+only and still does not perform MWR FX conversion, FX-rate sourcing, FX attribution,
+mixed-currency capital-timing methodology, execution/OMS, or Workbench product claims.
+
 2026-05-16 source-owner historical-attribution supportability update: `lotus-risk` PR #139
 (`40ac7a5`, wiki `421ae79`) tightens `HistoricalRiskAttributionReport:v1` so attribution-set
 quality flags degrade response-level calculation supportability. Manage consumes that degraded
