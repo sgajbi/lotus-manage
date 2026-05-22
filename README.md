@@ -356,10 +356,14 @@ source-refresh eventing, report-input and AI-evidence handoff contracts, support
 deduplicated AI-evidence source lineage across review, snapshot, dimension-result, and metric-level
 refs, and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
 hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
-state-filter validation evidence. Full post-trade outcome product support remains downstream until
-Gateway/Workbench implementation where surfaced is complete and canonically proven; Gateway PR #242
-and Workbench PR #350 now realize the already-supported bounded outcome-review source-lineage
-filters and facets through Gateway-only downstream consumption. RFC-0043 is
+state-filter validation evidence. The Lotus-owned RFC37-WTBD-001 outcome-feedback loop is now
+closed for the first-wave product path: Gateway/Workbench realization, report/render/archive
+materialization, governed AI narrative support, PM operating quality linkage, and bounded
+source-lineage filters/facets are merged in their owning repositories. Richer realized methodology
+depth remains RFC42-WTBD-006, and external OMS/client-communication runtime promotion remains an
+unsupported external-owner dependency. Gateway PR #242 and Workbench PR #350 realize the
+already-supported bounded outcome-review source-lineage filters and facets through Gateway-only
+downstream consumption. RFC-0043 is
 partially implemented for the bounded DPM workflow-pack product path: owner-side packs, default
 workflow-pack resolution, and first-wave Gateway/Workbench operations-handoff plus
 exception-summary invocation are merged, validated, and wiki-published. Full copilot workspace UX,

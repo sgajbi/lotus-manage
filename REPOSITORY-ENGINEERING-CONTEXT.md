@@ -863,8 +863,12 @@ Current repository posture:
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on
     outcome-review GET routes, same-key changed-evidence idempotency conflict handling, and invalid
-    search-state filter validation. Full product support remains downstream until Gateway/Workbench
-    implementation where surfaced is complete and canonically proven.
+    search-state filter validation. RFC37-WTBD-001 is closed for the Lotus-owned first-wave
+    outcome-feedback loop because Gateway/Workbench realization, report/render/archive
+    materialization, governed AI narrative support, PM operating quality linkage, and bounded
+    source-lineage filters/facets are merged in their owning repositories. Richer source
+    methodology remains tracked by RFC42-WTBD-006, and external OMS/client-communication runtime
+    promotion remains an unsupported external-owner dependency rather than a Manage gap.
 
 ## Architecture And Module Map
 

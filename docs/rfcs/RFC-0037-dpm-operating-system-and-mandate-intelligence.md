@@ -41,8 +41,10 @@ front-office stack; report/render/archive and AI realization exist for the suppo
 wave, and outcome-review handoff paths; and `lotus-platform` owns the canonical DPM sales/demo
 story through implementation-backed documentation and wiki truth. RFC-0037 remains a strategic
 parent, not a single closed implementation. RFC-0043 governed PM copilot, richer source-owner
-methodology depth, external OMS execution, PM scoring, client communication, and broader portfolio
-memory are still future or partial scope.
+methodology depth, broader portfolio memory, broader front-office realization, and full copilot
+workspace depth are still future or partial scope. External OMS execution and client communication
+runtime promotion remain explicit external-owner dependencies and unsupported claims, not hidden
+Lotus-owned implementation gaps.
 
 ---
 
@@ -1743,7 +1745,7 @@ strategic parent RFC without marking the full parent roadmap done.
 
 | WTBD | Integrated result | Current boundary |
 | --- | --- | --- |
-| RFC37-WTBD-001 | RFC-0042 now supports manage-owned outcome-review authority plus bounded Gateway/Workbench, report/archive, and AI narrative first-wave realization. | Source-owner methodology depth, external OMS execution, PM scoring, and client communication remain future scope. |
+| RFC37-WTBD-001 | RFC-0042 now supports manage-owned outcome-review authority plus bounded Gateway/Workbench, report/render/archive, governed AI narrative, PM operating quality linkage, and outcome-review source-lineage search/facet realization. | Source methodology depth remains tracked by RFC42-WTBD-006. External OMS and client communication runtime promotion remain unsupported external-owner dependencies, not blockers for Lotus-owned WTBD closure. |
 | RFC37-WTBD-005 | Supported proof-pack, rebalance-wave, and outcome-review evidence now flow from manage-owned report inputs into generated report, render, archive, Gateway/Workbench request posture, AI evidence handoff, and report/archive lineage families. | `lotus-manage` does not generate or archive documents, client communication execution remains unsupported, and any new evidence artifact family needs its own owner, controls, and proof. |
 | RFC37-WTBD-006 | `lotus-platform` PR #310, merge `42e0ecff3597257ac3ea63b0c59b425603eeb291`, and wiki publication commit `884bec3` provide the canonical DPM demo story for `PB_SG_GLOBAL_BAL_001`. | Demo material must keep unsupported OMS, PM-scoring, client-communication, autonomous AI, and unimplemented degraded/blocked seed fixtures out of supported claims. |
 
@@ -1764,5 +1766,6 @@ Gold-pass assessment:
    guards RFC/WTBD/wiki truth.
 5. Expected-standard decision: the completed child-roadmap items have reached the expected standard
    on merged and wiki-published owning-repository truth; RFC-0037 remains partial only where
-   future source-owner depth, portfolio-memory completion, OMS execution, PM scoring, client
-   communication, and broader copilot workspace scope are still unimplemented.
+   future source-methodology depth, portfolio-memory completion, broader front-office realization,
+   and broader copilot workspace scope are still unimplemented. External OMS/client-communication
+   runtime promotion remains an explicit external-owner dependency and unsupported product claim.
