@@ -2277,6 +2277,12 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "source-owned risk/performance enrichment from selected construction alternatives" in (
         supported_features
     )
+    assert "Construction risk/performance enrichment addendum" in supported_features
+    assert "`AuthoritativeRiskContext` and `AuthoritativePerformanceContext`" in (
+        supported_features
+    )
+    assert "including non-`RISK_AWARE`" in supported_features
+    assert "Manage still does not calculate tracking error" in supported_features
     assert "source-owned observed transaction-cost evidence from `lotus-core`" in (
         supported_features
     )

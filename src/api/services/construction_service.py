@@ -338,9 +338,7 @@ def _apply_supportability(
         result=result,
         tax_required=method == ConstructionMethod.TAX_AWARE,
         risk_required=method == ConstructionMethod.RISK_AWARE,
-        risk_context=(
-            authority_context.risk_context if method == ConstructionMethod.RISK_AWARE else None
-        ),
+        risk_context=authority_context.risk_context,
         performance_context=authority_context.performance_context,
         performance_required=False,
         transaction_cost_context=authority_context.transaction_cost_context,
