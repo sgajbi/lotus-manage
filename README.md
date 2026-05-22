@@ -150,6 +150,9 @@ portfolio-level source-system coverage from the specific event that satisfied an
 event/source/supportability filter without loading every portfolio timeline. The optional
 `source_type` query filter searches the same Manage-local matching-event source type, source refs,
 and artifact refs used for those facets; it is not a global cross-app source-event search.
+Gateway PR #242 and Workbench PR #350 realize these bounded source-lineage filters and facets
+downstream through Gateway-only portfolio-memory search consumption without broadening Manage into
+global portfolio-universe discovery or cross-app source-event search.
 Portfolio-level source-system coverage includes event owners, source refs, and artifact refs so
 report, AI, and archive handoff evidence is not hidden from audit search facets. Pagination metadata
 also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
@@ -347,7 +350,9 @@ deduplicated AI-evidence source lineage across review, snapshot, dimension-resul
 refs, and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
 hardening proof under `output/rfc0042-outcome-proof/20260505-025613` adds idempotency conflict and
 state-filter validation evidence. Full post-trade outcome product support remains downstream until
-Gateway/Workbench implementation where surfaced is complete and canonically proven. RFC-0043 is
+Gateway/Workbench implementation where surfaced is complete and canonically proven; Gateway PR #242
+and Workbench PR #350 now realize the already-supported bounded outcome-review source-lineage
+filters and facets through Gateway-only downstream consumption. RFC-0043 is
 partially implemented for the bounded DPM workflow-pack product path: owner-side packs, default
 workflow-pack resolution, and first-wave Gateway/Workbench operations-handoff plus
 exception-summary invocation are merged, validated, and wiki-published. Full copilot workspace UX,
