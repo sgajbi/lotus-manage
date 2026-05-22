@@ -17,6 +17,12 @@ CashflowProjectionOutcomeMeasure = Literal[
     "booked_total_net_cashflow",
     "projected_settlement_total_cashflow",
 ]
+RealizedTaxSummaryOutcomeMeasure = Literal[
+    "total_tax_amount",
+    "withholding_tax_amount",
+    "other_tax_deductions_amount",
+    "reporting_currency_total_tax_amount",
+]
 
 
 class CoreOutcomeSourceError(ValueError):
@@ -199,6 +205,159 @@ def realized_cashflow_projection_source_from_cashflow_projection_response(
     )
 
 
+def realized_tax_summary_source_from_realized_tax_summary_response(
+    response: dict[str, Any],
+    *,
+    measure: RealizedTaxSummaryOutcomeMeasure = "total_tax_amount",
+    currency: str | None = None,
+) -> DpmRealizedSourceSnapshot:
+    """Adapt source-owned portfolio realized-tax totals without tax methodology locally."""
+
+    metadata = _core_metadata(response)
+    portfolio_id = _read_required_text(response.get("portfolio_id"), "portfolio_id")
+    source_transaction_count = _read_int(
+        response.get("source_transaction_count"),
+        "source_transaction_count",
+    )
+    tax_evidence_transaction_count = _read_int(
+        response.get("tax_evidence_transaction_count"),
+        "tax_evidence_transaction_count",
+    )
+
+    if measure == "reporting_currency_total_tax_amount":
+        value = response.get("reporting_currency_total_tax_amount")
+        if value is None:
+            raise CoreOutcomeSourceError(
+                "lotus-core realized-tax summary response is missing "
+                "reporting_currency_total_tax_amount"
+            )
+        selected_currency = _read_required_text(
+            response.get("reporting_currency"), "reporting_currency"
+        )
+    else:
+        currency_total = _select_currency_total(
+            response=response,
+            currency=currency,
+        )
+        value = currency_total.get(measure)
+        if value is None:
+            raise CoreOutcomeSourceError(
+                f"lotus-core realized-tax summary response is missing {measure}"
+            )
+        selected_currency = _read_required_text(currency_total.get("currency"), "currency")
+
+    source_id = _source_id(
+        product_name=metadata["product_name"],
+        product_version=metadata["product_version"],
+        portfolio_id=portfolio_id,
+        as_of_date=metadata["as_of_date"],
+        basis=f"realized_tax_summary:{measure}:{selected_currency}",
+        fingerprint=metadata["content_hash"],
+    )
+    return DpmRealizedSourceSnapshot(
+        dimension="TAX",
+        source_system="lotus-core",
+        source_type="PORTFOLIO_REALIZED_TAX_SUMMARY",
+        source_id=source_id,
+        value=_decimal_value(value),
+        unit=selected_currency,
+        source_state=_source_state(metadata["data_quality_status"]),
+        quality=_source_quality(metadata["data_quality_status"]),
+        observed_at=metadata["observed_at"],
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["content_hash"],
+        reason_codes=[
+            _primary_reason(metadata["data_quality_status"]),
+            f"CORE_PRODUCT_{metadata['product_name'].upper()}",
+            f"CORE_PRODUCT_VERSION_{metadata['product_version'].upper()}",
+            f"REALIZED_TAX_SUMMARY_MEASURE_{measure.upper()}",
+            f"REALIZED_TAX_SUMMARY_CURRENCY_{selected_currency.upper()}",
+            f"REALIZED_TAX_SOURCE_TRANSACTION_COUNT_{source_transaction_count}",
+            f"REALIZED_TAX_EVIDENCE_TRANSACTION_COUNT_{tax_evidence_transaction_count}",
+            *_prefixed_reason_codes(
+                "REALIZED_TAX_SOURCE_REASON",
+                _read_text_list(response.get("reason_codes")),
+            ),
+            f"CORE_DATA_QUALITY_{metadata['data_quality_status'].upper()}",
+        ],
+    )
+
+
+def realized_cash_movement_source_from_cash_movement_summary_response(
+    response: dict[str, Any],
+    *,
+    classification: str,
+    timing: str,
+    currency: str,
+    is_position_flow: bool,
+    is_portfolio_flow: bool,
+) -> DpmRealizedSourceSnapshot:
+    """Adapt a source-owned cash movement bucket without forecasting or local aggregation."""
+
+    metadata = _core_metadata(response)
+    portfolio_id = _read_required_text(response.get("portfolio_id"), "portfolio_id")
+    bucket = _find_cash_movement_bucket(
+        response=response,
+        classification=classification,
+        timing=timing,
+        currency=currency,
+        is_position_flow=is_position_flow,
+        is_portfolio_flow=is_portfolio_flow,
+    )
+    if not bucket:
+        raise CoreOutcomeSourceError(
+            "lotus-core cash movement summary response is missing requested bucket"
+        )
+
+    bucket_cashflow_count = _read_int(bucket.get("cashflow_count"), "bucket.cashflow_count")
+    total_cashflow_count = _read_int(response.get("cashflow_count"), "cashflow_count")
+    movement_direction = _read_required_text(bucket.get("movement_direction"), "movement_direction")
+    start_date = _read_required_text(response.get("start_date"), "start_date")
+    end_date = _read_required_text(response.get("end_date"), "end_date")
+    selected_currency = _read_required_text(bucket.get("currency"), "bucket.currency")
+    source_id = _source_id(
+        product_name=metadata["product_name"],
+        product_version=metadata["product_version"],
+        portfolio_id=portfolio_id,
+        as_of_date=metadata["as_of_date"],
+        basis=(
+            "cash_movement_summary:"
+            f"{classification}:{timing}:{selected_currency}:"
+            f"position_flow={str(is_position_flow).lower()}:"
+            f"portfolio_flow={str(is_portfolio_flow).lower()}"
+        ),
+        fingerprint=metadata["content_hash"],
+    )
+    return DpmRealizedSourceSnapshot(
+        dimension="CASH_RESIDUAL",
+        source_system="lotus-core",
+        source_type="PORTFOLIO_CASH_MOVEMENT_SUMMARY",
+        source_id=source_id,
+        value=_decimal_value(bucket.get("total_amount")),
+        unit=selected_currency,
+        source_state=_source_state(metadata["data_quality_status"]),
+        quality=_source_quality(metadata["data_quality_status"]),
+        observed_at=metadata["observed_at"],
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["content_hash"],
+        reason_codes=[
+            _primary_reason(metadata["data_quality_status"]),
+            f"CORE_PRODUCT_{metadata['product_name'].upper()}",
+            f"CORE_PRODUCT_VERSION_{metadata['product_version'].upper()}",
+            f"CASH_MOVEMENT_CLASSIFICATION_{classification.upper()}",
+            f"CASH_MOVEMENT_TIMING_{timing.upper()}",
+            f"CASH_MOVEMENT_CURRENCY_{selected_currency.upper()}",
+            f"CASH_MOVEMENT_POSITION_FLOW_{str(is_position_flow).upper()}",
+            f"CASH_MOVEMENT_PORTFOLIO_FLOW_{str(is_portfolio_flow).upper()}",
+            f"CASH_MOVEMENT_DIRECTION_{movement_direction.upper()}",
+            f"CASH_MOVEMENT_BUCKET_CASHFLOW_COUNT_{bucket_cashflow_count}",
+            f"CASH_MOVEMENT_TOTAL_CASHFLOW_COUNT_{total_cashflow_count}",
+            f"CASH_MOVEMENT_RANGE_{start_date}_TO_{end_date}",
+            f"CORE_DATA_QUALITY_{metadata['data_quality_status'].upper()}",
+        ],
+    )
+
+
 def realized_execution_acknowledgement_source_from_response(
     response: dict[str, Any],
 ) -> DpmRealizedSourceSnapshot:
@@ -323,6 +482,61 @@ def _find_transaction(
         transaction_mapping = _read_mapping(transaction)
         if _read_text(transaction_mapping.get("transaction_id")) == transaction_id:
             return transaction_mapping
+    return {}
+
+
+def _select_currency_total(
+    *,
+    response: dict[str, Any],
+    currency: str | None,
+) -> dict[str, Any]:
+    totals = response.get("currency_totals")
+    if not isinstance(totals, list) or not totals:
+        raise CoreOutcomeSourceError(
+            "lotus-core realized-tax summary response is missing currency_totals"
+        )
+    normalized_currency = currency.upper() if isinstance(currency, str) else None
+    matches = [
+        _read_mapping(total)
+        for total in totals
+        if normalized_currency is None
+        or (_read_text(_read_mapping(total).get("currency")) or "").upper() == normalized_currency
+    ]
+    if not matches:
+        raise CoreOutcomeSourceError(
+            f"lotus-core realized-tax summary response is missing currency {currency}"
+        )
+    if normalized_currency is None and len(matches) != 1:
+        raise CoreOutcomeSourceError(
+            "lotus-core realized-tax summary response has multiple currencies; "
+            "currency must be supplied"
+        )
+    return matches[0]
+
+
+def _find_cash_movement_bucket(
+    *,
+    response: dict[str, Any],
+    classification: str,
+    timing: str,
+    currency: str,
+    is_position_flow: bool,
+    is_portfolio_flow: bool,
+) -> dict[str, Any]:
+    buckets = response.get("buckets")
+    if not isinstance(buckets, list):
+        return {}
+    for bucket in buckets:
+        bucket_mapping = _read_mapping(bucket)
+        if (
+            (_read_text(bucket_mapping.get("classification")) or "").upper()
+            == classification.upper()
+            and (_read_text(bucket_mapping.get("timing")) or "").upper() == timing.upper()
+            and (_read_text(bucket_mapping.get("currency")) or "").upper() == currency.upper()
+            and bucket_mapping.get("is_position_flow") is is_position_flow
+            and bucket_mapping.get("is_portfolio_flow") is is_portfolio_flow
+        ):
+            return bucket_mapping
     return {}
 
 
