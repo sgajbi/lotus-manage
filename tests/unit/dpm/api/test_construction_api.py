@@ -929,6 +929,10 @@ def test_authority_backed_methods_are_ready_with_required_evidence(monkeypatch) 
         "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"
         in alternatives["RISK_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+    risk_posture = alternatives["RISK_AWARE"]["diagnostics"]["source_analytics_posture"]
+    assert risk_posture["risk_context_supplied"] is True
+    assert risk_posture["risk_required_for_method"] is True
+    assert risk_posture["required_source_products"][0]["required_for_ready"] is True
     assert (
         "REGIME_SCENARIO_PACK_READY"
         in alternatives["REGIME_STRESS_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
@@ -942,6 +946,12 @@ def test_authority_backed_methods_are_ready_with_required_evidence(monkeypatch) 
         "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"
         not in alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+    liquidity_posture = alternatives["LIQUIDITY_AWARE"]["diagnostics"]["source_analytics_posture"]
+    assert liquidity_posture["risk_context_preservation"] == "SUPPORTED_WHEN_SUPPLIED"
+    assert liquidity_posture["performance_context_preservation"] == "SUPPORTED_WHEN_SUPPLIED"
+    assert liquidity_posture["risk_context_supplied"] is False
+    assert liquidity_posture["risk_required_for_method"] is False
+    assert "LOCAL_TRACKING_ERROR_CALCULATION" in liquidity_posture["blocked_capabilities"]
 
 
 def test_source_risk_and_performance_context_is_preserved_for_non_risk_methods(
@@ -970,6 +980,7 @@ def test_source_risk_and_performance_context_is_preserved_for_non_risk_methods(
         diagnostics = alternative["diagnostics"]
         reason_codes = diagnostics["enrichment_summary"]["reason_codes"]
         authority_context = diagnostics["authority_context"]
+        source_analytics_posture = diagnostics["source_analytics_posture"]
 
         assert "RISK_TRACKING_ERROR_ATTENTION" in reason_codes
         assert "PERFORMANCE_BENCHMARK_PARTIAL" in reason_codes
@@ -983,6 +994,35 @@ def test_source_risk_and_performance_context_is_preserved_for_non_risk_methods(
         )
         assert authority_context["performance_context"]["source_product_version"] == "v1"
         assert authority_context["performance_context"]["benchmark_id"] == "BMK_GLOBAL_BAL"
+        assert source_analytics_posture["product_family"] == (
+            "CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT"
+        )
+        assert source_analytics_posture["risk_context_supplied"] is True
+        assert source_analytics_posture["performance_context_supplied"] is True
+        assert source_analytics_posture["risk_required_for_method"] is False
+        assert source_analytics_posture["performance_required_for_method"] is False
+        assert source_analytics_posture["required_source_products"] == [
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "RiskAlternativeEnrichment",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-performance",
+                "source_product_name": "PerformanceBenchmarkContext",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+        ]
+        assert (
+            "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION"
+            in (source_analytics_posture["blocked_capabilities"])
+        )
+        assert (
+            "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED"
+            in (source_analytics_posture["reason_codes"])
+        )
 
 
 def test_liquidity_aware_method_uses_core_cashflow_projection_for_policy_review() -> None:

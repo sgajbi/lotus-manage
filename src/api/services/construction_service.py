@@ -416,6 +416,10 @@ def _apply_supportability(
                     reason_codes=method_reason_codes,
                 ).model_dump(mode="json"),
                 "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
+                "source_analytics_posture": _source_analytics_posture(
+                    method=method,
+                    authority_context=authority_context,
+                ),
             },
         }
     )
@@ -523,6 +527,48 @@ def _method_specific_reason_codes(
         else:
             reason_codes.extend(authority_context.regime_stress_context.reason_codes)
     return sorted(set(reason_codes))
+
+
+def _source_analytics_posture(
+    *,
+    method: ConstructionMethod,
+    authority_context: ConstructionAuthorityContext,
+) -> dict[str, object]:
+    return {
+        "product_family": "CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT",
+        "risk_context_preservation": "SUPPORTED_WHEN_SUPPLIED",
+        "performance_context_preservation": "SUPPORTED_WHEN_SUPPLIED",
+        "risk_context_supplied": authority_context.risk_context is not None,
+        "performance_context_supplied": authority_context.performance_context is not None,
+        "risk_required_for_method": method == ConstructionMethod.RISK_AWARE,
+        "performance_required_for_method": False,
+        "required_source_products": [
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "RiskAlternativeEnrichment",
+                "source_product_version": "v1",
+                "required_for_ready": method == ConstructionMethod.RISK_AWARE,
+            },
+            {
+                "source_system": "lotus-performance",
+                "source_product_name": "PerformanceBenchmarkContext",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+        ],
+        "blocked_capabilities": [
+            "LOCAL_TRACKING_ERROR_CALCULATION",
+            "LOCAL_VOLATILITY_CALCULATION",
+            "LOCAL_DRAWDOWN_CALCULATION",
+            "LOCAL_STRESS_CONTRIBUTION_CALCULATION",
+            "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION",
+            "LOCAL_BENCHMARK_RELATIVE_PERFORMANCE_CALCULATION",
+        ],
+        "reason_codes": [
+            "SOURCE_ANALYTICS_CONTEXT_PRESERVED_WHEN_SUPPLIED",
+            "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED",
+        ],
+    }
 
 
 def _authority_context_for_method(
