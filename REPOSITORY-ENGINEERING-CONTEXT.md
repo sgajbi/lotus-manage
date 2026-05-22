@@ -63,11 +63,11 @@ Current repository posture:
     reference evidence, external treasury/OMS fail-closed posture,
     CIO model-change cohorts, PM-book membership, risk-event/tactical cohorts, transaction-cost
     curves, regime-scenario evaluation, and caller-supplied source-owned mandate risk/performance
-    health contexts. This is declaration truth only; it does not make Manage
+    health contexts. It also declares bounded `BenchmarkAssignment:v1` consumption for mandate
+    benchmark identity lineage after upstream Core producer approval. This is declaration truth only; it does not make Manage
     the source owner for market data, valuation, risk, performance, tax, financial planning,
-    scenario methodology, treasury, execution, OMS, fill, or settlement facts.
-    `BenchmarkAssignment:v1` remains a declaration watchlist item until upstream producer approval
-    explicitly includes `lotus-manage`.
+    benchmark composition, benchmark analytics, scenario methodology, treasury, execution, OMS,
+    fill, or settlement facts.
 11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
     RFC-0038, RFC-0039, RFC-0040, the manage-owned explicit portfolio-list wave scope of
     RFC-0041, Gateway RFC-0098 wave composition, and the first-wave Workbench wave command center

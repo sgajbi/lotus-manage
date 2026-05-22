@@ -1594,6 +1594,9 @@ completed RFC36 downstream product realization.
 | RFC36-WTBD-001 - Gateway integration rebuilt against canonical `/api/v1` manage APIs | Completed and merged | `lotus-gateway` PR #191 merged to `main` at `a68181b`. Gateway consumes the certified manage `/api/v1` routes for rebalance runs, supportability summary, capabilities, construction alternatives, outcome reviews, proof packs, portfolio memory, and waves. Regression coverage now rejects retired unversioned route families, platform capability aliases, and monolithic `dpm-execution-context` assumptions. |
 | RFC36-WTBD-002 - Workbench product surfaces over stateful manage execution | Completed and merged | `lotus-workbench` PR #152 merged to `main` at `c83ea7e`. Workbench presents Gateway-provided manage action-register supportability on `/workbench/{portfolioId}` without direct manage calls or browser-side source-readiness synthesis. The UI renders status, source support state, freshness, run/operation/decision counts, last-run identity, and explicit unknown/N/A posture when Gateway omits source context. |
 | RFC36-WTBD-003 - Portfolio-level DPM operation dashboards over stateful executions | Completed, merged, live-proven, and wiki-published | `lotus-gateway` PR #192 (`df428d6`), `lotus-workbench` PR #153 (`3cbc688`), and corrective `lotus-gateway` PR #193 (`8afa4d3`) completed the operations dashboard path. Gateway enriches the Workbench overview `rebalance_snapshot` from `/api/v1/rebalance/runs?portfolio_id=<portfolio>&limit=5` and `/api/v1/rebalance/supportability/summary`; Workbench renders recent-run counts, issue counts, latest run rows, workflow posture, error labels, and explicit no-runs posture. |
+| RFC36-WTBD-004 - Promote additional stateful DPM source-data products into platform mesh certification | Completed, merged, and platform-certified | `lotus-core` PR #377 adds `DpmSourceReadiness:v1` trust telemetry, and `lotus-platform` PR #341 promotes it into the RFC-0091 maturity wave with SLO, access, evidence-pack, generated maturity-matrix, wiki, and cross-repo mesh certification proof. |
+| RFC36-WTBD-005 - Additional upstream source-product depth for stateful execution | Completed for the current Lotus-owned source-depth wave | `lotus-core` PR #378 approves bounded `lotus-manage` consumption of `BenchmarkAssignment:v1`, `lotus-platform` PR #342 mirrors the producer approval and regenerates catalog truth, and `lotus-manage` declares the dependency for mandate-health benchmark identity lineage only. Benchmark composition, active-risk, performance attribution, benchmark analytics, model-approval methodology, OMS, order routing, fills, settlement, and execution remain outside Manage. |
+| RFC36-WTBD-006 - Conditional downstream migration handling | Completed as no-migration-required | The cross-repo audit found no active consumer dependency requiring retired manage proposal routes, unversioned manage capability aliases, or legacy camelCase source-query parameters. `lotus-platform` PR #316 refreshed stale platform API-vocabulary truth so the certified `/api/v1` manage contract remains canonical. |
 
 ### Cross-Repository Evidence Rechecked
 
@@ -1638,10 +1641,10 @@ command-center panel itself is `READY` and `COMPLETE`. These are recorded as ope
 remain follow-on source-supportability work rather than blockers for the completed RFC36 first-wave
 Gateway/Workbench product path.
 
-The remaining RFC36 work is deliberately not reopened inside these completed WTBDs. Additional
-mesh-certified source products, richer upstream source-product depth, and any real downstream
-consumer migration for removed aliases remain separate work because they require producer-owned
-contracts, lineage semantics, and live proof.
+No RFC36-specific WTBD remains open after the 2026-05-22 source-depth closure. Broader strategic
+source-product depth, methodology ownership, and product-surface gaps remain tracked in their
+owning RFC rows, especially RFC37-WTBD-004 and the source-family rows for risk, performance,
+scenario, campaign, treasury, and OMS boundaries.
 
 ### Gold-Pass Reassessment
 

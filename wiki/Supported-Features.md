@@ -406,8 +406,8 @@ Audience use:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
-completion recount, the ledger tracks 59 WTBD items: 50 done on merged/published Lotus-owned
-truth, 7 partial or in progress, and 2 remaining or open. Counts now distinguish Lotus-owned
+completion recount, the ledger tracks 59 WTBD items: 51 done on merged/published Lotus-owned
+truth, 7 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC38-WTBD-007 is done
 for bounded `MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1` source-context
 preservation, RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fail-closed
@@ -417,7 +417,11 @@ settlement, and reconciliation remain external-owner promotion dependencies and 
 operational claims. RFC36-WTBD-004 is now done for Lotus-owned source-product certification because
 `lotus-core:DpmSourceReadiness:v1` has Core trust telemetry and Platform maturity-wave
 SLO/access/evidence policy proof through `lotus-core` PR #377 and `lotus-platform` PR #341.
-Broader upstream source-product depth remains RFC36-WTBD-005 / RFC37-WTBD-004. The count does not move
+RFC36-WTBD-005 is now done for the current Lotus-owned source-depth wave because `lotus-core`
+PR #378 approves bounded `lotus-manage` consumption of `BenchmarkAssignment:v1`, `lotus-platform`
+PR #342 mirrors the approval into catalog truth, and Manage declares the dependency for
+mandate-health benchmark identity lineage without claiming benchmark analytics or execution.
+Broader strategic source-product depth remains RFC37-WTBD-004. The count does not move
 for `lotus-performance` PR #168 or PR #170 because they advance an existing RFC42-WTBD-006 partial
 row rather than closing cross-currency stateful per-input FX evidence, broader FX methodology,
 predictive execution, or OMS methodology gaps. Current Manage campaign portfolio-memory workflow

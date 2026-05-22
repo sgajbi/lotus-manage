@@ -53,6 +53,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "PortfolioTaxLotWindow",
         "MarketDataCoverageWindow",
         "DpmSourceReadiness",
+        "BenchmarkAssignment",
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
         "PortfolioCashflowProjection",
@@ -96,6 +97,10 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["DpmSourceReadiness"]["producer_repository"] == "lotus-core"
     assert by_name["DpmSourceReadiness"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["DpmSourceReadiness"]["failure_posture"] == "fail_closed"
+    assert by_name["BenchmarkAssignment"]["producer_repository"] == "lotus-core"
+    assert by_name["BenchmarkAssignment"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["BenchmarkAssignment"]["failure_posture"] == "degrade_or_pending_review"
+    assert "benchmark identity" in by_name["BenchmarkAssignment"]["business_purpose"]
     assert by_name["ClientRestrictionProfile"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["ClientRestrictionProfile"]["failure_posture"] == "degrade_or_block"
     assert (
@@ -194,6 +199,7 @@ def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profil
         "PortfolioTaxLotWindow",
         "MarketDataCoverageWindow",
         "DpmSourceReadiness",
+        "BenchmarkAssignment",
         "ClientRestrictionProfile",
         "SustainabilityPreferenceProfile",
         "PortfolioCashflowProjection",
@@ -226,6 +232,7 @@ def test_manage_declaration_keeps_unapproved_market_data_on_the_watchlist() -> N
     assert "MarketDataWindow" not in product_names
     assert "`MarketDataWindow`" in readme
     assert "not currently approved for `lotus-manage`" in normalized_readme
+    assert "`BenchmarkAssignment:v1` is approved for bounded `lotus-manage`" in readme
 
 
 def test_manage_declaration_directory_contains_consumer_and_owned_product_contracts() -> None:
