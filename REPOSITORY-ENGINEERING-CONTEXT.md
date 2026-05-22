@@ -580,16 +580,20 @@ Current repository posture:
     truth without Gateway-local scoring, ranking, policy administration, HR, compensation,
     conduct, approval, client-contact, execution, or OMS claims. `lotus-gateway` PR #234
     (`c74b3e1514e8875d1cf7a479280e9deddd51a8db`, Main Releasability Gate `26163382026`) adds
-    bounded PM-quality review-action preview/create/list/get BFF routes. `lotus-workbench` PR
+    bounded PM-quality review-action preview/create/list/get BFF routes, and `lotus-gateway` PR
+    #239 (`c4f007d`) adds bounded PM-quality summary-invocation preview/create/list/get BFF
+    routes. `lotus-workbench` PR
     #245 (`2af063b`, wiki `2ba368d`, Main Releasability Gate `25991445845`) completes the bounded
     Gateway-only PM operating quality surface for policy/score-run evidence, fairness-analysis
     preview/create/list/detail, and review-gated PM-quality support-summary invocation; Workbench
     PR #302 (`8052d92`) and PR #303 (`3581b04`) add read-only review-action ledger/detail
     rendering and boundary tests. Workbench PR #314 (`6bd43c8`) adds Gateway-only review-action
     preview-before-create command UX, PR #315 (`806193f`) extracts the bounded command-control
-    component, PR #316 (`fdc37b5`) extracts the PM-quality API module, and the latest Workbench
-    Main Releasability Gate `26206758251` is green at
-    `1dfdeb14a24c1df25a6d4676c6d6c6506619efb3`.
+    component, PR #316 (`fdc37b5`) extracts the PM-quality API module, Workbench PR #341
+    (`667d18c`) renders persisted summary-invocation list/detail evidence, PR #342 (`565a555`)
+    adds the Gateway-only summary-invocation command path, PR #343 (`d0e1464`) adds source-backed
+    command target selectors, and PR #344 (`39993d4`) adds focused summary-invocation control test
+    hardening rather than a new product capability.
     `lotus-manage` remains evidence and report-input authority only; it does not generate, render,
     archive, retain, retrieve documents, construct AI prompts, generate PM memos, approve trades,
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,
@@ -643,10 +647,12 @@ Current repository posture:
     bounded portfolio-memory context, forbidden-action/output guardrails, review-required
     support-only output, and no score calculation, PM ranking, HR, compensation, conduct,
     client-contact, trade-approval, execution, OMS, or invented-source-fact claim. Gateway and
-    Workbench PM-quality summary invocation are bounded product-realized through Gateway PR #213
-    and Workbench PR #245; Manage-owned persisted summary invocation history is now bounded to
-    review-gated workflow/run/artifact identity only. Approval workflow beyond immutable review
-    actions remains future product depth, not part of the current support claim.
+    Workbench PM-quality summary invocation is bounded product-realized through Gateway PR #213,
+    Gateway PR #239, Workbench PR #245, Workbench PR #341, Workbench PR #342, and Workbench PR
+    #343; Workbench PR #344 adds focused test hardening only. Manage-owned persisted summary
+    invocation history is now bounded to review-gated workflow/run/artifact identity only.
+    Approval workflow beyond immutable review actions remains future product depth, not part of the
+    current support claim.
     CIO model-change discovery is now
     implemented for `CIO_MODEL_CHANGE` through lotus-core `CioModelChangeAffectedCohort:v1`.
     RFC41-WTBD-003 now has its first risk-event source-owner and manage-consumer path through

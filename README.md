@@ -424,22 +424,26 @@ trades, route orders, or claim OMS execution.
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,
 compensation, conduct, approval, client-contact, execution, or OMS decisions. `lotus-gateway`
 PR #234 (`c74b3e1514e8875d1cf7a479280e9deddd51a8db`, Main Releasability Gate `26163382026`)
-adds bounded PM-quality review-action preview/create/list/get BFF routes. `lotus-workbench`
+adds bounded PM-quality review-action preview/create/list/get BFF routes, and Gateway PR #239
+(`c4f007d`) adds bounded PM-quality summary-invocation preview/create/list/get BFF routes.
+`lotus-workbench`
 PR #245 (`2af063b`) implements the Gateway-only policy, score-run, fairness-analysis, and
 support-summary surface, and Workbench PR #302 (`8052d92`) plus PR #303 (`3581b04`) implement
 read-only PM-quality review-action ledger/detail rendering. Workbench PR #314 (`6bd43c8`) adds
 Gateway-only PM-quality review-action preview-before-create command UX, PR #315 (`806193f`)
 extracts the bounded command-control component, PR #316 (`fdc37b5`) extracts the PM-quality API
-module, and the latest Workbench Main Releasability Gate `26206758251` is green at
-`1dfdeb14a24c1df25a6d4676c6d6c6506619efb3`.
+module, Workbench PR #341 (`667d18c`) renders persisted summary-invocation list/detail evidence,
+PR #342 (`565a555`) adds the Gateway-only summary-invocation command path, PR #343 (`d0e1464`)
+adds source-backed command target selectors, and PR #344 (`39993d4`) adds focused test hardening
+for the summary-invocation control rather than a new product capability.
 `lotus-ai` PR #70 (`1951f62`) adds `pm_quality_summary.pack@v1` for review-gated support-only
 summaries over Manage-owned `PmOperatingQualityScoreRun` evidence. The pack validates score-run
 identity, source refs, supportability posture, optional bounded portfolio-memory context, and
 forbidden-use controls, and it must not calculate scores, rank PMs, generate HR/compensation/
 conduct decisions, contact clients, approve trades, route orders, claim execution, or invent
-missing source facts. Gateway/Workbench support-summary product invocation and Workbench
-review-action preview-before-create command UX are implemented through the Gateway and Workbench
-PM-quality realization path above.
+missing source facts. Gateway/Workbench support-summary product invocation, summary-invocation
+list/detail/command realization, and Workbench review-action preview-before-create command UX are
+implemented through the Gateway and Workbench PM-quality realization path above.
 Target-state features are not support claims until the owning RFC is implemented, certified,
 live-proven, and reflected in
 [wiki/Supported-Features.md](wiki/Supported-Features.md).
