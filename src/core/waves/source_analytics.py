@@ -195,13 +195,28 @@ def _source_measures(
     measure_names = (
         (
             "tracking_error",
+            "maximum_drawdown",
+            "average_drawdown",
+            "stress_loss_pct",
+            "stress_contribution_count",
+            "attribution_contributor_count",
             "concentration_breaches",
             "concentration_hhi_delta",
             "top_position_weight_proposed",
             "issuer_coverage_status",
         )
         if family == "risk"
-        else ("benchmark_id", "active_return", "underperformance_flag")
+        else (
+            "benchmark_id",
+            "active_return",
+            "benchmark_relative_return",
+            "contribution_total_return",
+            "attribution_allocation",
+            "attribution_selection",
+            "attribution_interaction",
+            "currency_attribution_total",
+            "underperformance_flag",
+        )
     )
     return {
         measure: [str(source_context[measure])]

@@ -46,7 +46,7 @@ retained only as evidence index and sequencing control.
 | RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-006 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | No RFC36-specific ledger boundary remains; broader strategic source-product depth remains tracked by RFC37-WTBD-004. |
 | RFC-0037 | RFC37-WTBD-005, RFC37-WTBD-006, and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops, full portfolio memory, source-owner depth, execution, PM scoring, and client-communication ownership stay outside the completed parent-roadmap claims. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-008 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-007 is completed for Lotus-owned bounded source-product context preservation: `lotus-risk:MandateRiskHealthContext:v1` and `lotus-performance:MandatePerformanceHealthContext:v1` are source-owned products, and Manage preserves caller-supplied context refs and uses source health-state/threshold posture without cloning risk or performance methodology. |
-| RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results, and the Lotus-owned RFC39-WTBD-008 external treasury/currency-overlay boundary result are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 is partial for Manage-side source-context preservation and source-analytics posture; broader source-owner risk/performance analytics products remain future. RFC39-WTBD-008 is done for Lotus-owned supportability: external treasury source-product contract boundaries, active fail-closed hedge-readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve posture are merged in `lotus-core`, mirrored in platform truth, and consumed by Manage as unavailable postures. Runtime external treasury ingestion remains an external bank-owner promotion dependency and is not a supported hedge-execution claim. |
+| RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, the bounded first-wave RFC39-WTBD-005, RFC39-WTBD-007 and RFC39-WTBD-009 results, and the Lotus-owned RFC39-WTBD-008 external treasury/currency-overlay boundary result are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 is done for Lotus-owned bounded support: Manage preserves supplied risk/performance authority context across construction alternatives, source-analytics posture names implemented `lotus-risk` and `lotus-performance` source products, wave/proof-pack handoffs preserve broader supplied drawdown, stress, attribution, contribution, benchmark-relative, and currency-attribution fields, and local risk/performance methodology calculation remains blocked. RFC39-WTBD-008 is done for Lotus-owned supportability: external treasury source-product contract boundaries, active fail-closed hedge-readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve posture are merged in `lotus-core`, mirrored in platform truth, and consumed by Manage as unavailable postures. Runtime external treasury ingestion remains an external bank-owner promotion dependency and is not a supported hedge-execution claim. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families, explicitly defers OMS execution, supports bounded PM quality score-run, review-action, and summary-invocation lineage for persisted score runs whose source-owned Core PM-book membership evidence includes the requested portfolio, supports Gateway PR #242 and Workbench PR #350 downstream realization of bounded portfolio-memory source-lineage search/facets, and supports generation-time direct proof-pack enrichment from source-owned `RegimeScenarioPackEvaluation:v1` context when the selected alternative does not already carry regime-stress authority. | Source-owned scenario governance posture is now bounded and implementation-backed through `lotus-risk` and preserved by `lotus-manage`; future OMS execution products, broader external CIO workflow UX, global portfolio-universe discovery, broader cross-app source-event search, and richer score-run analytics remain separate product depth rather than hidden manage proof-pack or portfolio-memory gaps. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003, the bounded tactical house-view source-owner plus manage-consumer result, the bounded manage-owned `BulkReviewCampaignMembership:v1` result, persisted Manage-owned `BulkReviewCampaignDiscovery:v1` over campaign definitions, Manage-owned campaign-definition retirement/supersession/lifecycle-event projection, preview-readiness checks, launch packages, durable campaign-definition launch with append-only launch history, first-class launch-history audit pages, append-only campaign approval-decision evidence, append-only campaign assignment/escalation actions, controlled campaign assignment-task lifecycle evidence, append-only maker-checker control evidence, bounded campaign operating queue, bounded campaign approval-attention inbox, bounded campaign workflow board, bounded campaign assignment plan, bounded campaign workflow-automation readiness, Gateway campaign-definition BFF composition, and Workbench active campaign-definition list plus launch/history rendering are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 remains partial only for global portfolio-universe campaign discovery and external workflow orchestration beyond Manage-side task readiness. Tactical house-view source ownership is implemented in `lotus-advise`: it owns `TacticalHouseViewAffectedCohort:v1` for governed bank-authored house-view instructions and caller-supplied source-backed candidates. `lotus-manage` consumes that product for bounded `TACTICAL_HOUSE_VIEW` wave preview/create without recomputing advisory, house-view, holdings, exposure, alignment, or mandate facts. `lotus-manage` also owns and implements the first `BulkReviewCampaignMembership:v1` DPM operating campaign envelope with optional approval, expiry, access-purpose, source-ref, actor-entitlement governance evidence, persisted `BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, `GET /api/v1/rebalance/waves/campaign-discovery` for bounded persisted campaign discovery, `GET /api/v1/rebalance/waves/campaign-operating-queue` for launch-ready/attention-required/closed queue posture, `GET /api/v1/rebalance/waves/campaign-approval-inbox` for read-only approval-complete/approval-required/approval-incomplete/expiry-attention/entitlement-attention/closed posture, `GET /api/v1/rebalance/waves/campaign-workflow-board` for read-only actor-aware next-action posture, `GET /api/v1/rebalance/waves/campaign-assignment-plan` for read-only actor routing/escalation/SLA posture, `GET /api/v1/rebalance/waves/campaign-workflow-automation` for read-only Manage-side task automation readiness, `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions` for append-only assignment, reassignment, escalation, de-escalation, and resolution posture evidence, `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks` for controlled assignment task state, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions` for append-only task transition evidence, `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls` for append-only actor-separation control evidence, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire` to keep retired definitions auditable while blocking new preview/create use, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede` to keep replaced definitions auditable while pointing to an active replacement version/hash, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events` for bounded lifecycle audit projection, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness` for fail-closed supportability, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package` for bounded preview/create request drafts and idempotency guidance, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch` for deterministic durable wave launch only when readiness is `READY`, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history` for paged append-only launch audit evidence, and `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions` for append-only approval posture evidence. Source apps still own the underlying facts and calculated reasons. `lotus-gateway` PR #231 (`ea6c036`, Main Releasability Gate `25989936539`) preserves bounded campaign-definition lifecycle-events, launch-history, launch-package, durable launch, and campaign-discovery BFF payloads without local cohort, readiness, idempotency, order, or OMS calculation. `lotus-workbench` PR #244 (`31ea877`, Main Releasability Gate `25989936388`) renders the Gateway-only READY-gated launch and paged launch-history/empty-state/no-order/no-OMS boundaries without computing cohort membership or readiness locally. RFC41-WTBD-010 is closed for Lotus-owned boundary supportability: execution/OMS integration remains an external-owner promotion dependency with no supported Lotus order-routing, acknowledgement, fill, settlement, reconciliation, or execution claim. |
 | RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005, the Lotus-owned RFC42-WTBD-007 external execution/OMS fail-closed boundary result, and the bounded RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded immutable support-summary invocation history, bounded portfolio-memory score-run, review-action, and summary-invocation lineage projection, Gateway policy/score-run/fairness-analysis/support-summary/review-action BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary plus review-action ledger/detail and preview-before-create command UX are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 remains partial source-family work; Gateway PR #242 and Workbench PR #350 realize the existing bounded source-lineage filter/facet posture downstream without moving the count. RFC42-WTBD-007 is done for Lotus-owned supportability: Core exposes fail-closed `ExternalOrderExecutionAcknowledgement:v1` posture and Manage preserves it as construction/outcome/report/AI boundary evidence. Bank-owned OMS ingestion, acknowledgements, fills, settlement, and reconciliation remain external-owner promotion dependencies and unsupported execution claims. PM quality does not claim PM ranking, protected-class inference, HR, compensation, conduct enforcement, client contact, trade approval, order routing, OMS, execution, approval workflow beyond immutable review actions, generated-summary text retention, or autonomous decisions. |
@@ -78,7 +78,7 @@ RFC37-WTBD-007 as partial, matching the detail rows: bounded first-wave product 
 product surfaces, and portfolio-memory lineage exist, while the full copilot workspace, broader
 front-office realization, full portfolio memory, OMS execution/fill/settlement projection,
 PM scoring, and remaining source-owner depth remain future scope. The current classification is
-59 total WTBD items: 51 done on merged/published Lotus-owned truth, 7 partial or in progress, and
+59 total WTBD items: 52 done on merged/published Lotus-owned truth, 6 partial or in progress, and
 1 remaining/open. The 2026-05-22 Lotus-owned completion recount moves RFC38-WTBD-007,
 RFC39-WTBD-008, and RFC42-WTBD-007 out of partial because Lotus has implemented bounded
 risk/performance health source-context preservation plus the fail-closed external treasury and
@@ -121,6 +121,11 @@ The RFC39-WTBD-005 construction risk/performance context slice moves that row fr
 Manage now emits machine-readable `source_analytics_posture` diagnostics for construction
 alternatives and preserves caller/source-supplied risk and performance authority context across
 methods without calculating source-owned methodology.
+The RFC39-WTBD-005 closure slice moves that row to done for Lotus-owned bounded support:
+construction diagnostics, wave source analytics, and proof-pack source analytics now preserve
+supplied source-owned drawdown, stress, attribution, contribution, benchmark-relative, and
+currency-attribution evidence fields while the posture names implemented `lotus-risk` and
+`lotus-performance` source products and keeps local analytics calculation blocked.
 The RFC38-WTBD-007 mandate-health risk/performance context slice moves that row from partial to
 done for Lotus-owned bounded support: `lotus-risk:MandateRiskHealthContext:v1` and
 `lotus-performance:MandatePerformanceHealthContext:v1` are now source-owned contracts, and Manage
@@ -162,8 +167,8 @@ methodology, performance benchmark analytics, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published Lotus-owned truth | 51 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
-| Partial / in progress | 7 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
+| Done on merged/published Lotus-owned truth | 52 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
+| Partial / in progress | 6 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
 | Remaining / open | 1 | Items still deferred, proposed, conditional, unsupported, or awaiting Lotus-owned implementation or ownership. |
 
 Recently closed in this snapshot:
@@ -230,6 +235,18 @@ risk-authority client and preserves it in selected-alternative and direct proof-
 effective-period posture, portfolio applicability, or contribution rows locally. Broader external
 CIO workflow UX/integration remains future product depth rather than a WTBD blocker for this
 bounded support claim.
+
+RFC39-WTBD-005 is complete for the bounded source-analytics preservation support claim. Manage
+construction alternatives now preserve supplied `AuthoritativeRiskContext` and
+`AuthoritativePerformanceContext` fields for source-owned risk metrics, drawdown, stress
+contribution, historical risk attribution, benchmark context, contribution, attribution,
+benchmark-relative performance, and currency-attribution evidence. `source_analytics_posture`
+names implemented `RiskMetricsReport:v1`, `DrawdownAnalyticsReport:v1`,
+`HistoricalRiskAttribution:v1`, `RegimeScenarioPackEvaluation:v1`,
+`BenchmarkExposureContext:v1`, `ContributionAnalytics:v1`, and `AttributionAnalytics:v1`
+source products. Wave and proof-pack source analytics preserve these supplied fields as lineage
+and metrics without calculating tracking error, drawdown, stress, attribution, contribution,
+benchmark-relative performance, or FX methodology locally.
 
 Partial / in-progress items:
 
@@ -614,7 +631,7 @@ Boundary that remains outside this WTBD:
 
 Broader benchmark analytics, market-data methodology, PM-book, sustainability,
 scenario, risk, performance, tax, treasury, OMS, and future source-family depth remains tracked by
-RFC37-WTBD-004, RFC39-WTBD-005, RFC40-WTBD-009, RFC41-WTBD-003, RFC42-WTBD-006,
+RFC37-WTBD-004, RFC40-WTBD-009, RFC41-WTBD-003, RFC42-WTBD-006,
 and external-owner execution/treasury boundary rows as applicable.
 
 2026-05-20 current-state consumer declaration hardening:
@@ -1872,7 +1889,7 @@ truth, while product realization and several richer source authorities belong ou
 | RFC39-WTBD-002 | Workbench construction lab / alternatives comparison UX | `lotus-workbench` | Implemented, merged, CI-proven, live-proven, and wiki-published through `lotus-workbench` PR #150 and PR #151 | Workbench consumes Gateway/BFF construction contracts only, sends governed DPM context, renders manage-owned alternatives and traces without browser optimization, and is proven by focused canonical Workbench live evidence. |
 | RFC39-WTBD-003 | Full front-office construction-lab product realization | `lotus-gateway`, `lotus-workbench`, with manage as backend authority | First-wave Gateway/Workbench realization implemented and wiki-published through `lotus-gateway` PR #190 plus `lotus-workbench` PR #150/#151 | The current PM-facing path is implementation-backed for generated alternatives, supportability, comparison, and selection controls. Bounded lifecycle depth through proof packs, waves, report input, and AI evidence input is now covered by RFC39-WTBD-010; external OMS execution and autonomous PM decisions remain unsupported. |
 | RFC39-WTBD-004 | ESG/restriction-aware construction support | `lotus-core` source authority consumed by manage | Completed for source-backed restriction and sustainability profile consumption | `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` are consumed through stateful core sourcing. Manage degrades when profiles are missing, blocks candidate trades that violate hard client restrictions, preserves sustainability preferences and source lineage, and keeps classification evidence gaps in `PENDING_REVIEW` rather than claiming automatic ESG approval. |
-| RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` | Partial: Manage preserves supplied risk/performance authority context and emits machine-readable source-analytics posture; broader source-owner analytics products remain future | Current `RISK_AWARE` consumes concentration authority. Construction alternatives now preserve caller/source-supplied `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` across methods and emit `source_analytics_posture` with required future product names and blocked local-calculation capabilities. Broader tracking error, drawdown, stress contribution, attribution, and benchmark-relative performance still need owning-service contracts. |
+| RFC39-WTBD-005 | Broader risk/performance alternative enrichment | `lotus-risk`, `lotus-performance`, consumed by `lotus-manage` | Completed for bounded source-owned analytics preservation | Current `RISK_AWARE` consumes concentration authority. Construction alternatives preserve caller/source-supplied `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` across methods and emit `source_analytics_posture` naming implemented source-owned risk metrics, drawdown, historical attribution, regime scenario, benchmark, contribution, and attribution products. Wave and proof-pack source analytics preserve supplied tracking-error, drawdown, stress, attribution, contribution, benchmark-relative, and currency-attribution fields without calculating source-owned methodology locally. Predictive execution, OMS, and broader FX methodology remain separate source-owner scope. |
 | RFC39-WTBD-006 | Authoritative transaction-cost and cost-aware alternatives | `lotus-core` source authority consumed by `lotus-manage` | Completed for source-owned observed-cost comparison methods | `TransactionCostCurve:v1` is consumed in stateful construction and proof packs. The `COST_AWARE` method applies observed average cost bps to candidate trade notionals, records an `ESTIMATED_COST` objective/constraint trace, and degrades when source evidence is absent or incomplete. Predictive execution quotes, market-impact modelling, venue routing, and broader execution methodology remain outside this support claim. |
 | RFC39-WTBD-007 | Cashflow/income-need aware liquidity construction | `lotus-core` source authority consumed by `lotus-manage` | Completed for bounded source-product consumption in stateful construction and mandate-health lineage | `LIQUIDITY_AWARE` accepts `lotus-core` `PortfolioCashflowProjection:v1` total net cashflow evidence and now also preserves optional `ClientIncomeNeedsSchedule:v1`, `LiquidityReserveRequirement:v1`, and `PlannedWithdrawalSchedule:v1` supportability evidence from stateful core sourcing. Manage records source identity, counts, hashes, currencies, horizons, and reason codes for liquidity-aware diagnostics and mandate lineage, but does not compute financial-planning advice, funding recommendations, client liability plans, OMS instructions, or treasury actions. |
 | RFC39-WTBD-008 | External treasury/currency overlay source boundary | `lotus-core` ingestion of external bank treasury/currency products, consumed by `lotus-manage` | Done for Lotus-owned boundary supportability; runtime external treasury ingestion remains an external-owner promotion dependency | Current support uses FX readiness and bounded currency-overlay context. Lotus will not introduce a `lotus-treasury` app. `lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`) declares contracts for external currency exposure, hedge policy, FX forward curves, and eligible hedge instruments. `lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`) exposes `ExternalHedgeExecutionReadiness:v1` as an active fail-closed `UNAVAILABLE` route. `lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`) exposes `ExternalCurrencyExposure:v1` as an active fail-closed `UNAVAILABLE` route. `lotus-core` PR #368 (`763db4c1`, wiki `50fff30`) exposes `ExternalHedgePolicy:v1` as an active fail-closed `UNAVAILABLE` route, `lotus-core` PR #369 (`89225766`, wiki `72dc91d`) exposes `ExternalFXForwardCurve:v1` as an active fail-closed `UNAVAILABLE` route, and `lotus-core` PR #370 (`bacad356`, wiki `6e7c706`) exposes `ExternalEligibleHedgeInstrument:v1` as an active fail-closed `UNAVAILABLE` route; `lotus-platform` PR #334 (`ae4f707`) and PR #335 (`72be854`) mirror the first active postures. Manage now consumes all five routes through stateful core sourcing and preserves empty exposure/policy/eligible-instrument/forward-curve rows, exposure count, policy-rule count, eligible-instrument count, curve-point count, missing external treasury data families, blocked capabilities, lineage, source hashes, and reason codes in currency-overlay diagnostics so hedge realization remains blocked while ingestion is unavailable. Manage still must not claim FX attribution, price forwards, approve hedge policy, select eligible hedge instruments, approve suitability, recommend products, choose counterparties, claim best execution, produce OMS acknowledgements, claim fills/settlement, or perform autonomous treasury action. |
@@ -2124,44 +2141,48 @@ contribution, attribution, and benchmark-relative performance context where avai
 
 Current implementation status:
 
-Manage now preserves caller/source-supplied `AuthoritativeRiskContext` and
-`AuthoritativePerformanceContext` in construction alternative diagnostics and enrichment summaries
-for every generated alternative, including non-`RISK_AWARE` methods. The preserved evidence includes
-source system, source product name/version, source id, content hash, risk tracking error, benchmark
-identity, active return, supportability status, and bounded reason codes. `RISK_AWARE` still
-requires risk evidence or fetches the bounded lotus-risk concentration context; non-risk methods do
-not require risk evidence but no longer discard it when an upstream authority supplies it. Each
-alternative also emits `source_analytics_posture` naming the source-owned future products,
-preservation support, whether risk/performance context was supplied, which methods require risk for
-readiness, and blocked local calculation capabilities for tracking error, volatility, drawdown,
-stress contribution, attribution, and benchmark-relative performance.
+Completed for bounded source-owned analytics preservation. Manage now preserves caller/source-
+supplied `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction
+alternative diagnostics and enrichment summaries for every generated alternative, including
+non-`RISK_AWARE` methods. The preserved evidence includes source system, source product
+name/version, source id, content hash, risk tracking error, maximum/average drawdown, stress-loss
+and stress-contribution counts, historical attribution contributor counts, benchmark identity,
+active return, benchmark-relative return, contribution total return, attribution allocation/
+selection/interaction, currency-attribution total, supportability status, and bounded reason codes.
+`RISK_AWARE` still requires risk evidence or fetches the bounded lotus-risk concentration context;
+non-risk methods do not require risk evidence but no longer discard it when an upstream authority
+supplies it. Each alternative also emits `source_analytics_posture` naming implemented source-owned
+`RiskMetricsReport:v1`, `DrawdownAnalyticsReport:v1`, `HistoricalRiskAttribution:v1`,
+`RegimeScenarioPackEvaluation:v1`, `BenchmarkExposureContext:v1`, `ContributionAnalytics:v1`, and
+`AttributionAnalytics:v1` products, preservation support, whether risk/performance context was
+supplied, which methods require risk for readiness, and blocked local calculation capabilities.
+Wave source analytics and proof-pack source analytics preserve the same supplied source-owned
+fields as lineage and metrics.
 
-Why it cannot be done now:
+Bounded closure:
 
-Current support consumes `lotus-risk` concentration authority for `RISK_AWARE` and can preserve
-caller/source-supplied risk and performance authority context across generated alternatives, but
-broader risk and performance analytics still need certified owner contracts. Manage must not
-recalculate risk or performance methodology.
+The WTBD is closed for Lotus-owned supportability because the relevant risk/performance source
+products exist in owning services and Manage preserves their supplied evidence without local
+methodology calculation. Manage still does not fetch every analytics product automatically,
+calculate tracking error, volatility, drawdown, stress, attribution, contribution,
+benchmark-relative performance, currency attribution, predictive execution, or OMS methodology.
 
-Dependencies before implementation:
+Implementation proof:
 
-1. `RiskAlternativeEnrichment:v1` or equivalent from `lotus-risk`,
-2. `PerformanceBenchmarkContext:v1` or equivalent from `lotus-performance`,
-3. benchmark identity, as-of date, period vocabulary, freshness, and supportability semantics,
-4. manage adapter tests,
-5. Gateway/Workbench posture if displayed.
+1. `src/core/construction/models.py` extends the bounded risk/performance authority contexts,
+2. `src/api/services/construction_service.py` names the implemented source products in
+   `source_analytics_posture`,
+3. `src/core/waves/source_analytics.py` preserves broader source-owned measures for wave evidence,
+4. `src/core/proof_packs/source_analytics.py` preserves broader source-owned measures for proof
+   packs,
+5. focused construction, wave source-analytics, and proof-pack tests prove preservation and
+   malformed-context rejection.
 
-Expected implementation wave:
+Remaining boundary:
 
-Implement after analytics source products exist. Preserve degraded supportability when unavailable.
-
-Promotion proof:
-
-1. owning-service API certification,
-2. manage alternative-enrichment tests,
-3. live proof with ready and degraded analytics,
-4. OpenAPI/endpoint-certification updates,
-5. supported-feature wording naming the exact analytics supported.
+Gateway/Workbench presentation of any newly supplied fields remains downstream product depth.
+Manage does not become the analytics authority and does not create investment, tax, execution, or
+OMS claims from preserved source context.
 
 #### RFC39-WTBD-006 - Authoritative Transaction-Cost And Cost-Aware Alternatives
 

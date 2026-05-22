@@ -177,7 +177,12 @@ Current repository posture:
     alternatives: `risk_impact` and `performance_context` sections preserve source-owned
     `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` supportability, lineage refs,
     content hashes, reason codes, and bounded source-emitted measures without manage-local
-    risk/performance methodology. RFC40-WTBD-007 manage proof-pack enrichment is implemented for
+    risk/performance methodology. RFC39-WTBD-005 is now closed for bounded source-owned analytics
+    preservation: construction diagnostics, wave source analytics, and proof-pack source analytics
+    preserve supplied risk metrics, drawdown, stress contribution, historical attribution,
+    benchmark, contribution, attribution, benchmark-relative, and currency-attribution fields from
+    implemented `lotus-risk` and `lotus-performance` source products while local analytics
+    calculation remains blocked. RFC40-WTBD-007 manage proof-pack enrichment is implemented for
     source-owned observed transaction-cost evidence: stateful core sourcing can consume
     `lotus-core` `TransactionCostCurve:v1`, attach `AuthoritativeTransactionCostContext` to
     construction alternatives, and preserve supportability, source refs, content hashes, reason

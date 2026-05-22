@@ -34,6 +34,9 @@ def test_build_source_analytics_from_alternative_set_preserves_source_owned_evid
                             "source_id": "risk-concentration-001",
                             "content_hash": "sha256:risk-001",
                             "tracking_error": Decimal("0.042"),
+                            "maximum_drawdown": Decimal("-0.125"),
+                            "stress_contribution_count": 7,
+                            "attribution_contributor_count": 5,
                             "concentration_hhi_delta": Decimal("125.5"),
                             "reason_codes": ["LOTUS_RISK_CONCENTRATION_READY"],
                         },
@@ -45,6 +48,10 @@ def test_build_source_analytics_from_alternative_set_preserves_source_owned_evid
                             "source_id": "perf-benchmark-001",
                             "benchmark_id": "BMK_GLOBAL_BAL",
                             "active_return": Decimal("-0.018"),
+                            "benchmark_relative_return": Decimal("-0.018"),
+                            "contribution_total_return": Decimal("0.021"),
+                            "attribution_selection": Decimal("-0.006"),
+                            "currency_attribution_total": Decimal("0.0025"),
                             "reason_codes": ["PERFORMANCE_BENCHMARK_PARTIAL"],
                         },
                     }
@@ -58,13 +65,20 @@ def test_build_source_analytics_from_alternative_set_preserves_source_owned_evid
     assert analytics["risk"]["supportability_state"] == "READY"
     assert analytics["risk"]["source_refs"][0]["source_type"] == "ConcentrationRiskReport"
     assert analytics["risk"]["source_measures"] == {
+        "attribution_contributor_count": ["5"],
         "concentration_hhi_delta": ["125.5"],
+        "maximum_drawdown": ["-0.125"],
+        "stress_contribution_count": ["7"],
         "tracking_error": ["0.042"],
     }
     assert analytics["performance"]["supportability_state"] == "DEGRADED"
     assert analytics["performance"]["source_measures"] == {
         "active_return": ["-0.018"],
+        "attribution_selection": ["-0.006"],
         "benchmark_id": ["BMK_GLOBAL_BAL"],
+        "benchmark_relative_return": ["-0.018"],
+        "contribution_total_return": ["0.021"],
+        "currency_attribution_total": ["0.0025"],
     }
 
 

@@ -112,6 +112,11 @@ def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAna
             key: value
             for key, value in {
                 "tracking_error": context.tracking_error,
+                "maximum_drawdown": context.maximum_drawdown,
+                "average_drawdown": context.average_drawdown,
+                "stress_loss_pct": context.stress_loss_pct,
+                "stress_contribution_count": context.stress_contribution_count,
+                "attribution_contributor_count": context.attribution_contributor_count,
                 "concentration_breaches": context.concentration_breaches,
                 "concentration_hhi_delta": context.concentration_hhi_delta,
                 "top_position_weight_proposed": context.top_position_weight_proposed,
@@ -160,6 +165,12 @@ def _performance_source_analytics(
             key: value
             for key, value in {
                 "active_return": context.active_return,
+                "benchmark_relative_return": context.benchmark_relative_return,
+                "contribution_total_return": context.contribution_total_return,
+                "attribution_allocation": context.attribution_allocation,
+                "attribution_selection": context.attribution_selection,
+                "attribution_interaction": context.attribution_interaction,
+                "currency_attribution_total": context.currency_attribution_total,
                 "underperformance_flag": context.underperformance_flag,
             }.items()
             if value is not None

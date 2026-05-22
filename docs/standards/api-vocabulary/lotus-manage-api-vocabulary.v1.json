@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-22T09:54:49.588714+00:00",
+  "generatedAt": "2026-05-22T13:01:13.945094+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1115,6 +1115,62 @@
       ]
     },
     {
+      "semanticId": "lotus.attribution_allocation",
+      "canonicalTerm": "attribution_allocation",
+      "preferredName": "attribution_allocation",
+      "description": "Performance-authoritative allocation effect when provided.",
+      "example": "attribution_allocation_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.attribution_contributor_count",
+      "canonicalTerm": "attribution_contributor_count",
+      "preferredName": "attribution_contributor_count",
+      "description": "Count of source-owned risk attribution contributors represented by the context.",
+      "example": "attribution_contributor_count_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.attribution_interaction",
+      "canonicalTerm": "attribution_interaction",
+      "preferredName": "attribution_interaction",
+      "description": "Performance-authoritative interaction effect when provided.",
+      "example": "attribution_interaction_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.attribution_selection",
+      "canonicalTerm": "attribution_selection",
+      "preferredName": "attribution_selection",
+      "description": "Performance-authoritative selection effect when provided.",
+      "example": "attribution_selection_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.audit_policy",
       "canonicalTerm": "audit_policy",
       "preferredName": "audit_policy",
@@ -1251,6 +1307,20 @@
       ]
     },
     {
+      "semanticId": "lotus.average_drawdown",
+      "canonicalTerm": "average_drawdown",
+      "preferredName": "average_drawdown",
+      "description": "Risk-authoritative average drawdown when provided.",
+      "example": "average_drawdown_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.average_score",
       "canonicalTerm": "average_score",
       "preferredName": "average_score",
@@ -1378,6 +1448,20 @@
       "preferredName": "benchmark_id",
       "description": "Unique benchmark identifier.",
       "example": "BENCHMARK_001",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.benchmark_relative_return",
+      "canonicalTerm": "benchmark_relative_return",
+      "preferredName": "benchmark_relative_return",
+      "description": "Performance-authoritative benchmark-relative return when provided.",
+      "example": "benchmark_relative_return_example",
       "type": "object",
       "locations": [
         "body"
@@ -2484,6 +2568,20 @@
       ]
     },
     {
+      "semanticId": "lotus.contribution_total_return",
+      "canonicalTerm": "contribution_total_return",
+      "preferredName": "contribution_total_return",
+      "description": "Performance-authoritative contribution total return when provided.",
+      "example": "contribution_total_return_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.control_action",
       "canonicalTerm": "control_action",
       "preferredName": "control_action",
@@ -2746,6 +2844,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.currency_attribution_total",
+      "canonicalTerm": "currency_attribution_total",
+      "preferredName": "currency_attribution_total",
+      "description": "Performance-authoritative total currency attribution when provided.",
+      "example": "USD",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -7940,6 +8052,20 @@
       "observedTypes": [
         "object",
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.maximum_drawdown",
+      "canonicalTerm": "maximum_drawdown",
+      "preferredName": "maximum_drawdown",
+      "description": "Risk-authoritative maximum drawdown when provided.",
+      "example": "maximum_drawdown_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -13529,6 +13655,34 @@
       "example": {
         "sample_key": "sample_value"
       },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.stress_contribution_count",
+      "canonicalTerm": "stress_contribution_count",
+      "preferredName": "stress_contribution_count",
+      "description": "Count of source-owned stress contribution rows represented by the context.",
+      "example": "stress_contribution_count_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.stress_loss_pct",
+      "canonicalTerm": "stress_loss_pct",
+      "preferredName": "stress_loss_pct",
+      "description": "Risk-authoritative stress loss percentage when provided.",
+      "example": "stress_loss_pct_example",
       "type": "object",
       "locations": [
         "body"
@@ -60631,6 +60785,46 @@
             "attributeRef": "#/attributeCatalog/lotus.tracking_error"
           },
           {
+            "name": "authority_context.risk_context.maximum_drawdown",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_drawdown",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_drawdown"
+          },
+          {
+            "name": "authority_context.risk_context.average_drawdown",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.average_drawdown",
+            "attributeRef": "#/attributeCatalog/lotus.average_drawdown"
+          },
+          {
+            "name": "authority_context.risk_context.stress_loss_pct",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.stress_loss_pct",
+            "attributeRef": "#/attributeCatalog/lotus.stress_loss_pct"
+          },
+          {
+            "name": "authority_context.risk_context.stress_contribution_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.stress_contribution_count",
+            "attributeRef": "#/attributeCatalog/lotus.stress_contribution_count"
+          },
+          {
+            "name": "authority_context.risk_context.attribution_contributor_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_contributor_count",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_contributor_count"
+          },
+          {
             "name": "authority_context.risk_context.concentration_breaches",
             "location": "body",
             "required": false,
@@ -60741,6 +60935,54 @@
             "type": "object",
             "semanticId": "lotus.active_return",
             "attributeRef": "#/attributeCatalog/lotus.active_return"
+          },
+          {
+            "name": "authority_context.performance_context.benchmark_relative_return",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.benchmark_relative_return",
+            "attributeRef": "#/attributeCatalog/lotus.benchmark_relative_return"
+          },
+          {
+            "name": "authority_context.performance_context.contribution_total_return",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.contribution_total_return",
+            "attributeRef": "#/attributeCatalog/lotus.contribution_total_return"
+          },
+          {
+            "name": "authority_context.performance_context.attribution_allocation",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_allocation",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_allocation"
+          },
+          {
+            "name": "authority_context.performance_context.attribution_selection",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_selection",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_selection"
+          },
+          {
+            "name": "authority_context.performance_context.attribution_interaction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_interaction",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_interaction"
+          },
+          {
+            "name": "authority_context.performance_context.currency_attribution_total",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency_attribution_total",
+            "attributeRef": "#/attributeCatalog/lotus.currency_attribution_total"
           },
           {
             "name": "authority_context.performance_context.underperformance_flag",
@@ -99846,6 +100088,46 @@
             "attributeRef": "#/attributeCatalog/lotus.tracking_error"
           },
           {
+            "name": "item_inputs[].authority_context.risk_context.maximum_drawdown",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.maximum_drawdown",
+            "attributeRef": "#/attributeCatalog/lotus.maximum_drawdown"
+          },
+          {
+            "name": "item_inputs[].authority_context.risk_context.average_drawdown",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.average_drawdown",
+            "attributeRef": "#/attributeCatalog/lotus.average_drawdown"
+          },
+          {
+            "name": "item_inputs[].authority_context.risk_context.stress_loss_pct",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.stress_loss_pct",
+            "attributeRef": "#/attributeCatalog/lotus.stress_loss_pct"
+          },
+          {
+            "name": "item_inputs[].authority_context.risk_context.stress_contribution_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.stress_contribution_count",
+            "attributeRef": "#/attributeCatalog/lotus.stress_contribution_count"
+          },
+          {
+            "name": "item_inputs[].authority_context.risk_context.attribution_contributor_count",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_contributor_count",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_contributor_count"
+          },
+          {
             "name": "item_inputs[].authority_context.risk_context.concentration_breaches",
             "location": "body",
             "required": false,
@@ -99956,6 +100238,54 @@
             "type": "object",
             "semanticId": "lotus.active_return",
             "attributeRef": "#/attributeCatalog/lotus.active_return"
+          },
+          {
+            "name": "item_inputs[].authority_context.performance_context.benchmark_relative_return",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.benchmark_relative_return",
+            "attributeRef": "#/attributeCatalog/lotus.benchmark_relative_return"
+          },
+          {
+            "name": "item_inputs[].authority_context.performance_context.contribution_total_return",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.contribution_total_return",
+            "attributeRef": "#/attributeCatalog/lotus.contribution_total_return"
+          },
+          {
+            "name": "item_inputs[].authority_context.performance_context.attribution_allocation",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_allocation",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_allocation"
+          },
+          {
+            "name": "item_inputs[].authority_context.performance_context.attribution_selection",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_selection",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_selection"
+          },
+          {
+            "name": "item_inputs[].authority_context.performance_context.attribution_interaction",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.attribution_interaction",
+            "attributeRef": "#/attributeCatalog/lotus.attribution_interaction"
+          },
+          {
+            "name": "item_inputs[].authority_context.performance_context.currency_attribution_total",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.currency_attribution_total",
+            "attributeRef": "#/attributeCatalog/lotus.currency_attribution_total"
           },
           {
             "name": "item_inputs[].authority_context.performance_context.underperformance_flag",

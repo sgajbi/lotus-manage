@@ -155,6 +155,26 @@ class AuthoritativeRiskContext(BaseModel):
         default=None,
         description="Risk-authoritative tracking error when provided.",
     )
+    maximum_drawdown: Decimal | None = Field(
+        default=None,
+        description="Risk-authoritative maximum drawdown when provided.",
+    )
+    average_drawdown: Decimal | None = Field(
+        default=None,
+        description="Risk-authoritative average drawdown when provided.",
+    )
+    stress_loss_pct: Decimal | None = Field(
+        default=None,
+        description="Risk-authoritative stress loss percentage when provided.",
+    )
+    stress_contribution_count: int | None = Field(
+        default=None,
+        description="Count of source-owned stress contribution rows represented by the context.",
+    )
+    attribution_contributor_count: int | None = Field(
+        default=None,
+        description="Count of source-owned risk attribution contributors represented by the context.",
+    )
     concentration_breaches: int | None = Field(
         default=None,
         description="Risk-authoritative concentration-breach count when provided.",
@@ -805,6 +825,30 @@ class AuthoritativePerformanceContext(BaseModel):
     active_return: Decimal | None = Field(
         default=None,
         description="Performance-authoritative active return when provided.",
+    )
+    benchmark_relative_return: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative benchmark-relative return when provided.",
+    )
+    contribution_total_return: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative contribution total return when provided.",
+    )
+    attribution_allocation: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative allocation effect when provided.",
+    )
+    attribution_selection: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative selection effect when provided.",
+    )
+    attribution_interaction: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative interaction effect when provided.",
+    )
+    currency_attribution_total: Decimal | None = Field(
+        default=None,
+        description="Performance-authoritative total currency attribution when provided.",
     )
     underperformance_flag: bool | None = Field(
         default=None,

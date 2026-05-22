@@ -71,13 +71,16 @@ Construction risk/performance enrichment addendum: Manage now preserves caller/s
 `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction alternative
 diagnostics and enrichment summaries for every generated alternative, including non-`RISK_AWARE`
 methods. The preserved evidence includes source system, source product name/version, source id,
-content hash, risk tracking error, benchmark identity, active return, supportability status, and
-bounded reason codes. `RISK_AWARE` still requires risk evidence or the bounded lotus-risk
-concentration context; non-risk methods do not require risk evidence but preserve it when supplied.
-Each construction alternative also emits bounded `source_analytics_posture` diagnostics naming the
-future source-owned `RiskAlternativeEnrichment:v1` and `PerformanceBenchmarkContext:v1` products,
-context-preservation support, supplied-context booleans, method readiness requirements, and blocked
-local calculation capabilities.
+content hash, risk tracking error, drawdown, stress contribution, historical attribution,
+benchmark identity, contribution, attribution, benchmark-relative performance, currency
+attribution, active return, supportability status, and bounded reason codes. `RISK_AWARE` still
+requires risk evidence or the bounded lotus-risk concentration context; non-risk methods do not
+require risk evidence but preserve it when supplied. Each construction alternative also emits
+bounded `source_analytics_posture` diagnostics naming implemented source-owned
+`RiskMetricsReport:v1`, `DrawdownAnalyticsReport:v1`, `HistoricalRiskAttribution:v1`,
+`RegimeScenarioPackEvaluation:v1`, `BenchmarkExposureContext:v1`, `ContributionAnalytics:v1`, and
+`AttributionAnalytics:v1` products, context-preservation support, supplied-context booleans,
+method readiness requirements, and blocked local calculation capabilities.
 This is source-context preservation only: Manage still does not calculate tracking error,
 volatility, drawdown, attribution, benchmark-relative performance, or performance methodology.
 
@@ -411,8 +414,8 @@ Audience use:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
-completion recount, the ledger tracks 59 WTBD items: 51 done on merged/published Lotus-owned
-truth, 7 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
+completion recount, the ledger tracks 59 WTBD items: 52 done on merged/published Lotus-owned
+truth, 6 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC38-WTBD-007 is done
 for bounded `MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1` source-context
 preservation, RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fail-closed
@@ -433,9 +436,10 @@ predictive execution, or OMS methodology gaps. Current Manage campaign portfolio
 projection also does not move
 the count because it advances existing RFC41-WTBD-003 and RFC40-WTBD-010 partial rows rather than
 closing global portfolio-universe discovery or external workflow automation. RFC39-WTBD-005 is now
-partial rather than open because Manage preserves supplied risk/performance authority context and
-publishes machine-readable source-analytics posture, while source-owned analytics products remain
-future. RFC38-WTBD-007 is done for Lotus-owned bounded support because mandate-health snapshots now
+done for bounded source-owned analytics preservation because Manage preserves supplied broader
+risk/performance authority context, names implemented risk/performance source products in
+machine-readable source-analytics posture, and carries the supplied fields into wave/proof-pack
+lineage without local methodology calculation. RFC38-WTBD-007 is done for Lotus-owned bounded support because mandate-health snapshots now
 emit typed `source_analytics_posture` evidence for supplied tracking-error/performance-attention
 signals and caller-supplied source health contexts, preserve stable source context refs, and use
 source-owned health-state/threshold posture without local risk or performance methodology. The next execution

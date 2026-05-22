@@ -545,13 +545,43 @@ def _source_analytics_posture(
         "required_source_products": [
             {
                 "source_system": "lotus-risk",
-                "source_product_name": "RiskAlternativeEnrichment",
+                "source_product_name": "RiskMetricsReport",
                 "source_product_version": "v1",
                 "required_for_ready": method == ConstructionMethod.RISK_AWARE,
             },
             {
+                "source_system": "lotus-risk",
+                "source_product_name": "DrawdownAnalyticsReport",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "HistoricalRiskAttribution",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "RegimeScenarioPackEvaluation",
+                "source_product_version": "v1",
+                "required_for_ready": method == ConstructionMethod.REGIME_STRESS_AWARE,
+            },
+            {
                 "source_system": "lotus-performance",
-                "source_product_name": "PerformanceBenchmarkContext",
+                "source_product_name": "BenchmarkExposureContext",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-performance",
+                "source_product_name": "ContributionAnalytics",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-performance",
+                "source_product_name": "AttributionAnalytics",
                 "source_product_version": "v1",
                 "required_for_ready": False,
             },
