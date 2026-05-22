@@ -151,16 +151,22 @@ materialization, peer-group/lookback-window scope evidence, immutable fairness-a
 preview/create/read/list, immutable review-action preview/create/read/list, portfolio-memory
 score-run lineage, and fail-closed governance controls.
 `lotus-gateway` PR #213 exposes the bounded PM operating quality BFF and review-gated
-`pm_quality_summary.pack@v1` handoff, and `lotus-gateway` PR #234
+`pm_quality_summary.pack@v1` handoff, `lotus-gateway` PR #234
 (`c74b3e1514e8875d1cf7a479280e9deddd51a8db`, Main Releasability Gate `26163382026`)
-adds PM-quality review-action BFF preview/create/list/get routes. `lotus-workbench` PR #245
+adds PM-quality review-action BFF preview/create/list/get routes, and `lotus-gateway` PR #239
+(`c4f007d`) adds bounded PM-quality summary-invocation preview/create/list/get BFF routes.
+`lotus-workbench` PR #245
 (`2af063b`, wiki `2ba368d`, Main Releasability Gate `25991445845`) completes the Gateway-only
 Workbench policy, score-run, fairness-analysis preview/create/list/detail, and support-summary
 invocation surface; `lotus-workbench` PR #302 (`8052d92`) and PR #303 (`3581b04`) add read-only
 review-action ledger/detail rendering; PR #314 (`6bd43c8`) adds Gateway-only preview-before-create
 review-action command UX; PR #315 (`806193f`) extracts the bounded command-control component; and
-PR #316 (`fdc37b5`) extracts the PM-quality API module. Latest Workbench main releasability is
-green through run `26206758251` at `1dfdeb14a24c1df25a6d4676c6d6c6506619efb3`. The closure does
+PR #316 (`fdc37b5`) extracts the PM-quality API module. Workbench PR #341 (`667d18c`) renders
+persisted PM-quality summary-invocation list/detail evidence, PR #342 (`565a555`) adds the
+Gateway-only summary-invocation command path, PR #343 (`d0e1464`) adds source-backed command target
+selectors, and PR #344 (`39993d4`) adds focused summary-invocation control test hardening rather
+than a new product capability. Latest Workbench downstream realization preserves Manage truth and
+does not alter the WTBD count. The closure does
 not claim PM ranking, protected-class inference, HR, compensation, conduct, client contact, trade
 approval, order routing, OMS, execution, approval workflow beyond immutable review actions,
 generated-summary text retention, or autonomous decisions.
@@ -215,6 +221,13 @@ ready values for local promotion or recalculation.
 | ---: | --- | --- | --- |
 | 1 | RFC42-WTBD-006 - Source-owner realized methodology depth | Promotes aggregate risk, performance, tax, FX, cash, liquidity, and execution methodology from selected adapters into auditable source-owned products. Current source-owner slices tighten `lotus-risk` non-rolling volatility, non-rolling drawdown, non-rolling Sharpe, non-rolling Sortino, non-rolling VaR, non-rolling beta, non-rolling tracking-error, non-rolling information-ratio, rolling volatility, rolling Sharpe, rolling beta, rolling maximum drawdown, rolling tracking-error, rolling information-ratio, drawdown analytics maximum-drawdown, average-drawdown, ulcer-index, and time-under-water methodology/wiki truth, and concentration position-HHI, top-position weight, top-N cumulative weight, issuer-HHI, and top-issuer weight methodology/wiki truth, `lotus-core` holdings-as-of, market-data coverage, DPM source-readiness, transaction-ledger window, cashflow-projection, liquidity-ladder, tax-lot window, client-tax profile/rule, portfolio realized-tax summary, and observed transaction-cost curve methodology/wiki truth, and `lotus-performance` MWR, contribution, and attribution methodology/wiki truth so stateful source resolution is auditable and downstream consumers cannot reconstruct `RiskMetricsReport:v1` volatility, drawdown, Sharpe, Sortino, VaR, beta, tracking error, or information ratio, rolling active-risk, rolling excess-return risk-adjusted performance, rolling benchmark sensitivity, rolling window maximum drawdown, drawdown analytics maximum drawdown, average drawdown, ulcer index, or time under water, concentration position HHI, concentration top-position weight, concentration top-N cumulative weight, concentration issuer HHI, concentration top issuer weight, rolling portfolio volatility, holdings snapshot selection, position weighting, cash-balance restatement, market price/FX freshness classification, DPM readiness family precedence, transaction row windowing/restatement, operational cash movement, cash-flow schedules, liquidity buckets, lot/cost-basis selection, explicit realized-tax aggregation, observed booked-fee cost curves, position contribution, active return, Brinson effects, or currency attribution locally. | Owning services provide methodology docs, contracts, degraded-state tests, live proof, and product-surface preservation without manage-local recalculation. |
 | 2 | RFC41-WTBD-003 - Tactical house-view, risk-event, and campaign/bulk-review cohorts | Moves the rebalance wave operating model toward bank operating workflows without inventing source-owned cohorts. Risk-event source ownership, bounded manage consumption, Advise-owned tactical house-view source ownership, bounded Manage tactical house-view consumption, first-wave Manage-owned bulk-review campaign membership with optional governance evidence, immutable Manage-owned campaign definitions over source-backed candidate sets, fail-closed campaign-definition preview readiness, bounded campaign-definition launch packages, deterministic durable launch from ready definitions, append-only launch-history audit pages, append-only campaign approval-decision evidence, append-only assignment-action evidence, controlled assignment-task lifecycle evidence, append-only maker-checker control evidence with actor separation for completed reviews, bounded campaign operating queue, bounded approval-attention inbox, bounded workflow board, bounded assignment plan, bounded workflow automation readiness, bounded portfolio-memory projection for campaign definition workflow evidence, Gateway campaign-definition BFF composition through PR #212 and PR #231, and Workbench active campaign-definition list plus READY-gated launch/history rendering through PR #184 and PR #244 are now implemented. | Global portfolio-universe campaign discovery and external workflow orchestration beyond Manage-side task readiness are added only after source behavior and product evidence are proven. |
+
+2026-05-22 downstream realization backfill: Gateway PR #238 and Workbench PR #340 add bounded
+campaign workflow/audit realization over existing Manage campaign workflow truth. This strengthens
+RFC41-WTBD-003 downstream product evidence but does not change its partial classification: global
+portfolio-universe campaign discovery and external workflow orchestration beyond Manage-side task
+readiness remain future source-owner scope, and no order, OMS, fill, settlement, or client-contact
+claim is promoted.
 
 2026-05-09 validation hardening:
 
@@ -6594,13 +6607,15 @@ strict non-use posture, required bank approval and fairness-review evidence, imm
 versions, immutable score-run storage, optional source-owned PM-book materialization, and bounded
 portfolio-memory score-run/review-action/summary-invocation lineage projection. Gateway BFF composition is implemented through
 `lotus-gateway` PR #213 for policy, score-run, fairness-analysis, and score-run summary handoff,
-and through `lotus-gateway` PR #234 for review-action preview/create/list/get, without local score
+through `lotus-gateway` PR #234 for review-action preview/create/list/get, and through
+`lotus-gateway` PR #239 for summary-invocation preview/create/list/get, without local score
 calculation or prohibited-use claims. `lotus-ai` PR #70
 implements `pm_quality_summary.pack@v1` as support-only narrative over score-run evidence without
 score ownership. Gateway/Workbench fairness-analysis product realization, PM-quality summary
-invocation, and review-action preview-before-create command UX are now complete for the bounded
-current support claim through Gateway PR #213/#234 and Workbench PR #245/#302/#303/#314/#315/#316.
-Persisted summary history downstream UX, approval workflow beyond immutable review actions,
+invocation list/detail/command realization, and review-action preview-before-create command UX are
+now complete for the bounded current support claim through Gateway PR #213/#234/#239 and Workbench
+PR #245/#302/#303/#314/#315/#316/#341/#342/#343, with Workbench PR #344 adding test hardening only.
+Approval workflow beyond immutable review actions,
 evidence validation, HR/compensation/conduct integration, protected-class inference, PM ranking,
 client-contact, order, OMS, and execution remain future product depth outside this support claim.
 
