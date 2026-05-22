@@ -212,8 +212,12 @@ Current repository posture:
     exceptions, RFC-0039 construction alternative set generation, selected-alternative decisions,
     proof packs, proof-pack-local decision timeline events, RFC-0041 wave events, internal handoff
     refs, and RFC-0042 outcome-review events into a deterministic, source-backed, hashable
-    timeline without reconstructing mandate health, construction, risk, performance, execution,
-    tax, cash, FX, or source-owner methodology. RFC42-WTBD-006 source-owner methodology depth now
+    timeline. The bounded search endpoint also supports normalized represented source-system and
+    represented source-type filters over Manage-local events, source refs, and artifact refs, and
+    returns matching-event source-system/source-type facets without becoming global portfolio
+    discovery or cross-app source-event search. Manage still does not reconstruct mandate health,
+    construction, risk, performance, execution, tax, cash, FX, or source-owner methodology.
+    RFC42-WTBD-006 source-owner methodology depth now
     includes merged and wiki-published issuer active-risk source truth through `lotus-performance`
     PR #165 (`191a405`, wiki `46a9124`) and `lotus-risk` PR #138 (`8ae3e4a`, wiki
     `616a10c`): performance owns benchmark issuer exposure context from lotus-core index-catalog

@@ -61,8 +61,8 @@ _PORTFOLIO_MEMORY_EVENT_TYPE_SET = set(_PORTFOLIO_MEMORY_EVENT_TYPES)
         "How: The endpoint scans persisted proof packs, rebalance waves, monitoring exceptions, "
         "campaign definitions, and outcome reviews, then composes each matching portfolio with "
         "the same source-backed memory assembler used by the detail route. It can filter by "
-        "event type, supportability state, and represented source system. It does not discover "
-        "the global portfolio universe, "
+        "event type, supportability state, represented source system, and represented source "
+        "type. It does not discover the global portfolio universe, "
         "query external source-owner event stores, project OMS acknowledgement/fill/settlement "
         "events, project client contact/message/delivery/approval events, or recalculate risk, "
         "performance, execution, tax, cash, FX, mandate-health, PM-quality score/review-action, "
@@ -102,6 +102,14 @@ def search_portfolio_memory_index(
         ),
         examples=["lotus-manage"],
     ),
+    source_type: str | None = Query(
+        default=None,
+        description=(
+            "Optional represented source-type filter across matching events, source refs, and "
+            "artifact refs. Leading and trailing whitespace is normalized before matching."
+        ),
+        examples=["DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"],
+    ),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum summaries to return."),
     offset: int = Query(default=0, ge=0, description="Zero-based page offset."),
     source_scan_limit: int = Query(
@@ -131,6 +139,7 @@ def search_portfolio_memory_index(
     normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
     normalized_supportability_state = normalize_portfolio_memory_search_filter(supportability_state)
     normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
+    normalized_source_type = normalize_portfolio_memory_search_filter(source_type)
     if (
         normalized_event_type is not None
         and normalized_event_type not in _PORTFOLIO_MEMORY_EVENT_TYPE_SET
@@ -158,6 +167,7 @@ def search_portfolio_memory_index(
             PortfolioMemorySupportabilityState | None, normalized_supportability_state
         ),
         source_system=normalized_source_system,
+        source_type=normalized_source_type,
         limit=limit,
         offset=offset,
         source_scan_limit=source_scan_limit,

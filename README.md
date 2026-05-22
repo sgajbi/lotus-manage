@@ -142,13 +142,16 @@ portfolio-memory API also exposes `GET /api/v1/rebalance/portfolio-memory/search
 Manage-local index over persisted proof-pack, wave, monitoring-exception, campaign-definition,
 outcome-review, PM-quality, and explicit caller-supplied portfolio identifiers. Search responses
 include pre-pagination facet counts for portfolio aggregate supportability state, matched event
-type, matched-event supportability state, matched-event source systems, and represented source
-system plus matching-event context and stable matching-event identity/source coordinates so
+type, matched-event supportability state, matched-event source systems, matched-event source
+types, and represented source system plus matching-event context and stable matching-event
+identity/source coordinates so
 consumers can distinguish the latest overall memory event, aggregate portfolio posture, and
 portfolio-level source-system coverage from the specific event that satisfied an
-event/source/supportability filter without loading every portfolio timeline. Portfolio-level
-source-system coverage includes event owners, source refs, and artifact refs so report, AI, and
-archive handoff evidence is not hidden from audit search facets. Pagination metadata
+event/source/supportability filter without loading every portfolio timeline. The optional
+`source_type` query filter searches the same Manage-local matching-event source type, source refs,
+and artifact refs used for those facets; it is not a global cross-app source-event search.
+Portfolio-level source-system coverage includes event owners, source refs, and artifact refs so
+report, AI, and archive handoff evidence is not hidden from audit search facets. Pagination metadata
 also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
 `source_scan_limit` used for each Manage-local evidence repository so consumers can continue
 bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
