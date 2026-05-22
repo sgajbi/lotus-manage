@@ -215,7 +215,9 @@ Current repository posture:
     timeline. The bounded search endpoint also supports normalized represented source-system and
     represented source-type filters over Manage-local events, source refs, and artifact refs, and
     returns matching-event source-system/source-type facets without becoming global portfolio
-    discovery or cross-app source-event search. Manage still does not reconstruct mandate health,
+    discovery or cross-app source-event search. Gateway PR #242 and Workbench PR #350 realize those
+    bounded source-lineage filters/facets downstream through Gateway-only consumption without
+    broadening the Manage source-owner claim. Manage still does not reconstruct mandate health,
     construction, risk, performance, execution, tax, cash, FX, or source-owner methodology.
     RFC42-WTBD-006 source-owner methodology depth now
     includes merged and wiki-published issuer active-risk source truth through `lotus-performance`
@@ -818,7 +820,8 @@ Current repository posture:
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
     append-only events, source-lineage source-owner/source-type filters and facets over persisted
-    review lineage, source-refresh eventing, report-input and AI-evidence handoff contracts,
+    review lineage with downstream Gateway PR #242 and Workbench PR #350 filter/facet realization,
+    source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
     `lotus-risk` `RiskMetricsReport:v1`, drawdown analytics maximum drawdown, average drawdown,
     ulcer index, and time under water, concentration response position HHI and selected measures, rolling metrics selected
