@@ -653,6 +653,37 @@ def test_health_source_staleness_risk_ready_and_workflow_blocked_edges() -> None
     ).state == (MandateHealthState.BLOCKED)
 
 
+def test_mandate_health_preserves_risk_performance_source_analytics_posture() -> None:
+    snapshot = calculate_mandate_health(
+        _ready_input(tracking_error=Decimal("0.08"), performance_under_review=True)
+    )
+
+    posture = snapshot.source_analytics_posture
+
+    assert posture.product_family == "MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"
+    assert posture.risk_tracking_error_supplied is True
+    assert posture.performance_attention_signal_supplied is True
+    assert posture.risk_context_preservation == "SUPPORTED_WHEN_SUPPLIED"
+    assert posture.performance_context_preservation == "SUPPORTED_WHEN_SUPPLIED"
+    assert [product.model_dump() for product in posture.required_source_products] == [
+        {
+            "source_system": "lotus-risk",
+            "source_product_name": "MandateRiskHealthContext",
+            "source_product_version": "v1",
+            "required_for_ready": False,
+        },
+        {
+            "source_system": "lotus-performance",
+            "source_product_name": "MandatePerformanceHealthContext",
+            "source_product_version": "v1",
+            "required_for_ready": False,
+        },
+    ]
+    assert "LOCAL_TRACKING_ERROR_CALCULATION" in posture.blocked_capabilities
+    assert "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION" in posture.blocked_capabilities
+    assert "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED" in posture.reason_codes
+
+
 @pytest.mark.parametrize(
     ("overrides", "dimension", "reason_code", "state", "action"),
     [

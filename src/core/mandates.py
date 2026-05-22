@@ -212,6 +212,60 @@ class DpmMandateHealthInput(BaseModel):
     model_effective_to: Optional[date] = Field(default=None)
 
 
+class DpmMandateHealthSourceProductRequirement(BaseModel):
+    source_system: str
+    source_product_name: str
+    source_product_version: str
+    required_for_ready: bool = False
+
+
+class DpmMandateHealthSourceAnalyticsPosture(BaseModel):
+    product_family: Literal["MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"] = (
+        "MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"
+    )
+    risk_tracking_error_supplied: bool
+    performance_attention_signal_supplied: bool
+    risk_context_preservation: Literal["SUPPORTED_WHEN_SUPPLIED"] = "SUPPORTED_WHEN_SUPPLIED"
+    performance_context_preservation: Literal["SUPPORTED_WHEN_SUPPLIED"] = "SUPPORTED_WHEN_SUPPLIED"
+    required_source_products: list[DpmMandateHealthSourceProductRequirement]
+    blocked_capabilities: list[str] = Field(
+        default_factory=lambda: [
+            "LOCAL_TRACKING_ERROR_CALCULATION",
+            "LOCAL_VOLATILITY_CALCULATION",
+            "LOCAL_DRAWDOWN_CALCULATION",
+            "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION",
+            "LOCAL_BENCHMARK_RELATIVE_PERFORMANCE_CALCULATION",
+        ]
+    )
+    reason_codes: list[str] = Field(
+        default_factory=lambda: [
+            "MANDATE_HEALTH_SOURCE_ANALYTICS_PRESERVED_WHEN_SUPPLIED",
+            "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED",
+        ]
+    )
+
+
+def _default_source_analytics_posture() -> DpmMandateHealthSourceAnalyticsPosture:
+    return DpmMandateHealthSourceAnalyticsPosture(
+        risk_tracking_error_supplied=False,
+        performance_attention_signal_supplied=False,
+        required_source_products=[
+            DpmMandateHealthSourceProductRequirement(
+                source_system="lotus-risk",
+                source_product_name="MandateRiskHealthContext",
+                source_product_version="v1",
+                required_for_ready=False,
+            ),
+            DpmMandateHealthSourceProductRequirement(
+                source_system="lotus-performance",
+                source_product_name="MandatePerformanceHealthContext",
+                source_product_version="v1",
+                required_for_ready=False,
+            ),
+        ],
+    )
+
+
 class DpmMandateHealthSnapshot(BaseModel):
     health_snapshot_id: str
     mandate_id: str
@@ -225,6 +279,9 @@ class DpmMandateHealthSnapshot(BaseModel):
     recommended_action: MandateRecommendedAction
     source_readiness_state: str
     evidence_refs: list[str] = Field(default_factory=list)
+    source_analytics_posture: DpmMandateHealthSourceAnalyticsPosture = Field(
+        default_factory=_default_source_analytics_posture
+    )
 
 
 class DpmMonitoringException(BaseModel):
@@ -738,6 +795,18 @@ def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthS
             for lineage in input_.twin.source_lineage
             if lineage.source_record_id
         ],
+        source_analytics_posture=_source_analytics_posture(input_),
+    )
+
+
+def _source_analytics_posture(
+    input_: DpmMandateHealthInput,
+) -> DpmMandateHealthSourceAnalyticsPosture:
+    return _default_source_analytics_posture().model_copy(
+        update={
+            "risk_tracking_error_supplied": input_.tracking_error is not None,
+            "performance_attention_signal_supplied": input_.performance_under_review,
+        }
     )
 
 
