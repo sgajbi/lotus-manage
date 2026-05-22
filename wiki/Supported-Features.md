@@ -55,6 +55,10 @@ methods. The preserved evidence includes source system, source product name/vers
 content hash, risk tracking error, benchmark identity, active return, supportability status, and
 bounded reason codes. `RISK_AWARE` still requires risk evidence or the bounded lotus-risk
 concentration context; non-risk methods do not require risk evidence but preserve it when supplied.
+Each construction alternative also emits bounded `source_analytics_posture` diagnostics naming the
+future source-owned `RiskAlternativeEnrichment:v1` and `PerformanceBenchmarkContext:v1` products,
+context-preservation support, supplied-context booleans, method readiness requirements, and blocked
+local calculation capabilities.
 This is source-context preservation only: Manage still does not calculate tracking error,
 volatility, drawdown, attribution, benchmark-relative performance, or performance methodology.
 
@@ -389,7 +393,7 @@ Audience use:
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
 completion recount, the ledger tracks 59 WTBD items: 47 done on merged/published Lotus-owned
-truth, 6 partial or in progress, and 6 remaining or open. Counts now distinguish Lotus-owned
+truth, 7 partial or in progress, and 5 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC39-WTBD-008 and
 RFC42-WTBD-007 are done for Lotus-owned fail-closed source/consumer boundary support, while runtime
 external treasury ingestion and bank-owned OMS acknowledgement/fill/settlement reconciliation remain
@@ -398,7 +402,10 @@ for `lotus-performance` PR #168 because it advances an existing RFC42-WTBD-006 p
 than closing stateful per-input FX evidence, broader FX methodology, predictive execution, or OMS
 methodology gaps. Current Manage campaign portfolio-memory workflow projection also does not move
 the count because it advances existing RFC41-WTBD-003 and RFC40-WTBD-010 partial rows rather than
-closing global portfolio-universe discovery or external workflow automation. The next execution
+closing global portfolio-universe discovery or external workflow automation. RFC39-WTBD-005 is now
+partial rather than open because Manage preserves supplied risk/performance authority context and
+publishes machine-readable source-analytics posture, while source-owned analytics products remain
+future. The next execution
 wave should focus on product surfaces that materially improve bank-buyable demo and operating value
 without inventing unsupported source truth.
 

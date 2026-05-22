@@ -11,6 +11,7 @@ WTBD_PARTIAL_IDS = {
     "RFC37-WTBD-002",
     "RFC37-WTBD-003",
     "RFC37-WTBD-007",
+    "RFC39-WTBD-005",
     "RFC41-WTBD-003",
     "RFC42-WTBD-006",
 }
@@ -20,7 +21,6 @@ WTBD_OPEN_IDS = {
     "RFC36-WTBD-005",
     "RFC37-WTBD-004",
     "RFC38-WTBD-007",
-    "RFC39-WTBD-005",
     "RFC41-WTBD-010",
 }
 
@@ -327,8 +327,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
 
     assert len(rows) == 59
     assert len(done_ids) == 47
-    assert len(WTBD_PARTIAL_IDS) == 6
-    assert len(WTBD_OPEN_IDS) == 6
+    assert len(WTBD_PARTIAL_IDS) == 7
+    assert len(WTBD_OPEN_IDS) == 5
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
 
@@ -338,8 +338,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
     assert "59 WTBD items: 47 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 6 partial or in progress" in supported_features
-    assert "6 remaining or open" in supported_features
+    assert "truth, 7 partial or in progress" in supported_features
+    assert "5 remaining or open" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "advances an existing RFC42-WTBD-006 partial row" in supported_features
 
@@ -2180,7 +2180,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
     assert "59 WTBD items: 47 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 6 partial or in progress" in supported_features
+    assert "truth, 7 partial or in progress" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
@@ -2282,6 +2282,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "including non-`RISK_AWARE`" in supported_features
+    assert "`source_analytics_posture` diagnostics" in supported_features
+    assert "`RiskAlternativeEnrichment:v1` and `PerformanceBenchmarkContext:v1`" in (
+        supported_features
+    )
     assert "Manage still does not calculate tracking error" in supported_features
     assert "source-owned observed transaction-cost evidence from `lotus-core`" in (
         supported_features
