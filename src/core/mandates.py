@@ -188,6 +188,34 @@ class DpmMandateDimensionScore(BaseModel):
     evidence_refs: list[str] = Field(default_factory=list)
 
 
+class DpmMandateSourceHealthContext(BaseModel):
+    source_system: Literal["lotus-risk", "lotus-performance"]
+    source_product_name: str
+    source_product_version: str = "v1"
+    health_state: Literal["ready", "attention", "unavailable"]
+    threshold_breached: Optional[bool] = None
+    request_fingerprint: str
+    source_metric: dict[str, object] = Field(default_factory=dict)
+    methodology_posture: dict[str, object] = Field(default_factory=dict)
+    benchmark_context: dict[str, object] = Field(default_factory=dict)
+    reason_codes: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_source_product_identity(self) -> "DpmMandateSourceHealthContext":
+        expected_products = {
+            "lotus-risk": "MandateRiskHealthContext",
+            "lotus-performance": "MandatePerformanceHealthContext",
+        }
+        expected_product = expected_products[self.source_system]
+        if self.source_product_name != expected_product:
+            raise ValueError(f"{self.source_system} context must use {expected_product}")
+        if self.source_product_version != "v1":
+            raise ValueError("source_product_version must be v1")
+        if not self.request_fingerprint.startswith("sha256:"):
+            raise ValueError("request_fingerprint must be a sha256 fingerprint")
+        return self
+
+
 class DpmMandateHealthInput(BaseModel):
     twin: DpmMandateDigitalTwin
     current_weights: dict[str, Decimal] = Field(default_factory=dict)
@@ -207,9 +235,42 @@ class DpmMandateHealthInput(BaseModel):
     tax_budget_used_base: Optional[Decimal] = Field(default=None)
     tracking_error: Optional[Decimal] = Field(default=None)
     performance_under_review: bool = False
+    risk_health_context: Optional[DpmMandateSourceHealthContext] = Field(
+        default=None,
+        description=(
+            "Bounded source-owned lotus-risk MandateRiskHealthContext:v1 posture. Manage "
+            "preserves this context and may use its health_state/threshold posture without "
+            "recalculating risk methodology."
+        ),
+    )
+    performance_health_context: Optional[DpmMandateSourceHealthContext] = Field(
+        default=None,
+        description=(
+            "Bounded source-owned lotus-performance MandatePerformanceHealthContext:v1 posture. "
+            "Manage preserves this context and may use its health_state/threshold posture without "
+            "recalculating performance methodology."
+        ),
+    )
     workflow_blocked: bool = False
     approval_required: bool = False
     model_effective_to: Optional[date] = Field(default=None)
+
+    @model_validator(mode="after")
+    def _validate_source_health_context_slots(self) -> "DpmMandateHealthInput":
+        if (
+            self.risk_health_context is not None
+            and self.risk_health_context.source_system != "lotus-risk"
+        ):
+            raise ValueError("risk_health_context must use lotus-risk MandateRiskHealthContext")
+        if (
+            self.performance_health_context is not None
+            and self.performance_health_context.source_system != "lotus-performance"
+        ):
+            raise ValueError(
+                "performance_health_context must use lotus-performance "
+                "MandatePerformanceHealthContext"
+            )
+        return self
 
 
 class DpmMandateHealthSourceProductRequirement(BaseModel):
@@ -225,9 +286,15 @@ class DpmMandateHealthSourceAnalyticsPosture(BaseModel):
     )
     risk_tracking_error_supplied: bool
     performance_attention_signal_supplied: bool
+    risk_health_context_supplied: bool = False
+    performance_health_context_supplied: bool = False
     risk_context_preservation: Literal["SUPPORTED_WHEN_SUPPLIED"] = "SUPPORTED_WHEN_SUPPLIED"
     performance_context_preservation: Literal["SUPPORTED_WHEN_SUPPLIED"] = "SUPPORTED_WHEN_SUPPLIED"
+    source_context_preservation: Literal["SOURCE_PRODUCT_CONTEXT_PRESERVED_WHEN_SUPPLIED"] = (
+        "SOURCE_PRODUCT_CONTEXT_PRESERVED_WHEN_SUPPLIED"
+    )
     required_source_products: list[DpmMandateHealthSourceProductRequirement]
+    source_context_refs: list[str] = Field(default_factory=list)
     blocked_capabilities: list[str] = Field(
         default_factory=lambda: [
             "LOCAL_TRACKING_ERROR_CALCULATION",
@@ -802,11 +869,32 @@ def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthS
 def _source_analytics_posture(
     input_: DpmMandateHealthInput,
 ) -> DpmMandateHealthSourceAnalyticsPosture:
+    source_context_refs = []
+    reason_codes = list(_default_source_analytics_posture().reason_codes)
+    if input_.risk_health_context is not None:
+        source_context_refs.append(_source_health_context_ref(input_.risk_health_context))
+        reason_codes.append("MANDATE_RISK_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED")
+    if input_.performance_health_context is not None:
+        source_context_refs.append(_source_health_context_ref(input_.performance_health_context))
+        reason_codes.append("MANDATE_PERFORMANCE_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED")
     return _default_source_analytics_posture().model_copy(
         update={
-            "risk_tracking_error_supplied": input_.tracking_error is not None,
-            "performance_attention_signal_supplied": input_.performance_under_review,
+            "risk_tracking_error_supplied": input_.tracking_error is not None
+            or input_.risk_health_context is not None,
+            "performance_attention_signal_supplied": input_.performance_under_review
+            or input_.performance_health_context is not None,
+            "risk_health_context_supplied": input_.risk_health_context is not None,
+            "performance_health_context_supplied": input_.performance_health_context is not None,
+            "source_context_refs": source_context_refs,
+            "reason_codes": reason_codes,
         }
+    )
+
+
+def _source_health_context_ref(context: DpmMandateSourceHealthContext) -> str:
+    return (
+        f"{context.source_system}:{context.source_product_name}:"
+        f"{context.source_product_version}:{context.request_fingerprint}"
     )
 
 
@@ -927,6 +1015,7 @@ def _attention_score(
     reason_code: str,
     measured_value: Optional[Decimal | str | int] = None,
     threshold_value: Optional[Decimal | str | int] = None,
+    evidence_refs: Optional[list[str]] = None,
 ) -> DpmMandateDimensionScore:
     return DpmMandateDimensionScore(
         dimension=dimension,
@@ -936,6 +1025,7 @@ def _attention_score(
         reason_code=reason_code,
         measured_value=measured_value,
         threshold_value=threshold_value,
+        evidence_refs=evidence_refs or [],
     )
 
 
@@ -994,6 +1084,14 @@ def _score_allocation_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensio
 
 
 def _score_risk_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
+    source_score = _score_source_health_context(
+        context=input_.risk_health_context,
+        dimension=MandateHealthDimension.RISK_DRIFT,
+        attention_reason_code="SOURCE_RISK_HEALTH_ATTENTION",
+        unavailable_reason_code="SOURCE_RISK_HEALTH_UNAVAILABLE",
+    )
+    if source_score is not None:
+        return source_score
     if input_.tracking_error is None or input_.twin.constraints.max_tracking_error is None:
         return _ready_score(MandateHealthDimension.RISK_DRIFT)
     if input_.tracking_error <= input_.twin.constraints.max_tracking_error:
@@ -1087,6 +1185,14 @@ def _score_eligibility_restrictions(input_: DpmMandateHealthInput) -> DpmMandate
 
 
 def _score_performance_attention(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
+    source_score = _score_source_health_context(
+        context=input_.performance_health_context,
+        dimension=MandateHealthDimension.PERFORMANCE_ATTENTION,
+        attention_reason_code="SOURCE_PERFORMANCE_HEALTH_ATTENTION",
+        unavailable_reason_code="SOURCE_PERFORMANCE_HEALTH_UNAVAILABLE",
+    )
+    if source_score is not None:
+        return source_score
     if input_.performance_under_review:
         return _attention_score(
             dimension=MandateHealthDimension.PERFORMANCE_ATTENTION,
@@ -1095,6 +1201,39 @@ def _score_performance_attention(input_: DpmMandateHealthInput) -> DpmMandateDim
             reason_code="PERFORMANCE_UNDER_REVIEW",
         )
     return _ready_score(MandateHealthDimension.PERFORMANCE_ATTENTION)
+
+
+def _score_source_health_context(
+    *,
+    context: Optional[DpmMandateSourceHealthContext],
+    dimension: MandateHealthDimension,
+    attention_reason_code: str,
+    unavailable_reason_code: str,
+) -> Optional[DpmMandateDimensionScore]:
+    if context is None:
+        return None
+    context_ref = _source_health_context_ref(context)
+    if context.health_state == "ready" and context.threshold_breached is not True:
+        return _ready_score(dimension)
+    if context.health_state == "unavailable":
+        return _attention_score(
+            dimension=dimension,
+            score=60,
+            state=MandateHealthState.PENDING_REVIEW,
+            reason_code=unavailable_reason_code,
+            measured_value=f"{context.source_product_name}:unavailable",
+            threshold_value="ready",
+            evidence_refs=[context_ref],
+        )
+    return _attention_score(
+        dimension=dimension,
+        score=65,
+        state=MandateHealthState.PENDING_REVIEW,
+        reason_code=attention_reason_code,
+        measured_value=f"{context.source_product_name}:{context.health_state}",
+        threshold_value="ready",
+        evidence_refs=[context_ref],
+    )
 
 
 def _score_workflow_readiness(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:

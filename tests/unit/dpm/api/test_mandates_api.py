@@ -657,6 +657,20 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         current_weights={"EQ_US_AAPL": Decimal("0.60")},
         target_weights={"EQ_US_AAPL": Decimal("0.60")},
         cash_weight=Decimal("0.05"),
+        risk_health_context={
+            "source_system": "lotus-risk",
+            "source_product_name": "MandateRiskHealthContext",
+            "health_state": "attention",
+            "threshold_breached": True,
+            "request_fingerprint": "sha256:risk-context",
+        },
+        performance_health_context={
+            "source_system": "lotus-performance",
+            "source_product_name": "MandatePerformanceHealthContext",
+            "health_state": "ready",
+            "threshold_breached": False,
+            "request_fingerprint": "sha256:performance-context",
+        },
     )
 
     with _client(repository) as client:
@@ -667,7 +681,15 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         latest = client.get(f"/api/v1/mandates/{MANDATE_ID}/health")
 
     assert recalculated.status_code == 200
-    assert recalculated.json()["health_state"] == "READY"
+    assert recalculated.json()["health_state"] == "PENDING_REVIEW"
+    assert recalculated.json()["source_analytics_posture"]["source_context_refs"] == [
+        "lotus-risk:MandateRiskHealthContext:v1:sha256:risk-context",
+        "lotus-performance:MandatePerformanceHealthContext:v1:sha256:performance-context",
+    ]
+    assert any(
+        score["reason_code"] == "SOURCE_RISK_HEALTH_ATTENTION"
+        for score in recalculated.json()["dimension_scores"]
+    )
     assert latest.status_code == 200
     assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
 

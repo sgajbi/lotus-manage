@@ -30,6 +30,10 @@ Current declarations:
    `lotus-risk:RegimeScenarioPackEvaluation:v1` for source-owned regime-stress evidence, and
    the `lotus-core:PortfolioManagerBookMembership:v1` API-read dependency used by PM-book
    rebalance-wave discovery and optional PM operating quality score-run scope materialization, and
+   the caller-supplied `lotus-risk:MandateRiskHealthContext:v1` and
+   `lotus-performance:MandatePerformanceHealthContext:v1` dependencies used to preserve
+   source-owned mandate risk/performance health posture in recalculated mandate-health snapshots
+   without local risk or performance methodology ownership, and
    the stateful `lotus-core:ExternalCurrencyExposure:v1`, `ExternalHedgePolicy:v1`,
    `ExternalEligibleHedgeInstrument:v1`, `ExternalFXForwardCurve:v1`, and
    `ExternalHedgeExecutionReadiness:v1` dependencies used to preserve fail-closed external

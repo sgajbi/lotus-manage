@@ -1225,8 +1225,8 @@ Expected-standard decision:
 RFC-0038 and completed WTBD-001 through WTBD-004 have genuinely reached the expected first-wave
 standard for backend authority, Gateway composition, Workbench command-center product realization,
 platform seed automation, PM-book monitoring cohort discovery, and first-wave mandate
-objective/benchmark/review source enrichment. Remaining degraded-fixture and richer
-risk/performance health-enrichment work should remain separate WTBD scope.
+objective/benchmark/review source enrichment. Remaining degraded-fixture product depth should
+remain separate source-owner or downstream product scope.
 
 ### 17.5 WTBD-005 Gold-Pass Assessment
 
@@ -1274,8 +1274,7 @@ Expected-standard decision:
 
 RFC38-WTBD-005 reaches the expected first-wave standard for source-owned mandate objective,
 benchmark binding, review cadence, review dates, and model-change source authority. Remaining
-RFC38 health enrichment is limited to broader risk/performance analytics and product-depth
-fixtures, not mandate objective or review-source truth.
+product-depth fixtures are not mandate objective or review-source truth.
 
 ### 17.6 WTBD-008 Gold-Pass Assessment
 
@@ -1319,8 +1318,8 @@ Testing and evidence:
 Expected-standard decision:
 
 RFC38-WTBD-008 reaches the expected first-wave product standard for the populated DPM
-command-center path. Remaining RFC38 work is limited to broader risk/performance health
-enrichment, degraded/blocked canonical fixtures, and richer profile-detail product surfaces.
+command-center path. Remaining product-depth work is limited to degraded/blocked canonical
+fixtures and richer profile-detail product surfaces.
 
 ### 17.7 WTBD-006 Gold-Pass Assessment
 
@@ -1373,3 +1372,53 @@ evidence products consumed by manage when available. Issuer/sector/client-jurisd
 joins, security-level sustainability classification, regulatory suitability approval, advice or
 funding outputs, and downstream UI detail presentation remain separately governed source-owner or
 product slices.
+
+### 17.8 WTBD-007 Gold-Pass Assessment
+
+Assessment date: 2026-05-22
+
+What was truly completed:
+
+1. `lotus-risk` owns `MandateRiskHealthContext:v1` as the source-owned mandate risk health context,
+   including tracking-error methodology posture, benchmark context, lineage, request fingerprint,
+   source services, and upstream request fingerprints,
+2. `lotus-performance` owns `MandatePerformanceHealthContext:v1` as the source-owned mandate
+   performance health context, including performance attention posture, benchmark context, lineage,
+   request fingerprint, and source services,
+3. `lotus-manage` mandate-health recalculation accepts bounded caller-supplied source health
+   contexts, validates source product identity and request-fingerprint posture, preserves stable
+   source context refs in `source_analytics_posture`, and records supplied-context reason codes,
+4. `RISK_DRIFT` and `PERFORMANCE_ATTENTION` can use source product `health_state` and
+   `threshold_breached` posture without calculating tracking error, volatility, drawdown,
+   attribution, benchmark-relative performance, FX, or other analytics methodology locally.
+
+Quality improvements made:
+
+1. the former supplied-boolean-only risk/performance posture now preserves source product identity
+   and request-fingerprint lineage,
+2. source health contexts are explicit typed inputs instead of ad hoc payload fragments,
+3. API and domain tests prove context preservation, identity validation, source-health scoring, and
+   persisted recalculate/read behavior.
+
+Debt removed:
+
+1. stale WTBD wording that treated `MandateRiskHealthContext:v1` and
+   `MandatePerformanceHealthContext:v1` as future products,
+2. ambiguity between Manage health scoring and source-owned risk/performance methodology,
+3. missing consumer-contract truth for the two source products.
+
+Testing and evidence:
+
+1. focused mandate health and mandate API tests passed for source-context preservation and
+   source-health scoring,
+2. domain-data-product consumer tests and validation cover the risk/performance health-context
+   dependencies,
+3. supported-feature and WTBD documentation now name the bounded support claim and explicit
+   methodology non-claims.
+
+Expected-standard decision:
+
+RFC38-WTBD-007 is complete for Lotus-owned bounded source-product context preservation and
+Manage-side mandate-health consumption. Gateway/Workbench profile-detail presentation and any
+additional risk/performance analytics depth remain downstream or source-owner product depth, not
+hidden Manage methodology scope.
