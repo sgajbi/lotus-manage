@@ -144,9 +144,9 @@ methodology, performance benchmark analytics, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published Lotus-owned truth | 47 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
-| Partial / in progress | 6 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
-| Remaining / open | 6 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
+| Done on merged/published Lotus-owned truth | 48 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
+| Partial / in progress | 7 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
+| Remaining / open | 4 | Items still deferred, proposed, conditional, unsupported, or awaiting ownership. |
 
 Recently closed in this snapshot:
 
