@@ -1485,7 +1485,7 @@ route. Remote Feature Lane CI is green for the latest pushed `lotus-manage` bran
 | Slice 5 Stateless envelope | Completed | Simulate/analyze/async analyze use explicit `input_mode=stateless` envelopes; direct legacy bodies are rejected. |
 | Slice 6 Core resolver seam | Completed and live-proven | Typed stateful selector/context models, bounded resolver client, transformation helpers, lineage fields, and client calls for the RFC-087 core source products exist; live core-backed execution passed with READY lineage. |
 | Slice 7 Stateful certification | Completed for simulate; analyze/async use the same resolver seam and remain covered by focused API tests | Capability publication is gated, composed RFC-087 source products are live-proven, and stateful simulate returns READY core lineage. |
-| Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. New stateful DPM source-data products must wait for the upstream resolver contract. |
+| Slice 8 Data mesh onboarding | Completed for current product truth | Existing producer/consumer declarations and trust telemetry validate. `lotus-core:DpmSourceReadiness:v1` is now promoted into platform mesh maturity through Core PR #377 and Platform PR #341; broader source-product depth remains source-owner follow-on work. |
 | Slice 9 Observability parity | Completed for implemented surfaces | Bounded logs, metrics, dashboard/alert contracts, no-sensitive telemetry checks, and live API metrics evidence exist. |
 | Slice 10 API certification | Completed for the implemented surface | Endpoint coverage, Swagger examples, `/metrics` media type, capability query semantics, and supportability summary errors were tightened. Live evidence now catches stale runtime OpenAPI and passed against the branch runtime. |
 | Slice 11 Implementation proof | Completed for direct core/manage API proof | Refreshed canonical core RFC-087 validation passed 7/7 probes, and manage validation passed 11/11 probes with stateful core sourcing available. |
@@ -1807,8 +1807,9 @@ This RFC is complete only when:
 4. Completed: close conditional downstream migration handling without adding compatibility aliases
    because no real consumer dependency was found; `lotus-platform` PR #316 refreshed the stale
    platform `lotus-manage` API-vocabulary mirror from current manage truth.
-5. Remaining: promote stateful DPM source-data products into platform mesh certification only after
-   the source-data lineage and supportability evidence is stable.
+5. Completed: promote the current additional stateful DPM source-readiness product into platform
+   mesh certification through `lotus-core:DpmSourceReadiness:v1` telemetry and `lotus-platform`
+   RFC-0091 maturity-wave SLO/access/evidence policies.
 6. Remaining: add further upstream source-product depth only through source-owner contracts,
    retrieval design, supportability semantics, and live proof.
 7. Future conditional: reopen legacy-consumer migration only if a real production dependency is
