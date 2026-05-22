@@ -2033,11 +2033,22 @@ Target business outcome:
 Alternative comparisons include source-backed tracking error, volatility, drawdown, stress
 contribution, attribution, and benchmark-relative performance context where available.
 
+Current implementation status:
+
+Manage now preserves caller/source-supplied `AuthoritativeRiskContext` and
+`AuthoritativePerformanceContext` in construction alternative diagnostics and enrichment summaries
+for every generated alternative, including non-`RISK_AWARE` methods. The preserved evidence includes
+source system, source product name/version, source id, content hash, risk tracking error, benchmark
+identity, active return, supportability status, and bounded reason codes. `RISK_AWARE` still
+requires risk evidence or fetches the bounded lotus-risk concentration context; non-risk methods do
+not require risk evidence but no longer discard it when an upstream authority supplies it.
+
 Why it cannot be done now:
 
-Current support consumes `lotus-risk` concentration authority for `RISK_AWARE`, but broader risk
-and performance analytics need certified owner contracts. Manage must not recalculate risk or
-performance methodology.
+Current support consumes `lotus-risk` concentration authority for `RISK_AWARE` and can preserve
+caller/source-supplied risk and performance authority context across generated alternatives, but
+broader risk and performance analytics still need certified owner contracts. Manage must not
+recalculate risk or performance methodology.
 
 Dependencies before implementation:
 

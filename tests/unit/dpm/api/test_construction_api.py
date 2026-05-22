@@ -112,6 +112,34 @@ def _authority_context_payload() -> dict:
     }
 
 
+def _risk_performance_authority_context_payload() -> dict:
+    return {
+        "risk_context": {
+            "supportability_status": "PENDING_REVIEW",
+            "source_system": "lotus-risk",
+            "source_product_name": "RiskAlternativeEnrichment",
+            "source_product_version": "v1",
+            "source_id": "risk-alt-PB_SG_GLOBAL_BAL_001-2026-05-03",
+            "content_hash": "sha256:risk-alternative-enrichment",
+            "tracking_error": "0.0420",
+            "concentration_breaches": 1,
+            "reason_codes": ["RISK_TRACKING_ERROR_ATTENTION"],
+        },
+        "performance_context": {
+            "supportability_status": "DEGRADED",
+            "source_system": "lotus-performance",
+            "source_product_name": "PerformanceBenchmarkContext",
+            "source_product_version": "v1",
+            "source_id": "perf-benchmark-PB_SG_GLOBAL_BAL_001-2026-05-03",
+            "content_hash": "sha256:performance-benchmark-context",
+            "benchmark_id": "BMK_GLOBAL_BAL",
+            "active_return": "-0.0150",
+            "underperformance_flag": True,
+            "reason_codes": ["PERFORMANCE_BENCHMARK_PARTIAL"],
+        },
+    }
+
+
 def _transaction_cost_authority_context_payload() -> dict:
     return {
         "transaction_cost_context": {
@@ -914,6 +942,47 @@ def test_authority_backed_methods_are_ready_with_required_evidence(monkeypatch) 
         "LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"
         not in alternatives["LIQUIDITY_AWARE"]["diagnostics"]["enrichment_summary"]["reason_codes"]
     )
+
+
+def test_source_risk_and_performance_context_is_preserved_for_non_risk_methods(
+    monkeypatch,
+) -> None:
+    repository = InMemoryConstructionRepository()
+    payload = _payload()
+    payload["methods"] = ["SOLVER_CONSTRAINED", "MIN_TURNOVER"]
+    payload["authority_context"] = _risk_performance_authority_context_payload()
+    monkeypatch.setattr(construction_service, "has_solver_dependencies", lambda: True)
+
+    with _client(repository) as client:
+        response = client.post(
+            "/api/v1/construction/alternative-sets/generate",
+            json=payload,
+            headers={"Idempotency-Key": "idem-construction-risk-performance-context"},
+        )
+
+    assert response.status_code == 200
+    alternatives = {
+        alternative["method"]: alternative for alternative in response.json()["alternatives"]
+    }
+    assert set(alternatives) == {"SOLVER_CONSTRAINED", "MIN_TURNOVER"}
+
+    for alternative in alternatives.values():
+        diagnostics = alternative["diagnostics"]
+        reason_codes = diagnostics["enrichment_summary"]["reason_codes"]
+        authority_context = diagnostics["authority_context"]
+
+        assert "RISK_TRACKING_ERROR_ATTENTION" in reason_codes
+        assert "PERFORMANCE_BENCHMARK_PARTIAL" in reason_codes
+        assert authority_context["risk_context"]["source_product_name"] == (
+            "RiskAlternativeEnrichment"
+        )
+        assert authority_context["risk_context"]["source_product_version"] == "v1"
+        assert authority_context["risk_context"]["tracking_error"] == "0.0420"
+        assert authority_context["performance_context"]["source_product_name"] == (
+            "PerformanceBenchmarkContext"
+        )
+        assert authority_context["performance_context"]["source_product_version"] == "v1"
+        assert authority_context["performance_context"]["benchmark_id"] == "BMK_GLOBAL_BAL"
 
 
 def test_liquidity_aware_method_uses_core_cashflow_projection_for_policy_review() -> None:
