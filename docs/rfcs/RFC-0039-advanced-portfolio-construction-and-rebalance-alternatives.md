@@ -855,6 +855,16 @@ upstream supportability and reason codes from `lotus-risk` and `lotus-performanc
 calculate authoritative risk or performance inside `lotus-manage`. Missing risk/performance context
 degrades explicitly with bounded reason codes.
 
+2026-05-22 closure update: RFC39-WTBD-005 is complete for bounded source-owned analytics
+preservation. `AuthoritativeRiskContext` now preserves supplied tracking-error, drawdown,
+stress-contribution, and historical-attribution posture; `AuthoritativePerformanceContext` now
+preserves supplied benchmark, contribution, attribution, benchmark-relative, and currency-
+attribution posture. Construction diagnostics name implemented `lotus-risk` and
+`lotus-performance` source-product families in `source_analytics_posture`, and wave/proof-pack
+source analytics carry the supplied fields as lineage and metrics. Manage still does not calculate
+risk, performance, stress, attribution, contribution, FX, predictive execution, or OMS
+methodology locally.
+
 Scope:
 
 1. add seams for risk enrichment,

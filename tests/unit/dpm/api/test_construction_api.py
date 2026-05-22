@@ -122,6 +122,11 @@ def _risk_performance_authority_context_payload() -> dict:
             "source_id": "risk-alt-PB_SG_GLOBAL_BAL_001-2026-05-03",
             "content_hash": "sha256:risk-alternative-enrichment",
             "tracking_error": "0.0420",
+            "maximum_drawdown": "-0.1250",
+            "average_drawdown": "-0.0320",
+            "stress_loss_pct": "0.0875",
+            "stress_contribution_count": 7,
+            "attribution_contributor_count": 5,
             "concentration_breaches": 1,
             "reason_codes": ["RISK_TRACKING_ERROR_ATTENTION"],
         },
@@ -134,6 +139,12 @@ def _risk_performance_authority_context_payload() -> dict:
             "content_hash": "sha256:performance-benchmark-context",
             "benchmark_id": "BMK_GLOBAL_BAL",
             "active_return": "-0.0150",
+            "benchmark_relative_return": "-0.0150",
+            "contribution_total_return": "0.0210",
+            "attribution_allocation": "0.0040",
+            "attribution_selection": "-0.0060",
+            "attribution_interaction": "0.0010",
+            "currency_attribution_total": "0.0025",
             "underperformance_flag": True,
             "reason_codes": ["PERFORMANCE_BENCHMARK_PARTIAL"],
         },
@@ -989,11 +1000,16 @@ def test_source_risk_and_performance_context_is_preserved_for_non_risk_methods(
         )
         assert authority_context["risk_context"]["source_product_version"] == "v1"
         assert authority_context["risk_context"]["tracking_error"] == "0.0420"
+        assert authority_context["risk_context"]["maximum_drawdown"] == "-0.1250"
+        assert authority_context["risk_context"]["stress_contribution_count"] == 7
+        assert authority_context["risk_context"]["attribution_contributor_count"] == 5
         assert authority_context["performance_context"]["source_product_name"] == (
             "PerformanceBenchmarkContext"
         )
         assert authority_context["performance_context"]["source_product_version"] == "v1"
         assert authority_context["performance_context"]["benchmark_id"] == "BMK_GLOBAL_BAL"
+        assert authority_context["performance_context"]["attribution_selection"] == "-0.0060"
+        assert authority_context["performance_context"]["currency_attribution_total"] == "0.0025"
         assert source_analytics_posture["product_family"] == (
             "CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT"
         )
@@ -1004,13 +1020,43 @@ def test_source_risk_and_performance_context_is_preserved_for_non_risk_methods(
         assert source_analytics_posture["required_source_products"] == [
             {
                 "source_system": "lotus-risk",
-                "source_product_name": "RiskAlternativeEnrichment",
+                "source_product_name": "RiskMetricsReport",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "DrawdownAnalyticsReport",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "HistoricalRiskAttribution",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "RegimeScenarioPackEvaluation",
                 "source_product_version": "v1",
                 "required_for_ready": False,
             },
             {
                 "source_system": "lotus-performance",
-                "source_product_name": "PerformanceBenchmarkContext",
+                "source_product_name": "BenchmarkExposureContext",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-performance",
+                "source_product_name": "ContributionAnalytics",
+                "source_product_version": "v1",
+                "required_for_ready": False,
+            },
+            {
+                "source_system": "lotus-performance",
+                "source_product_name": "AttributionAnalytics",
                 "source_product_version": "v1",
                 "required_for_ready": False,
             },

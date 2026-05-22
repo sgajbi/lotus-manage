@@ -80,6 +80,13 @@ cash-pressure evidence, currency-overlay, and regime-stress-aware construction t
 `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` when stateful core sourcing
 is enabled: hard client restrictions can block candidate trades, sustainability allocation
 preferences can trigger pending review, and profile source lineage is preserved for proof packs.
+Construction alternatives also preserve supplied source-owned risk/performance analytics context
+for tracking error, drawdown, stress contribution, historical risk attribution, benchmark,
+contribution, attribution, benchmark-relative performance, and currency attribution. The
+`source_analytics_posture` names implemented source products from `lotus-risk` and
+`lotus-performance`, while wave and proof-pack source analytics carry the supplied fields without
+Manage calculating risk, performance, attribution, contribution, FX, predictive execution, or OMS
+methodology locally.
 Construction alternatives also carry bounded `proposed_changes` diagnostics from generated
 security trade intents so wave simulation can show PM-reviewable proposed changes without claiming
 order execution, venue routing, execution price, or OMS handoff. Stateful core sourcing now also
