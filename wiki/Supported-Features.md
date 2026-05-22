@@ -393,7 +393,7 @@ Audience use:
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
 completion recount, the ledger tracks 59 WTBD items: 47 done on merged/published Lotus-owned
-truth, 7 partial or in progress, and 5 remaining or open. Counts now distinguish Lotus-owned
+truth, 8 partial or in progress, and 4 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC39-WTBD-008 and
 RFC42-WTBD-007 are done for Lotus-owned fail-closed source/consumer boundary support, while runtime
 external treasury ingestion and bank-owned OMS acknowledgement/fill/settlement reconciliation remain
@@ -405,7 +405,10 @@ the count because it advances existing RFC41-WTBD-003 and RFC40-WTBD-010 partial
 closing global portfolio-universe discovery or external workflow automation. RFC39-WTBD-005 is now
 partial rather than open because Manage preserves supplied risk/performance authority context and
 publishes machine-readable source-analytics posture, while source-owned analytics products remain
-future. The next execution
+future. RFC38-WTBD-007 is also partial rather than open because mandate-health snapshots now emit
+typed `source_analytics_posture` evidence for supplied tracking-error and performance-attention
+signals, future `MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1` source
+products, and blocked local-calculation capabilities. The next execution
 wave should focus on product surfaces that materially improve bank-buyable demo and operating value
 without inventing unsupported source truth.
 
