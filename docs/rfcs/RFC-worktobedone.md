@@ -5998,6 +5998,25 @@ Latest WTBD-006 core portfolio-cash-movement-summary methodology proof:
    planning, funding recommendation, treasury instruction, tax methodology, predictive execution,
    execution-quality assessment, or OMS acknowledgement support.
 
+Latest WTBD-006 manage portfolio-summary outcome-adapter proof:
+
+1. `lotus-manage` now wraps `PortfolioRealizedTaxSummary:v1` portfolio totals as RFC42 `TAX`
+   realized source snapshots, preserving source product identity, version, as-of date, evidence
+   timestamp, source fingerprint, source transaction counts, tax-evidence transaction counts,
+   currency basis, source reason codes, and data-quality posture,
+2. `lotus-manage` now wraps selected `PortfolioCashMovementSummary:v1` signed cash-movement
+   buckets as RFC42 `CASH_RESIDUAL` realized source snapshots, preserving classification, timing,
+   currency, position-flow/portfolio-flow scope, movement direction, bucket row count, total row
+   count, source window, evidence timestamp, source fingerprint, and data-quality posture,
+3. focused unit proof covers ready tax/cash dimensions, reporting-currency realized-tax totals,
+   ambiguous realized-tax currency rejection, missing reporting total rejection, missing
+   cash-movement bucket rejection, and source-ref/hash preservation through the realized outcome
+   snapshot assembler,
+4. this advances RFC42-WTBD-006 by consuming existing Core portfolio-level source products without
+   Manage calculating tax aggregation, cashflow aggregation, forecasting, funding advice,
+   treasury instruction, execution-quality assessment, order routing, fills, settlement,
+   reconciliation, or OMS acknowledgement.
+
 Latest WTBD-006 core transaction-cost-curve methodology proof:
 
 1. `lotus-core` PR #345 was merged to `main` as

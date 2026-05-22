@@ -2210,6 +2210,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`PortfolioRealizedTaxSummary:v1` source-product truth through `lotus-core` PR #363" in (
         supported_features
     )
+    assert (
+        "Manage now preserves `PortfolioRealizedTaxSummary:v1` portfolio totals and "
+        "`PortfolioCashMovementSummary:v1` bucket totals as realized outcome source snapshots"
+        in supported_features
+    )
     assert "`lotus-core` PR #365 (`c7fa07b0`, wiki `067f919`)" in supported_features
     assert "`lotus-core` PR #366 (`9e86df3b`, wiki `617e4e6`)" in supported_features
     assert "`lotus-core` PR #367 (`3d0a7bbd`, wiki `d719c74`)" in supported_features
