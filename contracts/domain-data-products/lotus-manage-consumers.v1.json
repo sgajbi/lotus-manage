@@ -612,6 +612,54 @@
         "pr-merge"
       ],
       "failure_posture": "degrade_or_pending_review"
+    },
+    {
+      "product_name": "MandateRiskHealthContext",
+      "producer_repository": "lotus-risk",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "lineage_version",
+        "request_fingerprint",
+        "source_services",
+        "upstream_request_fingerprints",
+        "benchmark_context"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "caller_supplied_contract_payload",
+      "business_purpose": "Preserve source-owned mandate risk health posture in mandate-health recalculation and use the source product health_state and threshold posture for bounded RISK_DRIFT attention without calculating tracking error, volatility, drawdown, or benchmark risk methodology in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
+    },
+    {
+      "product_name": "MandatePerformanceHealthContext",
+      "producer_repository": "lotus-performance",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "request_fingerprint",
+        "source_services",
+        "benchmark_context"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "caller_supplied_contract_payload",
+      "business_purpose": "Preserve source-owned mandate performance health posture in mandate-health recalculation and use the source product health_state and threshold posture for bounded PERFORMANCE_ATTENTION without calculating performance attribution, active return, benchmark-relative, or FX methodology in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "degrade_or_pending_review"
     }
   ]
 }

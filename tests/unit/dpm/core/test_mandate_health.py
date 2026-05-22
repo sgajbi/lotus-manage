@@ -25,6 +25,7 @@ from src.core.mandates import (
     DpmMandateHealthSnapshot,
     DpmMandatePreferences,
     DpmMandateReviewPolicy,
+    DpmMandateSourceHealthContext,
     MandateHealthDimension,
     MandateHealthState,
     MandateRecommendedAction,
@@ -663,8 +664,12 @@ def test_mandate_health_preserves_risk_performance_source_analytics_posture() ->
     assert posture.product_family == "MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"
     assert posture.risk_tracking_error_supplied is True
     assert posture.performance_attention_signal_supplied is True
+    assert posture.risk_health_context_supplied is False
+    assert posture.performance_health_context_supplied is False
     assert posture.risk_context_preservation == "SUPPORTED_WHEN_SUPPLIED"
     assert posture.performance_context_preservation == "SUPPORTED_WHEN_SUPPLIED"
+    assert posture.source_context_preservation == "SOURCE_PRODUCT_CONTEXT_PRESERVED_WHEN_SUPPLIED"
+    assert posture.source_context_refs == []
     assert [product.model_dump() for product in posture.required_source_products] == [
         {
             "source_system": "lotus-risk",
@@ -682,6 +687,98 @@ def test_mandate_health_preserves_risk_performance_source_analytics_posture() ->
     assert "LOCAL_TRACKING_ERROR_CALCULATION" in posture.blocked_capabilities
     assert "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION" in posture.blocked_capabilities
     assert "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED" in posture.reason_codes
+
+
+def test_mandate_health_preserves_source_product_health_contexts() -> None:
+    risk_fingerprint = "sha256:risk-context"
+    performance_fingerprint = "sha256:performance-context"
+    snapshot = calculate_mandate_health(
+        _ready_input(
+            risk_health_context={
+                "source_system": "lotus-risk",
+                "source_product_name": "MandateRiskHealthContext",
+                "source_product_version": "v1",
+                "health_state": "attention",
+                "threshold_breached": True,
+                "request_fingerprint": risk_fingerprint,
+                "source_metric": {"tracking_error": "0.073"},
+                "methodology_posture": {
+                    "methodology_owner": "lotus-risk",
+                    "methodology_ref": "tracking-error-v1",
+                },
+                "benchmark_context": {"benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40"},
+                "reason_codes": ["TRACKING_ERROR_ABOVE_LIMIT"],
+            },
+            performance_health_context={
+                "source_system": "lotus-performance",
+                "source_product_name": "MandatePerformanceHealthContext",
+                "source_product_version": "v1",
+                "health_state": "attention",
+                "threshold_breached": True,
+                "request_fingerprint": performance_fingerprint,
+                "source_metric": {"active_return": "-0.021"},
+                "methodology_posture": {
+                    "methodology_owner": "lotus-performance",
+                    "methodology_ref": "active-return-v1",
+                },
+                "benchmark_context": {"benchmark_id": "BMK_PB_GLOBAL_BALANCED_60_40"},
+                "reason_codes": ["ACTIVE_RETURN_BELOW_THRESHOLD"],
+            },
+        )
+    )
+
+    posture = snapshot.source_analytics_posture
+    risk_ref = f"lotus-risk:MandateRiskHealthContext:v1:{risk_fingerprint}"
+    performance_ref = (
+        f"lotus-performance:MandatePerformanceHealthContext:v1:{performance_fingerprint}"
+    )
+
+    assert posture.risk_tracking_error_supplied is True
+    assert posture.performance_attention_signal_supplied is True
+    assert posture.risk_health_context_supplied is True
+    assert posture.performance_health_context_supplied is True
+    assert posture.source_context_refs == [risk_ref, performance_ref]
+    assert "MANDATE_RISK_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED" in posture.reason_codes
+    assert "MANDATE_PERFORMANCE_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED" in posture.reason_codes
+
+    risk_score = _dimension(snapshot, MandateHealthDimension.RISK_DRIFT)
+    performance_score = _dimension(snapshot, MandateHealthDimension.PERFORMANCE_ATTENTION)
+    assert risk_score.state == MandateHealthState.PENDING_REVIEW
+    assert risk_score.reason_code == "SOURCE_RISK_HEALTH_ATTENTION"
+    assert risk_score.evidence_refs == [risk_ref]
+    assert performance_score.state == MandateHealthState.PENDING_REVIEW
+    assert performance_score.reason_code == "SOURCE_PERFORMANCE_HEALTH_ATTENTION"
+    assert performance_score.evidence_refs == [performance_ref]
+
+
+def test_source_health_context_rejects_wrong_product_identity() -> None:
+    with pytest.raises(
+        ValueError,
+        match="lotus-risk context must use MandateRiskHealthContext",
+    ):
+        DpmMandateSourceHealthContext.model_validate(
+            {
+                "source_system": "lotus-risk",
+                "source_product_name": "MandatePerformanceHealthContext",
+                "health_state": "ready",
+                "request_fingerprint": "sha256:risk-context",
+            }
+        )
+
+
+def test_mandate_health_input_rejects_source_context_in_wrong_slot() -> None:
+    with pytest.raises(
+        ValueError,
+        match="risk_health_context must use lotus-risk MandateRiskHealthContext",
+    ):
+        _ready_input(
+            risk_health_context={
+                "source_system": "lotus-performance",
+                "source_product_name": "MandatePerformanceHealthContext",
+                "health_state": "ready",
+                "request_fingerprint": "sha256:performance-context",
+            }
+        )
 
 
 @pytest.mark.parametrize(

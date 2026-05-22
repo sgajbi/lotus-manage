@@ -62,7 +62,8 @@ Current repository posture:
     PM-quality, and portfolio-memory paths, including projected cashflow, liquidity/income
     reference evidence, external treasury/OMS fail-closed posture,
     CIO model-change cohorts, PM-book membership, risk-event/tactical cohorts, transaction-cost
-    curves, and regime-scenario evaluation. This is declaration truth only; it does not make Manage
+    curves, regime-scenario evaluation, and caller-supplied source-owned mandate risk/performance
+    health contexts. This is declaration truth only; it does not make Manage
     the source owner for market data, valuation, risk, performance, tax, financial planning,
     scenario methodology, treasury, execution, OMS, fill, or settlement facts.
     `BenchmarkAssignment:v1` remains a declaration watchlist item until upstream producer approval
@@ -93,6 +94,12 @@ Current repository posture:
     command-center supportability contract now publishes a bounded `state` over ready, partial,
     empty, degraded, and blocked source-readiness posture so Gateway, Workbench, and platform seed
     automation can distinguish completeness from source health without local inference.
+    Mandate-health recalculation can also preserve caller-supplied
+    `lotus-risk:MandateRiskHealthContext:v1` and
+    `lotus-performance:MandatePerformanceHealthContext:v1` source contexts, validating product
+    identity/request fingerprints and using source health-state/threshold posture for bounded
+    `RISK_DRIFT` and `PERFORMANCE_ATTENTION` scoring without calculating risk or performance
+    methodology locally.
 13. RFC-0039 has delivered the implementation-backed construction-alternative backend foundation:
     bounded construction vocabulary, pure alternative models, method registry, enrichment posture,
     risk/performance seams, repository contract, in-memory and PostgreSQL persistence foundation,

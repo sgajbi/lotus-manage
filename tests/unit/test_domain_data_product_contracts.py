@@ -71,6 +71,8 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "PortfolioManagerBookMembership",
         "TransactionCostCurve",
         "RegimeScenarioPackEvaluation",
+        "MandateRiskHealthContext",
+        "MandatePerformanceHealthContext",
     }
     assert (
         by_name["PortfolioStateSnapshot"]["consumption_mode"] == "caller_supplied_contract_payload"
@@ -154,6 +156,22 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["RegimeScenarioPackEvaluation"]["producer_repository"] == "lotus-risk"
     assert by_name["RegimeScenarioPackEvaluation"]["consumption_mode"] == "api_read"
     assert by_name["RegimeScenarioPackEvaluation"]["failure_posture"] == "degrade_or_pending_review"
+    assert by_name["MandateRiskHealthContext"]["producer_repository"] == "lotus-risk"
+    assert (
+        by_name["MandateRiskHealthContext"]["consumption_mode"]
+        == "caller_supplied_contract_payload"
+    )
+    assert by_name["MandateRiskHealthContext"]["failure_posture"] == ("degrade_or_pending_review")
+    assert by_name["MandatePerformanceHealthContext"]["producer_repository"] == (
+        "lotus-performance"
+    )
+    assert (
+        by_name["MandatePerformanceHealthContext"]["consumption_mode"]
+        == "caller_supplied_contract_payload"
+    )
+    assert by_name["MandatePerformanceHealthContext"]["failure_posture"] == (
+        "degrade_or_pending_review"
+    )
 
     request_models = REQUEST_MODELS_PATH.read_text(encoding="utf-8")
     assert "portfolio_snapshot: PortfolioSnapshot" in request_models

@@ -11,7 +11,6 @@ WTBD_PARTIAL_IDS = {
     "RFC37-WTBD-002",
     "RFC37-WTBD-003",
     "RFC37-WTBD-007",
-    "RFC38-WTBD-007",
     "RFC39-WTBD-005",
     "RFC41-WTBD-003",
     "RFC42-WTBD-006",
@@ -273,6 +272,7 @@ def test_rfc0038_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:
     assert "RFC38-WTBD-002 - Workbench DPM cockpit panels" in rfc
     assert "RFC38-WTBD-003 - Platform canonical seed automation" in rfc
     assert "RFC38-WTBD-004 - PM-book discovery for monitoring and command-center cohorts" in rfc
+    assert "RFC38-WTBD-007" in rfc
     assert (
         "RFC38-WTBD-006 - Client restriction, sustainability, and cashflow source products" in rfc
     )
@@ -326,8 +326,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     done_ids = all_ids - WTBD_PARTIAL_IDS - WTBD_OPEN_IDS
 
     assert len(rows) == 59
-    assert len(done_ids) == 47
-    assert len(WTBD_PARTIAL_IDS) == 8
+    assert len(done_ids) == 48
+    assert len(WTBD_PARTIAL_IDS) == 7
     assert len(WTBD_OPEN_IDS) == 4
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
@@ -337,12 +337,12 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 47 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 8 partial or in progress" in supported_features
+    assert "59 WTBD items: 48 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 7 partial or in progress" in supported_features
     assert "4 remaining or open" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "advances an existing RFC42-WTBD-006 partial row" in supported_features
-    assert "RFC38-WTBD-007 is also partial rather than open" in supported_features
+    assert "RFC38-WTBD-007 is done for Lotus-owned bounded support" in supported_features
 
 
 def test_indexed_rfc_and_adr_files_exist() -> None:
@@ -1437,7 +1437,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         in work_to_be_done
     )
     assert (
-        "| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-006 and RFC38-WTBD-008 are incorporated into "
+        "| RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-008 are incorporated into "
         "`docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`." in work_to_be_done
     )
     assert (
@@ -2180,8 +2180,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 47 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 8 partial or in progress" in supported_features
+    assert "59 WTBD items: 48 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 7 partial or in progress" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
@@ -2288,9 +2288,11 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         supported_features
     )
     assert "Manage still does not calculate tracking error" in supported_features
-    assert "`MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1`" in (
-        supported_features
+    assert (
+        "`lotus-risk:MandateRiskHealthContext:v1` / "
+        "`lotus-performance:MandatePerformanceHealthContext:v1`" in supported_features
     )
+    assert "source-owned risk/performance health-state and threshold posture" in supported_features
     assert "source-owned observed transaction-cost evidence from `lotus-core`" in (
         supported_features
     )

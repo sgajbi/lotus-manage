@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-22T00:39:58.741663+00:00",
+  "generatedAt": "2026-05-22T02:33:50.298463+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1353,6 +1353,22 @@
       ],
       "observedTypes": [
         "Money-Output"
+      ]
+    },
+    {
+      "semanticId": "lotus.benchmark_context",
+      "canonicalTerm": "benchmark_context",
+      "preferredName": "benchmark_context",
+      "description": "dpm mandate source health context field: benchmark context.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -5957,6 +5973,7 @@
       ],
       "observedTypes": [
         "MandateHealthState",
+        "string",
         "object"
       ]
     },
@@ -8053,6 +8070,22 @@
       ]
     },
     {
+      "semanticId": "lotus.methodology_posture",
+      "canonicalTerm": "methodology_posture",
+      "preferredName": "methodology_posture",
+      "description": "dpm mandate source health context field: methodology posture.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.methodology_ref",
       "canonicalTerm": "methodology_ref",
       "preferredName": "methodology_ref",
@@ -9272,6 +9305,34 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.performance_health_context",
+      "canonicalTerm": "performance_health_context",
+      "preferredName": "performance_health_context",
+      "description": "Bounded source-owned lotus-performance MandatePerformanceHealthContext:v1 posture. Manage preserves this context and may use its health_state/threshold posture without recalculating performance methodology.",
+      "example": "performance_health_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.performance_health_context_supplied",
+      "canonicalTerm": "performance_health_context_supplied",
+      "preferredName": "performance_health_context_supplied",
+      "description": "dpm mandate health source analytics posture field: performance health context supplied.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -10835,6 +10896,20 @@
       ]
     },
     {
+      "semanticId": "lotus.request_fingerprint",
+      "canonicalTerm": "request_fingerprint",
+      "preferredName": "request_fingerprint",
+      "description": "dpm mandate source health context field: request fingerprint.",
+      "example": "sample_request_fingerprint",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.request_hash",
       "canonicalTerm": "request_hash",
       "preferredName": "request_hash",
@@ -11657,6 +11732,34 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.risk_health_context",
+      "canonicalTerm": "risk_health_context",
+      "preferredName": "risk_health_context",
+      "description": "Bounded source-owned lotus-risk MandateRiskHealthContext:v1 posture. Manage preserves this context and may use its health_state/threshold posture without recalculating risk methodology.",
+      "example": "risk_health_context_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.risk_health_context_supplied",
+      "canonicalTerm": "risk_health_context_supplied",
+      "preferredName": "risk_health_context_supplied",
+      "description": "dpm mandate health source analytics posture field: risk health context supplied.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
       ]
     },
     {
@@ -12636,6 +12739,36 @@
       ]
     },
     {
+      "semanticId": "lotus.source_context_preservation",
+      "canonicalTerm": "source_context_preservation",
+      "preferredName": "source_context_preservation",
+      "description": "dpm mandate health source analytics posture field: source context preservation.",
+      "example": "sample_source_context_preservation",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_context_refs",
+      "canonicalTerm": "source_context_refs",
+      "preferredName": "source_context_refs",
+      "description": "dpm mandate health source analytics posture field: source context refs.",
+      "example": [
+        "sample_source_context_refs_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
+      ]
+    },
+    {
       "semanticId": "lotus.source_degraded_item_count",
       "canonicalTerm": "source_degraded_item_count",
       "preferredName": "source_degraded_item_count",
@@ -12776,6 +12909,22 @@
       "canonicalTerm": "source_measures",
       "preferredName": "source_measures",
       "description": "Source-emitted scalar values grouped by measure name. Manage records values for lineage and cockpit display; it does not recalculate risk or performance.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_metric",
+      "canonicalTerm": "source_metric",
+      "preferredName": "source_metric",
+      "description": "dpm mandate source health context field: source metric.",
       "example": {
         "sample_key": "sample_value"
       },
@@ -14259,6 +14408,20 @@
       "observedTypes": [
         "object",
         "Money-Output"
+      ]
+    },
+    {
+      "semanticId": "lotus.threshold_breached",
+      "canonicalTerm": "threshold_breached",
+      "preferredName": "threshold_breached",
+      "description": "dpm mandate source health context field: threshold breached.",
+      "example": "threshold_breached_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -56470,6 +56633,22 @@
             "attributeRef": "#/attributeCatalog/lotus.performance_attention_signal_supplied"
           },
           {
+            "name": "health_snapshot.source_analytics_posture.risk_health_context_supplied",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.risk_health_context_supplied",
+            "attributeRef": "#/attributeCatalog/lotus.risk_health_context_supplied"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.performance_health_context_supplied",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.performance_health_context_supplied",
+            "attributeRef": "#/attributeCatalog/lotus.performance_health_context_supplied"
+          },
+          {
             "name": "health_snapshot.source_analytics_posture.risk_context_preservation",
             "location": "body",
             "required": false,
@@ -56484,6 +56663,14 @@
             "type": "string",
             "semanticId": "lotus.performance_context_preservation",
             "attributeRef": "#/attributeCatalog/lotus.performance_context_preservation"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_preservation",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_context_preservation",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_preservation"
           },
           {
             "name": "health_snapshot.source_analytics_posture.required_source_products",
@@ -56524,6 +56711,14 @@
             "type": "boolean",
             "semanticId": "lotus.required_for_ready",
             "attributeRef": "#/attributeCatalog/lotus.required_for_ready"
+          },
+          {
+            "name": "health_snapshot.source_analytics_posture.source_context_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_context_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_refs"
           },
           {
             "name": "health_snapshot.source_analytics_posture.blocked_capabilities",
@@ -56997,6 +57192,22 @@
             "attributeRef": "#/attributeCatalog/lotus.performance_attention_signal_supplied"
           },
           {
+            "name": "source_analytics_posture.risk_health_context_supplied",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.risk_health_context_supplied",
+            "attributeRef": "#/attributeCatalog/lotus.risk_health_context_supplied"
+          },
+          {
+            "name": "source_analytics_posture.performance_health_context_supplied",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.performance_health_context_supplied",
+            "attributeRef": "#/attributeCatalog/lotus.performance_health_context_supplied"
+          },
+          {
             "name": "source_analytics_posture.risk_context_preservation",
             "location": "body",
             "required": false,
@@ -57011,6 +57222,14 @@
             "type": "string",
             "semanticId": "lotus.performance_context_preservation",
             "attributeRef": "#/attributeCatalog/lotus.performance_context_preservation"
+          },
+          {
+            "name": "source_analytics_posture.source_context_preservation",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_context_preservation",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_preservation"
           },
           {
             "name": "source_analytics_posture.required_source_products",
@@ -57051,6 +57270,14 @@
             "type": "boolean",
             "semanticId": "lotus.required_for_ready",
             "attributeRef": "#/attributeCatalog/lotus.required_for_ready"
+          },
+          {
+            "name": "source_analytics_posture.source_context_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_context_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_refs"
           },
           {
             "name": "source_analytics_posture.blocked_capabilities",
@@ -57616,6 +57843,182 @@
             "attributeRef": "#/attributeCatalog/lotus.performance_under_review"
           },
           {
+            "name": "risk_health_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.risk_health_context",
+            "attributeRef": "#/attributeCatalog/lotus.risk_health_context"
+          },
+          {
+            "name": "risk_health_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "risk_health_context.source_product_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "risk_health_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "risk_health_context.health_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.health_state",
+            "attributeRef": "#/attributeCatalog/lotus.health_state"
+          },
+          {
+            "name": "risk_health_context.threshold_breached",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_breached",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_breached"
+          },
+          {
+            "name": "risk_health_context.request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
+            "name": "risk_health_context.source_metric",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_metric",
+            "attributeRef": "#/attributeCatalog/lotus.source_metric"
+          },
+          {
+            "name": "risk_health_context.methodology_posture",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.methodology_posture",
+            "attributeRef": "#/attributeCatalog/lotus.methodology_posture"
+          },
+          {
+            "name": "risk_health_context.benchmark_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.benchmark_context",
+            "attributeRef": "#/attributeCatalog/lotus.benchmark_context"
+          },
+          {
+            "name": "risk_health_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
+            "name": "performance_health_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.performance_health_context",
+            "attributeRef": "#/attributeCatalog/lotus.performance_health_context"
+          },
+          {
+            "name": "performance_health_context.source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "performance_health_context.source_product_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "performance_health_context.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "performance_health_context.health_state",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.health_state",
+            "attributeRef": "#/attributeCatalog/lotus.health_state"
+          },
+          {
+            "name": "performance_health_context.threshold_breached",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.threshold_breached",
+            "attributeRef": "#/attributeCatalog/lotus.threshold_breached"
+          },
+          {
+            "name": "performance_health_context.request_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.request_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.request_fingerprint"
+          },
+          {
+            "name": "performance_health_context.source_metric",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_metric",
+            "attributeRef": "#/attributeCatalog/lotus.source_metric"
+          },
+          {
+            "name": "performance_health_context.methodology_posture",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.methodology_posture",
+            "attributeRef": "#/attributeCatalog/lotus.methodology_posture"
+          },
+          {
+            "name": "performance_health_context.benchmark_context",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.benchmark_context",
+            "attributeRef": "#/attributeCatalog/lotus.benchmark_context"
+          },
+          {
+            "name": "performance_health_context.reason_codes",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.reason_codes",
+            "attributeRef": "#/attributeCatalog/lotus.reason_codes"
+          },
+          {
             "name": "workflow_blocked",
             "location": "body",
             "required": false,
@@ -57876,6 +58279,22 @@
             "attributeRef": "#/attributeCatalog/lotus.performance_attention_signal_supplied"
           },
           {
+            "name": "source_analytics_posture.risk_health_context_supplied",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.risk_health_context_supplied",
+            "attributeRef": "#/attributeCatalog/lotus.risk_health_context_supplied"
+          },
+          {
+            "name": "source_analytics_posture.performance_health_context_supplied",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.performance_health_context_supplied",
+            "attributeRef": "#/attributeCatalog/lotus.performance_health_context_supplied"
+          },
+          {
             "name": "source_analytics_posture.risk_context_preservation",
             "location": "body",
             "required": false,
@@ -57890,6 +58309,14 @@
             "type": "string",
             "semanticId": "lotus.performance_context_preservation",
             "attributeRef": "#/attributeCatalog/lotus.performance_context_preservation"
+          },
+          {
+            "name": "source_analytics_posture.source_context_preservation",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_context_preservation",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_preservation"
           },
           {
             "name": "source_analytics_posture.required_source_products",
@@ -57930,6 +58357,14 @@
             "type": "boolean",
             "semanticId": "lotus.required_for_ready",
             "attributeRef": "#/attributeCatalog/lotus.required_for_ready"
+          },
+          {
+            "name": "source_analytics_posture.source_context_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_context_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_context_refs"
           },
           {
             "name": "source_analytics_posture.blocked_capabilities",
