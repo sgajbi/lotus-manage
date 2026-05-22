@@ -235,6 +235,15 @@ def test_outcome_review_openapi_contract_is_grouped_and_guided() -> None:
     assert create["tags"] == ["lotus-manage Outcome Reviews"]
     assert "Idempotency-Key" in str(create["parameters"])
     assert "same-key changed evidence" in create["description"]
+    search = schema["paths"]["/api/v1/rebalance/outcome-reviews"]["get"]
+    assert "source-owner" in search["description"]
+    search_parameters = {parameter["name"] for parameter in search["parameters"]}
+    assert {"source_system", "source_type", "source_scan_limit"} <= search_parameters
+    list_schema = schema["components"]["schemas"]["DpmOutcomeReviewListResponse"]
+    assert "applied_filters" in list_schema["properties"]
+    assert "source_owner_counts" in list_schema["properties"]
+    assert "source_type_counts" in list_schema["properties"]
+    assert "support_boundary" in list_schema["properties"]
 
     refresh = schema["paths"][
         "/api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources"
@@ -290,10 +299,39 @@ def test_outcome_review_api_search_run_wave_and_missing_dimension_guardrail() ->
 
             search = client.get(
                 "/api/v1/rebalance/outcome-reviews",
-                params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+                params={
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "source_system": " lotus-manage ",
+                    "source_type": " TEST_SOURCE ",
+                },
             )
             assert search.status_code == 200
-            assert search.json()["items"][0]["outcome_review_id"] == review_id
+            search_body = search.json()
+            assert search_body["items"][0]["outcome_review_id"] == review_id
+            assert search_body["total"] == 1
+            assert search_body["applied_filters"] == {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": None,
+                "wave_id": None,
+                "rebalance_run_id": None,
+                "state": None,
+                "source_system": "lotus-manage",
+                "source_type": "TEST_SOURCE",
+            }
+            assert search_body["source_owner_counts"] == {"lotus-manage": 1}
+            assert search_body["source_type_counts"] == {"TEST_SOURCE": 1}
+            assert "does not query source-owner stores" in search_body["support_boundary"]
+
+            no_source_match = client.get(
+                "/api/v1/rebalance/outcome-reviews",
+                params={
+                    "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                    "source_system": "lotus-risk",
+                },
+            )
+            assert no_source_match.status_code == 200
+            assert no_source_match.json()["items"] == []
+            assert no_source_match.json()["total"] == 0
 
             invalid_state = client.get(
                 "/api/v1/rebalance/outcome-reviews",

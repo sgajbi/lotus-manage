@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-22T09:34:10.769180+00:00",
+  "generatedAt": "2026-05-22T09:54:49.588714+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -653,11 +653,12 @@
       "example": {
         "key": "value"
       },
-      "type": "DpmPortfolioMemorySearchAppliedFilters",
+      "type": "DpmOutcomeReviewListAppliedFilters",
       "locations": [
         "body"
       ],
       "observedTypes": [
+        "DpmOutcomeReviewListAppliedFilters",
         "DpmPortfolioMemorySearchAppliedFilters"
       ]
     },
@@ -12967,6 +12968,22 @@
       ]
     },
     {
+      "semanticId": "lotus.source_owner_counts",
+      "canonicalTerm": "source_owner_counts",
+      "preferredName": "source_owner_counts",
+      "description": "Pre-pagination counts by source-owner system represented in matching review lineage.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
       "semanticId": "lotus.source_owners",
       "canonicalTerm": "source_owners",
       "preferredName": "source_owners",
@@ -13248,6 +13265,22 @@
       ],
       "observedTypes": [
         "string",
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.source_type_counts",
+      "canonicalTerm": "source_type_counts",
+      "preferredName": "source_type_counts",
+      "description": "Pre-pagination counts by source type represented in matching review lineage.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
         "object"
       ]
     },
@@ -19240,6 +19273,30 @@
       "attributeRef": "#/attributeCatalog/lotus.state"
     },
     {
+      "name": "source_system",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional source-owner system filter over persisted outcome-review source lineage. Leading and trailing whitespace is normalized before matching.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.source_system",
+      "attributeRef": "#/attributeCatalog/lotus.source_system"
+    },
+    {
+      "name": "source_type",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional source-type filter over persisted outcome-review source lineage. Leading and trailing whitespace is normalized before matching.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.source_type",
+      "attributeRef": "#/attributeCatalog/lotus.source_type"
+    },
+    {
       "name": "limit",
       "kind": "request_option",
       "location": "query",
@@ -19262,6 +19319,18 @@
       "allowedValues": [],
       "semanticId": "lotus.offset",
       "attributeRef": "#/attributeCatalog/lotus.offset"
+    },
+    {
+      "name": "source_scan_limit",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "integer",
+      "description": "Maximum persisted outcome-review rows to scan before source-lineage filtering.",
+      "example": 1,
+      "allowedValues": [],
+      "semanticId": "lotus.source_scan_limit",
+      "attributeRef": "#/attributeCatalog/lotus.source_scan_limit"
     },
     {
       "name": "outcome_review_id",
@@ -110998,6 +111067,22 @@
             "attributeRef": "#/attributeCatalog/lotus.state"
           },
           {
+            "name": "source_system",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "source_type",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
             "name": "limit",
             "location": "query",
             "required": false,
@@ -111012,6 +111097,14 @@
             "type": "integer",
             "semanticId": "lotus.offset",
             "attributeRef": "#/attributeCatalog/lotus.offset"
+          },
+          {
+            "name": "source_scan_limit",
+            "location": "query",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.source_scan_limit",
+            "attributeRef": "#/attributeCatalog/lotus.source_scan_limit"
           }
         ]
       },
@@ -112192,6 +112285,94 @@
             "type": "integer",
             "semanticId": "lotus.total",
             "attributeRef": "#/attributeCatalog/lotus.total"
+          },
+          {
+            "name": "applied_filters",
+            "location": "body",
+            "required": false,
+            "type": "DpmOutcomeReviewListAppliedFilters",
+            "semanticId": "lotus.applied_filters",
+            "attributeRef": "#/attributeCatalog/lotus.applied_filters"
+          },
+          {
+            "name": "applied_filters.portfolio_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "applied_filters.mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+          },
+          {
+            "name": "applied_filters.wave_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "applied_filters.rebalance_run_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.rebalance_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "applied_filters.state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "applied_filters.source_system",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "applied_filters.source_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "source_owner_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_owner_counts",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner_counts"
+          },
+          {
+            "name": "source_type_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type_counts",
+            "attributeRef": "#/attributeCatalog/lotus.source_type_counts"
+          },
+          {
+            "name": "support_boundary",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.support_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.support_boundary"
           }
         ]
       }
@@ -118577,6 +118758,94 @@
             "type": "integer",
             "semanticId": "lotus.total",
             "attributeRef": "#/attributeCatalog/lotus.total"
+          },
+          {
+            "name": "applied_filters",
+            "location": "body",
+            "required": false,
+            "type": "DpmOutcomeReviewListAppliedFilters",
+            "semanticId": "lotus.applied_filters",
+            "attributeRef": "#/attributeCatalog/lotus.applied_filters"
+          },
+          {
+            "name": "applied_filters.portfolio_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "applied_filters.mandate_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.mandate_id",
+            "attributeRef": "#/attributeCatalog/lotus.mandate_id"
+          },
+          {
+            "name": "applied_filters.wave_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.wave_id",
+            "attributeRef": "#/attributeCatalog/lotus.wave_id"
+          },
+          {
+            "name": "applied_filters.rebalance_run_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.rebalance_run_id",
+            "attributeRef": "#/attributeCatalog/lotus.rebalance_run_id"
+          },
+          {
+            "name": "applied_filters.state",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.state",
+            "attributeRef": "#/attributeCatalog/lotus.state"
+          },
+          {
+            "name": "applied_filters.source_system",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "applied_filters.source_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
+            "name": "source_owner_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_owner_counts",
+            "attributeRef": "#/attributeCatalog/lotus.source_owner_counts"
+          },
+          {
+            "name": "source_type_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type_counts",
+            "attributeRef": "#/attributeCatalog/lotus.source_type_counts"
+          },
+          {
+            "name": "support_boundary",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.support_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.support_boundary"
           }
         ]
       }

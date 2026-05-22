@@ -75,9 +75,53 @@ class DpmOutcomeReviewLookupResponse(BaseModel):
     outcome_review: DpmPostTradeOutcomeReview = Field(description="Persisted immutable review.")
 
 
+class DpmOutcomeReviewListAppliedFilters(BaseModel):
+    portfolio_id: str | None = Field(default=None, description="Applied portfolio id filter.")
+    mandate_id: str | None = Field(default=None, description="Applied mandate id filter.")
+    wave_id: str | None = Field(default=None, description="Applied wave id filter.")
+    rebalance_run_id: str | None = Field(
+        default=None, description="Applied rebalance run id filter."
+    )
+    state: str | None = Field(default=None, description="Applied outcome review state filter.")
+    source_system: str | None = Field(
+        default=None,
+        description=(
+            "Applied source-owner system filter over persisted outcome-review source lineage."
+        ),
+    )
+    source_type: str | None = Field(
+        default=None,
+        description="Applied source-type filter over persisted outcome-review source lineage.",
+    )
+
+
 class DpmOutcomeReviewListResponse(BaseModel):
     items: list[DpmPostTradeOutcomeReview] = Field(description="Bounded review search results.")
-    total: int = Field(description="Returned item count.", examples=[1])
+    total: int = Field(description="Matching item count before pagination.", examples=[1])
+    applied_filters: DpmOutcomeReviewListAppliedFilters = Field(
+        default_factory=DpmOutcomeReviewListAppliedFilters,
+        description="Normalized filters applied to the outcome-review search.",
+    )
+    source_owner_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Pre-pagination counts by source-owner system represented in matching review lineage."
+        ),
+        examples=[{"lotus-manage": 1, "lotus-risk": 1}],
+    )
+    source_type_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description="Pre-pagination counts by source type represented in matching review lineage.",
+        examples=[{"RiskMetricsReport:v1": 1}],
+    )
+    support_boundary: str = Field(
+        default=(
+            "Outcome-review search filters persisted Manage outcome-review lineage only; it does "
+            "not query source-owner stores, recalculate realized source truth, project OMS "
+            "execution events, or create client-communication workflow evidence."
+        ),
+        description="Explicit no-claim boundary for outcome-review source-lineage search.",
+    )
 
 
 class DpmOutcomeReviewSupportabilityResponse(BaseModel):
