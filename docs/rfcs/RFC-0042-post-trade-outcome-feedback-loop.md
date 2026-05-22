@@ -397,7 +397,7 @@ requests/responses, error responses, and every attribute description/type/exampl
 | `POST /api/v1/rebalance/outcome-reviews/preview` | Validate expected and realized source availability before durable review creation. |
 | `POST /api/v1/rebalance/outcome-reviews` | Create an immutable outcome review with idempotency and source lineage. |
 | `GET /api/v1/rebalance/outcome-reviews/{outcome_review_id}` | Retrieve the full review. |
-| `GET /api/v1/rebalance/outcome-reviews` | Search reviews by portfolio, mandate, wave, run, state, reason code, and date window. |
+| `GET /api/v1/rebalance/outcome-reviews` | Search reviews by portfolio, mandate, wave, run, state, source-owner system, and source type; return applied filters plus source-owner/source-type facets from persisted review lineage. |
 | `GET /api/v1/rebalance/runs/{rebalance_run_id}/outcome-review` | Find the review for a run when one exists. |
 | `GET /api/v1/rebalance/waves/{wave_id}/outcome-reviews` | Retrieve outcome reviews associated with a wave. |
 | `POST /api/v1/rebalance/outcome-reviews/{outcome_review_id}/refresh-sources` | Re-evaluate realized source evidence and append a source-refresh event. |
@@ -818,10 +818,10 @@ outside the support claim.
 
 | Feature | Current state | Promotion rule |
 | --- | --- | --- |
-| Outcome review creation | Supported as manage backend authority | Durable source-backed create/retrieve/search APIs are certified and live-proven. |
+| Outcome review creation | Supported as manage backend authority | Durable source-backed create/retrieve/search APIs are certified and live-proven, including bounded source-lineage source-owner/source-type filters and facets over persisted review lineage. |
 | Expected-versus-realized variance decomposition | Supported for source-backed supplied dimensions | Supported where expected and realized evidence reconcile with lineage, hashes, and tests. |
 | Source-degraded outcome review | Supported as explicit state behavior | Degraded, blocked, unsupported, stale, partial, malformed, conflicting, and execution-evidence-blocked states are tested and documented. |
-| Searchable outcome memory | Supported as manage backend memory | Immutable persistence, events, source hashes, run lookup, wave lookup, and indexed search are proven. |
+| Searchable outcome memory | Supported as manage backend memory | Immutable persistence, events, source hashes, run lookup, wave lookup, source-lineage filters/facets, and indexed search are proven without querying source-owner stores or projecting OMS/client-communication workflow evidence. |
 | Report input from outcome review | Supported as manage handoff contract plus first-wave materialization path | Manage emits bounded report input with structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence; `lotus-report`, `lotus-render`, and `lotus-archive` own generated report and archive lifecycle without recomputing outcome truth, inferring OMS execution, or claiming client communication. |
 | AI evidence input from outcome review | Supported as bounded evidence contract plus governed narrative path | Manage emits bounded AI evidence input with structured `DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY` and `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence; `lotus-ai` owns guarded workflow-pack narrative execution. No recommendation, PM scoring, OMS execution, or client-contact support is claimed. |
 | Gateway outcome composition | Supported through `lotus-gateway` PR #186/#187/#188/#189 | Gateway composes manage outcome-review truth and report/AI handoff posture without recomputing expected values, realized values, variance, tolerance, lineage, freshness, or review state. |

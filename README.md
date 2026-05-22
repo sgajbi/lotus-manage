@@ -341,6 +341,7 @@ evidence with review-required guardrails. RFC-0042 is
 `DONE` for manage backend
 authority:
 source-backed outcome-review preview/create/retrieve/search, immutable persistence and events,
+source-lineage source-owner/source-type filters and facets over persisted review lineage,
 source-refresh eventing, report-input and AI-evidence handoff contracts, supportability telemetry,
 deduplicated AI-evidence source lineage across review, snapshot, dimension-result, and metric-level
 refs, and live canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`; Slice 12
@@ -647,7 +648,10 @@ Operationally important truths:
    OMS source ownership, reconciliation controls, consumer declaration, and downstream realization.
    Manage does not generate orders, route venues, certify best execution, ingest OMS
    acknowledgements, confirm fills, project settlement, or reconcile execution status.
-10. outcome-review supportability, report-input, and AI-evidence handoffs also expose structured
+10. outcome-review search exposes bounded source-owner and source-type filters plus facets over
+    persisted review lineage only. It does not query source-owner stores, recalculate realized
+    source truth, project OMS execution events, or create client-communication workflow evidence.
+11. outcome-review supportability, report-input, and AI-evidence handoffs also expose structured
     `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage may support internal PM, CIO,
     compliance, operations, report, and AI review workflows, but it does not contact clients,
     generate client-ready messages, collect client approval, confirm delivery, or certify client
@@ -655,24 +659,24 @@ Operationally important truths:
     downstream realization requirements before promotion. AI-evidence handoff source refs are bounded to persisted
     outcome-review lineage and deduplicated review, snapshot, dimension-result, and metric-level
     evidence refs.
-11. wave proof-pack posture and report-input handoffs expose structured
+12. wave proof-pack posture and report-input handoffs expose structured
     `DPM_WAVE_CLIENT_COMMUNICATION_BOUNDARY` evidence. Manage wave evidence stops at internal
     operations handoff and does not contact clients, generate client-ready wave messages, collect
     client approval, confirm delivery, or certify communication audit truth.
-12. proof-pack report-input and AI-evidence handoffs expose structured
+13. proof-pack report-input and AI-evidence handoffs expose structured
     `DPM_PROOF_PACK_CLIENT_COMMUNICATION_BOUNDARY` evidence with the same source-owner,
     delivery/audit, consent, and downstream-realization promotion bar.
-13. bulk-review campaign wave report-input handoffs expose structured
+14. bulk-review campaign wave report-input handoffs expose structured
     `DPM_WAVE_CAMPAIGN_UNIVERSE_BOUNDARY` evidence when the trigger is
     `BULK_REVIEW_CAMPAIGN`. Manage preserves persisted source-backed campaign-definition
     candidates only and does not discover the global portfolio universe, recalculate source facts,
     recompute membership, generate orders, or claim OMS execution.
-14. PM operating-quality review actions expose structured
+15. PM operating-quality review actions expose structured
     `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence. Manage records immutable review-action
     ledger rows over existing score-run or fairness-analysis evidence only; it does not mutate
     approval workflow state, approve policies or trades, contact clients, create HR or conduct
     decisions, route orders, or claim OMS execution.
-15. PM operating-quality summary invocations expose structured
+16. PM operating-quality summary invocations expose structured
     `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence. Manage records workflow/run/artifact references
     and hashes only; it does not store or expose generated summary text, project downstream
     summary UX, reconstruct prompts or model responses, contact clients, generate client-ready

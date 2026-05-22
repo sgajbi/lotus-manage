@@ -817,7 +817,8 @@ Current repository posture:
     acknowledgements, confirm fills, or settle trades.
 16. RFC-0042 is `DONE` for manage backend authority:
     source-backed outcome-review preview/create/retrieve/search, immutable persistence and
-    append-only events, source-refresh eventing, report-input and AI-evidence handoff contracts,
+    append-only events, source-lineage source-owner/source-type filters and facets over persisted
+    review lineage, source-refresh eventing, report-input and AI-evidence handoff contracts,
     supportability diagnostics, bounded metrics/logging, source-owned realized adapters for
     `lotus-risk` `RiskMetricsReport:v1`, drawdown analytics maximum drawdown, average drawdown,
     ulcer index, and time under water, concentration response position HHI and selected measures, rolling metrics selected
@@ -847,7 +848,9 @@ Current repository posture:
     source-event family postures, plus structured external-execution and client-communication
     boundary evidence; it does not project acknowledgement, fill, settlement, execution-status,
     client-contact, client-message, client-delivery, client-approval, or communication-audit
-    events. Live
+    events. Outcome-review search uses persisted Manage lineage only; it does not query source-owner
+    stores, recalculate realized source truth, project OMS execution events, or create
+    client-communication workflow evidence. Live
     canonical manage proof under `output/rfc0042-outcome-proof/20260505-024352`, and Slice 12 hardening proof under
     `output/rfc0042-outcome-proof/20260505-025613`. The proof found and fixed stale listener
     restart handling in `scripts/Start-CanonicalManage.ps1`, OpenAPI What/When/How gaps on
