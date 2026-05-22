@@ -227,6 +227,7 @@ def search_portfolio_memory(
     event_type: str | None = None,
     supportability_state: PortfolioMemorySupportabilityState | None = None,
     source_system: str | None = None,
+    source_type: str | None = None,
     limit: int = 50,
     offset: int = 0,
     source_scan_limit: int = 500,
@@ -241,6 +242,7 @@ def search_portfolio_memory(
         normalize_portfolio_memory_search_filter(cast(str | None, supportability_state)),
     )
     normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
+    normalized_source_type = normalize_portfolio_memory_search_filter(source_type)
     explicit_candidate_ids = {
         portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
     }
@@ -299,12 +301,14 @@ def search_portfolio_memory(
                 event_type=normalized_event_type,
                 supportability_state=normalized_supportability_state,
                 source_system=normalized_source_system,
+                source_type=normalized_source_type,
             )
         ]
         if (
             (
                 normalized_event_type is not None
                 or normalized_source_system is not None
+                or normalized_source_type is not None
                 or normalized_supportability_state is not None
             )
             and normalized_supportability_state != "EMPTY"
@@ -367,6 +371,7 @@ def search_portfolio_memory(
     event_type_counts: dict[str, int] = {}
     matching_event_supportability_state_counts: dict[str, int] = {}
     matching_event_source_system_counts: dict[str, int] = {}
+    matching_event_source_type_counts: dict[str, int] = {}
     source_system_counts: dict[str, int] = {}
     for item, matching_events in search_rows:
         for event in matching_events:
@@ -377,6 +382,10 @@ def search_portfolio_memory(
             for event_source_system in _event_source_systems(event):
                 matching_event_source_system_counts[event_source_system] = (
                     matching_event_source_system_counts.get(event_source_system, 0) + 1
+                )
+            for event_source_type in _event_source_types(event):
+                matching_event_source_type_counts[event_source_type] = (
+                    matching_event_source_type_counts.get(event_source_type, 0) + 1
                 )
         for represented_source_system in item.source_systems:
             source_system_counts[represented_source_system] = (
@@ -401,6 +410,7 @@ def search_portfolio_memory(
             event_type=normalized_event_type,
             supportability_state=normalized_supportability_state,
             source_system=normalized_source_system,
+            source_type=normalized_source_type,
         ),
         "supportability_state_counts": dict(sorted(supportability_state_counts.items())),
         "event_type_counts": dict(sorted(event_type_counts.items())),
@@ -409,6 +419,9 @@ def search_portfolio_memory(
         ),
         "matching_event_source_system_counts": dict(
             sorted(matching_event_source_system_counts.items())
+        ),
+        "matching_event_source_type_counts": dict(
+            sorted(matching_event_source_type_counts.items())
         ),
         "source_system_counts": dict(sorted(source_system_counts.items())),
         "generated_at": generated_at.isoformat(),
@@ -520,12 +533,15 @@ def _event_matches_search_filters(
     event_type: str | None,
     supportability_state: PortfolioMemorySupportabilityState | None,
     source_system: str | None,
+    source_type: str | None,
 ) -> bool:
     if event_type is not None and event.event_type != event_type:
         return False
     if supportability_state is not None and event.supportability_state != supportability_state:
         return False
     if source_system is not None and source_system not in _event_source_systems(event):
+        return False
+    if source_type is not None and source_type not in _event_source_types(event):
         return False
     return True
 
@@ -539,6 +555,18 @@ def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
             *(ref.source_system for ref in event.artifact_refs),
         ]
         if source_system
+    }
+
+
+def _event_source_types(event: DpmPortfolioMemoryEvent) -> set[str]:
+    return {
+        source_type
+        for source_type in [
+            event.source_type,
+            *(ref.source_type for ref in event.source_refs),
+            *(ref.source_type for ref in event.artifact_refs),
+        ]
+        if source_type
     }
 
 

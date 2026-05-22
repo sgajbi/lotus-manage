@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-22T02:33:50.298463+00:00",
+  "generatedAt": "2026-05-22T09:34:10.769180+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -7725,7 +7725,7 @@
       "semanticId": "lotus.matching_event_count",
       "canonicalTerm": "matching_event_count",
       "preferredName": "matching_event_count",
-      "description": "Number of events in this portfolio-memory view that match the applied event, source system, and supportability filters. When no filters are supplied this equals event_count.",
+      "description": "Number of events in this portfolio-memory view that match the applied event, source system, source type, and supportability filters. When no filters are supplied this equals event_count.",
       "example": 10,
       "type": "integer",
       "locations": [
@@ -7740,6 +7740,22 @@
       "canonicalTerm": "matching_event_source_system_counts",
       "preferredName": "matching_event_source_system_counts",
       "description": "Aggregate count of source systems represented on matching portfolio-memory events before pagination. Counts include the event source system plus source and artifact refs on events that satisfied the applied search filters, not every source system represented by the portfolio memory summary.",
+      "example": {
+        "sample_key": "sample_value"
+      },
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.matching_event_source_type_counts",
+      "canonicalTerm": "matching_event_source_type_counts",
+      "preferredName": "matching_event_source_type_counts",
+      "description": "Aggregate count of source types represented on matching portfolio-memory events before pagination. Counts include the event source type plus source and artifact refs on events that satisfied the applied search filters, not every source type represented by the portfolio memory summary.",
       "example": {
         "sample_key": "sample_value"
       },
@@ -13227,10 +13243,12 @@
       "example": "REBALANCE_RUN",
       "type": "string",
       "locations": [
-        "body"
+        "body",
+        "query"
       ],
       "observedTypes": [
-        "string"
+        "string",
+        "object"
       ]
     },
     {
@@ -19400,6 +19418,18 @@
       "allowedValues": [],
       "semanticId": "lotus.source_system",
       "attributeRef": "#/attributeCatalog/lotus.source_system"
+    },
+    {
+      "name": "source_type",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional represented source-type filter across matching events, source refs, and artifact refs. Leading and trailing whitespace is normalized before matching.",
+      "example": "STANDARD_VALUE",
+      "allowedValues": [],
+      "semanticId": "lotus.source_type",
+      "attributeRef": "#/attributeCatalog/lotus.source_type"
     },
     {
       "name": "limit",
@@ -118592,6 +118622,14 @@
             "attributeRef": "#/attributeCatalog/lotus.source_system"
           },
           {
+            "name": "source_type",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
             "name": "limit",
             "location": "query",
             "required": false,
@@ -118876,6 +118914,14 @@
             "attributeRef": "#/attributeCatalog/lotus.source_system"
           },
           {
+            "name": "applied_filters.source_type",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.source_type",
+            "attributeRef": "#/attributeCatalog/lotus.source_type"
+          },
+          {
             "name": "supportability_state_counts",
             "location": "body",
             "required": false,
@@ -118906,6 +118952,14 @@
             "type": "object",
             "semanticId": "lotus.matching_event_source_system_counts",
             "attributeRef": "#/attributeCatalog/lotus.matching_event_source_system_counts"
+          },
+          {
+            "name": "matching_event_source_type_counts",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.matching_event_source_type_counts",
+            "attributeRef": "#/attributeCatalog/lotus.matching_event_source_type_counts"
           },
           {
             "name": "source_system_counts",

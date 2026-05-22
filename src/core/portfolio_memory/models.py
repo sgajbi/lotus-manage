@@ -473,7 +473,7 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         ge=0,
         description=(
             "Number of events in this portfolio-memory view that match the applied event, source "
-            "system, and supportability filters. When no filters are supplied this equals "
+            "system, source type, and supportability filters. When no filters are supplied this equals "
             "event_count."
         ),
         examples=[1],
@@ -610,6 +610,13 @@ class DpmPortfolioMemorySearchAppliedFilters(BaseModel):
             "when supplied."
         ),
     )
+    source_type: str | None = Field(
+        default=None,
+        description=(
+            "Source-type filter applied to matching events, source refs, and artifact refs, "
+            "when supplied."
+        ),
+    )
 
 
 class DpmPortfolioMemorySearchPage(BaseModel):
@@ -700,6 +707,16 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         ),
         examples=[{"lotus-manage": 2, "lotus-core": 1}],
     )
+    matching_event_source_type_counts: dict[str, int] = Field(
+        default_factory=dict,
+        description=(
+            "Aggregate count of source types represented on matching portfolio-memory events "
+            "before pagination. Counts include the event source type plus source and artifact "
+            "refs on events that satisfied the applied search filters, not every source type "
+            "represented by the portfolio memory summary."
+        ),
+        examples=[{"DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF": 1}],
+    )
     source_system_counts: dict[str, int] = Field(
         default_factory=dict,
         description=(
@@ -754,6 +771,10 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         _validate_non_negative_counts(
             label="matching_event_source_system_counts",
             counts=self.matching_event_source_system_counts,
+        )
+        _validate_non_negative_counts(
+            label="matching_event_source_type_counts",
+            counts=self.matching_event_source_type_counts,
         )
         _validate_non_negative_counts(
             label="source_system_counts", counts=self.source_system_counts
