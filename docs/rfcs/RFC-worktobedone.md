@@ -91,6 +91,11 @@ mainline validated. Approval workflow beyond immutable review actions remains fu
 RFC42-WTBD-006 partial row with source-owned stateless MWR source-preconverted FX evidence, but it
 does not move the count because stateful per-input FX evidence, broader FX methodology, predictive
 execution, and OMS remain unfinished.
+`lotus-performance` PR #170 (`5eca912`, wiki `ffc69f8`) further tightens that same partial row by
+marking stateful single-currency MWR as `not_required_single_currency_inputs` with
+`no_conversion_required` market-value evidence when source and reporting currencies match; the count
+still does not move because cross-currency stateful per-input FX evidence, broader FX methodology,
+predictive execution, and OMS remain unfinished.
 The PM-quality review-action approval-workflow boundary hardening slice adds structured
 `PM_QUALITY_APPROVAL_WORKFLOW_BOUNDARY` evidence to Manage review-action rows, advancing the
 residual approval-workflow non-claim without changing the WTBD counts.
@@ -6293,6 +6298,31 @@ Latest WTBD-006 performance MWR source-preconverted FX-evidence proof:
 7. this advances RFC42-WTBD-006 but does not close it: stateful upstream per-input FX conversion
    evidence, broader FX methodology outside implemented performance-owned paths, predictive
    execution, OMS acknowledgements, tax advice, tax optimization, and broader live
+   portfolio-archetype validation remain source-owner or future-RFC work.
+
+Latest WTBD-006 performance MWR single-currency stateful evidence proof:
+
+1. `lotus-performance` PR #170 was merged to `main` as
+   `5eca9129baef0daeaf893451e292ece3983063e0` and published wiki commit `ffc69f8`,
+2. stateful MWR now emits
+   `conversion_evidence_status="not_required_single_currency_inputs"` when the source portfolio
+   currency, reporting currency, and explicit cash-flow currencies match,
+3. the beginning and ending market-value evidence now carries
+   `conversion_status="no_conversion_required"` in that single-currency stateful posture,
+4. cross-currency stateful MWR still emits
+   `upstream_preconverted_missing_per_input_fx_metadata` and continues to block inferred FX rates,
+   conversion policies, versions, timestamps, or fingerprints when upstream per-input evidence is
+   absent,
+5. performance proof passed focused MWR unit/integration/docs tests, `make check`, integration and
+   e2e suites, Feature Lane, PR Merge Gate, Docker validation, wiki publication/drift check, and
+   Main Releasability Gate
+   `https://github.com/sgajbi/lotus-performance/actions/runs/26269040916`,
+6. manage consumes this as source-owner evidence truth only: no MWR FX conversion, FX-rate sourcing,
+   FX attribution, reporting-currency restatement, or mixed-currency capital-timing methodology is
+   implemented or duplicated in Manage,
+7. this advances RFC42-WTBD-006 but does not close it: cross-currency stateful upstream per-input FX
+   conversion evidence, broader FX methodology outside implemented performance-owned paths,
+   predictive execution, OMS acknowledgements, tax advice, tax optimization, and broader live
    portfolio-archetype validation remain source-owner or future-RFC work.
 
 #### RFC42-WTBD-007 - External Execution / OMS Integration And Acknowledgements
