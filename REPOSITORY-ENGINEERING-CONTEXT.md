@@ -679,11 +679,18 @@ Current repository posture:
     (`ea6c036`, Main Releasability Gate `25989936539`) for bounded lifecycle-events,
     launch-history, launch-package, durable launch, and campaign-discovery BFF preservation of
     Manage-owned payloads without Gateway-local cohort, membership, readiness, idempotency,
-    maker-checker, order, or OMS calculation. Workbench PR #184 renders the first-wave active
+    maker-checker, order, or OMS calculation. Gateway PR #238 (`72c1397`) adds bounded campaign
+    workflow/audit BFF realization for operating queue, approval inbox, workflow board, assignment
+    plan, workflow automation, approval decisions, assignment actions, assignment tasks, task
+    transitions, and maker-checker controls without Gateway-local workflow-state, order, OMS, or
+    client-contact authority. Workbench PR #184 renders the first-wave active
     campaign-definition list through Gateway/BFF, and Workbench PR #244 (`31ea877`, Main
     Releasability Gate `25989936388`) validates Gateway-only READY-gated launch and paged
     launch-history/empty-state/no-order/no-OMS boundary rendering without browser-side cohort,
-    membership, readiness, or execution calculation. Persisted campaign discovery is now implemented at
+    membership, readiness, or execution calculation. Workbench PR #340 (`ec9bcd7`) renders bounded
+    campaign workflow/audit evidence and Gateway-backed workflow evidence commands without
+    browser-side cohort, workflow-state, order, OMS, or client-contact calculation. Persisted
+    campaign discovery is now implemented at
     `GET /api/v1/rebalance/waves/campaign-discovery` as a Manage-owned
     `BulkReviewCampaignDiscovery:v1` read model over persisted `BulkReviewCampaignDefinition:v1`
     records; it exposes campaign identity, governance posture, expiry posture, source-ref count,

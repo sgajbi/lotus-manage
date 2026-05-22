@@ -341,6 +341,12 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     assert "`lotus-performance` PR #168 or PR #170" in supported_features
     assert "cross-currency stateful per-input FX evidence" in supported_features
     assert "advance an existing RFC42-WTBD-006 partial" in supported_features
+    assert (
+        "Gateway PR #238 and Workbench PR #340 add bounded campaign workflow/audit realization"
+        in (supported_features)
+    )
+    assert "external-owner" in supported_features
+    assert "promotion dependencies rather than open Lotus-side blockers" in supported_features
     assert "RFC38-WTBD-007 is done for Lotus-owned bounded support" in supported_features
 
 
@@ -1542,10 +1548,20 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-gateway` PR #212 (`891d00dea0328525ada14fabad278af1d1b9386b`)" in (
         work_to_be_done
     )
+    assert "PR #238 (`72c1397`) adds bounded campaign workflow/audit BFF routes" in (
+        work_to_be_done
+    )
     assert "`lotus-workbench` PR #184 (`502aa2113a6e3954d53a35f9f956d258c84d5be0`)" in (
         work_to_be_done
     )
     assert "published Workbench wiki commit `694d9cd`" in work_to_be_done
+    assert "PR #340 (`ec9bcd7`) renders bounded campaign workflow/audit evidence" in (
+        work_to_be_done
+    )
+    assert (
+        "External workflow orchestration beyond Manage-side task readiness is an external-owner"
+        in (work_to_be_done)
+    )
     assert "BulkReviewCampaignDiscovery:v1" in work_to_be_done
     assert "`GET /api/v1/rebalance/waves/campaign-discovery`" in work_to_be_done
     assert (
