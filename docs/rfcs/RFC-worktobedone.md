@@ -43,7 +43,7 @@ retained only as evidence index and sequencing control.
 
 | Owning RFC | Completed WTBD truth now integrated into the RFC | Ledger boundary that remains here |
 | --- | --- | --- |
-| RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-004 and RFC36-WTBD-006 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | RFC36-WTBD-005 remains broader upstream-depth control. |
+| RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-006 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | No RFC36-specific ledger boundary remains; broader strategic source-product depth remains tracked by RFC37-WTBD-004. |
 | RFC-0037 | RFC37-WTBD-005, RFC37-WTBD-006, and the bounded RFC37-WTBD-001 first-wave outcome-review realization are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md`. | RFC-0037 remains a strategic parent roadmap; broader outcome-learning loops, full portfolio memory, source-owner depth, execution, PM scoring, and client-communication ownership stay outside the completed parent-roadmap claims. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-008 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-007 is completed for Lotus-owned bounded source-product context preservation: `lotus-risk:MandateRiskHealthContext:v1` and `lotus-performance:MandatePerformanceHealthContext:v1` are source-owned products, and Manage preserves caller-supplied context refs and uses source health-state/threshold posture without cloning risk or performance methodology. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, the bounded first-wave RFC39-WTBD-007 and RFC39-WTBD-009 results, and the Lotus-owned RFC39-WTBD-008 external treasury/currency-overlay boundary result are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 is partial for Manage-side source-context preservation and source-analytics posture; broader source-owner risk/performance analytics products remain future. RFC39-WTBD-008 is done for Lotus-owned supportability: external treasury source-product contract boundaries, active fail-closed hedge-readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve posture are merged in `lotus-core`, mirrored in platform truth, and consumed by Manage as unavailable postures. Runtime external treasury ingestion remains an external bank-owner promotion dependency and is not a supported hedge-execution claim. |
@@ -78,8 +78,8 @@ RFC37-WTBD-007 as partial, matching the detail rows: bounded first-wave product 
 product surfaces, and portfolio-memory lineage exist, while the full copilot workspace, broader
 front-office realization, full portfolio memory, OMS execution/fill/settlement projection,
 PM scoring, and remaining source-owner depth remain future scope. The current classification is
-59 total WTBD items: 50 done on merged/published Lotus-owned truth, 7 partial or in progress, and
-2 remaining/open. The 2026-05-22 Lotus-owned completion recount moves RFC38-WTBD-007,
+59 total WTBD items: 51 done on merged/published Lotus-owned truth, 7 partial or in progress, and
+1 remaining/open. The 2026-05-22 Lotus-owned completion recount moves RFC38-WTBD-007,
 RFC39-WTBD-008, and RFC42-WTBD-007 out of partial because Lotus has implemented bounded
 risk/performance health source-context preservation plus the fail-closed external treasury and
 external OMS source/consumer boundaries; runtime bank treasury and OMS ingestion remain explicit
@@ -91,7 +91,7 @@ RFC36-WTBD-004 is now closed for Lotus-owned mesh-certification promotion becaus
 `lotus-core:DpmSourceReadiness:v1` has repo-native trust telemetry and `lotus-platform` now
 requires it in the RFC-0091 maturity wave with SLO, access, evidence-pack, generated maturity
 matrix, context, wiki, and cross-repo mesh certification proof. Broader upstream source-product
-depth remains tracked by RFC36-WTBD-005 and RFC37-WTBD-004.
+depth remains tracked by RFC37-WTBD-004.
 Later
 cross-repo review
 on 2026-05-21 found the downstream PM-quality review-action realization has advanced: Gateway
@@ -155,9 +155,9 @@ methodology, performance benchmark analytics, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published Lotus-owned truth | 50 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
+| Done on merged/published Lotus-owned truth | 51 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
 | Partial / in progress | 7 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
-| Remaining / open | 2 | Items still deferred, proposed, conditional, unsupported, or awaiting Lotus-owned implementation or ownership. |
+| Remaining / open | 1 | Items still deferred, proposed, conditional, unsupported, or awaiting Lotus-owned implementation or ownership. |
 
 Recently closed in this snapshot:
 
@@ -165,7 +165,15 @@ RFC36-WTBD-004 is complete for Lotus-owned DPM source-readiness mesh certificati
 PR #377 adds `DpmSourceReadiness:v1` trust telemetry, and `lotus-platform` PR #341 promotes that
 source product into the RFC-0091 maturity wave with SLO/access/evidence policies, generated matrix
 truth, wiki publication, and cross-repo mesh certification. Broader upstream source-product depth
-remains tracked by RFC36-WTBD-005 and RFC37-WTBD-004.
+now moves to RFC36-WTBD-005 for the current source-depth wave and RFC37-WTBD-004 for strategic
+future source products.
+
+RFC36-WTBD-005 is complete for the current Lotus-owned stateful DPM source-depth wave. `lotus-core`
+PR #378 approves `lotus-manage` as a bounded `BenchmarkAssignment:v1` consumer, `lotus-platform`
+PR #342 mirrors that producer approval and regenerates catalog truth, and this Manage slice
+declares the dependency for mandate-health benchmark identity lineage. Manage does not calculate
+benchmark composition, active-risk, performance attribution, benchmark analytics, model-approval
+methodology, order routing, fills, settlement, or execution.
 
 RFC42-WTBD-008 is complete for the bounded PM operating quality support claim. `lotus-manage`
 owns policy administration, score-run preview/create/read/list, source-backed PM-book scope
@@ -331,8 +339,8 @@ mesh/product promotion belong to downstream or platform/source owners.
 | RFC36-WTBD-001 | Gateway integration rebuilt against canonical `/api/v1` manage APIs | `lotus-gateway` | Completed and merged to `lotus-gateway` `main` in PR #191 (`a68181b`) | Endpoint cleanup intentionally accepted breaking stale Gateway assumptions. Gateway now consumes certified manage APIs without reintroducing aliases or monolithic context assumptions. |
 | RFC36-WTBD-002 | Workbench product surfaces over stateful manage execution | `lotus-workbench` through Gateway/BFF | Completed and merged to `lotus-workbench` `main` in PR #152 (`c83ea7e`) | Workbench now surfaces Gateway-provided manage rebalance action-register supportability without direct manage calls or locally invented source readiness. |
 | RFC36-WTBD-003 | Portfolio-level DPM operation dashboards over stateful executions | `lotus-gateway`, `lotus-workbench`, `lotus-manage` | Completed, merged, live-proven, and wiki-published through `lotus-gateway` PR #192/#193 and `lotus-workbench` PR #153 | RFC-0036 certified execution/source posture. This follow-up now promotes recent-run and supportability telemetry into the Gateway BFF and Workbench product surface without making Workbench call manage directly. |
-| RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-core`, `lotus-platform`, and `lotus-manage` consumer declarations | Completed for Lotus-owned DPM source-readiness mesh promotion | `lotus-core:DpmSourceReadiness:v1` now has trust telemetry and `lotus-platform` PR #341 promotes it into the RFC-0091 maturity wave with SLO/access/evidence policies and cross-repo mesh certification. Broader source-product depth remains RFC36-WTBD-005 / RFC37-WTBD-004. |
-| RFC36-WTBD-005 | Additional upstream source-product depth for stateful execution | `lotus-core` and future source owners | Deferred source enrichment | RFC-0036 consumes the certified RFC-087 products. Additional portfolio, market-data, cashflow, benchmark, restriction, or execution-depth sources require explicit retrieval design. |
+| RFC36-WTBD-004 | Promote additional stateful DPM source-data products into platform mesh certification | `lotus-core`, `lotus-platform`, and `lotus-manage` consumer declarations | Completed for Lotus-owned DPM source-readiness mesh promotion | `lotus-core:DpmSourceReadiness:v1` now has trust telemetry and `lotus-platform` PR #341 promotes it into the RFC-0091 maturity wave with SLO/access/evidence policies and cross-repo mesh certification. Strategic future source-product depth remains RFC37-WTBD-004. |
+| RFC36-WTBD-005 | Additional upstream source-product depth for stateful execution | `lotus-core`, `lotus-platform`, and `lotus-manage` consumer declarations | Completed for the current Lotus-owned source-depth wave | `lotus-core` PR #378 approves bounded `BenchmarkAssignment:v1` consumption by Manage, `lotus-platform` PR #342 mirrors the producer approval and regenerates catalog truth, and Manage declares the dependency for mandate-health benchmark identity lineage without claiming benchmark analytics, model approval, OMS, or execution. |
 | RFC36-WTBD-006 | Downstream migration handling if production consumers of removed aliases are discovered | Owning consumer repo if a dependency is proven; `lotus-platform` for durable vocabulary mirrors | Completed as no-migration-required conditional closure | Cross-repo audit found no active Gateway/Workbench production dependency that requires retired manage proposal routes or unversioned manage capability aliases. The only stale durable truth found was the platform `lotus-manage` API-vocabulary mirror; `lotus-platform` PR #316 refreshed it from current manage vocabulary, removed retired route entries, and added a regression. No compatibility alias is added. |
 
 ### Detailed Follow-Up Items
@@ -597,9 +605,9 @@ Implemented dependencies:
 
 Boundary that remains outside this WTBD:
 
-Broader benchmark, cashflow, restriction, market-data, execution-cost, PM-book, sustainability,
+Broader benchmark analytics, market-data methodology, PM-book, sustainability,
 scenario, risk, performance, tax, treasury, OMS, and future source-family depth remains tracked by
-RFC36-WTBD-005, RFC37-WTBD-004, RFC39-WTBD-005, RFC40-WTBD-009, RFC41-WTBD-003, RFC42-WTBD-006,
+RFC37-WTBD-004, RFC39-WTBD-005, RFC40-WTBD-009, RFC41-WTBD-003, RFC42-WTBD-006,
 and external-owner execution/treasury boundary rows as applicable.
 
 2026-05-20 current-state consumer declaration hardening:
@@ -618,15 +626,17 @@ operating quality, and portfolio memory. The repo-native consumer declaration no
 `ExternalOrderExecutionAcknowledgement:v1`, `CioModelChangeAffectedCohort:v1`,
 `PortfolioManagerBookMembership:v1`, `TransactionCostCurve:v1`,
 `RiskEventAffectedCohort:v1`, `TacticalHouseViewAffectedCohort:v1`, and
-`RegimeScenarioPackEvaluation:v1`.
+`RegimeScenarioPackEvaluation:v1`. The follow-up benchmark lineage slice now also declares
+bounded `BenchmarkAssignment:v1` consumption after upstream Core source-owner approval.
 
 This was a governance hardening slice for current truth, not a new runtime feature. It advanced
 RFC36-WTBD-004 by making repo-native mesh declarations match the implemented source-consumer
 surface and by preserving explicit fail-closed/degraded/pending-review posture per dependency. It
-does not promote `BenchmarkAssignment:v1` until the upstream source owner approves Manage as a
-consumer, and it does not promote raw market-data ownership, valuation methodology, risk
-methodology, performance methodology, tax advice, financial-planning advice, scenario methodology,
-execution, OMS acknowledgement ingestion, fills, settlement, or treasury action.
+now also records `BenchmarkAssignment:v1` only for benchmark identity lineage after upstream Core
+approval; it does not promote raw market-data ownership, valuation methodology, benchmark
+composition, benchmark analytics, risk methodology, performance methodology, tax advice,
+financial-planning advice, scenario methodology, execution, OMS acknowledgement ingestion, fills,
+settlement, or treasury action.
 
 Closure proof:
 
@@ -646,29 +656,33 @@ Stateful DPM execution can consume richer source truth, such as benchmark, cashf
 market-data depth, execution cost, or portfolio operations data, without expanding manage into a
 source-data owner.
 
-Why it cannot be done now:
+Closure result:
 
-RFC-0036 proved the RFC-087 source family and explicitly states that future stateful resolution
-must be added only after upstream producer approval and explicit retrieval design.
+Completed for the current Lotus-owned stateful DPM source-depth wave on 2026-05-22. The remaining
+current watchlist gap was bounded benchmark identity lineage: Core already owned
+`BenchmarkAssignment:v1`, Manage already preserved source-owned benchmark identity in mandate
+health, and the missing bank-buyable control was explicit source-owner consumer approval plus
+repo-native consumer declaration truth.
 
-Dependencies before implementation:
+Implementation evidence:
 
-1. source owner and contract for each new source family,
-2. source-readiness and lineage semantics,
-3. manage resolver and transformer tests,
-4. feature-gated capability publication if user-visible,
-5. live proof for ready, stale, missing, and incomplete source states.
+1. `lotus-core` PR #378 approves `lotus-manage` as a bounded `BenchmarkAssignment:v1` consumer in
+   `lotus-core-products.v1.json` and records that Manage consumption is limited to mandate-health
+   benchmark identity lineage.
+2. `lotus-platform` PR #342 mirrors the Core producer approval into platform contract truth and
+   regenerates the domain-product catalog and dependency graph.
+3. `lotus-manage` declares `BenchmarkAssignment:v1` as a repo-native consumer dependency with
+   `stateful_core_sourcing` consumption, `degrade_or_pending_review` failure posture, and required
+   source trust metadata.
+4. Existing Manage runtime and tests already resolve `BenchmarkAssignment:v1` through Core sourcing
+   and preserve benchmark lineage without moving benchmark analytics methodology into Manage.
 
-Expected implementation wave:
+Boundaries:
 
-Add only when a downstream RFC requires the source and the source owner is ready.
-
-Promotion proof:
-
-1. source-owner certification,
-2. manage resolver tests,
-3. `make live-api-validate-core` or successor live proof,
-4. supported-feature/context updates.
+This WTBD does not claim benchmark composition, active-risk, performance attribution, benchmark
+analytics, model-approval methodology, predictive execution, order routing, fills, settlement,
+reconciliation, or OMS execution. Future source products that add materially new Lotus-owned
+business methodology remain RFC37-WTBD-004 or their owning source RFCs.
 
 #### RFC36-WTBD-006 - Conditional Downstream Migration Handling
 

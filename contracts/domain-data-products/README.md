@@ -85,7 +85,6 @@ Current watchlist:
    is not currently approved for `lotus-manage` in the upstream producer declaration. Manage
    declares only the bounded `MarketDataCoverageWindow:v1` supportability product and must not
    treat it as raw market-data or valuation-methodology ownership.
-3. `BenchmarkAssignment:v1` is referenced in mandate-health source lineage but is not currently
-   approved for `lotus-manage` in the upstream producer declaration. Keep it out of the
-   machine-readable consumer declaration until the source owner explicitly approves Manage
-   consumption.
+3. `BenchmarkAssignment:v1` is approved for bounded `lotus-manage` benchmark-identity lineage
+   consumption only. Keep benchmark composition, active-risk, performance attribution, benchmark
+   analytics, and model-approval methodology in their owning source services.
