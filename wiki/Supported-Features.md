@@ -406,14 +406,15 @@ Audience use:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-22 Lotus-owned
-completion recount, the ledger tracks 59 WTBD items: 48 done on merged/published Lotus-owned
-truth, 7 partial or in progress, and 4 remaining or open. Counts now distinguish Lotus-owned
+completion recount, the ledger tracks 59 WTBD items: 49 done on merged/published Lotus-owned
+truth, 7 partial or in progress, and 3 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC38-WTBD-007 is done
 for bounded `MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1` source-context
-preservation, and RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fail-closed
-source/consumer boundary support, while runtime external treasury ingestion and bank-owned OMS
-acknowledgement/fill/settlement reconciliation remain external-owner promotion dependencies and
-unsupported operational claims. The count does not move
+preservation, RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fail-closed
+source/consumer boundary support, and RFC41-WTBD-010 is done for Lotus-owned wave execution/OMS
+boundary evidence. Runtime external treasury ingestion and bank-owned OMS acknowledgement, fill,
+settlement, and reconciliation remain external-owner promotion dependencies and unsupported
+operational claims. The count does not move
 for `lotus-performance` PR #168 or PR #170 because they advance an existing RFC42-WTBD-006 partial
 row rather than closing cross-currency stateful per-input FX evidence, broader FX methodology,
 predictive execution, or OMS methodology gaps. Current Manage campaign portfolio-memory workflow
