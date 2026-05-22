@@ -62,6 +62,11 @@ Downstream realization backfill, 2026-05-22:
    global portfolio-universe discovery, broader cross-app event search, generated summary text
    retention, prompt/model-response exposure, PM ranking, or HR/conduct claims.
 
+This backfill closes stale downstream-realization wording for campaign workflow/audit and
+PM-quality summary-invocation support. Global portfolio-universe campaign discovery remains future
+Lotus source-owner depth; external workflow orchestration and OMS execution are external-owner
+promotion dependencies rather than open Lotus-side blockers.
+
 Construction risk/performance enrichment addendum: Manage now preserves caller/source-supplied
 `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction alternative
 diagnostics and enrichment summaries for every generated alternative, including non-`RISK_AWARE`
