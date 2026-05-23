@@ -44,9 +44,9 @@ storage-layer constraint.
   breaches. Currency-overlay alternatives preserve fail-closed `lotus-core`
   `ExternalHedgeExecutionReadiness:v1`, `ExternalCurrencyExposure:v1`,
   `ExternalHedgePolicy:v1`, `ExternalEligibleHedgeInstrument:v1`, and
-  `ExternalFXForwardCurve:v1` posture as blocked external treasury evidence without claiming
-  eligible-instrument selection, suitability approval, product recommendation, forward pricing,
-  hedge advice, execution, OMS, fills, or settlement. Construction authority diagnostics also
+  market-data-scoped `ExternalFXForwardCurve:v1` posture as blocked external treasury evidence
+  without claiming eligible-instrument selection, suitability approval, product recommendation,
+  forward pricing, hedge advice, execution, OMS, fills, or settlement. Construction authority diagnostics also
   preserve fail-closed `lotus-core` `ExternalOrderExecutionAcknowledgement:v1` posture as
   execution-boundary evidence without claiming order generation, venue routing, best execution,
   OMS acknowledgement ingestion, fills, settlement, execution-status certification, or autonomous

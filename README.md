@@ -109,8 +109,8 @@ fail-closed `UNAVAILABLE` route. `lotus-core` PR #371 (`9774bc40`, wiki publishe
 `ExternalOrderExecutionAcknowledgement:v1` as an active fail-closed `UNAVAILABLE` route for external
 OMS acknowledgement posture. `lotus-platform` PR #333 (`c46d581`), PR #334 (`ae4f707`), and
 PR #335 (`72be854`) mirror the first active treasury source-product postures. Manage now consumes
-the readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve
-postures through stateful core sourcing and preserves them in currency-overlay construction
+the readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and market-data-scoped
+FX forward-curve postures through stateful core sourcing and preserves them in currency-overlay construction
 diagnostics as blocked external treasury evidence, including empty exposure/policy/
 eligible-instrument/forward-curve rows, exposure/policy-rule/eligible-instrument/curve-point
 counts, missing data families, blocked capabilities, lineage, and source hashes. Manage also

@@ -128,7 +128,8 @@ Current repository posture:
     `lotus-platform` PR #333 (`c46d581`), PR #334 (`ae4f707`), and PR #335 (`72be854`) mirror the
     first active source-product postures. Manage now consumes the readiness, currency-exposure,
     hedge-policy, eligible-hedge-instrument, and FX forward-curve routes through stateful core
-    sourcing, preserves empty exposure/policy/eligible-instrument/forward-curve rows, exposure
+    sourcing, accepts the market-data-scoped `ExternalFXForwardCurve:v1` payload shape returned by
+    core, preserves empty exposure/policy/eligible-instrument/forward-curve rows, exposure
     count, policy-rule count, eligible-instrument count, curve-point count, missing external
     treasury data families, blocked capabilities, lineage, and source hashes in currency-overlay
     construction diagnostics, and blocks hedge realization while continuing to avoid FX
