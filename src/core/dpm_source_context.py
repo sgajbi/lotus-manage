@@ -1157,12 +1157,31 @@ class DpmCoreExternalFXForwardCurveResponse(BaseModel):
         description="Core source-data product name."
     )
     product_version: Literal["v1"] = Field(description="Core source-data product version.")
-    portfolio_id: str = Field(description="Core-governed portfolio identifier.")
-    client_id: str = Field(description="Core-governed client identifier.")
+    portfolio_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional core-governed portfolio identifier. The ExternalFXForwardCurve source "
+            "product is market-data scoped and may be returned without a portfolio identifier."
+        ),
+    )
+    client_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Optional core-governed client identifier. The ExternalFXForwardCurve source "
+            "product is market-data scoped and may be returned without a client identifier."
+        ),
+    )
     mandate_id: Optional[str] = Field(default=None, description="Optional mandate identifier.")
     as_of_date: date = Field(description="Business date used to resolve FX forward-curve posture.")
     reporting_currency: Optional[str] = Field(default=None)
-    exposure_currencies: list[str] = Field(default_factory=list)
+    exposure_currencies: list[str] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("exposure_currencies", "currency_pairs"),
+        description=(
+            "Exposure currencies or source-owned currency-pair selectors returned by core. "
+            "Manage treats these as source evidence only and never as forward-pricing authority."
+        ),
+    )
     curve_points: list[dict[str, str]] = Field(
         default_factory=list,
         description=(

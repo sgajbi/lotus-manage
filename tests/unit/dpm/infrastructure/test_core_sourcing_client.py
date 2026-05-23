@@ -4,7 +4,7 @@ from decimal import Decimal
 import httpx
 import pytest
 
-from src.core.dpm_source_context import DpmStatefulInput
+from src.core.dpm_source_context import DpmCoreExternalFXForwardCurveResponse, DpmStatefulInput
 from src.infrastructure.core_sourcing import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,
@@ -1850,6 +1850,21 @@ def test_core_resolver_fetches_external_fx_forward_curve_from_dedicated_route():
     assert response.supportability.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
     assert response.supportability.curve_point_count == 0
     assert response.curve_points == []
+    assert "forward_pricing" in response.supportability.blocked_capabilities
+
+
+def test_core_resolver_accepts_market_scoped_external_fx_forward_curve_payload():
+    payload = _external_fx_forward_curve_payload()
+    payload.pop("portfolio_id")
+    payload.pop("client_id")
+    payload["currency_pairs"] = payload.pop("exposure_currencies")
+
+    response = DpmCoreExternalFXForwardCurveResponse.model_validate(payload)
+
+    assert response.portfolio_id is None
+    assert response.client_id is None
+    assert response.exposure_currencies == ["USD"]
+    assert response.supportability.state == "UNAVAILABLE"
     assert "forward_pricing" in response.supportability.blocked_capabilities
 
 
