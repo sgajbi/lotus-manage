@@ -186,12 +186,15 @@ def test_architecture_review_control_docs_stay_present() -> None:
         ROOT / "docs" / "architecture" / "README.md",
         ROOT / "docs" / "architecture" / "CODEBASE-REVIEW-PLAYBOOK.md",
         ROOT / "docs" / "architecture" / "CODEBASE-REVIEW-LEDGER.md",
+        ROOT / "docs" / "architecture" / "RFC36-43-GOLD-PASS-AUDIT-MATRIX.md",
     ]
     missing = [str(path.relative_to(ROOT)) for path in required_docs if not path.exists()]
 
     assert missing == []
 
-    ledger = required_docs[-1].read_text(encoding="utf-8")
+    ledger = (ROOT / "docs" / "architecture" / "CODEBASE-REVIEW-LEDGER.md").read_text(
+        encoding="utf-8"
+    )
     required_findings = [
         "RFC36-S2-001",
         "RFC36-S2-002",
@@ -201,6 +204,51 @@ def test_architecture_review_control_docs_stay_present() -> None:
     missing_findings = [finding for finding in required_findings if finding not in ledger]
 
     assert missing_findings == []
+
+
+def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> None:
+    matrix_path = ROOT / "docs" / "architecture" / "RFC36-43-GOLD-PASS-AUDIT-MATRIX.md"
+    matrix = matrix_path.read_text(encoding="utf-8")
+    architecture_index = (ROOT / "docs" / "architecture" / "README.md").read_text(encoding="utf-8")
+    rfc_index = (ROOT / "docs" / "rfcs" / "README.md").read_text(encoding="utf-8")
+
+    assert "RFC36-43 Gold-Pass Audit Matrix" in matrix
+    assert "Total WTBD items | 59" in matrix
+    assert "Done on merged/published Lotus-owned truth | 58" in matrix
+    assert "Remaining / open | 1" in matrix
+    assert "RFC37-WTBD-004 remains open" in matrix
+    assert "DpmPortfolioUniverseCandidate:v1" in matrix
+    assert "current-stack evidence refresh requested by the user has not yet been rerun" in matrix
+    assert "no wiki source change is required" in matrix
+
+    for classification in [
+        "`fix-now`",
+        "`source-owner`",
+        "`front-office-realization`",
+        "`documentation-truth`",
+        "`unsupported-nonclaim`",
+    ]:
+        assert classification in matrix
+
+    for unsupported_claim in [
+        "global universe ownership",
+        "OMS",
+        "client contact",
+        "PM ranking",
+        "HR",
+        "generated-summary retention",
+        "raw prompt storage",
+    ]:
+        assert unsupported_claim in matrix
+
+    for rfc_number in range(36, 44):
+        assert f"RFC-00{rfc_number}" in matrix
+
+    for wtbd_id in {row[0] for row in _detailed_wtbd_rows()}:
+        assert wtbd_id in matrix
+
+    assert "RFC36-43-GOLD-PASS-AUDIT-MATRIX.md" in architecture_index
+    assert "RFC36-43-GOLD-PASS-AUDIT-MATRIX.md" in rfc_index
 
 
 def test_rfc0036_completed_wtbd_truth_is_integrated_into_rfc_and_wiki() -> None:

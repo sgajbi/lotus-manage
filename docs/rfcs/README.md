@@ -6,6 +6,9 @@ Standards for all current and future RFCs:
 Durable cross-RFC follow-up control:
 - `docs/rfcs/RFC-worktobedone.md`
 
+RFC36-43 gold-pass decision register:
+- `docs/architecture/RFC36-43-GOLD-PASS-AUDIT-MATRIX.md`
+
 Mandatory branch hygiene for RFC work:
 - Before RFC tightening, implementation start, final closure, post-merge audit, or moving to the
   next RFC, run stranded-truth reconciliation with `git fetch origin --prune` and
