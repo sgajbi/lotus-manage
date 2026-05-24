@@ -609,6 +609,8 @@ def compile_mandate_digital_twin_from_core(
         field_gaps.append("SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED")
     if portfolio_cashflow_projection is None:
         field_gaps.append("PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED")
+    if benchmark_assignment is None:
+        field_gaps.append("BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED")
     cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
     constraints = DpmMandateConstraintSet(
         cash_band_min_weight=cash_reserve_weight,

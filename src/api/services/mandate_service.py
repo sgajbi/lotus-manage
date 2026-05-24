@@ -31,7 +31,10 @@ from src.infrastructure.core_sourcing import (
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
 )
-from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
+from src.core.dpm_source_context import (
+    DpmCoreBenchmarkAssignmentResponse,
+    DpmCorePortfolioManagerBookMembershipResponse,
+)
 
 
 class DpmMandateNotFoundError(LookupError):
@@ -267,6 +270,10 @@ def refresh_mandate_from_core(
         unavailable_family=unavailable_benchmark_assignment,
         family_name="BENCHMARK_ASSIGNMENT",
     )
+    benchmark_assignment, unavailable_benchmark_assignment = _ready_benchmark_assignment_source(
+        source=benchmark_assignment,
+        unavailable_family=unavailable_benchmark_assignment,
+    )
     unavailable_source_families = [
         family
         for family in (
@@ -355,6 +362,18 @@ def _ready_optional_source(
         "ACCEPTED",
     }:
         return None, family_name
+    return source, unavailable_family
+
+
+def _ready_benchmark_assignment_source(
+    *,
+    source: DpmCoreBenchmarkAssignmentResponse | None,
+    unavailable_family: str | None,
+) -> tuple[DpmCoreBenchmarkAssignmentResponse | None, str | None]:
+    if source is None:
+        return None, unavailable_family
+    if source.assignment_status.upper() != "ACTIVE":
+        return None, "BENCHMARK_ASSIGNMENT"
     return source, unavailable_family
 
 

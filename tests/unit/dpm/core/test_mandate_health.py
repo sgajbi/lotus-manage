@@ -504,6 +504,7 @@ def test_compile_mandate_twin_preserves_explicit_gap_codes_for_missing_profile_f
     assert twin.review_policy.review_frequency == "QUARTERLY"
     assert "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED" in twin.field_gap_codes
     assert "MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED" in twin.field_gap_codes
+    assert "BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED" in twin.field_gap_codes
 
 
 def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainability_lineage() -> (

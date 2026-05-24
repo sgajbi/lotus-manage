@@ -86,5 +86,8 @@ Current watchlist:
    declares only the bounded `MarketDataCoverageWindow:v1` supportability product and must not
    treat it as raw market-data or valuation-methodology ownership.
 3. `BenchmarkAssignment:v1` is approved for bounded `lotus-manage` benchmark-identity lineage
-   consumption only. Keep benchmark composition, active-risk, performance attribution, benchmark
-   analytics, and model-approval methodology in their owning source services.
+   consumption only. Manage preserves only active assignments; missing, unavailable, incomplete, or
+   non-active assignments remain explicit degraded source posture through
+   `BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED`. Keep benchmark composition, active-risk, performance
+   attribution, benchmark analytics, and model-approval methodology in their owning source
+   services.

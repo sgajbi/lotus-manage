@@ -40,11 +40,13 @@ class FakeCoreResolver:
         incomplete: bool = False,
         optional_unavailable: bool = False,
         optional_incomplete: bool = False,
+        benchmark_inactive: bool = False,
     ) -> None:
         self.unavailable = unavailable
         self.incomplete = incomplete
         self.optional_unavailable = optional_unavailable
         self.optional_incomplete = optional_incomplete
+        self.benchmark_inactive = benchmark_inactive
         self.calls: list[tuple[str, dict[str, Any]]] = []
 
     def resolve_mandate_binding(self, **kwargs: Any) -> DpmCoreMandateBindingResponse:
@@ -110,6 +112,10 @@ class FakeCoreResolver:
         self.calls.append(("benchmark_assignment", kwargs))
         if self.optional_unavailable:
             raise DpmCoreResolverUnavailableError("DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE")
+        if self.benchmark_inactive:
+            return DpmCoreBenchmarkAssignmentResponse.model_validate(
+                _benchmark_assignment_payload(assignment_status="retired")
+            )
         return DpmCoreBenchmarkAssignmentResponse.model_validate(_benchmark_assignment_payload())
 
 
@@ -155,8 +161,8 @@ def _mandate_binding_payload(*, binding_version: int = 3) -> dict[str, Any]:
     }
 
 
-def _benchmark_assignment_payload() -> dict[str, Any]:
-    return {
+def _benchmark_assignment_payload(**overrides: Any) -> dict[str, Any]:
+    payload = {
         "product_name": "BenchmarkAssignment",
         "product_version": "v1",
         "portfolio_id": PORTFOLIO_ID,
@@ -173,6 +179,8 @@ def _benchmark_assignment_payload() -> dict[str, Any]:
         "data_quality_status": "COMPLETE",
         "latest_evidence_timestamp": "2026-05-03T01:00:00Z",
     }
+    payload.update(overrides)
+    return payload
 
 
 def _model_targets_payload() -> dict[str, Any]:
@@ -452,6 +460,28 @@ def test_refresh_from_core_degrades_optional_profile_gaps_without_fabricating_he
         reason["reason_code"] == "DPM_SOURCE_STALE"
         for reason in body["health_snapshot"]["top_reasons"]
     )
+
+
+def test_refresh_from_core_rejects_inactive_benchmark_assignment_without_local_methodology() -> (
+    None
+):
+    repository = InMemoryDpmMandateRepository()
+    resolver = FakeCoreResolver(benchmark_inactive=True)
+
+    with _client(repository, resolver) as client:
+        response = client.post(
+            f"/api/v1/mandates/{MANDATE_ID}/refresh-from-core",
+            json={"portfolio_id": PORTFOLIO_ID, "as_of_date": "2026-05-03"},
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["mandate"]["benchmark_id"] is None
+    assert "BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED" in body["field_gap_codes"]
+    assert body["health_snapshot"]["source_readiness_state"] == "DEGRADED"
+    assert "BenchmarkAssignment" not in {
+        lineage["product_name"] for lineage in body["mandate"]["source_lineage"]
+    }
 
 
 def test_refresh_from_core_preserves_gap_when_optional_profile_is_incomplete() -> None:
