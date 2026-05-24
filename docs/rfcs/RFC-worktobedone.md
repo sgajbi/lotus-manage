@@ -65,10 +65,13 @@ explicit external-owner non-claims rather than left open as Lotus implementation
 remaining Lotus-owned source, Manage, Gateway, Workbench, report, AI, methodology, or product
 surface implementation gaps stay partial or open.
 
-Snapshot basis: the 2026-05-20 clean mainline after `lotus-manage` PR #329
-(`e03be66c58e881024938eb5a63f4fb373e914c00`) incorporated bounded
-`PM_QUALITY_REVIEW_ACTION` portfolio-memory projection; later mainline slices add bounded `PM_QUALITY_SUMMARY_INVOCATION` projection. The latest verified Main Releasability
-Gate is GitHub Actions run `26161414570`. Earlier classification updates
+Snapshot basis: the 2026-05-24 clean mainline after `lotus-manage` PR #433
+(`954e3a74ff639dfb819207d9f7565628f05d4351`) incorporated the RFC36-43 current-state
+truth alignment and preserved the earlier `lotus-manage` PR #329
+(`e03be66c58e881024938eb5a63f4fb373e914c00`) bounded
+`PM_QUALITY_REVIEW_ACTION` portfolio-memory projection plus later bounded
+`PM_QUALITY_SUMMARY_INVOCATION` projection. The latest verified Main Releasability
+Gate is GitHub Actions run `26351443387`. Earlier classification updates
 tracked RFC39-WTBD-008 as partial while external treasury contracts, active fail-closed source
 postures, and Manage consumption were being completed. The 2026-05-22 Lotus-owned completion
 recount now closes that row for Lotus-owned supportability while runtime external treasury
@@ -179,8 +182,8 @@ methodology, performance benchmark analytics, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published Lotus-owned truth | 57 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
-| Partial / in progress | 1 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
+| Done on merged/published Lotus-owned truth | 58 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
+| Partial / in progress | 0 | No WTBD rows remain partial or in progress after the RFC37-WTBD-003 bounded front-office realization closure. |
 | Remaining / open | 1 | Items still deferred, proposed, conditional, unsupported, or awaiting Lotus-owned implementation or ownership. |
 
 Recently closed in this snapshot:
