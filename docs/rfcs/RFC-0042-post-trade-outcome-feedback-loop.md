@@ -2,7 +2,7 @@
 
 | Metadata | Details |
 | --- | --- |
-| **Status** | DONE - MANAGE BACKEND COMPLETE; FIRST-WAVE PRODUCT REALIZATION COMPLETE; SOURCE-OWNER ENRICHMENT REMAINS |
+| **Status** | DONE - MANAGE BACKEND COMPLETE; FIRST-WAVE PRODUCT REALIZATION COMPLETE; LOTUS-OWNED SOURCE-METHODOLOGY SUPPORTABILITY COMPLETE |
 | **Created** | 2026-05-03 |
 | **Gold Tightening Date** | 2026-05-05 |
 | **Owner** | `lotus-manage` for outcome-review authority and expected-versus-realized workflow memory |
@@ -60,8 +60,12 @@ counts, governed spread posture, and explicit no protected-class inference, PM r
 compensation, conduct, approval, client-contact, execution, or OMS claims. Outcome supportability,
 report input, and AI evidence now carry explicit `DPM_OUTCOME_CLIENT_COMMUNICATION_BOUNDARY`
 evidence for the no-client-contact boundary. Execution/OMS integration, client communication,
-Workbench PM quality UI, and richer source-owner methodology remain outside the supported claim
-until their owners implement and prove them.
+generated PM-quality summary text retention, and approval workflow beyond immutable review actions
+remain outside the supported claim until their owners implement and prove them. Source-owner
+methodology enrichment is now closed for Lotus-owned supportability: risk, performance, and core
+publish the implemented methodology/source-product evidence that Manage consumes without local
+recalculation, while tax advice, financial-planning advice, predictive execution, and OMS remain
+unsupported non-claims.
 
 ---
 
