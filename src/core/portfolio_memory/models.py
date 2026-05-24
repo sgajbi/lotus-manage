@@ -725,6 +725,27 @@ class DpmPortfolioMemorySearchPage(BaseModel):
         ),
         examples=[{"lotus-manage": 2, "lotus-core": 1}],
     )
+    source_event_family_posture: list[DpmPortfolioMemorySourceEventFamilyPosture] = Field(
+        default_factory=list,
+        description=(
+            "Supported and deferred source-event family posture for the bounded portfolio-memory "
+            "search surface. This lets Gateway, Workbench, audit, and operations consumers "
+            "discover which Manage/report/AI/archive/PM-quality families are supported and "
+            "which OMS or client-communication families remain deferred without querying "
+            "external source-owner stores."
+        ),
+    )
+    external_execution_boundary: DpmPortfolioMemoryExternalExecutionBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-OMS boundary evidence for portfolio-memory search consumers."
+        )
+    )
+    client_communication_boundary: DpmPortfolioMemoryClientCommunicationBoundaryEvidence = Field(
+        description=(
+            "Structured fail-closed no-client-contact boundary evidence for portfolio-memory "
+            "search consumers."
+        )
+    )
     content_hash: str = Field(
         description=(
             "Canonical hash of the bounded search page excluding generated_at, so audit consumers "

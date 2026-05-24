@@ -1625,6 +1625,29 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         "PortfolioManagerBookMembership": 1,
     }
     assert payload["source_system_counts"]["lotus-manage"] == 1
+    search_family_posture = {
+        posture["family_key"]: posture for posture in payload["source_event_family_posture"]
+    }
+    assert search_family_posture["report_lifecycle"]["support_status"] == "SUPPORTED"
+    assert search_family_posture["ai_workflow_pack"]["support_status"] == "SUPPORTED"
+    assert search_family_posture["generated_document_archive"]["support_status"] == "SUPPORTED"
+    assert search_family_posture["pm_quality_summary_invocation"]["support_status"] == "SUPPORTED"
+    assert search_family_posture["external_oms_execution"]["support_status"] == (
+        "DEFERRED_SOURCE_OWNER"
+    )
+    assert search_family_posture["client_communication"]["support_status"] == (
+        "DEFERRED_SOURCE_OWNER"
+    )
+    assert payload["external_execution_boundary"]["external_execution_events_projected"] is False
+    assert payload["external_execution_boundary"]["external_acknowledgement_events_projected"] is (
+        False
+    )
+    assert payload["client_communication_boundary"]["client_communication_events_projected"] is (
+        False
+    )
+    assert payload["client_communication_boundary"]["client_delivery_events_projected"] is False
+    assert payload["client_communication_boundary"]["client_approval_events_projected"] is False
+    assert "source-event family posture" in payload["support_boundary"]
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
     assert "project OMS" in payload["support_boundary"]
     assert openapi.status_code == 200
@@ -1646,6 +1669,13 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "matching_event_source_system_counts" in search_schema["properties"]
     assert "matching_event_source_type_counts" in search_schema["properties"]
     assert "source_system_counts" in search_schema["properties"]
+    assert "source_event_family_posture" in search_schema["properties"]
+    assert "external_execution_boundary" in search_schema["properties"]
+    assert "client_communication_boundary" in search_schema["properties"]
+    assert (
+        "Supported and deferred source-event family posture"
+        in search_schema["properties"]["source_event_family_posture"]["description"]
+    )
     filter_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchAppliedFilters"]
     assert "portfolio_ids" in filter_schema["properties"]
     assert "event_type" in filter_schema["properties"]

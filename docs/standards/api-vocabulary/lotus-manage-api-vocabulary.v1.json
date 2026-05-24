@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-22T13:01:13.945094+00:00",
+  "generatedAt": "2026-05-24T01:44:38.019584+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -12943,7 +12943,7 @@
       "semanticId": "lotus.source_event_family_posture",
       "canonicalTerm": "source_event_family_posture",
       "preferredName": "source_event_family_posture",
-      "description": "Supported and deferred source-event families in the portfolio-memory contract, including explicit campaign task-transition, OMS, external order acknowledgement, client communication, and PM-quality projection boundaries.",
+      "description": "Supported and deferred source-event family posture for the bounded portfolio-memory search surface. This lets Gateway, Workbench, audit, and operations consumers discover which Manage/report/AI/archive/PM-quality families are supported and which OMS or client-communication families remain deferred without querying external source-owner stores.",
       "example": [
         "source_event_family_posture_item_example"
       ],
@@ -119567,6 +119567,326 @@
             "type": "object",
             "semanticId": "lotus.source_system_counts",
             "attributeRef": "#/attributeCatalog/lotus.source_system_counts"
+          },
+          {
+            "name": "source_event_family_posture",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_event_family_posture",
+            "attributeRef": "#/attributeCatalog/lotus.source_event_family_posture"
+          },
+          {
+            "name": "source_event_family_posture[].family_key",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.family_key",
+            "attributeRef": "#/attributeCatalog/lotus.family_key"
+          },
+          {
+            "name": "source_event_family_posture[].source_system",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "source_event_family_posture[].owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.owner",
+            "attributeRef": "#/attributeCatalog/lotus.owner"
+          },
+          {
+            "name": "source_event_family_posture[].support_status",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.support_status",
+            "attributeRef": "#/attributeCatalog/lotus.support_status"
+          },
+          {
+            "name": "source_event_family_posture[].event_types",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.event_types",
+            "attributeRef": "#/attributeCatalog/lotus.event_types"
+          },
+          {
+            "name": "source_event_family_posture[].route",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.route",
+            "attributeRef": "#/attributeCatalog/lotus.route"
+          },
+          {
+            "name": "source_event_family_posture[].reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "source_event_family_posture[].summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "external_execution_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmPortfolioMemoryExternalExecutionBoundaryEvidence",
+            "semanticId": "lotus.external_execution_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.external_execution_boundary"
+          },
+          {
+            "name": "external_execution_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "external_execution_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "external_execution_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "external_execution_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "external_execution_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "external_execution_boundary.external_execution_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.external_execution_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.external_execution_events_projected"
+          },
+          {
+            "name": "external_execution_boundary.external_acknowledgement_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.external_acknowledgement_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.external_acknowledgement_events_projected"
+          },
+          {
+            "name": "external_execution_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "external_execution_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "external_execution_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "external_execution_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "external_execution_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "external_execution_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "external_execution_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "client_communication_boundary",
+            "location": "body",
+            "required": true,
+            "type": "DpmPortfolioMemoryClientCommunicationBoundaryEvidence",
+            "semanticId": "lotus.client_communication_boundary",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_boundary"
+          },
+          {
+            "name": "client_communication_boundary.boundary_id",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.boundary_id",
+            "attributeRef": "#/attributeCatalog/lotus.boundary_id"
+          },
+          {
+            "name": "client_communication_boundary.supportability_state",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.supportability_state",
+            "attributeRef": "#/attributeCatalog/lotus.supportability_state"
+          },
+          {
+            "name": "client_communication_boundary.source_system",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_system",
+            "attributeRef": "#/attributeCatalog/lotus.source_system"
+          },
+          {
+            "name": "client_communication_boundary.source_product_name",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_name",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_name"
+          },
+          {
+            "name": "client_communication_boundary.source_product_version",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.source_product_version",
+            "attributeRef": "#/attributeCatalog/lotus.source_product_version"
+          },
+          {
+            "name": "client_communication_boundary.client_communication_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_communication_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_communication_events_projected"
+          },
+          {
+            "name": "client_communication_boundary.client_delivery_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_delivery_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_delivery_events_projected"
+          },
+          {
+            "name": "client_communication_boundary.client_approval_events_projected",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.client_approval_events_projected",
+            "attributeRef": "#/attributeCatalog/lotus.client_approval_events_projected"
+          },
+          {
+            "name": "client_communication_boundary.reason_code",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.reason_code"
+          },
+          {
+            "name": "client_communication_boundary.blocked_capabilities",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.blocked_capabilities",
+            "attributeRef": "#/attributeCatalog/lotus.blocked_capabilities"
+          },
+          {
+            "name": "client_communication_boundary.required_owner",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_owner",
+            "attributeRef": "#/attributeCatalog/lotus.required_owner"
+          },
+          {
+            "name": "client_communication_boundary.required_source_product",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.required_source_product",
+            "attributeRef": "#/attributeCatalog/lotus.required_source_product"
+          },
+          {
+            "name": "client_communication_boundary.promotion_requirements",
+            "location": "body",
+            "required": true,
+            "type": "array",
+            "semanticId": "lotus.promotion_requirements",
+            "attributeRef": "#/attributeCatalog/lotus.promotion_requirements"
+          },
+          {
+            "name": "client_communication_boundary.summary",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.summary",
+            "attributeRef": "#/attributeCatalog/lotus.summary"
+          },
+          {
+            "name": "client_communication_boundary.content_hash",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.content_hash",
+            "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
             "name": "content_hash",

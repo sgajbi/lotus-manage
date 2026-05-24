@@ -424,12 +424,17 @@ def search_portfolio_memory(
             sorted(matching_event_source_type_counts.items())
         ),
         "source_system_counts": dict(sorted(source_system_counts.items())),
+        "source_event_family_posture": _source_event_family_posture(),
+        "external_execution_boundary": _external_execution_boundary_evidence(),
+        "client_communication_boundary": _client_communication_boundary_evidence(),
         "generated_at": generated_at.isoformat(),
         "support_boundary": (
             "Manage-local memory search indexes persisted Manage evidence and explicit "
-            "caller-supplied portfolio identifiers only; it does not discover the global "
-            "portfolio universe, query external source-owner event stores, project OMS "
-            "acknowledgement/fill/settlement events, or recalculate source truth."
+            "caller-supplied portfolio identifiers only. It exposes supported and deferred "
+            "source-event family posture for Manage/report/AI/archive/PM-quality lineage, but "
+            "does not discover the global portfolio universe, query external source-owner "
+            "event stores, project OMS acknowledgement/fill/settlement events, project "
+            "client-communication events, or recalculate source truth."
         ),
     }
     page_for_hash = DpmPortfolioMemorySearchPage.model_validate(

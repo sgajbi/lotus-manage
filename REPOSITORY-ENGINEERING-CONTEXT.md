@@ -617,8 +617,11 @@ Current repository posture:
     issue recommendations, or use PM quality score runs for HR, compensation, conduct enforcement,
     or autonomous ranking. Richer attribution/contribution/scenario source
     depth, client restrictions, sustainability profiles, predictive execution methodology, min-cost
-    optimization, and broader cross-RFC portfolio-memory source-event completion remain downstream
-    WTBD work in the owning repositories.
+    optimization remain downstream WTBD work in the owning repositories. Broader cross-RFC
+    portfolio-memory source-event completion is closed for Lotus-owned supportability; global
+    portfolio-universe discovery, bank-owned OMS event projection, client-communication events, and
+    broader cross-app source-event search remain unsupported external-owner or future source-owner
+    promotion dependencies rather than Manage-owned implementation gaps.
 15. RFC-0041 is `DONE` for implementation-backed manage backend authority over explicit
     portfolio-list rebalance waves: durable preview/create,
     source-check, RFC-0039-backed ready-item simulation, item-level selection, RFC-0040 proof-pack
