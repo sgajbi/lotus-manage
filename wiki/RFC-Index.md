@@ -117,13 +117,14 @@ evidence, and supported-feature promotion.
   Workbench PM-quality UI, and Gateway/Workbench fairness-analysis plus PM-quality summary
   invocation
 - RFC-0043
-  partially implemented governed AI PM copilot roadmap using `lotus-ai` without transferring domain
-  decision ownership to AI. Owner-side DPM packs exist for proof-pack PM memo, wave PM memo,
-  outcome-review narrative, operations handoff summary, exception summary, and PM quality summary.
-  Gateway/Workbench
-  operations-handoff and exception-summary invocation is now implemented through governed Gateway
-  routes and Gateway-only Workbench actions; broader copilot workspace depth remains future owner
-  work
+  implemented governed AI PM copilot support using `lotus-ai` without transferring domain decision
+  ownership to AI. Owner-side DPM packs exist for proof-pack PM memo, wave PM memo, outcome-review
+  narrative, operations handoff summary, exception summary, and PM quality summary.
+  Gateway/Workbench operations-handoff, exception-summary, PM-quality summary-invocation, and
+  Gateway-only `mode=copilot` workspace realization are now implemented through governed Gateway
+  routes and Workbench actions. Additional future copilot product surfaces remain owner-specific
+  scope and cannot claim autonomous advice, PM ranking, client contact, orders, OMS execution, raw
+  prompt retention, or generated model-output retention without new owner proof.
 
 ## Removed local RFC sprawl
 

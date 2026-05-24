@@ -1767,5 +1767,5 @@ Gold-pass assessment:
 5. Expected-standard decision: the completed child-roadmap items have reached the expected standard
    on merged and wiki-published owning-repository truth; RFC-0037 remains partial only where
    future source-methodology depth, portfolio-memory completion, broader front-office realization,
-   and broader copilot workspace scope are still unimplemented. External OMS/client-communication
+   and additional future copilot product-surface scope are still unimplemented. External OMS/client-communication
    runtime promotion remains an explicit external-owner dependency and unsupported product claim.
