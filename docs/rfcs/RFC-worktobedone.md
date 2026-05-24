@@ -1111,6 +1111,17 @@ Expected implementation wave:
 Add source depth as demanded by child RFCs and product-realization slices. Do not bundle unrelated
 source families into one large manage change.
 
+2026-05-24 bounded Manage consumer-hardening result:
+
+`lotus-manage` now preserves `BenchmarkAssignment:v1` only when the source-owned assignment is
+active. Missing, unavailable, incomplete, degraded, or non-active benchmark assignment evidence
+leaves `DpmMandateDigitalTwin.benchmark_id` unset, emits
+`BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED`, and degrades mandate-health source readiness instead of
+promoting stale benchmark identity. This advances RFC37-WTBD-004 consumer posture without closing
+the broader source-product-depth row and without claiming benchmark composition, active-risk,
+performance attribution, benchmark analytics, model approval, OMS, order routing, fills, settlement,
+or execution support.
+
 Promotion proof:
 
 1. owner API certification,

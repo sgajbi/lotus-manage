@@ -24,7 +24,7 @@ classified as source-backed, derived, local policy, or a known gap.
 | `time_horizon` | `DiscretionaryMandateBinding:v1.investment_horizon` | Source-backed and normalized to uppercase. | None. |
 | `model_portfolio_id` | `DiscretionaryMandateBinding:v1.model_portfolio_id` | Source-backed. | None. |
 | `model_portfolio_version` | `DpmModelPortfolioTarget:v1.model_portfolio_version` | Source-backed. | None. |
-| `benchmark_id` | `BenchmarkAssignment:v1.benchmark_id` when available | Source-backed from core benchmark assignment; nullable only when the optional source product is unavailable. | Performance benchmark analytics remain future enrichment. |
+| `benchmark_id` | `BenchmarkAssignment:v1.benchmark_id` when the source assignment is active | Source-backed from core benchmark assignment; nullable when the optional source product is unavailable, incomplete, missing, or non-active. | Performance benchmark analytics remain future enrichment. |
 | `constraints.cash_band_min_weight` | `DiscretionaryMandateBinding:v1.rebalance_bands.cash_reserve_weight` | Source-backed. | None for MVP. |
 | `constraints.cash_band_max_weight` | Derived from cash reserve with conservative default | Local policy fallback set to at least `0.10`. | Needs explicit mandate cash-band source. |
 | `constraints.turnover_budget` | Not yet available | Local policy fallback `0.15`. | Policy-pack or mandate restriction source should own this. |

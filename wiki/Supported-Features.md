@@ -443,6 +443,10 @@ RFC36-WTBD-005 is now done for the current Lotus-owned source-depth wave because
 PR #378 approves bounded `lotus-manage` consumption of `BenchmarkAssignment:v1`, `lotus-platform`
 PR #342 mirrors the approval into catalog truth, and Manage declares the dependency for
 mandate-health benchmark identity lineage without claiming benchmark analytics or execution.
+Manage now preserves only active `BenchmarkAssignment:v1` source assignments; unavailable,
+incomplete, degraded, missing, or non-active assignments leave benchmark identity unset, emit
+`BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED`, and degrade mandate-health source readiness without local
+benchmark methodology or stale benchmark promotion.
 Broader strategic source-product depth remains RFC37-WTBD-004. `lotus-performance` PR #168 and
 PR #170 now support the closed RFC42-WTBD-006 Lotus-owned source-methodology supportability claim:
 they add source-owned MWR source-preconverted FX evidence and single-currency no-conversion posture
