@@ -240,7 +240,13 @@ membership is implemented for `BULK_REVIEW_CAMPAIGN` through Manage-owned
 portfolio type, DPM portfolio-type filtering, deterministic membership refs, optional
 approval/expiry/actor-entitlement governance evidence, immutable
 `BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, and fail-closed
-validation. Tactical house-view wave discovery is implemented for `TACTICAL_HOUSE_VIEW` through
+validation. `BULK_REVIEW_CAMPAIGN` preview/create can also resolve its candidate set from
+lotus-core `DpmPortfolioUniverseCandidate:v1` by setting
+`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`; Manage preserves Core candidate lineage,
+rejects caller-supplied portfolios for that mode, and fails closed on unavailable, incomplete,
+degraded, empty, or truncated Core pages without claiming relationship householding, global
+portfolio-universe ownership, PM ranking, external workflow orchestration, OMS execution, or client
+communication workflow. Tactical house-view wave discovery is implemented for `TACTICAL_HOUSE_VIEW` through
 lotus-advise `TacticalHouseViewAffectedCohort:v1` over caller-supplied source-backed candidate
 portfolios; Manage preserves Advise cohort refs and fails closed without recomputing house-view,
 holdings, exposure, alignment, or mandate facts. Workbench now renders the first-wave active

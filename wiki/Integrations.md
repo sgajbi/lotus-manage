@@ -73,6 +73,7 @@ Current source-product integration status:
 | `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof passed. | Supplies price and FX coverage. |
 | `PortfolioCashflowProjection:v1` | Query-plane client method and liquidity-context transformer implemented; live proof is enforced through `stateful_source_backed_construction`. | Supplies operational projected cash-pressure evidence for liquidity-aware construction without turning manage into a forecasting source. |
 | `DpmSourceReadiness:v1` | Core source-family readiness product implemented; live proof passed. | Operator/control-plane readiness summary for source families. |
+| `DpmPortfolioUniverseCandidate:v1` | Client method and `BULK_REVIEW_CAMPAIGN` consumer path implemented; Manage requires source-ready, non-empty, non-truncated candidate pages. | Supplies bounded mandate-backed campaign candidates without making Manage the global portfolio-universe, relationship-householding, PM-ranking, workflow, client-contact, order, or OMS authority. |
 
 `TransactionCostCurve:v1` uses a configurable observed-cost lookback through
 `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS`, defaulting to 400 days. The longer default reflects
@@ -178,7 +179,13 @@ through the bounded advise-authority client when `DPM_ADVISE_BASE_URL` is config
 requires bank-authored tactical-view refs plus source-backed candidate portfolios, preserves Advise
 cohort/house-view/member lineage, and fails closed instead of calculating advisory, house-view,
 holdings, exposure, alignment, or mandate facts locally. Implicit/global campaign discovery remains
-unpromoted until owning implementations publish governed discovery behavior.
+unpromoted until owning implementations publish governed discovery behavior. Bulk-review campaign
+waves may now request bounded Core-owned `DpmPortfolioUniverseCandidate:v1` pages when
+`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`; Manage preserves Core candidate lineage
+and rejects unavailable, incomplete, degraded, empty, or truncated pages instead of silently
+launching a partial campaign. This does not promote relationship householding, global universe
+ownership, PM ranking, external workflow orchestration, client communication workflow, order
+routing, or OMS execution.
 
 ```mermaid
 flowchart LR

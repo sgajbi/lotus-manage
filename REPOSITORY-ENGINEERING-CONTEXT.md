@@ -61,10 +61,15 @@ Current repository posture:
     source-consumer surface for mandate health, construction, proof-pack, wave, outcome-review,
     PM-quality, and portfolio-memory paths, including projected cashflow, liquidity/income
     reference evidence, external treasury/OMS fail-closed posture,
-    CIO model-change cohorts, PM-book membership, risk-event/tactical cohorts, transaction-cost
+    CIO model-change cohorts, PM-book membership, Core DPM portfolio-universe candidate pages,
+    risk-event/tactical cohorts, transaction-cost
     curves, regime-scenario evaluation, and caller-supplied source-owned mandate risk/performance
     health contexts. It also declares bounded `BenchmarkAssignment:v1` consumption for mandate
-    benchmark identity lineage after upstream Core producer approval. This is declaration truth only; it does not make Manage
+    benchmark identity lineage after upstream Core producer approval. Core
+    `DpmPortfolioUniverseCandidate:v1` is consumed only as bounded source-owned candidate input for
+    `BULK_REVIEW_CAMPAIGN`; Manage fails closed on unavailable, incomplete, degraded, empty, or
+    truncated pages and does not infer relationship householding, PM ranking, global
+    portfolio-universe ownership, external workflow, client-contact, order, or OMS truth. This is declaration truth only; it does not make Manage
     the source owner for market data, valuation, risk, performance, tax, financial planning,
     benchmark composition, benchmark analytics, scenario methodology, treasury, execution, OMS,
     fill, or settlement facts.

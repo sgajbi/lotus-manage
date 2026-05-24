@@ -179,9 +179,17 @@ These are manage-owned backend authority endpoints. PM-book wave discovery is su
 affected-mandate discovery is supported for `CIO_MODEL_CHANGE` through lotus-core
 `CioModelChangeAffectedCohort:v1`. Bounded risk-event wave discovery is supported for
 `RISK_EVENT` through lotus-risk `RiskEventAffectedCohort:v1` when callers supply candidate
-portfolios and source-supplied exposure weights. Report materialization, rendering, archive
-lifecycle, AI memo generation, tactical/campaign cohort discovery, and external OMS execution
-remain downstream or source-owner responsibilities unless their owning repos have implemented and
+portfolios and source-supplied exposure weights. Tactical house-view wave discovery is supported
+for `TACTICAL_HOUSE_VIEW` through lotus-advise `TacticalHouseViewAffectedCohort:v1` when callers
+supply source-backed candidate portfolios. `BULK_REVIEW_CAMPAIGN` supports Manage-owned
+`BulkReviewCampaignMembership:v1` over inline or persisted source-backed candidates and can now
+resolve bounded candidate pages from lotus-core `DpmPortfolioUniverseCandidate:v1` with
+`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`; that mode rejects caller-supplied
+portfolios and fails closed on unavailable, incomplete, degraded, empty, or truncated Core pages.
+Report materialization, rendering, archive lifecycle, AI memo generation, relationship
+householding, global portfolio-universe ownership, PM ranking, external workflow orchestration,
+client communication workflow, and external OMS execution remain downstream, source-owner,
+external-owner, or unsupported responsibilities unless their owning repos have implemented and
 proven support. The manage report-input seam is explicitly bounded to internal operations handoff
 evidence and will not emit report input for contaminated external-execution claims.
 

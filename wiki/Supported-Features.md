@@ -78,6 +78,19 @@ PM-quality summary-invocation support. Global portfolio-universe campaign discov
 Lotus source-owner depth; external workflow orchestration and OMS execution are external-owner
 promotion dependencies rather than open Lotus-side blockers.
 
+RFC37-WTBD-004 bounded source-consumer addendum, 2026-05-24:
+
+Manage now consumes lotus-core `DpmPortfolioUniverseCandidate:v1` as an optional candidate source
+for `BULK_REVIEW_CAMPAIGN` preview/create when
+`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`. The implementation preserves Core
+candidate lineage through wave source refs, rejects caller-supplied portfolios in Core-discovery
+mode, and fails closed on unavailable, incomplete, degraded, empty, or truncated Core pages before a
+partial campaign wave can be created. This materially advances source-product depth for campaign
+candidate discovery but does not close RFC37-WTBD-004: relationship householding, global
+portfolio-universe ownership, PM ranking, external workflow orchestration, client communication
+workflow, order routing, OMS acknowledgement, fills, settlement, and reconciliation remain
+unsupported or external-owner scope.
+
 Construction risk/performance enrichment addendum: Manage now preserves caller/source-supplied
 `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction alternative
 diagnostics and enrichment summaries for every generated alternative, including non-`RISK_AWARE`
