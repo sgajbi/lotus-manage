@@ -571,11 +571,11 @@ def test_rfc0040_slice_evidence_stays_linked_and_support_claim_is_bounded() -> N
 
     assert missing_evidence == []
     assert "DONE - MANAGE BACKEND COMPLETE" in rfc
-    assert "DONE (MANAGE BACKEND COMPLETE" in index
+    assert "DONE (MANAGE BACKEND, FIRST-WAVE PRODUCT PATH" in index
     assert "MANAGE BACKEND COMPLETE" in rfc
-    assert "MANAGE BACKEND COMPLETE" in index
+    assert "MANAGE BACKEND" in index
     assert "FIRST-WAVE PRODUCT PATH LIVE-PROVEN" in rfc
-    assert "POST-MERGE GOLD-PASS AUDIT AND MANDATE-CONTEXT HARDENING COMPLETE" in index
+    assert "WTBD GOLD-PASS REINTEGRATION COMPLETE" in index
     assert "PR/CI/WIKI PUBLICATION PENDING" not in rfc
     assert "requires normal wiki publication after this audit PR merges" not in rfc
     assert "output/rfc0040-proof/20260503-135112" in rfc
@@ -754,7 +754,11 @@ def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
 
     assert missing_sections == []
     assert "FIRST-WAVE PRODUCT PATH LIVE-PROVEN" in rfc
-    assert "| RFC-0041 | Rebalance Wave Orchestration and CIO Model Change Impact | DONE |" in index
+    assert (
+        "| RFC-0041 | Rebalance Wave Orchestration and CIO Model Change Impact | DONE "
+        "(MANAGE WAVE ORCHESTRATION, CAMPAIGN CONTROL SURFACES, DOWNSTREAM REALIZATION, "
+        "AND NO-OMS BOUNDARY COMPLETE) |" in index
+    )
     assert "feat/rfc0041-gold-standard-tightening" in rfc
     assert "feat/rfc0041-implementation" in rfc
     assert "RFC-0041-source-map-and-gap-analysis.md" in rfc
@@ -1217,7 +1221,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "full Gateway/Workbench product experience" in closure_slice
 
     assert (
-        "| RFC-0042 | Post-Trade Outcome Feedback Loop | DONE (MANAGE BACKEND COMPLETE; FIRST-WAVE PRODUCT REALIZATION COMPLETE; SOURCE-OWNER ENRICHMENT REMAINS)"
+        "| RFC-0042 | Post-Trade Outcome Feedback Loop | DONE (MANAGE BACKEND, FIRST-WAVE PRODUCT REALIZATION, SOURCE-METHODOLOGY SUPPORTABILITY, PM QUALITY, AND NO-OMS BOUNDARY COMPLETE)"
         in index
     )
     assert "API evidence: `docs/rfcs/RFC-0042-api-openapi-slice7.md`" in index
