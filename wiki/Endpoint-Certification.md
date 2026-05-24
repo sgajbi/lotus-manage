@@ -2050,8 +2050,9 @@ Functional behavior:
   limit/offset, `has_more`, `next_offset`, scanned portfolio count, pre-pagination portfolio
   aggregate supportability-state, matched-event-type, matched-event supportability-state,
   matched-event source-system, portfolio-summary source-system facet counts, normalized applied
-  filters, the applied source scan limit, deterministic page content hash that excludes
-  `generated_at`, and an explicit support boundary,
+  filters, source-event family posture, structured external execution boundary evidence,
+  structured client communication boundary evidence, the applied source scan limit, deterministic
+  page content hash that excludes `generated_at`, and an explicit support boundary,
 - counts represented portfolio-memory source systems from event owners, source refs, and artifact
   refs, so report, AI, and archive handoff evidence remains visible to audit search without
   projecting raw downstream payloads,
