@@ -72,12 +72,14 @@ Gate is GitHub Actions run `26161414570`. Earlier classification updates
 tracked RFC39-WTBD-008 as partial while external treasury contracts, active fail-closed source
 postures, and Manage consumption were being completed. The 2026-05-22 Lotus-owned completion
 recount now closes that row for Lotus-owned supportability while runtime external treasury
-ingestion remains an external bank-owner promotion dependency. The classification also normalizes
-RFC37-WTBD-003 as partial and RFC37-WTBD-004 as open: bounded first-wave product paths,
-cross-app product surfaces, and portfolio-memory lineage exist, while broader front-office
-operating closure and strategic source-product depth remain future Lotus-owned work. The current
-classification is 59 total WTBD items: 57 done on merged/published Lotus-owned truth, 1 partial or
-in progress, and 1 remaining/open. The 2026-05-24 Lotus-owned completion recount keeps the
+ingestion remains an external bank-owner promotion dependency. The classification now closes
+RFC37-WTBD-003 for Lotus-owned bounded front-office realization because Gateway/Workbench product
+paths and governed Workbench canonical proof cover command center, construction, proof-pack, wave,
+outcome, portfolio-memory, campaign, PM-quality, and PM copilot workspace surfaces without OMS,
+client-contact, or unsupported source-product overclaims. RFC37-WTBD-004 remains open for broader
+strategic source-product depth. The current classification is 59 total WTBD items: 58 done on
+merged/published Lotus-owned truth, 0 partial or in progress, and 1 remaining/open. The 2026-05-24
+Lotus-owned completion recount keeps the
 2026-05-22 closures for RFC38-WTBD-007, RFC39-WTBD-008, and RFC42-WTBD-007 and moves
 RFC41-WTBD-003 and RFC37-WTBD-007 out of partial because Lotus has implemented bounded risk-event,
 tactical house-view, campaign-membership, campaign-discovery, controlled assignment-task,
@@ -292,9 +294,8 @@ benchmark-relative performance, or FX methodology locally.
 
 Partial / in-progress items:
 
-| ID | Current partial scope | Remaining gap |
-| --- | --- | --- |
-| RFC37-WTBD-003 | Front-office DPM product realization is complete feature-by-feature for several bounded paths, including command center, alternatives, proof packs, waves, reports, outcome review, governed copilot workspace, PM quality, and portfolio-memory surfaces. | Full end-to-end front-office operating closure still needs canonical proof that the bounded surfaces work coherently together without OMS, client-contact, or unsupported source-product overclaims. |
+No WTBD rows remain partial or in progress after RFC37-WTBD-003 closure. The remaining open row is
+RFC37-WTBD-004, which tracks broader strategic source-product depth.
 Next bank-buyable product-readiness priorities:
 
 2026-05-16 source-owner FX attribution update: `lotus-performance` PR #167 (`16261c9`, wiki
@@ -314,7 +315,7 @@ ready values for local promotion or recalculation.
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC37-WTBD-003 - Full front-office DPM product realization closure | Consolidates the now-implemented feature-by-feature surfaces into a complete front-office operating path only where Gateway/Workbench/API evidence proves the behavior. | Canonical front-office proof must show coherent workflows across bounded command center, construction, proof-pack, wave, outcome, portfolio-memory, campaign, PM-quality, and copilot surfaces without adding OMS or client-contact claims. |
+| 1 | RFC37-WTBD-004 - Source-product depth for crown-jewel DPM | Adds richer source-owner products only where `lotus-core`, `lotus-risk`, `lotus-performance`, or future source owners implement and certify the facts. | Source-owner contracts, producer/consumer mesh certification, Manage degraded-state consumption, Gateway/Workbench posture, and live proof with missing/stale/partial source states. |
 
 2026-05-22 downstream realization backfill: Gateway PR #238 and Workbench PR #340 add bounded
 campaign workflow/audit realization over existing Manage campaign workflow truth. This strengthens
@@ -845,7 +846,7 @@ Closure evidence:
 | Supported feature truth | `wiki/Supported-Features.md` |
 | Repository current-state truth | `REPOSITORY-ENGINEERING-CONTEXT.md` |
 | Implementation-backed child RFCs | RFC-0038, RFC-0039, RFC-0040, RFC-0041, RFC-0042 bounded first-wave product path, RFC-0043 governed workflow-pack and Workbench copilot workspace support |
-| Remaining partial child RFCs | Front-office realization depth tracked by RFC37-WTBD-003 and broader strategic source-product depth tracked by RFC37-WTBD-004 |
+| Remaining partial child RFCs | No partial RFC-0037 child WTBD rows remain; broader strategic source-product depth is tracked by the open RFC37-WTBD-004 row. |
 
 ### Remaining Work Summary
 
@@ -857,7 +858,7 @@ not to mark RFC-0037 complete from roadmap text alone.
 | --- | --- | --- | --- | --- |
 | RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` | Completed for the Lotus-owned first-wave outcome-review product path | RFC-0042 now delivers Manage authority, Gateway/Workbench product realization, report/render/archive materialization, governed AI narrative request flow, PM operating quality linkage, outcome-review source-lineage search/facets, and explicit external OMS/client-communication non-claim evidence. Richer source methodology depth remains in RFC42-WTBD-006; external OMS and client-communication runtime promotion remain unsupported external-owner dependencies. |
 | RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Completed for Lotus-owned governed copilot support | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary packs with guardrails and provenance, plus conservative workflow-pack default-version resolution. Gateway exposes governed invocation routes, and Workbench PR #354 adds the Gateway-only `mode=copilot` workspace across supported pack families. Additional future product surfaces are new owner scope, not a blocker for this WTBD. |
-| RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0043 | Multiple canonical product surfaces and AI workflow-pack workspace paths are implementation-backed, but full end-to-end front-office operating closure still needs coherent canonical proof across the bounded surfaces. OMS, client-contact, and unsupported source-product depth remain non-claims rather than blockers for Lotus-owned implementation. |
+| RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Completed for Lotus-owned bounded front-office DPM realization | Gateway and Workbench expose the bounded command center, construction, proof-pack, wave, outcome, portfolio-memory, campaign, PM-quality, and PM copilot workspace paths, and governed Workbench canonical proof classifies those panels through the platform panel registry without OMS, client-contact, or unsupported source-product overclaims. Strategic source-product depth remains open under RFC37-WTBD-004. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
@@ -1057,28 +1058,31 @@ construction lab, proof-pack review, rebalance waves, outcome feedback, and AI a
 
 Why it cannot be done now:
 
-Manage child RFCs have delivered backend foundations, but full product realization requires
-Gateway composition, Workbench UX, canonical seed data, browser proof, and audience-ready
-documentation across apps.
+This WTBD is now closed for Lotus-owned bounded realization. Gateway and Workbench product paths are
+implementation-backed, and governed Workbench canonical proof classifies the DPM command center,
+construction alternatives, proof-pack, wave, outcome-review, portfolio-memory, campaign,
+PM-quality, and PM copilot workspace surfaces without order-routing, OMS, client-contact, or
+unsupported source-product claims.
 
 Dependencies before implementation:
 
-1. Gateway compositions for RFC-0038 through RFC-0043 features,
-2. Workbench panels and workflows through BFF only,
-3. canonical front-office seed and validation automation,
-4. backend supportability and degraded states surfaced truthfully,
-5. product docs and demos backed by live evidence.
+1. Gateway compositions for RFC-0038 through RFC-0043 features are implemented,
+2. Workbench panels and workflows are routed through BFF/Gateway only,
+3. canonical front-office seed and validation automation are governed by platform contracts,
+4. backend supportability and degraded states surface truthfully,
+5. product docs and demos are backed by governed canonical evidence.
 
 Expected implementation wave:
 
-Execute feature by feature after the owning backend contracts are stable, then close with a
-cross-app product-realization proof.
+Completed through feature-by-feature backend, Gateway, Workbench, and platform-governed proof
+slices. Future richer product depth belongs to specific source-owner or downstream-owner rows, not
+to this bounded front-office realization closure.
 
 Promotion proof:
 
-1. canonical front-office evidence pack,
-2. API/BFF/browser/accessibility/visual checks,
-3. demo screenshots only after validation passes,
+1. governed Workbench panel registry entries for bounded DPM realization panels,
+2. canonical Workbench validation classifications and screenshots for implemented DPM surfaces,
+3. API/BFF/browser checks that preserve Gateway/Manage/lotus-ai ownership boundaries,
 4. wiki material for developers, business users, operations, sales/pre-sales, and client demos.
 
 #### RFC37-WTBD-004 - Source-Product Depth For Crown-Jewel DPM

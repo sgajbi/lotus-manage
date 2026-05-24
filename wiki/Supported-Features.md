@@ -425,8 +425,8 @@ Audience use:
 ## WTBD Product-Readiness Roadmap
 
 `docs/rfcs/RFC-worktobedone.md` is the governed WTBD ledger. As of the 2026-05-24 Lotus-owned
-completion recount, the ledger tracks 59 WTBD items: 57 done on merged/published Lotus-owned
-truth, 1 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
+completion recount, the ledger tracks 59 WTBD items: 58 done on merged/published Lotus-owned
+truth, 0 partial or in progress, and 1 remaining or open. Counts now distinguish Lotus-owned
 supportability completion from external bank-system promotion dependencies: RFC38-WTBD-007 is done
 for bounded `MandateRiskHealthContext:v1` / `MandatePerformanceHealthContext:v1` source-context
 preservation, RFC39-WTBD-008 plus RFC42-WTBD-007 are done for Lotus-owned fail-closed
@@ -482,10 +482,15 @@ memo, outcome-review narrative, operations handoff summary, exception summary, a
 summary invocation families. The support claim excludes autonomous decisions, PM ranking, client
 contact, order routing, fills, settlement, OMS execution, raw prompt storage, and generated
 model-output retention.
+RFC37-WTBD-003 is now done for Lotus-owned bounded front-office realization because Gateway and
+Workbench expose the command center, construction, proof-pack, wave, outcome, portfolio-memory,
+campaign, PM-quality, and PM copilot workspace paths, and governed Workbench canonical proof
+classifies the corresponding panel registry surfaces without creating OMS, order-routing,
+client-contact, PM-ranking, generated-summary-retention, or unsupported source-product claims.
 
 | Priority | WTBD | Business value | Required proof before support claim |
 | ---: | --- | --- | --- |
-| 1 | RFC37-WTBD-003 - Full front-office DPM product realization closure | Consolidates the implemented feature-by-feature surfaces into a complete front-office operating path only where Gateway/Workbench/API evidence proves the behavior. | Canonical front-office proof must show coherent workflows across bounded command center, construction, proof-pack, wave, outcome, portfolio-memory, campaign, PM-quality, and copilot surfaces without adding OMS or client-contact claims. |
+| 1 | RFC37-WTBD-004 - Source-product depth for crown-jewel DPM | Adds richer source-owner products only where `lotus-core`, `lotus-risk`, `lotus-performance`, or future source owners implement and certify the facts. | Source-owner contracts, producer/consumer mesh certification, Manage degraded-state consumption, Gateway/Workbench posture, and live proof with missing/stale/partial source states. |
 
 
 Completed RFC42-WTBD-006 source-owner methodology evidence summary:
