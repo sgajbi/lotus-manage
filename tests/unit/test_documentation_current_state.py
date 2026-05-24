@@ -10,7 +10,6 @@ WTBD_PARTIAL_IDS = {
     "RFC37-WTBD-002",
     "RFC37-WTBD-003",
     "RFC37-WTBD-007",
-    "RFC42-WTBD-006",
 }
 
 WTBD_OPEN_IDS = {
@@ -320,8 +319,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     done_ids = all_ids - WTBD_PARTIAL_IDS - WTBD_OPEN_IDS
 
     assert len(rows) == 59
-    assert len(done_ids) == 54
-    assert len(WTBD_PARTIAL_IDS) == 4
+    assert len(done_ids) == 55
+    assert len(WTBD_PARTIAL_IDS) == 3
     assert len(WTBD_OPEN_IDS) == 1
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
@@ -331,13 +330,17 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 54 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 4 partial or in progress" in supported_features
+    assert "59 WTBD items: 55 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 3 partial or in progress" in supported_features
     assert "1 remaining or open" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
-    assert "`lotus-performance` PR #168 or PR #170" in supported_features
-    assert "cross-currency stateful per-input FX evidence" in supported_features
-    assert "advance an existing RFC42-WTBD-006 partial" in supported_features
+    assert "`lotus-performance` PR #168 and" in supported_features
+    assert "PR #170" in supported_features
+    assert "source-owned MWR source-preconverted FX evidence" in supported_features
+    assert (
+        "support the closed RFC42-WTBD-006 Lotus-owned source-methodology supportability claim"
+        in supported_features
+    )
     assert (
         "Gateway PR #238 and Workbench PR #340 add bounded campaign workflow/audit realization"
         in (supported_features)
@@ -1047,7 +1050,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-gateway` PR #213 (`62ce4c4`)" in rfc
     assert "/api/v1/dpm/command-center/pm-operating-quality/*" in rfc
     assert "published Gateway wiki source at `a4c9db9`" in rfc
-    assert "Workbench PM quality UI" in rfc
+    assert "generated PM-quality summary text retention" in rfc
     assert "External execution integration | Not supported" in rfc
     assert "RFC42-WTBD-001" in rfc
     assert "RFC42-WTBD-008" in rfc
@@ -1263,7 +1266,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "first-wave product realization" in roadmap
     assert "output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/" in roadmap
     assert "lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/" in roadmap
-    assert "Remaining roadmap work is source-owner methodology enrichment" in roadmap
+    assert (
+        "Remaining roadmap work is copilot workspace, portfolio-memory, and front-office realization depth"
+        in roadmap
+    )
     assert "2026-05-16 source-owner FX attribution update" in roadmap
     assert "`lotus-performance` PR #167 (`16261c9`, wiki\n`41bdaa3`)" in roadmap
     assert "2026-05-16 external treasury source-boundary update" in roadmap
@@ -1464,6 +1470,7 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     ) is False
     assert (
         "| RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005, the Lotus-owned "
+        "RFC42-WTBD-006 source-owner methodology supportability result, the Lotus-owned "
         "RFC42-WTBD-007 external execution/OMS fail-closed boundary result, and the bounded "
         "RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded immutable support-summary invocation history, bounded portfolio-memory score-run, review-action, and summary-invocation lineage projection, Gateway policy/score-run/fairness-analysis/support-summary/review-action BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary plus review-action ledger/detail and preview-before-create command UX are incorporated into "
         "`docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`." in work_to_be_done
@@ -1519,8 +1526,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`e03be66c58e881024938eb5a63f4fb373e914c00`" in work_to_be_done
     assert "`lotus-performance` PR #168 (`781415f`, wiki `6fb7209`)" in (work_to_be_done)
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published Lotus-owned truth | 54 |" in work_to_be_done
-    assert "| Partial / in progress | 4 |" in work_to_be_done
+    assert "| Done on merged/published Lotus-owned truth | 55 |" in work_to_be_done
+    assert "| Partial / in progress | 3 |" in work_to_be_done
     assert "| Remaining / open | 1 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
@@ -1746,7 +1753,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
         work_to_be_done
     )
     assert "tests/unit/test_methodology_docs.py" in work_to_be_done
-    assert "this advances RFC42-WTBD-006 but does not close it" in work_to_be_done
+    assert (
+        "RFC42-WTBD-006 is complete for Lotus-owned source-methodology supportability"
+        in work_to_be_done
+    )
     assert "Latest WTBD-006 risk rolling-information-ratio methodology proof" in work_to_be_done
     assert "`lotus-risk` PR #114" in work_to_be_done
     assert "`ffa881e3266c09a4d48044b50df5bb2db43bd489`" in work_to_be_done
@@ -2197,8 +2207,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 54 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 4 partial or in progress" in supported_features
+    assert "59 WTBD items: 55 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 3 partial or in progress" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
