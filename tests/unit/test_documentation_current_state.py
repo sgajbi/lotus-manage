@@ -219,9 +219,19 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "RFC37-WTBD-004 remains open" in matrix
     assert "DpmPortfolioUniverseCandidate:v1" in matrix
     assert "Canonical Evidence Refresh - 2026-05-24" in matrix
+    assert "Candidate-Source Realization Refresh - 2026-05-24" in matrix
     assert "Gateway PR #245" in matrix
+    assert "Gateway PR #246" in matrix
+    assert "Workbench PR #361" in matrix
+    assert "Main Releasability Gate `26361663264`" in matrix
     assert "canonical-front-office-qa-20260524-185940.md" in matrix
-    assert "no wiki source change is required" in matrix
+    assert "`wiki/Supported-Features.md` is updated" in matrix
+    assert "Wiki publication and drift-zero verification are required after merge" in matrix
+    assert "no current Gateway/Workbench realization gap remains" in matrix
+    assert (
+        "Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, "
+        "Gateway/Workbench realization of Core candidate-source discovery" not in matrix
+    )
 
     for classification in [
         "`fix-now`",
@@ -433,6 +443,9 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         "Gateway PR #238 and Workbench PR #340 add bounded campaign workflow/audit realization"
         in (supported_features)
     )
+    assert "Gateway PR #246 preserves the source mode" in supported_features
+    assert "Workbench PR #361 renders the" in supported_features
+    assert "closes the bounded Gateway/Workbench realization gap" in supported_features
     assert "external-owner" in supported_features
     assert "promotion dependencies rather than open Lotus-side blockers" in supported_features
     assert "RFC38-WTBD-007 is done for Lotus-owned bounded support" in supported_features
