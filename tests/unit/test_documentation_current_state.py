@@ -218,7 +218,9 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "Remaining / open | 1" in matrix
     assert "RFC37-WTBD-004 remains open" in matrix
     assert "DpmPortfolioUniverseCandidate:v1" in matrix
-    assert "current-stack evidence refresh requested by the user has not yet been rerun" in matrix
+    assert "Canonical Evidence Refresh - 2026-05-24" in matrix
+    assert "Gateway PR #245" in matrix
+    assert "canonical-front-office-qa-20260524-185940.md" in matrix
     assert "no wiki source change is required" in matrix
 
     for classification in [

@@ -3,8 +3,8 @@
 Date: 2026-05-24
 
 Scope: current `lotus-manage` mainline after merge
-`74bb4abc1cbfc90bee6fa1941a6b2ae511d4e858`, with Main Releasability Gate
-`26358177212` green.
+`0a6465ccdb6be82546168d49721a6167e874246c`, with Main Releasability Gate
+`26358735306` green.
 
 This is the decision register for the RFC36-43 gold-pass completion program. It does not replace
 the detailed WTBD ledger in `docs/rfcs/RFC-worktobedone.md`; it summarizes the current audit
@@ -29,6 +29,45 @@ classification, required proof posture, and next implementation slices.
 | `documentation-truth` | The implementation is already bounded, but README/wiki/RFC/demo material needs sharper implementation-backed language. |
 | `unsupported-nonclaim` | The item is intentionally outside current Lotus support and must remain a non-claim until a source owner, external owner, or product owner implements and proves it. |
 
+## Canonical Evidence Refresh - 2026-05-24
+
+The Slice 2 canonical evidence refresh has now been run against the governed front-office stack.
+
+Evidence captured:
+
+1. `lotus-gateway` PR #245, merge SHA `c1d923f815cabe270ad5e0c5f432414c8169efca`, fixed a
+   source-consumer cache defect where Gateway could negative-cache a missing Core benchmark
+   assignment during the canonical seed recreate window and keep returning no-benchmark summaries
+   after Core had published `BMK_PB_GLOBAL_BALANCED_60_40`.
+2. Gateway Feature Lane and PR Merge Gate passed for PR #245; Gateway Main Releasability Gate
+   `26359582303` passed on `main`.
+3. Targeted Gateway refresh rebuilt only `lotus-gateway`, then the no-explicit-benchmark live
+   Gateway summary resolved `BMK_PB_GLOBAL_BALANCED_60_40`, `report_end_date=2026-04-10`, and no
+   warnings or partial failures.
+4. `npm run live:stack:up` passed after the Gateway refresh. The canonical seed verified
+   `PB_SG_GLOBAL_BAL_001` with 11 valued positions, 31 transactions, 2 cash accounts, complete
+   positions and cash data quality, fresh Core analytics reference, fresh Gateway performance
+   report date, and fresh return-path date.
+5. `npm run live:validate` passed.
+6. Platform QA wrapper passed:
+   `powershell -ExecutionPolicy Bypass -File automation\Invoke-Canonical-FrontOffice-QA.ps1 -ScreenshotDirectory C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\rfc36-43-gold-pass-20260524`.
+7. Machine-readable and screenshot evidence:
+   `C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\canonical-front-office-qa-20260524-185940.md`,
+   `C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\rfc36-43-gold-pass-20260524\live-validation-summary.json`,
+   and `C:\Users\Sandeep\projects\lotus-platform\output\front-office-qa\rfc36-43-gold-pass-20260524\SHOT-INDEX.md`.
+
+Panel classifications in the platform QA summary mark the following implemented surfaces `ready`:
+performance summary, contribution, attribution, evidence, risk snapshot/concentration/drawdown/
+rolling/historical attribution, portfolio summary/detailed, advisor brief, proposal narrative
+posture, DPM outcome review, proof pack, command center, portfolio memory, wave command center,
+construction alternatives, PM operating quality, and copilot workspace.
+
+Boundary preserved: this evidence proves the current bounded Lotus-owned front-office realization.
+It does not close RFC37-WTBD-004 broader source-product depth and does not claim global portfolio
+universe ownership, OMS execution, order routing, fills, settlement, reconciliation, client
+communication workflow, PM ranking, HR/conduct decisions, generated-summary retention, raw prompt
+storage, or unsupported source-product methodology.
+
 ## RFC-Level Audit Matrix
 
 | RFC | Current completeness | Correctness and tests | Live proof and docs | Gold-pass decision | Follow-up classification |
@@ -47,28 +86,28 @@ classification, required proof posture, and next implementation slices.
 | WTBD slice | Gold-pass status | Audit classification | Next action |
 | --- | --- | --- | --- |
 | RFC36-WTBD-001 | Done: Gateway canonical `/api/v1` Manage integration is merged. | `documentation-truth` | Keep API vocabulary mirrors current. |
-| RFC36-WTBD-002 | Done: Workbench surfaces Manage action-register supportability through Gateway. | `documentation-truth` | Revalidate in canonical stack during Slice 2. |
+| RFC36-WTBD-002 | Done: Workbench surfaces Manage action-register supportability through Gateway. | `documentation-truth` | Revalidated in the 2026-05-24 canonical evidence refresh. |
 | RFC36-WTBD-003 | Done: portfolio-level DPM operation dashboards are merged and live-proven. | `documentation-truth` | Preserve Gateway-only consumption. |
 | RFC36-WTBD-004 | Done: `DpmSourceReadiness:v1` mesh promotion is complete. | `source-owner` | Future source-depth belongs to RFC37-WTBD-004. |
 | RFC36-WTBD-005 | Done: current source-depth wave added bounded benchmark assignment lineage. | `source-owner` | Do not broaden into benchmark analytics without source-owner proof. |
 | RFC36-WTBD-006 | Done: no compatibility alias required after downstream audit. | `unsupported-nonclaim` | Keep retired aliases absent. |
-| RFC37-WTBD-001 | Done: first-wave outcome-review product path is complete. | `documentation-truth` | Revalidate cross-screen consistency in canonical evidence slice. |
+| RFC37-WTBD-001 | Done: first-wave outcome-review product path is complete. | `documentation-truth` | Cross-screen posture was revalidated in the 2026-05-24 canonical evidence refresh. |
 | RFC37-WTBD-002 | Done: governed AI PM copilot support is complete for current packs. | `front-office-realization` | Add future packs only after owner-side evidence exists. |
 | RFC37-WTBD-003 | Done: bounded front-office DPM realization is complete. | `documentation-truth` | Do not reopen unless a real source-owner or realization regression appears. |
 | RFC37-WTBD-004 | Open: broader strategic source-product depth remains unclosed. | `source-owner` | Continue with bounded source-owner slices; current Core `DpmPortfolioUniverseCandidate:v1` Manage consumer slice advances but does not close it and must not be promoted as global universe ownership. |
 | RFC37-WTBD-005 | Done: report/archive/evidence materialization is complete for supported proof-pack, wave, and outcome families. | `unsupported-nonclaim` | Client communication execution remains unsupported until a source owner implements it. |
-| RFC37-WTBD-006 | Done: canonical DPM demo story is implementation-backed. | `documentation-truth` | Refresh evidence only after live validation passes. |
+| RFC37-WTBD-006 | Done: canonical DPM demo story is implementation-backed. | `documentation-truth` | 2026-05-24 live validation passed; refresh again after source/product changes. |
 | RFC37-WTBD-007 | Done: portfolio-memory supportability is complete for Lotus-owned source events. | `source-owner` | Broader cross-app source-event search and OMS/client events need source-owner products. |
 | RFC38-WTBD-001 | Done: Gateway DPM command-center composition is merged. | `documentation-truth` | Preserve Manage authority in BFF rendering. |
-| RFC38-WTBD-002 | Done: Workbench command-center panels render Gateway truth. | `documentation-truth` | Revalidate UI behavior in Slice 2. |
+| RFC38-WTBD-002 | Done: Workbench command-center panels render Gateway truth. | `documentation-truth` | UI behavior was revalidated in the 2026-05-24 canonical evidence refresh. |
 | RFC38-WTBD-003 | Done: platform canonical seed automation covers ready, partial, and empty posture. | `source-owner` | Add degraded/blocked fixtures only when source-owner scenarios exist. |
 | RFC38-WTBD-004 | Done: PM-book monitoring cohort discovery consumes Core membership. | `source-owner` | Future PM-book depth belongs in Core. |
 | RFC38-WTBD-005 | Done: mandate objective, benchmark identity, review cadence, and model-change source posture are preserved. | `source-owner` | Benchmark analytics remain risk/performance/source-owner depth. |
 | RFC38-WTBD-006 | Done: restriction, sustainability, cashflow, income-needs, reserve, and withdrawal evidence are preserved. | `source-owner` | Profile-detail UI and richer classifications need source-owner/product-depth work. |
 | RFC38-WTBD-007 | Done: risk/performance health contexts are preserved without local methodology. | `source-owner` | New analytics methodology must land in Risk/Performance first. |
-| RFC38-WTBD-008 | Done: front-office command-center product support is merged and live-proven. | `front-office-realization` | Revalidate in current canonical stack. |
+| RFC38-WTBD-008 | Done: front-office command-center product support is merged and live-proven. | `front-office-realization` | Revalidated in the 2026-05-24 canonical evidence refresh. |
 | RFC39-WTBD-001 | Done: Gateway construction composition is merged. | `documentation-truth` | Keep Gateway from selecting alternatives. |
-| RFC39-WTBD-002 | Done: Workbench construction lab is live-proven. | `front-office-realization` | Revalidate current UI density and source-readiness rendering. |
+| RFC39-WTBD-002 | Done: Workbench construction lab is live-proven. | `front-office-realization` | Current UI and source-readiness rendering were revalidated on 2026-05-24. |
 | RFC39-WTBD-003 | Done: first-wave construction product realization is complete. | `front-office-realization` | Revalidate construction-to-proof/wave continuity. |
 | RFC39-WTBD-004 | Done: ESG/restriction-aware construction consumes Core source profiles. | `source-owner` | Do not claim automatic ESG approval or suitability. |
 | RFC39-WTBD-005 | Done: risk/performance alternative enrichment preserves source-owned analytics. | `source-owner` | Richer analytics require source-owner methodology. |
@@ -76,10 +115,10 @@ classification, required proof posture, and next implementation slices.
 | RFC39-WTBD-007 | Done: liquidity-aware construction preserves cashflow/income/reserve evidence. | `source-owner` | Financial-planning advice and funding recommendations remain unsupported. |
 | RFC39-WTBD-008 | Done: external treasury/currency-overlay boundary is fail-closed. | `unsupported-nonclaim` | Runtime treasury ingestion is external-owner scope. |
 | RFC39-WTBD-009 | Done: regime scenario-pack source support is first-wave implemented. | `source-owner` | CIO approval/applicability UX remains future source/product depth. |
-| RFC39-WTBD-010 | Done: selected alternatives flow through proof packs, waves, reports, AI, and outcomes. | `front-office-realization` | Revalidate continuity in current canonical stack. |
+| RFC39-WTBD-010 | Done: selected alternatives flow through proof packs, waves, reports, AI, and outcomes. | `front-office-realization` | Continuity was revalidated in the 2026-05-24 canonical evidence refresh. |
 | RFC40-WTBD-001 | Done: Gateway proof-pack composition is merged. | `documentation-truth` | Preserve no browser reconstruction of proof-pack sections. |
-| RFC40-WTBD-002 | Done: Workbench proof-pack review UX is merged. | `front-office-realization` | Revalidate source hashes and action eligibility in Slice 2. |
-| RFC40-WTBD-003 | Done: first-wave proof-pack product realization is live-proven. | `front-office-realization` | Revalidate current canonical proof-pack state. |
+| RFC40-WTBD-002 | Done: Workbench proof-pack review UX is merged. | `front-office-realization` | Source-hash and action posture were revalidated in the 2026-05-24 canonical evidence refresh. |
+| RFC40-WTBD-003 | Done: first-wave proof-pack product realization is live-proven. | `front-office-realization` | Current canonical proof-pack state was revalidated on 2026-05-24. |
 | RFC40-WTBD-004 | Done: proof-pack report materialization is implemented in report/render/archive. | `documentation-truth` | Keep Manage as report-input authority only. |
 | RFC40-WTBD-005 | Done: AI PM memo generation over proof-pack evidence is implemented. | `unsupported-nonclaim` | Preserve no prompt construction or autonomous decision claim. |
 | RFC40-WTBD-006 | Done: proof packs preserve source-owned risk/performance context. | `source-owner` | No local risk/performance methodology. |
@@ -92,14 +131,14 @@ classification, required proof posture, and next implementation slices.
 | RFC41-WTBD-003 | Done: risk-event, tactical house-view, and bounded campaign cohorts are supported. | `source-owner` | Global universe discovery and external workflow orchestration remain source/external-owner scope. |
 | RFC41-WTBD-004 | Done: wave aggregate analytics preserve Risk/Performance source values. | `source-owner` | No Manage-local risk/performance calculation. |
 | RFC41-WTBD-005 | Done: Gateway wave composition is merged. | `documentation-truth` | Preserve Manage wave authority. |
-| RFC41-WTBD-006 | Done: Workbench wave command center is merged and live-proven. | `front-office-realization` | Revalidate current campaign/wave UI behavior. |
+| RFC41-WTBD-006 | Done: Workbench wave command center is merged and live-proven. | `front-office-realization` | Current campaign/wave UI behavior was revalidated on 2026-05-24. |
 | RFC41-WTBD-007 | Done: first-wave wave command-center product support is complete. | `front-office-realization` | Revalidate active campaign definition and launch-history boundaries. |
 | RFC41-WTBD-008 | Done: wave report materialization is implemented. | `documentation-truth` | Keep report/render/archive ownership explicit. |
 | RFC41-WTBD-009 | Done: wave PM memo generation is implemented through AI/Gateway/Workbench. | `unsupported-nonclaim` | Preserve no browser prompt, no autonomous decision, and no execution claim. |
 | RFC41-WTBD-010 | Done: external execution integration is bounded as fail-closed supportability. | `unsupported-nonclaim` | OMS acknowledgement, fills, settlement, and reconciliation remain unsupported. |
 | RFC42-WTBD-001 | Done: Gateway outcome-review BFF is merged. | `documentation-truth` | Preserve Manage outcome authority. |
-| RFC42-WTBD-002 | Done: Workbench outcome-review UX is merged and live-proven. | `front-office-realization` | Revalidate UI/API consistency. |
-| RFC42-WTBD-003 | Done: first-wave outcome feedback product support is canonically proven. | `front-office-realization` | Revalidate against current stack. |
+| RFC42-WTBD-002 | Done: Workbench outcome-review UX is merged and live-proven. | `front-office-realization` | UI/API consistency was revalidated in the 2026-05-24 canonical evidence refresh. |
+| RFC42-WTBD-003 | Done: first-wave outcome feedback product support is canonically proven. | `front-office-realization` | Revalidated against the current stack on 2026-05-24. |
 | RFC42-WTBD-004 | Done: outcome report/archive lifecycle is implemented. | `documentation-truth` | Keep Manage as bounded report-input authority. |
 | RFC42-WTBD-005 | Done: outcome AI narrative/copilot flow is governed and merged. | `unsupported-nonclaim` | Preserve no prompt construction or autonomous decision claim. |
 | RFC42-WTBD-006 | Done: Lotus-owned source-methodology supportability is complete for current realized families. | `source-owner` | New methodologies must land in source owners first. |
@@ -110,10 +149,10 @@ classification, required proof posture, and next implementation slices.
 
 | Priority | Backlog item | Classification | Owner | Required evidence before support claim |
 | --- | --- | --- | --- | --- |
-| 1 | Current canonical front-office evidence refresh across command center, construction, proof-pack, wave, campaign, portfolio memory, outcome, PM quality, and copilot panels. | `fix-now` | `lotus-workbench` plus platform QA wrapper | `npm run live:stack:up`, `npm run live:validate`, platform `Invoke-Canonical-FrontOffice-QA.ps1`, API/panel evidence, logs, metrics/traces where available, screenshots captured only after validation passes. |
-| 2 | Gateway/Workbench realization of the new Core `DpmPortfolioUniverseCandidate:v1` candidate-source mode. | `front-office-realization` | `lotus-gateway`, `lotus-workbench` | BFF request preservation, source-readiness rendering, incomplete/truncated-page warnings, no caller-supplied portfolios in Core-discovery mode, focused UI tests, and live proof. |
+| 1 | Gateway/Workbench realization of the new Core `DpmPortfolioUniverseCandidate:v1` candidate-source mode. | `front-office-realization` | `lotus-gateway`, `lotus-workbench` | BFF request preservation, source-readiness rendering, incomplete/truncated-page warnings, no caller-supplied portfolios in Core-discovery mode, focused UI tests, and live proof. |
+| 2 | Broader Workbench product-quality hardening after the 2026-05-24 evidence refresh. | `fix-now` | `lotus-workbench` | Focused refactors only where code review finds material duplication, state leakage, or weak test coverage; preserve Gateway-backed source truth. |
 | 3 | Broader RFC37-WTBD-004 source-product depth beyond bounded campaign candidates. | `source-owner` | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Source-owner contracts, producer declarations, platform catalog mirror, consumer declarations, fail-closed degraded/missing/stale behavior, contract tests, and live source proof. |
-| 4 | Documentation/demo enrichment after new live evidence. | `documentation-truth` | Owning repo for changed truth | RFC Gold-Pass Assessment updates, wiki supported-feature updates, demo material tied to current evidence, wiki publication, and drift zero. |
+| 4 | Documentation/demo enrichment after new live evidence. | `documentation-truth` | Owning repo for changed truth | RFC Gold-Pass Assessment updates, wiki supported-feature updates where product truth changes, demo material tied to current evidence, wiki publication when wiki source changes, and drift zero. |
 | 5 | External workflow, client communication, OMS, fills, settlement, reconciliation, PM ranking, HR/conduct, generated-summary retention, and raw prompt storage. | `unsupported-nonclaim` | Future/external owners only | Must remain non-claims until explicit source/external-owner implementation, governance, tests, docs, and live proof exist. |
 
 ## Gold-Pass Assessment
@@ -123,8 +162,8 @@ classification, required proof posture, and next implementation slices.
 | What was truly completed | RFC36, RFC38, RFC39, RFC40, RFC41, RFC42, and RFC43 have bounded first-wave implementation-backed support claims. RFC37 is a strategic parent roadmap with all current child support claims complete except RFC37-WTBD-004 broader source-product depth. |
 | Quality improvements confirmed | The current mainline preserves source ownership, Gateway-only Workbench consumption, fail-closed degraded states, lineage/source refs, deterministic evidence hashes, no-OMS/no-client-contact boundaries, and documentation tests that keep stale closure language out. |
 | Debt removed | Historical advisory/proposal remnants, stale route aliases, stale vocabulary mirrors, and pre-merge closure wording are already guarded by current-state documentation tests. |
-| Testing and evidence basis | Recount is protected by `test_wtbd_control_snapshot_counts_match_detailed_ledger`; RFC-specific documentation tests protect integrated Gold-Pass sections; current mainline is backed by Main Releasability Gate `26358177212`. |
-| Remaining risk | The full current-stack evidence refresh requested by the user has not yet been rerun in this slice. That is the next implementation slice and must happen before new demo-ready screenshots or new front-office support claims are made. |
+| Testing and evidence basis | Recount is protected by `test_wtbd_control_snapshot_counts_match_detailed_ledger`; RFC-specific documentation tests protect integrated Gold-Pass sections; current Manage mainline is backed by Main Releasability Gate `26358735306`; Gateway PR #245 and Main Releasability Gate `26359582303` protect the benchmark-assignment cache fix; the 2026-05-24 canonical front-office QA pack proves current implemented panels after live validation passed. |
+| Remaining risk | The current-stack evidence refresh is complete for bounded implemented panels. Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, Gateway/Workbench realization of Core candidate-source discovery, and targeted product-quality hardening remain explicitly open. |
 | Expected-standard decision | The audit ledger is production-useful as a decision register, but it does not claim the whole RFC36-43 ecosystem is beyond improvement. Remaining improvements are explicitly classified and scheduled for source-owner, front-office-realization, documentation, or unsupported-nonclaim handling. |
 
 Wiki decision for this slice: no wiki source change is required because this file is an internal
