@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-24T01:44:38.019584+00:00",
+  "generatedAt": "2026-05-24T09:48:25.338509+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1807,6 +1807,34 @@
       ],
       "observedTypes": [
         "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.campaign_candidate_page_size",
+      "canonicalTerm": "campaign_candidate_page_size",
+      "preferredName": "campaign_candidate_page_size",
+      "description": "Maximum Core DPM portfolio-universe candidates to request for one wave preview/create. Manage rejects truncated responses rather than creating a partial campaign wave.",
+      "example": 10,
+      "type": "integer",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "integer"
+      ]
+    },
+    {
+      "semanticId": "lotus.campaign_candidate_source",
+      "canonicalTerm": "campaign_candidate_source",
+      "preferredName": "campaign_candidate_source",
+      "description": "Candidate source for `BULK_REVIEW_CAMPAIGN`. `INLINE_SOURCE_BACKED` preserves caller or persisted campaign-definition candidates. `CORE_DPM_PORTFOLIO_UNIVERSE` resolves bounded source-owned candidates from lotus-core `DpmPortfolioUniverseCandidate:v1` and fails closed on empty or truncated pages.",
+      "example": "INLINE_SOURCE_BACKED",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -6368,6 +6396,20 @@
       ]
     },
     {
+      "semanticId": "lotus.include_inactive_mandates",
+      "canonicalTerm": "include_inactive_mandates",
+      "preferredName": "include_inactive_mandates",
+      "description": "When true, asks source-owned Core candidate discovery to include inactive mandate bindings. Default false keeps wave launch scoped to active discretionary mandates.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
       "semanticId": "lotus.include_launch_package",
       "canonicalTerm": "include_launch_package",
       "preferredName": "include_launch_package",
@@ -8562,6 +8604,22 @@
       "observedTypes": [
         "object",
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.model_portfolio_ids",
+      "canonicalTerm": "model_portfolio_ids",
+      "preferredName": "model_portfolio_ids",
+      "description": "Optional model-portfolio filters for Core DPM portfolio-universe candidate discovery. Used only with `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`.",
+      "example": [
+        "sample_model_portfolio_ids_item"
+      ],
+      "type": "array",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "array"
       ]
     },
     {
@@ -94126,6 +94184,38 @@
             "attributeRef": "#/attributeCatalog/lotus.campaign_definition_version"
           },
           {
+            "name": "campaign_candidate_source",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.campaign_candidate_source",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_candidate_source"
+          },
+          {
+            "name": "model_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.model_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.model_portfolio_ids"
+          },
+          {
+            "name": "include_inactive_mandates",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.include_inactive_mandates",
+            "attributeRef": "#/attributeCatalog/lotus.include_inactive_mandates"
+          },
+          {
+            "name": "campaign_candidate_page_size",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.campaign_candidate_page_size",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_candidate_page_size"
+          },
+          {
             "name": "minimum_impact_score",
             "location": "body",
             "required": false,
@@ -95443,6 +95533,38 @@
             "type": "object",
             "semanticId": "lotus.campaign_definition_version",
             "attributeRef": "#/attributeCatalog/lotus.campaign_definition_version"
+          },
+          {
+            "name": "campaign_candidate_source",
+            "location": "body",
+            "required": false,
+            "type": "string",
+            "semanticId": "lotus.campaign_candidate_source",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_candidate_source"
+          },
+          {
+            "name": "model_portfolio_ids",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.model_portfolio_ids",
+            "attributeRef": "#/attributeCatalog/lotus.model_portfolio_ids"
+          },
+          {
+            "name": "include_inactive_mandates",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.include_inactive_mandates",
+            "attributeRef": "#/attributeCatalog/lotus.include_inactive_mandates"
+          },
+          {
+            "name": "campaign_candidate_page_size",
+            "location": "body",
+            "required": false,
+            "type": "integer",
+            "semanticId": "lotus.campaign_candidate_page_size",
+            "attributeRef": "#/attributeCatalog/lotus.campaign_candidate_page_size"
           },
           {
             "name": "minimum_impact_score",

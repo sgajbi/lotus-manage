@@ -30,6 +30,8 @@ Current declarations:
    `lotus-risk:RegimeScenarioPackEvaluation:v1` for source-owned regime-stress evidence, and
    the `lotus-core:PortfolioManagerBookMembership:v1` API-read dependency used by PM-book
    rebalance-wave discovery and optional PM operating quality score-run scope materialization, and
+   `lotus-core:DpmPortfolioUniverseCandidate:v1` for bounded source-owned
+   `BULK_REVIEW_CAMPAIGN` candidate discovery with fail-closed empty/truncated page handling, and
    the caller-supplied `lotus-risk:MandateRiskHealthContext:v1` and
    `lotus-performance:MandatePerformanceHealthContext:v1` dependencies used to preserve
    source-owned mandate risk/performance health posture in recalculated mandate-health snapshots

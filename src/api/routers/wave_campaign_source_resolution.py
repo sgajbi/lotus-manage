@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import date
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -25,13 +27,21 @@ from src.api.routers.wave_request_models import DpmWavePortfolioInput, DpmWavePr
 from src.api.routers.wave_source_refs import (
     bulk_review_campaign_member_ref,
     bulk_review_campaign_membership_ref,
+    dpm_portfolio_universe_candidate_ref,
+    dpm_portfolio_universe_ref,
     source_refs_payload,
+)
+from src.api.routers.wave_source_dependency_http import (
+    source_dependency_failed_http_exception,
+    upstream_dependency_failed_http_exception,
+    upstream_unavailable_http_exception,
 )
 from src.api.services import wave_service
 from src.core.waves import (
     DpmBulkReviewCampaignDefinitionRepository,
     DpmWaveSourceRef,
 )
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 
 
 def request_with_campaign_definition(
@@ -41,6 +51,11 @@ def request_with_campaign_definition(
 ) -> DpmWavePreviewRequest:
     if request.campaign_definition_id is None and request.campaign_definition_version is None:
         return request
+    if request.campaign_candidate_source != "INLINE_SOURCE_BACKED":
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_DEFINITION_REJECTS_SOURCE_DISCOVERY",
+            "Persisted campaign definitions already supply the candidate portfolio set.",
+        )
     if not request.campaign_definition_id or not request.campaign_definition_version:
         raise wave_service.DpmWaveValidationError(
             "BULK_REVIEW_CAMPAIGN_DEFINITION_REF_INCOMPLETE",
@@ -115,11 +130,29 @@ def request_with_campaign_definition(
 def resolve_bulk_review_campaign_portfolios(
     *,
     request: DpmWavePreviewRequest,
+    correlation_id: str,
+    core_resolver_factory: Callable[[], Any],
 ) -> list[dict[str, object]]:
-    if not request.portfolios:
+    if request.campaign_candidate_source == "CORE_DPM_PORTFOLIO_UNIVERSE":
+        request = request.model_copy(
+            update={
+                "portfolios": resolve_core_dpm_portfolio_universe_candidates(
+                    request=request,
+                    correlation_id=correlation_id,
+                    core_resolver_factory=core_resolver_factory,
+                )
+            },
+            deep=True,
+        )
+    elif not request.portfolios:
         raise wave_service.DpmWaveValidationError(
             "BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED",
             "BULK_REVIEW_CAMPAIGN requires source-backed candidate portfolios.",
+        )
+    elif request.campaign_candidate_source != "INLINE_SOURCE_BACKED":
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_CANDIDATE_SOURCE_UNSUPPORTED",
+            "BULK_REVIEW_CAMPAIGN candidate source is not supported.",
         )
     campaign_as_of_date = parse_wave_as_of_date(request.as_of_date)
     governance_diagnostics, governance_refs = resolve_bulk_review_campaign_governance(
@@ -192,6 +225,86 @@ def resolve_bulk_review_campaign_portfolios(
             },
         }
         for candidate in included_candidates
+    ]
+
+
+def resolve_core_dpm_portfolio_universe_candidates(
+    *,
+    request: DpmWavePreviewRequest,
+    correlation_id: str,
+    core_resolver_factory: Callable[[], Any],
+) -> list[DpmWavePortfolioInput]:
+    if request.portfolios:
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_CORE_UNIVERSE_REJECTS_CALLER_PORTFOLIOS",
+            "Core DPM portfolio-universe discovery supplies the candidate portfolio set.",
+        )
+    as_of_date = parse_wave_as_of_date(request.as_of_date)
+    try:
+        candidate_page = core_resolver_factory().resolve_dpm_portfolio_universe_candidates(
+            as_of_date=as_of_date,
+            tenant_id=request.tenant_id,
+            booking_center_code=request.booking_center_code,
+            model_portfolio_ids=request.model_portfolio_ids,
+            include_inactive_mandates=request.include_inactive_mandates,
+            page_size=request.campaign_candidate_page_size,
+            page_token=None,
+            correlation_id=correlation_id,
+        )
+    except DpmCoreResolverUnavailableError as exc:
+        raise upstream_unavailable_http_exception(
+            exc,
+            default_code="DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE",
+        ) from exc
+    except DpmCoreResolverError as exc:
+        raise upstream_dependency_failed_http_exception(
+            exc,
+            default_code="DPM_CORE_PORTFOLIO_UNIVERSE_INCOMPLETE",
+        ) from exc
+
+    if candidate_page.supportability.state != "READY":
+        raise source_dependency_failed_http_exception(
+            code=candidate_page.supportability.reason,
+            message="Core DPM portfolio-universe candidates are not source-ready.",
+        )
+    if candidate_page.page.next_page_token or candidate_page.supportability.page_truncated:
+        raise source_dependency_failed_http_exception(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_PAGE_PARTIAL",
+            message=(
+                "Core DPM portfolio-universe candidates were truncated; refine filters before "
+                "creating a campaign wave."
+            ),
+        )
+    if not candidate_page.candidates:
+        raise source_dependency_failed_http_exception(
+            code="DPM_CORE_PORTFOLIO_UNIVERSE_EMPTY",
+            message="Core DPM portfolio-universe discovery returned no candidate portfolios.",
+        )
+
+    universe_ref = dpm_portfolio_universe_ref(
+        source_id=candidate_page.snapshot_id or candidate_page.page.request_scope_fingerprint,
+        product_version=candidate_page.product_version,
+        supportability_state=candidate_page.supportability.state,
+        content_hash=candidate_page.source_batch_fingerprint,
+    )
+    return [
+        DpmWavePortfolioInput(
+            portfolio_id=candidate.portfolio_id,
+            mandate_id=candidate.mandate_id,
+            portfolio_type="DISCRETIONARY",
+            source_refs=[
+                DpmWaveSourceRef.model_validate(universe_ref),
+                DpmWaveSourceRef.model_validate(
+                    dpm_portfolio_universe_candidate_ref(
+                        source_record_id=candidate.source_record_id,
+                        portfolio_id=candidate.portfolio_id,
+                        mandate_id=candidate.mandate_id,
+                        binding_version=candidate.binding_version,
+                    )
+                ),
+            ],
+        )
+        for candidate in candidate_page.candidates
     ]
 
 

@@ -426,6 +426,97 @@ class DpmCoreCioModelChangeAffectedCohortResponse(BaseModel):
     )
 
 
+class DpmCorePortfolioUniverseCandidate(BaseModel):
+    portfolio_id: str = Field(description="Core-governed candidate portfolio identifier.")
+    mandate_id: str = Field(description="Source-owned discretionary mandate identifier.")
+    client_id: str = Field(description="Core-governed client identifier.")
+    booking_center_code: str = Field(description="Mandate booking center.")
+    jurisdiction_code: str = Field(description="Mandate jurisdiction.")
+    discretionary_authority_status: str = Field(
+        description="Discretionary authority status selected by lotus-core."
+    )
+    model_portfolio_id: str = Field(description="Approved model portfolio identifier.")
+    policy_pack_id: Optional[str] = Field(
+        default=None,
+        description="Policy pack associated with the mandate binding.",
+    )
+    mandate_objective: Optional[str] = Field(default=None)
+    risk_profile: str = Field(description="Mandate risk profile.")
+    investment_horizon: str = Field(description="Mandate investment horizon.")
+    effective_from: date = Field(description="Mandate binding effective start date.")
+    effective_to: Optional[date] = Field(
+        default=None,
+        description="Mandate binding effective end date.",
+    )
+    binding_version: int = Field(description="Selected mandate binding version.")
+    source_record_id: Optional[str] = Field(
+        default=None,
+        description="Core source record identifier for replay and audit.",
+    )
+
+
+class DpmCorePortfolioUniversePageMetadata(BaseModel):
+    page_size: int = Field(description="Maximum candidates requested from lotus-core.")
+    sort_key: str = Field(description="Deterministic sort key applied by lotus-core.")
+    returned_component_count: int = Field(description="Number of candidates returned.")
+    request_scope_fingerprint: str = Field(
+        description="Core fingerprint of request selectors and paging scope."
+    )
+    next_page_token: Optional[str] = Field(
+        default=None,
+        description="Opaque continuation token when more candidates are available.",
+    )
+
+
+class DpmCorePortfolioUniverseCandidateSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE"] = Field(
+        description="Core readiness state for DPM portfolio-universe discovery."
+    )
+    reason: str = Field(description="Bounded core readiness reason code.")
+    returned_candidate_count: int = Field(
+        description="Number of candidates returned in the current page."
+    )
+    filters_applied: list[str] = Field(
+        default_factory=list,
+        description="Core-applied filters used to resolve the candidate page.",
+    )
+    page_truncated: bool = Field(
+        description="True when additional source candidates remain behind a continuation token."
+    )
+
+
+class DpmCorePortfolioUniverseCandidateResponse(BaseModel):
+    product_name: Literal["DpmPortfolioUniverseCandidate"] = Field(
+        description="Core source-data product name."
+    )
+    product_version: Literal["v1"] = Field(description="Core source-data product version.")
+    as_of_date: date = Field(description="As-of date used to resolve the candidate universe.")
+    tenant_id: Optional[str] = Field(default=None, description="Optional tenant selector.")
+    candidates: list[DpmCorePortfolioUniverseCandidate] = Field(
+        description="Resolved DPM portfolio-universe candidates from lotus-core."
+    )
+    page: DpmCorePortfolioUniversePageMetadata = Field(
+        description="Core pagination metadata for the candidate response."
+    )
+    supportability: DpmCorePortfolioUniverseCandidateSupportability = Field(
+        description="Completeness and readiness posture for candidate discovery."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core lineage metadata for audit and diagnostics.",
+    )
+    data_quality_status: Optional[str] = Field(default=None)
+    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
+    source_batch_fingerprint: Optional[str] = Field(
+        default=None,
+        description="Core source-batch fingerprint for replay and evidence tie-out.",
+    )
+    snapshot_id: Optional[str] = Field(
+        default=None,
+        description="Core snapshot identifier for the resolved candidate page.",
+    )
+
+
 class DpmCoreInstrumentEligibilityRecord(BaseModel):
     security_id: str = Field(description="Core-governed security identifier.")
     found: bool = Field(description="Whether lotus-core found an effective eligibility profile.")

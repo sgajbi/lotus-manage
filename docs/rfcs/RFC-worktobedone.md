@@ -80,7 +80,14 @@ RFC37-WTBD-003 for Lotus-owned bounded front-office realization because Gateway/
 paths and governed Workbench canonical proof cover command center, construction, proof-pack, wave,
 outcome, portfolio-memory, campaign, PM-quality, and PM copilot workspace surfaces without OMS,
 client-contact, or unsupported source-product overclaims. RFC37-WTBD-004 remains open for broader
-strategic source-product depth. The current classification is 59 total WTBD items: 58 done on
+strategic source-product depth. The current RFC37-WTBD-004 source-product-depth wave has advanced
+but is not closed: lotus-core now owns `DpmPortfolioUniverseCandidate:v1`, and this Manage slice
+consumes it for bounded `BULK_REVIEW_CAMPAIGN` candidate resolution with Core lineage and
+fail-closed unavailable, incomplete, degraded, empty, and truncated-page handling. This does not
+change the WTBD counts because broader strategic source-product depth, relationship householding,
+global portfolio-universe semantics, PM ranking, external workflow orchestration, client
+communication workflow, OMS acknowledgement, fills, settlement, and reconciliation remain
+unsupported or external-owner scope. The current classification is 59 total WTBD items: 58 done on
 merged/published Lotus-owned truth, 0 partial or in progress, and 1 remaining/open. The 2026-05-24
 Lotus-owned completion recount keeps the
 2026-05-22 closures for RFC38-WTBD-007, RFC39-WTBD-008, and RFC42-WTBD-007 and moves
@@ -318,7 +325,7 @@ ready values for local promotion or recalculation.
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC37-WTBD-004 - Source-product depth for crown-jewel DPM | Adds richer source-owner products only where `lotus-core`, `lotus-risk`, `lotus-performance`, or future source owners implement and certify the facts. | Source-owner contracts, producer/consumer mesh certification, Manage degraded-state consumption, Gateway/Workbench posture, and live proof with missing/stale/partial source states. |
+| 1 | RFC37-WTBD-004 - Source-product depth for crown-jewel DPM | Adds richer source-owner products only where `lotus-core`, `lotus-risk`, `lotus-performance`, or future source owners implement and certify the facts. The current bounded Manage slice consumes lotus-core `DpmPortfolioUniverseCandidate:v1` for bulk-review campaign candidates, but the broader WTBD remains open. | Source-owner contracts, producer/consumer mesh certification, Manage degraded-state consumption, Gateway/Workbench posture, and live proof with missing/stale/partial source states. Core candidate consumption must not be promoted as relationship householding, global universe ownership, PM ranking, external workflow orchestration, client communication workflow, or OMS execution. |
 
 2026-05-22 downstream realization backfill: Gateway PR #238 and Workbench PR #340 add bounded
 campaign workflow/audit realization over existing Manage campaign workflow truth. This strengthens

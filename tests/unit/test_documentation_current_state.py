@@ -71,6 +71,48 @@ def test_current_docs_do_not_advertise_removed_advisory_runtime_surface() -> Non
     assert failures == []
 
 
+def test_core_dpm_portfolio_universe_candidate_consumer_truth_is_documented() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    repo_context = (ROOT / "REPOSITORY-ENGINEERING-CONTEXT.md").read_text(encoding="utf-8")
+    consumer_docs = (ROOT / "contracts" / "domain-data-products" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    rfc37 = (
+        ROOT / "docs" / "rfcs" / "RFC-0037-dpm-operating-system-and-mandate-intelligence.md"
+    ).read_text(encoding="utf-8")
+    wtbd = (ROOT / "docs" / "rfcs" / "RFC-worktobedone.md").read_text(encoding="utf-8")
+    upstream_map = (
+        ROOT / "docs" / "standards" / "RFC-0082-upstream-contract-family-map.md"
+    ).read_text(encoding="utf-8")
+    api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
+    integrations = (ROOT / "wiki" / "Integrations.md").read_text(encoding="utf-8")
+    supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
+    rfc_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
+
+    for text in [
+        readme,
+        repo_context,
+        consumer_docs,
+        rfc37,
+        wtbd,
+        upstream_map,
+        api_surface,
+        integrations,
+        supported_features,
+        rfc_index,
+    ]:
+        assert "DpmPortfolioUniverseCandidate:v1" in text
+
+    assert "`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`" in readme
+    assert "fails closed on unavailable, incomplete, degraded, empty, or truncated" in (
+        supported_features
+    )
+    assert "RFC37-WTBD-004 is not complete" in rfc37
+    assert "WTBD counts because broader strategic source-product depth" in wtbd
+    assert "relationship householding" in upstream_map
+    assert "global portfolio-universe ownership" in api_surface
+
+
 def test_completed_wtbd_gold_pass_truth_is_not_left_in_pre_merge_language() -> None:
     audited_paths = [
         ROOT / "docs" / "rfcs" / "RFC-worktobedone.md",
