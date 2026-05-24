@@ -115,6 +115,40 @@ def cio_model_change_affected_mandate_ref(
     )
 
 
+def dpm_portfolio_universe_ref(
+    *,
+    source_id: str | None,
+    product_version: str,
+    supportability_state: str,
+    content_hash: str | None,
+) -> dict[str, object]:
+    return source_ref_payload(
+        source_system="lotus-core",
+        source_type="DpmPortfolioUniverseCandidate",
+        source_id=source_id,
+        source_version=product_version,
+        supportability_state=supportability_state,
+        content_hash=content_hash,
+    )
+
+
+def dpm_portfolio_universe_candidate_ref(
+    *,
+    source_record_id: str | None,
+    portfolio_id: str,
+    mandate_id: str,
+    binding_version: object,
+) -> dict[str, object]:
+    return source_ref_payload(
+        source_system="lotus-core",
+        source_type="DPM_PORTFOLIO_UNIVERSE_CANDIDATE",
+        source_id=source_record_id or f"{portfolio_id}:{mandate_id}",
+        source_version=str(binding_version),
+        supportability_state="READY",
+        include_content_hash=False,
+    )
+
+
 def tactical_house_view_cohort_ref(
     *,
     source_service: str,

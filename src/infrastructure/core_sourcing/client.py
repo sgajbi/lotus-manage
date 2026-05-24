@@ -24,6 +24,7 @@ from src.core.dpm_source_context import (
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
+    DpmCorePortfolioUniverseCandidateResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
     DpmCorePortfolioTaxLotWindowResponse,
     DpmCorePolicyContext,
@@ -69,6 +70,9 @@ class DpmCoreResolverConfig:
     )
     cio_model_change_affected_cohort_path_template: str = (
         "/integration/model-portfolios/{model_portfolio_id}/affected-mandates"
+    )
+    dpm_portfolio_universe_candidates_path_template: str = (
+        "/integration/dpm/portfolio-universe/candidates"
     )
     instrument_eligibility_path_template: str = "/integration/instruments/eligibility-bulk"
     portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
@@ -164,6 +168,14 @@ class DpmCoreResolverConfig:
             raise DpmCoreResolverUnavailableError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE")
         base = self.base_url.rstrip("/")
         path = path_template.format(model_portfolio_id=model_portfolio_id).lstrip("/")
+        return f"{base}/{path}"
+
+    def resolve_dpm_portfolio_universe_candidates_url(self) -> str:
+        path_template = self.dpm_portfolio_universe_candidates_path_template.strip()
+        if not path_template:
+            raise DpmCoreResolverUnavailableError("DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE")
+        base = self.base_url.rstrip("/")
+        path = path_template.lstrip("/")
         return f"{base}/{path}"
 
     def resolve_instrument_eligibility_url(self) -> str:
@@ -779,6 +791,39 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",
         )
         return DpmCoreCioModelChangeAffectedCohortResponse.model_validate(response)
+
+    def resolve_dpm_portfolio_universe_candidates(
+        self,
+        *,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        booking_center_code: Optional[str] = None,
+        model_portfolio_ids: Optional[list[str]] = None,
+        include_inactive_mandates: bool = False,
+        page_size: int = 1000,
+        page_token: Optional[str] = None,
+        correlation_id: Optional[str],
+    ) -> DpmCorePortfolioUniverseCandidateResponse:
+        url = self._config.resolve_dpm_portfolio_universe_candidates_url()
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "booking_center_code": booking_center_code,
+            "model_portfolio_ids": model_portfolio_ids or [],
+            "include_inactive_mandates": include_inactive_mandates,
+            "page": {
+                "page_size": page_size,
+                "page_token": page_token,
+            },
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE",
+            incomplete_code="DPM_CORE_PORTFOLIO_UNIVERSE_INCOMPLETE",
+        )
+        return DpmCorePortfolioUniverseCandidateResponse.model_validate(response)
 
     def resolve_instrument_eligibility(
         self,

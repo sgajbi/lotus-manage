@@ -1215,10 +1215,14 @@ def launch_bulk_review_campaign_definition(
         "membership evidence. `TACTICAL_HOUSE_VIEW` evaluates the candidate set through "
         "lotus-advise `TacticalHouseViewAffectedCohort:v1` and preserves source-owned "
         "house-view/candidate evidence. `BULK_REVIEW_CAMPAIGN` builds the Manage-owned "
-        "`BulkReviewCampaignMembership:v1` envelope from source-backed candidate portfolios and "
-        "DPM portfolio-type filters. Unsupported trigger types remain blocked; the endpoint does "
-        "not recompute house-view, holdings, risk, performance, simulation, approval, staging, or "
-        "operations handoff."
+        "`BulkReviewCampaignMembership:v1` envelope from inline or persisted source-backed "
+        "candidate portfolios, or from lotus-core `DpmPortfolioUniverseCandidate:v1` when "
+        "`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`. Core candidate discovery fails "
+        "closed on unavailable, incomplete, degraded, empty, or truncated source pages. "
+        "Unsupported trigger types remain blocked; the endpoint does not recompute house-view, "
+        "holdings, risk, performance, simulation, approval, staging, operations handoff, "
+        "relationship householding, global portfolio-universe semantics, workflow orchestration, "
+        "or OMS execution."
     ),
     responses={
         200: {
@@ -1281,9 +1285,14 @@ def preview_wave(
         "lotus-risk `RiskEventAffectedCohort:v1` before persistence. `TACTICAL_HOUSE_VIEW` "
         "evaluates the candidate set through lotus-advise "
         "`TacticalHouseViewAffectedCohort:v1` before persistence. `BULK_REVIEW_CAMPAIGN` persists "
-        "a Manage-owned campaign membership wave from source-backed candidates. Required header: "
+        "a Manage-owned campaign membership wave from inline, persisted, or lotus-core "
+        "`DpmPortfolioUniverseCandidate:v1` source-backed candidates. Core candidate discovery "
+        "requires `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE` and fails closed on "
+        "unavailable, incomplete, degraded, empty, or truncated source pages. Required header: "
         "`Idempotency-Key`. Unsupported trigger types are rejected and missing source evidence "
-        "produces blocked items, not false readiness."
+        "produces blocked items, not false readiness; the route does not claim relationship "
+        "householding, global portfolio-universe ownership, workflow orchestration, client "
+        "communication workflow, order routing, or OMS execution."
     ),
     responses={
         201: {

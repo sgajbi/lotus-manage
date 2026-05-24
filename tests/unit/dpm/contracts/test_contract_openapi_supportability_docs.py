@@ -1200,3 +1200,28 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert workflow_history_by_idempotency["responses"]["422"]["description"] == (
         "Unsupported query parameters were supplied."
     )
+
+
+def test_wave_preview_openapi_documents_core_portfolio_universe_candidate_source() -> None:
+    openapi = app.openapi()
+    schemas = openapi["components"]["schemas"]
+
+    preview = openapi["paths"]["/api/v1/rebalance/waves/preview"]["post"]
+    assert "DpmPortfolioUniverseCandidate:v1" in preview["description"]
+    assert "campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE" in preview["description"]
+    assert "truncated source pages" in preview["description"]
+    assert "relationship householding" in preview["description"]
+    assert "OMS execution" in preview["description"]
+
+    request_schema = schemas["DpmWavePreviewRequest"]
+    for field_name in [
+        "campaign_candidate_source",
+        "model_portfolio_ids",
+        "include_inactive_mandates",
+        "campaign_candidate_page_size",
+    ]:
+        _assert_property_has_docs(request_schema, field_name)
+
+    candidate_source_schema = request_schema["properties"]["campaign_candidate_source"]
+    assert "CORE_DPM_PORTFOLIO_UNIVERSE" in str(candidate_source_schema)
+    assert "empty or truncated pages" in candidate_source_schema["description"]

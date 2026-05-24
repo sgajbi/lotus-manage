@@ -261,6 +261,62 @@ def _cio_model_change_cohort_payload() -> dict:
     }
 
 
+def _dpm_portfolio_universe_candidate_payload() -> dict:
+    return {
+        "product_name": "DpmPortfolioUniverseCandidate",
+        "product_version": "v1",
+        "tenant_id": "default",
+        "as_of_date": "2026-05-10",
+        "candidates": [
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+                "client_id": "CIF_SG_000184",
+                "booking_center_code": "Singapore",
+                "jurisdiction_code": "SG",
+                "discretionary_authority_status": "active",
+                "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+                "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+                "mandate_objective": "Global balanced discretionary mandate.",
+                "risk_profile": "balanced",
+                "investment_horizon": "long_term",
+                "effective_from": "2026-05-01",
+                "effective_to": None,
+                "binding_version": 3,
+                "source_record_id": "mandate-binding-001",
+            }
+        ],
+        "page": {
+            "page_size": 1000,
+            "sort_key": "portfolio_id:asc,mandate_id:asc",
+            "returned_component_count": 1,
+            "request_scope_fingerprint": "sha256:dpm-portfolio-universe",
+            "next_page_token": None,
+        },
+        "supportability": {
+            "state": "READY",
+            "reason": "DPM_PORTFOLIO_UNIVERSE_READY",
+            "returned_candidate_count": 1,
+            "filters_applied": [
+                "as_of_date",
+                "booking_center_code",
+                "model_portfolio_ids",
+                "active_discretionary_authority",
+            ],
+            "page_truncated": False,
+        },
+        "lineage": {
+            "source_system": "lotus-core",
+            "source_table": "portfolio_mandate_bindings",
+            "contract_version": "rfc_037_dpm_portfolio_universe_candidate_v1",
+        },
+        "data_quality_status": "ACCEPTED",
+        "latest_evidence_timestamp": "2026-05-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:dpm-portfolio-universe",
+        "snapshot_id": "dpm_portfolio_universe:sha256:dpm-portfolio-universe",
+    }
+
+
 def _instrument_eligibility_payload() -> dict:
     return {
         "product_name": "InstrumentEligibilityProfile",
@@ -1403,6 +1459,44 @@ def test_core_resolver_fetches_portfolio_manager_book_membership_source_product(
     assert response.product_name == "PortfolioManagerBookMembership"
     assert response.supportability.state == "READY"
     assert response.members[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
+
+
+def test_core_resolver_fetches_dpm_portfolio_universe_candidates_source_product():
+    seen: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        seen["correlation_id"] = request.headers.get("X-Correlation-Id")
+        seen["payload"] = request.read()
+        return httpx.Response(200, json=_dpm_portfolio_universe_candidate_payload())
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    response = client.resolve_dpm_portfolio_universe_candidates(
+        as_of_date=date(2026, 5, 10),
+        tenant_id="default",
+        booking_center_code="Singapore",
+        model_portfolio_ids=["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+        include_inactive_mandates=False,
+        page_size=1000,
+        page_token=None,
+        correlation_id="corr-dpm-universe-001",
+    )
+
+    assert seen["url"] == "https://core.example.test/integration/dpm/portfolio-universe/candidates"
+    assert seen["correlation_id"] == "corr-dpm-universe-001"
+    assert b'"as_of_date":"2026-05-10"' in seen["payload"]
+    assert b'"tenant_id":"default"' in seen["payload"]
+    assert b'"booking_center_code":"Singapore"' in seen["payload"]
+    assert b'"model_portfolio_ids":["MODEL_PB_SG_GLOBAL_BAL_DPM"]' in seen["payload"]
+    assert b'"include_inactive_mandates":false' in seen["payload"]
+    assert b'"page_size":1000' in seen["payload"]
+    assert response.product_name == "DpmPortfolioUniverseCandidate"
+    assert response.supportability.state == "READY"
+    assert response.candidates[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
 
 
 def test_core_resolver_fetches_cio_model_change_affected_cohort_source_product():

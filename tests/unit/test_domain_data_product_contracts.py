@@ -68,6 +68,7 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
         "ExternalOrderExecutionAcknowledgement",
         "RiskEventAffectedCohort",
         "CioModelChangeAffectedCohort",
+        "DpmPortfolioUniverseCandidate",
         "TacticalHouseViewAffectedCohort",
         "PortfolioManagerBookMembership",
         "TransactionCostCurve",
@@ -149,6 +150,12 @@ def test_manage_consumer_declaration_tracks_current_core_inputs() -> None:
     assert by_name["CioModelChangeAffectedCohort"]["producer_repository"] == "lotus-core"
     assert by_name["CioModelChangeAffectedCohort"]["consumption_mode"] == "stateful_core_sourcing"
     assert by_name["CioModelChangeAffectedCohort"]["failure_posture"] == "fail_closed"
+    assert by_name["DpmPortfolioUniverseCandidate"]["producer_repository"] == "lotus-core"
+    assert by_name["DpmPortfolioUniverseCandidate"]["consumption_mode"] == "stateful_core_sourcing"
+    assert by_name["DpmPortfolioUniverseCandidate"]["failure_posture"] == "fail_closed"
+    assert (
+        "relationship householding" in by_name["DpmPortfolioUniverseCandidate"]["business_purpose"]
+    )
     assert by_name["TacticalHouseViewAffectedCohort"]["producer_repository"] == "lotus-advise"
     assert by_name["TacticalHouseViewAffectedCohort"]["consumption_mode"] == "api_read"
     assert by_name["TacticalHouseViewAffectedCohort"]["failure_posture"] == "fail_closed"
@@ -213,6 +220,7 @@ def test_manage_declaration_limits_live_source_data_api_reads_to_approved_profil
         "ExternalHedgeExecutionReadiness",
         "ExternalOrderExecutionAcknowledgement",
         "CioModelChangeAffectedCohort",
+        "DpmPortfolioUniverseCandidate",
         "TransactionCostCurve",
     }
     assert "modeled, feature-gated outbound resolver seam" in upstream_family_map

@@ -83,7 +83,11 @@ def resolve_portfolio_inputs_for_request(
             request=request,
             repository=campaign_definition_repository,
         )
-        return resolve_bulk_review_campaign_portfolios(request=resolved_request)
+        return resolve_bulk_review_campaign_portfolios(
+            request=resolved_request,
+            correlation_id=correlation_id,
+            core_resolver_factory=core_resolver_factory,
+        )
     return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
 
 

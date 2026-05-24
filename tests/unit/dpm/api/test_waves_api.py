@@ -32,6 +32,7 @@ from src.core.mandates import (
 )
 from src.core.dpm_source_context import (
     DpmCoreCioModelChangeAffectedCohortResponse,
+    DpmCorePortfolioUniverseCandidateResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
 )
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -303,6 +304,21 @@ def _bulk_review_campaign_request() -> dict[str, object]:
     }
 
 
+def _core_universe_bulk_review_campaign_request() -> dict[str, object]:
+    request = _bulk_review_campaign_request()
+    request.update(
+        {
+            "campaign_candidate_source": "CORE_DPM_PORTFOLIO_UNIVERSE",
+            "portfolios": [],
+            "model_portfolio_ids": ["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+            "tenant_id": "default",
+            "booking_center_code": "Singapore",
+            "campaign_candidate_page_size": 1000,
+        }
+    )
+    return request
+
+
 def _bulk_review_campaign_governance() -> dict[str, object]:
     return {
         "approval_ref": "BRC-APPROVAL-2026-05",
@@ -450,6 +466,76 @@ def _cio_model_change_cohort_payload(
     }
 
 
+def _dpm_portfolio_universe_candidate_payload(
+    *,
+    supportability_state: str = "READY",
+    page_truncated: bool = False,
+    candidates: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    candidate_rows = candidates
+    if candidate_rows is None:
+        candidate_rows = [
+            {
+                "portfolio_id": PORTFOLIO_ID,
+                "mandate_id": MANDATE_ID,
+                "client_id": "CIF_SG_000184",
+                "booking_center_code": "Singapore",
+                "jurisdiction_code": "SG",
+                "discretionary_authority_status": "active",
+                "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+                "policy_pack_id": "POLICY_DPM_SG_BALANCED_V1",
+                "mandate_objective": "Global balanced discretionary mandate.",
+                "risk_profile": "balanced",
+                "investment_horizon": "long_term",
+                "effective_from": "2026-05-01",
+                "effective_to": None,
+                "binding_version": 3,
+                "source_record_id": "mandate-binding-001",
+            }
+        ]
+    return {
+        "product_name": "DpmPortfolioUniverseCandidate",
+        "product_version": "v1",
+        "tenant_id": "default",
+        "as_of_date": "2026-05-10",
+        "candidates": candidate_rows,
+        "page": {
+            "page_size": 1000,
+            "sort_key": "portfolio_id:asc,mandate_id:asc",
+            "returned_component_count": len(candidate_rows),
+            "request_scope_fingerprint": "sha256:dpm-portfolio-universe",
+            "next_page_token": "next-page" if page_truncated else None,
+        },
+        "supportability": {
+            "state": supportability_state,
+            "reason": (
+                "DPM_PORTFOLIO_UNIVERSE_READY"
+                if supportability_state == "READY"
+                else "DPM_PORTFOLIO_UNIVERSE_PAGE_PARTIAL"
+                if page_truncated
+                else "DPM_PORTFOLIO_UNIVERSE_EMPTY"
+            ),
+            "returned_candidate_count": len(candidate_rows),
+            "filters_applied": [
+                "as_of_date",
+                "booking_center_code",
+                "model_portfolio_ids",
+                "active_discretionary_authority",
+            ],
+            "page_truncated": page_truncated,
+        },
+        "lineage": {
+            "source_system": "lotus-core",
+            "source_table": "portfolio_mandate_bindings",
+            "contract_version": "rfc_037_dpm_portfolio_universe_candidate_v1",
+        },
+        "data_quality_status": "ACCEPTED",
+        "latest_evidence_timestamp": "2026-05-10T09:00:00Z",
+        "source_batch_fingerprint": "sha256:dpm-portfolio-universe",
+        "snapshot_id": "dpm_portfolio_universe:sha256:dpm-portfolio-universe",
+    }
+
+
 class _PmBookResolver:
     def __init__(self, payload: dict[str, object]) -> None:
         self.payload = payload
@@ -488,6 +574,26 @@ class _UnavailableCioModelChangeResolver:
 class _IncompleteCioModelChangeResolver:
     def resolve_cio_model_change_affected_cohort(self, **_kwargs: object):
         raise DpmCoreResolverError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE")
+
+
+class _DpmPortfolioUniverseResolver:
+    def __init__(self, payload: dict[str, object]) -> None:
+        self.payload = payload
+        self.calls: list[dict[str, object]] = []
+
+    def resolve_dpm_portfolio_universe_candidates(self, **kwargs: object):
+        self.calls.append(kwargs)
+        return DpmCorePortfolioUniverseCandidateResponse.model_validate(self.payload)
+
+
+class _UnavailableDpmPortfolioUniverseResolver:
+    def resolve_dpm_portfolio_universe_candidates(self, **_kwargs: object):
+        raise DpmCoreResolverUnavailableError("DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE")
+
+
+class _IncompleteDpmPortfolioUniverseResolver:
+    def resolve_dpm_portfolio_universe_candidates(self, **_kwargs: object):
+        raise DpmCoreResolverError("DPM_CORE_PORTFOLIO_UNIVERSE_INCOMPLETE")
 
 
 class _RiskEventAuthority:
@@ -1435,6 +1541,25 @@ def test_tactical_house_view_wave_preview_rejects_invalid_source_evidence(
     assert response.json()["detail"]["code"] == expected_code
 
 
+def test_bulk_review_campaign_core_universe_rejects_caller_portfolios(monkeypatch) -> None:
+    resolver = _DpmPortfolioUniverseResolver(_dpm_portfolio_universe_candidate_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+    request = {
+        **_core_universe_bulk_review_campaign_request(),
+        "portfolios": _bulk_review_campaign_request()["portfolios"],
+    }
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == 422
+    assert (
+        response.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_CORE_UNIVERSE_REJECTS_CALLER_PORTFOLIOS"
+    )
+    assert resolver.calls == []
+
+
 @pytest.mark.parametrize(
     ("authority", "expected_status", "expected_code"),
     [
@@ -1578,6 +1703,131 @@ def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> N
     assert item["diagnostics"]["source_product"] == "BulkReviewCampaignMembership:v1"
     assert item["diagnostics"]["excluded_candidate_count"] == 1
     assert item["diagnostics"]["eligible_portfolio_types"] == ["DISCRETIONARY"]
+
+
+def test_bulk_review_campaign_preview_can_resolve_core_portfolio_universe_candidates(
+    monkeypatch,
+) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    resolver = _DpmPortfolioUniverseResolver(_dpm_portfolio_universe_candidate_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_core_universe_bulk_review_campaign_request(),
+            headers={"X-Correlation-Id": "corr-core-universe-preview"},
+        )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["durable"] is False
+    assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
+    assert payload["wave"]["trigger"]["source_refs"][0]["source_type"] == (
+        "BulkReviewCampaignMembership"
+    )
+    item = payload["wave"]["items"][0]
+    assert item["portfolio_id"] == PORTFOLIO_ID
+    assert item["mandate_id"] == MANDATE_ID
+    assert {ref["source_type"] for ref in item["source_refs"]} >= {
+        "BulkReviewCampaignMembership",
+        "BULK_REVIEW_CAMPAIGN_MEMBER",
+        "DpmPortfolioUniverseCandidate",
+        "DPM_PORTFOLIO_UNIVERSE_CANDIDATE",
+        "MANDATE_DIGITAL_TWIN",
+    }
+    assert item["diagnostics"]["source_product"] == "BulkReviewCampaignMembership:v1"
+    assert item["diagnostics"]["eligible_portfolio_types"] == ["DISCRETIONARY"]
+    assert resolver.calls == [
+        {
+            "as_of_date": date(2026, 5, 10),
+            "tenant_id": "default",
+            "booking_center_code": "Singapore",
+            "model_portfolio_ids": ["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+            "include_inactive_mandates": False,
+            "page_size": 1000,
+            "page_token": None,
+            "correlation_id": "corr-core-universe-preview",
+        }
+    ]
+
+
+def test_bulk_review_campaign_create_persists_core_portfolio_universe_candidates(
+    monkeypatch,
+) -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    resolver = _DpmPortfolioUniverseResolver(_dpm_portfolio_universe_candidate_payload())
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(mandate_repository, wave_repository) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves",
+            json=_core_universe_bulk_review_campaign_request(),
+            headers={"Idempotency-Key": "idem-core-universe-campaign-wave"},
+        )
+
+    assert response.status_code == 201
+    payload = response.json()
+    assert payload["durable"] is True
+    assert payload["wave"]["trigger"]["trigger_type"] == "BULK_REVIEW_CAMPAIGN"
+    assert payload["wave"]["aggregate_metrics"]["state_counts"] == {"CANDIDATE": 1}
+    assert wave_repository.get_wave(wave_id=payload["wave"]["wave_id"]) is not None
+
+
+@pytest.mark.parametrize(
+    ("resolver", "expected_status", "expected_code"),
+    [
+        (
+            _DpmPortfolioUniverseResolver(
+                _dpm_portfolio_universe_candidate_payload(
+                    supportability_state="INCOMPLETE",
+                    candidates=[],
+                )
+            ),
+            424,
+            "DPM_PORTFOLIO_UNIVERSE_EMPTY",
+        ),
+        (
+            _DpmPortfolioUniverseResolver(
+                _dpm_portfolio_universe_candidate_payload(
+                    supportability_state="DEGRADED",
+                    page_truncated=True,
+                )
+            ),
+            424,
+            "DPM_PORTFOLIO_UNIVERSE_PAGE_PARTIAL",
+        ),
+        (
+            _UnavailableDpmPortfolioUniverseResolver(),
+            503,
+            "DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE",
+        ),
+        (
+            _IncompleteDpmPortfolioUniverseResolver(),
+            424,
+            "DPM_CORE_PORTFOLIO_UNIVERSE_INCOMPLETE",
+        ),
+    ],
+)
+def test_bulk_review_campaign_preview_fails_closed_for_core_universe_dependency_states(
+    monkeypatch,
+    resolver: object,
+    expected_status: int,
+    expected_code: str,
+) -> None:
+    monkeypatch.setattr(waves_router, "build_core_resolver_client", lambda: resolver)
+
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        response = client.post(
+            "/api/v1/rebalance/waves/preview",
+            json=_core_universe_bulk_review_campaign_request(),
+        )
+
+    assert response.status_code == expected_status
+    assert response.json()["detail"]["code"] == expected_code
 
 
 def test_bulk_review_campaign_preview_preserves_governance_evidence() -> None:

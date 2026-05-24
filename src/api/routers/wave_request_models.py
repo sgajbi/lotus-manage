@@ -180,6 +180,45 @@ class DpmWavePreviewRequest(BaseModel):
         description="Required with campaign_definition_id.",
         examples=["2026.05"],
     )
+    campaign_candidate_source: Literal["INLINE_SOURCE_BACKED", "CORE_DPM_PORTFOLIO_UNIVERSE"] = (
+        Field(
+            default="INLINE_SOURCE_BACKED",
+            description=(
+                "Candidate source for `BULK_REVIEW_CAMPAIGN`. `INLINE_SOURCE_BACKED` preserves "
+                "caller or persisted campaign-definition candidates. "
+                "`CORE_DPM_PORTFOLIO_UNIVERSE` resolves bounded source-owned candidates from "
+                "lotus-core `DpmPortfolioUniverseCandidate:v1` and fails closed on empty or "
+                "truncated pages."
+            ),
+            examples=["CORE_DPM_PORTFOLIO_UNIVERSE"],
+        )
+    )
+    model_portfolio_ids: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Optional model-portfolio filters for Core DPM portfolio-universe candidate "
+            "discovery. Used only with `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`."
+        ),
+        examples=[["MODEL_PB_SG_GLOBAL_BAL_DPM"]],
+    )
+    include_inactive_mandates: bool = Field(
+        default=False,
+        description=(
+            "When true, asks source-owned Core candidate discovery to include inactive mandate "
+            "bindings. Default false keeps wave launch scoped to active discretionary mandates."
+        ),
+        examples=[False],
+    )
+    campaign_candidate_page_size: int = Field(
+        default=1000,
+        ge=1,
+        le=1000,
+        description=(
+            "Maximum Core DPM portfolio-universe candidates to request for one wave preview/create. "
+            "Manage rejects truncated responses rather than creating a partial campaign wave."
+        ),
+        examples=[1000],
+    )
     minimum_impact_score: float = Field(
         default=0.05,
         ge=0.0,

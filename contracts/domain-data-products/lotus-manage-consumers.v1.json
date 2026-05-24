@@ -552,6 +552,29 @@
       "failure_posture": "fail_closed"
     },
     {
+      "product_name": "DpmPortfolioUniverseCandidate",
+      "producer_repository": "lotus-core",
+      "required_product_version": "v1",
+      "required_trust_metadata": [
+        "product_name",
+        "product_version",
+        "as_of_date",
+        "source_batch_fingerprint",
+        "snapshot_id",
+        "correlation_id"
+      ],
+      "migration_posture": {
+        "status": "current"
+      },
+      "consumption_mode": "stateful_core_sourcing",
+      "business_purpose": "Resolve bounded Core-owned DPM portfolio-universe candidate pages for bulk-review campaign wave preview and creation without inferring relationship householding, PM ranking, execution readiness, client communication workflow, or global universe ownership in lotus-manage.",
+      "validation_lanes": [
+        "feature",
+        "pr-merge"
+      ],
+      "failure_posture": "fail_closed"
+    },
+    {
       "product_name": "TacticalHouseViewAffectedCohort",
       "producer_repository": "lotus-advise",
       "required_product_version": "v1",
