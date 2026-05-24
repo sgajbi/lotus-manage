@@ -48,24 +48,26 @@
 - RFC-0036
   implemented target-state stateful `lotus-core` sourcing and duplicate endpoint consolidation
 
-## Strategic Target-State RFCs
+## Strategic DPM RFCs With Implemented Boundaries
 
-These RFCs are proposed roadmap and execution-guide material. They permit clean strategic API
-redesign and endpoint retirement because no production downstream dependency is assumed for the
-revamp surface. They become supported product claims only after implementation, certification, live
-evidence, and supported-feature promotion.
+These RFCs started as proposed roadmap and execution-guide material. Their supported claims now
+follow the implementation-backed posture recorded in each RFC, the WTBD reintegration ledger,
+certified API docs, wiki source, and canonical Workbench proof. Future scope and external-owner
+dependencies remain explicit non-claims until implementation, certification, live evidence, wiki
+updates, and supported-feature promotion are complete.
 
 - RFC-0037
-  proposed DPM operating-system and mandate-intelligence roadmap intended to make
-  `lotus-manage` the management-side crown jewel of the Lotus ecosystem, with the 15 target
-  capability themes explicitly accounted for as implementation slices or dependent RFCs
+  strategic DPM operating-system and mandate-intelligence parent roadmap. Bounded Lotus-owned child
+  realization is complete for command center, construction, proof-pack, wave, outcome,
+  portfolio-memory, campaign, PM-quality, and PM copilot workspace surfaces. Broader strategic
+  source-product depth remains open under RFC37-WTBD-004.
 - RFC-0038
   implemented first DPM operating-system foundation: source-mapped mandate digital twin,
   deterministic health engine, monitoring exception taxonomy, persistence, certified mandate and
   monitoring APIs, bounded command-center summary, local manage proof, local canonical manage plus
   live core proof, wiki publication, and downstream Gateway/Workbench/platform handoff issues.
 - RFC-0039
-  implementation-backed manage foundation: advanced portfolio construction and rebalance
+  implementation-backed manage and first-wave product foundation: advanced portfolio construction and rebalance
   alternatives now have a governed source-data and method map, manage-local construction API
   governance, a dedicated `src/core/construction/` package, pure alternative models, do-nothing
   baseline, heuristic wrapping, normalized drift/turnover metrics, conservative alternative-set
@@ -74,17 +76,17 @@ evidence, and supported-feature promotion.
   integration for risk-aware construction, regime-stress authority context, certified manage backend
   APIs for generating, retrieving, and selecting persisted construction alternative sets,
   Postgres-backed canonical manage proof, source-backed ESG/restriction profile consumption, and
-  construction-specific Gateway/Workbench realization requirements. Full product-surface support is
-  not claimed until Gateway and Workbench implement and live-prove the downstream journey.
+  construction-specific Gateway/Workbench realization proof. Broader unsupported source-product
+  methodology, OMS execution, order routing, and settlement remain non-claims.
 - RFC-0040
-  implemented manage-backend pre-trade proof-pack and DPM evidence-fabric authority with durable
+  implemented pre-trade proof-pack and DPM evidence-fabric authority with durable
   JSON, Markdown summary, report-input, AI-evidence input, lineage, retention posture,
-  Gateway/Workbench realization RFC alignment, canonical Postgres-backed live proof under
-  `output/rfc0040-proof`, and no full product-surface claim until downstream implementation is
-  complete
+  Gateway/Workbench realization, portfolio-memory lineage, PM-quality source-event family posture,
+  and canonical Postgres-backed live proof under `output/rfc0040-proof`
 - RFC-0041
   rebalance-wave orchestration and CIO model-change impact is `DONE` for the manage-owned explicit
-  portfolio-list wave backend authority. Source-map, platform-scaffold evidence improvement, cleanup review, wave
+  portfolio-list wave backend authority, bounded campaign control surfaces, downstream realization,
+  and no-OMS boundary posture. Source-map, platform-scaffold evidence improvement, cleanup review, wave
   domain contracts, persistence foundation, explicit affected-portfolio preview, idempotent
   durable create, durable source-check classification, ready-item simulation, item-level
   alternative selection, proof-pack linkage, approval, staging, internal operations handoff
@@ -92,11 +94,10 @@ evidence, and supported-feature promotion.
   supportability telemetry,
   repository-backed search/detail/item/proof-pack/supportability read models, OpenAPI
   certification, aggregate reconciliation, hardening review, downstream Gateway/Workbench
-  RFC-0098 wave realization addenda, and source-owned `PM_BOOK_REVIEW` wave discovery through
-  lotus-core `PortfolioManagerBookMembership:v1` are complete. CIO automatic cohort
-  discovery is deferred until source-owning products are proven. Full Gateway/Workbench product
-  support remains proposed until downstream implementation and canonical front-office proof are
-  complete.
+  RFC-0098 wave realization addenda, source-owned `PM_BOOK_REVIEW` wave discovery through
+  lotus-core `PortfolioManagerBookMembership:v1`, campaign-definition BFF composition, and
+  Workbench launch/history rendering are complete. Global portfolio-universe campaign discovery and
+  external workflow orchestration remain source-owner/external-owner promotion dependencies.
 - RFC-0042
   post-trade outcome feedback loop; `DONE` for the manage backend authority after gold-standard
   tightening on 2026-05-05, with Slice 0 source-map guardrails, Slice 1 platform scaffold evidence, Slice 2 cleanup/structure
@@ -111,11 +112,11 @@ evidence, and supported-feature promotion.
   WTBD audit proof at `output/rfc0042-wtbd-audit-outcome-proof/20260505-211611/` and canonical
   Workbench evidence at `lotus-workbench/output/playwright/rfc42-wtbd-audit-20260506-fixed/`
   prove the first-wave Gateway/Workbench outcome-review product path after owning-app
-  implementation. PM operating quality backend support, Gateway BFF composition, and `lotus-ai`
-  `pm_quality_summary.pack@v1` support-only score-run summaries are implemented. Remaining
-  RFC-0042 work is source-owner methodology enrichment, external execution/OMS ownership,
-  Workbench PM-quality UI, and Gateway/Workbench fairness-analysis plus PM-quality summary
-  invocation
+  implementation. PM operating quality backend support, Gateway BFF composition, Workbench
+  policy/score/fairness/review-action/summary-invocation UI, portfolio-memory lineage, and
+  `lotus-ai` `pm_quality_summary.pack@v1` support-only score-run summaries are implemented.
+  Unsupported execution/OMS ownership, client contact, PM ranking, HR/conduct decisions, and raw
+  prompt/generated-summary retention remain explicit non-claims.
 - RFC-0043
   implemented governed AI PM copilot support using `lotus-ai` without transferring domain decision
   ownership to AI. Owner-side DPM packs exist for proof-pack PM memo, wave PM memo, outcome-review
