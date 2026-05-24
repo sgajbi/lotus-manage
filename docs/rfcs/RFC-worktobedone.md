@@ -44,13 +44,13 @@ retained only as evidence index and sequencing control.
 | Owning RFC | Completed WTBD truth now integrated into the RFC | Ledger boundary that remains here |
 | --- | --- | --- |
 | RFC-0036 | RFC36-WTBD-001 through RFC36-WTBD-006 are incorporated into `docs/rfcs/RFC-0036-dpm-stateful-core-sourcing-and-endpoint-consolidation.md`. | No RFC36-specific ledger boundary remains; broader strategic source-product depth remains tracked by RFC37-WTBD-004. |
-| RFC-0037 | RFC37-WTBD-001, RFC37-WTBD-005, and RFC37-WTBD-006 are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md` as completed parent-roadmap closure results. | RFC-0037 remains a strategic parent roadmap; full portfolio memory, source-owner methodology depth, full copilot workspace depth, and broader front-office realization stay outside these completed parent-roadmap claims. Outcome-review source-methodology follow-ons remain tracked by RFC42-WTBD-006; external OMS/client-communication promotion dependencies remain explicit non-claims rather than RFC37-WTBD-001 blockers. |
+| RFC-0037 | RFC37-WTBD-001, RFC37-WTBD-002, RFC37-WTBD-005, and RFC37-WTBD-006 are incorporated into `docs/rfcs/RFC-0037-dpm-operating-system-and-mandate-intelligence.md` as completed parent-roadmap closure results. | RFC-0037 remains a strategic parent roadmap; full portfolio memory, source-owner methodology depth, broader front-office realization, and additional future copilot product surfaces stay outside these completed parent-roadmap claims. Outcome-review source-methodology follow-ons remain tracked by RFC42-WTBD-006; external OMS/client-communication promotion dependencies remain explicit non-claims rather than RFC37-WTBD-001 blockers. |
 | RFC-0038 | RFC38-WTBD-001 through RFC38-WTBD-008 are incorporated into `docs/rfcs/RFC-0038-mandate-digital-twin-health-and-command-center.md`. | RFC38-WTBD-007 is completed for Lotus-owned bounded source-product context preservation: `lotus-risk:MandateRiskHealthContext:v1` and `lotus-performance:MandatePerformanceHealthContext:v1` are source-owned products, and Manage preserves caller-supplied context refs and uses source health-state/threshold posture without cloning risk or performance methodology. |
 | RFC-0039 | RFC39-WTBD-001 through RFC39-WTBD-004, RFC39-WTBD-006, RFC39-WTBD-010, the bounded first-wave RFC39-WTBD-005, RFC39-WTBD-007 and RFC39-WTBD-009 results, and the Lotus-owned RFC39-WTBD-008 external treasury/currency-overlay boundary result are incorporated into `docs/rfcs/RFC-0039-advanced-portfolio-construction-and-rebalance-alternatives.md`. | RFC39-WTBD-005 is done for Lotus-owned bounded support: Manage preserves supplied risk/performance authority context across construction alternatives, source-analytics posture names implemented `lotus-risk` and `lotus-performance` source products, wave/proof-pack handoffs preserve broader supplied drawdown, stress, attribution, contribution, benchmark-relative, and currency-attribution fields, and local risk/performance methodology calculation remains blocked. RFC39-WTBD-008 is done for Lotus-owned supportability: external treasury source-product contract boundaries, active fail-closed hedge-readiness, currency-exposure, hedge-policy, eligible-hedge-instrument, and FX forward-curve posture are merged in `lotus-core`, mirrored in platform truth, and consumed by Manage as unavailable postures. Runtime external treasury ingestion remains an external bank-owner promotion dependency and is not a supported hedge-execution claim. |
 | RFC-0040 | RFC40-WTBD-001 through RFC40-WTBD-010 are incorporated into `docs/rfcs/RFC-0040-pre-trade-proof-pack-and-evidence-fabric.md`, including the portfolio-memory source-event family posture that lists supported manage/report/AI/archive families, explicitly defers OMS execution, supports bounded PM quality score-run, review-action, and summary-invocation lineage for persisted score runs whose source-owned Core PM-book membership evidence includes the requested portfolio, supports Gateway PR #242 and Workbench PR #350 downstream realization of bounded portfolio-memory source-lineage search/facets, and supports generation-time direct proof-pack enrichment from source-owned `RegimeScenarioPackEvaluation:v1` context when the selected alternative does not already carry regime-stress authority. | Source-owned scenario governance posture is now bounded and implementation-backed through `lotus-risk` and preserved by `lotus-manage`; future OMS execution products, broader external CIO workflow UX, global portfolio-universe discovery, broader cross-app source-event search, and richer score-run analytics remain separate product depth rather than hidden manage proof-pack or portfolio-memory gaps. |
 | RFC-0041 | RFC41-WTBD-001, RFC41-WTBD-002, RFC41-WTBD-004 through RFC41-WTBD-009, the bounded risk-event source-owner plus manage-consumer result for RFC41-WTBD-003, the bounded tactical house-view source-owner plus manage-consumer result, the bounded manage-owned `BulkReviewCampaignMembership:v1` result, persisted Manage-owned `BulkReviewCampaignDiscovery:v1` over campaign definitions, Manage-owned campaign-definition retirement/supersession/lifecycle-event projection, preview-readiness checks, launch packages, durable campaign-definition launch with append-only launch history, first-class launch-history audit pages, append-only campaign approval-decision evidence, append-only campaign assignment/escalation actions, controlled campaign assignment-task lifecycle evidence, append-only maker-checker control evidence, bounded campaign operating queue, bounded campaign approval-attention inbox, bounded campaign workflow board, bounded campaign assignment plan, bounded campaign workflow-automation readiness, Gateway campaign-definition BFF composition, and Workbench active campaign-definition list plus launch/history rendering are incorporated into `docs/rfcs/RFC-0041-rebalance-wave-orchestration-and-cio-model-change-impact.md`. | RFC41-WTBD-003 is closed for Lotus-owned supportability: global portfolio-universe campaign discovery remains a deferred source-owner promotion dependency and external workflow orchestration remains an external-owner promotion dependency, both represented by machine-readable boundary postures rather than open Manage implementation gaps. Tactical house-view source ownership is implemented in `lotus-advise`: it owns `TacticalHouseViewAffectedCohort:v1` for governed bank-authored house-view instructions and caller-supplied source-backed candidates. `lotus-manage` consumes that product for bounded `TACTICAL_HOUSE_VIEW` wave preview/create without recomputing advisory, house-view, holdings, exposure, alignment, or mandate facts. `lotus-manage` also owns and implements the first `BulkReviewCampaignMembership:v1` DPM operating campaign envelope with optional approval, expiry, access-purpose, source-ref, actor-entitlement governance evidence, persisted `BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, `GET /api/v1/rebalance/waves/campaign-discovery` for bounded persisted campaign discovery, `GET /api/v1/rebalance/waves/campaign-operating-queue` for launch-ready/attention-required/closed queue posture, `GET /api/v1/rebalance/waves/campaign-approval-inbox` for read-only approval-complete/approval-required/approval-incomplete/expiry-attention/entitlement-attention/closed posture, `GET /api/v1/rebalance/waves/campaign-workflow-board` for read-only actor-aware next-action posture, `GET /api/v1/rebalance/waves/campaign-assignment-plan` for read-only actor routing/escalation/SLA posture, `GET /api/v1/rebalance/waves/campaign-workflow-automation` for read-only Manage-side task automation readiness, `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions` for append-only assignment, reassignment, escalation, de-escalation, and resolution posture evidence, `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks` for controlled assignment task state, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions` for append-only task transition evidence, `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls` for append-only actor-separation control evidence, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire` to keep retired definitions auditable while blocking new preview/create use, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede` to keep replaced definitions auditable while pointing to an active replacement version/hash, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events` for bounded lifecycle audit projection, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness` for fail-closed supportability, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package` for bounded preview/create request drafts and idempotency guidance, `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch` for deterministic durable wave launch only when readiness is `READY`, `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history` for paged append-only launch audit evidence, and `POST`/`GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions` for append-only approval posture evidence. Source apps still own the underlying facts and calculated reasons. `lotus-gateway` PR #231 (`ea6c036`, Main Releasability Gate `25989936539`) preserves bounded campaign-definition lifecycle-events, launch-history, launch-package, durable launch, and campaign-discovery BFF payloads without local cohort, readiness, idempotency, order, or OMS calculation. `lotus-workbench` PR #244 (`31ea877`, Main Releasability Gate `25989936388`) renders the Gateway-only READY-gated launch and paged launch-history/empty-state/no-order/no-OMS boundaries without computing cohort membership or readiness locally. RFC41-WTBD-010 is closed for Lotus-owned boundary supportability: execution/OMS integration remains an external-owner promotion dependency with no supported Lotus order-routing, acknowledgement, fill, settlement, reconciliation, or execution claim. |
 | RFC-0042 | RFC42-WTBD-001 through RFC42-WTBD-005, the Lotus-owned RFC42-WTBD-006 source-owner methodology supportability result, the Lotus-owned RFC42-WTBD-007 external execution/OMS fail-closed boundary result, and the bounded RFC42-WTBD-008 PM operating quality policy administration, preview, persisted score-run lifecycle, governance controls, optional source-owned PM-book materialization, bounded source-segment fairness-analysis preview/create/read/list lifecycle, bounded immutable review-action preview/create/read/list ledger, bounded immutable support-summary invocation history, bounded portfolio-memory score-run, review-action, and summary-invocation lineage projection, Gateway policy/score-run/fairness-analysis/support-summary/review-action BFF composition, AI-owned support-only PM quality summary pack, and Gateway/Workbench PM-quality policy/score-run/fairness-analysis/support-summary plus review-action ledger/detail and preview-before-create command UX are incorporated into `docs/rfcs/RFC-0042-post-trade-outcome-feedback-loop.md`. | RFC42-WTBD-006 is done for Lotus-owned source-methodology supportability: risk, performance, and core now publish implementation-backed methodology/source-product truth for the supported realized outcome families, Manage consumes them only as source-owned evidence, and Gateway PR #242 plus Workbench PR #350 realize the bounded source-lineage filter/facet posture downstream. RFC42-WTBD-007 is done for Lotus-owned supportability: Core exposes fail-closed `ExternalOrderExecutionAcknowledgement:v1` posture and Manage preserves it as construction/outcome/report/AI boundary evidence. Bank-owned OMS ingestion, acknowledgements, fills, settlement, and reconciliation remain external-owner promotion dependencies and unsupported execution claims. PM quality does not claim PM ranking, protected-class inference, HR, compensation, conduct enforcement, client contact, trade approval, order routing, OMS, execution, approval workflow beyond immutable review actions, generated-summary text retention, or autonomous decisions. |
-| RFC-0043 | The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including the merged owner-side operations handoff summary, exception summary, and PM quality summary packs plus first-wave Gateway/Workbench invocation surfaces where implemented. | RFC-0043 remains partial until the full copilot workspace and any additional product-surface requirements are implemented by their owners. |
+| RFC-0043 | The governed DPM workflow-pack and Workbench copilot workspace result from RFC37-WTBD-002 is incorporated into `docs/rfcs/RFC-0043-governed-ai-pm-copilot-for-dpm.md`, now including merged owner-side proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, PM quality summary packs, Gateway BFF invocation routes, and Workbench `mode=copilot` realization. | Additional future AI product surfaces remain owner-specific future scope and must preserve no autonomous decision, no PM ranking, no client contact, no order routing, no OMS execution, and no raw prompt/model-output retention claims. |
 
 ## Mainline WTBD Control Snapshot
 
@@ -73,12 +73,11 @@ tracked RFC39-WTBD-008 as partial while external treasury contracts, active fail
 postures, and Manage consumption were being completed. The 2026-05-22 Lotus-owned completion
 recount now closes that row for Lotus-owned supportability while runtime external treasury
 ingestion remains an external bank-owner promotion dependency. The classification also normalizes
-RFC37-WTBD-002, RFC37-WTBD-003, and
-RFC37-WTBD-007 as partial, matching the detail rows: bounded first-wave product paths, cross-app
-product surfaces, and portfolio-memory lineage exist, while the full copilot workspace, broader
-front-office realization, full portfolio memory, and remaining source-owner methodology depth remain
-future scope. The current classification is
-59 total WTBD items: 55 done on merged/published Lotus-owned truth, 3 partial or in progress, and
+RFC37-WTBD-003 and RFC37-WTBD-007 as partial, matching the detail rows: bounded first-wave product
+paths, cross-app product surfaces, and portfolio-memory lineage exist, while broader front-office
+realization, full portfolio memory, and remaining source-owner methodology depth remain future
+scope. The current classification is
+59 total WTBD items: 56 done on merged/published Lotus-owned truth, 2 partial or in progress, and
 1 remaining/open. The 2026-05-24 Lotus-owned completion recount keeps the 2026-05-22 closures for
 RFC38-WTBD-007, RFC39-WTBD-008, and RFC42-WTBD-007 and now moves RFC41-WTBD-003 out of partial
 because Lotus has implemented bounded risk-event, tactical house-view, campaign-membership,
@@ -176,12 +175,23 @@ methodology, performance benchmark analytics, or unsupported ESG approval.
 | Control | Count | Meaning |
 | --- | ---: | --- |
 | Total WTBD items | 59 | RFC-0036 through RFC-0042 follow-up items tracked in this ledger. |
-| Done on merged/published Lotus-owned truth | 55 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
-| Partial / in progress | 3 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
+| Done on merged/published Lotus-owned truth | 56 | Implementation-backed Lotus-owned items merged to owning `main` branches, validated, and published where wiki truth changed; external bank-system promotion dependencies remain explicit non-claims. |
+| Partial / in progress | 2 | Items with meaningful implementation-backed progress but remaining Lotus-owned source, Manage, downstream, methodology, or product-surface gaps. |
 | Remaining / open | 1 | Items still deferred, proposed, conditional, unsupported, or awaiting Lotus-owned implementation or ownership. |
 
 Recently closed in this snapshot:
 
+RFC37-WTBD-002 is complete for Lotus-owned governed AI PM copilot support. `lotus-ai` owns the
+review-gated workflow packs for proof-pack PM memo, wave PM memo, outcome-review narrative,
+operations handoff summary, exception summary, and PM-quality summary; `lotus-gateway` owns the
+bounded BFF invocation routes; and `lotus-workbench` PR #354
+(`e68b698331af30ffea952ea8266d9ed793305d94`, wiki `504a783`, Main Releasability Gate
+`26347952758`) adds the Gateway-only `/workbench/{portfolioId}?mode=copilot` workspace with list,
+detail, command, readiness, source-ref, run-posture, and unavailable-state rendering across the
+supported pack families. This closes the Lotus-owned workspace gap without claiming autonomous
+investment decisions, PM ranking, client contact, order routing, fills, settlement, OMS execution,
+raw prompt storage, or generated model-output retention. Additional future copilot product
+surfaces are new owner-specific scope rather than a blocker for this WTBD.
 
 RFC42-WTBD-006 is complete for Lotus-owned source-methodology supportability. The current merged
 source-owner posture covers implementation-backed `lotus-risk` risk metrics, rolling risk,
@@ -282,8 +292,7 @@ Partial / in-progress items:
 
 | ID | Current partial scope | Remaining gap |
 | --- | --- | --- |
-| RFC37-WTBD-002 | Bounded current workflow-pack PM memo, operations handoff, exception summary, and PM-quality summary invocation paths are implemented through owning services and first-wave Gateway/Workbench surfaces. | Full governed copilot workspace and any additional product-surface requirements still need owner-backed implementation and proof. |
-| RFC37-WTBD-003 | Front-office DPM product realization is complete feature-by-feature for several bounded paths, including command center, alternatives, proof packs, waves, reports, outcome review, PM quality, and selected portfolio-memory surfaces. | Broader copilot workspace, full portfolio-memory depth, and remaining source/product surfaces must be realized by their owning apps without OMS or client-communication overclaims. |
+| RFC37-WTBD-003 | Front-office DPM product realization is complete feature-by-feature for several bounded paths, including command center, alternatives, proof packs, waves, reports, outcome review, governed copilot workspace, PM quality, and selected portfolio-memory surfaces. | Full portfolio-memory depth and remaining source/product surfaces must be realized by their owning apps without OMS or client-communication overclaims. |
 | RFC37-WTBD-007 | Portfolio memory has a strong first-wave Manage-local read model, search, source-event family posture, report/AI/archive lineage, campaign workflow evidence, and PM-quality lineage projection with Gateway/Workbench realization for bounded source-lineage filters/facets. | Full OMS execution projection, client communication source events, global portfolio-universe discovery, and broader cross-app source-event search/discovery remain owner-specific future depth or external-owner promotion dependencies. |
 Next bank-buyable product-readiness priorities:
 
@@ -304,7 +313,8 @@ ready values for local promotion or recalculation.
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC37-WTBD-002 - Full governed AI PM copilot workspace | Builds beyond the bounded current workflow-pack invocation path into any remaining owner-backed copilot workspace realization without inventing prompts, decisions, client-contact, order, or OMS claims. Completed RFC42-WTBD-006 already provides source-owned methodology evidence for realized outcome families, so this priority should consume those source facts through Manage/Gateway contracts rather than recalculate them. Promotion requires Gateway/Workbench product surfaces, AI workflow ownership, review gates, source lineage, supportability boundaries, tests, and wiki truth while preserving no autonomous decision, no PM ranking, no client communication, no order routing, and no OMS execution claims. | Owner-backed workspace surfaces and contract tests must be merged in their owning repos; any external communication or execution capability remains an external-owner non-claim. |
+| 1 | RFC37-WTBD-007 - Portfolio-memory source-event discovery depth | Builds beyond the bounded Manage-local read model and source-lineage filters into any remaining owner-backed portfolio-memory discovery depth without inventing OMS execution, client communication, or global cross-app search claims. | Source-owner event families, Gateway/Workbench search posture, access/retention policy, degraded states, and tests must be merged in owning repos; bank OMS/client-communication runtime integrations remain external-owner non-claims until implemented by their owners. |
+| 2 | RFC37-WTBD-003 - Full front-office DPM product realization closure | Consolidates the now-implemented feature-by-feature surfaces into a complete front-office operating path only where Gateway/Workbench/API evidence proves the behavior. | Canonical front-office proof must show coherent workflows across bounded command center, construction, proof-pack, wave, outcome, portfolio-memory, campaign, PM-quality, and copilot surfaces without adding OMS or client-contact claims. |
 
 2026-05-22 downstream realization backfill: Gateway PR #238 and Workbench PR #340 add bounded
 campaign workflow/audit realization over existing Manage campaign workflow truth. This strengthens
@@ -816,12 +826,13 @@ Current closure status:
 
 RFC-0037 is a strategic parent roadmap, not a single implementation closure. It defines the target
 DPM operating-system proposition and the execution contract inherited by RFC-0038 through RFC-0043.
-Implementation-backed support has advanced through RFC-0038, RFC-0039, RFC-0040, RFC-0041, and the
-RFC-0042 bounded first-wave outcome-review product path. The canonical DPM sales/demo story is also
-implemented and wiki-published through `lotus-platform` PR #310. RFC37-WTBD-001 is closed for the
-Lotus-owned outcome-feedback loop. RFC-0043 is partially implemented for owner-side DPM workflow
-packs, while broader portfolio memory, full copilot workspace depth, broader front-office
-realization, and richer source-owner methodology depth remain future or partial scope. External OMS
+Implementation-backed support has advanced through RFC-0038, RFC-0039, RFC-0040, RFC-0041, the
+RFC-0042 bounded first-wave outcome-review product path, and RFC-0043 governed AI PM copilot
+support. The canonical DPM sales/demo story is also implemented and wiki-published through
+`lotus-platform` PR #310. RFC37-WTBD-001 is closed for the Lotus-owned outcome-feedback loop, and
+RFC37-WTBD-002 is closed for owner-side workflow packs, Gateway routes, and Workbench
+`mode=copilot` realization. Broader portfolio memory, broader front-office realization, and richer
+source-owner methodology depth remain future or partial scope. External OMS
 execution and client communication runtime promotion remain explicit external-owner dependencies
 and unsupported claims.
 
@@ -833,8 +844,8 @@ Closure evidence:
 | RFC family status | `docs/rfcs/README.md` |
 | Supported feature truth | `wiki/Supported-Features.md` |
 | Repository current-state truth | `REPOSITORY-ENGINEERING-CONTEXT.md` |
-| Implementation-backed child RFCs | RFC-0038, RFC-0039, RFC-0040, RFC-0041, RFC-0042 bounded first-wave product path, RFC-0043 owner-side DPM workflow-pack subset |
-| Remaining partial child RFCs | RFC-0043 broader copilot workspace and additional workflow-pack scope |
+| Implementation-backed child RFCs | RFC-0038, RFC-0039, RFC-0040, RFC-0041, RFC-0042 bounded first-wave product path, RFC-0043 governed workflow-pack and Workbench copilot workspace support |
+| Remaining partial child RFCs | Broader portfolio-memory/source-product/front-office realization depth tracked by RFC37-WTBD-003, RFC37-WTBD-004, and RFC37-WTBD-007 |
 
 ### Remaining Work Summary
 
@@ -845,8 +856,8 @@ not to mark RFC-0037 complete from roadmap text alone.
 | ID | Work item | Owner | Current status | Why it was not done in RFC-0037 |
 | --- | --- | --- | --- | --- |
 | RFC37-WTBD-001 | Complete RFC-0042 post-trade outcome feedback loop | `lotus-manage` plus `lotus-core`, `lotus-risk`, `lotus-performance`, `lotus-gateway`, `lotus-workbench`, `lotus-report`, `lotus-render`, `lotus-archive`, `lotus-ai` | Completed for the Lotus-owned first-wave outcome-review product path | RFC-0042 now delivers Manage authority, Gateway/Workbench product realization, report/render/archive materialization, governed AI narrative request flow, PM operating quality linkage, outcome-review source-lineage search/facets, and explicit external OMS/client-communication non-claim evidence. Richer source methodology depth remains in RFC42-WTBD-006; external OMS and client-communication runtime promotion remain unsupported external-owner dependencies. |
-| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Completed for the bounded current product path; partial for the broader copilot workspace | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary packs with guardrails and provenance, plus conservative workflow-pack default-version resolution. Gateway and Workbench now expose the operations handoff, exception-summary, and PM-quality summary invocation surfaces through governed Gateway routes. Full copilot workspace and any additional product surfaces remain future work. |
-| RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0043 | Multiple canonical product surfaces and first-wave AI workflow-pack invocation paths are implementation-backed, but the broader RFC-0043 copilot workspace, full portfolio memory, OMS, PM scoring, and remaining source-owner depth are not complete. |
+| RFC37-WTBD-002 | Complete RFC-0043 governed AI PM copilot | `lotus-ai`, consumed by Gateway/Workbench/manage evidence | Completed for Lotus-owned governed copilot support | `lotus-ai` now owns review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary packs with guardrails and provenance, plus conservative workflow-pack default-version resolution. Gateway exposes governed invocation routes, and Workbench PR #354 adds the Gateway-only `mode=copilot` workspace across supported pack families. Additional future product surfaces are new owner scope, not a blocker for this WTBD. |
+| RFC37-WTBD-003 | Full front-office DPM product realization across Gateway and Workbench | `lotus-gateway`, `lotus-workbench` | Partially implemented feature-by-feature across RFC-0038 through RFC-0043 | Multiple canonical product surfaces and AI workflow-pack workspace paths are implementation-backed, but full portfolio memory, OMS, PM scoring, and remaining source-owner depth are not complete. |
 | RFC37-WTBD-004 | Source-product depth for mandate personalization, PM-book discovery, sustainability, restrictions, risk, performance, cost, cashflow, and scenarios | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Deferred source-authority work | RFC-0037 requires rich private-banking source truth that cannot be fabricated in manage. |
 | RFC37-WTBD-005 | Report, archive, and client/internal evidence materialization | `lotus-report`, `lotus-render`, `lotus-archive`, with Gateway/Workbench and AI posture consumers | Completed for supported proof-pack, wave, and outcome-review evidence materialization | Report-input contracts, render templates, archive lifecycle, Gateway/Workbench request posture, and AI evidence handoff paths are implemented, validated, merged, and wiki-published in the owning child RFC slices. Broader client-communication execution and any new evidence catalog families remain future owner scope. |
 | RFC37-WTBD-006 | Canonical sales/demo story from implementation-backed stack evidence | `lotus-platform`, `lotus-workbench`, `lotus-gateway`, participating domain apps | Completed, merged, CI-proven, and wiki-published through `lotus-platform` PR #310 | Platform now owns a governed cross-app canonical DPM demo story tied to `PB_SG_GLOBAL_BAL_001`, canonical demo-data contracts, Workbench panel registry, platform QA, merged owner evidence, audience-specific talk track, diagrams, and explicit unsupported-claim boundaries. |
@@ -871,7 +882,7 @@ Gold-pass assessment:
 5. Expected-standard decision: completed RFC37 child-roadmap items have reached the expected
    standard on merged and wiki-published owning-repository truth. RFC-0037 remains partial only
    where future source-methodology depth, full portfolio memory, broader front-office realization,
-   and broader copilot workspace scope are still unimplemented.
+   and additional future copilot product-surface scope are still unimplemented.
 
 ### Detailed Follow-Up Items
 
@@ -962,7 +973,7 @@ posture, and no-reconstruction source-authority policy. Gateway and Workbench ha
 invocation/posture surfaces for the implemented DPM memo paths where recorded under RFC40, RFC41,
 and RFC42 WTBD evidence.
 
-What remains open:
+Completed implementation evidence:
 
 `lotus-ai` PR #66 now implements conservative workflow-pack default-version resolution through
 `GET /platform/workflow-packs/registry/{pack_id}/default`. The route resolves only registered,
@@ -992,10 +1003,20 @@ PR #182 adds Gateway-only PM/operations actions and status display for both path
 prompt construction, direct manage/AI coupling, client-message generation, PM scoring, order
 routing, trade approval, or execution claims.
 
-RFC-0043 still needs the broader copilot workspace UX, additional AI-unavailable product fallbacks
-where not already implemented, and any future product surfaces in their owning apps. AI behavior
-remains support-only and cannot approve, recommend, execute, score PMs, route orders, or contact
-clients.
+`lotus-workbench` PR #354
+(`e68b698331af30ffea952ea8266d9ed793305d94`, wiki `504a783`, Main Releasability Gate
+`26347952758`) closes the broader Workbench copilot workspace gap by adding the Gateway-only
+`/workbench/{portfolioId}?mode=copilot` workspace across proof-pack PM memo, wave PM memo,
+outcome-review narrative, operations handoff summary, exception summary, and PM-quality summary
+invocation families. The workspace centralizes list/detail/command posture, source refs, workflow
+run/artifact refs, readiness states, unavailable-state rendering, and no-order/no-OMS/no-client
+boundaries without constructing prompts, calling Manage or AI directly, persisting generated
+summary text, ranking PMs, approving trades, routing orders, or contacting clients.
+
+RFC-0043 remains support-only. Future AI product surfaces may be added by their owning apps, but
+they are new scope and cannot approve, recommend, execute, score PMs, route orders, contact
+clients, store raw prompts, or retain generated model output unless a future governed owner
+contract explicitly implements and proves that behavior.
 
 Dependencies before implementation:
 
@@ -1007,9 +1028,8 @@ Dependencies before implementation:
 
 Expected implementation wave:
 
-Continue in `lotus-ai` for any additional pack families, then integrate through Gateway/Workbench
-after evidence contracts are stable. Do not add direct provider calls or prompt construction to
-`lotus-manage`.
+Continue in owning apps for any additional pack families or product surfaces. Do not add direct
+provider calls or prompt construction to `lotus-manage` or Workbench.
 
 Promotion proof:
 
@@ -1022,11 +1042,11 @@ Gold-pass assessment - 2026-05-10:
 
 | Gold-pass question | Assessment |
 | --- | --- |
-| What was truly completed | DPM workflow-pack execution exists for proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary; `lotus-ai` exposes conservative default-version resolution; Gateway and Workbench now expose the first-wave operations handoff and exception-summary invocation surfaces through governed Gateway routes. |
-| Quality improvements made | RFC37-WTBD-002 and RFC-0043 now distinguish implemented workflow packs, registry default resolution, and first-wave product invocation from future full-copilot workspace scope instead of treating all AI work as proposed. |
-| Debt removed | Stale roadmap wording that ignored merged `lotus-ai`, Gateway, and Workbench DPM copilot paths was retired from the WTBD/RFC truth. The remaining boundary is now the broader workspace and future product surfaces, not the current operations-handoff or exception-summary invocation paths. |
-| What was proven through testing and evidence | Existing `lotus-ai` slices prove guardrails, source refs, review posture, no-raw-payload behavior, bounded portfolio-memory lineage, and AI-owned source-event projections. `lotus-ai` PR #66 proves default-version resolution with focused registry tests, `make check`, green Feature Lane and PR Merge Gate, and wiki publication. `lotus-ai` PR #67 proves operations handoff summary support with guardrail/stub/API tests, full `make check`, live registry/execution/guardrail API proof, clean server-log scan, green Feature Lane and PR Merge Gate including coverage and Docker build, and wiki publication. `lotus-ai` PR #68 proves exception summary support with guardrail/stub/API tests, optional portfolio-memory context validation, forbidden client-message/PM-scoring/routing/action-output coverage, local 99 percent coverage-gate proof, green Feature Lane and PR Merge Gate including coverage and Docker build, merge to main, and wiki publication. `lotus-gateway` PR #209 and PR #210 prove the governed Gateway routes with contract, unit, integration, mypy, `make check`, integration, coverage, Docker/parity CI, merge to main, and wiki publication. `lotus-workbench` PR #182 proves Gateway-only invocation and display with focused Vitest tests, typecheck, lint, docs guard, `make check`, build, Playwright smoke, Docker/parity CI, merge to main, and wiki publication. |
-| Expected-standard decision | The bounded current RFC37-WTBD-002 product path reaches the expected standard: owner-side DPM workflow-pack execution, registry default resolution, and Gateway/Workbench operations-handoff plus exception-summary invocation are merged, validated, and wiki-published. The broader RFC37-WTBD-002 remains partial only for full copilot workspace and additional future product-surface requirements. |
+| What was truly completed | DPM workflow-pack execution exists for proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary; `lotus-ai` exposes conservative default-version resolution; Gateway exposes governed BFF invocation routes; and Workbench now exposes a coherent Gateway-only `mode=copilot` workspace across the supported pack families. |
+| Quality improvements made | RFC37-WTBD-002 and RFC-0043 now distinguish completed Lotus-owned workflow-pack, registry, Gateway-route, and Workbench-workspace support from future optional AI product surfaces instead of treating the copilot workspace as unfinished. |
+| Debt removed | Stale roadmap wording that ignored merged `lotus-ai`, Gateway, and Workbench DPM copilot paths was retired from the WTBD/RFC truth. The remaining boundary is future owner-specific product surface depth, not the current governed copilot workspace. |
+| What was proven through testing and evidence | Existing `lotus-ai` slices prove guardrails, source refs, review posture, no-raw-payload behavior, bounded portfolio-memory lineage, and AI-owned source-event projections. `lotus-ai` PR #66 proves default-version resolution with focused registry tests, `make check`, green Feature Lane and PR Merge Gate, and wiki publication. `lotus-ai` PR #67 proves operations handoff summary support with guardrail/stub/API tests, full `make check`, live registry/execution/guardrail API proof, clean server-log scan, green Feature Lane and PR Merge Gate including coverage and Docker build, and wiki publication. `lotus-ai` PR #68 proves exception summary support with guardrail/stub/API tests, optional portfolio-memory context validation, forbidden client-message/PM-scoring/routing/action-output coverage, local 99 percent coverage-gate proof, green Feature Lane and PR Merge Gate including coverage and Docker build, merge to main, and wiki publication. `lotus-gateway` PR #209 and PR #210 prove the governed Gateway routes with contract, unit, integration, mypy, `make check`, integration, coverage, Docker/parity CI, merge to main, and wiki publication. `lotus-workbench` PR #182 proves Gateway-only invocation and display with focused Vitest tests, typecheck, lint, docs guard, `make check`, build, Playwright smoke, Docker/parity CI, merge to main, and wiki publication. `lotus-workbench` PR #354 proves the `mode=copilot` workspace with focused navigation/component/API tests, `make lint`, `make typecheck`, `make test-coverage`, green Feature Lane, green PR Merge Gate, wiki publication commit `504a783`, and Main Releasability Gate `26347952758`. |
+| Expected-standard decision | RFC37-WTBD-002 is complete for Lotus-owned governed AI PM copilot support: owner-side DPM workflow-pack execution, registry default resolution, Gateway invocation routes, and Workbench `mode=copilot` workspace are merged, validated, and wiki-published. Future AI surfaces remain owner-specific scope and do not reopen this WTBD unless they introduce new source-owner obligations. |
 
 #### RFC37-WTBD-003 - Full Front-Office DPM Product Realization
 

@@ -7,7 +7,6 @@ from src.api.main import app
 ROOT = Path(__file__).resolve().parents[2]
 
 WTBD_PARTIAL_IDS = {
-    "RFC37-WTBD-002",
     "RFC37-WTBD-003",
     "RFC37-WTBD-007",
 }
@@ -319,8 +318,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     done_ids = all_ids - WTBD_PARTIAL_IDS - WTBD_OPEN_IDS
 
     assert len(rows) == 59
-    assert len(done_ids) == 55
-    assert len(WTBD_PARTIAL_IDS) == 3
+    assert len(done_ids) == 56
+    assert len(WTBD_PARTIAL_IDS) == 2
     assert len(WTBD_OPEN_IDS) == 1
     assert WTBD_PARTIAL_IDS <= all_ids
     assert WTBD_OPEN_IDS <= all_ids
@@ -330,8 +329,8 @@ def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
         assert f"| {wtbd_id} |" in ledger
 
     supported_features = (ROOT / "wiki" / "Supported-Features.md").read_text(encoding="utf-8")
-    assert "59 WTBD items: 55 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 3 partial or in progress" in supported_features
+    assert "59 WTBD items: 56 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 2 partial or in progress" in supported_features
     assert "1 remaining or open" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "`lotus-performance` PR #168 and" in supported_features
@@ -693,16 +692,18 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
     wiki_index = (ROOT / "wiki" / "RFC-Index.md").read_text(encoding="utf-8")
 
     required_terms = [
-        "PARTIALLY IMPLEMENTED - BOUNDED DPM WORKFLOW PACKS AND FIRST-WAVE PRODUCT INVOCATION",
+        "IMPLEMENTED - GOVERNED DPM WORKFLOW PACKS AND WORKBENCH COPILOT WORKSPACE",
         "`dpm_pm_memo.pack@v1`",
         "`dpm_wave_pm_memo.pack@v1`",
         "`outcome_review_narrative.pack@v1`",
         "`dpm_operations_handoff_summary.pack@v1`",
         "`pm_quality_summary.pack@v1`",
-        "The bounded DPM workflow-pack result from RFC37-WTBD-002 is incorporated",
-        "bounded current RFC37-WTBD-002 product path",
+        "The governed DPM workflow-pack and Workbench copilot workspace result from RFC37-WTBD-002 is incorporated",
+        "RFC37-WTBD-002 is complete for Lotus-owned governed AI PM copilot support",
         "WTBD Reintegration Audit - 2026-05-10",
         "review-gated proof-pack PM memo, wave PM memo, outcome-review narrative, operations handoff summary, exception summary, and PM quality summary packs",
+        "`lotus-workbench` PR #354",
+        "mode=copilot",
         "`dpm_exception_summary.pack@v1`",
         "lotus-ai` PR #68",
         "`lotus-ai` PR #70",
@@ -712,17 +713,16 @@ def test_rfc0043_ai_copilot_truth_reflects_implemented_owner_side_packs() -> Non
     for term in required_terms:
         assert term in rfc or term in wtbd or term in supported_features or term in wiki_index
 
-    assert (
-        "PARTIALLY IMPLEMENTED (BOUNDED DPM WORKFLOW PACKS; FIRST-WAVE PRODUCT INVOCATION COMPLETE)"
-        in index
-    )
-    assert (
-        "Partially supported through bounded DPM workflow packs and first-wave product invocation"
-        in (supported_features)
+    assert "IMPLEMENTED (GOVERNED DPM WORKFLOW PACKS AND WORKBENCH COPILOT WORKSPACE)" in index
+    assert "Supported through governed DPM workflow packs and Workbench copilot workspace" in (
+        supported_features
     )
     assert "all AI copilot features as proposed" not in rfc
     assert "RFC-0043 remains proposed" not in wtbd
-    assert "Exception-summary packs, full copilot workspace UX" not in supported_features
+    assert (
+        "Full copilot workspace UX and additional future product surfaces remain future owner work"
+        not in supported_features
+    )
 
 
 def test_rfc0041_slice0_source_map_guardrails_stay_truthful() -> None:
@@ -1526,8 +1526,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`e03be66c58e881024938eb5a63f4fb373e914c00`" in work_to_be_done
     assert "`lotus-performance` PR #168 (`781415f`, wiki `6fb7209`)" in (work_to_be_done)
     assert "| Total WTBD items | 59 |" in work_to_be_done
-    assert "| Done on merged/published Lotus-owned truth | 55 |" in work_to_be_done
-    assert "| Partial / in progress | 3 |" in work_to_be_done
+    assert "| Done on merged/published Lotus-owned truth | 56 |" in work_to_be_done
+    assert "| Partial / in progress | 2 |" in work_to_be_done
     assert "| Remaining / open | 1 |" in work_to_be_done
     assert "RFC36-WTBD-006 is now closed as a no-migration-required" in work_to_be_done
     assert "`lotus-platform` PR #316" in work_to_be_done
@@ -2207,8 +2207,8 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "## WTBD Product-Readiness Roadmap" in supported_features
     assert "flowchart LR" in supported_features
     assert "developers, business users, operations, sales/pre-sales" in supported_features
-    assert "59 WTBD items: 55 done on merged/published Lotus-owned" in supported_features
-    assert "truth, 3 partial or in progress" in supported_features
+    assert "59 WTBD items: 56 done on merged/published Lotus-owned" in supported_features
+    assert "truth, 2 partial or in progress" in supported_features
     assert "`lotus-performance` PR #168" in supported_features
     assert "`lotus-platform` PR #310 and wiki publication commit `884bec3`" in (supported_features)
     assert "Canonical DPM demo story" in supported_features
