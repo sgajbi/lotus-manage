@@ -81,9 +81,10 @@ paths and governed Workbench canonical proof cover command center, construction,
 outcome, portfolio-memory, campaign, PM-quality, and PM copilot workspace surfaces without OMS,
 client-contact, or unsupported source-product overclaims. RFC37-WTBD-004 remains open for broader
 strategic source-product depth. The current RFC37-WTBD-004 source-product-depth wave has advanced
-but is not closed: lotus-core now owns `DpmPortfolioUniverseCandidate:v1`, and this Manage slice
-consumes it for bounded `BULK_REVIEW_CAMPAIGN` candidate resolution with Core lineage and
-fail-closed unavailable, incomplete, degraded, empty, and truncated-page handling. This does not
+but is not closed: lotus-core now owns `DpmPortfolioUniverseCandidate:v1`, Manage consumes it for
+bounded `BULK_REVIEW_CAMPAIGN` candidate resolution with Core lineage and fail-closed unavailable,
+incomplete, degraded, empty, and truncated-page handling, Gateway preserves and guards the Core
+candidate-source mode, and Workbench renders the bounded source-readiness posture. This does not
 change the WTBD counts because broader strategic source-product depth, relationship householding,
 global portfolio-universe semantics, PM ranking, external workflow orchestration, client
 communication workflow, OMS acknowledgement, fills, settlement, and reconciliation remain
@@ -325,7 +326,7 @@ ready values for local promotion or recalculation.
 
 | Priority | WTBD | Why this is next | Promotion bar |
 | ---: | --- | --- | --- |
-| 1 | RFC37-WTBD-004 - Source-product depth for crown-jewel DPM | Adds richer source-owner products only where `lotus-core`, `lotus-risk`, `lotus-performance`, or future source owners implement and certify the facts. The current bounded Manage slice consumes lotus-core `DpmPortfolioUniverseCandidate:v1` for bulk-review campaign candidates, but the broader WTBD remains open. | Source-owner contracts, producer/consumer mesh certification, Manage degraded-state consumption, Gateway/Workbench posture, and live proof with missing/stale/partial source states. Core candidate consumption must not be promoted as relationship householding, global universe ownership, PM ranking, external workflow orchestration, client communication workflow, or OMS execution. |
+| 1 | RFC37-WTBD-004 - Source-product depth for crown-jewel DPM | Adds richer source-owner products only where `lotus-core`, `lotus-risk`, `lotus-performance`, or future source owners implement and certify the facts. The current bounded Manage/Gateway/Workbench realization consumes lotus-core `DpmPortfolioUniverseCandidate:v1` for bulk-review campaign candidates, but the broader WTBD remains open. | Source-owner contracts, producer/consumer mesh certification, Manage degraded-state consumption, Gateway/Workbench posture, and live proof with missing/stale/partial source states. Core candidate realization must not be promoted as relationship householding, global universe ownership, PM ranking, external workflow orchestration, client communication workflow, or OMS execution. |
 
 2026-05-22 downstream realization backfill: Gateway PR #238 and Workbench PR #340 add bounded
 campaign workflow/audit realization over existing Manage campaign workflow truth. This strengthens
@@ -1131,6 +1132,21 @@ promoting stale benchmark identity. This advances RFC37-WTBD-004 consumer postur
 the broader source-product-depth row and without claiming benchmark composition, active-risk,
 performance attribution, benchmark analytics, model approval, OMS, order routing, fills, settlement,
 or execution support.
+
+2026-05-24 bounded candidate-source downstream realization result:
+
+`lotus-gateway` PR #246 (`45d9b3252edff1f14820ffaea5c0fa55c1f82c2c`) preserves the Core
+`DpmPortfolioUniverseCandidate:v1` candidate-source mode through the DPM wave BFF and rejects
+caller-supplied portfolios when `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`, preventing
+mixed manual/source discovery requests from launching partial campaign waves. `lotus-workbench`
+PR #361 (`999e093d9c47be47a453de2f5a34c508feef83b2`) renders the bounded Core-candidate source
+readiness card, candidate count, source product identity, incomplete/truncated-page warnings, and
+no-caller-portfolio boundary. Workbench PR #362
+(`d3fe554b18a0cd61c2b6d548662c3f5101b79bb7`) preserved peer branch work and returned Workbench to
+clean `main` with Main Releasability Gate `26361663264` green. Gateway Main Releasability Gate
+`26360219504` passed after PR #246. This closes the downstream realization gap for the bounded Core
+candidate-source mode only; it does not close RFC37-WTBD-004 broader strategic source-product
+depth.
 
 Promotion proof:
 
