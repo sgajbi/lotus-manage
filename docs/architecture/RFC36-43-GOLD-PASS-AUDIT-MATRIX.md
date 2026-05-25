@@ -1,11 +1,11 @@
 # RFC36-43 Gold-Pass Audit Matrix
 
-Date: 2026-05-24
+Date: 2026-05-25
 
 Scope: current `lotus-manage` mainline after merge
-`0189462797b2b87f30241110eed2bfcdef5664c9`, with Main Releasability Gate
-`26359848217` green, plus downstream Gateway and Workbench candidate-source realization already
-merged to their own `main` branches.
+`603946c7d5dd9e9bbc189b9fd3d70e515a9a3a20`, with Main Releasability Gate
+`26379041259` green, plus downstream Gateway, Workbench, Platform, and Core realization evidence
+already merged to their own `main` branches.
 
 This is the decision register for the RFC36-43 gold-pass completion program. It does not replace
 the detailed WTBD ledger in `docs/rfcs/RFC-worktobedone.md`; it summarizes the current audit
@@ -106,12 +106,44 @@ depth and does not promote relationship householding, global portfolio-universe 
 ranking, external workflow orchestration, client communication workflow, OMS acknowledgement,
 fills, settlement, reconciliation, or execution.
 
+## Current Evidence Refresh - 2026-05-25
+
+The 2026-05-25 refresh records cross-repo evidence that landed after the original 2026-05-24 audit
+matrix. It does not change WTBD counts and does not promote new Manage-owned support claims.
+
+Evidence captured:
+
+1. `lotus-workbench` PR #367, merge SHA
+   `7d9247e4a2b43c041b893c8cfdc3adc8a8d26fb7`, aligned canonical live proposal memo validation
+   with the current Workbench UI copy and source posture. The validation now checks the implemented
+   advisor proposal evidence-pack panel without implying an approved-state claim.
+2. Workbench Main Releasability Gate `26385514550` passed on `main`, and the post-merge
+   `npm run live:validate` run passed from synced Workbench/Platform mains with screenshots under
+   `lotus-workbench/output/playwright/live-canonical`.
+3. `lotus-platform` PR #353, merge SHA
+   `7b266a6c48ddcca1fb5803fb8ce42516ed7ca496`, registered
+   `proposal.memo_evidence_pack` in the governed Workbench panel registry, fixed registry schema
+   drift, and refreshed generated domain-product catalog, certification, and maturity artifacts for
+   `lotus-core:DpmPortfolioUniverseCandidate:v1`.
+4. Platform Main Releasability Gate `26385491782` and API Vocabulary Governance run
+   `26385491806` passed on `main`.
+5. The live stack was stopped cleanly after post-merge validation, and branch hygiene checks across
+   Workbench, Platform, Gateway, Manage, Core, Advise, Risk, and Performance found clean `main`
+   branches with no open PRs and no unmerged remote branches.
+
+Boundary preserved: proposal memo/evidence-pack validation remains an advisor proposal support
+surface proof. It does not claim approval workflow completion, client communication workflow,
+autonomous advice, generated-summary retention, raw prompt storage, order routing, OMS execution,
+fills, settlement, or reconciliation. The Platform registry update proves governed panel
+registration and generated catalog alignment; it does not turn the broader RFC37-WTBD-004
+source-product-depth roadmap into a completed item.
+
 ## RFC-Level Audit Matrix
 
 | RFC | Current completeness | Correctness and tests | Live proof and docs | Gold-pass decision | Follow-up classification |
 | --- | --- | --- | --- | --- | --- |
 | RFC-0036 | Implemented: canonical `/api/v1` Manage execution and supportability posture, stateful sourcing envelope, mesh/source-readiness promotion, and retired alias cleanup are integrated. | Documentation tests and API/vocabulary gates protect removal of stale advisory/proposal and unversioned product surfaces. | Supported-feature, endpoint-certification, and RFC truth are current; downstream Gateway/Workbench support is merged. | Meets current first-wave standard for Lotus-owned Manage execution supportability. | `documentation-truth` only if future API mirrors drift; broader source depth remains RFC37-WTBD-004. |
-| RFC-0037 | Strategic parent roadmap remains partially implemented by design. Completed child realizations cover outcome, copilot, front-office DPM realization, reporting/evidence, canonical demo story, portfolio memory, and bounded Core candidate-source realization. | Current docs correctly retain RFC37-WTBD-004 as open and treat the roadmap as a boundary ledger, not a blanket support claim. Gateway/Workbench now also fail closed for the bounded Core-discovery mode rather than allowing caller portfolios to leak into source discovery; Core live validation now walks all bounded candidate pages to terminal exhaustion and rejects duplicate, empty, malformed, missing, and non-terminating pages. | Latest bounded source-consumer improvement consumes and realizes `DpmPortfolioUniverseCandidate:v1` through Core, Manage, Gateway, and Workbench without closing broader source-product depth. | Not globally complete; completed child surfaces are bounded and implementation-backed. | `source-owner` and `unsupported-nonclaim` for RFC37-WTBD-004; no current Gateway/Workbench realization gap remains for the bounded Core candidate-source mode. |
+| RFC-0037 | Strategic parent roadmap remains partially implemented by design. Completed child realizations cover outcome, copilot, front-office DPM realization, reporting/evidence, canonical demo story, portfolio memory, governed Workbench panel registration, and bounded Core candidate-source realization. | Current docs correctly retain RFC37-WTBD-004 as open and treat the roadmap as a boundary ledger, not a blanket support claim. Gateway/Workbench now also fail closed for the bounded Core-discovery mode rather than allowing caller portfolios to leak into source discovery; Core live validation now walks all bounded candidate pages to terminal exhaustion and rejects duplicate, empty, malformed, missing, and non-terminating pages. Platform registry schema drift is fixed and generated catalog/certification/maturity artifacts include the current bounded source-product truth. | Latest bounded source-consumer improvement consumes and realizes `DpmPortfolioUniverseCandidate:v1` through Core, Manage, Gateway, and Workbench without closing broader source-product depth. Current live validation also proves the governed proposal memo/evidence-pack panel as implemented, without approved-state overclaim. | Not globally complete; completed child surfaces are bounded and implementation-backed. | `source-owner` and `unsupported-nonclaim` for RFC37-WTBD-004; no current Gateway/Workbench realization gap remains for the bounded Core candidate-source mode. |
 | RFC-0038 | Implemented for Manage mandate digital twin, health, command-center foundation, source-context preservation, and downstream command-center realization. | Current tests protect source refs, supportability states, PM-book discovery, and documentation truth. | Canonical seed proof covers populated ready, selector-driven partial, and empty command-center posture. | Meets current first-wave standard for the implemented command-center scope. | `source-owner` for degraded/blocked fixtures and richer profile-detail source products. |
 | RFC-0039 | Implemented for construction alternatives, source-authority posture, restriction/sustainability, transaction-cost, liquidity, regime-stress, lifecycle into proof/wave/report/AI, and Workbench realization. | Unit/API/source-client tests cover deterministic alternatives, method posture, source supportability, and failure handling. | Workbench construction validation and docs prove Gateway-only product support. | Meets current first-wave standard for bounded construction alternatives. | `source-owner` for future predictive execution/FX/treasury depth; `unsupported-nonclaim` for OMS and autonomous PM choice. |
 | RFC-0040 | Implemented for proof packs, report input, AI evidence, source analytics, transaction-cost/scenario enrichment, decision timeline, and portfolio memory linkage. | Tests cover section states, content hashes, source refs, replay safety, boundary evidence, and malformed source contexts. | Canonical front-office proof classifies `dpm.proof_pack` as ready; report/render/archive/AI downstream support is merged. | Meets current first-wave proof-pack and evidence-fabric standard. | `source-owner` for future source-event families; `unsupported-nonclaim` for client communication execution and OMS. |
@@ -190,7 +222,7 @@ fills, settlement, reconciliation, or execution.
 | 1 | Broader Workbench product-quality hardening after the 2026-05-24 evidence refresh and candidate-source realization. | `fix-now` | `lotus-workbench` | Focused refactors only where code review finds material duplication, state leakage, weak test coverage, or confusing private-banking workflow language; preserve Gateway-backed source truth. |
 | 2 | Broader RFC37-WTBD-004 source-product depth beyond bounded campaign candidates. | `source-owner` | `lotus-core`, `lotus-risk`, `lotus-performance`, future source owners | Source-owner contracts, producer declarations, platform catalog mirror, consumer declarations, fail-closed degraded/missing/stale behavior, contract tests, and live source proof. |
 | 3 | Canonical automation scenario expansion for implemented RFC36-43 surfaces where live evidence still lacks meaningful negative, degraded, partial, or cross-screen consistency coverage. | `fix-now` | `lotus-workbench`, source-owning repo where data is missing | Additional seed data or validation probes must be tied to implemented features, not aspirational product claims; evidence must cover API response, UI state, logs/metrics/traces where available, and data consistency. |
-| 4 | Documentation/demo enrichment after new live evidence. | `documentation-truth` | Owning repo for changed truth | RFC Gold-Pass Assessment updates, wiki supported-feature updates where product truth changes, demo material tied to current evidence, wiki publication when wiki source changes, and drift zero. |
+| 4 | Documentation/demo enrichment after new live evidence. | `documentation-truth` | Owning repo for changed truth | RFC Gold-Pass Assessment updates, wiki supported-feature updates where product truth changes, demo material tied to current evidence, wiki publication when wiki source changes, and drift zero. This 2026-05-25 Manage decision-register refresh records cross-repo evidence only; it makes no new user-facing Manage support claim. |
 | 5 | External workflow, client communication, OMS, fills, settlement, reconciliation, PM ranking, HR/conduct, generated-summary retention, and raw prompt storage. | `unsupported-nonclaim` | Future/external owners only | Must remain non-claims until explicit source/external-owner implementation, governance, tests, docs, and live proof exist. |
 
 ## Gold-Pass Assessment
@@ -200,10 +232,14 @@ fills, settlement, reconciliation, or execution.
 | What was truly completed | RFC36, RFC38, RFC39, RFC40, RFC41, RFC42, and RFC43 have bounded first-wave implementation-backed support claims. RFC37 is a strategic parent roadmap with all current child support claims complete except RFC37-WTBD-004 broader source-product depth. |
 | Quality improvements confirmed | The current mainline preserves source ownership, Gateway-only Workbench consumption, fail-closed degraded states, lineage/source refs, deterministic evidence hashes, no-OMS/no-client-contact boundaries, and documentation tests that keep stale closure language out. |
 | Debt removed | Historical advisory/proposal remnants, stale route aliases, stale vocabulary mirrors, and pre-merge closure wording are already guarded by current-state documentation tests. |
-| Testing and evidence basis | Recount is protected by `test_wtbd_control_snapshot_counts_match_detailed_ledger`; RFC-specific documentation tests protect integrated Gold-Pass sections; current Manage mainline is backed by Main Releasability Gate `26359848217`; Gateway PR #245 and Main Releasability Gate `26359582303` protect the benchmark-assignment cache fix; Gateway PR #246 and Main Releasability Gate `26360219504` protect the Core candidate-source BFF guard; Workbench PR #361 plus Main Releasability Gate `26361663264` protect candidate-source UI realization; Core PR #384 and Main Releasability Gate `26377741432` protect full continuation-token candidate-source validation through terminal page exhaustion; the 2026-05-24 canonical front-office QA pack proves current implemented panels after live validation passed. |
+| Testing and evidence basis | Recount is protected by `test_wtbd_control_snapshot_counts_match_detailed_ledger`; RFC-specific documentation tests protect integrated Gold-Pass sections; current Manage mainline is backed by Main Releasability Gate `26379041259`; Gateway PR #245 and Main Releasability Gate `26359582303` protect the benchmark-assignment cache fix; Gateway PR #246 and Main Releasability Gate `26360219504` protect the Core candidate-source BFF guard; Workbench PR #361 plus Main Releasability Gate `26361663264` protect candidate-source UI realization; Core PR #384 and Main Releasability Gate `26377741432` protect full continuation-token candidate-source validation through terminal page exhaustion; Workbench PR #367 plus Main Releasability Gate `26385514550` protect current proposal memo/evidence-pack live validation alignment; Platform PR #353 plus Main Releasability Gate `26385491782` and API Vocabulary Governance `26385491806` protect governed panel registration, schema drift repair, and generated catalog/certification/maturity refresh; the 2026-05-24 canonical front-office QA pack plus the 2026-05-25 post-merge `npm run live:validate` pass prove current implemented panels after live validation passed. |
 | Remaining risk | The current-stack evidence refresh is complete for bounded implemented panels, and the bounded Core candidate-source Gateway/Workbench realization gap is closed. Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, canonical automation expansion for implemented negative/degraded/partial scenarios, and targeted product-quality hardening remain explicitly open. |
 | Expected-standard decision | The audit ledger is production-useful as a decision register, but it does not claim the whole RFC36-43 ecosystem is beyond improvement. Remaining improvements are explicitly classified and scheduled for source-owner, front-office-realization, documentation, or unsupported-nonclaim handling. |
 
 Wiki decision for this slice: `wiki/Supported-Features.md` is updated because downstream
 Gateway/Workbench realization changed user-facing support truth for the bounded Core
 candidate-source mode. Wiki publication and drift-zero verification are required after merge.
+
+Wiki decision for the 2026-05-25 evidence-register refresh: no `lotus-manage` wiki source change is
+made because this refresh only records already-merged cross-repo evidence and does not change a
+Manage user-facing supported-feature claim.

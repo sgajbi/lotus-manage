@@ -220,16 +220,25 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "DpmPortfolioUniverseCandidate:v1" in matrix
     assert "Canonical Evidence Refresh - 2026-05-24" in matrix
     assert "Candidate-Source Realization Refresh - 2026-05-24" in matrix
+    assert "Current Evidence Refresh - 2026-05-25" in matrix
     assert "Gateway PR #245" in matrix
     assert "Gateway PR #246" in matrix
     assert "Workbench PR #361" in matrix
     assert "Main Releasability Gate `26361663264`" in matrix
     assert "Core PR #384" in matrix
     assert "Main Releasability Gate `26377741432`" in matrix
+    assert "Workbench PR #367" in matrix
+    assert "Main Releasability Gate `26385514550`" in matrix
+    assert "Platform PR #353" in matrix
+    assert "proposal.memo_evidence_pack" in matrix
+    assert "API Vocabulary Governance run" in matrix
+    assert "`26385491806`" in matrix
+    assert "Main Releasability Gate `26379041259`" in matrix
     assert "terminal page exhaustion" in matrix
     assert "canonical-front-office-qa-20260524-185940.md" in matrix
     assert "`wiki/Supported-Features.md` is updated" in matrix
     assert "Wiki publication and drift-zero verification are required after merge" in matrix
+    assert "no `lotus-manage` wiki source change" in matrix
     assert "no current Gateway/Workbench realization gap remains" in matrix
     assert (
         "Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, "
