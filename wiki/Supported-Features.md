@@ -95,6 +95,17 @@ portfolio-universe ownership, PM ranking, external workflow orchestration, clien
 workflow, order routing, OMS acknowledgement, fills, settlement, and reconciliation remain
 unsupported or external-owner scope.
 
+Candidate-source pagination proof addendum, 2026-05-25:
+
+`lotus-core` PR #384 (`555158278f8e51c2d0fdd5dbb2d640fc1aad322b`) strengthens the canonical
+`DpmPortfolioUniverseCandidate:v1` validator so live proof walks continuation-token pages through
+terminal page exhaustion. The validator requires every governed candidate exactly once and rejects
+duplicate, empty, malformed, missing, and non-terminating candidate pages. Core Main Releasability
+Gate `26377741432` passed, with institutional 1000-portfolio completion/sign-off jobs remaining
+opt-in and skipped by default. This is stronger proof for the bounded candidate-source mode; it is
+not a global universe, householding, PM-ranking, external workflow, client-contact, order,
+execution, OMS, fill, settlement, or reconciliation claim.
+
 Construction risk/performance enrichment addendum: Manage now preserves caller/source-supplied
 `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction alternative
 diagnostics and enrichment summaries for every generated alternative, including non-`RISK_AWARE`

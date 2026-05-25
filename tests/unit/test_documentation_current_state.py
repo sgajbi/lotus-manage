@@ -224,6 +224,9 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "Gateway PR #246" in matrix
     assert "Workbench PR #361" in matrix
     assert "Main Releasability Gate `26361663264`" in matrix
+    assert "Core PR #384" in matrix
+    assert "Main Releasability Gate `26377741432`" in matrix
+    assert "terminal page exhaustion" in matrix
     assert "canonical-front-office-qa-20260524-185940.md" in matrix
     assert "`wiki/Supported-Features.md` is updated" in matrix
     assert "Wiki publication and drift-zero verification are required after merge" in matrix
@@ -1633,6 +1636,9 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "`lotus-manage` PR #433" in work_to_be_done
     assert "`954e3a74ff639dfb819207d9f7565628f05d4351`" in work_to_be_done
     assert "Gate is GitHub Actions run `26351443387`" in work_to_be_done
+    assert "`lotus-core` PR #384 (`555158278f8e51c2d0fdd5dbb2d640fc1aad322b`)" in (work_to_be_done)
+    assert "continuation-token pages through terminal exhaustion" in work_to_be_done
+    assert "non-terminating continuation tokens" in work_to_be_done
     assert "`lotus-performance` PR #168 (`781415f`, wiki `6fb7209`)" in (work_to_be_done)
     assert "| Total WTBD items | 59 |" in work_to_be_done
     assert "| Done on merged/published Lotus-owned truth | 58 |" in work_to_be_done
