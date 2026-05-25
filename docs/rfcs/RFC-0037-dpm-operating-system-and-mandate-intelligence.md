@@ -1746,7 +1746,7 @@ strategic parent RFC without marking the full parent roadmap done.
 | WTBD | Integrated result | Current boundary |
 | --- | --- | --- |
 | RFC37-WTBD-001 | RFC-0042 now supports manage-owned outcome-review authority plus bounded Gateway/Workbench, report/render/archive, governed AI narrative, PM operating quality linkage, and outcome-review source-lineage search/facet realization. | Source methodology depth remains tracked by RFC42-WTBD-006. External OMS and client communication runtime promotion remain unsupported external-owner dependencies, not blockers for Lotus-owned WTBD closure. |
-| RFC37-WTBD-004 | The current source-product-depth wave has advanced through lotus-core `DpmPortfolioUniverseCandidate:v1` and this manage-consumer slice: `BULK_REVIEW_CAMPAIGN` preview/create can now request Core-owned mandate-backed candidate pages, preserve Core candidate lineage, and fail closed on unavailable, incomplete, degraded, empty, or truncated pages. | RFC37-WTBD-004 remains open. This is a bounded source-consumer improvement, not full strategic source-product closure; relationship householding, global portfolio-universe semantics, PM ranking, external workflow orchestration, client communication workflow, order routing, OMS acknowledgement, fills, settlement, and reconciliation remain unsupported or external-owner scope. |
+| RFC37-WTBD-004 | The current source-product-depth wave has advanced through lotus-core `DpmPortfolioUniverseCandidate:v1` and this manage-consumer slice: `BULK_REVIEW_CAMPAIGN` preview/create can now request Core-owned mandate-backed candidate pages, walk bounded continuation pages to terminal exhaustion, preserve Core candidate lineage, and fail closed on unavailable, incomplete, degraded, empty, duplicate, non-terminating, or still-truncated pages. | RFC37-WTBD-004 remains open. This is a bounded source-consumer improvement, not full strategic source-product closure; relationship householding, global portfolio-universe semantics, PM ranking, external workflow orchestration, client communication workflow, order routing, OMS acknowledgement, fills, settlement, and reconciliation remain unsupported or external-owner scope. |
 | RFC37-WTBD-005 | Supported proof-pack, rebalance-wave, and outcome-review evidence now flow from manage-owned report inputs into generated report, render, archive, Gateway/Workbench request posture, AI evidence handoff, and report/archive lineage families. | `lotus-manage` does not generate or archive documents, client communication execution remains unsupported, and any new evidence artifact family needs its own owner, controls, and proof. |
 | RFC37-WTBD-006 | `lotus-platform` PR #310, merge `42e0ecff3597257ac3ea63b0c59b425603eeb291`, and wiki publication commit `884bec3` provide the canonical DPM demo story for `PB_SG_GLOBAL_BAL_001`. | Demo material must keep unsupported OMS, PM-scoring, client-communication, autonomous AI, and unimplemented degraded/blocked seed fixtures out of supported claims. |
 
@@ -1756,7 +1756,8 @@ Gold-pass assessment:
    RFC37-WTBD-001 is complete for the RFC-0042 bounded first-wave outcome-review product path, and
    RFC37-WTBD-005 is complete for supported proof-pack, wave, and outcome-review evidence
    materialization. RFC37-WTBD-004 is not complete; the current Manage slice only promotes bounded
-   consumption of Core `DpmPortfolioUniverseCandidate:v1` for bulk-review campaign candidates.
+   consumption of Core `DpmPortfolioUniverseCandidate:v1` for bulk-review campaign candidates,
+   including bounded continuation-page exhaustion and duplicate/non-terminating page guards.
 2. Quality improvements made: RFC-0037 now distinguishes implemented child capabilities from the
    remaining parent-roadmap ambition instead of leaving the supported-features ledger entirely in
    proposed state. The source-product-depth narrative now distinguishes Core-owned candidate pages
@@ -1769,8 +1770,9 @@ Gold-pass assessment:
    render, archive, Gateway/Workbench, AI-evidence, and canonical evidence, `lotus-platform`
    PR #310, platform wiki publication commit `884bec3`, and the documentation regression that
    guards RFC/WTBD/wiki truth. The Core candidate consumer slice adds focused Manage unit/API
-   proof for successful preview/create, lineage preservation, caller-portfolio rejection, and
-   unavailable/incomplete/degraded/empty/truncated fail-closed behavior.
+   proof for successful preview/create, paged source exhaustion, lineage preservation,
+   caller-portfolio rejection, duplicate/non-terminating page rejection, and unavailable/
+   incomplete/degraded/empty/truncated fail-closed behavior.
 5. Expected-standard decision: the completed child-roadmap items have reached the expected standard
    on merged and wiki-published owning-repository truth; RFC-0037 remains partial only where
    future source-methodology depth, portfolio-memory completion, broader front-office realization,

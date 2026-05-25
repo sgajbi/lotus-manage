@@ -1209,7 +1209,8 @@ def test_wave_preview_openapi_documents_core_portfolio_universe_candidate_source
     preview = openapi["paths"]["/api/v1/rebalance/waves/preview"]["post"]
     assert "DpmPortfolioUniverseCandidate:v1" in preview["description"]
     assert "campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE" in preview["description"]
-    assert "truncated source pages" in preview["description"]
+    assert "terminal exhaustion" in preview["description"]
+    assert "non-terminating" in preview["description"]
     assert "relationship householding" in preview["description"]
     assert "OMS execution" in preview["description"]
 
@@ -1224,4 +1225,5 @@ def test_wave_preview_openapi_documents_core_portfolio_universe_candidate_source
 
     candidate_source_schema = request_schema["properties"]["campaign_candidate_source"]
     assert "CORE_DPM_PORTFOLIO_UNIVERSE" in str(candidate_source_schema)
-    assert "empty or truncated pages" in candidate_source_schema["description"]
+    assert "continuation pages" in candidate_source_schema["description"]
+    assert "duplicate, non-terminating" in candidate_source_schema["description"]

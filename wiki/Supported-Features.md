@@ -85,8 +85,10 @@ for `BULK_REVIEW_CAMPAIGN` preview/create when
 `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`. The implementation preserves Core
 candidate lineage through wave source refs, rejects caller-supplied portfolios in Core-discovery
 mode, and fails closed on unavailable, incomplete, degraded, empty, or truncated Core pages before a
-partial campaign wave can be created. Gateway PR #246 preserves the source mode through the DPM
-wave BFF and rejects mixed Core-discovery/manual-portfolio requests. Workbench PR #361 renders the
+partial campaign wave can be created. The 2026-05-25 Manage consumer hardening now walks bounded
+Core continuation pages to terminal exhaustion and additionally rejects duplicate, non-terminating,
+or still-truncated page evidence. Gateway PR #246 preserves the source mode through the DPM wave
+BFF and rejects mixed Core-discovery/manual-portfolio requests. Workbench PR #361 renders the
 bounded source-readiness card, candidate count, source product identity, incomplete/truncated-page
 warnings, and no-caller-portfolio boundary. This materially advances source-product depth for
 campaign candidate discovery and closes the bounded Gateway/Workbench realization gap for this
@@ -105,6 +107,12 @@ Gate `26377741432` passed, with institutional 1000-portfolio completion/sign-off
 opt-in and skipped by default. This is stronger proof for the bounded candidate-source mode; it is
 not a global universe, householding, PM-ranking, external workflow, client-contact, order,
 execution, OMS, fill, settlement, or reconciliation claim.
+
+`lotus-manage` now consumes that bounded pagination posture in preview/create: it requests
+continuation pages until Core returns a terminal page, preserves candidate lineage for every
+returned candidate, and fails closed on duplicate candidate rows or repeated continuation tokens.
+This is a source-consumer completeness improvement only; it does not make Manage a portfolio
+universe source owner.
 
 Construction risk/performance enrichment addendum: Manage now preserves caller/source-supplied
 `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction alternative
