@@ -84,11 +84,14 @@ strategic source-product depth. The current RFC37-WTBD-004 source-product-depth 
 but is not closed: lotus-core now owns `DpmPortfolioUniverseCandidate:v1`, Manage consumes it for
 bounded `BULK_REVIEW_CAMPAIGN` candidate resolution with Core lineage and fail-closed unavailable,
 incomplete, degraded, empty, and truncated-page handling, Gateway preserves and guards the Core
-candidate-source mode, and Workbench renders the bounded source-readiness posture. This does not
-change the WTBD counts because broader strategic source-product depth, relationship householding,
-global portfolio-universe semantics, PM ranking, external workflow orchestration, client
-communication workflow, OMS acknowledgement, fills, settlement, and reconciliation remain
-unsupported or external-owner scope. The current classification is 59 total WTBD items: 58 done on
+candidate-source mode, and Workbench renders the bounded source-readiness posture. Core live
+validation also walks continuation-token pages through terminal exhaustion while rejecting
+duplicate, empty, malformed, missing, and non-terminating pages.
+This does not change the WTBD counts because broader strategic source-product depth, relationship
+householding, global portfolio-universe semantics, PM ranking, external workflow orchestration,
+client communication workflow, OMS acknowledgement, fills, settlement, and reconciliation remain
+unsupported or external-owner scope.
+The current classification is 59 total WTBD items: 58 done on
 merged/published Lotus-owned truth, 0 partial or in progress, and 1 remaining/open. The 2026-05-24
 Lotus-owned completion recount keeps the
 2026-05-22 closures for RFC38-WTBD-007, RFC39-WTBD-008, and RFC42-WTBD-007 and moves
@@ -1147,6 +1150,20 @@ clean `main` with Main Releasability Gate `26361663264` green. Gateway Main Rele
 `26360219504` passed after PR #246. This closes the downstream realization gap for the bounded Core
 candidate-source mode only; it does not close RFC37-WTBD-004 broader strategic source-product
 depth.
+
+2026-05-25 bounded candidate-source pagination validation result:
+
+`lotus-core` PR #384 (`555158278f8e51c2d0fdd5dbb2d640fc1aad322b`) tightens the governed
+`DpmPortfolioUniverseCandidate:v1` live validator so candidate-source proof walks
+continuation-token pages through terminal page exhaustion. The validator now requires every
+governed candidate exactly once and rejects duplicate candidate ids, empty candidate pages,
+malformed candidate pages, missing expected candidates, and non-terminating continuation tokens.
+Core Feature Lane, PR Merge Gate, wiki publication, wiki drift check, and Main Releasability Gate
+`26377741432` passed for the slice. This improves source-owner proof quality for the bounded Core
+candidate-source mode only; it does not close RFC37-WTBD-004 broader strategic source-product
+depth and does not promote relationship householding, global portfolio-universe ownership, PM
+ranking, external workflow orchestration, client communication workflow, order routing, OMS
+acknowledgement, fills, settlement, or reconciliation.
 
 Promotion proof:
 
