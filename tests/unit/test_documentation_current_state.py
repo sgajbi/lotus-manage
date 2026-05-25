@@ -221,6 +221,7 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "Canonical Evidence Refresh - 2026-05-24" in matrix
     assert "Candidate-Source Realization Refresh - 2026-05-24" in matrix
     assert "Current Evidence Refresh - 2026-05-25" in matrix
+    assert "Canonical Campaign Seed And Source-Lineage Refresh - 2026-05-25" in matrix
     assert "Gateway PR #245" in matrix
     assert "Gateway PR #246" in matrix
     assert "Workbench PR #361" in matrix
@@ -233,13 +234,24 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "proposal.memo_evidence_pack" in matrix
     assert "API Vocabulary Governance run" in matrix
     assert "`26385491806`" in matrix
-    assert "Main Releasability Gate `26379041259`" in matrix
+    assert "Platform PR #356" in matrix
+    assert "campaign-core-universe-202605" in matrix
+    assert "Main Releasability Gate `26402477310`" in matrix
+    assert "`26402477356`" in matrix
+    assert "Workbench PR #373" in matrix
+    assert "source-lineage product rendering from candidate refs" in matrix
+    assert "Main Releasability Gate `26402821996`" in matrix
+    assert "Core PR #385" in matrix
+    assert "canonical seed retry hardening" in matrix
+    assert "Main Releasability Gate `26402781811`" in matrix
+    assert "Main Releasability Gate `26394305827`" in matrix
     assert "terminal page exhaustion" in matrix
     assert "canonical-front-office-qa-20260524-185940.md" in matrix
+    assert "canonical-campaign-source-seed-clean-20260525" in matrix
     assert "`wiki/Supported-Features.md` is updated" in matrix
     assert "Wiki publication and drift-zero verification are required after merge" in matrix
     assert "no `lotus-manage` wiki source change" in matrix
-    assert "no current Gateway/Workbench realization gap remains" in matrix
+    assert "no current Gateway/Workbench/platform-seed realization gap remains" in matrix
     assert (
         "Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, "
         "Gateway/Workbench realization of Core candidate-source discovery" not in matrix
