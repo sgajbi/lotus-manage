@@ -243,8 +243,9 @@ approval/expiry/actor-entitlement governance evidence, immutable
 validation. `BULK_REVIEW_CAMPAIGN` preview/create can also resolve its candidate set from
 lotus-core `DpmPortfolioUniverseCandidate:v1` by setting
 `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`; Manage preserves Core candidate lineage,
-rejects caller-supplied portfolios for that mode, and fails closed on unavailable, incomplete,
-degraded, empty, or truncated Core pages without claiming relationship householding, global
+rejects caller-supplied portfolios for that mode, walks bounded continuation pages to terminal
+exhaustion, and fails closed on unavailable, incomplete, degraded, empty, duplicate,
+non-terminating, or still-truncated Core pages without claiming relationship householding, global
 portfolio-universe ownership, PM ranking, external workflow orchestration, OMS execution, or client
 communication workflow. Tactical house-view wave discovery is implemented for `TACTICAL_HOUSE_VIEW` through
 lotus-advise `TacticalHouseViewAffectedCohort:v1` over caller-supplied source-backed candidate

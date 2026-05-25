@@ -83,10 +83,9 @@ client-contact, or unsupported source-product overclaims. RFC37-WTBD-004 remains
 strategic source-product depth. The current RFC37-WTBD-004 source-product-depth wave has advanced
 but is not closed: lotus-core now owns `DpmPortfolioUniverseCandidate:v1`, Manage consumes it for
 bounded `BULK_REVIEW_CAMPAIGN` candidate resolution with Core lineage and fail-closed unavailable,
-incomplete, degraded, empty, and truncated-page handling, Gateway preserves and guards the Core
-candidate-source mode, and Workbench renders the bounded source-readiness posture. Core live
-validation also walks continuation-token pages through terminal exhaustion while rejecting
-duplicate, empty, malformed, missing, and non-terminating pages.
+incomplete, degraded, empty, duplicate, non-terminating, and still-truncated-page handling, Gateway
+preserves and guards the Core candidate-source mode, and Workbench renders the bounded
+source-readiness posture. Core live validation also walks continuation-token pages through terminal exhaustion while rejecting duplicate, empty, malformed, missing, and non-terminating pages.
 This does not change the WTBD counts because broader strategic source-product depth, relationship
 householding, global portfolio-universe semantics, PM ranking, external workflow orchestration,
 client communication workflow, OMS acknowledgement, fills, settlement, and reconciliation remain
@@ -1164,6 +1163,18 @@ candidate-source mode only; it does not close RFC37-WTBD-004 broader strategic s
 depth and does not promote relationship householding, global portfolio-universe ownership, PM
 ranking, external workflow orchestration, client communication workflow, order routing, OMS
 acknowledgement, fills, settlement, or reconciliation.
+
+2026-05-25 bounded candidate-source Manage pagination consumer result:
+
+Manage now walks bounded Core `DpmPortfolioUniverseCandidate:v1` continuation pages to terminal
+exhaustion for `BULK_REVIEW_CAMPAIGN` preview/create, preserves source refs for candidates returned
+across pages, and fails closed on duplicate candidate rows, repeated continuation tokens,
+unavailable/incomplete/degraded/empty source posture, or still-truncated results. Focused Manage
+unit/API and OpenAPI documentation tests cover successful paged preview, duplicate-candidate
+rejection, non-terminating page rejection, and updated contract wording. This advances the bounded
+source-consumer path only; RFC37-WTBD-004 remains open for broader strategic source-product depth
+and unsupported global-universe, householding, workflow, client-contact, order, OMS, fill,
+settlement, and reconciliation claims remain excluded.
 
 Promotion proof:
 

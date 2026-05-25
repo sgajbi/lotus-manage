@@ -187,8 +187,9 @@ class DpmWavePreviewRequest(BaseModel):
                 "Candidate source for `BULK_REVIEW_CAMPAIGN`. `INLINE_SOURCE_BACKED` preserves "
                 "caller or persisted campaign-definition candidates. "
                 "`CORE_DPM_PORTFOLIO_UNIVERSE` resolves bounded source-owned candidates from "
-                "lotus-core `DpmPortfolioUniverseCandidate:v1` and fails closed on empty or "
-                "truncated pages."
+                "lotus-core `DpmPortfolioUniverseCandidate:v1`, walks continuation pages to "
+                "terminal exhaustion, and fails closed on empty, duplicate, non-terminating, or "
+                "still-truncated pages."
             ),
             examples=["CORE_DPM_PORTFOLIO_UNIVERSE"],
         )
@@ -214,8 +215,10 @@ class DpmWavePreviewRequest(BaseModel):
         ge=1,
         le=1000,
         description=(
-            "Maximum Core DPM portfolio-universe candidates to request for one wave preview/create. "
-            "Manage rejects truncated responses rather than creating a partial campaign wave."
+            "Maximum Core DPM portfolio-universe candidates to request per continuation page. "
+            "Manage walks bounded pages to terminal exhaustion and rejects duplicate, "
+            "non-terminating, or still-truncated responses rather than creating a partial "
+            "campaign wave."
         ),
         examples=[1000],
     )
