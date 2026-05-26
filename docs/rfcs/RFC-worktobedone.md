@@ -86,6 +86,12 @@ bounded `BULK_REVIEW_CAMPAIGN` candidate resolution with Core lineage and fail-c
 incomplete, degraded, empty, duplicate, non-terminating, and still-truncated-page handling, Gateway
 preserves and guards the Core candidate-source mode, and Workbench renders the bounded
 source-readiness posture. Core live validation also walks continuation-token pages through terminal exhaustion while rejecting duplicate, empty, malformed, missing, and non-terminating pages.
+The 2026-05-26 follow-up also proves the candidate-selection basis survives the source-consumer
+handoff: Manage PR #443 preserves Core `candidate_selection_basis`, Platform PR #359 pins the
+field in the canonical demo-data contract, Platform PR #360 supersedes stale canonical campaign
+definitions that predate the evidence, and Workbench PR #377 live-validates rendered
+`Selection Basis`, `Effective Discretionary Mandate Binding`, `portfolio_mandate_bindings`, and
+`mandate_type=discretionary` in the candidate-source panel.
 This does not change the WTBD counts because broader strategic source-product depth, relationship
 householding, global portfolio-universe semantics, PM ranking, external workflow orchestration,
 client communication workflow, OMS acknowledgement, fills, settlement, and reconciliation remain
@@ -1176,6 +1182,26 @@ rejection, non-terminating page rejection, and updated contract wording. This ad
 source-consumer path only; RFC37-WTBD-004 remains open for broader strategic source-product depth
 and unsupported global-universe, householding, workflow, client-contact, order, OMS, fill,
 settlement, and reconciliation claims remain excluded.
+
+2026-05-26 bounded candidate-source selection-basis proof result:
+
+`lotus-manage` PR #443 (`003730d7c835b107a3f62c159420ce05e11efa4a`) preserves Core
+`candidate_selection_basis` on `DpmWaveSourceRef` for candidates resolved from
+`DpmPortfolioUniverseCandidate:v1`; Manage Main Releasability Gate `26426233343` passed after the
+merge. `lotus-platform` PR #359 (`1c138c4499945754733a0fdcd68ddc7f16499fad`) pins
+`candidate_selection_basis` in the canonical demo-data contract, and `lotus-platform` PR #360
+(`dce6dfaf42459779418841a5d85ada12eeb69a04`) advances the canonical campaign version to
+`2026.05.2` while superseding stale `2026.05` and `2026.05.1` definitions that predate
+selection-basis evidence. `lotus-workbench` PR #376
+(`87f02b46cb59b829e8fb1c913f3b1c9c43d22b30`) renders the basis in the candidate-source card, and
+`lotus-workbench` PR #377 (`ef52049b13f0dc31e833bbcd08cf753aa5968fd5`) live-validates rendered
+`Selection Basis`, `Effective Discretionary Mandate Binding`, `portfolio_mandate_bindings`,
+`mandate_type=discretionary`, and no-order/no-OMS/no-client-contact boundaries. Platform Main
+Releasability Gate `26428982839` and Workbench Main Releasability Gate `26429896658` passed. This
+closes a proof-quality gap in the bounded source-consumer path only; RFC37-WTBD-004 remains open
+for broader strategic source-product depth and unsupported global-universe, householding,
+PM-ranking, workflow, client-contact, order, OMS, fill, settlement, and reconciliation claims
+remain excluded.
 
 Promotion proof:
 

@@ -226,6 +226,7 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "Candidate-Source Realization Refresh - 2026-05-24" in matrix
     assert "Current Evidence Refresh - 2026-05-25" in matrix
     assert "Canonical Campaign Seed And Source-Lineage Refresh - 2026-05-25" in matrix
+    assert "Candidate Selection-Basis Front-Office Proof - 2026-05-26" in matrix
     assert "Gateway PR #245" in matrix
     assert "Gateway PR #246" in matrix
     assert "Workbench PR #361" in matrix
@@ -248,13 +249,23 @@ def test_rfc36_43_gold_pass_audit_matrix_tracks_remaining_work_truthfully() -> N
     assert "Core PR #385" in matrix
     assert "canonical seed retry hardening" in matrix
     assert "Main Releasability Gate `26402781811`" in matrix
-    assert "Main Releasability Gate `26394305827`" in matrix
+    assert "Manage PR #443" in matrix
+    assert "Main Releasability Gate `26426233343`" in matrix
+    assert "Workbench PR #376" in matrix
+    assert "Platform PR #359" in matrix
+    assert "Platform PR #360" in matrix
+    assert "canonical campaign definition to\n   version `2026.05.2`" in matrix
+    assert "Main Releasability Gate `26428982839`" in matrix
+    assert "Workbench PR #377" in matrix
+    assert "Main Releasability Gate\n   `26429896658`" in matrix
+    assert "candidate_selection_basis" in matrix
+    assert "Effective Discretionary Mandate Binding" in matrix
     assert "terminal page exhaustion" in matrix
     assert "canonical-front-office-qa-20260524-185940.md" in matrix
     assert "canonical-campaign-source-seed-clean-20260525" in matrix
     assert "`wiki/Supported-Features.md` is updated" in matrix
     assert "Wiki publication and drift-zero verification are required after merge" in matrix
-    assert "no `lotus-manage` wiki source change" in matrix
+    assert "2026-05-26 selection-basis evidence-register refresh" in matrix
     assert "no current Gateway/Workbench/platform-seed realization gap remains" in matrix
     assert (
         "Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, "
