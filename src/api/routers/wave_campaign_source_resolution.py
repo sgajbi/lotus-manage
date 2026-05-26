@@ -317,6 +317,11 @@ def resolve_core_dpm_portfolio_universe_candidates(
         candidate_keys.add(candidate_key)
 
     first_page = candidate_pages[0]
+    selection_basis = (
+        first_page.selection_basis.model_dump(mode="json")
+        if first_page.selection_basis is not None
+        else None
+    )
     universe_ref = dpm_portfolio_universe_ref(
         source_id=first_page.snapshot_id or first_page.page.request_scope_fingerprint,
         product_version=first_page.product_version,
@@ -336,6 +341,7 @@ def resolve_core_dpm_portfolio_universe_candidates(
                         portfolio_id=candidate.portfolio_id,
                         mandate_id=candidate.mandate_id,
                         binding_version=candidate.binding_version,
+                        selection_basis=selection_basis,
                     )
                 ),
             ],

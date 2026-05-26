@@ -1167,8 +1167,9 @@ acknowledgement, fills, settlement, or reconciliation.
 2026-05-25 bounded candidate-source Manage pagination consumer result:
 
 Manage now walks bounded Core `DpmPortfolioUniverseCandidate:v1` continuation pages to terminal
-exhaustion for `BULK_REVIEW_CAMPAIGN` preview/create, preserves source refs for candidates returned
-across pages, and fails closed on duplicate candidate rows, repeated continuation tokens,
+exhaustion for `BULK_REVIEW_CAMPAIGN` preview/create, preserves source refs and Core's
+`EFFECTIVE_DISCRETIONARY_MANDATE_BINDING` selection basis for candidates returned across pages,
+and fails closed on duplicate candidate rows, repeated continuation tokens,
 unavailable/incomplete/degraded/empty source posture, or still-truncated results. Focused Manage
 unit/API and OpenAPI documentation tests cover successful paged preview, duplicate-candidate
 rejection, non-terminating page rejection, and updated contract wording. This advances the bounded

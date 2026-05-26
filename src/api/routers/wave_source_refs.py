@@ -19,6 +19,7 @@ def source_ref_payload(
     supportability_state: str,
     content_hash: str | None = None,
     include_content_hash: bool = True,
+    selection_basis: dict[str, object] | None = None,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "source_system": source_system,
@@ -29,6 +30,8 @@ def source_ref_payload(
     }
     if include_content_hash:
         payload["content_hash"] = content_hash
+    if selection_basis is not None:
+        payload["selection_basis"] = selection_basis
     return payload
 
 
@@ -138,6 +141,7 @@ def dpm_portfolio_universe_candidate_ref(
     portfolio_id: str,
     mandate_id: str,
     binding_version: object,
+    selection_basis: dict[str, object] | None = None,
 ) -> dict[str, object]:
     return source_ref_payload(
         source_system="lotus-core",
@@ -146,6 +150,7 @@ def dpm_portfolio_universe_candidate_ref(
         source_version=str(binding_version),
         supportability_state="READY",
         include_content_hash=False,
+        selection_basis=selection_basis,
     )
 
 

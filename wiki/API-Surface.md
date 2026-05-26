@@ -187,6 +187,9 @@ resolve bounded candidate pages from lotus-core `DpmPortfolioUniverseCandidate:v
 `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`; that mode rejects caller-supplied
 portfolios, walks bounded continuation pages to terminal exhaustion, and fails closed on
 unavailable, incomplete, degraded, empty, duplicate, non-terminating, or still-truncated Core pages.
+Core candidate source refs preserve the source-owned `EFFECTIVE_DISCRETIONARY_MANDATE_BINDING`
+selection basis so downstream screens can show why candidate membership was included without
+promoting it into broader campaign membership authority.
 Report materialization, rendering, archive lifecycle, AI memo generation, relationship
 householding, global portfolio-universe ownership, PM ranking, external workflow orchestration,
 client communication workflow, and external OMS execution remain downstream, source-owner,

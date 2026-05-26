@@ -78,6 +78,20 @@ class DpmWaveSourceRef(BaseModel):
         description="Canonical content hash when available.",
         examples=["sha256:manifest-example"],
     )
+    selection_basis: dict[str, object] | None = Field(
+        default=None,
+        description=(
+            "Optional source-owned candidate-selection basis preserved from upstream source "
+            "products when membership is resolved by a producer rather than inferred by manage."
+        ),
+        examples=[
+            {
+                "basis_type": "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING",
+                "source_table": "portfolio_mandate_bindings",
+            }
+        ],
+        exclude_if=lambda value: value is None,
+    )
 
 
 class DpmWaveTrigger(BaseModel):

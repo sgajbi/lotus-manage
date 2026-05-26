@@ -6,6 +6,7 @@ from src.api.routers.wave_source_refs import (
     bulk_review_campaign_member_ref,
     bulk_review_campaign_membership_ref,
     cio_model_change_affected_mandate_ref,
+    dpm_portfolio_universe_candidate_ref,
     pm_book_member_ref,
     pm_book_membership_ref,
     risk_event_affected_portfolio_ref,
@@ -80,6 +81,30 @@ def test_cio_model_change_affected_mandate_ref_stringifies_binding_version() -> 
         "source_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
         "source_version": "7",
         "supportability_state": "READY",
+    }
+
+
+def test_dpm_portfolio_universe_candidate_ref_preserves_selection_basis() -> None:
+    selection_basis = {
+        "basis_type": "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING",
+        "source_table": "portfolio_mandate_bindings",
+        "included_when": ["mandate_type=discretionary"],
+        "downstream_boundary": "Candidate membership is not relationship householding.",
+    }
+
+    assert dpm_portfolio_universe_candidate_ref(
+        source_record_id="mandate-binding-001",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        binding_version=3,
+        selection_basis=selection_basis,
+    ) == {
+        "source_system": "lotus-core",
+        "source_type": "DPM_PORTFOLIO_UNIVERSE_CANDIDATE",
+        "source_id": "mandate-binding-001",
+        "source_version": "3",
+        "supportability_state": "READY",
+        "selection_basis": selection_basis,
     }
 
 

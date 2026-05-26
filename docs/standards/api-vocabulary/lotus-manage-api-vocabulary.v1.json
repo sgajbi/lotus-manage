@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-24T09:48:25.338509+00:00",
+  "generatedAt": "2026-05-26T00:46:59.677578+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -12629,6 +12629,20 @@
       ],
       "observedTypes": [
         "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.selection_basis",
+      "canonicalTerm": "selection_basis",
+      "preferredName": "selection_basis",
+      "description": "Optional source-owned candidate-selection basis preserved from upstream source products when membership is resolved by a producer rather than inferred by manage.",
+      "example": "selection_basis_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
       ]
     },
     {
@@ -67898,6 +67912,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -68010,6 +68032,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -68064,6 +68094,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_by",
@@ -68254,6 +68292,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -68366,6 +68412,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -68420,6 +68474,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -68710,6 +68772,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -68868,6 +68938,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -69046,6 +69124,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -69212,6 +69298,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -69388,6 +69482,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -69613,6 +69715,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -69725,6 +69835,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -69779,6 +69897,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -70069,6 +70195,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -70227,6 +70361,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -70405,6 +70547,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -70571,6 +70721,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -70747,6 +70905,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -71004,6 +71170,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].governance",
             "location": "body",
             "required": false,
@@ -71116,6 +71290,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].source_refs",
             "location": "body",
             "required": false,
@@ -71170,6 +71352,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "items[].created_at",
@@ -71460,6 +71650,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -71618,6 +71816,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "items[].assignment_actions[].forbidden_actions",
@@ -71796,6 +72002,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -71962,6 +72176,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "items[].assignment_tasks[].transitions[].content_hash",
@@ -72138,6 +72360,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "items[].maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "items[].maker_checker_controls[].forbidden_actions",
@@ -72411,6 +72641,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -72523,6 +72761,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -72577,6 +72823,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -72867,6 +73121,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -73025,6 +73287,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -73203,6 +73473,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -73369,6 +73647,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -73545,6 +73831,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -73802,6 +74096,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -73914,6 +74216,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -73968,6 +74278,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -74258,6 +74576,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -74416,6 +74742,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -74594,6 +74928,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -74760,6 +75102,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -74936,6 +75286,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -81957,6 +82315,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -82131,6 +82497,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -82243,6 +82617,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -82297,6 +82679,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -82587,6 +82977,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -82745,6 +83143,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -82923,6 +83329,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -83089,6 +83503,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -83265,6 +83687,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -83490,6 +83920,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -83683,6 +84121,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -83857,6 +84303,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -83969,6 +84423,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -84023,6 +84485,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -84313,6 +84783,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -84471,6 +84949,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -84649,6 +85135,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -84815,6 +85309,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -84991,6 +85493,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -85240,6 +85750,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_actions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -85465,6 +85983,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -85639,6 +86165,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -85751,6 +86285,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -85805,6 +86347,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -86095,6 +86645,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -86253,6 +86811,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -86431,6 +86997,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -86597,6 +87171,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -86773,6 +87355,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -87046,6 +87636,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -87212,6 +87810,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -87455,6 +88061,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -87629,6 +88243,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -87741,6 +88363,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -87795,6 +88425,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -88085,6 +88723,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -88243,6 +88889,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -88421,6 +89075,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -88587,6 +89249,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -88763,6 +89433,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -88942,6 +89620,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -89116,6 +89802,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "candidates[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "governance",
             "location": "body",
             "required": false,
@@ -89228,6 +89922,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "source_refs",
             "location": "body",
             "required": false,
@@ -89282,6 +89984,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "created_at",
@@ -89572,6 +90282,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "approval_decisions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "approval_decisions[].forbidden_actions",
             "location": "body",
             "required": false,
@@ -89730,6 +90448,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_actions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_actions[].forbidden_actions",
@@ -89908,6 +90634,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "assignment_tasks[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "assignment_tasks[].transitions",
             "location": "body",
             "required": true,
@@ -90074,6 +90808,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "assignment_tasks[].transitions[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "assignment_tasks[].transitions[].content_hash",
@@ -90250,6 +90992,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -90505,6 +91255,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "maker_checker_controls[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "maker_checker_controls[].forbidden_actions",
@@ -93149,6 +93907,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -93299,6 +94065,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -93515,6 +94289,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -94040,6 +94822,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolios[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "portfolio_manager_id",
             "location": "body",
             "required": false,
@@ -94166,6 +94956,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "campaign_definition_id",
@@ -94366,6 +95164,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "campaign_governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -94490,6 +95296,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.as_of_date",
@@ -94642,6 +95456,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -94858,6 +95680,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -95391,6 +96221,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "portfolios[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "portfolio_manager_id",
             "location": "body",
             "required": false,
@@ -95517,6 +96355,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "tactical_house_view.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "campaign_definition_id",
@@ -95717,6 +96563,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "campaign_governance.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           }
         ]
       },
@@ -95841,6 +96695,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.as_of_date",
@@ -95993,6 +96855,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -96209,6 +97079,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -96866,6 +97744,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].aggregate_metrics.source_analytics[].reason_codes",
             "location": "body",
             "required": false,
@@ -97081,6 +97967,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -97231,6 +98125,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -97447,6 +98349,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -98352,6 +99262,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].alternative_set_id",
             "location": "body",
             "required": false,
@@ -98568,6 +99486,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "aggregate_metrics.source_analytics[].reason_codes",
             "location": "body",
             "required": false,
@@ -98743,6 +99669,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -98893,6 +99827,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -99109,6 +100051,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -102230,6 +103180,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -102380,6 +103338,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -102596,6 +103562,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -103133,6 +104107,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -103283,6 +104265,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -103499,6 +104489,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -104012,6 +105010,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -104162,6 +105168,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -104378,6 +105392,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -104891,6 +105913,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -105041,6 +106071,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -105257,6 +106295,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -105770,6 +106816,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -105920,6 +106974,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -106136,6 +107198,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -106649,6 +107719,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "wave.trigger.source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "wave.as_of_date",
             "location": "body",
             "required": true,
@@ -106799,6 +107877,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.items[].alternative_set_id",
@@ -107015,6 +108101,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "wave.aggregate_metrics.source_analytics[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "wave.aggregate_metrics.source_analytics[].reason_codes",
@@ -108071,6 +109165,14 @@
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
           },
           {
+            "name": "items[].source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
+          },
+          {
             "name": "items[].diagnostics",
             "location": "body",
             "required": true,
@@ -108301,6 +109403,14 @@
             "type": "object",
             "semanticId": "lotus.content_hash",
             "attributeRef": "#/attributeCatalog/lotus.content_hash"
+          },
+          {
+            "name": "source_refs[].selection_basis",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.selection_basis",
+            "attributeRef": "#/attributeCatalog/lotus.selection_basis"
           },
           {
             "name": "portfolio_memory_context",

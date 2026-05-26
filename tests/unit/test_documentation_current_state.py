@@ -104,9 +104,13 @@ def test_core_dpm_portfolio_universe_candidate_consumer_truth_is_documented() ->
         assert "DpmPortfolioUniverseCandidate:v1" in text
 
     assert "`campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`" in readme
-    assert "fails closed on unavailable, incomplete, degraded, empty, or truncated" in (
+    assert "unavailable, incomplete, degraded, empty, or truncated Core pages" in (
         supported_features
     )
+    assert "rejects duplicate, non-terminating" in supported_features
+    assert "still-truncated page" in supported_features
+    assert "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING" in supported_features
+    assert "selection basis" in api_surface
     assert "RFC37-WTBD-004 is not complete" in rfc37
     assert "WTBD counts because broader strategic source-product depth" in wtbd
     assert "relationship householding" in upstream_map

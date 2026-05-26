@@ -527,6 +527,21 @@ def _dpm_portfolio_universe_candidate_payload(
             ],
             "page_truncated": page_truncated,
         },
+        "selection_basis": {
+            "basis_type": "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING",
+            "source_table": "portfolio_mandate_bindings",
+            "included_when": [
+                "mandate_type=discretionary",
+                "effective_from<=as_of_date",
+                "effective_to is null or effective_to>=as_of_date",
+                "active authority unless include_inactive_mandates=true",
+            ],
+            "downstream_boundary": (
+                "Candidate membership is not relationship householding, suitability approval, "
+                "portfolio-manager ranking, execution readiness, client communication workflow, "
+                "or external workflow ownership."
+            ),
+        },
         "lineage": {
             "source_system": "lotus-core",
             "source_table": "portfolio_mandate_bindings",
@@ -1745,6 +1760,26 @@ def test_bulk_review_campaign_preview_can_resolve_core_portfolio_universe_candid
         "DpmPortfolioUniverseCandidate",
         "DPM_PORTFOLIO_UNIVERSE_CANDIDATE",
         "MANDATE_DIGITAL_TWIN",
+    }
+    candidate_ref = next(
+        ref
+        for ref in item["source_refs"]
+        if ref["source_type"] == "DPM_PORTFOLIO_UNIVERSE_CANDIDATE"
+    )
+    assert candidate_ref["selection_basis"] == {
+        "basis_type": "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING",
+        "source_table": "portfolio_mandate_bindings",
+        "included_when": [
+            "mandate_type=discretionary",
+            "effective_from<=as_of_date",
+            "effective_to is null or effective_to>=as_of_date",
+            "active authority unless include_inactive_mandates=true",
+        ],
+        "downstream_boundary": (
+            "Candidate membership is not relationship householding, suitability approval, "
+            "portfolio-manager ranking, execution readiness, client communication workflow, "
+            "or external workflow ownership."
+        ),
     }
     assert item["diagnostics"]["source_product"] == "BulkReviewCampaignMembership:v1"
     assert item["diagnostics"]["eligible_portfolio_types"] == ["DISCRETIONARY"]
