@@ -1,10 +1,10 @@
 # RFC36-43 Gold-Pass Audit Matrix
 
-Date: 2026-05-25
+Date: 2026-05-26
 
 Scope: current `lotus-manage` mainline after merge
-`cad7727c97073bada4c04e37d88c187e775be80e`, with Main Releasability Gate
-`26394305827` green, plus downstream Gateway, Workbench, Platform, and Core realization evidence
+`003730d7c835b107a3f62c159420ce05e11efa4a`, with Main Releasability Gate
+`26426233343` green, plus downstream Gateway, Workbench, Platform, and Core realization evidence
 already merged to their own `main` branches.
 
 This is the decision register for the RFC36-43 gold-pass completion program. It does not replace
@@ -201,12 +201,52 @@ workflow orchestration, client communication workflow, OMS acknowledgement, fill
 reconciliation, raw prompt storage, generated-summary retention, or unsupported source-product
 methodology.
 
+## Candidate Selection-Basis Front-Office Proof - 2026-05-26
+
+The bounded Core candidate-source path now has durable front-office proof that the source-owned
+candidate-selection basis survives the Core-to-Manage-to-Gateway-to-Workbench handoff:
+
+1. `lotus-manage` PR #443, merge SHA
+   `003730d7c835b107a3f62c159420ce05e11efa4a`, preserves Core
+   `candidate_selection_basis` on `DpmWaveSourceRef` for
+   `BULK_REVIEW_CAMPAIGN` candidates resolved from `DpmPortfolioUniverseCandidate:v1`.
+2. Manage Feature Lane, PR Merge Gate, and Main Releasability Gate `26426233343` passed after the
+   merge.
+3. `lotus-workbench` PR #376, merge SHA
+   `87f02b46cb59b829e8fb1c913f3b1c9c43d22b30`, renders the candidate-selection basis in the DPM
+   campaign candidate-source card.
+4. `lotus-platform` PR #359, merge SHA
+   `1c138c4499945754733a0fdcd68ddc7f16499fad`, adds
+   `candidate_selection_basis` to the canonical front-office demo-data contract and seed
+   assertions.
+5. `lotus-platform` PR #360, merge SHA
+   `dce6dfaf42459779418841a5d85ada12eeb69a04`, advances the canonical campaign definition to
+   version `2026.05.2`, records superseded `2026.05` and `2026.05.1` definitions, and makes the
+   seed supersede stale canonical campaign definitions instead of silently reusing definitions that
+   predate selection-basis evidence.
+6. `lotus-workbench` PR #377, merge SHA
+   `ef52049b13f0dc31e833bbcd08cf753aa5968fd5`, extends live canonical browser validation to assert
+   rendered `Selection Basis`, `Effective Discretionary Mandate Binding`,
+   `portfolio_mandate_bindings`, `mandate_type=discretionary`, and the no-order/no-OMS/
+   no-client-contact boundaries. It also fixes Workbench command-center boundary mapping for
+   nested `universe_posture.operating_boundaries`.
+7. Platform Main Releasability Gate `26428982839` and Workbench Main Releasability Gate
+   `26429896658` passed on the merged `main` commits. Workbench wiki drift was checked with
+   `DiffCount 0`.
+
+Boundary preserved: this closes the source-selection-basis proof gap for the bounded Core
+candidate-source mode only. It does not change WTBD counts, close RFC37-WTBD-004, or promote
+relationship householding, global portfolio-universe ownership, PM ranking, external workflow
+orchestration, client communication workflow, OMS acknowledgement, order routing, fills,
+settlement, reconciliation, generated-summary retention, raw prompt storage, or unsupported
+source-product methodology.
+
 ## RFC-Level Audit Matrix
 
 | RFC | Current completeness | Correctness and tests | Live proof and docs | Gold-pass decision | Follow-up classification |
 | --- | --- | --- | --- | --- | --- |
 | RFC-0036 | Implemented: canonical `/api/v1` Manage execution and supportability posture, stateful sourcing envelope, mesh/source-readiness promotion, and retired alias cleanup are integrated. | Documentation tests and API/vocabulary gates protect removal of stale advisory/proposal and unversioned product surfaces. | Supported-feature, endpoint-certification, and RFC truth are current; downstream Gateway/Workbench support is merged. | Meets current first-wave standard for Lotus-owned Manage execution supportability. | `documentation-truth` only if future API mirrors drift; broader source depth remains RFC37-WTBD-004. |
-| RFC-0037 | Strategic parent roadmap remains partially implemented by design. Completed child realizations cover outcome, copilot, front-office DPM realization, reporting/evidence, canonical demo story, portfolio memory, governed Workbench panel registration, and bounded Core candidate-source realization. | Current docs correctly retain RFC37-WTBD-004 as open and treat the roadmap as a boundary ledger, not a blanket support claim. Gateway/Workbench now also fail closed for the bounded Core-discovery mode rather than allowing caller portfolios to leak into source discovery; Core live validation now walks all bounded candidate pages to terminal exhaustion and rejects duplicate, empty, malformed, missing, and non-terminating pages; Manage now consumes bounded continuation pages to terminal exhaustion and rejects duplicate or non-terminating source evidence before wave creation. Platform registry schema drift is fixed and generated catalog/certification/maturity artifacts include the current bounded source-product truth. Platform canonical seed automation now persists/reuses a source-backed campaign definition, Workbench renders source-lineage product identity from candidate refs, and Core seed retries are hardened. | Latest bounded source-consumer improvement consumes and realizes `DpmPortfolioUniverseCandidate:v1` through Core, Manage, Gateway, Workbench, and platform canonical seed automation without closing broader source-product depth. Current live validation also proves the governed proposal memo/evidence-pack panel as implemented, without approved-state overclaim. | Not globally complete; completed child surfaces are bounded and implementation-backed. | `source-owner` and `unsupported-nonclaim` for RFC37-WTBD-004; no current Gateway/Workbench/platform-seed realization gap remains for the bounded Core candidate-source mode. |
+| RFC-0037 | Strategic parent roadmap remains partially implemented by design. Completed child realizations cover outcome, copilot, front-office DPM realization, reporting/evidence, canonical demo story, portfolio memory, governed Workbench panel registration, and bounded Core candidate-source realization. | Current docs correctly retain RFC37-WTBD-004 as open and treat the roadmap as a boundary ledger, not a blanket support claim. Gateway/Workbench now also fail closed for the bounded Core-discovery mode rather than allowing caller portfolios to leak into source discovery; Core live validation now walks all bounded candidate pages to terminal exhaustion and rejects duplicate, empty, malformed, missing, and non-terminating pages; Manage now consumes bounded continuation pages to terminal exhaustion and rejects duplicate or non-terminating source evidence before wave creation. Platform registry schema drift is fixed and generated catalog/certification/maturity artifacts include the current bounded source-product truth. Platform canonical seed automation now persists/reuses a source-backed campaign definition, Workbench renders source-lineage product identity from candidate refs, and Core seed retries are hardened. The 2026-05-26 selection-basis proof now confirms source-owned membership rationale is preserved by Manage, contract-pinned by Platform seed automation, and rendered plus live-validated in Workbench. | Latest bounded source-consumer improvement consumes and realizes `DpmPortfolioUniverseCandidate:v1` through Core, Manage, Gateway, Workbench, and platform canonical seed automation without closing broader source-product depth. Current live validation also proves the governed proposal memo/evidence-pack panel and candidate-selection basis as implemented, without approved-state or global-universe overclaim. | Not globally complete; completed child surfaces are bounded and implementation-backed. | `source-owner` and `unsupported-nonclaim` for RFC37-WTBD-004; no current Gateway/Workbench/platform-seed realization gap remains for the bounded Core candidate-source mode. |
 | RFC-0038 | Implemented for Manage mandate digital twin, health, command-center foundation, source-context preservation, and downstream command-center realization. | Current tests protect source refs, supportability states, PM-book discovery, and documentation truth. | Canonical seed proof covers populated ready, selector-driven partial, and empty command-center posture. | Meets current first-wave standard for the implemented command-center scope. | `source-owner` for degraded/blocked fixtures and richer profile-detail source products. |
 | RFC-0039 | Implemented for construction alternatives, source-authority posture, restriction/sustainability, transaction-cost, liquidity, regime-stress, lifecycle into proof/wave/report/AI, and Workbench realization. | Unit/API/source-client tests cover deterministic alternatives, method posture, source supportability, and failure handling. | Workbench construction validation and docs prove Gateway-only product support. | Meets current first-wave standard for bounded construction alternatives. | `source-owner` for future predictive execution/FX/treasury depth; `unsupported-nonclaim` for OMS and autonomous PM choice. |
 | RFC-0040 | Implemented for proof packs, report input, AI evidence, source analytics, transaction-cost/scenario enrichment, decision timeline, and portfolio memory linkage. | Tests cover section states, content hashes, source refs, replay safety, boundary evidence, and malformed source contexts. | Canonical front-office proof classifies `dpm.proof_pack` as ready; report/render/archive/AI downstream support is merged. | Meets current first-wave proof-pack and evidence-fabric standard. | `source-owner` for future source-event families; `unsupported-nonclaim` for client communication execution and OMS. |
@@ -227,7 +267,7 @@ methodology.
 | RFC37-WTBD-001 | Done: first-wave outcome-review product path is complete. | `documentation-truth` | Cross-screen posture was revalidated in the 2026-05-24 canonical evidence refresh. |
 | RFC37-WTBD-002 | Done: governed AI PM copilot support is complete for current packs. | `front-office-realization` | Add future packs only after owner-side evidence exists. |
 | RFC37-WTBD-003 | Done: bounded front-office DPM realization is complete. | `documentation-truth` | Do not reopen unless a real source-owner or realization regression appears. |
-| RFC37-WTBD-004 | Open: broader strategic source-product depth remains unclosed. | `source-owner` | Continue with bounded source-owner slices; current Core `DpmPortfolioUniverseCandidate:v1` Manage/Gateway/Workbench realization, Core full-pagination validation, and Manage bounded continuation-page consumption advance but do not close it and must not be promoted as global universe ownership. |
+| RFC37-WTBD-004 | Open: broader strategic source-product depth remains unclosed. | `source-owner` | Continue with bounded source-owner slices; current Core `DpmPortfolioUniverseCandidate:v1` Manage/Gateway/Workbench realization, Core full-pagination validation, Manage bounded continuation-page consumption, canonical seed supersession, and Workbench selection-basis rendering advance but do not close it and must not be promoted as global universe ownership. |
 | RFC37-WTBD-005 | Done: report/archive/evidence materialization is complete for supported proof-pack, wave, and outcome families. | `unsupported-nonclaim` | Client communication execution remains unsupported until a source owner implements it. |
 | RFC37-WTBD-006 | Done: canonical DPM demo story is implementation-backed. | `documentation-truth` | 2026-05-24 live validation passed; refresh again after source/product changes. |
 | RFC37-WTBD-007 | Done: portfolio-memory supportability is complete for Lotus-owned source events. | `source-owner` | Broader cross-app source-event search and OMS/client events need source-owner products. |
@@ -295,14 +335,15 @@ methodology.
 | What was truly completed | RFC36, RFC38, RFC39, RFC40, RFC41, RFC42, and RFC43 have bounded first-wave implementation-backed support claims. RFC37 is a strategic parent roadmap with all current child support claims complete except RFC37-WTBD-004 broader source-product depth. |
 | Quality improvements confirmed | The current mainline preserves source ownership, Gateway-only Workbench consumption, fail-closed degraded states, lineage/source refs, deterministic evidence hashes, no-OMS/no-client-contact boundaries, and documentation tests that keep stale closure language out. |
 | Debt removed | Historical advisory/proposal remnants, stale route aliases, stale vocabulary mirrors, and pre-merge closure wording are already guarded by current-state documentation tests. |
-| Testing and evidence basis | Recount is protected by `test_wtbd_control_snapshot_counts_match_detailed_ledger`; RFC-specific documentation tests protect integrated Gold-Pass sections; current Manage mainline is backed by Main Releasability Gate `26394305827`; Gateway PR #245 and Main Releasability Gate `26359582303` protect the benchmark-assignment cache fix; Gateway PR #246 and Main Releasability Gate `26360219504` protect the Core candidate-source BFF guard; Workbench PR #361 plus Main Releasability Gate `26361663264` protect candidate-source UI realization; Core PR #384 and Main Releasability Gate `26377741432` protect full continuation-token candidate-source validation through terminal page exhaustion; Workbench PR #367 plus Main Releasability Gate `26385514550` protect current proposal memo/evidence-pack live validation alignment; Platform PR #353 plus Main Releasability Gate `26385491782` and API Vocabulary Governance `26385491806` protect governed panel registration, schema drift repair, and generated catalog/certification/maturity refresh; Platform PR #356 plus Main Releasability Gate `26402477310` and API Vocabulary Governance `26402477356` protect canonical source-backed campaign-definition seed/reuse proof; Workbench PR #373 plus Main Releasability Gate `26402821996` protect source-lineage product rendering from candidate refs and live canonical screenshots; Core PR #385 plus Main Releasability Gate `26402781811` protect canonical seed retry hardening; the 2026-05-24 canonical front-office QA pack plus the 2026-05-25 post-merge live validation passes prove current implemented panels after live validation passed. |
-| Remaining risk | The current-stack evidence refresh is complete for bounded implemented panels, and the bounded Core candidate-source Gateway/Workbench/platform-seed realization gap is closed. Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, canonical automation expansion for implemented negative/degraded/partial scenarios, and targeted product-quality hardening remain explicitly open. |
+| Testing and evidence basis | Recount is protected by `test_wtbd_control_snapshot_counts_match_detailed_ledger`; RFC-specific documentation tests protect integrated Gold-Pass sections; current Manage mainline is backed by Main Releasability Gate `26426233343`; Gateway PR #245 and Main Releasability Gate `26359582303` protect the benchmark-assignment cache fix; Gateway PR #246 and Main Releasability Gate `26360219504` protect the Core candidate-source BFF guard; Workbench PR #361 plus Main Releasability Gate `26361663264` protect candidate-source UI realization; Core PR #384 and Main Releasability Gate `26377741432` protect full continuation-token candidate-source validation through terminal page exhaustion; Workbench PR #367 plus Main Releasability Gate `26385514550` protect current proposal memo/evidence-pack live validation alignment; Platform PR #353 plus Main Releasability Gate `26385491782` and API Vocabulary Governance `26385491806` protect governed panel registration, schema drift repair, and generated catalog/certification/maturity refresh; Platform PR #356 plus Main Releasability Gate `26402477310` and API Vocabulary Governance `26402477356` protect canonical source-backed campaign-definition seed/reuse proof; Workbench PR #373 plus Main Releasability Gate `26402821996` protect source-lineage product rendering from candidate refs and live canonical screenshots; Core PR #385 plus Main Releasability Gate `26402781811` protect canonical seed retry hardening; Manage PR #443 plus Main Releasability Gate `26426233343` protect selection-basis preservation in wave source refs; Workbench PR #376 and Platform PR #359 protect first selection-basis UI/contract propagation; Platform PR #360 plus Main Releasability Gate `26428982839` protects canonical campaign seed supersession for stale definitions; Workbench PR #377 plus Main Releasability Gate `26429896658` protects live browser validation of rendered selection-basis evidence and nested operating-boundary mapping; the 2026-05-24 canonical front-office QA pack plus the 2026-05-25 and 2026-05-26 post-merge live validation passes prove current implemented panels after live validation passed. |
+| Remaining risk | The current-stack evidence refresh is complete for bounded implemented panels, and the bounded Core candidate-source Gateway/Workbench/platform-seed/selection-basis realization gap is closed. Remaining risk is not hidden completion work: RFC37-WTBD-004 source-product depth, canonical automation expansion for implemented negative/degraded/partial scenarios, and targeted product-quality hardening remain explicitly open. |
 | Expected-standard decision | The audit ledger is production-useful as a decision register, but it does not claim the whole RFC36-43 ecosystem is beyond improvement. Remaining improvements are explicitly classified and scheduled for source-owner, front-office-realization, documentation, or unsupported-nonclaim handling. |
 
 Wiki decision for this slice: `wiki/Supported-Features.md` is updated because downstream
 Gateway/Workbench realization changed user-facing support truth for the bounded Core
 candidate-source mode. Wiki publication and drift-zero verification are required after merge.
 
-Wiki decision for the 2026-05-25 evidence-register refresh: no `lotus-manage` wiki source change is
-made because this refresh only records already-merged cross-repo evidence and does not change a
-Manage user-facing supported-feature claim.
+Wiki decision for the 2026-05-26 selection-basis evidence-register refresh:
+`wiki/Supported-Features.md` and `wiki/RFC-Index.md` are updated because the bounded candidate
+source proof now has additional user-facing Workbench and canonical seed evidence. Wiki
+publication and drift-zero verification are required after merge.

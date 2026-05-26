@@ -62,7 +62,8 @@ updates, and supported-feature promotion are complete.
   portfolio-memory, campaign, PM-quality, and PM copilot workspace surfaces. Broader strategic
   source-product depth remains open under RFC37-WTBD-004, even though the bounded Manage consumer
   path for lotus-core `DpmPortfolioUniverseCandidate:v1` now advances bulk-review campaign
-  candidate discovery with fail-closed page completeness and source-lineage controls.
+  candidate discovery with fail-closed page completeness, source-lineage controls, and
+  front-office-validated source-owned selection-basis evidence.
 - RFC-0038
   implemented first DPM operating-system foundation: source-mapped mandate digital twin,
   deterministic health engine, monitoring exception taxonomy, persistence, certified mandate and

@@ -115,6 +115,22 @@ returned candidate, and fails closed on duplicate candidate rows or repeated con
 This is a source-consumer completeness improvement only; it does not make Manage a portfolio
 universe source owner.
 
+Candidate-source selection-basis proof addendum, 2026-05-26:
+
+The bounded campaign-candidate path now proves the source-owned selection basis through the
+front-office stack. `lotus-manage` PR #443 preserves Core `candidate_selection_basis` on wave
+source refs, `lotus-platform` PR #359 pins the field in the canonical demo-data contract, and
+`lotus-platform` PR #360 supersedes stale canonical campaign definitions that predate
+selection-basis evidence. `lotus-workbench` PR #376 renders the basis in the campaign candidate
+source card, and `lotus-workbench` PR #377 live-validates `Selection Basis`,
+`Effective Discretionary Mandate Binding`, `portfolio_mandate_bindings`,
+`mandate_type=discretionary`, and the no-order/no-OMS/no-client-contact boundaries. Manage Main
+Releasability Gate `26426233343`, Platform Main Releasability Gate `26428982839`, and Workbench
+Main Releasability Gate `26429896658` passed. This is additional proof for bounded Core-owned DPM
+candidate membership only; it is not a relationship-householding, global-universe, PM-ranking,
+external-workflow, client-contact, order, execution, OMS, fill, settlement, or reconciliation
+claim.
+
 Construction risk/performance enrichment addendum: Manage now preserves caller/source-supplied
 `AuthoritativeRiskContext` and `AuthoritativePerformanceContext` in construction alternative
 diagnostics and enrichment summaries for every generated alternative, including non-`RISK_AWARE`
