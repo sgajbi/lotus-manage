@@ -83,16 +83,17 @@ RFC37-WTBD-004 bounded source-consumer addendum, 2026-05-24:
 Manage now consumes lotus-core `DpmPortfolioUniverseCandidate:v1` as an optional candidate source
 for `BULK_REVIEW_CAMPAIGN` preview/create when
 `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`. The implementation preserves Core
-candidate lineage through wave source refs, rejects caller-supplied portfolios in Core-discovery
-mode, and fails closed on unavailable, incomplete, degraded, empty, or truncated Core pages before a
-partial campaign wave can be created. The 2026-05-25 Manage consumer hardening now walks bounded
-Core continuation pages to terminal exhaustion and additionally rejects duplicate, non-terminating,
-or still-truncated page evidence. Gateway PR #246 preserves the source mode through the DPM wave
-BFF and rejects mixed Core-discovery/manual-portfolio requests. Workbench PR #361 renders the
-bounded source-readiness card, candidate count, source product identity, incomplete/truncated-page
-warnings, and no-caller-portfolio boundary. This materially advances source-product depth for
-campaign candidate discovery and closes the bounded Gateway/Workbench realization gap for this
-candidate-source mode, but it does not close RFC37-WTBD-004: relationship householding, global
+candidate lineage and Core's `EFFECTIVE_DISCRETIONARY_MANDATE_BINDING` selection basis through wave
+source refs, rejects caller-supplied portfolios in Core-discovery mode, and fails closed on
+unavailable, incomplete, degraded, empty, or truncated Core pages before a partial campaign wave can
+be created. The 2026-05-25 Manage consumer hardening now walks bounded Core continuation pages to
+terminal exhaustion and additionally rejects duplicate, non-terminating, or still-truncated page
+evidence. Gateway PR #246 preserves the source mode through the DPM wave BFF and rejects mixed
+Core-discovery/manual-portfolio requests. Workbench PR #361 renders the bounded source-readiness
+card, candidate count, source product identity, incomplete/truncated-page warnings, and
+no-caller-portfolio boundary. This materially advances source-product depth for campaign candidate
+discovery and closes the bounded Gateway/Workbench realization gap for this candidate-source mode,
+but it does not close RFC37-WTBD-004: relationship householding, global
 portfolio-universe ownership, PM ranking, external workflow orchestration, client communication
 workflow, order routing, OMS acknowledgement, fills, settlement, and reconciliation remain
 unsupported or external-owner scope.

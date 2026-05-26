@@ -485,6 +485,25 @@ class DpmCorePortfolioUniverseCandidateSupportability(BaseModel):
     )
 
 
+class DpmCorePortfolioUniverseCandidateSelectionBasis(BaseModel):
+    basis_type: Literal["EFFECTIVE_DISCRETIONARY_MANDATE_BINDING"] = Field(
+        description=(
+            "Core-owned selection-basis code for candidate membership; downstream consumers must "
+            "not reinterpret it as broader campaign membership or execution authority."
+        )
+    )
+    source_table: Literal["portfolio_mandate_bindings"] = Field(
+        description="Core source table family used to resolve DPM candidate membership."
+    )
+    included_when: list[str] = Field(
+        default_factory=list,
+        description="Core source predicates required before a candidate is included.",
+    )
+    downstream_boundary: str = Field(
+        description="Consumer boundary attached by Core for downstream audit and non-claims."
+    )
+
+
 class DpmCorePortfolioUniverseCandidateResponse(BaseModel):
     product_name: Literal["DpmPortfolioUniverseCandidate"] = Field(
         description="Core source-data product name."
@@ -500,6 +519,13 @@ class DpmCorePortfolioUniverseCandidateResponse(BaseModel):
     )
     supportability: DpmCorePortfolioUniverseCandidateSupportability = Field(
         description="Completeness and readiness posture for candidate discovery."
+    )
+    selection_basis: DpmCorePortfolioUniverseCandidateSelectionBasis | None = Field(
+        default=None,
+        description=(
+            "Core-owned rule basis explaining why returned mandate bindings qualify as DPM "
+            "portfolio-universe candidates."
+        ),
     )
     lineage: dict[str, str] = Field(
         default_factory=dict,
