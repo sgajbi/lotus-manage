@@ -3810,3 +3810,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   campaign read-model router.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-145: Campaign operating queue was mixed with attention projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-operating-queue`.
+- Finding: after extracting campaign discovery, the campaign read-model router still mixed the
+  operating queue with approval inbox, workflow board, assignment plan, and automation readiness.
+  The operating queue owns launch-ready versus attention posture over persisted definitions,
+  requested-as-of/actor context, active-on filtering, and expired-row inclusion.
+- Action: moved the operating queue route registration into
+  `src/api/routers/wave_campaign_operating_queue_routes.py` and included it after discovery,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split approval inbox and workflow-board projections from the remaining campaign
+  read-model router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
