@@ -20,6 +20,7 @@ from src.api.dependencies import (
 from src.api.main import app
 from src.api.request_models import RebalanceRequest
 from src.api.routers import waves as waves_router
+from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service, proof_pack_service, wave_service
 from src.core.mandates import (
@@ -1672,7 +1673,7 @@ def test_bulk_review_campaign_definition_reference_validation(
     expected_code: str,
 ) -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
-    definition_request = waves_router.DpmBulkReviewCampaignDefinitionRequest.model_validate(
+    definition_request = DpmBulkReviewCampaignDefinitionRequest.model_validate(
         _bulk_review_campaign_definition_request()
     )
     campaign_repository.save_definition(
@@ -6248,6 +6249,26 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]
     cancel = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/cancel"]["post"]
     supportability = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/supportability"]["get"]
+    campaign_definition = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}"
+    ]["put"]
+    campaign_discovery = openapi["paths"]["/api/v1/rebalance/waves/campaign-discovery"]["get"]
+    workflow_board = openapi["paths"]["/api/v1/rebalance/waves/campaign-workflow-board"]["get"]
+    workflow_overview = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/workflow-overview"
+    ]["get"]
+    assignment_transition = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-tasks/{task_ref}/transitions"
+    ]["post"]
+    approval_decisions = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/approval-decisions"
+    ]["get"]
+    item_selection = openapi["paths"][
+        "/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select"
+    ]["post"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
     assert search["tags"] == ["lotus-manage Rebalance Waves"]
@@ -6279,6 +6300,18 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "404" in source_check["responses"]
     assert "409" in source_check["responses"]
     assert "422" in source_check["responses"]
+    source_check_parameters = {
+        parameter["name"]: parameter["description"] for parameter in source_check["parameters"]
+    }
+    assert source_check_parameters["x-correlation-id"] == (
+        "Optional correlation id for wave supportability and audit traceability."
+    )
+    create_parameters = {
+        parameter["name"]: parameter["description"] for parameter in create["parameters"]
+    }
+    assert create_parameters["idempotency-key"] == (
+        "Required idempotency token for durable wave create replay protection."
+    )
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
     assert "does not cancel external orders" in cancel["description"]
@@ -6317,3 +6350,66 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "DpmWaveClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]
     assert "DpmWaveCampaignUniverseBoundaryEvidence" in openapi["components"]["schemas"]
     assert "excludes portfolio identifiers" in supportability["description"]
+    campaign_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in campaign_definition["parameters"]
+    }
+    assert campaign_parameters == {
+        "campaign_id": "Manage-owned bulk-review campaign definition identifier.",
+        "campaign_version": "Immutable campaign definition version.",
+    }
+    assignment_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in assignment_transition["parameters"]
+    }
+    assert assignment_parameters["task_ref"] == "Stable campaign assignment task reference."
+    detail_parameters = {
+        parameter["name"]: parameter["description"] for parameter in detail["parameters"]
+    }
+    assert detail_parameters["wave_id"] == "Durable Manage rebalance wave identifier."
+    selection_parameters = {
+        parameter["name"]: parameter["description"] for parameter in item_selection["parameters"]
+    }
+    assert selection_parameters["wave_item_id"] == (
+        "Durable Manage rebalance wave item identifier."
+    )
+    discovery_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in campaign_discovery["parameters"]
+    }
+    assert discovery_parameters["campaign_id"] == (
+        "Optional filter for one Manage-owned bulk-review campaign definition id."
+    )
+    assert discovery_parameters["limit"] == "Maximum number of campaign read-model rows to return."
+    assert discovery_parameters["offset"] == "Zero-based campaign read-model page offset."
+    approval_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in approval_decisions["parameters"]
+    }
+    assert approval_parameters["limit"] == "Maximum number of campaign evidence records to return."
+    assert approval_parameters["offset"] == "Zero-based campaign evidence page offset."
+    board_parameters = {
+        parameter["name"]: parameter["description"] for parameter in workflow_board["parameters"]
+    }
+    assert board_parameters["requested_as_of_date"].startswith(
+        "Optional ISO date to evaluate read-model readiness and expiry."
+    )
+    assert board_parameters["actor_id"] == (
+        "Optional actor id to evaluate against campaign entitlement evidence."
+    )
+    assert board_parameters["include_closed"] == (
+        "When false, omit closed campaign rows from attention and workflow read models."
+    )
+    overview_parameters = {
+        parameter["name"]: parameter["description"] for parameter in workflow_overview["parameters"]
+    }
+    assert overview_parameters["requested_as_of_date"] == (
+        "ISO date that the future wave preview/create request would use."
+    )
+    assert overview_parameters["include_launch_package"].startswith(
+        "When true, include launch package guidance"
+    )
+    assert overview_parameters["launch_history_limit"] == (
+        "Maximum number of launch audit records to include."
+    )
+    assert overview_parameters["launch_history_offset"] == "Zero-based launch audit page offset."

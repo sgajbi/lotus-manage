@@ -1781,3 +1781,1077 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   controls change.
 - Wiki decision: updated `wiki/Current-State.md` because this is implementation-backed
   product-current-state and demo/client-pitch truth.
+
+## BACKEND-REVIEW-20260531-050: Wave campaign read-model query flow was duplicated in the router
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign discovery, operating queue, approval inbox, workflow board,
+  assignment plan, and workflow-automation read models
+- Finding: `src/api/routers/waves.py` repeated the same `active_on` parsing and campaign-definition
+  repository filtering across six read-model endpoints. That kept request-boundary query shaping
+  mixed into every controller function and increased the chance of drift in date validation,
+  status/as-of filters, pagination, or future campaign read-model route additions.
+- Action: extracted campaign read-model query loading to
+  `src/api/routers/wave_campaign_read_model_query.py` and updated the six endpoints to consume one
+  typed query result containing the repository page and parsed `active_on` date.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/api/test_wave_campaign_read_model_query.py` plus targeted
+  Ruff checks for the changed router/helper/test files.
+- Follow-up: keep future campaign read-model endpoints on the shared query helper before adding
+  endpoint-specific projection logic.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-051: Campaign definition path parameters lacked reusable API documentation
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign definition route path parameters in `src/api/routers/waves.py`
+- Finding: campaign-definition endpoints repeated bare `campaign_id`, `campaign_version`, and
+  assignment `task_ref` path parameters without shared descriptions or examples. That left a large
+  workflow surface dependent on generated default Swagger wording instead of domain-correct API
+  documentation.
+- Action: introduced reusable FastAPI `Annotated` path aliases for campaign definition id,
+  campaign definition version, and assignment task reference, then applied them across the
+  campaign-definition route family.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy on `src/api/routers/waves.py`, OpenAPI quality gate, and regenerated
+  API vocabulary inventory validation.
+- Follow-up: apply the same reusable path-parameter documentation pattern to durable wave id and
+  wave item id routes in a separate slice.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
+  existing routes with no behavior, payload, or supported-feature change.
+
+## BACKEND-REVIEW-20260531-052: Durable wave path parameters lacked reusable API documentation
+
+- Date: 2026-05-31
+- Scope: durable rebalance wave route path parameters in `src/api/routers/waves.py`
+- Finding: durable wave endpoints still used bare `wave_id` and `wave_item_id` path parameters
+  after campaign-definition path parameters were standardized. That left core wave detail,
+  item-selection, workflow, proof-pack, report-input, and supportability routes with weaker
+  Swagger parameter descriptions than the campaign route family.
+- Action: added reusable FastAPI `Annotated` path aliases for durable wave id and wave item id,
+  applied them across the durable wave route family, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy on `src/api/routers/waves.py`, OpenAPI quality gate, and regenerated
+  API vocabulary inventory validation.
+- Follow-up: continue using shared path-parameter aliases when new wave subroutes are added.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
+  existing routes with no behavior, payload, or supported-feature change.
+
+## BACKEND-REVIEW-20260531-053: Campaign read-model query parameters repeated weak Swagger metadata
+
+- Date: 2026-05-31
+- Scope: campaign definition list and bulk-review campaign read-model query parameters
+- Finding: campaign-definition list, discovery, operating queue, approval inbox, workflow board,
+  assignment plan, and workflow automation endpoints repeated bare query parameter definitions for
+  campaign id, campaign status, as-of date, expiry date, include-expired, limit, and offset. The
+  route behavior was bounded, but the Swagger metadata and controller signatures were less reusable
+  than the API surface warrants.
+- Action: introduced shared `Annotated` query aliases for the campaign read-model filters and
+  pagination controls, applied them across the campaign read-model endpoints, and regenerated the
+  API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy on `src/api/routers/waves.py`, OpenAPI quality gate, and regenerated
+  API vocabulary inventory validation.
+- Follow-up: review campaign action/list endpoints separately before applying the read-model
+  pagination aliases there, because those pages represent append-only evidence ledgers rather than
+  the front-office campaign read models.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.
+
+## BACKEND-REVIEW-20260531-054: Wave route parameter aliases were embedded in the main router
+
+- Date: 2026-05-31
+- Scope: reusable wave route path and query parameter aliases
+- Finding: after hardening wave Swagger metadata, the reusable `Annotated` path/query aliases lived
+  directly in `src/api/routers/waves.py`. That kept domain API documentation primitives mixed with
+  route wiring in an already large controller module.
+- Action: moved campaign and durable-wave path/query aliases into
+  `src/api/routers/wave_route_parameters.py`, leaving `waves.py` to import the shared route
+  parameter contracts.
+- Status: hardened
+- Evidence: focused OpenAPI regression coverage, focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: place future wave route parameter aliases in the shared module instead of adding
+  controller-local `Path` or `Query` metadata.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-055: Campaign evidence pagination repeated weak Swagger metadata
+
+- Date: 2026-05-31
+- Scope: campaign approval-decision, assignment-action, assignment-task, maker-checker-control, and
+  launch-history evidence pages
+- Finding: append-only campaign evidence endpoints repeated bare `limit` and `offset` query
+  metadata. Those pages are audit/evidence ledgers and should not inherit generic pagination
+  wording from generated OpenAPI defaults.
+- Action: added shared campaign evidence pagination aliases in
+  `src/api/routers/wave_route_parameters.py`, applied them to the append-only evidence pages, and
+  regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep read-model pagination and evidence-ledger pagination separate so future docs do
+  not blur operational queues with audit/evidence record pages.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
+  existing routes with no behavior, payload, or supported-feature change.
+
+## BACKEND-REVIEW-20260531-056: Campaign read-model context queries repeated entitlement wording
+
+- Date: 2026-05-31
+- Scope: campaign operating queue, approval inbox, workflow board, assignment plan, and workflow
+  automation query metadata
+- Finding: `requested_as_of_date`, `actor_id`, and `include_closed` query parameters repeated
+  route-local Swagger text across the campaign read-model endpoints. These fields carry shared
+  readiness, expiry, entitlement, and closed-row semantics, so duplicating their descriptions made
+  future drift more likely.
+- Action: added shared campaign read-model context query aliases for requested as-of date, actor id,
+  and closed-row inclusion, applied them to the read-model endpoints, and regenerated the API
+  vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep launch-package command queries separate unless they share the same read-model
+  semantics; launch commands have stricter operational meaning than queue projections.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.
+
+## BACKEND-REVIEW-20260531-057: Campaign launch-readiness queries repeated command wording
+
+- Date: 2026-05-31
+- Scope: campaign workflow overview, preview-readiness, and launch-package query metadata
+- Finding: launch-readiness endpoints repeated route-local query metadata for requested as-of date,
+  actor id, launch-package inclusion, correlation id, and launch-history pagination. These queries
+  drive fail-closed launch package guidance and are command-adjacent, so their Swagger wording
+  should stay consistent without sharing weaker queue/read-model aliases by accident.
+- Action: added shared launch-readiness query aliases in
+  `src/api/routers/wave_route_parameters.py`, applied them to workflow overview,
+  preview-readiness, and launch-package routes, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep launch-readiness query aliases separate from read-model and evidence-page
+  pagination aliases so command-adjacent API documentation remains precise.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.
+
+## BACKEND-REVIEW-20260531-058: Wave correlation header metadata was duplicated across command routes
+
+- Date: 2026-05-31
+- Scope: wave preview, create, source-check, simulate, item selection, approval, staging, handoff,
+  and cancellation routes
+- Finding: wave command routes repeated route-local `X-Correlation-Id` header metadata. Correlation
+  ids are supportability and audit controls, so duplicated Swagger text made it easier for command
+  routes to drift in wording or examples.
+- Action: added a shared `WaveCorrelationIdHeader` alias in
+  `src/api/routers/wave_route_parameters.py`, applied it across wave command routes, pinned the
+  OpenAPI header description, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: review durable create `Idempotency-Key` header separately so idempotency semantics stay
+  explicit and do not get blurred with optional correlation.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.
+
+## BACKEND-REVIEW-20260531-059: Durable wave create idempotency header was route-local metadata
+
+- Date: 2026-05-31
+- Scope: durable wave create `Idempotency-Key` header contract
+- Finding: the durable wave create endpoint carried its idempotency header metadata directly in
+  `src/api/routers/waves.py`. Idempotency is a command-safety contract, so it should be reusable
+  route metadata and kept deliberately separate from optional correlation headers.
+- Action: added `WaveCreateIdempotencyKeyHeader` to
+  `src/api/routers/wave_route_parameters.py`, applied it to durable wave create, pinned the
+  OpenAPI header description, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep future command idempotency headers modeled as explicit command-safety contracts
+  rather than generic header parameters.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for an existing route with no behavior, payload, or supported-feature
+  change.
+
+## BACKEND-REVIEW-20260531-060: Campaign read-model routes lived in the monolithic wave router
+
+- Date: 2026-05-31
+- Scope: campaign discovery, operating queue, approval inbox, workflow board, assignment plan, and
+  workflow automation route definitions
+- Finding: read-only front-office campaign read-model routes still lived in
+  `src/api/routers/waves.py` after their query contracts and query loader were extracted. That kept
+  queue/projection route ownership mixed with campaign definition commands and durable wave command
+  routes in the same large controller module.
+- Action: moved the campaign read-model route group into
+  `src/api/routers/wave_campaign_read_model_routes.py` and mounted it from the main wave router
+  without changing route paths or response contracts.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: continue extracting route groups by ownership boundary before touching deeper service
+  orchestration, so route registration stays easy to verify.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-061: Campaign definition lifecycle routes lived in the monolithic wave router
+
+- Date: 2026-05-31
+- Scope: campaign definition create, list, retire, and supersede route definitions
+- Finding: campaign definition lifecycle routes still lived directly in
+  `src/api/routers/waves.py` even though their response handling already lived in
+  `src/api/routers/wave_campaign_definition_http.py`. That kept definition persistence and
+  lifecycle registration mixed with read models, workflow evidence, and durable wave command
+  routes in the same large controller module.
+- Action: moved the campaign definition lifecycle route group into
+  `src/api/routers/wave_campaign_definition_routes.py`, mounted it from the main wave router in the
+  original registration position, and updated the API regression test to import the request model
+  from its owning module instead of relying on an accidental `waves.py` re-export.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract the remaining campaign definition detail/action/readiness routes by ownership
+  boundary while preserving route registration order and public contracts.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-062: Campaign evidence routes lived in the monolithic wave router
+
+- Date: 2026-05-31
+- Scope: campaign approval-decision, assignment-action, assignment-task, and maker-checker-control
+  route definitions
+- Finding: campaign evidence and control routes still lived directly in
+  `src/api/routers/waves.py`. These routes share append-only evidence semantics, pagination
+  contracts, and campaign-definition repository access, so keeping them mixed with durable wave
+  preview/create and launch orchestration increased controller size and ownership ambiguity.
+- Action: moved the campaign evidence/control route group into
+  `src/api/routers/wave_campaign_evidence_routes.py` and mounted it from the main wave router after
+  the campaign definition detail route, preserving the original public path order and response
+  contracts.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract campaign lifecycle/readiness read routes separately from the durable launch
+  command so read-side supportability remains distinct from wave creation behavior.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-063: Campaign readiness read routes lived beside launch commands
+
+- Date: 2026-05-31
+- Scope: campaign lifecycle-events, launch-history, workflow-overview, preview-readiness, and
+  launch-package route definitions
+- Finding: campaign readiness and supportability read routes still lived directly in
+  `src/api/routers/waves.py` beside the durable campaign launch command and generic wave
+  preview/create routes. These endpoints are operator read models over persisted campaign
+  definitions, not wave creation handlers, so their route ownership should stay separate from
+  command orchestration.
+- Action: moved the campaign readiness/read route group into
+  `src/api/routers/wave_campaign_readiness_routes.py` and mounted it after the campaign evidence
+  router, preserving the original public path order and response contracts.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: isolate the durable campaign launch command from generic durable wave preview/create
+  routing when the next slice can preserve command dependency wiring clearly.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-064: Campaign launch route lived beside generic wave commands
+
+- Date: 2026-05-31
+- Scope: durable bulk-review campaign definition launch route definition
+- Finding: the campaign-definition launch endpoint still lived directly in
+  `src/api/routers/waves.py` beside generic wave preview/create routes. The route is a campaign
+  command with campaign-definition repository wiring, launch-package readiness, and deterministic
+  launch idempotency semantics, so keeping it in the generic wave controller blurred ownership.
+- Action: moved the durable campaign launch route into
+  `src/api/routers/wave_campaign_launch_routes.py` and mounted it after the campaign readiness
+  read router, preserving the original public path order and response contract.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review generic wave preview/create/search/detail routes next, because the remaining
+  controller still mixes command, search, detail, item, and workflow subdomains.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-065: Generic wave preview/create routes lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: generic wave preview and durable wave create route definitions
+- Finding: the non-durable preview and durable create routes still lived directly in
+  `src/api/routers/waves.py`, mixing source-resolution command orchestration with search, detail,
+  item, workflow, and report-input endpoints. These routes share source resolver wiring, mandate
+  repository access, optional correlation, and create idempotency contracts, so they form a
+  coherent command boundary.
+- Action: moved preview/create route registration into
+  `src/api/routers/wave_create_preview_routes.py`. The module uses a registration helper instead
+  of a child router because FastAPI rejects included child routers that contribute an empty-string
+  path operation; the helper preserves the exact `POST /rebalance/waves` public route and the
+  existing `build_core_resolver_client` monkeypatch seam used by regression tests.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: continue separating remaining generic wave search/detail/item/workflow routes by
+  read-side and command-side ownership boundaries.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-066: Wave source-check route lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave source-check route definition
+- Finding: the source-check command still lived directly in `src/api/routers/waves.py` even though
+  its response handling already lived in `src/api/routers/wave_source_check_http.py`. Source-check
+  is a source-readiness command with mandate repository wiring and idempotent replay semantics, so
+  it should not stay mixed with search, detail, simulation, item selection, and workflow command
+  routes.
+- Action: moved the source-check route into `src/api/routers/wave_source_check_routes.py` and
+  mounted it from the main wave router after item read routes, preserving public path order and
+  response contracts. The child router intentionally inherits parent tags to avoid duplicate
+  OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: continue extracting simulation and item/workflow command groups separately so command
+  dependencies stay visible and independently testable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-067: Wave simulation route lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave simulation route definition
+- Finding: the simulation command still lived directly in `src/api/routers/waves.py` even though
+  its response handling already lived in `src/api/routers/wave_simulation_http.py`. Simulation has
+  construction repository, risk authority, run-support, and wave repository dependencies, so it is a
+  distinct command boundary from source-check, item selection, and workflow transitions.
+- Action: moved the simulation route into `src/api/routers/wave_simulation_routes.py` and mounted
+  it after source-check, preserving public path order and response contracts. The child router
+  inherits parent tags to avoid duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract item-selection/proof-pack command routes separately from wave workflow state
+  commands.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-068: Wave item-selection route lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave item construction-alternative selection route definition
+- Finding: the item-selection command still lived directly in `src/api/routers/waves.py` even
+  though its response handling already lived in `src/api/routers/wave_selection_http.py`.
+  Selection has construction, proof-pack, mandate, run-support, and wave repository dependencies,
+  and it can optionally generate proof-pack evidence, so it should remain separate from wave
+  workflow state-transition commands.
+- Action: moved the item-selection route into `src/api/routers/wave_selection_routes.py` and
+  mounted it after simulation, preserving public path order and response contracts. The child
+  router inherits parent tags to avoid duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract wave workflow state-transition commands into their own route module and then
+  review the remaining read-only search/detail/proof-pack/report/supportability routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-069: Wave workflow commands lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave approve, stage, handoff, and cancel route definitions
+- Finding: wave workflow state-transition commands still lived directly in
+  `src/api/routers/waves.py` even though their shared HTTP response handling already lived in
+  `src/api/routers/wave_workflow_command_http.py`. These endpoints share a command envelope,
+  correlation-id handling, idempotent replay semantics, and wave repository dependency, so keeping
+  them mixed with read-only search/detail/supportability routes obscured the command boundary.
+- Action: moved the workflow command group into `src/api/routers/wave_workflow_routes.py` and
+  mounted it after item selection, preserving public path order and response contracts. The child
+  router inherits parent tags to avoid duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract the remaining read-only wave search/detail/proof-pack/report/supportability
+  routes into read-model route modules and review whether the campaign detail route should join the
+  campaign-definition route module.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-070: Wave search/detail/item read routes lived in the main router
+
+- Date: 2026-05-31
+- Scope: durable wave search, wave detail, and wave item read route definitions
+- Finding: read-only durable wave search/detail/item routes still lived directly in
+  `src/api/routers/waves.py` after the command routes were extracted. These endpoints are
+  persisted read models over wave state and should be owned separately from source-check,
+  simulation, selection, and workflow command routes.
+- Action: moved search/detail/item route registration into `src/api/routers/wave_read_routes.py`.
+  The module uses a registration helper rather than a child router because the search route is an
+  empty-string path operation (`GET /rebalance/waves`), which FastAPI cannot include from a
+  zero-prefix child router.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract proof-pack/report/supportability read routes as a final wave read-support
+  group, then move the campaign definition detail route to campaign-definition ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-071: Wave read-support routes lived in the main router
+
+- Date: 2026-05-31
+- Scope: durable wave proof-pack posture, report-input, and supportability route definitions
+- Finding: wave proof-pack posture, report-input, and supportability reads still lived directly in
+  `src/api/routers/waves.py`. These endpoints are read-support views over persisted wave evidence,
+  proof-pack linkage, report materialization inputs, and product-safe diagnostics; keeping them in
+  the root router mixed operational reads with route composition.
+- Action: moved the read-support route group into
+  `src/api/routers/wave_read_support_routes.py` and mounted it after workflow commands, preserving
+  public path order and response contracts. The child router inherits parent tags to avoid
+  duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: move the remaining campaign definition detail route into campaign-definition route
+  ownership so the main wave router becomes composition-only.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-072: Campaign definition detail route kept the main router non-compositional
+
+- Date: 2026-05-31
+- Scope: campaign definition detail route definition and main wave router composition
+- Finding: after extracting campaign, wave command, and wave read route groups, the campaign
+  definition detail endpoint was the only remaining business route implemented directly in
+  `src/api/routers/waves.py`. That kept the root router from becoming a composition-only module
+  and left campaign definition ownership split across files.
+- Action: moved the campaign definition detail route into
+  `src/api/routers/wave_campaign_definition_routes.py` using a separate detail router that is
+  mounted after campaign read-model routes, preserving the original public path order and response
+  contract. The main wave router now only composes owned route modules.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review the newly extracted route modules for repeated router construction patterns
+  and consider a lightweight route-registration convention once the split has stabilized.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-073: PM operating quality correlation header metadata was duplicated
+
+- Date: 2026-05-31
+- Scope: PM operating quality command endpoints for score runs, fairness analyses, review actions,
+  and summary invocations.
+- Finding: eight command routes repeated route-local `X-Correlation-Id` header metadata. The
+  correlation id is an audit, supportability, and downstream governance traceability contract, so
+  repeated local Swagger descriptions could drift across PM operating quality command endpoints.
+- Action: added the shared `PmQualityCorrelationIdHeader` route parameter contract and applied it
+  across PM operating quality command routes. The PM operating quality OpenAPI regression now pins
+  the governed header description, and the API vocabulary inventory was regenerated to reflect the
+  updated Swagger-visible contract.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift after regeneration.
+- Follow-up: continue extracting PM operating quality route groups by lifecycle boundary once
+  shared route parameter contracts are stable.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, supported-feature, or
+  operator-contract change.
+
+## BACKEND-REVIEW-20260531-074: PM operating quality policy routes lived in the main router
+
+- Date: 2026-05-31
+- Scope: PM operating quality policy persist, list, and detail route definitions.
+- Finding: policy administration endpoints still lived directly in
+  `src/api/routers/pm_operating_quality.py` alongside score-run, fairness, review-action, and
+  support-summary lifecycle routes. That made the router harder to scan and mixed immutable policy
+  configuration ownership with execution and evidence workflows.
+- Action: moved the policy route group into `src/api/routers/pm_operating_quality_policy_routes.py`
+  and mounted it from the parent PM operating quality router, preserving public paths, response
+  models, descriptions, and repository behavior.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: continue extracting PM operating quality lifecycle route groups, with score-run
+  extraction deferred until the private helper tests and core-resolver monkeypatch boundary are
+  made explicit.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-075: PM operating quality fairness routes were mixed with other lifecycles
+
+- Date: 2026-05-31
+- Scope: PM operating quality fairness-analysis preview, create, list, detail, and route-local
+  builder behavior.
+- Finding: fairness-analysis endpoints and the route-local fairness builder lived inside the
+  general PM operating quality router, mixed with score-run, review-action, summary-invocation,
+  and policy routes. That obscured the fairness lifecycle boundary and kept model-risk governance
+  behavior harder to inspect.
+- Action: moved the fairness-analysis route group and builder into
+  `src/api/routers/pm_operating_quality_fairness_routes.py` and mounted it from the parent PM
+  operating quality router, preserving public paths, response contracts, descriptions, conflict
+  handling, and service error mapping.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: extract review-action and support-summary lifecycle routes next, then make the
+  score-run helper/core-resolver test seam explicit before moving score-run routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-076: PM operating quality summary-invocation routes were mixed with review flows
+
+- Date: 2026-05-31
+- Scope: PM operating quality support-summary invocation preview, create, list, detail, and
+  route-local builder behavior.
+- Finding: support-summary invocation endpoints and their validation builder lived in the parent
+  PM operating quality router alongside score-run, fairness, review-action, and policy routes.
+  These routes own append-only support-summary workflow evidence and have a distinct governance
+  boundary from supervisory review actions.
+- Action: moved the summary-invocation route group and builder into
+  `src/api/routers/pm_operating_quality_summary_routes.py` and mounted it from the parent PM
+  operating quality router, preserving public paths, response contracts, descriptions, conflict
+  handling, missing-target behavior, and validation error mapping.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: isolate review-action routes after making the parent-level builder monkeypatch
+  contract explicit, then finish score-run extraction.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-077: PM operating quality review-action routes obscured the parent router
+
+- Date: 2026-05-31
+- Scope: PM operating quality review-action preview, create, list, and detail route registration.
+- Finding: review-action endpoints still occupied the parent PM operating quality router even after
+  policy, fairness, and support-summary routes were extracted. These routes own supervisory review
+  evidence and conflict handling, while the parent should increasingly compose lifecycle modules.
+- Action: moved review-action route registration into
+  `src/api/routers/pm_operating_quality_review_action_routes.py`. The parent keeps the existing
+  `_build_review_action` helper and supplies it through an explicit route-builder adapter so
+  existing private tests and monkeypatches remain stable while route ownership is separated.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: make the score-run builder/core-resolver dependency boundary explicit, then extract
+  score-run command and read routes as the final PM operating quality router decomposition step.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-078: PM operating quality score-run routes kept the router non-compositional
+
+- Date: 2026-05-31
+- Scope: PM operating quality score-run preview, create, list, and detail route registration.
+- Finding: score-run command and read endpoints were the last route definitions implemented
+  directly in `src/api/routers/pm_operating_quality.py`. The parent router still needed to retain
+  private builder and source-resolution helpers for existing focused tests, but direct route
+  definitions were no longer necessary there.
+- Action: moved score-run command and read route registration into
+  `src/api/routers/pm_operating_quality_score_run_routes.py` with separate command and read
+  registration functions so the existing OpenAPI path order is preserved. The parent router now
+  composes PM operating quality lifecycle route modules and keeps only builder/support helper
+  behavior.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review whether PM operating quality helper functions should move behind an explicit
+  injectable service boundary once the current private tests are converted away from parent-module
+  monkeypatching.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-079: Run artifact endpoint lived in the supportability root router
+
+- Date: 2026-05-31
+- Scope: deterministic DPM run artifact route registration for
+  `GET /api/v1/rebalance/runs/{rebalance_run_id}/artifact`.
+- Finding: the deterministic run artifact endpoint was still implemented directly in
+  `src/api/routers/rebalance_runs.py`, which already owns service initialization, feature gates,
+  lookup APIs, support bundles, operations, and workflow composition. Artifact retrieval is a
+  distinct supportability sub-surface with its own feature gate and audit/replay contract.
+- Action: moved artifact route registration into
+  `src/api/routers/rebalance_runs_artifact_routes.py` while preserving public path, response
+  model, Swagger metadata, feature gates, unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API supportability/artifact regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "artifact or support_bundle or supportability_summary or support_runs_list or idempotency_history"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: extract run support-bundle routes next, then lookup/read routes, keeping
+  supportability service initialization in the parent until dependency ownership is made explicit.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-080: Run support-bundle routes duplicated query metadata in the root router
+
+- Date: 2026-05-31
+- Scope: DPM run support-bundle routes by run id, correlation id, idempotency key, and operation
+  id.
+- Finding: support-bundle endpoints were implemented directly in `src/api/routers/rebalance_runs.py`
+  and repeated the same optional-section query parameter metadata on each route. That kept the
+  root supportability router large and made the support-bundle API contract more likely to drift
+  across lookup variants.
+- Action: moved support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_routes.py` and centralized the
+  `include_artifact`, `include_async_operation`, and `include_idempotency_history` query parameter
+  contracts while preserving paths, response models, Swagger descriptions, feature gates,
+  unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: extract run lookup/read and idempotency-history route groups, then review
+  supportability summary and service initialization as separate ownership boundaries.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-081: Run lookup and idempotency routes lived in the supportability root router
+
+- Date: 2026-05-31
+- Scope: DPM run lookup routes by correlation id, request hash, idempotency key, run id, and
+  idempotency history.
+- Finding: run lookup and idempotency supportability endpoints still lived directly in
+  `src/api/routers/rebalance_runs.py`, mixed with service initialization, list/search,
+  supportability summary, support bundles, artifact, operations, and workflow route composition.
+  These endpoints form a distinct read/lineage lookup surface with consistent no-query-parameter
+  posture and not-found handling.
+- Action: moved lookup and idempotency route registration into
+  `src/api/routers/rebalance_runs_lookup_routes.py`, preserving public paths, response models,
+  Swagger descriptions, feature gates, unsupported-query rejection, idempotency-history gating, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API lookup/supportability regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability or idempotency_history or support_runs_list"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review whether list/search and supportability summary should move to separate route
+  modules or remain with service initialization until the supportability root module is reduced to
+  a composition/service-factory boundary.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-082: Run inventory and summary routes kept supportability router non-compositional
+
+- Date: 2026-05-31
+- Scope: DPM run inventory listing and store-wide supportability summary route registration.
+- Finding: after artifact, support-bundle, and lookup route extraction, the root
+  `src/api/routers/rebalance_runs.py` still directly implemented the run inventory and
+  supportability summary endpoints. That kept request/Swagger/controller logic mixed with the
+  supportability service factory and feature-gate helpers.
+- Action: moved run inventory and supportability summary route registration into
+  `src/api/routers/rebalance_runs_inventory_routes.py`, preserving public paths, response models,
+  Swagger descriptions, unsupported-query rejection, supportability feature gates, retention
+  configuration, and action-register observability recording.
+- Status: hardened
+- Evidence: focused DPM API inventory/summary regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability_summary or support_runs_list"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the supportability parent module for service-factory naming and explicit route
+  composition ordering once operations/workflow modules are aligned with the newer extracted route
+  module pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-083: Supportability lineage route was mixed with async operations
+
+- Date: 2026-05-31
+- Scope: supportability lineage lookup for `GET /api/v1/rebalance/lineage/{entity_id}`.
+- Finding: lineage search was implemented inside `rebalance_runs_operations_routes.py` alongside
+  asynchronous operation list/detail routes. Lineage is an audit and traceability search surface
+  with a separate feature gate and filter contract, so keeping it mixed with async operation
+  polling obscured ownership and made future route review harder.
+- Action: moved lineage route registration into `src/api/routers/rebalance_runs_lineage_routes.py`
+  while preserving public path, response model, Swagger metadata, feature gates,
+  unsupported-query rejection, lineage filters, and empty-page behavior for unknown entity ids.
+- Status: hardened
+- Evidence: focused DPM API lineage/async-operation regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "lineage or async_operation"`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review async operation route metadata and workflow route duplication now that lineage
+  is owned separately.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-084: Workflow decision routes were mixed with run workflow actions
+
+- Date: 2026-05-31
+- Scope: workflow decision listing and workflow-decision history lookup by correlation id.
+- Finding: workflow decision search routes lived in `rebalance_runs_workflow_routes.py` alongside
+  workflow state, workflow actions, and run/idempotency history routes. Decision search has a
+  distinct filter contract and supports operational audit review across runs, while action routes
+  own mutation, conflict handling, and workflow metrics.
+- Action: moved workflow decision route registration into
+  `src/api/routers/rebalance_runs_workflow_decision_routes.py`, preserving public paths, response
+  models, Swagger metadata, query filters, feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split workflow state/history reads from workflow action commands so mutating review
+  behavior and read-only supportability views are owned separately.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-085: Workflow history routes were mixed with workflow action commands
+
+- Date: 2026-05-31
+- Scope: workflow history routes by run id, correlation id, and idempotency key.
+- Finding: read-only workflow history endpoints still lived in `rebalance_runs_workflow_routes.py`
+  next to mutating workflow action routes. History retrieval is an append-only audit/read surface,
+  while action routes own review command handling, transition conflicts, and workflow metrics.
+- Action: moved workflow history route registration into
+  `src/api/routers/rebalance_runs_workflow_history_routes.py`, preserving public paths, response
+  models, Swagger metadata, feature gates, unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split workflow action commands from workflow state reads, keeping workflow decision
+  metrics with the command route module.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-086: Workflow action command routes were mixed with workflow state reads
+
+- Date: 2026-05-31
+- Scope: workflow action command routes by run id, correlation id, and idempotency key.
+- Finding: mutating workflow action routes still lived in
+  `src/api/routers/rebalance_runs_workflow_routes.py` next to read-only workflow state endpoints
+  after decision and history extraction. Workflow commands own transition conflicts, reviewer
+  traceability, and decision metrics, so keeping them mixed with state reads made route ownership
+  and regression scope less explicit.
+- Action: moved workflow action route registration and workflow decision metric recording into
+  `src/api/routers/rebalance_runs_workflow_action_routes.py`, preserving public paths, response
+  models, Swagger metadata, supportability and workflow feature gates, unsupported-query
+  rejection, optional correlation-header behavior, disabled/not-found/conflict mapping, and metric
+  outcomes.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review remaining workflow state routes and parent module composition for final
+  supportability route ownership clarity.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-087: Workflow state routes were still owned by the composition shell
+
+- Date: 2026-05-31
+- Scope: read-only workflow state routes by run id, correlation id, and idempotency key.
+- Finding: after extracting workflow decisions, history, and action commands,
+  `src/api/routers/rebalance_runs_workflow_routes.py` still directly owned workflow state route
+  handlers while also acting as the workflow route composition shell. That left one route family in
+  a different ownership style from the rest of the workflow supportability surface.
+- Action: moved workflow state route registration into
+  `src/api/routers/rebalance_runs_workflow_state_routes.py` and reduced
+  `rebalance_runs_workflow_routes.py` to explicit composition imports for state, action, and
+  history route modules, preserving public paths, response models, Swagger metadata, feature
+  gates, unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the supportability root composition module for service-factory and route-order
+  readability once the async-operation module has the same ownership clarity.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-088: Async operation point lookups were mixed with list filtering
+
+- Date: 2026-05-31
+- Scope: async operation lookup routes by operation id and correlation id.
+- Finding: `src/api/routers/rebalance_runs_operations_routes.py` owned both the query-heavy async
+  operation list endpoint and point lookup endpoints. Lookup routes have simpler no-query
+  contracts and not-found behavior, while the list endpoint owns pagination and filter validation,
+  so keeping them together made review scope broader than necessary.
+- Action: moved async operation point lookup route registration into
+  `src/api/routers/rebalance_runs_async_operation_lookup_routes.py` and left the operations module
+  to register the list endpoint plus the lookup module import, preserving public paths, response
+  models, Swagger metadata, supportability and async-operation feature gates, and not-found
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API async-operation regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "async_operation"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split async operation list filtering into an explicit inventory route module so the
+  operations shell mirrors the workflow route composition pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-089: Async operation inventory route still lived in the operations shell
+
+- Date: 2026-05-31
+- Scope: async operation list route with creation-window, type, status, correlation, and cursor
+  filters.
+- Finding: after point lookup extraction, `src/api/routers/rebalance_runs_operations_routes.py`
+  still directly owned the async operation list endpoint while also acting as the route composition
+  shell. The list endpoint has the query-heavy filter and pagination contract, so keeping it in the
+  shell left async-operation route ownership inconsistent with the workflow route pattern.
+- Action: moved async operation list route registration into
+  `src/api/routers/rebalance_runs_async_operation_inventory_routes.py` and reduced
+  `rebalance_runs_operations_routes.py` to explicit composition imports for inventory and lookup
+  route modules, preserving public path, response model, Swagger metadata, query filters,
+  unsupported-query rejection, supportability and async-operation feature gates, and pagination
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API async-operation regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "async_operation"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the supportability root module for naming and composition readability now that
+  workflow and async-operation route families follow the same shell-plus-owned-module pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-090: Support-bundle include flags were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: support-bundle include-flag query parameter contract.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` owned the shared
+  `include_artifact`, `include_async_operation`, and `include_idempotency_history` query parameter
+  metadata inline with route handlers. That made the include-flag contract harder to reuse as
+  support-bundle route ownership is split by resolver type.
+- Action: moved the support-bundle allowed-query set and typed include-flag aliases into
+  `src/api/routers/rebalance_runs_support_bundle_parameters.py`, preserving query names, defaults,
+  Swagger metadata, unsupported-query rejection, and response behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split operation-resolved support-bundle lookup from direct run/correlation/idempotency
+  support-bundle routes using the shared include-flag contract.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-091: Operation-resolved support bundle was mixed with run resolvers
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by asynchronous operation id.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` mixed direct run,
+  correlation, idempotency, and operation-id support-bundle resolvers in one module. The
+  operation-id resolver follows the async-operation mapping path before reaching a run bundle, so
+  it has a different supportability ownership boundary from direct run/key lookup routes.
+- Action: moved the operation-id support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_operation_routes.py`, reusing the shared
+  include-flag query parameter contract and preserving public path, response model, Swagger
+  metadata, supportability and support-bundle feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review whether direct support-bundle run, correlation, and idempotency resolvers
+  should be split once remaining lookup route ownership is simplified.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-092: Idempotency support bundle was mixed with direct run resolvers
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by idempotency key.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` still mixed the
+  idempotency-key support-bundle resolver with direct run and correlation resolvers. The
+  idempotency route resolves through retry-key mapping and can include idempotency history, so it
+  has a distinct supportability contract from direct run/correlation bundle lookup.
+- Action: moved idempotency-key support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_idempotency_routes.py`, reusing the shared
+  include-flag query parameter contract and preserving public path, response model, Swagger
+  metadata, supportability and support-bundle feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split correlation-resolved support-bundle lookup from direct run support-bundle lookup
+  so the remaining support-bundle shell has explicit resolver ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-093: Correlation support bundle was mixed with direct run lookup
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by submitted run correlation id.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` still owned both direct
+  run-id support-bundle lookup and correlation-id support-bundle lookup. Correlation lookup is a
+  trace-resolution support path used when the caller has the submitted correlation id rather than
+  the persisted run id, so it benefits from separate route ownership and focused review scope.
+- Action: moved correlation-id support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_correlation_routes.py`, reusing the shared
+  include-flag query parameter contract and preserving public path, response model, Swagger
+  metadata, supportability and support-bundle feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: move the remaining direct run-id support-bundle route into its own module and leave
+  the support-bundle shell responsible only for composition order.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-094: Direct run support bundle was still owned by the composition shell
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by run id.
+- Finding: after operation, idempotency, and correlation support-bundle extraction,
+  `src/api/routers/rebalance_runs_support_bundle_routes.py` still directly owned the run-id
+  support-bundle endpoint while also acting as the support-bundle route composition shell. That
+  left one resolver in a different ownership style from the rest of the support-bundle surface.
+- Action: moved direct run-id support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_run_routes.py` and reduced the support-bundle
+  shell to explicit composition imports for run, correlation, idempotency, and operation resolver
+  modules, preserving public path, response model, Swagger metadata, supportability and
+  support-bundle feature gates, unsupported-query rejection, include-flag behavior, and not-found
+  mapping.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review run lookup/idempotency lookup route ownership with the same resolver-boundary
+  pattern used for support bundles.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-095: Idempotency history lookup was mixed with current run lookups
+
+- Date: 2026-05-31
+- Scope: append-only idempotency history route for retry/audit reconstruction.
+- Finding: `src/api/routers/rebalance_runs_lookup_routes.py` mixed current run lookup routes with
+  the append-only idempotency history route. The history route has a distinct feature gate and
+  audit contract from current lookup by correlation, request hash, idempotency key, or run id.
+- Action: moved idempotency history route registration into
+  `src/api/routers/rebalance_runs_lookup_idempotency_history_routes.py`, preserving public path,
+  response model, Swagger metadata, supportability and idempotency-history feature gates,
+  unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API idempotency-history regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "idempotency_history"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split current idempotency-key lookup from correlation, request-hash, and run-id lookup
+  routes so each resolver boundary has focused ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-096: Current idempotency lookup was mixed with run lookup resolvers
+
+- Date: 2026-05-31
+- Scope: current idempotency-key to run mapping lookup route.
+- Finding: `src/api/routers/rebalance_runs_lookup_routes.py` still mixed the current idempotency
+  mapping route with correlation, request-hash, and direct run-id lookup routes. Current
+  idempotency lookup is retry-token supportability behavior and has a distinct resolver boundary
+  from trace, request-fingerprint, and run-id lookup.
+- Action: moved current idempotency lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_idempotency_routes.py`, preserving public path, response
+  model, Swagger metadata, supportability feature gate, unsupported-query rejection, and not-found
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API idempotency regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "idempotency"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split request-hash lookup and direct run-id lookup from correlation lookup, preserving
+  route registration order for specific lookup paths before the run-id catch-all route.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-097: Request-hash lookup was mixed with trace and run-id lookups
+
+- Date: 2026-05-31
+- Scope: latest run lookup by canonical request hash.
+- Finding: `src/api/routers/rebalance_runs_lookup_routes.py` still mixed request-hash lookup with
+  correlation and direct run-id lookup routes. Request-hash lookup supports retry/replay and
+  fingerprint-based investigations, while correlation lookup supports trace resolution and run-id
+  lookup is the direct persisted identifier path.
+- Action: moved request-hash lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_request_hash_routes.py`, preserving public path, response
+  model, Swagger metadata, supportability feature gate, unsupported-query rejection, URL-encoded
+  hash path behavior, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API request-hash/supportability regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "request_hash or supportability"`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split direct run-id lookup from correlation lookup and leave the lookup shell
+  responsible only for specific-before-catch-all route composition.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-098: Direct run-id lookup was still owned by the lookup shell
+
+- Date: 2026-05-31
+- Scope: direct persisted run-id lookup route.
+- Finding: after request-hash and idempotency lookup extraction,
+  `src/api/routers/rebalance_runs_lookup_routes.py` still owned the direct run-id lookup route
+  while also coordinating lookup route composition. The run-id route is the specific persisted
+  identifier path and must remain registered after specific lookup paths to avoid catch-all
+  ambiguity.
+- Action: moved direct run-id lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_run_routes.py`, preserving public path, response model,
+  Swagger metadata, supportability feature gate, unsupported-query rejection, not-found behavior,
+  and specific-before-catch-all registration order.
+- Status: hardened
+- Evidence: focused DPM API supportability/run-list regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability or support_runs_list"`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: move correlation-id lookup into its own module and reduce the lookup shell to
+  explicit route composition only.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-099: Correlation lookup was still owned by the lookup composition shell
+
+- Date: 2026-05-31
+- Scope: latest run lookup by submitted correlation id.
+- Finding: after request-hash, idempotency, idempotency-history, and run-id lookup extraction,
+  `src/api/routers/rebalance_runs_lookup_routes.py` still directly owned the correlation lookup
+  route while also acting as the lookup route composition shell. That left trace-resolution lookup
+  in a different ownership style from the other lookup resolver families.
+- Action: moved correlation-id lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_correlation_routes.py` and reduced the lookup shell to
+  explicit composition imports in specific-before-catch-all order, preserving public path, response
+  model, Swagger metadata, supportability feature gate, unsupported-query rejection, and not-found
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API supportability/idempotency regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability or support_runs_list or idempotency"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review route composition shells for a shared readability pattern once this PR slice is
+  raised and CI feedback is available.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
