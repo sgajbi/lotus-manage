@@ -989,3 +989,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   weakening campaign-version identity or maker-checker boundary evidence.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-009: Outcome-review memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: post-trade outcome-review created and append-only event projection
+- Finding: outcome-review event projection was embedded in `src/core/portfolio_memory/service.py`
+  beside repository scanning. The event builders own source lineage mapping, persisted-event
+  dedupe semantics, content-hash preservation, and handoff-reference metadata, so they are a
+  source-event-family projection boundary rather than service orchestration.
+- Action: extracted outcome-review created and append-only event projection into
+  `src/core/portfolio_memory/outcome_projection.py`, leaving outcome-review repository traversal
+  in the service. Added direct unit coverage for review lineage/handoff metadata and duplicate
+  persisted-event precedence.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_outcome_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep PM-quality event projection as the next likely extraction once the score-run,
+  review-action, and summary-invocation boundaries can be pinned without weakening no-raw-score
+  and no-summary-text evidence.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
