@@ -3168,3 +3168,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   registrations into separately owned modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-115: Command-center summary was mixed with monitoring execution
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/dpm/command-center`.
+- Finding: `src/api/routers/monitoring.py` mixed the command-center read model with monitoring
+  run execution, run lookup, and exception queue mutations. The command-center route owns bounded
+  PM/supervision summary filters, supportability posture, attention bucket limits, and Gateway /
+  Workbench read-model semantics, so it should be reviewed independently from execution commands.
+- Action: moved command-center route registration into
+  `src/api/routers/monitoring_command_center_routes.py`, preserving public path, response model,
+  Swagger guidance, query filters, health-state validation, active-exception limit bounds,
+  repository dependency wiring, and supportability response behavior.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split monitoring run-once execution, monitoring run lookup/listing, and exception
+  queue routes into owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
