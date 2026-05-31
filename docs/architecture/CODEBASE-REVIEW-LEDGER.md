@@ -2981,3 +2981,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   separately owned read modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-106: Outcome-review search was mixed with point lookups
+
+- Date: 2026-05-31
+- Scope: outcome-review search route with metadata, source-owner, source-type, and pagination
+  filters.
+- Finding: `src/api/routers/outcome_reviews.py` mixed query-heavy outcome-review search with
+  direct lookup, run lookup, and wave lookup routes. Search owns bounded pagination, source-lineage
+  scan limits, normalized source filters, applied-filter response shaping, and source owner/type
+  facets, so it should be isolated from point lookup routes.
+- Action: moved search route registration into `src/api/routers/outcome_review_search_routes.py`,
+  preserving public path, response model, Swagger guidance, query parameter metadata, normalized
+  filter behavior, applied-filter payloads, source owner/type counts, and source-owner boundary
+  text.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split direct review lookup, run lookup, and wave lookup routes into owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
