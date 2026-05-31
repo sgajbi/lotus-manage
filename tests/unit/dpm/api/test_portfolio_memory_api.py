@@ -51,9 +51,9 @@ from src.core.portfolio_memory.handoffs import (
     build_portfolio_memory_report_context,
 )
 from src.core.portfolio_memory.pm_quality_projection import score_run_includes_portfolio
+from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
-    build_portfolio_memory_event_lookup,
     search_portfolio_memory,
 )
 from src.core.portfolio_memory.source_refs import (

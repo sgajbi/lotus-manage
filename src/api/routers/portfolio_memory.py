@@ -29,8 +29,8 @@ from src.core.portfolio_memory.models import (
     PortfolioMemoryEventType,
     PortfolioMemorySupportabilityState,
 )
+from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
 from src.core.portfolio_memory.service import (
-    build_portfolio_memory_event_lookup,
     build_portfolio_memory,
     normalize_portfolio_memory_search_filter,
     search_portfolio_memory,

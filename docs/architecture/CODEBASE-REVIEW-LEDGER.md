@@ -1155,3 +1155,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   collector can be split without weakening projection tests or introducing circular dependencies.
 - Wiki decision: no wiki source change required; this is internal aggregate modularity cleanup with
   no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-017: Portfolio-memory event lookup assembly lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: exact portfolio-memory event lookup envelope assembly
+- Finding: `src/core/portfolio_memory/service.py` still owned exact event selection and replay-stable
+  lookup envelope construction even though it no longer needed repository access. That kept
+  audit/read-model lookup behavior coupled to memory/search orchestration and made the exact-event
+  surface depend on service internals in API code and tests.
+- Action: extracted exact event lookup assembly to `src/core/portfolio_memory/event_lookup.py`,
+  updated the portfolio-memory API route and tests to import the dedicated lookup module, and added
+  direct lookup tests for exact-event envelope projection and missing-event behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_event_lookup.py` plus existing
+  portfolio-memory API lookup tests.
+- Follow-up: keep exact-event lookup behavior in the lookup module; future route work should only
+  handle HTTP status mapping and repository dependency wiring.
+- Wiki decision: no wiki source change required; this is internal lookup modularity cleanup with no
+  API, supported-feature, or operator-contract change.
