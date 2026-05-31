@@ -1466,3 +1466,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   introduced through the source-repository factory first.
 - Wiki decision: no wiki source change required; this is internal dependency-construction cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-032: Portfolio-memory API repeated source repository dependency blocks
+
+- Date: 2026-05-31
+- Scope: portfolio-memory API dependency wiring and source-bundle service entry point
+- Finding: the detail, event lookup, and search endpoints each carried the same repository
+  dependency list and then passed individual repositories into service facades. That duplicated
+  API wiring across routes and made every new source-family repository a multi-endpoint route edit.
+- Action: added a shared FastAPI dependency that resolves
+  `PortfolioMemorySourceRepositories`, added `search_portfolio_memory_from_sources` for bundle-based
+  search orchestration, and updated all portfolio-memory API routes to consume the explicit source
+  bundle.
+- Status: hardened
+- Evidence: focused service test in `tests/unit/dpm/portfolio_memory/test_service.py` plus existing
+  portfolio-memory API tests that cover detail, event lookup, search, OpenAPI, and error behavior.
+- Follow-up: route-level source-family additions should update only the shared API dependency and
+  the source repository factory unless the public query contract changes.
+- Wiki decision: no wiki source change required; this is internal API wiring modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

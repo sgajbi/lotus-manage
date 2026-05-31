@@ -42,8 +42,12 @@ from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
 )
 from src.core.portfolio_memory.service import (
-    build_portfolio_memory,
-    search_portfolio_memory,
+    build_portfolio_memory_from_sources,
+    search_portfolio_memory_from_sources,
+)
+from src.core.portfolio_memory.source_repositories import (
+    PortfolioMemorySourceRepositories,
+    build_portfolio_memory_source_repositories,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -56,6 +60,40 @@ router = APIRouter(
 )
 _PORTFOLIO_MEMORY_EVENT_TYPES = tuple(get_args(PortfolioMemoryEventType))
 _PORTFOLIO_MEMORY_EVENT_TYPE_SET = set(_PORTFOLIO_MEMORY_EVENT_TYPES)
+
+
+def get_portfolio_memory_source_repositories(
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> PortfolioMemorySourceRepositories:
+    """Resolve portfolio-memory source repositories once per API request."""
+
+    return build_portfolio_memory_source_repositories(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
+        pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+        campaign_definition_repository=campaign_definition_repository,
+    )
 
 
 @router.get(
@@ -137,22 +175,8 @@ def search_portfolio_memory_index(
         le=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
         description="Maximum rows to scan from each Manage-local evidence repository.",
     ),
-    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
-    construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-        get_pm_quality_score_run_repository
-    ),
-    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
-        get_pm_quality_review_action_repository
-    ),
-    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
-        get_pm_quality_summary_invocation_repository
-    ),
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    repositories: PortfolioMemorySourceRepositories = Depends(
+        get_portfolio_memory_source_repositories
     ),
 ) -> DpmPortfolioMemorySearchPage:
     normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
@@ -170,16 +194,8 @@ def search_portfolio_memory_index(
                 f"supported_event_types={','.join(_PORTFOLIO_MEMORY_EVENT_TYPES)}"
             ),
         )
-    return search_portfolio_memory(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-        construction_repository=construction_repository,
-        pm_quality_score_run_repository=pm_quality_score_run_repository,
-        pm_quality_review_action_repository=pm_quality_review_action_repository,
-        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
-        campaign_definition_repository=campaign_definition_repository,
+    return search_portfolio_memory_from_sources(
+        repositories=repositories,
         portfolio_ids=portfolio_ids,
         event_type=normalized_event_type,
         supportability_state=cast(
@@ -215,35 +231,13 @@ def get_portfolio_memory_event(
     portfolio_id: str,
     event_id: str,
     limit: int = Query(default=500, ge=1, le=1000, description="Maximum events to scan."),
-    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
-    construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-        get_pm_quality_score_run_repository
-    ),
-    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
-        get_pm_quality_review_action_repository
-    ),
-    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
-        get_pm_quality_summary_invocation_repository
-    ),
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    repositories: PortfolioMemorySourceRepositories = Depends(
+        get_portfolio_memory_source_repositories
     ),
 ) -> DpmPortfolioMemoryEventLookup:
-    memory = build_portfolio_memory(
+    memory = build_portfolio_memory_from_sources(
         portfolio_id=portfolio_id,
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-        construction_repository=construction_repository,
-        pm_quality_score_run_repository=pm_quality_score_run_repository,
-        pm_quality_review_action_repository=pm_quality_review_action_repository,
-        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
-        campaign_definition_repository=campaign_definition_repository,
+        repositories=repositories,
         limit=limit,
     )
     lookup = build_portfolio_memory_event_lookup(
@@ -289,34 +283,12 @@ def get_portfolio_memory_event(
 def get_portfolio_memory(
     portfolio_id: str,
     limit: int = Query(default=100, ge=1, le=500, description="Maximum events to return."),
-    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
-    construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-        get_pm_quality_score_run_repository
-    ),
-    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
-        get_pm_quality_review_action_repository
-    ),
-    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
-        get_pm_quality_summary_invocation_repository
-    ),
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    repositories: PortfolioMemorySourceRepositories = Depends(
+        get_portfolio_memory_source_repositories
     ),
 ) -> DpmPortfolioMemory:
-    return build_portfolio_memory(
+    return build_portfolio_memory_from_sources(
         portfolio_id=portfolio_id,
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-        construction_repository=construction_repository,
-        pm_quality_score_run_repository=pm_quality_score_run_repository,
-        pm_quality_review_action_repository=pm_quality_review_action_repository,
-        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
-        campaign_definition_repository=campaign_definition_repository,
+        repositories=repositories,
         limit=limit,
     )

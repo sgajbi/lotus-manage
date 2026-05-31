@@ -124,18 +124,46 @@ def search_portfolio_memory(
 ) -> DpmPortfolioMemorySearchPage:
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
 
-    generated_at = generated_at or datetime.now(timezone.utc)
-    repositories = _build_portfolio_memory_source_repositories(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-        construction_repository=construction_repository,
-        pm_quality_score_run_repository=pm_quality_score_run_repository,
-        pm_quality_review_action_repository=pm_quality_review_action_repository,
-        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
-        campaign_definition_repository=campaign_definition_repository,
+    return search_portfolio_memory_from_sources(
+        repositories=_build_portfolio_memory_source_repositories(
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_review_repository,
+            mandate_repository=mandate_repository,
+            construction_repository=construction_repository,
+            pm_quality_score_run_repository=pm_quality_score_run_repository,
+            pm_quality_review_action_repository=pm_quality_review_action_repository,
+            pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+            campaign_definition_repository=campaign_definition_repository,
+        ),
+        portfolio_ids=portfolio_ids,
+        event_type=event_type,
+        supportability_state=supportability_state,
+        source_system=source_system,
+        source_type=source_type,
+        limit=limit,
+        offset=offset,
+        source_scan_limit=source_scan_limit,
+        generated_at=generated_at,
     )
+
+
+def search_portfolio_memory_from_sources(
+    *,
+    repositories: PortfolioMemorySourceRepositories,
+    portfolio_ids: list[str] | None = None,
+    event_type: str | None = None,
+    supportability_state: PortfolioMemorySupportabilityState | None = None,
+    source_system: str | None = None,
+    source_type: str | None = None,
+    limit: int = PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    offset: int = PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    source_scan_limit: int = PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+    generated_at: datetime | None = None,
+) -> DpmPortfolioMemorySearchPage:
+    """Build a bounded Manage-local search page from an explicit source bundle."""
+
+    generated_at = generated_at or datetime.now(timezone.utc)
     search_query = _build_portfolio_memory_search_query(
         portfolio_ids=portfolio_ids,
         event_type=event_type,
