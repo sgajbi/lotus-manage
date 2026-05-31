@@ -467,6 +467,32 @@ def test_wiki_api_surface_documents_portfolio_memory_bounds_and_flow() -> None:
     assert "memory-event-id?limit=500" in api_surface
 
 
+def test_wiki_architecture_documents_portfolio_memory_module_boundary() -> None:
+    architecture = (ROOT / "wiki" / "Architecture.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "## Portfolio Memory Module Boundary",
+        "PortfolioMemorySourceRepositories",
+        "candidate_portfolios",
+        "source_collection",
+        "source-family collection modules",
+        "search_request, search_filters, search_facets, search_page",
+        "report/AI/archive-safe context handoff",
+        "It is not a global portfolio-universe search",
+        "source-owner methodology engine",
+        "src/core/portfolio_memory/source_repositories.py",
+        "src/core/portfolio_memory/candidate_portfolios.py",
+        "src/core/portfolio_memory/aggregate.py",
+        "src/core/portfolio_memory/handoffs.py",
+        "src/api/services/portfolio_memory_context_service.py",
+        "each new event family must enter",
+        "through a source-family collector/projection module",
+    ]
+    missing_terms = [term for term in required_terms if term not in architecture]
+
+    assert missing_terms == []
+
+
 def test_wiki_current_state_page_is_demo_and_operations_ready() -> None:
     current_state = (ROOT / "wiki" / "Current-State.md").read_text(encoding="utf-8")
     home = (ROOT / "wiki" / "Home.md").read_text(encoding="utf-8")

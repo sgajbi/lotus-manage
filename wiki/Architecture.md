@@ -148,6 +148,66 @@ from projection totals. Gateway and Workbench must consume that truth without re
 construction methods or bypassing the experience API. The downstream handoff is maintained in
 [`docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`](../docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md).
 
+## Portfolio Memory Module Boundary
+
+Portfolio memory is an audit and lineage read model assembled from Manage-owned persisted evidence.
+It is not a global portfolio-universe search, source-owner methodology engine, report renderer, AI
+author, archive owner, client-communication workflow, external OMS integration, or source-event
+store for other services.
+
+```mermaid
+flowchart LR
+    Router[portfolio-memory API routes] --> RepoBundle[PortfolioMemorySourceRepositories]
+    RepoBundle --> Candidates[candidate_portfolios]
+    RepoBundle --> SourceCollection[source_collection]
+    SourceCollection --> Families[source-family collection modules]
+    Families --> Mandate[mandate]
+    Families --> Construction[construction]
+    Families --> ProofPack[proof pack]
+    Families --> Wave[wave and campaign]
+    Families --> Outcome[outcome review]
+    Families --> PmQuality[PM quality]
+    Mandate --> Aggregate[aggregate]
+    Construction --> Aggregate
+    ProofPack --> Aggregate
+    Wave --> Aggregate
+    Outcome --> Aggregate
+    PmQuality --> Aggregate
+    Aggregate --> Search[search_request, search_filters, search_facets, search_page]
+    Aggregate --> Handoffs[report/AI/archive-safe context handoff]
+    Search --> Gateway[lotus-gateway composition]
+    Handoffs --> Report[lotus-report lineage consumer]
+    Handoffs --> AI[lotus-ai bounded context consumer]
+    Handoffs --> Archive[lotus-archive source-event lineage]
+```
+
+The implemented module boundary is:
+
+- `src/api/routers/portfolio_memory.py`
+  owns FastAPI request parsing, Swagger descriptions, path/query bounds, and the shared source
+  repository dependency.
+- `src/core/portfolio_memory/source_repositories.py`
+  owns the explicit repository bundle so route, service, search, and report-context callers use the
+  same source-family wiring.
+- `src/core/portfolio_memory/candidate_portfolios.py` and
+  `src/core/portfolio_memory/search_request.py`
+  own bounded candidate discovery and shared scan-limit validation before source repositories are
+  queried.
+- `src/core/portfolio_memory/*_collection.py` and `*_projection.py`
+  own family-specific event projection from persisted Manage evidence without copying raw source
+  payloads or recalculating source-owned methodology.
+- `src/core/portfolio_memory/aggregate.py`, `search_facets.py`, and `search_page.py`
+  own deterministic event aggregation, facet counting, pagination, and hashable response assembly.
+- `src/core/portfolio_memory/handoffs.py` and
+  `src/api/services/portfolio_memory_context_service.py`
+  own report/AI/archive-safe bounded context so downstream consumers preserve lineage without
+  reconstructing Manage memory events.
+
+This boundary is important for bank-buyable operation because each new event family must enter
+through a source-family collector/projection module, reuse the explicit repository bundle, carry
+supportability/source refs/content hashes, and preserve the non-claim boundary before it appears in
+Gateway, Workbench, report, AI, or archive surfaces.
+
 ## Code map
 
 - `src/api/`
@@ -173,6 +233,10 @@ construction methods or bypassing the experience API. The downstream handoff is 
   RFC-0039 construction-alternative domain, API, service, and persistence foundation
 - `docs/architecture/dpm-construction-alternatives-gateway-workbench-handoff.md`
   RFC-0039 downstream integration handoff for Gateway and Workbench construction-lab adoption
+- `src/core/portfolio_memory/`, `src/api/routers/portfolio_memory.py`, and
+  `src/api/services/portfolio_memory_context_service.py`
+  RFC-0040 portfolio-memory read model, bounded search, exact event lookup, source-family event
+  projections, and report/AI/archive-safe context handoff
 - `src/core/common/`
   shared simulation primitives, diagnostics, workflow gates, and canonical helpers
 - `src/infrastructure/`

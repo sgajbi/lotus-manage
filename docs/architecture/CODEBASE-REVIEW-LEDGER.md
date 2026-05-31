@@ -1580,3 +1580,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the API envelope.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-038: Portfolio-memory module boundaries were not visible in architecture wiki
+
+- Date: 2026-05-31
+- Scope: portfolio-memory architecture wiki and implementation-backed module map
+- Finding: the wiki API and current-state pages described the portfolio-memory capability, but the
+  architecture page did not explain the implemented module boundaries now used by the refactor:
+  source repository bundles, candidate discovery, source-family collectors, search request/filter,
+  search facet/page modules, and report-safe handoff context.
+- Action: added an implementation-backed portfolio-memory module-boundary diagram and reader
+  guidance to `wiki/Architecture.md`, and pinned it with the documentation current-state test pack.
+- Status: hardened
+- Evidence: docs regression test in `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep architecture wiki module maps current when portfolio-memory source families,
+  search facets, or handoff consumers change.
+- Wiki decision: updated `wiki/Architecture.md` because implementation-backed module boundaries are
+  developer, operations, demo, and client-pitch product truth.
