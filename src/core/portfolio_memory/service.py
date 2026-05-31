@@ -20,7 +20,7 @@ from src.core.portfolio_memory.aggregate import (
     build_portfolio_memory_aggregate as _build_portfolio_memory_aggregate,
 )
 from src.core.portfolio_memory.candidate_portfolios import (
-    candidate_portfolio_ids as _candidate_portfolio_ids,
+    candidate_portfolio_ids_from_sources as _candidate_portfolio_ids_from_sources,
 )
 from src.core.portfolio_memory.search_filters import (
     normalize_portfolio_memory_search_filter,
@@ -31,9 +31,9 @@ from src.core.portfolio_memory.search_page import (
     build_search_row as _build_search_row,
 )
 from src.core.portfolio_memory.source_collection import (
-    PortfolioMemorySourceRepositories,
     collect_portfolio_memory_events as _collect_portfolio_memory_events,
 )
+from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
@@ -56,10 +56,9 @@ def build_portfolio_memory(
 ) -> DpmPortfolioMemory:
     """Compose manage-owned portfolio memory without recalculating source truth."""
 
-    generated_at = generated_at or datetime.now(timezone.utc)
-    events = _collect_portfolio_memory_events(
+    return build_portfolio_memory_from_sources(
         portfolio_id=portfolio_id,
-        repositories=PortfolioMemorySourceRepositories(
+        repositories=_source_repositories(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
@@ -70,6 +69,24 @@ def build_portfolio_memory(
             pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
             campaign_definition_repository=campaign_definition_repository,
         ),
+        limit=limit,
+        generated_at=generated_at,
+    )
+
+
+def build_portfolio_memory_from_sources(
+    *,
+    portfolio_id: str,
+    repositories: PortfolioMemorySourceRepositories,
+    limit: int = 100,
+    generated_at: datetime | None = None,
+) -> DpmPortfolioMemory:
+    """Compose portfolio memory from an explicit source-repository bundle."""
+
+    generated_at = generated_at or datetime.now(timezone.utc)
+    events = _collect_portfolio_memory_events(
+        portfolio_id=portfolio_id,
+        repositories=repositories,
         limit=limit,
     )
     return _build_portfolio_memory_aggregate(
@@ -104,6 +121,17 @@ def search_portfolio_memory(
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
 
     generated_at = generated_at or datetime.now(timezone.utc)
+    repositories = _source_repositories(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
+        pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+        campaign_definition_repository=campaign_definition_repository,
+    )
     normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
     normalized_supportability_state = cast(
         PortfolioMemorySupportabilityState | None,
@@ -120,29 +148,16 @@ def search_portfolio_memory(
     explicit_candidate_ids = {
         portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
     }
-    candidate_ids = _candidate_portfolio_ids(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-        campaign_definition_repository=campaign_definition_repository,
-        pm_quality_score_run_repository=pm_quality_score_run_repository,
+    candidate_ids = _candidate_portfolio_ids_from_sources(
+        repositories=repositories,
         portfolio_ids=portfolio_ids,
         source_scan_limit=source_scan_limit,
     )
     search_rows = []
     for portfolio_id in candidate_ids:
-        memory = build_portfolio_memory(
+        memory = build_portfolio_memory_from_sources(
             portfolio_id=portfolio_id,
-            proof_pack_repository=proof_pack_repository,
-            wave_repository=wave_repository,
-            outcome_review_repository=outcome_review_repository,
-            mandate_repository=mandate_repository,
-            construction_repository=construction_repository,
-            pm_quality_score_run_repository=pm_quality_score_run_repository,
-            pm_quality_review_action_repository=pm_quality_review_action_repository,
-            pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
-            campaign_definition_repository=campaign_definition_repository,
+            repositories=repositories,
             limit=source_scan_limit,
             generated_at=generated_at,
         )
@@ -163,4 +178,29 @@ def search_portfolio_memory(
         limit=limit,
         offset=offset,
         generated_at=generated_at.isoformat(),
+    )
+
+
+def _source_repositories(
+    *,
+    proof_pack_repository: DpmProofPackRepository,
+    wave_repository: DpmWaveRepository,
+    outcome_review_repository: DpmOutcomeReviewRepository,
+    mandate_repository: DpmMandateRepository | None,
+    construction_repository: ConstructionRepository | None,
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None,
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository | None,
+    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None,
+) -> PortfolioMemorySourceRepositories:
+    return PortfolioMemorySourceRepositories(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
+        pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+        campaign_definition_repository=campaign_definition_repository,
     )

@@ -1344,3 +1344,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   removes real duplication.
 - Wiki decision: no wiki source change required; this is internal orchestration modularity cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-026: Portfolio-memory source repositories were duplicated across search paths
+
+- Date: 2026-05-31
+- Scope: portfolio-memory source repository dependency flow for aggregate build and search
+- Finding: portfolio-memory candidate discovery, source event collection, and search aggregation
+  carried the same source repository family as separate parameter lists. That preserved public
+  compatibility but kept repeated wiring in the search path and made it easier for candidate
+  discovery and event collection to drift when new source families are added.
+- Action: moved `PortfolioMemorySourceRepositories` into a dedicated
+  `src/core/portfolio_memory/source_repositories.py` dependency module, added a bundle-based
+  candidate discovery entrypoint, and updated search to reuse one source repository bundle for
+  candidate discovery and per-portfolio memory assembly while keeping existing public service and
+  candidate-discovery signatures stable.
+- Status: hardened
+- Evidence: focused candidate-discovery and source-collection tests plus existing portfolio-memory
+  API tests.
+- Follow-up: keep future source-family additions on the shared source repository bundle first,
+  then adapt public compatibility facades only where existing callers require them.
+- Wiki decision: no wiki source change required; this is internal dependency-flow modularity cleanup
+  with no API, supported-feature, or operator-contract change.

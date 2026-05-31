@@ -1,4 +1,8 @@
-from src.core.portfolio_memory.candidate_portfolios import candidate_portfolio_ids
+from src.core.portfolio_memory.candidate_portfolios import (
+    candidate_portfolio_ids,
+    candidate_portfolio_ids_from_sources,
+)
+from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
 from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from src.infrastructure.waves import InMemoryDpmBulkReviewCampaignDefinitionRepository
 from tests.unit.dpm.api.test_portfolio_memory_api import (
@@ -16,13 +20,15 @@ def test_candidate_portfolio_ids_merge_explicit_and_source_backed_portfolios() -
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
 
-    candidates = candidate_portfolio_ids(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_repository,
-        mandate_repository=mandate_repository,
-        campaign_definition_repository=campaign_repository,
-        pm_quality_score_run_repository=pm_quality_repository,
+    candidates = candidate_portfolio_ids_from_sources(
+        repositories=PortfolioMemorySourceRepositories(
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_repository,
+            mandate_repository=mandate_repository,
+            campaign_definition_repository=campaign_repository,
+            pm_quality_score_run_repository=pm_quality_repository,
+        ),
         portfolio_ids=[" PB_MANUAL_001 ", "", PORTFOLIO_ID],
         source_scan_limit=100,
     )

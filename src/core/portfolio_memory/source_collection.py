@@ -1,15 +1,5 @@
 """Source-family collection orchestration for portfolio memory."""
 
-from dataclasses import dataclass
-
-from src.core.construction.repository import ConstructionRepository
-from src.core.mandate_repository import DpmMandateRepository
-from src.core.pm_quality.repository import (
-    DpmPmQualityReviewActionRepository,
-    DpmPmQualityScoreRunRepository,
-    DpmPmQualitySummaryInvocationRepository,
-)
-from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.campaign_collection import campaign_definition_memory_events
 from src.core.portfolio_memory.construction_collection import construction_memory_events
 from src.core.portfolio_memory.mandate_collection import mandate_memory_events
@@ -17,23 +7,8 @@ from src.core.portfolio_memory.models import DpmPortfolioMemoryEvent
 from src.core.portfolio_memory.outcome_collection import outcome_review_memory_events
 from src.core.portfolio_memory.pm_quality_collection import pm_quality_memory_events
 from src.core.portfolio_memory.proof_pack_collection import proof_pack_memory_events
+from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
 from src.core.portfolio_memory.wave_collection import wave_memory_events
-from src.core.proof_packs.repository import DpmProofPackRepository
-from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
-from src.core.waves.repository import DpmWaveRepository
-
-
-@dataclass(frozen=True)
-class PortfolioMemorySourceRepositories:
-    proof_pack_repository: DpmProofPackRepository
-    wave_repository: DpmWaveRepository
-    outcome_review_repository: DpmOutcomeReviewRepository
-    mandate_repository: DpmMandateRepository | None = None
-    construction_repository: ConstructionRepository | None = None
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None
-    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository | None = None
-    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None = None
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None
 
 
 def collect_portfolio_memory_events(

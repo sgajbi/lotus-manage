@@ -1,6 +1,6 @@
-from src.core.portfolio_memory.source_collection import (
+from src.core.portfolio_memory.source_collection import collect_portfolio_memory_events
+from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
-    collect_portfolio_memory_events,
 )
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
