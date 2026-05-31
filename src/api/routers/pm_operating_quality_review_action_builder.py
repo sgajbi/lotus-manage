@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import HTTPException, status
-
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_not_found_http_exception,
+    pm_quality_validation_http_exception,
+)
 from src.api.routers.pm_operating_quality_models import DpmPmQualityReviewActionRequest
 from src.core.pm_quality import (
     DpmPmOperatingQualityScoreRun,
@@ -26,16 +28,16 @@ def build_review_action(
     if request.target_type == "SCORE_RUN":
         target = score_run_repository.get_score_run(score_run_id=request.target_id)
         if target is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{request.target_id}",
+            raise pm_quality_not_found_http_exception(
+                code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+                identifier=request.target_id,
             )
     else:
         target = fairness_repository.get_fairness_analysis(fairness_analysis_id=request.target_id)
         if target is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{request.target_id}",
+            raise pm_quality_not_found_http_exception(
+                code="PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND",
+                identifier=request.target_id,
             )
     try:
         return review_action_builder(
@@ -50,7 +52,4 @@ def build_review_action(
             correlation_id=x_correlation_id or request.actor_id,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
+        raise pm_quality_validation_http_exception(exc) from exc

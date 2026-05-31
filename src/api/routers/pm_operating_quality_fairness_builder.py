@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from fastapi import HTTPException, status
-
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_not_found_http_exception,
+    pm_quality_validation_http_exception,
+)
 from src.api.routers.pm_operating_quality_models import DpmPmQualityFairnessPreviewRequest
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityServiceError,
@@ -46,12 +48,10 @@ def build_fairness_analysis_response_model(
             score_run_repository=repository,
         )
     except DpmPmOperatingQualityServiceError as exc:
-        status_code = (
-            status.HTTP_404_NOT_FOUND
-            if exc.code.startswith("PM_QUALITY_SCORE_RUN_NOT_FOUND:")
-            else status.HTTP_422_UNPROCESSABLE_CONTENT
-        )
-        raise HTTPException(
-            status_code=status_code,
-            detail=exc.code,
-        ) from exc
+        not_found_prefix = "PM_QUALITY_SCORE_RUN_NOT_FOUND:"
+        if exc.code.startswith(not_found_prefix):
+            raise pm_quality_not_found_http_exception(
+                code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+                identifier=exc.code.removeprefix(not_found_prefix),
+            ) from exc
+        raise pm_quality_validation_http_exception(exc.code) from exc

@@ -9,6 +9,7 @@ from src.api.routers.pm_operating_quality_book_scope_builder import (
     book_scope_signal,
     resolve_pm_book_scope_evidence,
 )
+from src.api.routers.pm_operating_quality_http import pm_quality_validation_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewRequest,
 )
@@ -63,8 +64,5 @@ def build_score_run(
             correlation_id=x_correlation_id or request.actor_id,
         )
     except DpmPmQualityValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
+        raise pm_quality_validation_http_exception(exc) from exc
     return score_run

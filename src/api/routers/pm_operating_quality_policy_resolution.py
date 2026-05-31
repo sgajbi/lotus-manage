@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from fastapi import HTTPException, status
-
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_not_found_http_exception,
+    pm_quality_validation_http_exception,
+)
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewRequest,
 )
@@ -19,17 +21,15 @@ def resolve_policy(
     if request.policy is not None:
         return request.policy
     if request.policy_id is None or request.policy_version is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="PM_QUALITY_POLICY_REFERENCE_REQUIRED",
-        )
+        raise pm_quality_validation_http_exception("PM_QUALITY_POLICY_REFERENCE_REQUIRED")
     policy = repository.get_policy(
         policy_id=request.policy_id,
         policy_version=request.policy_version,
     )
     if policy is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_POLICY_NOT_FOUND:{request.policy_id}:{request.policy_version}",
+        raise pm_quality_not_found_http_exception(
+            code="PM_QUALITY_POLICY_NOT_FOUND",
+            identifier=request.policy_id,
+            secondary_identifier=request.policy_version,
         )
     return policy

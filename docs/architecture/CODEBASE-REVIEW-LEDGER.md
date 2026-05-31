@@ -5400,3 +5400,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   intentionally mix missing persisted inputs and validation/conflict semantics.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-216: PM operating quality builders repeated validation mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py`,
+  `src/api/routers/pm_operating_quality_policy_resolution.py`,
+  `src/api/routers/pm_operating_quality_score_run_builder.py`,
+  `src/api/routers/pm_operating_quality_fairness_builder.py`,
+  `src/api/routers/pm_operating_quality_review_action_builder.py`, and
+  `src/api/routers/pm_operating_quality_summary_invocation_builder.py`.
+- Finding: PM operating-quality builder modules repeated the same `422` validation HTTP mapping
+  and several matching PM-quality prerequisite `404` mappings. The repeated branches made the
+  builder layer less consistent with the route-level PM-quality HTTP helper introduced for
+  persisted reads and writes.
+- Action: added `pm_quality_validation_http_exception()` and reused the existing
+  `pm_quality_not_found_http_exception()` across PM-quality policy resolution, score-run,
+  fairness, review-action, and summary-invocation builders. Public paths, response models,
+  OpenAPI output, and existing `404`/`422` detail strings were preserved.
+- Status: hardened
+- Evidence: PM operating-quality API and service regressions
+  (`tests/unit/api/test_pm_operating_quality_api.py` and
+  `tests/unit/api/test_pm_operating_quality_service.py`), router-wide Ruff checks, router-wide
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: leave outcome-review prerequisite lookup in the score-run builder separate until a
+  broader cross-domain prerequisite error helper is introduced.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

@@ -33,3 +33,7 @@ def pm_quality_not_found_http_exception(
     if secondary_identifier is not None:
         detail = f"{detail}:{secondary_identifier}"
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+
+def pm_quality_validation_http_exception(detail: str | Exception) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(detail))
