@@ -4731,3 +4731,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   prove no active callers remain.
 - Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-186: PM operating quality compatibility builder had one parent-router caller
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality.py` and
+  `src/api/routers/pm_operating_quality_builders.py`.
+- Finding: after PM quality score-run, review-action, policy-resolution, and PM-book scope builders
+  were split, the compatibility builder only re-exported focused helpers. The only active
+  repository-local caller was the parent PM operating quality router, which kept the router coupled
+  to an obsolete import surface.
+- Action: updated the parent router to import focused helper modules directly and removed the
+  unused compatibility builder. Public routes, request/response models, private edge helpers,
+  repository wiring, OpenAPI output, and PM-book fail-closed behavior were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; PM operating quality API
+  regression (`tests/unit/api/test_pm_operating_quality_api.py`), router-wide Ruff checks,
+  router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no
+  drift.
+- Follow-up: continue removing compatibility-only router modules only after route and test imports
+  are proven migrated.
+- Wiki decision: no wiki source change required; this is internal helper import cleanup with no
+  route, payload, supported-feature, or operator-contract change.

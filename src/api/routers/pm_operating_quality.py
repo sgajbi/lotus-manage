@@ -2,12 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from src.api.routers.pm_operating_quality_builders import (
+from src.api.routers.pm_operating_quality_book_scope_builder import (
     book_scope_signal,
-    build_review_action,
-    build_score_run,
     resolve_pm_book_scope_evidence,
-    resolve_policy,
 )
 from src.api.routers.pm_operating_quality_fairness_routes import router as fairness_router
 from src.api.routers.pm_operating_quality_models import (
@@ -18,10 +15,13 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionRequest,
     DpmPmQualitySummaryInvocationRequest,
 )
+from src.api.routers.pm_operating_quality_policy_resolution import resolve_policy
 from src.api.routers.pm_operating_quality_policy_routes import router as policy_router
+from src.api.routers.pm_operating_quality_review_action_builder import build_review_action
 from src.api.routers.pm_operating_quality_review_action_routes import (
     register_pm_quality_review_action_routes,
 )
+from src.api.routers.pm_operating_quality_score_run_builder import build_score_run
 from src.api.routers.pm_operating_quality_score_run_routes import (
     register_pm_quality_score_run_command_routes,
     register_pm_quality_score_run_read_routes,
