@@ -2005,3 +2005,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration, so route registration stays easy to verify.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-061: Campaign definition lifecycle routes lived in the monolithic wave router
+
+- Date: 2026-05-31
+- Scope: campaign definition create, list, retire, and supersede route definitions
+- Finding: campaign definition lifecycle routes still lived directly in
+  `src/api/routers/waves.py` even though their response handling already lived in
+  `src/api/routers/wave_campaign_definition_http.py`. That kept definition persistence and
+  lifecycle registration mixed with read models, workflow evidence, and durable wave command
+  routes in the same large controller module.
+- Action: moved the campaign definition lifecycle route group into
+  `src/api/routers/wave_campaign_definition_routes.py`, mounted it from the main wave router in the
+  original registration position, and updated the API regression test to import the request model
+  from its owning module instead of relying on an accidental `waves.py` re-export.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract the remaining campaign definition detail/action/readiness routes by ownership
+  boundary while preserving route registration order and public contracts.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

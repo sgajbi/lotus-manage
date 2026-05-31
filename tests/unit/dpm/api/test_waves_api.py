@@ -20,6 +20,7 @@ from src.api.dependencies import (
 from src.api.main import app
 from src.api.request_models import RebalanceRequest
 from src.api.routers import waves as waves_router
+from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service, proof_pack_service, wave_service
 from src.core.mandates import (
@@ -1672,7 +1673,7 @@ def test_bulk_review_campaign_definition_reference_validation(
     expected_code: str,
 ) -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
-    definition_request = waves_router.DpmBulkReviewCampaignDefinitionRequest.model_validate(
+    definition_request = DpmBulkReviewCampaignDefinitionRequest.model_validate(
         _bulk_review_campaign_definition_request()
     )
     campaign_repository.save_definition(
