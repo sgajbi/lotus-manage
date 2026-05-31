@@ -6,6 +6,10 @@ from decimal import Decimal
 import re
 from typing import Optional
 
+from src.api.services.construction_idempotency import (
+    construction_request_hash,
+    resolve_existing_construction_alternative_set,
+)
 from src.core.common.capabilities import has_solver_dependencies
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.alternative_engine import (
@@ -42,7 +46,6 @@ from src.core.construction.models import (
 from src.core.construction.repository import (
     ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
-    ConstructionIdempotencyConflictError,
     ConstructionRepository,
 )
 from src.core.construction.vocabulary import (
@@ -89,18 +92,17 @@ def generate_construction_alternative_set(
     run_service: DpmRunSupportService | None = None,
 ) -> ConstructionAlternativeSet:
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
-    request_payload = {
-        "request": request.model_dump(mode="json"),
-        "methods": [method.value for method in method_set],
-        "source_context_hash": (
-            source_context.stateful_context_hash if source_context is not None else None
-        ),
-    }
-    request_hash = hash_canonical_payload(request_payload)
-    existing = repository.get_alternative_set_by_idempotency(idempotency_key=idempotency_key)
+    request_hash = construction_request_hash(
+        request=request,
+        methods=method_set,
+        source_context=source_context,
+    )
+    existing = resolve_existing_construction_alternative_set(
+        repository=repository,
+        idempotency_key=idempotency_key,
+        request_hash=request_hash,
+    )
     if existing is not None:
-        if existing.request_hash != request_hash:
-            raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
         return existing
 
     base_result = _run_method(

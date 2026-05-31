@@ -6333,3 +6333,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   regression coverage; do not remove the remaining env/core exports until their callers migrate.
 - Wiki decision: no wiki source change required; this is internal stale-alias cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-250: Construction idempotency helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_idempotency.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_construction_idempotency.py`.
+- Finding: construction alternative-set generation embedded canonical request-hash construction,
+  method/source-context participation, idempotency replay lookup, and conflict detection directly
+  in the large construction service. That made a production-critical replay/audit boundary harder
+  to test without running the full construction generation path.
+- Action: extracted construction request-hash construction and existing alternative-set replay
+  resolution into `construction_idempotency.py`. The generation service now delegates this
+  idempotency boundary before executing methods. Added focused tests proving methods and stateful
+  source context participate in the hash and that replay/conflict behavior is enforced directly.
+- Status: hardened
+- Evidence: focused construction idempotency and construction API regressions
+  (`tests/unit/dpm/construction/test_construction_idempotency.py` and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 27 tests, focused Ruff checks,
+  focused mypy over construction idempotency and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  behavioral or contract drift.
+- Follow-up: continue extracting construction source-product authority context and method-specific
+  supportability in small compatibility-preserving slices; keep tests direct at the helper layer
+  where the behavior is not inherently route-level.
+- Wiki decision: no wiki source change required; this is internal idempotency-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
