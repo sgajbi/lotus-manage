@@ -10,6 +10,12 @@ from src.api.services.construction_idempotency import (
     construction_request_hash,
     resolve_existing_construction_alternative_set,
 )
+from src.api.services.construction_transaction_cost_supportability import (
+    observed_transaction_cost_estimate,
+    transaction_cost_reason_codes,
+    transaction_cost_status,
+    with_observed_transaction_cost_estimate,
+)
 from src.core.common.capabilities import has_solver_dependencies
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.alternative_engine import (
@@ -41,7 +47,6 @@ from src.core.construction.models import (
     ConstructionConstraintTrace,
     ConstructionEnrichmentSummary,
     ConstructionMethodPlan,
-    ConstructionObjectiveTerm,
 )
 from src.core.construction.repository import (
     ConstructionAlternativeNotFoundError,
@@ -76,7 +81,6 @@ from src.infrastructure.risk_authority import (
 
 _MIN_TURNOVER_DEFAULT = Decimal("0.10")
 _DATE_PATTERN = re.compile(r"(\d{4})[-_](\d{2})[-_](\d{2})")
-_MONEY_QUANT = Decimal("0.0001")
 
 
 def generate_construction_alternative_set(
@@ -1251,43 +1255,10 @@ def _with_observed_transaction_cost_estimate(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> ConstructionAlternative:
-    estimate = _observed_transaction_cost_estimate(result=result, context=context)
-    if estimate is None:
-        return alternative
-    metrics = alternative.comparison_metrics.model_copy(
-        update={"estimated_transaction_cost": estimate}
-    )
-    objective_trace = [
-        *alternative.objective_trace,
-        ConstructionObjectiveTerm(
-            term=ConstructionTraceTerm.ESTIMATED_COST,
-            value=estimate.amount,
-            unit=estimate.currency,
-            direction="lower_is_better",
-            description=(
-                "Source-observed transaction-cost bps applied to candidate trade notionals; "
-                "not a predictive execution quote."
-            ),
-        ),
-    ]
-    constraint_trace = [
-        *alternative.constraint_trace,
-        ConstructionConstraintTrace(
-            constraint=ConstructionTraceTerm.ESTIMATED_COST,
-            status=_transaction_cost_status(result=result, context=context),
-            source_family=ConstructionSourceFamily.TRANSACTION_COST,
-            reason_codes=_transaction_cost_reason_codes(result=result, context=context),
-            description=(
-                "Observed TransactionCostCurve:v1 evidence supports cost-aware comparison only."
-            ),
-        ),
-    ]
-    return alternative.model_copy(
-        update={
-            "comparison_metrics": metrics,
-            "objective_trace": objective_trace,
-            "constraint_trace": constraint_trace,
-        }
+    return with_observed_transaction_cost_estimate(
+        alternative=alternative,
+        result=result,
+        context=context,
     )
 
 
@@ -1296,25 +1267,7 @@ def _observed_transaction_cost_estimate(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> Money | None:
-    if context is None or context.supportability_status != ConstructionMethodStatus.READY:
-        return None
-    point_by_key = {
-        (point.security_id, point.transaction_type): point for point in context.curve_points
-    }
-    total = Decimal("0")
-    currency = result.before.total_value.currency
-    matched = False
-    for intent in result.intents:
-        if not isinstance(intent, SecurityTradeIntent) or intent.notional_base is None:
-            continue
-        point = point_by_key.get((intent.instrument_id, intent.side))
-        if point is None:
-            continue
-        matched = True
-        total += abs(intent.notional_base.amount) * point.average_cost_bps / Decimal("10000")
-    if not matched:
-        return None
-    return Money(amount=total.quantize(_MONEY_QUANT), currency=currency)
+    return observed_transaction_cost_estimate(result=result, context=context)
 
 
 def _transaction_cost_status(
@@ -1322,18 +1275,7 @@ def _transaction_cost_status(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    status = context.supportability_status
-    traded_security_ids = {
-        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
-    }
-    covered_security_ids = {point.security_id for point in context.curve_points}
-    if traded_security_ids and not traded_security_ids <= covered_security_ids:
-        status = _lowest_status([status, ConstructionMethodStatus.DEGRADED])
-    if _observed_transaction_cost_estimate(result=result, context=context) is None:
-        status = _lowest_status([status, ConstructionMethodStatus.DEGRADED])
-    return status
+    return transaction_cost_status(result=result, context=context)
 
 
 def _transaction_cost_reason_codes(
@@ -1341,21 +1283,7 @@ def _transaction_cost_reason_codes(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> list[str]:
-    if context is None:
-        return ["TRANSACTION_COST_CURVE_UNAVAILABLE"]
-    reason_codes = list(context.reason_codes)
-    traded_security_ids = {
-        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
-    }
-    covered_security_ids = {point.security_id for point in context.curve_points}
-    missing_security_ids = sorted(traded_security_ids - covered_security_ids)
-    if missing_security_ids:
-        reason_codes.append("TRANSACTION_COST_CURVE_MISSING_TRADED_SECURITIES")
-    if _observed_transaction_cost_estimate(result=result, context=context) is None:
-        reason_codes.append("TRANSACTION_COST_ESTIMATE_UNAVAILABLE")
-    else:
-        reason_codes.append("TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS")
-    return sorted(set(reason_codes))
+    return transaction_cost_reason_codes(result=result, context=context)
 
 
 def _with_esg_restriction_constraints(

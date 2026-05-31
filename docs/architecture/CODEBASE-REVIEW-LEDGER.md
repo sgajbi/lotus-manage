@@ -6361,3 +6361,36 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   where the behavior is not inherently route-level.
 - Wiki decision: no wiki source change required; this is internal idempotency-boundary modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-251: Construction transaction-cost supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_transaction_cost_supportability.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`, and
+  `tests/unit/dpm/construction/test_enrichment.py`.
+- Finding: observed transaction-cost supportability logic was embedded in the large construction
+  service, including source-owned curve coverage checks, estimated-cost objective/constraint
+  trace composition, reason-code derivation, and local cost estimation from candidate trade
+  notionals. This made a source-authority boundary hard to test independently and kept
+  transaction-cost behavior coupled to unrelated ESG/liquidity/currency-overlay helpers.
+- Action: extracted transaction-cost supportability into
+  `construction_transaction_cost_supportability.py`, kept thin service compatibility wrappers for
+  existing private-helper tests, and added direct helper coverage for applied observed curves and
+  degraded missing-security coverage. Also updated a stale enrichment test to assert construction
+  HTTP exception mapping through `src.api.routers.construction_http` instead of reintroducing HTTP
+  translation into the service layer.
+- Status: hardened
+- Evidence: focused transaction-cost supportability, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks,
+  focused mypy over transaction-cost supportability and construction service, OpenAPI quality
+  gate, API vocabulary inventory validation, diff check, and service-layer HTTP leakage scan
+  passed with no API contract drift.
+- Follow-up: continue extracting ESG/restriction and source-product authority-context helpers into
+  dedicated service modules while keeping business logic outside routers and HTTP mapping outside
+  services.
+- Wiki decision: no wiki source change required; this is internal source-evidence supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
