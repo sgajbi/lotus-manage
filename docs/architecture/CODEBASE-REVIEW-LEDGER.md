@@ -2809,3 +2809,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   responsible only for specific-before-catch-all route composition.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-098: Direct run-id lookup was still owned by the lookup shell
+
+- Date: 2026-05-31
+- Scope: direct persisted run-id lookup route.
+- Finding: after request-hash and idempotency lookup extraction,
+  `src/api/routers/rebalance_runs_lookup_routes.py` still owned the direct run-id lookup route
+  while also coordinating lookup route composition. The run-id route is the specific persisted
+  identifier path and must remain registered after specific lookup paths to avoid catch-all
+  ambiguity.
+- Action: moved direct run-id lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_run_routes.py`, preserving public path, response model,
+  Swagger metadata, supportability feature gate, unsupported-query rejection, not-found behavior,
+  and specific-before-catch-all registration order.
+- Status: hardened
+- Evidence: focused DPM API supportability/run-list regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability or support_runs_list"`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: move correlation-id lookup into its own module and reduce the lookup shell to
+  explicit route composition only.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
