@@ -1386,3 +1386,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   before they reach repository orchestration or page assembly.
 - Wiki decision: no wiki source change required; this is internal search-query modularity cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-028: Portfolio-memory search pagination relied on API-only bounds
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search pagination and source scan bounds
+- Finding: the portfolio-memory API route constrained `limit`, `offset`, and `source_scan_limit`,
+  but the core search service accepted those values directly. Internal callers could therefore
+  bypass API query validation and pass negative offsets, zero limits, or unbounded source scan
+  limits into repository orchestration and page assembly.
+- Action: extended `src/core/portfolio_memory/search_request.py` so normalized search queries also
+  validate and carry pagination bounds. Updated the service to use the normalized query limits for
+  candidate discovery, per-portfolio memory assembly, and search page construction. Added focused
+  tests that prove valid bounds are preserved and unsafe direct-call pagination is rejected before
+  repository scans run.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_request.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: keep API and core service pagination bounds synchronized when new portfolio-memory
+  search limits or continuation semantics are introduced.
+- Wiki decision: no wiki source change required; this is internal defensive validation hardening
+  with no API, supported-feature, or operator-contract change.

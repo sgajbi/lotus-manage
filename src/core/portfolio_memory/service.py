@@ -136,18 +136,21 @@ def search_portfolio_memory(
         supportability_state=supportability_state,
         source_system=source_system,
         source_type=source_type,
+        limit=limit,
+        offset=offset,
+        source_scan_limit=source_scan_limit,
     )
     candidate_ids = _candidate_portfolio_ids_from_sources(
         repositories=repositories,
         portfolio_ids=portfolio_ids,
-        source_scan_limit=source_scan_limit,
+        source_scan_limit=search_query.source_scan_limit,
     )
     search_rows = []
     for portfolio_id in candidate_ids:
         memory = build_portfolio_memory_from_sources(
             portfolio_id=portfolio_id,
             repositories=repositories,
-            limit=source_scan_limit,
+            limit=search_query.source_scan_limit,
             generated_at=generated_at,
         )
         row = _build_search_row(
@@ -163,9 +166,9 @@ def search_portfolio_memory(
         filters=search_query.filters,
         explicit_candidate_ids=search_query.explicit_candidate_ids,
         scanned_portfolio_count=len(candidate_ids),
-        source_scan_limit=source_scan_limit,
-        limit=limit,
-        offset=offset,
+        source_scan_limit=search_query.source_scan_limit,
+        limit=search_query.limit,
+        offset=search_query.offset,
         generated_at=generated_at.isoformat(),
     )
 

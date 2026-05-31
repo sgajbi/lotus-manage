@@ -12,6 +12,9 @@ from src.core.portfolio_memory.search_page import PortfolioMemorySearchFilters
 class PortfolioMemorySearchQuery:
     filters: PortfolioMemorySearchFilters
     explicit_candidate_ids: set[str]
+    limit: int
+    offset: int
+    source_scan_limit: int
 
 
 def build_portfolio_memory_search_query(
@@ -21,7 +24,15 @@ def build_portfolio_memory_search_query(
     supportability_state: PortfolioMemorySupportabilityState | None,
     source_system: str | None,
     source_type: str | None,
+    limit: int,
+    offset: int,
+    source_scan_limit: int,
 ) -> PortfolioMemorySearchQuery:
+    _validate_search_pagination(
+        limit=limit,
+        offset=offset,
+        source_scan_limit=source_scan_limit,
+    )
     return PortfolioMemorySearchQuery(
         filters=PortfolioMemorySearchFilters(
             event_type=normalize_portfolio_memory_search_filter(event_type),
@@ -35,4 +46,21 @@ def build_portfolio_memory_search_query(
         explicit_candidate_ids={
             portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
         },
+        limit=limit,
+        offset=offset,
+        source_scan_limit=source_scan_limit,
     )
+
+
+def _validate_search_pagination(
+    *,
+    limit: int,
+    offset: int,
+    source_scan_limit: int,
+) -> None:
+    if limit < 1 or limit > 200:
+        raise ValueError("portfolio-memory search limit must be between 1 and 200")
+    if offset < 0:
+        raise ValueError("portfolio-memory search offset must be greater than or equal to 0")
+    if source_scan_limit < 1 or source_scan_limit > 1000:
+        raise ValueError("portfolio-memory source_scan_limit must be between 1 and 1000")
