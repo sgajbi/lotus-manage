@@ -6,6 +6,9 @@ from src.api.dependencies import get_campaign_definition_repository
 from src.api.routers.wave_campaign_approval_inbox_routes import (
     router as approval_inbox_router,
 )
+from src.api.routers.wave_campaign_assignment_plan_routes import (
+    router as assignment_plan_router,
+)
 from src.api.routers.wave_campaign_discovery_routes import router as discovery_router
 from src.api.routers.wave_campaign_operating_queue_routes import (
     router as operating_queue_router,
@@ -26,14 +29,10 @@ from src.api.routers.wave_route_parameters import (
     CampaignRequestedAsOfDateQuery,
 )
 from src.core.waves import (
-    CampaignAssignmentEscalationTier,
     CampaignWorkflowAutomationAction,
     CampaignWorkflowAutomationStatus,
-    CampaignWorkflowNextAction,
-    DpmBulkReviewCampaignAssignmentPlanPage,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmBulkReviewCampaignWorkflowAutomationPage,
-    build_bulk_review_campaign_assignment_plan_page,
     build_bulk_review_campaign_workflow_automation_page,
 )
 
@@ -45,64 +44,7 @@ router.include_router(discovery_router)
 router.include_router(operating_queue_router)
 router.include_router(approval_inbox_router)
 router.include_router(workflow_board_router)
-
-
-@router.get(
-    "/campaign-assignment-plan",
-    response_model=DpmBulkReviewCampaignAssignmentPlanPage,
-    status_code=status.HTTP_200_OK,
-    summary="List bulk-review campaign assignment plan",
-    description=(
-        "Returns a read-only assignment and escalation plan over persisted "
-        "`BulkReviewCampaignDefinition:v1` records. The plan derives assigned actors, escalation "
-        "tier, SLA posture, and reason codes from the existing workflow board without mutating "
-        "assignment state, creating escalation tasks, discovering the global portfolio universe, "
-        "recalculating source facts, mutating approval state, creating maker-checker workflow, "
-        "approving trades, generating orders, or claiming OMS execution."
-    ),
-)
-def list_bulk_review_campaign_assignment_plan(
-    campaign_id: CampaignDefinitionFilterIdQuery = None,
-    campaign_status: CampaignDefinitionStatusQuery = None,
-    as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
-    actor_id: CampaignActorIdQuery = None,
-    active_on: CampaignActiveOnQuery = None,
-    escalation_tier: CampaignAssignmentEscalationTier | None = Query(
-        default=None,
-        description="Optional filter for one read-only escalation tier.",
-    ),
-    next_action: CampaignWorkflowNextAction | None = Query(
-        default=None,
-        description="Optional filter for one derived operator next action.",
-    ),
-    include_closed: CampaignIncludeClosedQuery = False,
-    limit: CampaignReadModelLimitQuery = 50,
-    offset: CampaignReadModelOffsetQuery = 0,
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
-    ),
-) -> DpmBulkReviewCampaignAssignmentPlanPage:
-    campaign_query = load_campaign_read_model_query(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_status=campaign_status,
-        as_of_date=as_of_date,
-        active_on=active_on,
-        limit=limit,
-        offset=offset,
-    )
-    return build_bulk_review_campaign_assignment_plan_page(
-        definitions=campaign_query.definitions,
-        requested_as_of_date=requested_as_of_date,
-        actor_id=actor_id,
-        active_on=campaign_query.active_on,
-        include_closed=include_closed,
-        escalation_tier=escalation_tier,
-        next_action=next_action,
-        limit=limit,
-        offset=offset,
-    )
+router.include_router(assignment_plan_router)
 
 
 @router.get(
