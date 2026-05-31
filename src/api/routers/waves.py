@@ -143,6 +143,7 @@ from src.infrastructure.advise_authority import (
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
 logger = logging.getLogger(__name__)
 
+CampaignDefinitionStatus = Literal["ACTIVE", "RETIRED", "SUPERSEDED"]
 CampaignDefinitionIdPath = Annotated[
     str,
     Path(
@@ -176,6 +177,57 @@ WaveItemIdPath = Annotated[
     Path(
         description="Durable Manage rebalance wave item identifier.",
         examples=["dwi_001"],
+    ),
+]
+CampaignDefinitionFilterIdQuery = Annotated[
+    str | None,
+    Query(
+        description="Optional filter for one Manage-owned bulk-review campaign definition id.",
+        examples=["campaign-holdings-apple-tesla-20260510"],
+    ),
+]
+CampaignDefinitionStatusQuery = Annotated[
+    CampaignDefinitionStatus | None,
+    Query(
+        description="Optional filter for campaign definition lifecycle status.",
+        examples=["ACTIVE"],
+    ),
+]
+CampaignDefinitionAsOfDateQuery = Annotated[
+    str | None,
+    Query(
+        description="Optional campaign definition business as-of date filter.",
+        examples=["2026-05-10"],
+    ),
+]
+CampaignActiveOnQuery = Annotated[
+    str | None,
+    Query(
+        description="Optional ISO date used to classify campaign expiry posture.",
+        examples=["2026-05-10"],
+    ),
+]
+CampaignIncludeExpiredQuery = Annotated[
+    bool,
+    Query(
+        description="When false, omit expired campaigns from expiry-aware read models.",
+    ),
+]
+CampaignReadModelLimitQuery = Annotated[
+    int,
+    Query(
+        ge=1,
+        le=200,
+        description="Maximum number of campaign read-model rows to return.",
+        examples=[50],
+    ),
+]
+CampaignReadModelOffsetQuery = Annotated[
+    int,
+    Query(
+        ge=0,
+        description="Zero-based campaign read-model page offset.",
+        examples=[0],
     ),
 ]
 
@@ -216,11 +268,11 @@ def put_bulk_review_campaign_definition(
     description="Lists immutable Manage-owned bulk-review campaign definitions.",
 )
 def list_bulk_review_campaign_definitions(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
-    as_of_date: str | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = None,
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -311,19 +363,13 @@ def supersede_bulk_review_campaign_definition(
     ),
 )
 def discover_bulk_review_campaigns(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default="ACTIVE"),
-    as_of_date: str | None = Query(default=None),
-    active_on: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date used to classify and filter campaign expiry posture. When supplied "
-            "with include_expired=false, expired campaigns are omitted."
-        ),
-    ),
-    include_expired: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = "ACTIVE",
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
+    active_on: CampaignActiveOnQuery = None,
+    include_expired: CampaignIncludeExpiredQuery = False,
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -370,9 +416,9 @@ def discover_bulk_review_campaigns(
     ),
 )
 def list_bulk_review_campaign_operating_queue(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
-    as_of_date: str | None = Query(default=None),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = None,
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
     requested_as_of_date: str | None = Query(
         default=None,
         description=(
@@ -385,16 +431,10 @@ def list_bulk_review_campaign_operating_queue(
         default=None,
         description="Optional actor id to evaluate against campaign entitlement evidence.",
     ),
-    active_on: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date used to classify and filter campaign expiry posture. When supplied "
-            "with include_expired=false, expired campaigns are omitted."
-        ),
-    ),
-    include_expired: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    active_on: CampaignActiveOnQuery = None,
+    include_expired: CampaignIncludeExpiredQuery = False,
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -434,9 +474,9 @@ def list_bulk_review_campaign_operating_queue(
     ),
 )
 def list_bulk_review_campaign_approval_inbox(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
-    as_of_date: str | None = Query(default=None),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = None,
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
     requested_as_of_date: str | None = Query(
         default=None,
         description=(
@@ -449,17 +489,14 @@ def list_bulk_review_campaign_approval_inbox(
         default=None,
         description="Optional actor id to evaluate against campaign entitlement evidence.",
     ),
-    active_on: str | None = Query(
-        default=None,
-        description="Optional ISO date used to classify discovery expiry posture.",
-    ),
+    active_on: CampaignActiveOnQuery = None,
     inbox_status: CampaignApprovalInboxStatus | None = Query(
         default=None,
         description="Optional filter for one approval attention posture.",
     ),
     include_closed: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -501,9 +538,9 @@ def list_bulk_review_campaign_approval_inbox(
     ),
 )
 def list_bulk_review_campaign_workflow_board(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
-    as_of_date: str | None = Query(default=None),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = None,
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
     requested_as_of_date: str | None = Query(
         default=None,
         description=(
@@ -516,10 +553,7 @@ def list_bulk_review_campaign_workflow_board(
         default=None,
         description="Optional actor id to evaluate against campaign entitlement evidence.",
     ),
-    active_on: str | None = Query(
-        default=None,
-        description="Optional ISO date used to classify discovery expiry posture.",
-    ),
+    active_on: CampaignActiveOnQuery = None,
     board_status: CampaignWorkflowBoardStatus | None = Query(
         default=None,
         description="Optional filter for one workflow-board posture.",
@@ -529,8 +563,8 @@ def list_bulk_review_campaign_workflow_board(
         description="Optional filter for one derived operator next action.",
     ),
     include_closed: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -572,9 +606,9 @@ def list_bulk_review_campaign_workflow_board(
     ),
 )
 def list_bulk_review_campaign_assignment_plan(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
-    as_of_date: str | None = Query(default=None),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = None,
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
     requested_as_of_date: str | None = Query(
         default=None,
         description=(
@@ -587,10 +621,7 @@ def list_bulk_review_campaign_assignment_plan(
         default=None,
         description="Optional actor id to evaluate against campaign entitlement evidence.",
     ),
-    active_on: str | None = Query(
-        default=None,
-        description="Optional ISO date used to classify discovery expiry posture.",
-    ),
+    active_on: CampaignActiveOnQuery = None,
     escalation_tier: CampaignAssignmentEscalationTier | None = Query(
         default=None,
         description="Optional filter for one read-only escalation tier.",
@@ -600,8 +631,8 @@ def list_bulk_review_campaign_assignment_plan(
         description="Optional filter for one derived operator next action.",
     ),
     include_closed: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -649,9 +680,9 @@ def list_bulk_review_campaign_assignment_plan(
     ),
 )
 def list_bulk_review_campaign_workflow_automation(
-    campaign_id: str | None = Query(default=None),
-    campaign_status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] | None = Query(default=None),
-    as_of_date: str | None = Query(default=None),
+    campaign_id: CampaignDefinitionFilterIdQuery = None,
+    campaign_status: CampaignDefinitionStatusQuery = None,
+    as_of_date: CampaignDefinitionAsOfDateQuery = None,
     requested_as_of_date: str | None = Query(
         default=None,
         description=(
@@ -664,10 +695,7 @@ def list_bulk_review_campaign_workflow_automation(
         default=None,
         description="Optional actor id to evaluate against campaign entitlement evidence.",
     ),
-    active_on: str | None = Query(
-        default=None,
-        description="Optional ISO date used to classify discovery expiry posture.",
-    ),
+    active_on: CampaignActiveOnQuery = None,
     automation_status: CampaignWorkflowAutomationStatus | None = Query(
         default=None,
         description="Optional filter for one Manage-side automation posture.",
@@ -677,8 +705,8 @@ def list_bulk_review_campaign_workflow_automation(
         description="Optional filter for one proposed Manage-side automation action.",
     ),
     include_closed: bool = Query(default=False),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignReadModelLimitQuery = 50,
+    offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),

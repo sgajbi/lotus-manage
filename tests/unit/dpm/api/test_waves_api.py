@@ -6251,6 +6251,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     campaign_definition = openapi["paths"][
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}"
     ]["put"]
+    campaign_discovery = openapi["paths"]["/api/v1/rebalance/waves/campaign-discovery"]["get"]
     assignment_transition = openapi["paths"][
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/assignment-tasks/{task_ref}/transitions"
@@ -6350,3 +6351,12 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert selection_parameters["wave_item_id"] == (
         "Durable Manage rebalance wave item identifier."
     )
+    discovery_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in campaign_discovery["parameters"]
+    }
+    assert discovery_parameters["campaign_id"] == (
+        "Optional filter for one Manage-owned bulk-review campaign definition id."
+    )
+    assert discovery_parameters["limit"] == "Maximum number of campaign read-model rows to return."
+    assert discovery_parameters["offset"] == "Zero-based campaign read-model page offset."

@@ -1839,3 +1839,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: continue using shared path-parameter aliases when new wave subroutes are added.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
   existing routes with no behavior, payload, or supported-feature change.
+
+## BACKEND-REVIEW-20260531-053: Campaign read-model query parameters repeated weak Swagger metadata
+
+- Date: 2026-05-31
+- Scope: campaign definition list and bulk-review campaign read-model query parameters
+- Finding: campaign-definition list, discovery, operating queue, approval inbox, workflow board,
+  assignment plan, and workflow automation endpoints repeated bare query parameter definitions for
+  campaign id, campaign status, as-of date, expiry date, include-expired, limit, and offset. The
+  route behavior was bounded, but the Swagger metadata and controller signatures were less reusable
+  than the API surface warrants.
+- Action: introduced shared `Annotated` query aliases for the campaign read-model filters and
+  pagination controls, applied them across the campaign read-model endpoints, and regenerated the
+  API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy on `src/api/routers/waves.py`, OpenAPI quality gate, and regenerated
+  API vocabulary inventory validation.
+- Follow-up: review campaign action/list endpoints separately before applying the read-model
+  pagination aliases there, because those pages represent append-only evidence ledgers rather than
+  the front-office campaign read models.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.
