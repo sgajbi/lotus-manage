@@ -33,11 +33,11 @@ from src.api.routers.wave_request_models import (
 from src.api.routers.wave_campaign_definition_http import (
     get_campaign_definition_response,
     list_campaign_definitions_response,
-    parse_optional_campaign_discovery_date,
     put_campaign_definition_response,
     retire_campaign_definition_response,
     supersede_campaign_definition_response,
 )
+from src.api.routers.wave_campaign_read_model_query import load_campaign_read_model_query
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
     DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
@@ -292,22 +292,23 @@ def discover_bulk_review_campaigns(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDiscoveryPage:
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    definitions = repository.list_definitions(
+    campaign_query = load_campaign_read_model_query(
+        repository=repository,
         campaign_id=campaign_id,
-        status=campaign_status,
+        campaign_status=campaign_status,
         as_of_date=as_of_date,
+        active_on=active_on,
         limit=limit,
         offset=offset,
     )
     items = [
-        build_bulk_review_campaign_discovery_item(definition=definition, active_on=active_on_date)
-        for definition in definitions
+        build_bulk_review_campaign_discovery_item(
+            definition=definition,
+            active_on=campaign_query.active_on,
+        )
+        for definition in campaign_query.definitions
     ]
-    if active_on_date is not None and not include_expired:
+    if campaign_query.active_on is not None and not include_expired:
         items = [item for item in items if item.expiry_state != "EXPIRED"]
     return DpmBulkReviewCampaignDiscoveryPage(
         items=items,
@@ -362,22 +363,20 @@ def list_bulk_review_campaign_operating_queue(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignOperatingQueuePage:
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    definitions = repository.list_definitions(
+    campaign_query = load_campaign_read_model_query(
+        repository=repository,
         campaign_id=campaign_id,
-        status=campaign_status,
+        campaign_status=campaign_status,
         as_of_date=as_of_date,
+        active_on=active_on,
         limit=limit,
         offset=offset,
     )
     return build_bulk_review_campaign_operating_queue_page(
-        definitions=definitions,
+        definitions=campaign_query.definitions,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
-        active_on=active_on_date,
+        active_on=campaign_query.active_on,
         include_expired=include_expired,
         limit=limit,
         offset=offset,
@@ -429,22 +428,20 @@ def list_bulk_review_campaign_approval_inbox(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignApprovalInboxPage:
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    definitions = repository.list_definitions(
+    campaign_query = load_campaign_read_model_query(
+        repository=repository,
         campaign_id=campaign_id,
-        status=campaign_status,
+        campaign_status=campaign_status,
         as_of_date=as_of_date,
+        active_on=active_on,
         limit=limit,
         offset=offset,
     )
     return build_bulk_review_campaign_approval_inbox_page(
-        definitions=definitions,
+        definitions=campaign_query.definitions,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
-        active_on=active_on_date,
+        active_on=campaign_query.active_on,
         include_closed=include_closed,
         inbox_status=inbox_status,
         limit=limit,
@@ -502,22 +499,20 @@ def list_bulk_review_campaign_workflow_board(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignWorkflowBoardPage:
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    definitions = repository.list_definitions(
+    campaign_query = load_campaign_read_model_query(
+        repository=repository,
         campaign_id=campaign_id,
-        status=campaign_status,
+        campaign_status=campaign_status,
         as_of_date=as_of_date,
+        active_on=active_on,
         limit=limit,
         offset=offset,
     )
     return build_bulk_review_campaign_workflow_board_page(
-        definitions=definitions,
+        definitions=campaign_query.definitions,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
-        active_on=active_on_date,
+        active_on=campaign_query.active_on,
         include_closed=include_closed,
         board_status=board_status,
         next_action=next_action,
@@ -575,22 +570,20 @@ def list_bulk_review_campaign_assignment_plan(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignAssignmentPlanPage:
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    definitions = repository.list_definitions(
+    campaign_query = load_campaign_read_model_query(
+        repository=repository,
         campaign_id=campaign_id,
-        status=campaign_status,
+        campaign_status=campaign_status,
         as_of_date=as_of_date,
+        active_on=active_on,
         limit=limit,
         offset=offset,
     )
     return build_bulk_review_campaign_assignment_plan_page(
-        definitions=definitions,
+        definitions=campaign_query.definitions,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
-        active_on=active_on_date,
+        active_on=campaign_query.active_on,
         include_closed=include_closed,
         escalation_tier=escalation_tier,
         next_action=next_action,
@@ -654,22 +647,20 @@ def list_bulk_review_campaign_workflow_automation(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignWorkflowAutomationPage:
-    active_on_date = parse_optional_campaign_discovery_date(
-        value=active_on,
-        field_name="active_on",
-    )
-    definitions = repository.list_definitions(
+    campaign_query = load_campaign_read_model_query(
+        repository=repository,
         campaign_id=campaign_id,
-        status=campaign_status,
+        campaign_status=campaign_status,
         as_of_date=as_of_date,
+        active_on=active_on,
         limit=limit,
         offset=offset,
     )
     return build_bulk_review_campaign_workflow_automation_page(
-        definitions=definitions,
+        definitions=campaign_query.definitions,
         requested_as_of_date=requested_as_of_date,
         actor_id=actor_id,
-        active_on=active_on_date,
+        active_on=campaign_query.active_on,
         include_closed=include_closed,
         automation_status=automation_status,
         automation_action=automation_action,

@@ -1781,3 +1781,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   controls change.
 - Wiki decision: updated `wiki/Current-State.md` because this is implementation-backed
   product-current-state and demo/client-pitch truth.
+
+## BACKEND-REVIEW-20260531-050: Wave campaign read-model query flow was duplicated in the router
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign discovery, operating queue, approval inbox, workflow board,
+  assignment plan, and workflow-automation read models
+- Finding: `src/api/routers/waves.py` repeated the same `active_on` parsing and campaign-definition
+  repository filtering across six read-model endpoints. That kept request-boundary query shaping
+  mixed into every controller function and increased the chance of drift in date validation,
+  status/as-of filters, pagination, or future campaign read-model route additions.
+- Action: extracted campaign read-model query loading to
+  `src/api/routers/wave_campaign_read_model_query.py` and updated the six endpoints to consume one
+  typed query result containing the repository page and parsed `active_on` date.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/api/test_wave_campaign_read_model_query.py` plus targeted
+  Ruff checks for the changed router/helper/test files.
+- Follow-up: keep future campaign read-model endpoints on the shared query helper before adding
+  endpoint-specific projection logic.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
