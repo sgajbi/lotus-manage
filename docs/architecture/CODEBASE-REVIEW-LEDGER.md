@@ -2936,3 +2936,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split read/search/supportability/report/AI handoff routes into owned modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-104: Outcome-review supportability diagnostics were mixed with reads
+
+- Date: 2026-05-31
+- Scope: outcome-review supportability endpoint, remediation routing, boundary projection, and
+  structured diagnostics.
+- Finding: `src/api/routers/outcome_reviews.py` mixed operator supportability diagnostics with
+  plain search/lookup and downstream report/AI handoff routes. Supportability owns bounded
+  diagnostic counts, remediation routes, external execution and client communication boundaries,
+  supportability metrics, and structured logging, so it should be reviewed independently.
+- Action: moved supportability route registration, response assembly, remediation route mapping,
+  and structured diagnostic logging into
+  `src/api/routers/outcome_review_supportability_routes.py`, preserving public path, response
+  model, Swagger guidance, not-found mapping, supportability metrics, remediation route outputs,
+  and boundary projections.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split downstream report/AI evidence handoff routes from remaining search and lookup
+  routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
