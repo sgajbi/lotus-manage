@@ -949,3 +949,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   scanning can remain separated from pure event construction.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-007: Proof-pack memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: proof-pack created and decision-timeline portfolio-memory event projection
+- Finding: proof-pack event projection was embedded in `src/core/portfolio_memory/service.py`
+  beside repository scanning. The event builders own source-safe projection details such as
+  source refs, report/AI artifact refs, content hashes, status mapping, and bounded metadata, so
+  they are a source-event-family projection boundary rather than service orchestration.
+- Action: extracted proof-pack created and decision-timeline event projection into
+  `src/core/portfolio_memory/proof_pack_projection.py`, leaving proof-pack repository retrieval in
+  the service. Added direct unit coverage for created-event source/artifact references and
+  timeline-event evidence artifact projection.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_proof_pack_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: continue extracting source-event-family projection modules only when source lineage
+  and artifact-ref semantics can be covered independently.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.

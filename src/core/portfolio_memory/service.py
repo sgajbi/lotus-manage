@@ -46,15 +46,15 @@ from src.core.portfolio_memory.governance import (
 from src.core.portfolio_memory.pm_quality_projection import (
     score_run_includes_portfolio as _score_run_includes_portfolio,
 )
+from src.core.portfolio_memory.proof_pack_projection import (
+    proof_pack_events as _proof_pack_events,
+)
 from src.core.portfolio_memory.source_refs import (
     campaign_definition_artifact_ref as _campaign_definition_artifact_ref,
     campaign_definition_source_refs as _campaign_definition_source_refs,
     from_outcome_source_ref as _from_outcome_source_ref,
-    from_proof_pack_evidence_ref as _from_proof_pack_evidence_ref,
     from_source_product_lineage as _from_source_product_lineage,
     from_wave_source_ref as _from_wave_source_ref,
-    proof_pack_artifact_refs as _proof_pack_artifact_refs,
-    proof_pack_source_refs as _proof_pack_source_refs,
     wave_source_refs as _wave_source_refs,
 )
 from src.core.portfolio_memory.search_filters import (
@@ -74,9 +74,6 @@ from src.core.portfolio_memory.supportability import (
     pm_quality_summary_invocation_state as _pm_quality_summary_invocation_state,
     portfolio_memory_state as _memory_state,
     source_supportability_state as _state,
-)
-from src.core.proof_packs.models import (
-    DpmPreTradeProofPack,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.models import (
@@ -699,61 +696,6 @@ def _construction_events(
                     selection=selection,
                 )
             )
-    return events
-
-
-def _proof_pack_events(proof_pack: DpmPreTradeProofPack) -> list[DpmPortfolioMemoryEvent]:
-    refs = _proof_pack_source_refs(proof_pack)
-    events = [
-        DpmPortfolioMemoryEvent(
-            event_id=f"memory:proof_pack:{proof_pack.proof_pack_id}:created",
-            event_type="PROOF_PACK_CREATED",
-            event_time=proof_pack.created_at.isoformat(),
-            actor=proof_pack.created_by,
-            source_system="lotus-manage",
-            source_type="DPM_PRE_TRADE_PROOF_PACK",
-            source_id=proof_pack.proof_pack_id,
-            status=proof_pack.status,
-            supportability_state=_state(proof_pack.status),
-            summary=f"Proof pack {proof_pack.proof_pack_id} created from {proof_pack.source_type}.",
-            reason_codes=proof_pack.supportability.reason_codes,
-            source_refs=refs,
-            artifact_refs=_proof_pack_artifact_refs(proof_pack),
-            content_hash=proof_pack.content_hash,
-            metadata={
-                "mandate_id": proof_pack.mandate_id,
-                "rebalance_run_id": proof_pack.rebalance_run_id,
-                "alternative_set_id": proof_pack.alternative_set_id,
-                "selected_alternative_id": proof_pack.selected_alternative_id,
-                "as_of_date": proof_pack.as_of_date,
-            },
-        )
-    ]
-    for timeline_event in proof_pack.decision_timeline.events:
-        events.append(
-            DpmPortfolioMemoryEvent(
-                event_id=(
-                    f"memory:proof_pack:{proof_pack.proof_pack_id}:"
-                    f"timeline:{timeline_event.event_id}"
-                ),
-                event_type="PROOF_PACK_TIMELINE_EVENT",
-                event_time=timeline_event.event_time,
-                actor=timeline_event.actor,
-                source_system=timeline_event.source_system,
-                source_type=timeline_event.event_type,
-                source_id=timeline_event.event_id,
-                status=timeline_event.status,
-                supportability_state=_state(timeline_event.status),
-                summary=f"Proof-pack timeline event {timeline_event.event_type}.",
-                reason_codes=timeline_event.reason_codes,
-                source_refs=refs,
-                artifact_refs=[
-                    _from_proof_pack_evidence_ref(ref) for ref in timeline_event.artifact_refs
-                ],
-                content_hash=proof_pack.content_hash,
-                metadata={"proof_pack_id": proof_pack.proof_pack_id},
-            )
-        )
     return events
 
 
