@@ -3379,3 +3379,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   remaining router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-125: Proof-pack reads were mixed with downstream handoff routes
+
+- Date: 2026-05-31
+- Scope: proof-pack persisted lookup and deterministic Markdown summary routes.
+- Finding: after extracting proof-pack generation, `src/api/routers/proof_packs.py` still mixed
+  basic persisted proof-pack reads with downstream report-input and AI-evidence-input routes. The
+  lookup and Markdown routes own local proof-pack retrieval and deterministic human-readable
+  rendering, while handoff routes own downstream payload assembly with wave, outcome, and mandate
+  dependencies.
+- Action: moved proof-pack lookup and Markdown route registration into
+  `src/api/routers/proof_pack_read_routes.py`, preserving public paths, response model, Markdown
+  response class, Swagger guidance, repository dependency wiring, deterministic renderer call, and
+  proof-pack-not-found mapping.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split report-input and AI-evidence-input handoff routes from the remaining router
+  shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
