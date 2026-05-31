@@ -10,6 +10,7 @@ import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
+import src.api.services.rebalance_supportability_write as supportability_write
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
 from src.api.request_models import BatchExecutionRequestEnvelope, RebalanceExecutionRequestEnvelope
@@ -401,6 +402,40 @@ def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_
             source_context=None,
             support_service_factory=_InconsistentService,
         )
+
+
+def test_rebalance_supportability_write_preserves_replay_failure_gate() -> None:
+    def _raise_runtime(**_kwargs):
+        raise RuntimeError("store down")
+
+    with pytest.raises(
+        service.DpmRebalanceIdempotencyStoreWriteFailedError,
+        match="DPM_IDEMPOTENCY_STORE_WRITE_FAILED",
+    ):
+        supportability_write.record_simulation_supportability(
+            result=SimpleNamespace(),
+            request_hash="sha256:request",
+            portfolio_id="PF_TEST",
+            idempotency_key="idem_001",
+            replay_enabled=True,
+            source_context=None,
+            record_for_support=_raise_runtime,
+            current_logger=SimpleNamespace(exception=lambda *_args, **_kwargs: None),
+        )
+
+    logged_messages: list[str] = []
+    supportability_write.record_simulation_supportability(
+        result=SimpleNamespace(),
+        request_hash="sha256:request",
+        portfolio_id="PF_TEST",
+        idempotency_key="idem_001",
+        replay_enabled=False,
+        source_context=None,
+        record_for_support=_raise_runtime,
+        current_logger=SimpleNamespace(exception=lambda message: logged_messages.append(message)),
+    )
+
+    assert logged_messages == ["Supportability persistence failed"]
 
 
 def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) -> None:

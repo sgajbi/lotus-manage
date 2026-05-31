@@ -51,6 +51,7 @@ from src.api.services.rebalance_async_config import (
     env_flag,
     resolve_async_execution_mode,
 )
+from src.api.services.rebalance_supportability_write import record_simulation_supportability
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
     get_dpm_run_support_service,
@@ -315,28 +316,17 @@ def simulate_rebalance(
     )
     result = apply_source_lineage(result=result, source_context=source_context)
 
-    try:
-        record_for_support = (
-            _main_override("record_dpm_run_for_support") or record_dpm_run_for_support
-        )
-        record_for_support(
-            result=result,
-            request_hash=request_hash,
-            portfolio_id=request.portfolio_snapshot.portfolio_id,
-            idempotency_key=idempotency_key,
-        )
-    except (RuntimeError, ValueError) as exc:
-        if replay_enabled:
-            record_execution_call(
-                operation="simulate",
-                input_mode=source_input_mode(source_context),
-                outcome="error",
-                result_status="failed",
-            )
-            raise DpmRebalanceIdempotencyStoreWriteFailedError(
-                "DPM_IDEMPOTENCY_STORE_WRITE_FAILED"
-            ) from exc
-        current_logger.exception("Supportability persistence failed")
+    record_simulation_supportability(
+        result=result,
+        request_hash=request_hash,
+        portfolio_id=request.portfolio_snapshot.portfolio_id,
+        idempotency_key=idempotency_key,
+        replay_enabled=replay_enabled,
+        source_context=source_context,
+        record_for_support=_main_override("record_dpm_run_for_support")
+        or record_dpm_run_for_support,
+        current_logger=current_logger,
+    )
 
     if result.status == "BLOCKED":
         current_logger.warning("Run blocked by DPM engine safety rules")

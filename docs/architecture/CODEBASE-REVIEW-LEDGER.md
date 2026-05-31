@@ -5902,3 +5902,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   persistence failure behavior are both independently testable service helpers.
 - Wiki decision: no wiki source change required; this is internal orchestration modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-234: Rebalance supportability-write helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_supportability_write.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `simulate_rebalance` still owned post-run supportability persistence and the
+  fail-closed/fail-open split between replay-enabled idempotency writes and replay-disabled best
+  effort persistence. That made supportability-store failure semantics harder to test without a
+  full simulation request path.
+- Action: extracted simulation supportability recording into `rebalance_supportability_write.py`,
+  preserved the main-module override for `record_dpm_run_for_support`, and kept replay-enabled
+  write failures mapped to `DPM_IDEMPOTENCY_STORE_WRITE_FAILED` while replay-disabled failures are
+  logged and do not block simulation. Public routes, OpenAPI output, result payloads, and error
+  details were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  supportability-write and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue extracting the remaining policy-resolution and batch-execution orchestration
+  from `rebalance_simulation_service.py` only in small slices with direct lower-level coverage.
+- Wiki decision: no wiki source change required; this is internal supportability-write modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
