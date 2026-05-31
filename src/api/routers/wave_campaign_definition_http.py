@@ -1,9 +1,14 @@
 from __future__ import annotations
 
-from datetime import date
-
-from fastapi import HTTPException, status
-
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_conflict_http_exception,
+    campaign_definition_launch_blocked_http_exception as campaign_definition_launch_blocked_http_exception,
+    campaign_definition_lifecycle_http_exception,
+    campaign_definition_not_found_http_exception,
+    campaign_definition_value_http_exception,
+    invalid_campaign_discovery_date_http_exception as invalid_campaign_discovery_date_http_exception,
+    parse_optional_campaign_discovery_date as parse_optional_campaign_discovery_date,
+)
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionPage,
     DpmBulkReviewCampaignDefinitionRequest,
@@ -13,7 +18,6 @@ from src.api.routers.wave_campaign_models import (
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionConflictError,
-    DpmBulkReviewCampaignDefinitionLaunchBlocked,
     DpmBulkReviewCampaignDefinitionRepository,
 )
 from src.core.waves.campaign_definition_lifecycle import (
@@ -21,12 +25,6 @@ from src.core.waves.campaign_definition_lifecycle import (
     retire_bulk_review_campaign_definition,
     supersede_bulk_review_campaign_definition,
 )
-
-
-_CAMPAIGN_DEFINITION_NOT_FOUND_DETAIL = {
-    "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
-    "message": "Bulk-review campaign definition was not found.",
-}
 
 
 def get_campaign_definition_or_404(
@@ -40,10 +38,7 @@ def get_campaign_definition_or_404(
         campaign_version=campaign_version,
     )
     if definition is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=_CAMPAIGN_DEFINITION_NOT_FOUND_DETAIL,
-        )
+        raise campaign_definition_not_found_http_exception()
     return definition
 
 
@@ -167,82 +162,3 @@ def supersede_campaign_definition_response(
     if superseded is None:
         raise campaign_definition_not_found_http_exception()
     return superseded
-
-
-def campaign_definition_not_found_http_exception() -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=_CAMPAIGN_DEFINITION_NOT_FOUND_DETAIL,
-    )
-
-
-def campaign_definition_conflict_http_exception(
-    exc: DpmBulkReviewCampaignDefinitionConflictError,
-    *,
-    message: str | None = None,
-) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_409_CONFLICT,
-        detail={"code": str(exc), "message": message or str(exc)},
-    )
-
-
-def campaign_definition_value_http_exception(exc: ValueError) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail={"code": str(exc), "message": str(exc)},
-    )
-
-
-def campaign_definition_lifecycle_http_exception(
-    exc: DpmBulkReviewCampaignDefinitionLifecycleError,
-) -> HTTPException:
-    return HTTPException(
-        status_code=_campaign_definition_lifecycle_status_code(exc.code),
-        detail={"code": exc.code, "message": exc.message},
-    )
-
-
-def campaign_definition_launch_blocked_http_exception(
-    exc: DpmBulkReviewCampaignDefinitionLaunchBlocked,
-) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail={
-            "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_LAUNCH_BLOCKED",
-            "message": "Bulk-review campaign definition is not ready for durable launch.",
-            "reason_codes": exc.reason_codes,
-            "readiness": exc.readiness.model_dump(mode="json"),
-        },
-    )
-
-
-def invalid_campaign_discovery_date_http_exception(field_name: str) -> HTTPException:
-    return HTTPException(
-        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        detail={
-            "code": "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID",
-            "message": f"{field_name} must be an ISO date.",
-        },
-    )
-
-
-def parse_optional_campaign_discovery_date(
-    *,
-    value: str | None,
-    field_name: str,
-) -> date | None:
-    if value is None:
-        return None
-    try:
-        return date.fromisoformat(value)
-    except ValueError as exc:
-        raise invalid_campaign_discovery_date_http_exception(field_name) from exc
-
-
-def _campaign_definition_lifecycle_status_code(code: str) -> int:
-    if code == "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND":
-        return status.HTTP_404_NOT_FOUND
-    if code == "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID":
-        return status.HTTP_422_UNPROCESSABLE_CONTENT
-    return status.HTTP_409_CONFLICT

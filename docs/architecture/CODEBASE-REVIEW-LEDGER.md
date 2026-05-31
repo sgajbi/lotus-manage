@@ -4346,3 +4346,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   prove no downstream import consumers remain.
 - Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-169: Campaign definition HTTP mixed response orchestration with reusable error mapping
+
+- Date: 2026-05-31
+- Scope: `src/api/routers/wave_campaign_definition_http.py` HTTP error/date mapping helpers.
+- Finding: campaign-definition response orchestration lived in the same module as reusable HTTP
+  exception builders and campaign discovery date parsing. Downstream campaign helpers imported that
+  module for error mapping even when they did not need definition response orchestration.
+- Action: moved reusable campaign-definition HTTP exception builders and discovery date parsing into
+  `src/api/routers/wave_campaign_definition_errors.py`, kept `wave_campaign_definition_http.py`
+  import-compatible for existing callers, and moved focused helper tests to the new boundary.
+  Not-found, conflict, validation, lifecycle, launch-blocked, and discovery-date behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused campaign-definition helper tests
+  (`tests/unit/api/test_wave_campaign_definition_http.py`), focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff checks, source-file mypy, OpenAPI quality
+  gate, and API vocabulary inventory validation with no drift.
+- Follow-up: move downstream helper imports from `wave_campaign_definition_http.py` to the focused
+  error module when touching those modules for adjacent work.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
