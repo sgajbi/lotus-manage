@@ -3062,3 +3062,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   ownership pattern.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-110: Mandate API contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: mandate API response examples and core-refresh request/response models.
+- Finding: `src/api/routers/mandates.py` mixed OpenAPI examples and Pydantic contract models with
+  read, refresh, and health route handlers. The refresh response contract owns serialization of
+  compiled mandate twins, health snapshots, monitoring exceptions, and field-gap codes, so it
+  should be independently reviewable from route registration.
+- Action: moved the mandate response example and refresh request/response contracts into
+  `src/api/routers/mandate_models.py`, preserving public schemas, Swagger examples, response
+  serialization, and route behavior.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split mandate read, refresh, and health route registrations into separately owned
+  modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
