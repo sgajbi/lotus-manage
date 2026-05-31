@@ -4878,3 +4878,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   still the safest pattern.
 - Wiki decision: no wiki source change required; this is internal route registration readability
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-193: Outcome review parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/outcome_reviews.py`.
+- Finding: the outcome review parent router registered primary outcome-review routes and cross-link
+  run/wave lookup routes through repeated `importlib.import_module()` calls. That made route order
+  harder to scan and increased copy/paste friction for future outcome-review route slices.
+- Action: centralized primary route module names and cross-link route module names in ordered
+  tuples and registered each group through a single loop after its owning parent router was
+  initialized. Public paths, route ordering, response models, OpenAPI output, lookup prefixes,
+  supportability behavior, and handoff behavior were preserved.
+- Status: hardened
+- Evidence: outcome review API regression (`tests/unit/api/test_outcome_reviews_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
