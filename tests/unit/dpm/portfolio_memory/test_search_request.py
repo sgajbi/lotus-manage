@@ -10,6 +10,8 @@ from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
     build_portfolio_memory_search_query,
+    normalize_portfolio_memory_event_type_filter,
+    normalize_portfolio_memory_supportability_state_filter,
     validate_portfolio_memory_source_scan_limit,
 )
 
@@ -67,6 +69,33 @@ def test_build_portfolio_memory_search_query_treats_blank_filters_as_absent() ->
     assert query.limit == 25
     assert query.offset == 10
     assert query.source_scan_limit == 250
+
+
+def test_build_portfolio_memory_search_query_rejects_unsupported_event_type() -> None:
+    with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE"):
+        build_portfolio_memory_search_query(
+            portfolio_ids=None,
+            event_type="NOT_A_MEMORY_EVENT",
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+            limit=PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+            offset=PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+            source_scan_limit=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+        )
+
+
+def test_portfolio_memory_search_filter_normalizers_reject_unsupported_vocabularies() -> None:
+    assert normalize_portfolio_memory_event_type_filter(" WAVE_HANDOFF_READY ") == (
+        "WAVE_HANDOFF_READY"
+    )
+    assert normalize_portfolio_memory_supportability_state_filter(" READY ") == "READY"
+
+    with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE"):
+        normalize_portfolio_memory_event_type_filter("NOT_A_MEMORY_EVENT")
+
+    with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_SUPPORTABILITY_STATE"):
+        normalize_portfolio_memory_supportability_state_filter("NOT_A_SUPPORTABILITY_STATE")
 
 
 def test_validate_portfolio_memory_source_scan_limit_preserves_supported_limit() -> None:

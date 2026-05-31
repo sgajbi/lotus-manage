@@ -1,6 +1,6 @@
 """API routes for RFC-0040 portfolio memory."""
 
-from typing import Annotated, cast, get_args
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
@@ -24,11 +24,7 @@ from src.core.pm_quality.repository import (
     DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.portfolio_memory import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
-from src.core.portfolio_memory.models import (
-    DpmPortfolioMemoryEventLookup,
-    PortfolioMemoryEventType,
-    PortfolioMemorySupportabilityState,
-)
+from src.core.portfolio_memory.models import DpmPortfolioMemoryEventLookup
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
 from src.core.portfolio_memory.read_request import (
     PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX,
@@ -37,7 +33,6 @@ from src.core.portfolio_memory.read_request import (
     PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
     PORTFOLIO_MEMORY_READ_LIMIT_MIN,
 )
-from src.core.portfolio_memory.search_filters import normalize_portfolio_memory_search_filter
 from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
     PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
@@ -47,6 +42,8 @@ from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+    normalize_portfolio_memory_event_type_filter,
+    normalize_portfolio_memory_supportability_state_filter,
 )
 from src.core.portfolio_memory.service import (
     build_portfolio_memory_from_sources,
@@ -65,8 +62,6 @@ router = APIRouter(
     prefix="/rebalance/portfolio-memory",
     tags=["lotus-manage Portfolio Memory"],
 )
-_PORTFOLIO_MEMORY_EVENT_TYPES = tuple(get_args(PortfolioMemoryEventType))
-_PORTFOLIO_MEMORY_EVENT_TYPE_SET = set(_PORTFOLIO_MEMORY_EVENT_TYPES)
 
 
 def get_portfolio_memory_source_repositories(
@@ -186,30 +181,23 @@ def search_portfolio_memory_index(
         get_portfolio_memory_source_repositories
     ),
 ) -> DpmPortfolioMemorySearchPage:
-    normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
-    normalized_supportability_state = normalize_portfolio_memory_search_filter(supportability_state)
-    normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
-    normalized_source_type = normalize_portfolio_memory_search_filter(source_type)
-    if (
-        normalized_event_type is not None
-        and normalized_event_type not in _PORTFOLIO_MEMORY_EVENT_TYPE_SET
-    ):
+    try:
+        normalized_event_type = normalize_portfolio_memory_event_type_filter(event_type)
+        normalized_supportability_state = normalize_portfolio_memory_supportability_state_filter(
+            supportability_state
+        )
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                f"UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: {normalized_event_type}; "
-                f"supported_event_types={','.join(_PORTFOLIO_MEMORY_EVENT_TYPES)}"
-            ),
-        )
+            detail=str(exc),
+        ) from exc
     return search_portfolio_memory_from_sources(
         repositories=repositories,
         portfolio_ids=portfolio_ids,
         event_type=normalized_event_type,
-        supportability_state=cast(
-            PortfolioMemorySupportabilityState | None, normalized_supportability_state
-        ),
-        source_system=normalized_source_system,
-        source_type=normalized_source_type,
+        supportability_state=normalized_supportability_state,
+        source_system=source_system,
+        source_type=source_type,
         limit=limit,
         offset=offset,
         source_scan_limit=source_scan_limit,

@@ -1646,3 +1646,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   rather than reintroducing order-sensitive overwrite behavior.
 - Wiki decision: no wiki source change required; this is deterministic aggregate hygiene with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-042: Search vocabulary validation was router-local
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search request vocabulary validation
+- Finding: unsupported portfolio-memory event types were rejected at the API router, but direct core
+  search callers could still pass unsupported event-type strings and receive empty results. Search
+  supportability-state normalization had the same direct-call drift risk despite API-level pattern
+  validation.
+- Action: moved event-type and supportability-state vocabulary normalization into
+  `src/core/portfolio_memory/search_request.py`, kept the API route translating those validation
+  errors into 422 responses, and added focused request-normalization tests.
+- Status: hardened
+- Evidence: focused search-request tests plus the portfolio-memory API/search lane.
+- Follow-up: add future portfolio-memory search vocabularies through the request-normalization
+  module before exposing them in routers or service facades.
+- Wiki decision: no wiki source change required; this is internal validation-boundary hardening
+  with no route, payload, supported-feature, or operator-contract change.

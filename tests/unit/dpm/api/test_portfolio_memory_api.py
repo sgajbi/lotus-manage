@@ -2319,14 +2319,15 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         mandate_repository=InMemoryDpmMandateRepository(),
         portfolio_ids=["EMPTY_PORTFOLIO"],
     )
-    event_type_filtered = search_portfolio_memory(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_repository,
-        mandate_repository=mandate_repository,
-        portfolio_ids=[PORTFOLIO_ID],
-        event_type="NOT_A_MEMORY_EVENT",
-    )
+    with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE"):
+        search_portfolio_memory(
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_repository,
+            mandate_repository=mandate_repository,
+            portfolio_ids=[PORTFOLIO_ID],
+            event_type="NOT_A_MEMORY_EVENT",
+        )
     state_filtered = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
@@ -2353,7 +2354,6 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
     )
 
     assert empty_filtered.returned_count == 0
-    assert event_type_filtered.returned_count == 0
     assert state_filtered.returned_count == 0
     assert source_filtered.returned_count == 0
     assert blank_source_unfiltered.returned_count == 1
