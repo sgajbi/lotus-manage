@@ -3852,3 +3852,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   router.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-147: Campaign workflow board was mixed with assignment projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-workflow-board`.
+- Finding: after extracting discovery, operating queue, and approval inbox routes, the campaign
+  read-model router still mixed workflow-board behavior with assignment plan and automation
+  readiness. The workflow board owns cross-actor next-action rows, board-status filtering,
+  next-action filtering, and closed-row inclusion over persisted definitions.
+- Action: moved workflow-board route registration into
+  `src/api/routers/wave_campaign_workflow_board_routes.py` and included it after approval inbox,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment plan and automation readiness from the remaining campaign read-model
+  router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
